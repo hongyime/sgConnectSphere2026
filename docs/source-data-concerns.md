@@ -16,18 +16,20 @@ must be corrected when the source documents change.
   `E09-S01` through `E09-S07`. The app labels now follow the workbook; update
   source-adjacent design notes if they still describe attendee registration as
   Epic 10.
-- `BACKLOG DECISION REVIEW CAA 130926.docx` says "Version 5 - 11 September
-  2026" and references `CONNECTSPHERE_BACKLOGS_CAA_v5.xlsx`, while the current
-  workbook committed to the repo is named `CONNECTSPHERE BACKLOGS CAA
-  140926.xlsx`. Confirm whether the DOCX filename, internal date, or workbook
-  reference should be renamed in the source documents.
-- `ARCHITECTURE DECISION RECORDS CAA 120926.docx` says "Version 4 - 13
-  September 2026" inside the document. Confirm whether the file name or the
-  internal date is the intended source date.
 - Several repository Markdown files were written before the React/Vite frontend,
   TypeScript backend foundation, Vercel configuration, Redis outbox plan, and
   Supabase setup existed. When source documents are next revised, update the
   derivative Markdown so it no longer says the project has no application.
+
+## Resolved In PR 33
+
+- `BACKLOG DECISION REVIEW CAA 130926.docx` was renamed to `BACKLOG DECISION
+  REVIEW CAA 140926.docx`. Its internal date now says 14 September 2026 and its
+  workbook reference now points to `CONNECTSPHERE BACKLOGS CAA 140926.xlsx`.
+- `ARCHITECTURE DECISION RECORDS CAA 120926.docx` was renamed to `ARCHITECTURE
+  DECISION RECORDS CAA 140926.docx`. Its internal date now says 14 September
+  2026 and its workbook reference now points to `CONNECTSPHERE BACKLOGS CAA
+  140926.xlsx`.
 
 ## Action Taken In This Branch
 
