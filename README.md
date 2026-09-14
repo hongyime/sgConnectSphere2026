@@ -2,7 +2,7 @@
 
 IS212 Software Project Management team 8 web application monorepo.
 
-- Status: repository foundation; application scope and technology stack are undecided.
+- Status: repository foundation plus initial React/Vite frontend and TypeScript backend scaffolds.
 - Owners: the project team listed in [CODEOWNERS](.github/CODEOWNERS).
 - Frontend and backend will live together with independent application boundaries.
 - Licensing: Apache-2.0, adopted from the organization template.
@@ -51,17 +51,18 @@ case collisions, large files, private keys, likely secrets, and repository-tooli
 behaviour. PRs also get branch/title validation and a Git LFS pointer guard.
 Dependabot is configured for GitHub Actions and the repository tooling.
 
-**There is no application to run yet.** Frontend/backend linting, type checking,
-application tests, builds, and deployment are not configured. A green repository
-check does not claim those have passed. Code review is handled by teammates;
-no AI reviewer or paid review subscription is part of this setup.
+The application scaffold now includes a React/Vite frontend, a TypeScript
+backend foundation, database migration/seed scripts, and Playwright fixme
+coverage generated from the source workbook. A green repository check still
+does not mean every user story is implemented. Code review is handled by
+teammates; no AI reviewer or paid review subscription is part of this setup.
 
 ## Layout
 
 ```text
-frontend/             Future browser application
-backend/              Future API, application logic, and database migrations
-tests/e2e/            Future tests across the complete application
+frontend/             React/Vite browser application
+backend/              API, application logic, and database migrations
+tests/e2e/            Playwright scaffold for end-to-end coverage
 tooling/              Repository tooling requirements and its own tests
 scripts/              Cross-platform setup, checks, and GitHub settings helper
 docs/                 Setup guide, architecture, and decision records

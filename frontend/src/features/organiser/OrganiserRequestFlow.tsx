@@ -79,11 +79,11 @@ export function OrganiserRequestFlow() {
     <section className="organiser-flow" aria-label="Organiser request creation flow">
       <header className="flow-header">
         <div>
-          <p className="eyebrow">Feature slice - Organiser</p>
+          <p className="eyebrow">Organiser workflow</p>
           <h2>Create event request</h2>
           <p>
-            Batch 5 becomes a working request-to-submit flow with mock validation, draft
-            state, and the status timeline the backend will later persist.
+            A working request-to-submit flow with mock validation, draft state, and the
+            status timeline the backend will later persist.
           </p>
         </div>
         <div className="flow-status">
