@@ -792,7 +792,9 @@ function PrototypeApp() {
           </div>
         </header>
 
-        {viewMode === 'organiser-flow' ? <OrganiserRequestFlow /> : null}
+        {viewMode === 'organiser-flow' ? (
+          <OrganiserRequestFlow getAccessToken={async () => null} />
+        ) : null}
 
         <section className={`role-hero accent-${activeRole.accent}`}>
           <div className="role-hero-copy">
