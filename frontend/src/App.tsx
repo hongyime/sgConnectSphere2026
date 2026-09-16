@@ -17,6 +17,9 @@ import {
   TechnicianAssignment, ConflictState,
 } from './features/support/Support';
 import {
+  AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
+} from './features/admin/Admin';
+import {
   AlertTriangle,
   Bell,
   CalendarDays,
@@ -1027,6 +1030,10 @@ function App() {
       <Route path="/support/requests/:requestId" element={<ReservationDetail />} />
       <Route path="/support/technicians" element={<TechnicianAssignment />} />
       <Route path="/support/conflicts" element={<ConflictState />} />
+      <Route path="/admin" element={<AdminHome />} />
+      <Route path="/admin/users" element={<UserManagement />} />
+      <Route path="/admin/users/:userId/role" element={<RoleAssignment />} />
+      <Route path="/admin/audit" element={<AuditLogViewer />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>
