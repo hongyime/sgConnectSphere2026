@@ -1,0 +1,152 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { Client, Pool } from 'pg';
+import { createVenue, getVenue, retireVenue, searchVenues, updateVenue } from '../src/modules/venueBooking/catalogue';
+import type { Query } from '../src/modules/eventVisibility/service';
+import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+
+type VenueBody = { id: string; max_capacity: number; is_active: boolean; facilities: string[] };
+
+function expectVenue(result: { status: number; body: unknown }): VenueBody {
+  const body = result.body as Record<string, unknown>;
+  assert.ok('venue' in body, `expected a venue in the response, got ${JSON.stringify(body)}`);
+  return body.venue as VenueBody;
+}
+
+test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', async () => {
+  assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
+  const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
+  await db.connect();
+  const schema = `venues_${randomUUID().replaceAll('-', '')}`;
+  const org = randomUUID(), organiser = randomUUID(), coordinatorId = randomUUID();
+  let pool: Pool | undefined;
+  try {
+    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
+    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await db.query(`CREATE SCHEMA ${schema}`);
+    await db.query(`SET search_path TO ${schema}, public`);
+    // Exercise the actual repository migrations, not an approximation of the schema.
+    // 0002_durable_notification_dispatch adds the dispatch_state/recipient_email
+    // columns that insertNotificationDelivery (used by the capacity-drop flag path) needs.
+    for (const migration of ['0001_connectsphere_schema.sql', '0002_durable_notification_dispatch.sql']) {
+      await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+    await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
+    await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role) VALUES
+      ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser'),
+      ($3, $2, 'coordinator@example.test', 'unused', 'Coordinator', 'event_coordinator')`, [organiser, org, coordinatorId]);
+
+    const scopedUrl = new URL(process.env.TEST_DATABASE_URL!);
+    scopedUrl.searchParams.set('options', `-csearch_path=${schema},public`);
+    pool = new Pool({ connectionString: scopedUrl.toString() });
+    // A Pool, not the single setup Client, because attachDetails() fires its
+    // facility/accessibility/layout lookups concurrently via Promise.all.
+    const query: Query = (sql, values) => pool!.query(sql, values);
+
+    const staffUser: AuthenticatedUser = { id: randomUUID(), email: 'staff@example.test', role: 'venue_staff', isActive: true, failedLoginCount: 0 };
+    const coordinatorUser: AuthenticatedUser = { id: coordinatorId, email: 'coordinator@example.test', role: 'event_coordinator', isActive: true, failedLoginCount: 0 };
+
+    async function insertConfirmedBooking(eventCode: string, expectedAttendance: number, venueId: string, range: string) {
+      const eventId = randomUUID();
+      await db.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, event_range, expected_attendance)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::tstzrange, $8)`,
+      [eventId, eventCode, organiser, coordinatorId, org, `${eventCode} title`, range, expectedAttendance]);
+      await db.query(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status) VALUES ($1, $2, $3::tstzrange, 'confirmed')`,
+        [venueId, eventId, range]);
+      return eventId;
+    }
+
+    // Scenario 1: a saved venue becomes searchable by Event Coordinators.
+    const created = await createVenue(pool, staffUser, {
+      name: 'Grand Ballroom', location: '123 Marina Blvd', max_capacity: 300,
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Stage', 'AV system'], accessibility_features: ['Wheelchair Access'],
+      supported_layouts: [{ label: 'Theatre', capacity: 280 }, { label: 'Banquet', capacity: 200 }],
+    });
+    assert.equal(created.status, 201);
+    const grandBallroom = expectVenue(created);
+    assert.deepEqual([...grandBallroom.facilities].sort(), ['AV system', 'Stage']);
+    const found = await searchVenues(query, coordinatorUser, 'Grand Ballroom');
+    assert.equal(found.length, 1);
+    assert.equal(found[0].id, grandBallroom.id);
+
+    // Scenario 2: reducing capacity below a confirmed booking's expected attendance
+    // flags that booking and notifies the assigned coordinator.
+    const eventA2 = await insertConfirmedBooking('EVT-A2', 250, grandBallroom.id, '[2027-01-01 09:00+08,2027-01-01 12:00+08)');
+    const droppedCapacity = await updateVenue(pool, staffUser, grandBallroom.id, { max_capacity: 200 });
+    assert.equal(droppedCapacity.status, 200);
+    const flaggedBooking = (await db.query('SELECT requires_reconfirmation FROM venue_bookings WHERE event_id = $1', [eventA2])).rows[0];
+    assert.equal(flaggedBooking.requires_reconfirmation, true);
+    const delivery = (await db.query(`SELECT n.message, nd.channel FROM notifications n
+      JOIN notification_deliveries nd ON nd.notification_id = n.id WHERE n.user_id = $1 AND n.event_id = $2`, [coordinatorId, eventA2])).rows[0];
+    assert.ok(delivery, 'expected a notification delivery for the assigned coordinator');
+    assert.equal(delivery.channel, 'email');
+    assert.match(delivery.message, /200/);
+
+    // Exact-capacity boundary: capacity equal to the booked attendance is sufficient
+    // and must not flag or notify (TC_E05S01_07), one below it must (TC_E05S01_06).
+    const boundaryVenue = expectVenue(await createVenue(pool, staffUser, {
+      name: 'Boundary Hall', location: 'Level 2', max_capacity: 200,
+      opens_at: '08:00', closes_at: '22:00', facilities: ['Wifi'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Boardroom', capacity: 150 }],
+    }));
+    const boundaryEvent = await insertConfirmedBooking('EVT-BOUND', 150, boundaryVenue.id, '[2027-02-01 09:00+08,2027-02-01 12:00+08)');
+
+    await updateVenue(pool, staffUser, boundaryVenue.id, { max_capacity: 150 });
+    let boundaryBooking = (await db.query('SELECT requires_reconfirmation FROM venue_bookings WHERE event_id = $1', [boundaryEvent])).rows[0];
+    assert.equal(boundaryBooking.requires_reconfirmation, false);
+    let notificationCount = (await db.query('SELECT count(*)::int AS count FROM notifications WHERE event_id = $1', [boundaryEvent])).rows[0].count;
+    assert.equal(notificationCount, 0);
+
+    await updateVenue(pool, staffUser, boundaryVenue.id, { max_capacity: 149 });
+    boundaryBooking = (await db.query('SELECT requires_reconfirmation FROM venue_bookings WHERE event_id = $1', [boundaryEvent])).rows[0];
+    assert.equal(boundaryBooking.requires_reconfirmation, true);
+    notificationCount = (await db.query('SELECT count(*)::int AS count FROM notifications WHERE event_id = $1', [boundaryEvent])).rows[0].count;
+    assert.equal(notificationCount, 1);
+
+    // Checklist: updating a single attribute (e.g. facilities) saves the change
+    // and leaves the rest of the venue record untouched.
+    const facilityUpdate = await updateVenue(pool, staffUser, boundaryVenue.id, { facilities: ['Wifi', 'Catering'] });
+    assert.equal(facilityUpdate.status, 200);
+    const updatedVenue = expectVenue(facilityUpdate);
+    assert.deepEqual([...updatedVenue.facilities].sort(), ['Catering', 'Wifi']);
+    assert.equal(updatedVenue.max_capacity, 149);
+
+    // Scenario 3: retiring a venue with no future bookings removes it from
+    // search results while its past bookings are retained.
+    const oldHall = expectVenue(await createVenue(pool, staffUser, {
+      name: 'Old Hall', location: 'Archive Wing', max_capacity: 80,
+      opens_at: '08:00', closes_at: '18:00', facilities: ['Storage'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Boardroom', capacity: 60 }],
+    }));
+    const pastEvent = await insertConfirmedBooking('EVT-PAST', 50, oldHall.id, '[2020-01-01 09:00+08,2020-01-01 12:00+08)');
+    const retired = await retireVenue(pool, staffUser, oldHall.id);
+    assert.equal(retired.status, 200);
+    assert.deepEqual(retired.body, { retired: true });
+    assert.deepEqual(await searchVenues(query, coordinatorUser, 'Old Hall'), []);
+    const retainedBooking = (await db.query('SELECT id FROM venue_bookings WHERE event_id = $1', [pastEvent])).rows[0];
+    assert.ok(retainedBooking, 'past bookings must be retained after retirement');
+
+    // Scenario 4: retirement is blocked while a future booking exists, and the
+    // blocking booking is identified in the response.
+    const expoCenter = expectVenue(await createVenue(pool, staffUser, {
+      name: 'Expo Center', location: 'Waterfront', max_capacity: 500,
+      opens_at: '08:00', closes_at: '23:00', facilities: ['Loading dock'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Theatre', capacity: 400 }],
+    }));
+    await insertConfirmedBooking('EVT-FUTURE', 100, expoCenter.id, '[2027-12-20 09:00+08,2027-12-20 17:00+08)');
+    const blocked = await retireVenue(pool, staffUser, expoCenter.id);
+    assert.equal(blocked.status, 409);
+    const blockedBody = blocked.body as { retired: boolean; blockingBookings: Array<{ eventCode: string }> };
+    assert.equal(blockedBody.retired, false);
+    assert.deepEqual(blockedBody.blockingBookings.map(booking => booking.eventCode), ['EVT-FUTURE']);
+    const stillListed = await getVenue(query, staffUser, expoCenter.id);
+    assert.equal(stillListed.is_active, true);
+  } finally {
+    if (pool) await pool.end();
+    await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    await db.end();
+  }
+});

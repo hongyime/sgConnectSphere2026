@@ -34,3 +34,22 @@ export async function respond(response: VercelResponse, work: () => Promise<Reco
       { error: accessError?.message ?? 'Service unavailable. Please try again.' });
   }
 }
+
+// Like respond(), but for handlers whose work already carries its own
+// success status (e.g. 201 on create, 409 on a business-rule conflict)
+// instead of always answering 200.
+export async function respondWithResult(
+  response: VercelResponse,
+  work: () => Promise<{ status: number; body: Record<string, unknown> }>,
+) {
+  response.setHeader('Cache-Control', 'private, no-store');
+  response.setHeader('Vary', 'Cookie');
+  try {
+    const result = await work();
+    sendJson(response, result.status, result.body);
+  } catch (error) {
+    const accessError = error instanceof AccessError ? error : undefined;
+    sendJson(response, accessError?.status ?? 503,
+      { error: accessError?.message ?? 'Service unavailable. Please try again.' });
+  }
+}
