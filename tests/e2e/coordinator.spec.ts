@@ -1,3 +1,10 @@
+// Playwright tests for /coordinator/* routes (SCRUM-96). Each test exercises a
+// user-visible flow — dashboard rendering, queue filtering, decision-panel
+// validation, readiness gating — against the mock data in
+// frontend/src/features/coordinator/mocks.ts. No backend is hit; these tests
+// confirm that the mock-data functional screens satisfy the acceptance
+// criteria captured in E03-S01, E03-S03, and E06-S03 without depending on
+// implementation of the coordinator API endpoints.
 import { test, expect } from '@playwright/test';
 
 test('coordinator dashboard renders the workload metrics', async ({ page }) => {
