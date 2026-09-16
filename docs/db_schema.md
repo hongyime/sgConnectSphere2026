@@ -101,7 +101,11 @@ erDiagram
         tstzrange event_range "start and end, replaces the former SESSIONS.session_range"
         int expected_attendance "planning input for venue suitability, not a registration cap"
         uuid layout_id FK "shared vocabulary with venue layouts"
+        text venue_requirements "free text, E02-S01 mandatory field"
         text accessibility_note "free text, excluded from matching"
+        text equipment_requirements "free text; 'none_required' sentinel means explicitly opted out"
+        text layout_preference "free text organiser input, E02-S01; distinct from layout_id, the confirmed structured layout; 'none_required' sentinel means explicitly opted out"
+        text registration_setup "free text; 'none_required' sentinel means explicitly opted out"
         timestamptz created_at
     }
 
