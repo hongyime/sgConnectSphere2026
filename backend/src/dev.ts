@@ -1,8 +1,11 @@
 import { createServer } from 'node:http';
 import register from '../../api/auth/register.js';
+import session from '../../api/auth/session.js';
+import profile from '../../api/account/profile.js';
 
 createServer(async (request, response) => {
-  if (request.url !== '/api/auth/register') { response.writeHead(404).end(); return; }
+  const handler = ({ '/api/auth/register': register, '/api/auth/session': session, '/api/account/profile': profile } as const)[new URL(request.url || '/', 'http://localhost').pathname as '/api/auth/register'];
+  if (!handler) { response.writeHead(404).end(); return; }
   try {
     const chunks: Buffer[] = [];
     let size = 0;
@@ -13,7 +16,7 @@ createServer(async (request, response) => {
     }
     const raw = Buffer.concat(chunks).toString();
     const json = (body: unknown) => { response.end(JSON.stringify(body)); };
-    await register({ method: request.method, headers: request.headers, body: raw ? JSON.parse(raw) : undefined }, {
+    await handler({ url: request.url, method: request.method, headers: request.headers, body: raw ? JSON.parse(raw) : undefined }, {
       setHeader: (name: string, value: string) => { response.setHeader(name, value); },
       status: (code: number) => { response.statusCode = code; return { json }; }, json,
     });

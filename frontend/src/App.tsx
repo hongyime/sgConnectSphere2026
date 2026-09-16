@@ -784,6 +784,7 @@ function PrototypeApp() {
                 Organiser flow
               </button>
             </div>
+            <a href="/profile">My Profile</a>
             <a href="/register">Create Account</a>
             <IconButton icon={Search} label="Search screens" />
             <IconButton icon={SlidersHorizontal} label="Filter screens" />
