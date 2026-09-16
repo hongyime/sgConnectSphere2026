@@ -10,6 +10,9 @@ import {
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
 } from './features/coordinator/Coordinator';
 import {
+  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
+} from './features/venue/Venue';
+import {
   AlertTriangle,
   Bell,
   CalendarDays,
@@ -1010,6 +1013,10 @@ function App() {
       <Route path="/coordinator/events/:eventCode/plan" element={<PlanningWorkspace />} />
       <Route path="/coordinator/events/:eventCode/readiness" element={<ReadinessChecklist />} />
       <Route path="/coordinator/events/:eventCode/confirm" element={<FinalConfirmation />} />
+      <Route path="/venue" element={<VenueDashboard />} />
+      <Route path="/venue/inventory" element={<VenueInventory />} />
+      <Route path="/venue/availability" element={<AvailabilityCalendar />} />
+      <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>
