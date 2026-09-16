@@ -17,7 +17,11 @@ type CreateEventBody = {
   endAt?: unknown;
   expectedAttendance?: unknown;
   layoutId?: unknown;
+  venueRequirements?: unknown;
   accessibilityNote?: unknown;
+  equipmentRequirements?: unknown;
+  layoutPreference?: unknown;
+  registrationSetup?: unknown;
 };
 
 function optionalString(value: unknown) {
@@ -65,7 +69,11 @@ function parseCreateEventBody(
     endAt,
     expectedAttendance,
     layoutId: optionalString(payload.layoutId),
+    venueRequirements: optionalString(payload.venueRequirements),
     accessibilityNote: optionalString(payload.accessibilityNote),
+    equipmentRequirements: optionalString(payload.equipmentRequirements),
+    layoutPreference: optionalString(payload.layoutPreference),
+    registrationSetup: optionalString(payload.registrationSetup),
   };
 }
 
@@ -107,11 +115,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
         startAt: event.startAt?.toISOString(),
         endAt: event.endAt?.toISOString(),
         expectedAttendance: event.expectedAttendance,
+        venueRequirements: event.venueRequirements,
+        accessibilityNote: event.accessibilityNote,
+        equipmentRequirements: event.equipmentRequirements,
+        layoutPreference: event.layoutPreference,
+        registrationSetup: event.registrationSetup,
       },
     });
   } catch (error) {
     if (error instanceof EventValidationError) {
-      sendJson(response, 400, { error: error.message });
+      sendJson(response, 400, { error: error.message, ...error.details });
       return;
     }
 

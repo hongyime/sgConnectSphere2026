@@ -1,7 +1,36 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 // E02 - 13 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
+
+async function fillMandatoryFields(page: import('@playwright/test').Page, overrides: Record<string, string> = {}) {
+  const values: Record<string, string> = {
+    'Event name': 'Annual Tech Summit',
+    Description: 'A summit bringing together the tech community.',
+    Purpose: 'Share the annual technology roadmap.',
+    'Expected attendance': '180',
+    'Venue requirements': 'Seminar room with theatre seating',
+    'Accessibility needs': 'Wheelchair access',
+    ...overrides,
+  };
+
+  for (const [label, value] of Object.entries(values)) {
+    await page.getByLabel(label, { exact: true }).fill(value);
+  }
+
+  if (!('Preferred start date and time' in overrides)) {
+    await page.getByLabel('Preferred start date and time').fill('2026-11-15T09:00');
+  }
+  if (!('Preferred end date and time' in overrides)) {
+    await page.getByLabel('Preferred end date and time').fill('2026-11-15T12:00');
+  }
+
+  for (const field of ['Equipment requirements', 'Layout preference', 'Registration setup']) {
+    if (!(field in overrides)) {
+      await page.getByLabel(`${field}: none required`).check();
+    }
+  }
+}
 
 test.describe("E02-S01", () => {
 
@@ -19,12 +48,11 @@ test.describe("E02-S01", () => {
    * Expected result:
    *   A confirmation message is shown and the request status becomes "Submitted"
    */
-  test.fixme("TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Complete all 10 mandatory fields: Event Name, Description, Purpose, Preferred Date/Time, Expected Attendance, Venue Requirements, Accessibility Needs, Equipment Requirements, Layout Preference, Registration Setup
-    // 2. Click "Submit"
-    // 3. Observe the confirmation and the request status
-    void page;
+  test("TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser", async ({ page }) => {
+    await page.goto('/');
+    await fillMandatoryFields(page);
+    await page.getByRole('button', { name: 'Submit request' }).click();
+    await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
   });
 
   /**
@@ -41,11 +69,13 @@ test.describe("E02-S01", () => {
    * Expected result:
    *   Submission is blocked; both "Venue Requirements" and "Layout Preference" are listed as required/missing
    */
-  test.fixme("TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Complete all mandatory fields except Venue Requirements and Layout Preference, leaving those two empty
-    // 2. Click "Submit"
-    void page;
+  test("TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified", async ({ page }) => {
+    await page.goto('/');
+    await fillMandatoryFields(page, { 'Venue requirements': '', 'Layout preference': '' });
+    await expect(page.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+    const missing = page.getByRole('list', { name: 'Missing mandatory fields' });
+    await expect(missing.getByText('Venue requirements')).toBeVisible();
+    await expect(missing.getByText('Layout preference')).toBeVisible();
   });
 
   /**
@@ -62,12 +92,11 @@ test.describe("E02-S01", () => {
    * Expected result:
    *   Submission is blocked with the message "Preferred date must be in the future"
    */
-  test.fixme("TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Complete all mandatory fields
-    // 2. Enter Preferred Date: 01/01/2026 (a past date)
-    // 3. Click "Submit"
-    void page;
+  test("TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation", async ({ page }) => {
+    await page.goto('/');
+    await fillMandatoryFields(page, { 'Preferred start date and time': '2026-01-01T09:00' });
+    await expect(page.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+    await expect(page.getByText('Preferred date must be in the future')).toBeVisible();
   });
 
   /**
@@ -84,14 +113,12 @@ test.describe("E02-S01", () => {
    * Expected result:
    *   All three fields are treated as complete; submission proceeds and the status becomes "Submitted"
    */
-  test.fixme("TC_E02S01_04 - Verify that selecting 'none required' for equipment, layout, or registration setup should count each as complete where the event does not need them", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Complete all other mandatory fields
-    // 2. For Equipment Requirements, select "None Required"
-    // 3. For Layout Preference, select "None Required"
-    // 4. For Registration Setup, select "None Required"
-    // 5. Click "Submit"
-    void page;
+  test("TC_E02S01_04 - Verify that selecting 'none required' for equipment, layout, or registration setup should count each as complete where the event does not need them", async ({ page }) => {
+    await page.goto('/');
+    await fillMandatoryFields(page);
+    await expect(page.getByRole('button', { name: 'Submit request' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Submit request' }).click();
+    await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
   });
 
   /**
@@ -108,11 +135,29 @@ test.describe("E02-S01", () => {
    * Expected result:
    *   All 10 named fields are present on the form and marked as mandatory
    */
-  test.fixme("TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Review the event request form
-    // 2. Confirm the following fields are present and marked mandatory: Event Name, Description, Purpose, Preferred Dates and Times, Expected Attendance, Venue Requirements, Accessibility Needs, Equipment Requirements, Layout Preference, Registration Setup
-    void page;
+  test("TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete", async ({ page }) => {
+    await page.goto('/');
+    for (const label of [
+      'Event name',
+      'Description',
+      'Purpose',
+      'Preferred start date and time',
+      'Preferred end date and time',
+      'Expected attendance',
+      'Venue requirements',
+      'Accessibility needs',
+      'Equipment requirements',
+      'Layout preference',
+      'Registration setup',
+    ]) {
+      await expect(page.getByLabel(label, { exact: true })).toBeVisible();
+    }
+    // Prove each field is actually enforced: complete the form, then clear one
+    // mandatory field and confirm submission is blocked again.
+    await fillMandatoryFields(page);
+    await expect(page.getByRole('button', { name: 'Submit request' })).toBeEnabled();
+    await page.getByLabel('Description', { exact: true }).fill('');
+    await expect(page.getByRole('button', { name: 'Submit request' })).toBeDisabled();
   });
 
 });
