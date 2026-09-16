@@ -1,5 +1,10 @@
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
 import { useMemo, useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { LandingPage } from './features/landing/LandingPage';
+import { LoginPage } from './features/accessControl/LoginPage';
+import { RegisterForm } from './features/accessControl/RegisterForm';
+import { ProfileForm } from './features/accessControl/ProfileForm';
 import {
   AlertTriangle,
   Bell,
@@ -699,12 +704,6 @@ function IconButton({ icon: Icon, label }: { icon: LucideIcon; label: string }) 
   );
 }
 
-function App() {
-  if (window.location.pathname.startsWith('/attendee/events') || window.location.pathname.startsWith('/internal/')) return <AttendeeEvents />;
-  if (window.location.pathname === '/events' || window.location.pathname.startsWith('/events/')) return <ClientEvents />;
-  return <PrototypeApp />;
-}
-
 function PrototypeApp() {
   const [viewMode, setViewMode] = useState<'inventory' | 'organiser-flow'>('organiser-flow');
   const [roleId, setRoleId] = useState(roleAreas[0].id);
@@ -986,6 +985,23 @@ function MobileFrame({ role, screen }: { role: RoleArea; screen: Screen }) {
         </footer>
       </div>
     </article>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterForm />} />
+      <Route path="/profile" element={<ProfileForm />} />
+      <Route path="/events" element={<ClientEvents />} />
+      <Route path="/events/*" element={<ClientEvents />} />
+      <Route path="/attendee/events" element={<AttendeeEvents />} />
+      <Route path="/internal/*" element={<AttendeeEvents />} />
+      <Route path="/prototype" element={<PrototypeApp />} />
+      <Route path="*" element={<LandingPage />} />
+    </Routes>
   );
 }
 
