@@ -78,6 +78,10 @@ function fakePool(user: UserRow | undefined): { pool: Pool; queries: string[]; r
         }
         return { rows: [], rowCount: 1 } as unknown as QueryResult;
       }
+      if (sql.startsWith('INSERT INTO audit_logs')) {
+        // Recorded as an audit entry — assertion happens via the queries[] log.
+        return { rows: [], rowCount: 1 } as unknown as QueryResult;
+      }
       if (sql.startsWith('UPDATE users SET failed_login_count = $1 WHERE')) {
         if (currentUser && params) currentUser.failed_login_count = Number(params[0]);
         return { rows: [], rowCount: 1 } as unknown as QueryResult;
@@ -110,7 +114,7 @@ test('increments failed_login_count on wrong password below threshold', async ()
 
 test('sets locked_until at the fifth consecutive failed attempt', async () => {
   const before = Date.now();
-  const { pool, row } = fakePool(await fixtureUser({ failed_login_count: 4 }));
+  const { pool, queries, row } = fakePool(await fixtureUser({ failed_login_count: 4 }));
   await expectAccessError(login(pool, 'organiser@example.com', wrongPassword), 401);
   const updated = row()!;
   assert.equal(updated.failed_login_count, LOCKOUT_THRESHOLD);
@@ -119,6 +123,11 @@ test('sets locked_until at the fifth consecutive failed attempt', async () => {
   // Give a wide tolerance because the fake pool computes new Date() at call time.
   assert.ok(lockDuration >= LOCKOUT_MINUTES * 60 * 1000 - 1000, `lockout window shorter than expected: ${lockDuration}ms`);
   assert.ok(lockDuration <= LOCKOUT_MINUTES * 60 * 1000 + 2000, `lockout window longer than expected: ${lockDuration}ms`);
+  // E14-S02: the lockout must appear in the audit log alongside the user row
+  // update. Both happen in the same transaction, so the audit insert should
+  // sit between the users update and the COMMIT.
+  const auditInserts = queries.filter(sql => sql.startsWith('INSERT INTO audit_logs'));
+  assert.equal(auditInserts.length, 1, 'Exactly one audit entry expected on lockout.');
 });
 
 test('refuses correct password while the lockout window is still in effect', async () => {

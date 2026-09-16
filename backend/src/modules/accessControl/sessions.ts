@@ -54,6 +54,15 @@ export async function login(pool: Pool, email: string, password: string) {
             `UPDATE users SET failed_login_count = $1, locked_until = now() + ($2 || ' minutes')::interval WHERE id = $3`,
             [nextCount, String(LOCKOUT_MINUTES), user.id],
           );
+          // E14-S02: the lockout is a significant action and must appear in
+          // the audit log alongside the failed access. Inserting inside the
+          // same transaction guarantees the audit entry is present iff the
+          // users update committed.
+          await db.query(
+            `INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
+             VALUES ($1, 'user', $1, 'Account Locked', $2)`,
+            [user.id, `locked for ${LOCKOUT_MINUTES} minutes after ${nextCount} failed attempts`],
+          );
         } else {
           await db.query('UPDATE users SET failed_login_count = $1 WHERE id = $2', [nextCount, user.id]);
         }
