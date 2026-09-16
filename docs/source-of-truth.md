@@ -15,11 +15,12 @@ authoritative filenames never drift out of sync with what is on disk.
 | Product backlog | `docs/backlog/` (Markdown, per-epic under `release-1/` and `product/`) | `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` |
 | Backlog decision review | `docs/BACKLOG DECISION REVIEW CAA 160926.docx` | — |
 | Architecture decision records | `docs/ARCHITECTURE DECISION RECORDS CAA 160926.docx` | — |
-| Project test cases | `docs/testing/PROJECT TEST CASES.xlsx` | — |
+| Project test cases | `docs/testing/cases/` (Markdown, per-epic) | `docs/testing/PROJECT TEST CASES CAA 160926.xlsx` |
 
-The workbook under `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` is
-regenerated from the Markdown by running
-`python scripts/export_backlog_xlsx.py`. Do not edit the workbook directly;
+The workbook exports under `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` and
+`docs/testing/PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` are regenerated from the
+Markdown by running `python scripts/export_backlog_xlsx.py` and
+`python scripts/export_testcases_xlsx.py`. Do not edit the workbooks directly;
 changes there will be lost the next time the export runs. Older CAA-dated
 workbook copies remain on disk as history.
 
