@@ -10,22 +10,17 @@ filenames follow the copy-forward convention described in the next section.
 When a new dated copy is added, update this table in the same commit so the
 authoritative filenames never drift out of sync with what is on disk.
 
-| Domain | Current authoritative source | Generated export |
-| --- | --- | --- |
-| Product backlog | `docs/backlog/` (Markdown, per-epic under `release-1/` and `product/`) | `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` |
-| Backlog decision review | `docs/BACKLOG DECISION REVIEW CAA 160926.docx` | — |
-| Architecture decision records | `docs/ARCHITECTURE DECISION RECORDS CAA 160926.docx` | — |
-| Project test cases | `docs/testing/PROJECT TEST CASES.xlsx` | — |
+| Domain | Current authoritative file |
+| --- | --- |
+| Product backlog | `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx` |
+| Backlog decision review | `docs/bdr/` (Markdown, per-section) |
+| Architecture decision records | `docs/adr/` (Markdown, per-ADR) |
+| Project test cases | `docs/testing/PROJECT TEST CASES.xlsx` |
 
-The workbook under `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` is
-regenerated from the Markdown by running
-`python scripts/export_backlog_xlsx.py`. Do not edit the workbook directly;
-changes there will be lost the next time the export runs. Older CAA-dated
-workbook copies remain on disk as history.
-
-The two decision documents (`CAA 160926.docx` above) are updated per the
-copy-forward convention alongside the ADR-015 refresh (see the ADR document
-for context). Older dated copies remain on disk as history.
+The original Word copies (`docs/BACKLOG DECISION REVIEW CAA 140926.docx`,
+`docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`) remain on disk as
+history under ADR-015 copy-forward, but the Markdown under `docs/adr/` and
+`docs/bdr/` is authoritative. See `docs/decisions/0005-adr-bdr-markdown-authority.md`.
 
 ## Copy-forward convention for CAA-dated files
 
@@ -129,9 +124,9 @@ the same time, the sources will diverge silently.
 
 | Source | Update these derivatives when relevant |
 | --- | --- |
-| Product backlog (Markdown, `docs/backlog/`) | Jira backlog, `docs/design/figma-wireframe-refinement-plan.md`, testing plans, implementation tickets |
-| Backlog decision review Word doc | user roles, feature scope, future backlog labels, definition of done, release boundaries |
-| Architecture decision records Word doc | `docs/decisions/`, `docs/architecture.md`, `docs/modular-monolith-architecture.md`, `docs/db_schema.md` |
+| Product backlog workbook | Jira backlog, `docs/design/figma-wireframe-refinement-plan.md`, testing plans, implementation tickets |
+| Backlog decision review (`docs/bdr/`) | user roles, feature scope, future backlog labels, definition of done, release boundaries |
+| Architecture decision records (`docs/adr/`) | `docs/decisions/`, `docs/architecture.md`, `docs/modular-monolith-architecture.md`, `docs/db_schema.md` |
 | Test cases workbook | testing README, scaffold reference tests, Jira acceptance evidence |
 
 Markdown is useful because reviewers, CI, and agents can diff it. It is still a
