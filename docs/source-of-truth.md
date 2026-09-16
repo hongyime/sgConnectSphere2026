@@ -3,13 +3,50 @@
 This guide tells human contributors and AI agents how to treat ConnectSphere
 product documents, Markdown summaries, Figma boards, Jira issues, and future code.
 
+## Current primary source files
+
+The four files below are the current primary product sources. The dated
+filenames follow the copy-forward convention described in the next section.
+When a new dated copy is added, update this table in the same commit so the
+authoritative filenames never drift out of sync with what is on disk.
+
+| Domain | Current authoritative file |
+| --- | --- |
+| Product backlog | `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx` |
+| Backlog decision review | `docs/BACKLOG DECISION REVIEW CAA 140926.docx` |
+| Architecture decision records | `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx` |
+| Project test cases | `docs/testing/PROJECT TEST CASES.xlsx` |
+
+## Copy-forward convention for CAA-dated files
+
+The `CAA DDMMYYYY` suffix is not decorative. It records the day a source file
+was last edited, and lets multiple dated copies coexist in the repository so
+that history is preserved and reviewers can compare versions.
+
+The rules:
+
+1. **Do not overwrite an older dated copy.** When you need to edit any
+   `CAA DDMMYYYY` file, first copy it to a new filename with today's date, then
+   edit the copy. The original file stays untouched.
+2. **Same-day edits happen in place.** If a file with today's date already
+   exists (someone else on the team edited earlier today), edit that file
+   directly. Do not create `CAA DDMMYYYY (2).xlsx` or similar suffixed forks;
+   note your change in the PR body instead.
+3. **Latest date on disk is authoritative.** Downstream readers, humans and
+   agents alike, should treat the file with the newest `CAA DDMMYYYY` date as
+   the current authority for its domain. Older copies are history only.
+4. **Update this document in the same commit.** The PR that introduces a new
+   dated copy must also update the "Current primary source files" table above
+   so references stay in sync. CI does not enforce this; reviewers should.
+5. **Merge backlog PRs sequentially, not in parallel.** `.docx` and `.xlsx`
+   files are binary and cannot be 3-way merged. If two PRs edit the same
+   source file, land the first one, rebase the second, then merge the second.
+   Once a source file has been migrated to Markdown or another text format,
+   this rule no longer applies to that file.
+
 ## Authority order
 
-1. Primary product sources:
-   - `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx`
-   - `docs/BACKLOG DECISION REVIEW CAA 140926.docx`
-   - `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`
-   - `docs/testing/PROJECT TEST CASES.xlsx`
+1. Primary product sources (see table above).
 2. Recorded repository decisions:
    - `docs/decisions/`
    - architecture Markdown under `docs/`
@@ -39,6 +76,40 @@ related area should do a small reconciliation pass:
    primary.
 4. Keep generated exports or summaries scoped. Do not commit private notes,
    personal paths, local tokens, or tool caches.
+
+## Backlog changes are upstream; derivatives follow
+
+The product backlog is the most upstream source. When it changes, the
+following derivatives may need reconciliation, in this order:
+
+1. C4 / architecture diagrams (`docs/c4-diagrams.md`,
+   `docs/modular-monolith-architecture.md`) if new modules, boundaries, or
+   integrations are implied.
+2. User flow documents (`docs/dynamic-user-flows.md`, Figma boards) if
+   Organiser / Coordinator / Venue Staff / Technical Support / Attendee flows
+   change.
+3. Test cases (`docs/testing/PROJECT TEST CASES.xlsx`) if acceptance
+   criteria, error paths, or coverage areas shift.
+4. Jira issues, epics, sprint assignments, points, priorities.
+
+The PR that changes the backlog should either update these derivatives in the
+same PR, or note in the PR body which derivatives were checked and why no
+update was needed. The PR template checklist reminds contributors to do this.
+
+## Jira reconciliation after backlog merges
+
+Jira is a derivative of the primary source documents, not a peer. When a
+backlog PR merges:
+
+1. The PR author (or their agent) opens a small follow-up PR titled
+   `docs: reconcile Jira after <backlog-PR-number>`.
+2. The follow-up PR body lists the Jira issues that were created, updated, or
+   retired to match the merged backlog change.
+3. If no Jira changes were needed, the follow-up PR body records that
+   explicitly so future readers know the reconciliation happened.
+
+Do not edit Jira issues in parallel with the backlog PR. If both are edited at
+the same time, the sources will diverge silently.
 
 ## Mapping sources to repo docs
 

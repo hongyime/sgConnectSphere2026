@@ -17,6 +17,8 @@ Attach screenshots for visible UI changes and note migrations or configuration c
 - [ ] Before requesting review, required checks are passing or queued from the latest commit.
 - [ ] Auto-merge is enabled if this PR should merge as soon as review and checks pass.
 - [ ] I updated documentation if setup, behaviour, or contracts changed.
+- [ ] If this PR touched a `CAA DDMMYYYY` source file, I followed the copy-forward rules in `docs/source-of-truth.md` and updated the "Current primary source files" table.
+- [ ] If this PR changed the product backlog, I updated the affected derivatives (C4 diagrams, user flows, test cases, Jira) in this PR or noted which ones I checked and why no update was needed.
 - [ ] I reviewed the diff for secrets and generated files.
 - [ ] Significant reviewer findings are resolved or answered with a reason.
 
