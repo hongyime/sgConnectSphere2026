@@ -1,10 +1,3 @@
-// Playwright tests for /admin/* routes (SCRUM-99). Four screens for the
-// Admin role: system overview, user management with per-role filter, role
-// assignment save flow, and audit log free-text search. Backed by
-// frontend/src/features/admin/mocks.ts fixtures. The audit-log filter test
-// specifically covers the workbook-mentioned pattern where deactivation
-// events surface via a free-text query so operators can find them without
-// knowing the exact actor or entity.
 import { test, expect } from '@playwright/test';
 
 test('admin home shows system-wide counts', async ({ page }) => {
