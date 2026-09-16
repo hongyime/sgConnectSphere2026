@@ -1,3 +1,8 @@
+// Playwright tests for /venue/* routes (SCRUM-97). Covers the four Batch 5
+// screens for Venue Staff: dashboard, inventory, availability calendar with
+// per-venue filter, and pending booking detail with a confirm/decline action.
+// Backed by frontend/src/features/venue/mocks.ts fixtures; no live network
+// calls. Screens map to E05-S01, E05-S02, E05-S03, E05-S04 in the workbook.
 import { test, expect } from '@playwright/test';
 
 test('venue dashboard shows pending and confirmed counts', async ({ page }) => {
