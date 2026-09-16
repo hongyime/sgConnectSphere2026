@@ -118,7 +118,6 @@ export function AuditLogViewer() {
       entry.actor.toLowerCase().includes(lowered)
       || entry.action.toLowerCase().includes(lowered)
       || entry.entity.toLowerCase().includes(lowered)
-      || entry.detail.toLowerCase().includes(lowered)
     );
   }, [query]);
   return (
