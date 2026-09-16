@@ -40,8 +40,8 @@ connect safely.
 Use these primary files:
 
 - `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx`
-- `docs/BACKLOG DECISION REVIEW CAA 130926.docx`
-- `docs/ARCHITECTURE DECISION RECORDS CAA 120926.docx`
+- `docs/BACKLOG DECISION REVIEW CAA 140926.docx`
+- `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`
 - `docs/testing/PROJECT TEST CASES.xlsx`
 
 Suggested Jira mapping:

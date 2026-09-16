@@ -25,6 +25,11 @@ type DraftEvent = {
 };
 
 type FieldKey = keyof DraftEvent;
+type SubmitState =
+  | { status: 'idle' }
+  | { status: 'submitting' }
+  | { status: 'submitted'; persisted: boolean }
+  | { status: 'error'; message: string };
 
 const initialDraft: DraftEvent = {
   title: 'Annual Sustainability Forum',
@@ -68,26 +73,82 @@ function updateDraft(draft: DraftEvent, key: FieldKey, value: string): DraftEven
   return { ...draft, [key]: value };
 }
 
-export function OrganiserRequestFlow() {
+function toIsoLocal(value: string) {
+  return new Date(value).toISOString();
+}
+
+export function OrganiserRequestFlow({
+  getAccessToken,
+}: {
+  getAccessToken: () => Promise<string | null>;
+}) {
   const [draft, setDraft] = useState(initialDraft);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const missingFields = useMemo(() => getMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
   const canSubmit = missingFields.length === 0 && !invalidDateRange;
+  const submitted = submitState.status === 'submitted';
+
+  const submitRequest = async () => {
+    if (!canSubmit || submitState.status === 'submitting') {
+      return;
+    }
+
+    setSubmitState({ status: 'submitting' });
+    const accessToken = await getAccessToken();
+
+    if (!accessToken) {
+      setSubmitState({ status: 'submitted', persisted: false });
+      return;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: draft.title,
+          description: `${draft.eventType}. ${draft.venuePreference}. ${draft.equipmentNeeds}`,
+          purpose: draft.organiserNotes,
+          status: 'submitted',
+          startAt: toIsoLocal(draft.startDate),
+          endAt: toIsoLocal(draft.endDate),
+          expectedAttendance: Number(draft.expectedAttendance),
+          accessibilityNote: draft.accessibilityNeeds,
+        }),
+      });
+    } catch {
+      setSubmitState({ status: 'error', message: 'The request could not be submitted.' });
+      return;
+    }
+
+    if (!response.ok) {
+      setSubmitState({ status: 'error', message: 'The request could not be submitted.' });
+      return;
+    }
+
+    setSubmitState({ status: 'submitted', persisted: true });
+  };
 
   return (
     <section className="organiser-flow" aria-label="Organiser request creation flow">
       <header className="flow-header">
         <div>
-          <p className="eyebrow">Feature slice - Organiser</p>
+          <p className="eyebrow">Organiser workflow</p>
           <h2>Create event request</h2>
           <p>
-            Batch 5 becomes a working request-to-submit flow with mock validation, draft
-            state, and the status timeline the backend will later persist.
+            A working request-to-submit flow with mock validation, draft state, and the
+            status timeline the backend will later persist.
           </p>
         </div>
         <div className="flow-status">
-          {submitted ? (
+          {submitState.status === 'submitting' ? (
+            <span className="status-pill status-info">Submitting</span>
+          ) : submitted ? (
             <span className="status-pill status-success">Submitted</span>
           ) : canSubmit ? (
             <span className="status-pill status-info">Ready to submit</span>
@@ -172,11 +233,11 @@ export function OrganiserRequestFlow() {
             <button
               className="primary-action"
               type="button"
-              disabled={!canSubmit}
-              onClick={() => setSubmitted(true)}
+              disabled={!canSubmit || submitState.status === 'submitting'}
+              onClick={submitRequest}
             >
               <Send size={16} aria-hidden="true" />
-              Submit request
+              {submitState.status === 'submitting' ? 'Submitting...' : 'Submit request'}
             </button>
           </div>
         </section>
@@ -207,10 +268,19 @@ export function OrganiserRequestFlow() {
               <ClipboardList size={18} aria-hidden="true" />
               <h3>Status timeline</h3>
             </div>
+            {submitState.status === 'error' ? (
+              <p className="login-error" role="alert">
+                {submitState.message}
+              </p>
+            ) : null}
             <ol className="timeline-list">
               <li className="timeline-done">Draft saved locally</li>
               <li className={canSubmit ? 'timeline-done' : ''}>Mandatory fields complete</li>
-              <li className={submitted ? 'timeline-done' : ''}>Submitted to coordinator queue</li>
+              <li className={submitted ? 'timeline-done' : ''}>
+                {submitState.status === 'submitted' && submitState.persisted
+                  ? 'Persisted through API and submitted to coordinator queue'
+                  : 'Submitted to coordinator queue'}
+              </li>
               <li>Awaiting coordinator review</li>
             </ol>
           </section>

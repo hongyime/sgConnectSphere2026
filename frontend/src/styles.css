@@ -116,14 +116,11 @@ button {
 }
 
 .brand-mark {
-  display: grid;
   width: 48px;
   height: 48px;
-  place-items: center;
   border-radius: 8px;
-  background: var(--teal);
-  color: #ffffff;
-  font-weight: 900;
+  display: block;
+  flex: 0 0 auto;
 }
 
 .role-nav {
