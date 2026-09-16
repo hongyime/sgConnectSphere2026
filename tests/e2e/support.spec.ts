@@ -1,10 +1,3 @@
-// Playwright tests for /support/* routes (SCRUM-98). Six screens for the
-// Technical Support Staff role: equipment dashboard, catalogue, request
-// queue, reservation detail, technician assignment, and conflict state.
-// Backed by frontend/src/features/support/mocks.ts fixtures. The
-// reservation-detail test exercises the shortfall-recording flow required
-// by E07-S04 Scenario 2, and the conflict state screen surfaces the same
-// data via a different lens for triage-first workflows.
 import { test, expect } from '@playwright/test';
 
 test('equipment dashboard shows open requests and shortfalls', async ({ page }) => {
