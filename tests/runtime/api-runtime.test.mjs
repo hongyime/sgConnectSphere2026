@@ -80,8 +80,6 @@ for (const [path, method, expected] of [
   ['api/notifications/send.js', 'POST', 401],
   ['api/cron/outbox-relay.js', 'POST', 405],
   ['api/cron/outbox-relay.js', 'GET', 401],
-  ['api/cron/notification-worker.js', 'POST', 405],
-  ['api/cron/notification-worker.js', 'GET', 401],
 ]) {
   test(`compiled ${path} rejects ${method} without invoking a provider`, () => {
     const response = invoke(path, method);
@@ -92,12 +90,13 @@ for (const [path, method, expected] of [
 
 const internal = { headers: { authorization: 'Bearer synthetic-internal-credential' } };
 const internalEnvironment = { CRON_SECRET: 'synthetic-internal-credential' }; // pragma: allowlist secret - isolated test process only
-for (const [path, error] of [
-  ['api/cron/outbox-relay.js', 'notification_relay_not_enabled'],
-  ['api/cron/notification-worker.js', 'notification_delivery_not_enabled'],
+for (const [path, error, request] of [
+  ['api/cron/outbox-relay.js', 'notification_relay_not_enabled', internal],
+  // /api/cron/notification-worker rewrites to this same function with ?task=worker (see vercel.json)
+  ['api/cron/outbox-relay.js', 'notification_delivery_not_enabled', { ...internal, url: '/api/cron/outbox-relay?task=worker' }],
 ]) {
-  test(`authorized compiled ${path} stays disabled without activation`, () => {
-    const result = invoke(path, 'GET', internal, internalEnvironment);
+  test(`authorized compiled ${path}${request.url ? ` (${request.url})` : ''} stays disabled without activation`, () => {
+    const result = invoke(path, 'GET', request, internalEnvironment);
     assert.equal(result.status, 503);
     assert.equal(result.body.error, error);
   });
