@@ -3,8 +3,9 @@ import { test, expect } from '@playwright/test';
 test('venue dashboard shows pending and confirmed counts', async ({ page }) => {
   await page.goto('/venue');
   await expect(page.getByRole('heading', { name: 'Venue dashboard' })).toBeVisible();
-  await expect(page.getByText('Pending review')).toBeVisible();
-  await expect(page.getByText('Confirmed', { exact: true })).toBeVisible();
+  const metrics = page.getByRole('region', { name: 'Booking counts' });
+  await expect(metrics.getByText('Pending review')).toBeVisible();
+  await expect(metrics.getByText('Confirmed', { exact: true })).toBeVisible();
 });
 
 test('venue inventory lists every venue with capacity', async ({ page }) => {
