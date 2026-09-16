@@ -11,6 +11,7 @@
 // should be readable by any teammate without domain reconstruction.
 
 import { render, screen, waitFor } from '@testing-library/react';
+import { act } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { RegisterForm } from './RegisterForm';
@@ -81,9 +82,13 @@ describe('RegisterForm', () => {
     // Prevents accidental double-submit. The Playwright suite cannot easily
     // assert on this because the browser hits the response too quickly; here
     // the fetch stub can be deliberately slow.
+    //
+    // We hold the fetch promise open with an external resolver, assert the
+    // in-flight state, resolve the fetch, then await the settled state so
+    // React can flush the resulting state update inside its own act boundary.
     const user = userEvent.setup();
     let resolveFetch: ((response: Response) => void) | undefined;
-    const slowFetch = vi.fn(async (): Promise<Response> => {
+    const slowFetch = vi.fn((): Promise<Response> => {
       return new Promise(resolve => { resolveFetch = resolve; });
     });
     vi.stubGlobal('fetch', slowFetch);
@@ -96,6 +101,15 @@ describe('RegisterForm', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Creating account...' })).toBeDisabled();
     });
-    resolveFetch?.(new Response('{}', { status: 201 }));
+    // Resolve inside act so React can flush the resulting state update without
+    // triggering an "update not wrapped in act(...)" warning.
+    await act(async () => {
+      resolveFetch?.(new Response('{}', { status: 201 }));
+    });
+    // Wait for the success state to render so the test does not leave any
+    // pending microtasks that could bleed into subsequent tests.
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Your Attendee account has been created.');
+    });
   });
 });
