@@ -1,8 +1,21 @@
+// SCRUM-40/SCRUM-41: unit tests for the venue catalogue module (E05-S01
+// "Maintain the venue catalogue", E05-S02 "Match layout requirements to
+// venue capacity").
+//
+// No database is touched: validateVenueInput and the layout-mutation
+// validators are exercised directly, and every guarded or mutating function
+// is checked against denyPool/denyQuery stubs that throw if a query is
+// attempted, proving each one rejects unauthorised or invalid input before
+// opening a transaction.
+//
+// See venueCatalogue.integration.test.ts for the real-Postgres behavioural
+// scenarios (E05-S01 TC_E05S01_01..07, E05-S02 TC_E05S02_01..08).
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createVenue, getVenue, requireCatalogueViewer, requireVenueStaff,
-  retireVenue, searchVenues, updateVenue, validateVenueInput,
+  addVenueLayout, createVenue, getVenue, removeVenueLayout, requireCatalogueViewer, requireVenueStaff,
+  retireVenue, searchVenues, updateVenue, updateVenueLayout, validateVenueInput,
 } from '../src/modules/venueBooking/catalogue';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
@@ -106,4 +119,71 @@ test('createVenue reports validation errors without opening a transaction', asyn
   const body = result.body as { error: string; errors: Record<string, string[]> };
   assert.equal(body.error, 'validation_failed');
   assert.ok(body.errors.name);
+});
+
+test('addVenueLayout rejects unauthorised callers before opening a transaction', async () => {
+  await assert.rejects(addVenueLayout(denyPool, attendee, 'venue-1', { label: 'Theatre', capacity: 100 }), { status: 403 });
+  await assert.rejects(addVenueLayout(denyPool, coordinator, 'venue-1', { label: 'Theatre', capacity: 100 }), { status: 403 });
+  await assert.rejects(addVenueLayout(denyPool, undefined, 'venue-1', { label: 'Theatre', capacity: 100 }), { status: 401 });
+});
+
+test('addVenueLayout reports validation errors without opening a transaction', async () => {
+  const nonObject = await addVenueLayout(denyPool, venueStaff, 'venue-1', null);
+  assert.equal(nonObject.status, 400);
+
+  const missingLabel = await addVenueLayout(denyPool, venueStaff, 'venue-1', { capacity: 100 });
+  assert.equal(missingLabel.status, 400);
+  const missingLabelBody = missingLabel.body as { errors: Record<string, string[]> };
+  assert.ok(missingLabelBody.errors.label);
+
+  const badCapacity = await addVenueLayout(denyPool, venueStaff, 'venue-1', { label: 'Theatre', capacity: 0 });
+  assert.equal(badCapacity.status, 400);
+  const badCapacityBody = badCapacity.body as { errors: Record<string, string[]> };
+  assert.ok(badCapacityBody.errors.capacity);
+});
+
+test('updateVenueLayout and removeVenueLayout reject unauthorised callers before opening a transaction', async () => {
+  await assert.rejects(updateVenueLayout(denyPool, attendee, 'venue-1', 'Theatre', { capacity: 100 }), { status: 403 });
+  await assert.rejects(updateVenueLayout(denyPool, undefined, 'venue-1', 'Theatre', { capacity: 100 }), { status: 401 });
+  await assert.rejects(removeVenueLayout(denyPool, attendee, 'venue-1', 'Theatre'), { status: 403 });
+  await assert.rejects(removeVenueLayout(denyPool, undefined, 'venue-1', 'Theatre'), { status: 401 });
+});
+
+test('updateVenueLayout reports validation errors without opening a transaction', async () => {
+  const nonObject = await updateVenueLayout(denyPool, venueStaff, 'venue-1', 'Theatre', null);
+  assert.equal(nonObject.status, 400);
+
+  const badCapacity = await updateVenueLayout(denyPool, venueStaff, 'venue-1', 'Theatre', { capacity: -1 });
+  assert.equal(badCapacity.status, 400);
+  const badCapacityBody = badCapacity.body as { errors: Record<string, string[]> };
+  assert.ok(badCapacityBody.errors.capacity);
+});
+
+// Mirrors TC_E05S02_07/_08 (exact-fit suitable, one-below excluded) at the
+// unit level with a hand-rolled Query stub that branches on the SQL string,
+// since attachDetails() issues three follow-up queries per venue that a
+// simple denyQuery/denyPool stub can't answer. The authoritative,
+// real-database version of this boundary lives in
+// venueCatalogue.integration.test.ts.
+test('searchVenues excludes venues whose matching layout capacity is below the required attendance, boundary at exactly-equal', async () => {
+  const venueRows = [
+    { id: 'v-fits', name: 'Grand Ballroom', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+    { id: 'v-short', name: 'Small Room', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+    { id: 'v-no-layout', name: 'No Theatre Here', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+  ];
+  const layoutsByVenue: Record<string, Array<{ label: string; capacity: number }>> = {
+    'v-fits': [{ label: 'Theatre', capacity: 120 }],
+    'v-short': [{ label: 'Theatre', capacity: 119 }],
+    'v-no-layout': [{ label: 'Banquet', capacity: 500 }],
+  };
+  const fakeQuery: Query = async (sql, values) => {
+    if (sql.includes('FROM venues v')) return { rows: venueRows as never[] };
+    if (sql.includes('FROM venue_facilities')) return { rows: [] };
+    if (sql.includes('FROM venue_accessibility_features')) return { rows: [] };
+    if (sql.includes('FROM venue_supported_layouts')) return { rows: (layoutsByVenue[values![0] as string] ?? []) as never[] };
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+
+  const matches = await searchVenues(fakeQuery, coordinator, '', 'Theatre', 120);
+  assert.deepEqual(matches.map(venue => venue.id), ['v-fits']);
 });

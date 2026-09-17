@@ -175,12 +175,37 @@ function isUniqueViolation(error: unknown): boolean {
   return Boolean(error) && typeof error === 'object' && (error as { code?: string }).code === '23505';
 }
 
-export async function searchVenues(query: Query, user: AuthenticatedUser | undefined, search = '') {
+// Distinct from isUniqueViolation(): that one is used where any 23505 means
+// "venue name taken". Here we only want the venue_supported_layouts primary
+// key (venue_id, layout_id) specifically, so a name clash elsewhere in the
+// same transaction is never misreported as a duplicate layout.
+function isDuplicateLayoutViolation(error: unknown): boolean {
+  return Boolean(error) && typeof error === 'object'
+    && (error as { code?: string }).code === '23505'
+    && (error as { constraint?: string }).constraint === 'venue_supported_layouts_pkey';
+}
+
+export async function searchVenues(
+  query: Query,
+  user: AuthenticatedUser | undefined,
+  search = '',
+  requiredLayout?: string,
+  requiredAttendance?: number,
+) {
   requireCatalogueViewer(user);
   const result = await query<VenueRecord>(`SELECT ${venueProjection} FROM venues v
     WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
     ORDER BY v.name LIMIT 100`, [search.slice(0, 240)]);
-  return Promise.all(result.rows.map(venue => attachDetails(query, venue)));
+  const venues = await Promise.all(result.rows.map(venue => attachDetails(query, venue)));
+  if (!requiredLayout || typeof requiredAttendance !== 'number') return venues;
+
+  // Mirrors flagAffectedBookings' boundary rule: a layout capacity strictly
+  // below the required attendance is unsuitable, exactly equal is fine
+  // (E05-S02 Scenario 2, TC_E05S02_07/_08).
+  const requiredCode = slugify(requiredLayout);
+  return venues.filter(venue => venue.supported_layouts.some(
+    layout => slugify(layout.label) === requiredCode && layout.capacity >= requiredAttendance,
+  ));
 }
 
 export async function getVenue(query: Query, user: AuthenticatedUser | undefined, id: string) {
@@ -297,5 +322,157 @@ export async function retireVenue(database: Pool, user: AuthenticatedUser | unde
     }
     await client.query(`UPDATE venues SET is_active = false WHERE id = $1`, [id]);
     return { status: 200, body: { retired: true } };
+  });
+}
+
+export type VenueLayoutMutationInput = { label: string; capacity: number };
+
+function validateLayoutInput(body: unknown):
+  | { input: VenueLayoutMutationInput; errors?: never }
+  | { errors: VenueErrors; input?: never } {
+  if (!isPlainObject(body)) {
+    return { errors: { form: ['Submit an object containing label and capacity.'] } };
+  }
+  const errors: VenueErrors = {};
+  const label = typeof body.label === 'string' ? body.label.trim() : '';
+  if (!label) errors.label = ['Layout name is required.'];
+
+  const capacity = body.capacity;
+  if (typeof capacity !== 'number' || !Number.isInteger(capacity) || capacity <= 0) {
+    errors.capacity = ['Capacity must be a whole number greater than 0.'];
+  }
+
+  if (Object.keys(errors).length) return { errors };
+  return { input: { label, capacity: capacity as number } };
+}
+
+// Adds a single layout without disturbing the venue's other layouts,
+// facilities or accessibility features — unlike updateVenue, which replaces
+// all lookup links wholesale (E05-S02 Scenario 1).
+export async function addVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, body: unknown) {
+  requireVenueStaff(user);
+  const validated = validateLayoutInput(body);
+  if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
+  const { input } = validated;
+  const code = slugify(input.label);
+
+  return inTransaction(database, async client => {
+    const venue = await client.query<{ id: string }>(`SELECT id FROM venues WHERE id = $1 FOR UPDATE`, [venueId]);
+    if (!venue.rows[0]) throw new AccessError(404, 'Venue not found.');
+
+    // Check for a duplicate by the same normalized code used everywhere else
+    // BEFORE touching room_layouts: that table is shared across every venue,
+    // and upsertLookup()'s ON CONFLICT DO UPDATE renames its label globally,
+    // so a rejected duplicate must never trigger that rename as a side effect.
+    const existing = await client.query(`
+      SELECT 1 FROM venue_supported_layouts vl JOIN room_layouts r ON r.id = vl.layout_id
+      WHERE vl.venue_id = $1 AND r.code = $2
+    `, [venueId, code]);
+    if (existing.rows[0]) {
+      return { status: 200, body: {
+        warning: 'layout_already_exists',
+        message: `"${input.label}" is already a supported layout for this venue.`,
+      } };
+    }
+
+    const layoutId = await upsertLookup(client, 'room_layouts', input.label);
+    try {
+      await client.query(`INSERT INTO venue_supported_layouts (venue_id, layout_id, capacity) VALUES ($1, $2, $3)`,
+        [venueId, layoutId, input.capacity]);
+    } catch (error) {
+      // Belt-and-suspenders against a concurrent add of the same layout
+      // racing between the SELECT above and this INSERT.
+      if (isDuplicateLayoutViolation(error)) {
+        return { status: 200, body: {
+          warning: 'layout_already_exists',
+          message: `"${input.label}" is already a supported layout for this venue.`,
+        } };
+      }
+      throw error;
+    }
+
+    const venueRow = await client.query<VenueRecord>(`SELECT ${venueProjection} FROM venues v WHERE v.id = $1`, [venueId]);
+    const clientQuery: Query = (sql, values) => client.query(sql, values);
+    const venueDetails = await attachDetails(clientQuery, venueRow.rows[0]!);
+    return { status: 201, body: { venue: venueDetails } };
+  });
+}
+
+function validateCapacityInput(body: unknown):
+  | { capacity: number; errors?: never }
+  | { errors: VenueErrors; capacity?: never } {
+  if (!isPlainObject(body)) {
+    return { errors: { form: ['Submit an object containing capacity.'] } };
+  }
+  const capacity = body.capacity;
+  if (typeof capacity !== 'number' || !Number.isInteger(capacity) || capacity <= 0) {
+    return { errors: { capacity: ['Capacity must be a whole number greater than 0.'] } };
+  }
+  return { capacity };
+}
+
+// Layouts are addressed by label (normalized to the same code used to store
+// them) rather than an internal layout_id, so callers never need to know
+// about the shared room_layouts lookup table.
+export async function updateVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, label: string, body: unknown) {
+  requireVenueStaff(user);
+  const validated = validateCapacityInput(body);
+  if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
+  const { capacity } = validated;
+  const code = slugify(label);
+
+  return inTransaction(database, async client => {
+    const venue = await client.query<{ id: string }>(`SELECT id FROM venues WHERE id = $1 FOR UPDATE`, [venueId]);
+    if (!venue.rows[0]) throw new AccessError(404, 'Venue not found.');
+
+    const updated = await client.query(`
+      UPDATE venue_supported_layouts vl SET capacity = $3
+      FROM room_layouts r
+      WHERE vl.venue_id = $1 AND vl.layout_id = r.id AND r.code = $2
+    `, [venueId, code, capacity]);
+    if (updated.rowCount === 0) throw new AccessError(404, `Layout "${label}" is not on this venue.`);
+
+    const venueRow = await client.query<VenueRecord>(`SELECT ${venueProjection} FROM venues v WHERE v.id = $1`, [venueId]);
+    const clientQuery: Query = (sql, values) => client.query(sql, values);
+    const venueDetails = await attachDetails(clientQuery, venueRow.rows[0]!);
+    return { status: 200, body: { venue: venueDetails } };
+  });
+}
+
+export async function removeVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, label: string) {
+  requireVenueStaff(user);
+  const code = slugify(label);
+
+  return inTransaction(database, async client => {
+    const venue = await client.query<{ id: string }>(`SELECT id FROM venues WHERE id = $1 FOR UPDATE`, [venueId]);
+    if (!venue.rows[0]) throw new AccessError(404, 'Venue not found.');
+
+    // validateVenueInput requires at least one supported layout on every
+    // create/full-update, so this targeted delete must uphold the same
+    // invariant rather than being able to drive a venue to zero layouts.
+    const existingCodes = await client.query<{ code: string }>(`
+      SELECT r.code FROM venue_supported_layouts vl JOIN room_layouts r ON r.id = vl.layout_id WHERE vl.venue_id = $1
+    `, [venueId]);
+    if (!existingCodes.rows.some(row => row.code === code)) {
+      throw new AccessError(404, `Layout "${label}" is not on this venue.`);
+    }
+    if (existingCodes.rows.length <= 1) {
+      return { status: 409, body: {
+        error: 'last_layout',
+        errors: { label: ['A venue must have at least one supported layout.'] },
+      } };
+    }
+
+    const deleted = await client.query(`
+      DELETE FROM venue_supported_layouts vl
+      USING room_layouts r
+      WHERE vl.venue_id = $1 AND vl.layout_id = r.id AND r.code = $2
+    `, [venueId, code]);
+    if (deleted.rowCount === 0) throw new AccessError(404, `Layout "${label}" is not on this venue.`);
+
+    const venueRow = await client.query<VenueRecord>(`SELECT ${venueProjection} FROM venues v WHERE v.id = $1`, [venueId]);
+    const clientQuery: Query = (sql, values) => client.query(sql, values);
+    const venueDetails = await attachDetails(clientQuery, venueRow.rows[0]!);
+    return { status: 200, body: { venue: venueDetails } };
   });
 }
