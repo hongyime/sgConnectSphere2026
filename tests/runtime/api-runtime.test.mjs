@@ -81,7 +81,12 @@ for (const [path, method, expected, expectedError] of [
   // invoking a provider" invariant still holds.
   ['api/events.js', 'GET', 401, 'Sign in to continue.'],
   ['api/events.js', 'POST', 401, 'unauthorized'],
-  ['api/events.js', 'DELETE', 405, 'method_not_allowed'],
+  // SCRUM-27: PATCH/DELETE are now real, bearer-auth-gated branches (draft
+  // edit/delete), not unsupported methods - see requireOrganiserBearer in
+  // api/events.ts. PUT stays genuinely unsupported, covering the 405 branch.
+  ['api/events.js', 'PATCH', 401, 'unauthorized'],
+  ['api/events.js', 'DELETE', 401, 'unauthorized'],
+  ['api/events.js', 'PUT', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'GET', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'POST', 401, 'unauthorized'],
   ['api/cron/outbox-relay.js', 'POST', 405, 'method_not_allowed'],
