@@ -30,7 +30,7 @@ test('direct denied access commits actor and attempted event before returning de
   const query: Query = async (sql, values) => { calls.push({ sql, values }); return { rows: [] }; };
   await assert.rejects(getEvent(query, user, 'EVT-B01'), { status: 403 });
   assert.equal(calls.length, 2);
-  assert.deepEqual(calls[0].values, ['client-a', 'EVT-B01']);
+  assert.deepEqual(calls[0].values, ['client-a', 'EVT-B01', 'organiser-a']);
   assert.match(calls[1].sql, /INSERT INTO audit_logs/);
   assert.deepEqual(calls[1].values, ['organiser-a', 'EVT-B01']);
 });
@@ -48,7 +48,7 @@ test('list and notification reads use trusted organisation and recipient paramet
   const query: Query = async (_sql, values) => { calls.push(values || []); return { rows: [] }; };
   await listEvents(query, user, "%' OR true --");
   await listNotifications(query, user);
-  assert.deepEqual(calls, [['client-a', "%' OR true --"], ['organiser-a', 'client-a']]);
+  assert.deepEqual(calls, [['client-a', 'organiser-a', "%' OR true --"], ['organiser-a', 'client-a']]);
 });
 
 test('notifications without an authorised database record cannot be delivered', async () => {

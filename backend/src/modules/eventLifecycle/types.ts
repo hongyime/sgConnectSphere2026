@@ -45,3 +45,8 @@ export type CreateEventRequest = {
   layoutPreference?: string;
   registrationSetup?: string;
 };
+
+// A full replacement of every editable field on an existing draft. The service
+// layer always resolves a sparse patch against the current record before
+// calling the repository, so this is a plain update, not a merge-in-SQL patch.
+export type EventUpdate = Omit<CreateEventRequest, 'organiserId' | 'clientOrgId'>;

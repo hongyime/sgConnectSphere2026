@@ -1,4 +1,4 @@
-import type { CreateEventRequest } from './types.js';
+import type { CreateEventRequest, EventUpdate } from './types.js';
 
 type CreateEventBody = {
   title?: unknown;
@@ -67,4 +67,62 @@ export function parseCreateEventBody(
     layoutPreference: optionalString(payload.layoutPreference),
     registrationSetup: optionalString(payload.registrationSetup),
   };
+}
+
+// SCRUM-27: a PATCH body only needs to carry the fields being changed. A key
+// that's absent is left out of the returned patch (so the service keeps the
+// draft's existing value); a key present but empty/invalid is still parsed
+// through, so the service's validation can report it as missing rather than
+// silently keeping a stale value.
+export function parseUpdateEventBody(body: unknown): Partial<EventUpdate> | null {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return null;
+  }
+
+  const payload = body as CreateEventBody;
+  const patch: Partial<EventUpdate> = {};
+
+  if (payload.title !== undefined) {
+    patch.title = optionalString(payload.title) ?? '';
+  }
+  if (payload.description !== undefined) {
+    patch.description = optionalString(payload.description);
+  }
+  if (payload.purpose !== undefined) {
+    patch.purpose = optionalString(payload.purpose);
+  }
+  if (payload.status !== undefined) {
+    patch.status = payload.status === 'submitted' ? 'submitted' : 'draft';
+  }
+  if (payload.startAt !== undefined) {
+    patch.startAt = parseDate(payload.startAt) ?? new Date(Number.NaN);
+  }
+  if (payload.endAt !== undefined) {
+    patch.endAt = parseDate(payload.endAt) ?? new Date(Number.NaN);
+  }
+  if (payload.expectedAttendance !== undefined) {
+    patch.expectedAttendance = typeof payload.expectedAttendance === 'number'
+      ? payload.expectedAttendance
+      : Number.NaN;
+  }
+  if (payload.layoutId !== undefined) {
+    patch.layoutId = optionalString(payload.layoutId);
+  }
+  if (payload.venueRequirements !== undefined) {
+    patch.venueRequirements = optionalString(payload.venueRequirements);
+  }
+  if (payload.accessibilityNote !== undefined) {
+    patch.accessibilityNote = optionalString(payload.accessibilityNote);
+  }
+  if (payload.equipmentRequirements !== undefined) {
+    patch.equipmentRequirements = optionalString(payload.equipmentRequirements);
+  }
+  if (payload.layoutPreference !== undefined) {
+    patch.layoutPreference = optionalString(payload.layoutPreference);
+  }
+  if (payload.registrationSetup !== undefined) {
+    patch.registrationSetup = optionalString(payload.registrationSetup);
+  }
+
+  return patch;
 }
