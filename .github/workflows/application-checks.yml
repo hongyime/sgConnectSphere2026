@@ -12,6 +12,22 @@ on:
       - "playwright.config.ts"
       - "vercel.json"
       - ".github/workflows/application-checks.yml"
+  # Also run on pushes to main so post-merge build failures are visible
+  # in the Actions log. Teammates without Vercel dashboard access read
+  # this run to debug a red Vercel status.
+  push:
+    branches:
+      - main
+    paths:
+      - "api/**"
+      - "backend/**"
+      - "frontend/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
+      - "vercel.json"
+      - ".github/workflows/application-checks.yml"
 
 permissions:
   contents: read
