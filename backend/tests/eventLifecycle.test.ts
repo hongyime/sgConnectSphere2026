@@ -137,3 +137,53 @@ test('a non-positive or non-integer expected attendance is reported as missing',
     },
   );
 });
+
+// Cover the HTTP parser as well as the service: previously the parser returned
+// invalid_payload before the service could name all missing mandatory fields.
+import { parseCreateEventBody } from '../src/modules/eventLifecycle/parseRequest.js';
+
+test('an empty HTTP request reports all ten mandatory fields without writing', async () => {
+  const repository = fakeRepository();
+  const request = parseCreateEventBody({}, 'organiser-a', 'client-a');
+  assert.ok(request);
+  await assert.rejects(createEventRequest(repository, request), (error: unknown) => {
+    assert.ok(error instanceof EventValidationError);
+    assert.equal(error.message, 'missing_mandatory_fields');
+    assert.deepEqual(error.details?.missingFields, [
+      'Event name', 'Description', 'Purpose', 'Expected attendance',
+      'Venue requirements', 'Accessibility needs', 'Equipment requirements',
+      'Layout preference', 'Registration setup', 'Preferred dates and times',
+    ]);
+    return true;
+  });
+  assert.equal(repository.created.length, 0);
+});
+
+for (const attendance of [true, [], [1], '1', 0, -1, 1.5]) {
+  test(`HTTP attendance ${JSON.stringify(attendance)} is rejected before persistence`, async () => {
+    const repository = fakeRepository();
+    const valid = completeRequest();
+    const request = parseCreateEventBody({
+      ...valid, startAt: valid.startAt.toISOString(), endAt: valid.endAt.toISOString(),
+      expectedAttendance: attendance,
+    }, valid.organiserId, valid.clientOrgId);
+    assert.ok(request);
+    await assert.rejects(createEventRequest(repository, request), (error: unknown) => {
+      assert.ok(error instanceof EventValidationError);
+      assert.deepEqual(error.details?.missingFields, ['Expected attendance']);
+      return true;
+    });
+    assert.equal(repository.created.length, 0);
+  });
+}
+
+for (const field of ['startAt', 'endAt'] as const) {
+  test(`invalid ${field} cannot bypass date validation with NaN`, async () => {
+    const repository = fakeRepository();
+    await assert.rejects(
+      createEventRequest(repository, completeRequest({ [field]: new Date(Number.NaN) })),
+      { message: 'missing_mandatory_fields' },
+    );
+    assert.equal(repository.created.length, 0);
+  });
+}

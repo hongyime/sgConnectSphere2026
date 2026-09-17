@@ -5,77 +5,8 @@ import {
   createEventRequest,
   EventValidationError,
 } from '../backend/src/modules/eventLifecycle/service.js';
-import type { CreateEventRequest } from '../backend/src/modules/eventLifecycle/types.js';
+import { parseCreateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
 import type { VercelRequest, VercelResponse } from '../backend/src/vercel.js';
-
-type CreateEventBody = {
-  title?: unknown;
-  description?: unknown;
-  purpose?: unknown;
-  status?: unknown;
-  startAt?: unknown;
-  endAt?: unknown;
-  expectedAttendance?: unknown;
-  layoutId?: unknown;
-  venueRequirements?: unknown;
-  accessibilityNote?: unknown;
-  equipmentRequirements?: unknown;
-  layoutPreference?: unknown;
-  registrationSetup?: unknown;
-};
-
-function optionalString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value : undefined;
-}
-
-function parseDate(value: unknown) {
-  if (typeof value !== 'string') {
-    return null;
-  }
-
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function parseCreateEventBody(
-  body: unknown,
-  organiserId: string,
-  clientOrgId: string,
-): CreateEventRequest | null {
-  if (!body || typeof body !== 'object') {
-    return null;
-  }
-
-  const payload = body as CreateEventBody;
-  const title = optionalString(payload.title);
-  const startAt = parseDate(payload.startAt);
-  const endAt = parseDate(payload.endAt);
-  const expectedAttendance = Number(payload.expectedAttendance);
-
-  if (!title || !startAt || !endAt || !Number.isFinite(expectedAttendance)) {
-    return null;
-  }
-
-  const status = payload.status === 'submitted' ? 'submitted' : 'draft';
-
-  return {
-    title,
-    description: optionalString(payload.description),
-    purpose: optionalString(payload.purpose),
-    organiserId,
-    clientOrgId,
-    status,
-    startAt,
-    endAt,
-    expectedAttendance,
-    layoutId: optionalString(payload.layoutId),
-    venueRequirements: optionalString(payload.venueRequirements),
-    accessibilityNote: optionalString(payload.accessibilityNote),
-    equipmentRequirements: optionalString(payload.equipmentRequirements),
-    layoutPreference: optionalString(payload.layoutPreference),
-    registrationSetup: optionalString(payload.registrationSetup),
-  };
-}
 
 const repository = new PostgresEventLifecycleRepository();
 
