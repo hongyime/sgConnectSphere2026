@@ -136,7 +136,6 @@ export function OrganiserRequestFlow({
   getAccessToken,
   draftId,
   initialValues,
-  onSaved,
 }: {
   getAccessToken: () => Promise<string | null>;
   // SCRUM-27: when set, "Save draft" and "Submit request" PATCH this
@@ -145,9 +144,6 @@ export function OrganiserRequestFlow({
   // Pre-fills the form when reopening a draft. Omitted (the common case,
   // e.g. /organiser/new-request) keeps the existing example-filled defaults.
   initialValues?: Partial<DraftEvent>;
-  // Called with the saved/submitted event's id, so a host route can e.g.
-  // navigate back to the drafts list.
-  onSaved?: (eventId: string) => void;
 }) {
   const [draft, setDraft] = useState<DraftEvent>(() => ({ ...initialDraft, ...initialValues }));
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
@@ -232,11 +228,7 @@ export function OrganiserRequestFlow({
       return;
     }
 
-    const body = await response.json().catch(() => null);
     setSubmitState({ status: 'submitted', persisted: true });
-    if (body?.event?.id) {
-      onSaved?.(body.event.id);
-    }
   };
 
   const saveDraft = async () => {
@@ -300,11 +292,7 @@ export function OrganiserRequestFlow({
       return;
     }
 
-    const body = await response.json().catch(() => null);
     setDraftSaveState({ status: 'saved' });
-    if (body?.event?.id) {
-      onSaved?.(body.event.id);
-    }
   };
 
   return (
