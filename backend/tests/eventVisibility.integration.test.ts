@@ -86,7 +86,7 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
     try {
       const runtime = await import('../src/modules/eventVisibility/runtime');
       closeRuntime = () => runtime.databasePool().end();
-      const { default: handler } = await import('../../api/events/index');
+      const { default: handler } = await import('../../api/events');
       async function request(url: string, cookie?: string) {
         let status = 200;
         let body: Record<string, any> = {};

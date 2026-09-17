@@ -73,18 +73,24 @@ test('compiled health handler loads under Node and reports configuration without
   });
 });
 
-for (const [path, method, expected] of [
-  ['api/events.js', 'GET', 405],
-  ['api/events.js', 'POST', 401],
-  ['api/notifications/send.js', 'GET', 405],
-  ['api/notifications/send.js', 'POST', 401],
-  ['api/cron/outbox-relay.js', 'POST', 405],
-  ['api/cron/outbox-relay.js', 'GET', 401],
+for (const [path, method, expected, expectedError] of [
+  // Consolidated /api/events serves both GET (browse, auth check via AccessError)
+  // and POST (create, direct auth check). See ADR-014 for the one-file-per-route
+  // rule and api/events.ts for the method dispatch. GET without a session cookie
+  // trips currentUser's AccessError before any database query, so the "without
+  // invoking a provider" invariant still holds.
+  ['api/events.js', 'GET', 401, 'Sign in to continue.'],
+  ['api/events.js', 'POST', 401, 'unauthorized'],
+  ['api/events.js', 'DELETE', 405, 'method_not_allowed'],
+  ['api/notifications/send.js', 'GET', 405, 'method_not_allowed'],
+  ['api/notifications/send.js', 'POST', 401, 'unauthorized'],
+  ['api/cron/outbox-relay.js', 'POST', 405, 'method_not_allowed'],
+  ['api/cron/outbox-relay.js', 'GET', 401, 'unauthorized'],
 ]) {
   test(`compiled ${path} rejects ${method} without invoking a provider`, () => {
     const response = invoke(path, method);
     assert.equal(response.status, expected);
-    assert.equal(response.body.error, expected === 401 ? 'unauthorized' : 'method_not_allowed');
+    assert.equal(response.body.error, expectedError);
   });
 }
 
