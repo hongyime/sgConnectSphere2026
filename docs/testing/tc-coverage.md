@@ -7,8 +7,8 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **15** (6.5%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **212** (92.2%)
+- Automated (explicit TC_ID in an active test title): **24** (10.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **203** (88.3%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -16,18 +16,18 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 15 | 17 | 0 |
-| E02 | 13 | 0 | 13 | 0 |
-| E03 | 26 | 0 | 26 | 0 |
+| E02 | 13 | 2 | 11 | 0 |
+| E03 | 26 | 2 | 24 | 0 |
 | E05 | 24 | 0 | 24 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
-| E09 | 35 | 0 | 35 | 0 |
+| E09 | 35 | 5 | 30 | 0 |
 | E10 | 15 | 0 | 15 | 0 |
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **15** | **212** | **3** |
+| **Total** | **230** | **24** | **203** | **3** |
 
 ## Case-by-case status
 
@@ -79,8 +79,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
 | `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
 | `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
-| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators |
-| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values |
+| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators; tests/e2e/organiser.spec.ts: TC_E02S02_01  |
+| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values; tests/e2e/organiser.spec.ts: TC_E02S02_02 — request list fil |
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
 | `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
 | `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
@@ -97,8 +97,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S01_03` | E03-S01 | Verify that the currently assigned Coordinator should be able to reassign the ev | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment |
-| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
-| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator |
+| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
+| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator; tests/e2e/organis |
 | `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised |
 | `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status |
 | `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser |
@@ -234,13 +234,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E09S01_01` | E09-S01 | Verify that submitting the required registration information for an open event w | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the required registration information for an open event with places remaining should reserve a place and provide a conf |
+| `TC_E09S01_01` | E09-S01 | Verify that submitting the required registration information for an open event w | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity; tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the requi |
 | `TC_E09S01_02` | E09-S01 | Verify that registering for a multi-event event should let the Attendee choose w | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
 | `TC_E09S01_03` | E09-S01 | Verify that attempting to register again for a event already registered for shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
 | `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields |
 | `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused |
-| `TC_E09S02_01` | E09-S02 | Verify that an Event Organiser should be able to set a registration limit for a  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser should be able to set a registration limit for a event |
-| `TC_E09S02_02` | E09-S02 | Verify that registration should stop once the event reaches the lower of the Org | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should stop once the event reaches the lower of the Organiser |
+| `TC_E09S02_01` | E09-S02 | Verify that an Event Organiser should be able to set a registration limit for a  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit; tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser sh |
+| `TC_E09S02_02` | E09-S02 | Verify that registration should stop once the event reaches the lower of the Org | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join; tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should s |
 | `TC_E09S02_03` | E09-S02 | Verify that when only one place remains, two simultaneous registration attempts  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
 | `TC_E09S02_04` | E09-S02 | Verify that opening the registration page for a full event should close registra | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
 | `TC_E09S02_06` | E09-S02 | Verify that a VIP can be added manually when normal registration is full but ven | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
@@ -258,10 +258,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
-| `TC_E09S05_01` | E09-S05 | Verify that withdrawing from a single event before the withdrawal deadline shoul | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single event before the withdrawal deadline should cancel that registration and release the place, leaving othe |
+| `TC_E09S05_01` | E09-S05 | Verify that withdrawing from a single event before the withdrawal deadline shoul | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S05_01 — withdrawal requires a reason before recording; tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single e |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
-| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_01 - Verify that marking a registered Attendee as attended for a event after the event is Completed should update their record without changing the |
+| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S06_01 — feedback requires a rating; tests/e2e/e09.spec.ts: TC_E09S06_01 - Verify that marking a registered Attendee as attended for  |
 | `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed |
 | `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked |
 | `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_04 - Verify that registration and attendance counts should be viewable side by side for each event |
@@ -367,6 +367,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - rejects invalid email and reports all password corrections
 - endpoint returns method, validation, creation and safe failure responses
 
+### `backend/tests/sessions.test.ts`
+
+- increments failed_login_count on wrong password below threshold
+- sets locked_until at the fifth consecutive failed attempt
+- refuses correct password while the lockout window is still in effect
+- auto-unlocks after locked_until has passed and accepts a fresh success
+- resets counter and lock on a mid-window correct password
+- does not increment counter for an inactive account
+- does not increment counter when the account does not exist
+
 ### `backend/tests/venueCatalogue.integration.test.ts`
 
 - E05-S01: venue catalogue create/update/retire against real PostgreSQL
@@ -384,6 +394,34 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - mutating operations reject anyone but venue staff before opening a transaction
 - createVenue reports validation errors without opening a transaction
 
+### `backend/tests/verificationEmail.test.ts`
+
+- sendVerificationEmail issues one token, one notification, one delivery
+- buildVerificationMessage embeds the token in a /verify link and trims trailing slashes on appUrl
+
+### `backend/tests/verificationTokens.test.ts`
+
+- issued token is a 64-hex string that consumeVerificationToken accepts
+- malformed token is rejected as unknown before hitting the database
+- unrecognised token hash is rejected as unknown
+- token issued for a different purpose is rejected as wrong_purpose
+- token that was already consumed is rejected as consumed
+- token past its expiry is rejected as expired
+- positive ttl is required at issue time
+
+### `frontend/src/features/accessControl/RegisterForm.test.tsx`
+
+- submits the four required fields as JSON and shows the success message on 201
+- marks the offending field aria-invalid when the server returns a 400 error
+- disables the submit button while the request is in flight
+
+### `tests/e2e/admin.spec.ts`
+
+- admin home shows system-wide counts
+- user management filters by role
+- role assignment saves a role change
+- audit log viewer filters by free-text query
+
 ### `tests/e2e/attendee-events.spec.ts`
 
 - empty registrations and expired sessions have useful states
@@ -391,6 +429,36 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/client-events.spec.ts`
 
 - expired sessions prompt for sign-in without exposing cached events
+
+### `tests/e2e/coordinator.spec.ts`
+
+- coordinator dashboard renders the workload metrics
+- review queue filters between all and needs-decision
+- request detail exposes the event workflow tabs
+- decision panel requires a reason when rejecting or clarifying
+- final confirmation blocks until readiness is met
+
+### `tests/e2e/landing.spec.ts`
+
+- landing page renders at / and links to login and register
+- login page posts to /api/auth/session and surfaces server errors without leaking credentials
+- login page redirects to the role home on success
+
+### `tests/e2e/support.spec.ts`
+
+- equipment dashboard shows open requests and shortfalls
+- equipment catalogue lists inventory rows
+- request queue filters by state
+- reservation detail records a shortfall
+- technician assignment lists available technicians
+- conflict state lists shortfall requests
+
+### `tests/e2e/venue.spec.ts`
+
+- venue dashboard shows pending and confirmed counts
+- venue inventory lists every venue with capacity
+- availability calendar filters bookings by selected venue
+- pending booking detail confirms a booking
 
 ### `tests/notifications/postgres.test.ts`
 
