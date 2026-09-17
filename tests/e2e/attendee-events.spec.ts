@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 const event = { id: 'published-event', name: 'Published event', starts_at: '2027-01-01T09:00:00Z', ends_at: '2027-01-01T10:00:00Z', venue_name: 'Published Hall', venue_location: 'Level 2' };
 
-test('attendee sees only published fields for registered events', async ({ page }) => {
+test('TC_E01S03_01 — attendee sees only published fields for registered events', async ({ page }) => {
   await page.route('**/api/attendee/events?*', route => route.fulfill({ json: { events: [event] } }));
   await page.goto('/attendee/events');
   await expect(page.getByRole('link', { name: 'Published event', exact: true })).toBeVisible();
@@ -13,7 +13,7 @@ test('attendee sees only published fields for registered events', async ({ page 
   await expect(page.getByText('Level 2')).toBeVisible();
 });
 
-test('direct internal planning request is sent for auditing and denied', async ({ page }) => {
+test('TC_E01S03_02 — direct internal planning request is sent for auditing and denied', async ({ page }) => {
   let requested = false;
   await page.route('**/api/internal/planning?*', route => { requested = true; return route.fulfill({ status: 403, json: { error: 'Access denied. Internal planning is not available here.' } }); });
   await page.goto('/internal/planning/EVT-PRIVATE');
@@ -23,7 +23,7 @@ test('direct internal planning request is sent for auditing and denied', async (
   await expect(page.getByRole('link', { name: 'Back to my registered events' })).toBeVisible();
 });
 
-test('unregistered direct event is refused with no event fields', async ({ page }) => {
+test('TC_E01S03_03 — unregistered direct event is refused with no event fields', async ({ page }) => {
   await page.route('**/api/attendee/events?*', route => route.fulfill({ status: 403, json: { error: 'This event is not available in your registered events.' } }));
   await page.goto('/attendee/events/unregistered');
   await expect(page.getByRole('alert')).toContainText('not available');

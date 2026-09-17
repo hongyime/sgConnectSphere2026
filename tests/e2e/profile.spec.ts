@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const initial = { full_name: 'Alex', email: 'alex@example.test', contact_number: '9123 4567', organisation_name: 'Client A' };
 
-test('edit profile, save normalized values and reload; organisation stays read-only', async ({ page }) => {
+test('TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only', async ({ page }) => {
   let profile = { ...initial };
   await page.route('**/api/account/profile', async route => {
     if (route.request().method() === 'PUT') {
@@ -27,7 +27,7 @@ test('edit profile, save normalized values and reload; organisation stays read-o
   await expect(page.getByLabel('Contact number')).toHaveValue('9876 5432');
 });
 
-test('field errors remain visible and form can be corrected', async ({ page }) => {
+test('TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected', async ({ page }) => {
   await page.route('**/api/account/profile', route => route.fulfill(route.request().method() === 'GET'
     ? { json: { profile: initial } }
     : { status: 400, json: { errors: { email: ['Please enter a valid email address'], contact_number: ['Contact number is required'] } } }));
@@ -41,7 +41,7 @@ test('field errors remain visible and form can be corrected', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Save profile' })).toBeEnabled();
 });
 
-test('unauthenticated user signs in through existing session endpoint', async ({ page }) => {
+test('TC_E01S01_01 — unauthenticated user signs in through existing session endpoint', async ({ page }) => {
   let signedIn = false;
   await page.route('**/api/account/profile', route => route.fulfill(signedIn ? { json: { profile: initial } } : { status: 401, json: { error: 'Sign in to continue.' } }));
   await page.route('**/api/auth/session', async route => {
