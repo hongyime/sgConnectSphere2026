@@ -1,10 +1,16 @@
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
+import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback } from './features/attendee/AttendeeRegistration';
 import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
 import { LoginPage } from './features/accessControl/LoginPage';
+import { VerifyPage } from './features/accessControl/VerifyPage';
+import { PermissionDenied } from './features/access/PermissionDenied';
 import { RegisterForm } from './features/accessControl/RegisterForm';
 import { ProfileForm } from './features/accessControl/ProfileForm';
+import {
+  OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail, ClarificationResponse,
+} from './features/organiser/Organiser';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
@@ -1012,7 +1018,19 @@ function App() {
       <Route path="/events" element={<ClientEvents />} />
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
+      <Route path="/attendee/discover" element={<EventDiscovery />} />
+      <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
+      <Route path="/attendee/register/:eventCode" element={<RegisterForEvent />} />
+      <Route path="/attendee/withdraw/:eventCode" element={<WithdrawFromEvent />} />
+      <Route path="/attendee/feedback/:eventCode" element={<EventFeedback />} />
       <Route path="/internal/*" element={<AttendeeEvents />} />
+      <Route path="/organiser" element={<OrganiserDashboard />} />
+      <Route path="/organiser/requests" element={<OrganiserRequestList />} />
+      <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
+      <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
+      <Route path="/organiser/new-request" element={<OrganiserRequestFlow getAccessToken={async () => 'mock-token'} />} />
+      <Route path="/verify" element={<VerifyPage />} />
+      <Route path="/permission-denied" element={<PermissionDenied />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />
       <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
       <Route path="/coordinator/events/:eventCode" element={<CoordinatorRequestDetail />} />
