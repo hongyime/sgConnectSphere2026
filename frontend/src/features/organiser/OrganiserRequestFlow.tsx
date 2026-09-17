@@ -133,11 +133,14 @@ function toIsoLocal(value: string) {
 }
 
 export function OrganiserRequestFlow({
-  getAccessToken,
+  prototype = false,
   draftId,
   initialValues,
 }: {
-  getAccessToken: () => Promise<string | null>;
+  // When true, "Save draft" and "Submit request" simulate the state
+  // transition locally without hitting the API. Used by the /prototype
+  // demo route which is not attached to a real session.
+  prototype?: boolean;
   // SCRUM-27: when set, "Save draft" and "Submit request" PATCH this
   // existing draft instead of POSTing a new one.
   draftId?: string;
@@ -168,16 +171,11 @@ export function OrganiserRequestFlow({
     }
 
     setSubmitState({ status: 'submitting' });
-    let accessToken: string | null;
-    try {
-      accessToken = await getAccessToken();
-    } catch {
-      // A session lookup failure must leave the form retryable, not stuck submitting.
-      setSubmitState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
-      return;
-    }
 
-    if (!accessToken) {
+    // Prototype mode simulates the state transition without touching the
+    // network. The /prototype route uses this so it can demo the flow
+    // without a real session cookie.
+    if (prototype) {
       setSubmitState({ status: 'submitted', persisted: false });
       return;
     }
@@ -186,8 +184,8 @@ export function OrganiserRequestFlow({
     try {
       response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
         method: draftId ? 'PATCH' : 'POST',
+        credentials: 'same-origin',
         headers: {
-          authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -237,15 +235,11 @@ export function OrganiserRequestFlow({
     }
 
     setDraftSaveState({ status: 'saving' });
-    let accessToken: string | null;
-    try {
-      accessToken = await getAccessToken();
-    } catch {
-      setDraftSaveState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
-      return;
-    }
 
-    if (!accessToken) {
+    if (prototype) {
+      // In the offline demo the draft has nowhere to persist; report a
+      // clear "sign in first" state instead of leaving the form pretending
+      // to have saved.
       setDraftSaveState({ status: 'error', message: 'Sign in to save a draft.' });
       return;
     }
@@ -254,8 +248,8 @@ export function OrganiserRequestFlow({
     try {
       response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
         method: draftId ? 'PATCH' : 'POST',
+        credentials: 'same-origin',
         headers: {
-          authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({

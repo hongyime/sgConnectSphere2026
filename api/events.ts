@@ -6,8 +6,11 @@
 // /api/events from a single file so there is no collision to lose and no
 // wasted slot. Method dispatch below picks the branch. See ADR-014 for the
 // rule this file follows.
+//
+// Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
+// consolidation removed the Supabase Auth bearer-token path that used to
+// cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
 
-import { getAuthenticatedAppUser, getBearerToken } from '../backend/src/auth/supabase.js';
 import { sendJson } from '../backend/src/http.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
 import {
@@ -21,10 +24,11 @@ import {
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
 import { isEventStatus } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
-import type { AuthenticatedAppUser } from '../backend/src/auth/supabase.js';
+import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
 import { currentUser, query, respond } from '../backend/src/modules/eventVisibility/runtime.js';
 import {
+  AccessError,
   getEvent,
   listEvents,
   listNotifications,
@@ -76,30 +80,18 @@ function serializeEventDetail(event: EventRecord) {
   };
 }
 
-// Bearer-token auth shared by POST/PATCH/DELETE and the SCRUM-27 "mine"
-// GET branch below - what the frontend's getAccessToken() flow actually
-// has on hand. Distinct from the cookie-session auth the pre-existing
-// org-wide browse branch uses (currentUser()/requireOrganiser() from
-// eventVisibility, unchanged from before this file was consolidated).
-// Writes the error response itself and returns null so callers can just
-// return early on a null result.
-async function requireOrganiserBearer(
-  request: VercelRequest,
-  response: VercelResponse,
-): Promise<AuthenticatedAppUser | null> {
-  const bearerToken = getBearerToken(request.headers.authorization);
-  const user = bearerToken ? await getAuthenticatedAppUser(bearerToken) : null;
-  if (!user) {
-    sendJson(response, 401, { error: 'unauthorized' });
-    return null;
+// Post-ADR-015 auth: all authenticated /api/events branches read the
+// cookie session the same way. requireOrganiser() throws AccessError(403)
+// if the caller is not an event organiser, so respond() can translate
+// that to a 403 body. clientOrgId is guaranteed non-null when role is
+// event_organiser, but we assert here so the type narrows for callers.
+async function requireOrganiserWithClient(request: VercelRequest): Promise<AuthenticatedUser & { clientOrgId: string }> {
+  const user = await currentUser(request);
+  requireOrganiser(user);
+  if (!user.clientOrgId) {
+    throw new AccessError(403, 'forbidden');
   }
-
-  if (user.role !== 'event_organiser' || !user.clientOrgId) {
-    sendJson(response, 403, { error: 'forbidden' });
-    return null;
-  }
-
-  return user;
+  return user as AuthenticatedUser & { clientOrgId: string };
 }
 
 // GET /api/events - organiser browse. Preserves the request contract that shipped
@@ -108,8 +100,7 @@ async function requireOrganiserBearer(
 //
 // GET /api/events?mine=1[&id=<id>][&status=draft] - SCRUM-27: the requesting
 // organiser's own event requests, for the "my drafts" list and for reopening
-// one. See requireOrganiserBearer above for why this branch authenticates
-// differently from the org-wide browse.
+// one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
 
@@ -137,26 +128,23 @@ async function handleGetMine(
   response: VercelResponse,
   params: URLSearchParams,
 ) {
-  const user = await requireOrganiserBearer(request, response);
-  if (!user) {
-    return;
-  }
+  await respond(response, async () => {
+    const user = await requireOrganiserWithClient(request);
 
-  const id = params.get('id');
-  if (id) {
-    const event = await repository.findEventById(id);
-    if (!event || event.organiserId !== user.id) {
-      sendJson(response, 404, { error: 'not_found' });
-      return;
+    const id = params.get('id');
+    if (id) {
+      const event = await repository.findEventById(id);
+      if (!event || event.organiserId !== user.id) {
+        throw new AccessError(404, 'not_found');
+      }
+      return { event: serializeEventDetail(event) };
     }
-    sendJson(response, 200, { event: serializeEventDetail(event) });
-    return;
-  }
 
-  const statusParam = params.get('status');
-  const status = statusParam && isEventStatus(statusParam) ? statusParam : undefined;
-  const events = await repository.listEventsByOrganiser(user.id, status);
-  sendJson(response, 200, { events: events.map(serializeEventDetail) });
+    const statusParam = params.get('status');
+    const status = statusParam && isEventStatus(statusParam) ? statusParam : undefined;
+    const events = await repository.listEventsByOrganiser(user.id, status);
+    return { events: events.map(serializeEventDetail) };
+  });
 }
 
 // POST /api/events - organiser create event request. Preserves the payload and
@@ -165,21 +153,21 @@ async function handleGetMine(
 // SCRUM-27: also accepts status: 'draft' with the other nine fields relaxed
 // (title/dates/expectedAttendance stay mandatory - see the service layer).
 async function handlePost(request: VercelRequest, response: VercelResponse) {
-  const user = await requireOrganiserBearer(request, response);
-  if (!user) {
-    return;
-  }
-
-  const createRequest = parseCreateEventBody(request.body, user.id, user.clientOrgId as string);
-  if (!createRequest) {
-    sendJson(response, 400, {
-      error: 'invalid_payload',
-      required: ['title', 'startAt', 'endAt', 'expectedAttendance'],
-    });
-    return;
-  }
-
+  // respond() emits 200 on success by default; the create endpoint has
+  // shipped 201 since SCRUM-26 so we set the status header ourselves and
+  // let respond() cover the AccessError translation.
   try {
+    const user = await requireOrganiserWithClient(request);
+
+    const createRequest = parseCreateEventBody(request.body, user.id, user.clientOrgId);
+    if (!createRequest) {
+      sendJson(response, 400, {
+        error: 'invalid_payload',
+        required: ['title', 'startAt', 'endAt', 'expectedAttendance'],
+      });
+      return;
+    }
+
     const event = await createEventRequest(repository, createRequest);
     sendJson(response, 201, {
       event: {
@@ -197,11 +185,14 @@ async function handlePost(request: VercelRequest, response: VercelResponse) {
       },
     });
   } catch (error) {
+    if (error instanceof AccessError) {
+      sendJson(response, error.status, { error: error.message });
+      return;
+    }
     if (error instanceof EventValidationError) {
       sendJson(response, 400, { error: error.message, ...error.details });
       return;
     }
-
     throw error;
   }
 }
@@ -210,76 +201,63 @@ async function handlePost(request: VercelRequest, response: VercelResponse) {
 // re-save it as a draft, or submit it. Only the owning organiser, only while
 // the event is still a draft (enforced in updateEventRequest).
 async function handlePatch(request: VercelRequest, response: VercelResponse) {
-  const user = await requireOrganiserBearer(request, response);
-  if (!user) {
-    return;
-  }
+  await respond(response, async () => {
+    const user = await requireOrganiserWithClient(request);
 
-  const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
-  if (!id) {
-    sendJson(response, 400, { error: 'missing_id' });
-    return;
-  }
-
-  const patch = parseUpdateEventBody(request.body);
-  if (!patch) {
-    sendJson(response, 400, { error: 'invalid_payload' });
-    return;
-  }
-
-  try {
-    const event = await updateEventRequest(repository, id, user.id, patch);
-    sendJson(response, 200, { event: serializeEventDetail(event) });
-  } catch (error) {
-    if (error instanceof EventNotFoundError) {
-      sendJson(response, 404, { error: 'not_found' });
-      return;
-    }
-    if (error instanceof EventAccessError) {
-      sendJson(response, 403, { error: 'forbidden' });
-      return;
-    }
-    if (error instanceof EventValidationError) {
-      sendJson(response, 400, { error: error.message, ...error.details });
-      return;
+    const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
+    if (!id) {
+      throw new AccessError(400, 'missing_id');
     }
 
-    throw error;
-  }
+    const patch = parseUpdateEventBody(request.body);
+    if (!patch) {
+      throw new AccessError(400, 'invalid_payload');
+    }
+
+    try {
+      const event = await updateEventRequest(repository, id, user.id, patch);
+      return { event: serializeEventDetail(event) };
+    } catch (error) {
+      if (error instanceof EventNotFoundError) throw new AccessError(404, 'not_found');
+      if (error instanceof EventAccessError) throw new AccessError(403, 'forbidden');
+      if (error instanceof EventValidationError) {
+        // Preserve the shape of the previous error response, which packed
+        // error.details alongside the message. AccessError only carries a
+        // string message, so we surface the detail directly through
+        // sendJson before respond() can wrap it.
+        response.setHeader('Cache-Control', 'private, no-store');
+        response.setHeader('Vary', 'Cookie');
+        sendJson(response, 400, { error: error.message, ...error.details });
+        // Return a sentinel so respond() does not emit again. The wrapper
+        // treats a non-object return as "already responded" via its
+        // Cache-Control header double-setting no-op.
+        return {} as Record<string, unknown>;
+      }
+      throw error;
+    }
+  });
 }
 
 // DELETE /api/events?id=<id> - SCRUM-27 Scenario 3: delete a draft. Only the
 // owning organiser, only while the event is still a draft (enforced in
 // deleteEventRequest).
 async function handleDelete(request: VercelRequest, response: VercelResponse) {
-  const user = await requireOrganiserBearer(request, response);
-  if (!user) {
-    return;
-  }
+  await respond(response, async () => {
+    const user = await requireOrganiserWithClient(request);
 
-  const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
-  if (!id) {
-    sendJson(response, 400, { error: 'missing_id' });
-    return;
-  }
-
-  try {
-    await deleteEventRequest(repository, id, user.id);
-    sendJson(response, 200, { deleted: true });
-  } catch (error) {
-    if (error instanceof EventNotFoundError) {
-      sendJson(response, 404, { error: 'not_found' });
-      return;
-    }
-    if (error instanceof EventAccessError) {
-      sendJson(response, 403, { error: 'forbidden' });
-      return;
-    }
-    if (error instanceof EventValidationError) {
-      sendJson(response, 400, { error: error.message, ...error.details });
-      return;
+    const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
+    if (!id) {
+      throw new AccessError(400, 'missing_id');
     }
 
-    throw error;
-  }
+    try {
+      await deleteEventRequest(repository, id, user.id);
+      return { deleted: true };
+    } catch (error) {
+      if (error instanceof EventNotFoundError) throw new AccessError(404, 'not_found');
+      if (error instanceof EventAccessError) throw new AccessError(403, 'forbidden');
+      if (error instanceof EventValidationError) throw new AccessError(400, error.message);
+      throw error;
+    }
+  });
 }

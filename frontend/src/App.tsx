@@ -813,7 +813,7 @@ function PrototypeApp() {
         </header>
 
         {viewMode === 'organiser-flow' ? (
-          <OrganiserRequestFlow getAccessToken={async () => null} />
+          <OrganiserRequestFlow prototype />
         ) : null}
 
         <section className={`role-hero accent-${activeRole.accent}`}>
@@ -1031,9 +1031,9 @@ function App() {
       <Route path="/organiser/requests" element={<OrganiserRequestList />} />
       <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
       <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
-      <Route path="/organiser/new-request" element={<OrganiserRequestFlow getAccessToken={async () => 'mock-token'} />} />
-      <Route path="/organiser/drafts" element={<OrganiserDrafts getAccessToken={async () => 'mock-token'} />} />
-      <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit getAccessToken={async () => 'mock-token'} />} />
+      <Route path="/organiser/new-request" element={<OrganiserRequestFlow />} />
+      <Route path="/organiser/drafts" element={<OrganiserDrafts />} />
+      <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/permission-denied" element={<PermissionDenied />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />

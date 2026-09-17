@@ -74,18 +74,17 @@ test('compiled health handler loads under Node and reports configuration without
 });
 
 for (const [path, method, expected, expectedError] of [
-  // Consolidated /api/events serves both GET (browse, auth check via AccessError)
-  // and POST (create, direct auth check). See ADR-014 for the one-file-per-route
-  // rule and api/events.ts for the method dispatch. GET without a session cookie
-  // trips currentUser's AccessError before any database query, so the "without
-  // invoking a provider" invariant still holds.
+  // Consolidated /api/events serves GET (browse), POST (create), PATCH (edit
+  // draft), and DELETE (delete draft) from one file. Post-ADR-015 every
+  // branch reads the same cookie session via currentUser() and throws
+  // AccessError(401, 'Sign in to continue.') when the cookie is missing.
+  // No provider or database query fires before the auth check, so the
+  // "without invoking a provider" invariant still holds. PUT stays
+  // genuinely unsupported, covering the 405 branch.
   ['api/events.js', 'GET', 401, 'Sign in to continue.'],
-  ['api/events.js', 'POST', 401, 'unauthorized'],
-  // SCRUM-27: PATCH/DELETE are now real, bearer-auth-gated branches (draft
-  // edit/delete), not unsupported methods - see requireOrganiserBearer in
-  // api/events.ts. PUT stays genuinely unsupported, covering the 405 branch.
-  ['api/events.js', 'PATCH', 401, 'unauthorized'],
-  ['api/events.js', 'DELETE', 401, 'unauthorized'],
+  ['api/events.js', 'POST', 401, 'Sign in to continue.'],
+  ['api/events.js', 'PATCH', 401, 'Sign in to continue.'],
+  ['api/events.js', 'DELETE', 401, 'Sign in to continue.'],
   ['api/events.js', 'PUT', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'GET', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'POST', 401, 'unauthorized'],
