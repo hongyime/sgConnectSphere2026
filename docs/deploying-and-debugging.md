@@ -107,7 +107,7 @@ but does not consume a paid seat on Bryan's team. The resulting
 - **Silent route collision.** Vercel builds both `api/foo.ts` and
   `api/foo/index.ts` and maps them to the same URL `/api/foo`; one
   wins the route and the other is a dead lambda that still counts
-  against the 12-function cap. This is how SCRUM-42's organiser
+  against the 12-function cap. This is how the E01-S03 (SCRUM-18) organiser
   browse-events endpoint silently broke after PR #56 shipped. Enforced
   against by the same pre-commit hook. Postplan documenting the
   discovery: <https://4ovp804r75sa.postplan.dev>.

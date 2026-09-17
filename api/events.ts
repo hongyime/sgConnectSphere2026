@@ -103,7 +103,7 @@ async function requireOrganiserBearer(
 }
 
 // GET /api/events - organiser browse. Preserves the request contract that shipped
-// in PR #42 (SCRUM-42): id-lookup returns { event }, otherwise
+// in PR #42 (SCRUM-18 hide internal planning info): id-lookup returns { event }, otherwise
 // { events, notifications, organisationId }. AccessError is caught by respond().
 //
 // GET /api/events?mine=1[&id=<id>][&status=draft] - SCRUM-27: the requesting
