@@ -193,19 +193,26 @@ export async function searchVenues(
   requiredAttendance?: number,
 ) {
   requireCatalogueViewer(user);
-  const result = await query<VenueRecord>(`SELECT ${venueProjection} FROM venues v
-    WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
-    ORDER BY v.name LIMIT 100`, [search.slice(0, 240)]);
-  const venues = await Promise.all(result.rows.map(venue => attachDetails(query, venue)));
-  if (!requiredLayout || typeof requiredAttendance !== 'number') return venues;
+  const hasLayoutFilter = Boolean(requiredLayout) && typeof requiredAttendance === 'number';
 
-  // Mirrors flagAffectedBookings' boundary rule: a layout capacity strictly
-  // below the required attendance is unsuitable, exactly equal is fine
-  // (E05-S02 Scenario 2, TC_E05S02_07/_08).
-  const requiredCode = slugify(requiredLayout);
-  return venues.filter(venue => venue.supported_layouts.some(
-    layout => slugify(layout.label) === requiredCode && layout.capacity >= requiredAttendance,
-  ));
+  // The layout/attendance suitability check runs in SQL, before LIMIT 100,
+  // not as a JS filter afterward — otherwise a suitable venue ranked past
+  // the 100th alphabetical name match would be cut by the LIMIT before its
+  // suitability was ever checked (E05-S02 Scenario 2).
+  const result = hasLayoutFilter
+    ? await query<VenueRecord>(`
+      SELECT ${venueProjection} FROM venues v
+      JOIN venue_supported_layouts vl ON vl.venue_id = v.id
+      JOIN room_layouts r ON r.id = vl.layout_id
+      WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
+        AND r.code = $2 AND vl.capacity >= $3
+      ORDER BY v.name LIMIT 100
+    `, [search.slice(0, 240), slugify(requiredLayout!), requiredAttendance])
+    : await query<VenueRecord>(`SELECT ${venueProjection} FROM venues v
+      WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
+      ORDER BY v.name LIMIT 100`, [search.slice(0, 240)]);
+
+  return Promise.all(result.rows.map(venue => attachDetails(query, venue)));
 }
 
 export async function getVenue(query: Query, user: AuthenticatedUser | undefined, id: string) {
