@@ -21,7 +21,11 @@ type EventRow = {
   end_at: Date;
   expected_attendance: number;
   layout_id: string | null;
+  venue_requirements: string | null;
   accessibility_note: string | null;
+  equipment_requirements: string | null;
+  layout_preference: string | null;
+  registration_setup: string | null;
 };
 
 function mapEvent(row: EventRow): EventRecord {
@@ -39,7 +43,11 @@ function mapEvent(row: EventRow): EventRecord {
     endAt: row.end_at,
     expectedAttendance: row.expected_attendance,
     layoutId: row.layout_id ?? undefined,
+    venueRequirements: row.venue_requirements ?? undefined,
     accessibilityNote: row.accessibility_note ?? undefined,
+    equipmentRequirements: row.equipment_requirements ?? undefined,
+    layoutPreference: row.layout_preference ?? undefined,
+    registrationSetup: row.registration_setup ?? undefined,
   };
 }
 
@@ -57,7 +65,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           event_range,
           expected_attendance,
           layout_id,
-          accessibility_note
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
         )
         VALUES (
           $1,
@@ -69,7 +81,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           tstzrange($7::timestamptz, $8::timestamptz, '[)'),
           $9,
           $10,
-          $11
+          $11,
+          $12,
+          $13,
+          $14,
+          $15
         )
         RETURNING
           id,
@@ -85,7 +101,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           upper(event_range) AS end_at,
           expected_attendance,
           layout_id,
-          accessibility_note
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
       `,
       [
         request.organiserId,
@@ -98,7 +118,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         request.endAt.toISOString(),
         request.expectedAttendance,
         request.layoutId ?? null,
+        request.venueRequirements ?? null,
         request.accessibilityNote ?? null,
+        request.equipmentRequirements ?? null,
+        request.layoutPreference ?? null,
+        request.registrationSetup ?? null,
       ],
     );
 
@@ -122,7 +146,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           upper(event_range) AS end_at,
           expected_attendance,
           layout_id,
-          accessibility_note
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
         FROM events
         WHERE id = $1
         LIMIT 1
@@ -159,7 +187,11 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           upper(event_range) AS end_at,
           expected_attendance,
           layout_id,
-          accessibility_note
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
       `,
       [eventId, status, reason ?? null],
     );
