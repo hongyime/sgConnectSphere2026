@@ -23,18 +23,23 @@ const projection = `e.id, e.event_code, e.title, e.description, e.status,
 export async function listEvents(query: Query, user: AuthenticatedUser, search = '') {
   const org = requireOrganiser(user);
   // Position treats search text literally, including SQL wildcard characters.
+  // SCRUM-27 Scenario 1: a draft is only visible to the organiser who owns
+  // it, not to colleagues browsing the same client organisation (this
+  // endpoint is already unreachable for Coordinators - see requireOrganiser).
   return (await query(`SELECT ${projection} FROM events e
     JOIN users u ON u.id = e.organiser_id
-    WHERE e.client_org_id = $1 AND
-      (strpos(lower(e.title), lower($2)) > 0 OR strpos(lower(coalesce(e.event_code, '')), lower($2)) > 0)
-    ORDER BY lower(e.event_range), e.id LIMIT 100`, [org, search.slice(0, 240)])).rows;
+    WHERE e.client_org_id = $1 AND (e.status <> 'draft' OR e.organiser_id = $2) AND
+      (strpos(lower(e.title), lower($3)) > 0 OR strpos(lower(coalesce(e.event_code, '')), lower($3)) > 0)
+    ORDER BY lower(e.event_range), e.id LIMIT 100`, [org, user.id, search.slice(0, 240)])).rows;
 }
 
 export async function getEvent(query: Query, user: AuthenticatedUser, identifier: string) {
   const org = requireOrganiser(user);
+  // Same draft-privacy rule as listEvents above.
   const result = await query(`SELECT ${projection} FROM events e
     JOIN users u ON u.id = e.organiser_id
-    WHERE e.client_org_id = $1 AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier]);
+    WHERE e.client_org_id = $1 AND (e.status <> 'draft' OR e.organiser_id = $3)
+      AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier, user.id]);
   if (result.rows[0]) return result.rows[0];
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
