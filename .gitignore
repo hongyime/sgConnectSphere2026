@@ -43,3 +43,9 @@ Desktop.ini
 *.sqlite
 *.sqlite3
 *.db
+
+# Postplan review artifacts. Local HTML is a source for the hosted postplan
+# URL, not a durable deliverable. Keep intermediate renders and scratch
+# comment drafts out of git. Finished postplans live at their postplan.dev URL
+# and are linked from PR comments per docs/contributing/creating-a-postplan.md.
+artifacts/

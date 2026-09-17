@@ -23,6 +23,8 @@ underpin all of these.
   must follow.
 - [Converting a source file](./converting-a-source-file.md) — when to run
   the one-shot conversion scripts and when to stop.
+- [Creating a postplan](./creating-a-postplan.md) — the per-PR HTML
+  review that gets uploaded to `postplan.dev` and linked in the PR.
 
 ## Shared conventions
 
