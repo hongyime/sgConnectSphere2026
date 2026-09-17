@@ -15,6 +15,10 @@
       "destination": "/api/cron/outbox-relay?task=worker"
     },
     {
+      "source": "/api/auth/verify",
+      "destination": "/api/auth/session?task=verify"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },
