@@ -10,12 +10,28 @@ filenames follow the copy-forward convention described in the next section.
 When a new dated copy is added, update this table in the same commit so the
 authoritative filenames never drift out of sync with what is on disk.
 
-| Domain | Current authoritative file |
-| --- | --- |
-| Product backlog | `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx` |
-| Backlog decision review | `docs/BACKLOG DECISION REVIEW CAA 140926.docx` |
-| Architecture decision records | `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx` |
-| Project test cases | `docs/testing/PROJECT TEST CASES.xlsx` |
+| Domain | Current authoritative source | Generated export |
+| --- | --- | --- |
+| Product backlog | `docs/backlog/` (Markdown, per-epic under `release-1/` and `product/`) | `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` |
+| Backlog decision review | `docs/BACKLOG DECISION REVIEW CAA 160926.docx` | — |
+| Architecture decision records | `docs/ARCHITECTURE DECISION RECORDS CAA 160926.docx` | — |
+| Project test cases | `docs/testing/cases/` (Markdown, per-epic) | `docs/testing/PROJECT TEST CASES CAA 160926.xlsx` |
+
+The workbook exports under `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` and
+`docs/testing/PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` are regenerated from the
+Markdown by running `python scripts/export_backlog_xlsx.py` and
+`python scripts/export_testcases_xlsx.py`. Do not edit the workbooks directly;
+changes there will be lost the next time the export runs. Older CAA-dated
+workbook copies remain on disk as history.
+
+The two decision documents (`CAA 160926.docx` above) are updated per the
+copy-forward convention alongside the ADR-015 refresh (see the ADR document
+for context). Older dated copies remain on disk as history.
+
+The original Word copies (`docs/BACKLOG DECISION REVIEW CAA 140926.docx`,
+`docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`) remain on disk as
+history under ADR-015 copy-forward, but the Markdown under `docs/adr/` and
+`docs/bdr/` is authoritative. See `docs/decisions/0005-adr-bdr-markdown-authority.md`.
 
 ## Copy-forward convention for CAA-dated files
 
@@ -38,15 +54,19 @@ The rules:
 4. **Update this document in the same commit.** The PR that introduces a new
    dated copy must also update the "Current primary source files" table above
    so references stay in sync. CI does not enforce this; reviewers should.
-5. **Merge backlog PRs sequentially, not in parallel.** `.docx` and `.xlsx`
-   files are binary and cannot be 3-way merged. If two PRs edit the same
-   source file, land the first one, rebase the second, then merge the second.
-   Once a source file has been migrated to Markdown or another text format,
-   this rule no longer applies to that file.
+5. **Merge PRs against binary source files sequentially.** This rule
+   applies only to files that are still binary: the two `CAA DDMMYYYY.docx`
+   decision documents and the `docs/testing/PROJECT TEST CASES.xlsx`
+   workbook. `.docx` and `.xlsx` cannot be 3-way merged. If two PRs edit
+   the same binary source file, land the first one, rebase the second,
+   then merge the second. The Markdown backlog under `docs/backlog/`
+   merges normally with git 3-way merge and is exempt from this rule.
 
 ## Authority order
 
-1. Primary product sources (see table above).
+1. Primary product sources (see table above). The Markdown backlog under
+   `docs/backlog/` is authoritative; the CAA-dated xlsx exports are
+   generated snapshots.
 2. Recorded repository decisions:
    - `docs/decisions/`
    - architecture Markdown under `docs/`
@@ -115,7 +135,7 @@ the same time, the sources will diverge silently.
 
 | Source | Update these derivatives when relevant |
 | --- | --- |
-| Product backlog workbook | Jira backlog, `docs/design/figma-wireframe-refinement-plan.md`, testing plans, implementation tickets |
+| Product backlog (Markdown, `docs/backlog/`) | Jira backlog, `docs/design/figma-wireframe-refinement-plan.md`, testing plans, implementation tickets |
 | Backlog decision review Word doc | user roles, feature scope, future backlog labels, definition of done, release boundaries |
 | Architecture decision records Word doc | `docs/decisions/`, `docs/architecture.md`, `docs/modular-monolith-architecture.md`, `docs/db_schema.md` |
 | Test cases workbook | testing README, scaffold reference tests, Jira acceptance evidence |

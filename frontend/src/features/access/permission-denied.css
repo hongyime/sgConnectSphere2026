@@ -1,0 +1,22 @@
+.permission-denied-page {
+  min-height: calc(100vh - 4rem);
+  display: grid;
+  place-items: center;
+  padding: 3rem 1.5rem;
+}
+
+.permission-denied-card {
+  max-width: 30rem;
+  padding: 2rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  color: var(--text-strong, #0f172a);
+}
+
+.permission-denied-card h1 { margin: 0; font-size: 1.65rem; }
+.permission-denied-card p { margin: 0; color: var(--text-muted, #475569); }
+.permission-denied-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }

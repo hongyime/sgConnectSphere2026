@@ -1,0 +1,28 @@
+.verify-page {
+  min-height: calc(100vh - 4rem);
+  display: grid;
+  place-items: center;
+  padding: 3rem 1.5rem;
+}
+
+.verify-card {
+  width: 100%;
+  max-width: 30rem;
+  padding: 2rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+}
+
+.verify-card h1 { margin: 0; font-size: 1.65rem; color: var(--text-strong, #0f172a); }
+.verify-card p { margin: 0; color: var(--text-muted, #475569); }
+
+.verify-icon { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 999px; }
+.verify-icon-ok      { background: rgba(5, 150, 105, 0.14);  color: #047857; }
+.verify-icon-pending { background: rgba(37, 99, 235, 0.14);  color: #1d4ed8; }
+.verify-icon-error   { background: rgba(220, 38, 38, 0.14);  color: #b91c1c; }
+
+.verify-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }

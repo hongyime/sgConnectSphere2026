@@ -1,11 +1,16 @@
 import { runtimeConfig, requireEnv } from '../../backend/src/config.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { login, sessionToken, tokenDigest } from '../../backend/src/modules/accessControl/sessions.js';
-import { respond, databasePool, query } from '../../backend/src/modules/eventVisibility/runtime.js';
+import { currentUser, respond, databasePool, query } from '../../backend/src/modules/eventVisibility/runtime.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   await respond(response, async () => {
+    if (request.method === 'GET') {
+      // Idempotent whoami. No side effects, so skip the origin check that CSRF-protects the mutating branches.
+      const user = await currentUser(request);
+      return { user: { id: user.id, email: user.email, role: user.role, clientOrgId: user.clientOrgId } };
+    }
     if (request.method !== 'POST' && request.method !== 'DELETE') throw new AccessError(405, 'Method not allowed.');
     if (request.headers.origin !== requireEnv(runtimeConfig.appUrl, 'APP_URL')) throw new AccessError(403, 'Access denied.');
     const flags = `Path=/; HttpOnly; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;

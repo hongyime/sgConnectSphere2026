@@ -39,9 +39,10 @@ connect safely.
 
 Use these primary files:
 
-- `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx`
-- `docs/BACKLOG DECISION REVIEW CAA 140926.docx`
-- `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`
+- `docs/backlog/` (canonical Markdown, per-epic files under `release-1/` and `product/`)
+- `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` (generated export)
+- `docs/BACKLOG DECISION REVIEW CAA 160926.docx`
+- `docs/ARCHITECTURE DECISION RECORDS CAA 160926.docx`
 - `docs/testing/PROJECT TEST CASES.xlsx`
 
 Suggested Jira mapping:
