@@ -52,7 +52,9 @@ function findMissingMandatoryFields(request: CreateEventRequest): string[] {
     }
   }
 
-  if (!request.startAt || !request.endAt) {
+  // Invalid Date is truthy and NaN bypasses range comparisons; reject it before SQL.
+  if (!(request.startAt instanceof Date) || !Number.isFinite(request.startAt.getTime())
+    || !(request.endAt instanceof Date) || !Number.isFinite(request.endAt.getTime())) {
     missing.push('Preferred dates and times');
   }
 

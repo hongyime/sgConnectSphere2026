@@ -1018,6 +1018,7 @@ function App() {
       <Route path="/events" element={<ClientEvents />} />
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
+      {/* Without this route, event detail links and denied deep links fall through to the landing page. */}
       <Route path="/attendee/events/*" element={<AttendeeEvents />} />
       <Route path="/attendee/discover" element={<EventDiscovery />} />
       <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />

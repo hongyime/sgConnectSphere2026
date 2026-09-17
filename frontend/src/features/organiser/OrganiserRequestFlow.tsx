@@ -67,6 +67,11 @@ const requiredFields: { key: FieldKey; label: string; optional?: boolean }[] = [
 
 function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[number]) {
   const value = draft[field.key].trim();
+  // A nonempty number input can still contain zero, a negative value, or a fraction.
+  // Match the API's positive-integer rule before enabling submission.
+  if (field.key === 'expectedAttendance') {
+    return Number.isInteger(Number(value)) && Number(value) > 0;
+  }
   if (field.optional && value === NONE_REQUIRED) {
     return true;
   }
@@ -128,7 +133,14 @@ export function OrganiserRequestFlow({
     }
 
     setSubmitState({ status: 'submitting' });
-    const accessToken = await getAccessToken();
+    let accessToken: string | null;
+    try {
+      accessToken = await getAccessToken();
+    } catch {
+      // A session lookup failure must leave the form retryable, not stuck submitting.
+      setSubmitState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
+      return;
+    }
 
     if (!accessToken) {
       setSubmitState({ status: 'submitted', persisted: false });

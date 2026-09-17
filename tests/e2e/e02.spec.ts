@@ -3,13 +3,9 @@ import { test, expect } from '@playwright/test';
 // E02 - 13 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
-// PR #65 added a real /organiser/new-request route, but it passes a
-// getAccessToken stub ('mock-token') that fails real Supabase verification
-// (SCRUM-90/91 not done yet, both unassigned). /prototype reproduces the
-// same client-side-only behaviour these tests were written against. Reroute
-// to /organiser/new-request once SCRUM-90/91 land and mock-token is replaced
-// with real auth.
-const ORGANISER_REQUEST_FORM_PATH = '/prototype';
+// Exercise the real request screen with a mocked API. This covers the browser
+// contract, not live authentication or PostgreSQL persistence.
+const ORGANISER_REQUEST_FORM_PATH = '/organiser/new-request';
 
 async function fillMandatoryFields(page: import('@playwright/test').Page, overrides: Record<string, string> = {}) {
   const values: Record<string, string> = {
@@ -41,6 +37,17 @@ async function fillMandatoryFields(page: import('@playwright/test').Page, overri
 }
 
 test.describe("E02-S01", () => {
+  test.beforeEach(async ({ page }) => {
+    // Freeze the browser clock so the source-case dates stay deterministic.
+    await page.clock.setFixedTime(new Date('2026-09-10T00:00:00Z'));
+    await page.route('**/api/events', async (route) => {
+      expect(route.request().method()).toBe('POST');
+      const payload = route.request().postDataJSON();
+      expect(payload.status).toBe('submitted');
+      expect(payload.equipmentRequirements).toBe('none_required');
+      await route.fulfill({ status: 201, json: { event: { id: 'test-event', status: 'submitted' } } });
+    });
+  });
 
   /**
    * TC_E02S01_01
@@ -61,6 +68,7 @@ test.describe("E02-S01", () => {
     await fillMandatoryFields(page);
     await page.getByRole('button', { name: 'Submit request' }).click();
     await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
+    await expect(page.getByText('Persisted through API and submitted to coordinator queue')).toBeVisible();
   });
 
   /**
@@ -127,6 +135,7 @@ test.describe("E02-S01", () => {
     await expect(page.getByRole('button', { name: 'Submit request' })).toBeEnabled();
     await page.getByRole('button', { name: 'Submit request' }).click();
     await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
+    await expect(page.getByText('Persisted through API and submitted to coordinator queue')).toBeVisible();
   });
 
   /**
