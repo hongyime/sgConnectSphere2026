@@ -25,3 +25,4 @@ References to requirements use the Week 1 Customer Briefing (§), the Week 4 cor
 - [ADR-011 — Controlled vocabularies for accessibility and facilities](./ADR-011-controlled-vocabularies-for-accessibility-and-facilities.md)
 - [ADR-012 — One role per account in release 1](./ADR-012-one-role-per-account-in-release-1.md)
 - [ADR-013 — Separate the backlog data from the reasoning behind it](./ADR-013-separate-the-backlog-data-from-the-reasoning-behind-it.md)
+- [ADR-014 — One file per Vercel serverless API route](./ADR-014-one-file-per-vercel-serverless-api-route.md)

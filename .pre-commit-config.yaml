@@ -53,3 +53,14 @@ repos:
         stages: [pre-push]
         pass_filenames: false
         always_run: true
+      - id: api-routes
+        # Fail on api/foo.ts + api/foo/index.ts collisions (SCRUM-42 regression)
+        # and keep the file count under the Vercel Hobby soft limit. See
+        # docs/adr/ADR-014-* and BDR T-56.
+        name: Vercel /api/ route conventions
+        entry: python scripts/check_api_routes.py
+        language: python
+        stages: [pre-commit]
+        pass_filenames: false
+        always_run: true
+        files: ^api/

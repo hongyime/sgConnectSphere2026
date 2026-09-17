@@ -38,9 +38,12 @@ error text. This is where the fix belongs.
 If the mirror workflow is **green** but `Vercel` is **red**, the failure
 is Vercel-specific:
 
-- Missing or wrong environment variable in the Vercel project.
+- **Missing or wrong environment variable in the Vercel project.**
 - More than 12 serverless functions (Hobby-plan limit; a rewrite in
   `vercel.json` collapses functions).
+- **Silent route collision between `api/foo.ts` and `api/foo/index.ts`**
+  (both build, one silently wins; caught by
+  `scripts/check_api_routes.py` per ADR-014 and BDR T-56).
 - Output directory or framework preset mis-configured.
 - Deploy-time function validation error.
 
@@ -98,7 +101,16 @@ but does not consume a paid seat on Bryan's team. The resulting
 - **12-function cap on the Hobby plan.** Every file under `api/`
   becomes one serverless function. `vercel.json` collapses multi-verb
   routes via `rewrites` so several logical endpoints share one function.
-  Adding a new file under `api/` risks pushing us past the cap.
+  Adding a new file under `api/` risks pushing us past the cap. See
+  ADR-014 for the one-file-per-URL rule and BDR T-56 for the 11-file
+  soft limit enforced by `scripts/check_api_routes.py`.
+- **Silent route collision.** Vercel builds both `api/foo.ts` and
+  `api/foo/index.ts` and maps them to the same URL `/api/foo`; one
+  wins the route and the other is a dead lambda that still counts
+  against the 12-function cap. This is how SCRUM-42's organiser
+  browse-events endpoint silently broke after PR #56 shipped. Enforced
+  against by the same pre-commit hook. Postplan documenting the
+  discovery: <https://4ovp804r75sa.postplan.dev>.
 - **100MB compiled output for edge and serverless functions.** Not hit
   yet, but `package-lock.json` size is worth watching.
 - **1 concurrent build.** Rapid push bursts queue rather than fail;
