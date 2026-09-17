@@ -6,6 +6,20 @@ import { LoginPage } from './features/accessControl/LoginPage';
 import { RegisterForm } from './features/accessControl/RegisterForm';
 import { ProfileForm } from './features/accessControl/ProfileForm';
 import {
+  CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
+  DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
+} from './features/coordinator/Coordinator';
+import {
+  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
+} from './features/venue/Venue';
+import {
+  EquipmentDashboard, EquipmentCatalogue, RequestQueue, ReservationDetail,
+  TechnicianAssignment, ConflictState,
+} from './features/support/Support';
+import {
+  AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
+} from './features/admin/Admin';
+import {
   AlertTriangle,
   Bell,
   CalendarDays,
@@ -999,6 +1013,27 @@ function App() {
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
       <Route path="/internal/*" element={<AttendeeEvents />} />
+      <Route path="/coordinator" element={<CoordinatorHome />} />
+      <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
+      <Route path="/coordinator/events/:eventCode" element={<CoordinatorRequestDetail />} />
+      <Route path="/coordinator/events/:eventCode/decide" element={<DecisionPanel />} />
+      <Route path="/coordinator/events/:eventCode/plan" element={<PlanningWorkspace />} />
+      <Route path="/coordinator/events/:eventCode/readiness" element={<ReadinessChecklist />} />
+      <Route path="/coordinator/events/:eventCode/confirm" element={<FinalConfirmation />} />
+      <Route path="/venue" element={<VenueDashboard />} />
+      <Route path="/venue/inventory" element={<VenueInventory />} />
+      <Route path="/venue/availability" element={<AvailabilityCalendar />} />
+      <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
+      <Route path="/support" element={<EquipmentDashboard />} />
+      <Route path="/support/catalogue" element={<EquipmentCatalogue />} />
+      <Route path="/support/queue" element={<RequestQueue />} />
+      <Route path="/support/requests/:requestId" element={<ReservationDetail />} />
+      <Route path="/support/technicians" element={<TechnicianAssignment />} />
+      <Route path="/support/conflicts" element={<ConflictState />} />
+      <Route path="/admin" element={<AdminHome />} />
+      <Route path="/admin/users" element={<UserManagement />} />
+      <Route path="/admin/users/:userId/role" element={<RoleAssignment />} />
+      <Route path="/admin/audit" element={<AuditLogViewer />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>

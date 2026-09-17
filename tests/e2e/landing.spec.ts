@@ -1,3 +1,10 @@
+// Playwright tests for the public routes at / and /login (SCRUM-95). Covers
+// the LandingPage rendering, LoginPage error handling on 401, and the
+// resume-on-load + navigate-to-role-home flow that a signed-in user hits.
+// Every /api/auth/session call is intercepted so these tests do not depend
+// on backend availability. The success test transitions the intercept
+// through three states (unauthenticated GET, POST success, whoami success)
+// to mirror the real page-load-then-sign-in sequence.
 import { test, expect } from '@playwright/test';
 
 test('landing page renders at / and links to login and register', async ({ page }) => {
