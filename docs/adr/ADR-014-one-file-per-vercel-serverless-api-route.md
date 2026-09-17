@@ -7,7 +7,7 @@
 
 Every file under `api/` builds as one serverless function on Vercel. The URL a function serves is derived from its path: `api/foo.ts` serves `/api/foo`, and `api/foo/index.ts` also serves `/api/foo`. When both files exist the build succeeds without warning, both lambdas ship, and one silently wins the route while the other becomes unreachable. Empirically on the current builder the parent-level file wins, but Vercel does not document the tie-breaker, so the outcome is undefined by contract.
 
-This is not hypothetical. PR #56 (SCRUM-26 submit event request) added `api/events.ts` for the POST create path. `api/events/index.ts` already existed from PR #42 (SCRUM-42 hide internal planning info) serving the organiser browse-events GET listing. From the moment PR #56 shipped, `GET /api/events` in production returned `405 method_not_allowed` with `Allow: POST` — the organiser browse screen backed by `frontend/src/features/organiser/ClientEvents.tsx` was silently broken. Nobody noticed at review because the routing collision does not manifest in the build log, only at request time on the deployed URL, and the failing screen is behind SSO on the Vercel preview alias where teammates without dashboard access could not reach it.
+This is not hypothetical. PR #56 (SCRUM-26 submit event request) added `api/events.ts` for the POST create path. `api/events/index.ts` already existed from PR #42 (SCRUM-18 hide internal planning info) serving the organiser browse-events GET listing. From the moment PR #56 shipped, `GET /api/events` in production returned `405 method_not_allowed` with `Allow: POST` — the organiser browse screen backed by `frontend/src/features/organiser/ClientEvents.tsx` was silently broken. Nobody noticed at review because the routing collision does not manifest in the build log, only at request time on the deployed URL, and the failing screen is behind SSO on the Vercel preview alias where teammates without dashboard access could not reach it.
 
 The Hobby plan compounds the failure mode. It caps a deployment at twelve serverless functions. Two colliding files consume two slots but only serve one route, so the collision costs a slot that a future story needs. On the deployment where this bug was discovered the project sat at exactly 12/12 functions with one of them dead, leaving zero headroom for the next feature.
 
@@ -28,7 +28,7 @@ Both rules are enforced by `scripts/check_api_routes.py`, wired into `.pre-commi
 
 ### What this buys us
 
-- The failure mode that broke SCRUM-42 for the whole of Sprint 1 becomes a red pre-commit hook rather than a silent production regression.
+- The failure mode that broke E01-S03 (SCRUM-18) for the whole of Sprint 1 becomes a red pre-commit hook rather than a silent production regression.
 - Consolidating `api/events.ts` and `api/events/index.ts` into one file returned one lambda slot, so SCRUM-27 draft persistence has room to land without a function-count fight.
 - One rule to remember when adding an API route: one URL, one file. No routing quirks in the reader's head.
 - The eleven-file soft limit makes the twelve-function cap visible at authoring time instead of at deploy time, where only Bryan can read the log.
