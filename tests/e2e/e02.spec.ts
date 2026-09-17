@@ -3,6 +3,14 @@ import { test, expect } from '@playwright/test';
 // E02 - 13 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
+// PR #65 added a real /organiser/new-request route, but it passes a
+// getAccessToken stub ('mock-token') that fails real Supabase verification
+// (SCRUM-90/91 not done yet, both unassigned). /prototype reproduces the
+// same client-side-only behaviour these tests were written against. Reroute
+// to /organiser/new-request once SCRUM-90/91 land and mock-token is replaced
+// with real auth.
+const ORGANISER_REQUEST_FORM_PATH = '/prototype';
+
 async function fillMandatoryFields(page: import('@playwright/test').Page, overrides: Record<string, string> = {}) {
   const values: Record<string, string> = {
     'Event name': 'Annual Tech Summit',
@@ -49,7 +57,7 @@ test.describe("E02-S01", () => {
    *   A confirmation message is shown and the request status becomes "Submitted"
    */
   test("TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser", async ({ page }) => {
-    await page.goto('/');
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
     await fillMandatoryFields(page);
     await page.getByRole('button', { name: 'Submit request' }).click();
     await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
@@ -70,7 +78,7 @@ test.describe("E02-S01", () => {
    *   Submission is blocked; both "Venue Requirements" and "Layout Preference" are listed as required/missing
    */
   test("TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified", async ({ page }) => {
-    await page.goto('/');
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
     await fillMandatoryFields(page, { 'Venue requirements': '', 'Layout preference': '' });
     await expect(page.getByRole('button', { name: 'Submit request' })).toBeDisabled();
     const missing = page.getByRole('list', { name: 'Missing mandatory fields' });
@@ -93,7 +101,7 @@ test.describe("E02-S01", () => {
    *   Submission is blocked with the message "Preferred date must be in the future"
    */
   test("TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation", async ({ page }) => {
-    await page.goto('/');
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
     await fillMandatoryFields(page, { 'Preferred start date and time': '2026-01-01T09:00' });
     await expect(page.getByRole('button', { name: 'Submit request' })).toBeDisabled();
     await expect(page.getByText('Preferred date must be in the future')).toBeVisible();
@@ -114,7 +122,7 @@ test.describe("E02-S01", () => {
    *   All three fields are treated as complete; submission proceeds and the status becomes "Submitted"
    */
   test("TC_E02S01_04 - Verify that selecting 'none required' for equipment, layout, or registration setup should count each as complete where the event does not need them", async ({ page }) => {
-    await page.goto('/');
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
     await fillMandatoryFields(page);
     await expect(page.getByRole('button', { name: 'Submit request' })).toBeEnabled();
     await page.getByRole('button', { name: 'Submit request' }).click();
@@ -136,7 +144,7 @@ test.describe("E02-S01", () => {
    *   All 10 named fields are present on the form and marked as mandatory
    */
   test("TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete", async ({ page }) => {
-    await page.goto('/');
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
     for (const label of [
       'Event name',
       'Description',
