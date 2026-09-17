@@ -71,3 +71,71 @@ test('API validation errors show all returned fields without claiming success', 
   expect(screen.getByRole('alert')).toHaveTextContent('Layout preference');
   expect(screen.queryByText('Submitted', { exact: true })).not.toBeInTheDocument();
 });
+
+// --- SCRUM-27: save/reopen/edit a draft ---
+
+test('Save draft is enabled with optional fields incomplete, and saves as a draft', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 201 }));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} />);
+
+  // Layout preference and registration setup are blank by default with
+  // neither "none required" checked, so Submit is blocked - but Option B
+  // only requires title/dates/attendance for a draft, so Save draft is not.
+  expect(screen.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  expect(await screen.findByText('Draft saved.')).toBeVisible();
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(url).toBe('/api/events');
+  expect(init.method).toBe('POST');
+  const body = JSON.parse(init.body);
+  expect(body.status).toBe('draft');
+  expect(body.title).toBe('Annual Sustainability Forum');
+});
+
+test('Save draft is disabled without a title, attendance, or dates', () => {
+  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} />);
+  fireEvent.change(screen.getByLabelText('Event name'), { target: { value: '' } });
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+});
+
+test('editing an existing draft PATCHes it instead of creating a new one', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 200 }));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} draftId="draft-1" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  expect(await screen.findByText('Draft saved.')).toBeVisible();
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(url).toBe('/api/events?id=draft-1');
+  expect(init.method).toBe('PATCH');
+});
+
+test('calls onSaved with the returned event id after saving a draft', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-99' } }), { status: 201 })));
+  const onSaved = vi.fn();
+  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} onSaved={onSaved} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  await screen.findByText('Draft saved.');
+  expect(onSaved).toHaveBeenCalledWith('draft-99');
+});
+
+test('initialValues pre-fill the form for reopening a draft', () => {
+  render(
+    <OrganiserRequestFlow
+      getAccessToken={async () => 'test-token'}
+      draftId="draft-1"
+      initialValues={{ eventName: 'Reopened Draft', venueRequirements: '' }}
+    />,
+  );
+  expect(screen.getByLabelText('Event name')).toHaveValue('Reopened Draft');
+});
+
+test('clearing the dates disables Save draft too, not just Submit', () => {
+  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} />);
+  fireEvent.change(screen.getByLabelText('Preferred start date and time'), { target: { value: '' } });
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+});

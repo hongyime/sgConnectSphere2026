@@ -37,6 +37,15 @@ type SubmitState =
   | { status: 'submitted'; persisted: boolean }
   | { status: 'error'; message: string; missingFields?: string[] };
 
+// SCRUM-27: a draft only ever requires these three (Option B - see the
+// SCRUM-27 task list). Mirrors the backend's ALWAYS_MANDATORY_KEYS in
+// backend/src/modules/eventLifecycle/service.ts.
+type DraftSaveState =
+  | { status: 'idle' }
+  | { status: 'saving' }
+  | { status: 'saved' }
+  | { status: 'error'; message: string; missingFields?: string[] };
+
 const initialDraft: DraftEvent = {
   eventName: 'Annual Sustainability Forum',
   description: 'A forum bringing together sustainability leads across the client organisation.',
@@ -86,6 +95,19 @@ function getMissingFields(draft: DraftEvent) {
   return missing;
 }
 
+const ALWAYS_MANDATORY_FIELD_KEYS: FieldKey[] = ['eventName', 'expectedAttendance'];
+
+// SCRUM-27 Option B: saving a draft only needs these three, not all ten.
+function getDraftMissingFields(draft: DraftEvent) {
+  const missing = requiredFields
+    .filter((field) => ALWAYS_MANDATORY_FIELD_KEYS.includes(field.key) && !isFieldComplete(draft, field))
+    .map((field) => field.label);
+  if (!draft.startDate || !draft.endDate) {
+    missing.push('Preferred dates and times');
+  }
+  return missing;
+}
+
 function isInvalidDateRange(draft: DraftEvent) {
   if (!draft.startDate || !draft.endDate) {
     return false;
@@ -112,15 +134,32 @@ function toIsoLocal(value: string) {
 
 export function OrganiserRequestFlow({
   getAccessToken,
+  draftId,
+  initialValues,
+  onSaved,
 }: {
   getAccessToken: () => Promise<string | null>;
+  // SCRUM-27: when set, "Save draft" and "Submit request" PATCH this
+  // existing draft instead of POSTing a new one.
+  draftId?: string;
+  // Pre-fills the form when reopening a draft. Omitted (the common case,
+  // e.g. /organiser/new-request) keeps the existing example-filled defaults.
+  initialValues?: Partial<DraftEvent>;
+  // Called with the saved/submitted event's id, so a host route can e.g.
+  // navigate back to the drafts list.
+  onSaved?: (eventId: string) => void;
 }) {
-  const [draft, setDraft] = useState(initialDraft);
+  const [draft, setDraft] = useState<DraftEvent>(() => ({ ...initialDraft, ...initialValues }));
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>({ status: 'idle' });
   const missingFields = useMemo(() => getMissingFields(draft), [draft]);
+  const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
   const pastDate = isPastDate(draft);
   const canSubmit = missingFields.length === 0 && !invalidDateRange && !pastDate;
+  // SCRUM-27 Option B: a draft only needs title/dates/attendance valid, not
+  // every mandatory field - matches the backend's relaxed validation.
+  const canSaveDraft = draftMissingFields.length === 0 && !invalidDateRange && !pastDate;
   const submitted = submitState.status === 'submitted';
 
   const setNoneRequired = (key: OptionalField, checked: boolean) => {
@@ -149,8 +188,8 @@ export function OrganiserRequestFlow({
 
     let response: Response;
     try {
-      response = await fetch('/api/events', {
-        method: 'POST',
+      response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
+        method: draftId ? 'PATCH' : 'POST',
         headers: {
           authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
@@ -193,7 +232,79 @@ export function OrganiserRequestFlow({
       return;
     }
 
+    const body = await response.json().catch(() => null);
     setSubmitState({ status: 'submitted', persisted: true });
+    if (body?.event?.id) {
+      onSaved?.(body.event.id);
+    }
+  };
+
+  const saveDraft = async () => {
+    if (!canSaveDraft || draftSaveState.status === 'saving') {
+      return;
+    }
+
+    setDraftSaveState({ status: 'saving' });
+    let accessToken: string | null;
+    try {
+      accessToken = await getAccessToken();
+    } catch {
+      setDraftSaveState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
+      return;
+    }
+
+    if (!accessToken) {
+      setDraftSaveState({ status: 'error', message: 'Sign in to save a draft.' });
+      return;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
+        method: draftId ? 'PATCH' : 'POST',
+        headers: {
+          authorization: `Bearer ${accessToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: draft.eventName,
+          description: draft.description,
+          purpose: draft.purpose,
+          status: 'draft',
+          startAt: toIsoLocal(draft.startDate),
+          endAt: toIsoLocal(draft.endDate),
+          expectedAttendance: Number(draft.expectedAttendance),
+          venueRequirements: draft.venueRequirements,
+          accessibilityNote: draft.accessibilityNeeds,
+          equipmentRequirements: draft.equipmentRequirements,
+          layoutPreference: draft.layoutPreference,
+          registrationSetup: draft.registrationSetup,
+        }),
+      });
+    } catch {
+      setDraftSaveState({ status: 'error', message: 'The draft could not be saved.' });
+      return;
+    }
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      if (body?.error === 'missing_mandatory_fields' && Array.isArray(body.missingFields)) {
+        setDraftSaveState({
+          status: 'error',
+          message: 'The draft could not be saved until these fields are valid.',
+          missingFields: body.missingFields,
+        });
+        return;
+      }
+      setDraftSaveState({ status: 'error', message: 'The draft could not be saved.' });
+      return;
+    }
+
+    const body = await response.json().catch(() => null);
+    setDraftSaveState({ status: 'saved' });
+    if (body?.event?.id) {
+      onSaved?.(body.event.id);
+    }
   };
 
   return (
@@ -298,9 +409,14 @@ export function OrganiserRequestFlow({
           </div>
 
           <div className="form-actions">
-            <button className="secondary-action" type="button">
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={!canSaveDraft || draftSaveState.status === 'saving'}
+              onClick={saveDraft}
+            >
               <Save size={16} aria-hidden="true" />
-              Save draft
+              {draftSaveState.status === 'saving' ? 'Saving...' : 'Save draft'}
             </button>
             <button
               className="primary-action"
@@ -312,6 +428,21 @@ export function OrganiserRequestFlow({
               {submitState.status === 'submitting' ? 'Submitting...' : 'Submit request'}
             </button>
           </div>
+          {draftSaveState.status === 'error' ? (
+            <div role="alert" className="field-control">
+              <p className="login-error">{draftSaveState.message}</p>
+              {draftSaveState.missingFields ? (
+                <ul className="validation-list" aria-label="Fields blocking draft save">
+                  {draftSaveState.missingFields.map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+          {draftSaveState.status === 'saved' ? (
+            <p role="status" className="field-control">Draft saved.</p>
+          ) : null}
         </section>
 
         <aside className="review-panel" aria-label="Validation and status">
