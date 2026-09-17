@@ -17,7 +17,7 @@ sources.
   read the diff.
 - A postplan URL is a stable public link the whole team, and the marker,
   can view without a GitHub login.
-- The visual explainer's dark/cyan design keeps every postplan looking
+- A shared dark theme with one accent colour keeps every postplan looking
   the same; only the subject changes.
 
 ## When to make one
@@ -31,39 +31,77 @@ Skip a postplan only for a purely trivial single-line fix (typo, obvious
 constant rename). If a reviewer needs any context beyond the diff, write
 a postplan.
 
-## What goes in the HTML
+## Setup
 
-Follow the visual-explainer skill in
-`C:/Users/bryan/OneDrive/01 SKILLS/.agents/skills/visual-explainer/` if you
-are running Kiro or Claude Code. Otherwise copy an existing postplan HTML
-from a prior PR and replace the subject.
+The workflow uses two tools:
 
-Required sections, in this order, each with a stable `id`:
+1. **A text editor** to author standalone HTML. Any editor works. Do
+   not use a scaffolder that adds external dependencies (CDN scripts,
+   remote fonts, iframes); the file must be single-page standalone.
+2. **The `postplan` CLI** to upload the finished HTML to a public URL.
+   Runs via `npx` on demand; nothing to install globally.
 
-- `id="overview"` — one visual (usually a diagram or a comparison figure)
-  and one sentence answering the question the PR poses.
+The repository ships one helper script:
+
+- `scripts/check_postplan_html.py` — a structural check that flags
+  missing sections, duplicate ids, external network dependencies, and
+  unrendered Mermaid containers.
+
+No accounts or paid services are required. Postplan drafts are free.
+
+## Author the HTML
+
+Start from an existing postplan file in the repository history
+(look under any recent PR's diff for `artifacts/*.html`) and replace
+the subject, or write a fresh standalone HTML file.
+
+Required document structure, three top-level `<section>` anchors in
+this order:
+
+- `id="overview"` — one visual (usually a diagram or a comparison
+  figure) and one sentence answering the question the PR poses.
 - `id="details"` — the substantive evidence: tables, metrics, review
   findings, CI status. This is where the reader spends most of their
   time.
-- `id="next-steps"` — a short numbered list of what happens next. For a
-  feature PR that is usually "merge, then update Jira". For a review PR
-  it is usually a merge path.
+- `id="next-steps"` — a short numbered list of what happens next. For
+  a feature PR that is usually "merge, then update Jira". For a review
+  PR it is usually a merge path.
 
-Design tokens the skill enforces (do not invent new ones):
+Design conventions the check does not enforce but every postplan
+follows:
 
-- Background `#101418`, surface `#171D23`, accent `#67D4E8`.
-- `Segoe UI, system-ui, sans-serif` font stack.
-- One inline SVG diagram, drawn or rendered locally. Never a CDN script
-  or remote font.
+- Dark background, one accent colour, sans-serif system font stack.
+- One inline SVG diagram, drawn or rendered locally. No CDN scripts,
+  no remote fonts, no runtime `fetch` calls.
+- Every diagram carries a `<title>` and `<desc>` for screenreaders and
+  a plain-language caption for sighted readers.
 
-Verify structure with:
+## Verify the structure
+
+From the repository root, run:
 
 ```pwsh
-py -3 "C:\Users\bryan\OneDrive\01 SKILLS\.agents\skills\visual-explainer\scripts\check_html.py" artifacts/<slug>.html
+# Windows PowerShell
+py -3 scripts/check_postplan_html.py artifacts/<slug>.html
 ```
 
-The check flags missing sections, duplicate ids, external network
-dependencies, and unrendered Mermaid containers.
+```bash
+# macOS or Linux
+python3 scripts/check_postplan_html.py artifacts/<slug>.html
+```
+
+The check exits `0` on pass and prints the number of inline SVGs it
+found. Visually inspect the HTML in a browser after the check passes;
+the check does not verify layout or readability.
+
+Common check failures:
+
+- `Missing document section: <id>` — add the required section anchor.
+- `External script dependency` or `External stylesheet/preload
+  dependency` — replace the CDN reference with inline CSS or SVG.
+- `Unrendered Mermaid container` — render the Mermaid source to SVG
+  locally and paste the SVG inline. Keep the Mermaid source in a
+  `<details>` element beside the SVG for future editing.
 
 ## Naming and location
 
@@ -75,7 +113,7 @@ dependencies, and unrendered Mermaid containers.
   - `sprint1-wrapup.html`
   - `scrum-93-verification-flow.html`
 
-## Uploading and posting
+## Upload and post
 
 Upload the file to postplan:
 
