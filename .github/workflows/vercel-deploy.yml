@@ -1,0 +1,122 @@
+name: Vercel Deploy
+
+# Full-fidelity mirror of Vercel's build and deploy inside GitHub Actions.
+# The Vercel dashboard is a paid-seat resource; this workflow surfaces the
+# same deploy log inside Actions where every collaborator can read it,
+# including deploy-time errors (missing env vars, function-count limits,
+# output-directory mismatches) that the doc-only mirror in
+# application-checks.yml does not catch.
+#
+# Uses three secrets, all set on the repo:
+#   VERCEL_TOKEN       Vercel personal access token, rotate via Vercel dashboard
+#   VERCEL_ORG_ID      Vercel team id (theprawnvercel)
+#   VERCEL_PROJECT_ID  Vercel project id (sgconnectsphere)
+#
+# Runs twice per event on purpose during the trial period: Vercel's own
+# git integration continues to deploy in parallel so we can compare outputs.
+# Once this workflow proves reliable, disable the git integration in the
+# Vercel dashboard so Actions becomes the single deploy path.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+
+permissions:
+  # Only need to read the repo; the workflow authenticates to Vercel
+  # with the token, not the ambient GITHUB_TOKEN.
+  contents: read
+  # Allow posting a summary comment on PRs when the preview URL is ready.
+  pull-requests: write
+
+concurrency:
+  # One deploy at a time per branch to avoid stacking preview builds.
+  group: vercel-deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  vercel-deploy:
+    name: vercel-deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        # Node 22 matches Vercel's default runtime for this project.
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Vercel CLI
+        # Pinned to the CLI major so a breaking release does not silently
+        # change deploy behaviour. Bump deliberately when Vercel announces
+        # a new major.
+        run: npm install --global vercel@59
+
+      - name: Pull Vercel environment
+        # Downloads the env vars and framework preset for the target
+        # environment. Emits .vercel/project.json and .vercel/.env.<env>.local.
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          else
+            vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          fi
+
+      - name: Build with Vercel
+        # Runs the same build Vercel runs inside its own edge builders.
+        # Any Vercel-specific error (bundle > 100MB, function count over
+        # 12, wrong output directory) surfaces here.
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            vercel build --prod --token=$VERCEL_TOKEN
+          else
+            vercel build --token=$VERCEL_TOKEN
+          fi
+
+      - name: Deploy prebuilt artifact to Vercel
+        id: deploy
+        # Uploads the .vercel/output directory produced by `vercel build`
+        # and creates a deployment. Prints the deployment URL on stdout.
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            URL=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
+          else
+            URL=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Deployment URL: $URL"
+          echo "## Vercel deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: $URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Trigger: ${{ github.event_name }} on ${{ github.ref }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Comment preview URL on the PR
+        # Only fires for PR events, and only when the deploy step succeeded.
+        if: github.event_name == 'pull_request' && steps.deploy.outputs.url != ''
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const url = '${{ steps.deploy.outputs.url }}';
+            const marker = '<!-- vercel-deploy-preview -->';
+            const body = `${marker}\n**Vercel preview** &mdash; ${url}\n\nBuilt from ${context.sha.slice(0, 7)} via GitHub Actions using the token-backed workflow. Same deploy Vercel would run on its own; error output is in the Actions log.`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.startsWith(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
