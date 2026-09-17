@@ -182,7 +182,7 @@ Given I sign up through the public form When my account is created Then it holds
 
 - **Sprint**: Sprint 1
 - **Points**: 3
-- **BDR references**: C-26, T-09
+- **BDR references**: C-26, T-09, T-52, T-53, T-54, T-55
 - **Owner**: xiang ying / ji ning
 
 ### User story
@@ -201,17 +201,17 @@ Given I have deactivated my account When ConnectSphere views an event I was link
 
 #### Scenario 3 — Upcoming registration released
 
-Given I am an Attendee registered for an upcoming event When I deactivate Then my registration is withdrawn and the place is released
+Given I am an Attendee registered for an upcoming event (an event whose start timestamp is in the future) When I deactivate Then my registration is withdrawn and the place is released, and this applies to both `registered` and `waitlisted` entries, and deactivation overrides the E09-S05 `withdrawal_deadline` (see T-53, T-54, T-55)
 
 #### Scenario 4 — Coordinator with events blocked
 
-Given I am an Event Coordinator with events assigned to me When I attempt to deactivate Then deactivation is blocked until those events are reassigned
+Given I am an Event Coordinator with events assigned to me in an active-lifecycle status (Submitted, Under review, Clarification requested, Approved, Planning, or Confirmed) When I attempt to deactivate Then deactivation is blocked until those events are reassigned, while events in Completed, Cancelled, or Rejected status do not block deactivation (see T-52)
 
 ### Checklist
 
 - Deactivate my own account and be signed out immediately
 - Be unable to sign in afterwards
 - Have my historical event and registration records retained and still attributed
-- Have upcoming registrations released on deactivation (Attendees)
-- Be blocked from deactivating while I still hold assigned events (Coordinators)
+- Have upcoming registrations (event start in the future) released on deactivation, including waitlisted entries, overriding the E09-S05 withdrawal deadline (Attendees; T-53, T-54, T-55)
+- Be blocked from deactivating while I hold any event in an active-lifecycle status (Submitted through Confirmed); events in Completed, Cancelled, or Rejected do not block (Coordinators; T-52)
 - Have the deactivation recorded in the activity log with actor and time

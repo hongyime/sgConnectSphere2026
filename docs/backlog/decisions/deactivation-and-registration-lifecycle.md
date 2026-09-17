@@ -7,6 +7,23 @@ resolution should live once accepted. The recommendations are safe conservative
 defaults for Sprint 1; anything more permissive should be a deliberate team
 decision.
 
+## Status — accepted 2026-09-17
+
+All four defaults were accepted by Bryan on 2026-09-17 and promoted to team
+decisions T-52 through T-55 in `docs/bdr/B-team-decisions.md`. The affected
+acceptance criteria on E01-S11 were amended in the same PR, and test case
+`TC_E01S11_04` was updated to reflect the explicit status list.
+
+| Question | Accepted as | Amends |
+| --- | --- | --- |
+| Q1 Coordinator blocking on active-lifecycle statuses only | [T-52](../../bdr/B-team-decisions.md) | E01-S11 Scenario 4, `TC_E01S11_04` |
+| Q2 Upcoming means event start in the future | [T-53](../../bdr/B-team-decisions.md) | E01-S11 Scenario 3 |
+| Q3 Deactivation overrides the E09-S05 withdrawal deadline | [T-54](../../bdr/B-team-decisions.md) | E01-S11 Scenario 3, E09-S05 (cross-reference) |
+| Q4 Waitlisted registrations are withdrawn too | [T-55](../../bdr/B-team-decisions.md) | E01-S11 Scenario 3 |
+
+This file is retained as the record of the options considered and why each
+default was chosen; the canonical decisions live in the BDR.
+
 Every entry below should end up as either a **T-XX team decision** (if the
 team accepts the default) or an **O-XX open assumption** (if we want to defer
 to a customer clarification) in the Backlog Decision Review document, per the

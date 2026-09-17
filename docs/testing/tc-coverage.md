@@ -7,8 +7,8 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **24** (10.4%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **203** (88.3%)
+- Automated (explicit TC_ID in an active test title): **44** (19.1%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **183** (79.6%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -16,9 +16,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 15 | 17 | 0 |
-| E02 | 13 | 2 | 11 | 0 |
+| E02 | 13 | 7 | 6 | 0 |
 | E03 | 26 | 2 | 24 | 0 |
-| E05 | 24 | 0 | 24 | 0 |
+| E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
@@ -27,7 +27,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **24** | **203** | **3** |
+| **Total** | **230** | **44** | **183** | **3** |
 
 ## Case-by-case status
 
@@ -74,11 +74,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E02S01_01` | E02-S01 | Verify that submitting a request with every mandatory field complete should set  | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser |
-| `TC_E02S01_02` | E02-S01 | Verify that submitting with any mandatory field empty should be blocked with eve | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified |
-| `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
-| `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
-| `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
+| `TC_E02S01_01` | E02-S01 | Verify that submitting a request with every mandatory field complete should set  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser |
+| `TC_E02S01_02` | E02-S01 | Verify that submitting with any mandatory field empty should be blocked with eve | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified |
+| `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
+| `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
+| `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
 | `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators; tests/e2e/organiser.spec.ts: TC_E02S02_01  |
 | `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values; tests/e2e/organiser.spec.ts: TC_E02S02_02 — request list fil |
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
@@ -123,21 +123,21 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E05S01_01` | E05-S01 | Verify that saving a new venue with its full details should make it searchable b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_01 - Verify that saving a new venue with its full details should make it searchable by Event Coordinators |
-| `TC_E05S01_02` | E05-S01 | Verify that reducing a venue's capacity below a confirmed booking's expected att | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_02 - Verify that reducing a venue |
-| `TC_E05S01_03` | E05-S01 | Verify that retiring a venue with no future bookings should remove it from searc | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_03 - Verify that retiring a venue with no future bookings should remove it from search results while keeping its past bookings |
-| `TC_E05S01_04` | E05-S01 | Verify that attempting to retire a venue with future bookings should be blocked  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_04 - Verify that attempting to retire a venue with future bookings should be blocked with those bookings identified |
-| `TC_E05S01_05` | E05-S01 | Verify that updating an existing venue's attributes should save the changes | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_05 - Verify that updating an existing venue |
-| `TC_E05S01_06` | E05-S01 | Verify that reducing venue capacity one below the booked expected attendance fla | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_06 - Verify that reducing venue capacity one below the booked expected attendance flags the booking |
-| `TC_E05S01_07` | E05-S01 | Verify that reducing venue capacity to exactly the booked expected attendance do | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S01_07 - Verify that reducing venue capacity to exactly the booked expected attendance does not flag the booking |
-| `TC_E05S02_01` | E05-S02 | Verify that adding a supported layout with its maximum capacity should store it  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_01 - Verify that adding a supported layout with its maximum capacity should store it against the venue |
-| `TC_E05S02_02` | E05-S02 | Verify that a venue whose layout capacity is below a event's required attendance | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_02 - Verify that a venue whose layout capacity is below a event |
-| `TC_E05S02_03` | E05-S02 | Verify that attempting to add a layout that already exists on the venue should b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_03 - Verify that attempting to add a layout that already exists on the venue should be warned without creating a duplicate |
-| `TC_E05S02_04` | E05-S02 | Verify that venue Staff should be able to view all layouts supported by a venue  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_04 - Verify that venue Staff should be able to view all layouts supported by a venue and their maximum capacities |
-| `TC_E05S02_05` | E05-S02 | Verify that editing the maximum capacity of an existing layout should save the u | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_05 - Verify that editing the maximum capacity of an existing layout should save the updated value |
-| `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_06 - Verify that removing a layout no longer offered at the venue should delete it from the venue |
-| `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_07 - Verify that a layout whose capacity exactly equals event attendance is treated as suitable |
-| `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S02_08 - Verify that a layout one place short of event attendance is excluded or marked unsuitable |
+| `TC_E05S01_01` | E05-S01 | Verify that saving a new venue with its full details should make it searchable b | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_02` | E05-S01 | Verify that reducing a venue's capacity below a confirmed booking's expected att | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_03` | E05-S01 | Verify that retiring a venue with no future bookings should remove it from searc | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_04` | E05-S01 | Verify that attempting to retire a venue with future bookings should be blocked  | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_05` | E05-S01 | Verify that updating an existing venue's attributes should save the changes | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_06` | E05-S01 | Verify that reducing venue capacity one below the booked expected attendance fla | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S01_07` | E05-S01 | Verify that reducing venue capacity to exactly the booked expected attendance do | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_01` | E05-S02 | Verify that adding a supported layout with its maximum capacity should store it  | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_02` | E05-S02 | Verify that a venue whose layout capacity is below a event's required attendance | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_03` | E05-S02 | Verify that attempting to add a layout that already exists on the venue should b | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_04` | E05-S02 | Verify that venue Staff should be able to view all layouts supported by a venue  | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_05` | E05-S02 | Verify that editing the maximum capacity of an existing layout should save the u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
+| `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_01 - Verify that opening a venue |
 | `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event |
 | `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar |
@@ -331,6 +331,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
 
+### `backend/tests/eventLifecycle.test.ts`
+
+- a request with all ten mandatory fields complete is submitted
+- every missing mandatory field is named, not just the first one
+- a preferred date in the past is blocked with an explanation
+- an empty equipment/layout/registration field without
+- an end time at or before the start time is rejected
+- a non-positive or non-integer expected attendance is reported as missing
+- an empty HTTP request reports all ten mandatory fields without writing
+
 ### `backend/tests/eventVisibility.integration.test.ts`
 
 - E01-S02: organisation isolation, colleagues, search, audit and notification delivery
@@ -377,10 +387,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
 
-### `backend/tests/venueCatalogue.integration.test.ts`
-
-- E05-S01: venue catalogue create/update/retire against real PostgreSQL
-
 ### `backend/tests/venueCatalogue.test.ts`
 
 - validateVenueInput rejects a non-object submission
@@ -393,6 +399,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - read operations reject unauthorised viewers before querying the database
 - mutating operations reject anyone but venue staff before opening a transaction
 - createVenue reports validation errors without opening a transaction
+- addVenueLayout rejects unauthorised callers before opening a transaction
+- addVenueLayout reports validation errors without opening a transaction
+- updateVenueLayout and removeVenueLayout reject unauthorised callers before opening a transaction
+- updateVenueLayout reports validation errors without opening a transaction
+- searchVenues excludes venues whose matching layout capacity is below the required attendance, boundary at exactly-equal
+- searchVenues finds a suitable venue even when it ranks alphabetically past the first 100 name matches
+- searchVenues caps at 100 results drawn from the suitable venues, not the raw name matches
 
 ### `backend/tests/verificationEmail.test.ts`
 
@@ -414,6 +427,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - submits the four required fields as JSON and shows the success message on 201
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
+
+### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
+
+- sends all request fields and confirms API success
+- a failed session lookup reports an error and allows retry
+- API validation errors show all returned fields without claiming success
 
 ### `tests/e2e/admin.spec.ts`
 
