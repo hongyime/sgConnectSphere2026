@@ -253,6 +253,27 @@ test(
     // never match a Theatre search, regardless of attendance.
     const noTheatreLayout = await searchVenues(query, coordinatorUser, '', 'Theatre', 1);
     assert.ok(!noTheatreLayout.some(venue => venue.id === boundaryVenue.id));
+
+    // Scenario 10 (regression): a suitable venue must still be found even
+    // when the name search matches more than 100 active venues. An earlier
+    // version of searchVenues fetched only the first 100 name-sorted rows
+    // via SQL and filtered THAT page for suitability in JavaScript, so a
+    // suitable venue ranked past the 100th name match was silently dropped
+    // by the LIMIT before its capacity was ever checked. Inserted directly
+    // (not via createVenue) so this proves the actual SQL join, not a JS
+    // simulation of it.
+    const theatreLayoutId = (await db.query(`SELECT id FROM room_layouts WHERE code = 'theatre'`)).rows[0].id;
+    const overflowTotal = 101;
+    for (let i = 1; i <= overflowTotal; i++) {
+      const venueId = randomUUID();
+      await db.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at)
+        VALUES ($1, $2, 'Test wing', 500, '08:00', '22:00')`, [venueId, `Overflow Venue ${String(i).padStart(3, '0')}`]);
+      // Only the alphabetically-last (101st) venue can actually seat 200.
+      await db.query(`INSERT INTO venue_supported_layouts (venue_id, layout_id, capacity) VALUES ($1, $2, $3)`,
+        [venueId, theatreLayoutId, i === overflowTotal ? 300 : 50]);
+    }
+    const overflowMatches = await searchVenues(query, coordinatorUser, 'Overflow Venue', 'Theatre', 200);
+    assert.deepEqual(overflowMatches.map(venue => venue.name), ['Overflow Venue 101']);
   } finally {
     if (pool) await pool.end();
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
