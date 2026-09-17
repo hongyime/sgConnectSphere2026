@@ -14,7 +14,11 @@ export type EventRecord = {
   endAt?: Date;
   expectedAttendance?: number;
   layoutId?: string;
+  venueRequirements?: string;
   accessibilityNote?: string;
+  equipmentRequirements?: string;
+  layoutPreference?: string;
+  registrationSetup?: string;
 };
 
 export type StatusChangeRequest = {
@@ -35,5 +39,9 @@ export type CreateEventRequest = {
   endAt: Date;
   expectedAttendance: number;
   layoutId?: string;
+  venueRequirements?: string;
   accessibilityNote?: string;
+  equipmentRequirements?: string;
+  layoutPreference?: string;
+  registrationSetup?: string;
 };

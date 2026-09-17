@@ -13,15 +13,14 @@ npm run typecheck --workspace frontend
 npm run build --workspace frontend
 ```
 
-The current UI is a high-fi Batch 5 prototype shell that visualises the breadth
-of planned ConnectSphere screens across desktop and mobile companion layouts.
-It uses static mock data from the product/design docs so the team can review
-screen coverage before implementing real workflow logic.
+The current UI is the SG ConnectSphere Release 1 application shell. It opens on
+the first working request-to-submit slice, with the full screen map retained as
+reference coverage across desktop and mobile companion layouts.
 
-Use the `Organiser flow` switch in the prototype to review the first working
-frontend slice: create event request, validate mandatory fields, save draft, and
-submit with a mock status timeline. Keep extending from this flow before adding
-backend persistence.
+Use the `Request flow` switch to review the organiser create-request path:
+validate mandatory fields, save draft, and submit with a mock status timeline.
+Use `Screen map` only when checking planned role coverage against the source
+documents and Figma plan.
 
 Keep server-only credentials out of frontend code. Browser-safe values should use
 the public names documented in `.env.template`.
