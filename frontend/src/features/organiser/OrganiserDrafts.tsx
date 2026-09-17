@@ -4,7 +4,7 @@
 // the SCRUM-27 task list.
 
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Pencil, Trash2 } from 'lucide-react';
 import { OrganiserRequestFlow } from './OrganiserRequestFlow';
 import './organiser.css';
@@ -173,7 +173,6 @@ export function OrganiserDraftEdit({
   getAccessToken: () => Promise<string | null>;
 }) {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [state, setState] = useState<EditState>({ status: 'loading' });
 
   useEffect(() => {
@@ -253,11 +252,13 @@ export function OrganiserDraftEdit({
   }
 
   return (
-    <OrganiserRequestFlow
-      getAccessToken={getAccessToken}
-      draftId={id}
-      initialValues={state.initialValues}
-      onSaved={() => navigate('/organiser/drafts')}
-    />
+    <>
+      <p className="organiser-footer"><Link to="/organiser/drafts">← Back to my drafts</Link></p>
+      <OrganiserRequestFlow
+        getAccessToken={getAccessToken}
+        draftId={id}
+        initialValues={state.initialValues}
+      />
+    </>
   );
 }

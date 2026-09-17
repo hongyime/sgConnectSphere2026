@@ -113,15 +113,6 @@ test('editing an existing draft PATCHes it instead of creating a new one', async
   expect(init.method).toBe('PATCH');
 });
 
-test('calls onSaved with the returned event id after saving a draft', async () => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-99' } }), { status: 201 })));
-  const onSaved = vi.fn();
-  render(<OrganiserRequestFlow getAccessToken={async () => 'test-token'} onSaved={onSaved} />);
-  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
-  await screen.findByText('Draft saved.');
-  expect(onSaved).toHaveBeenCalledWith('draft-99');
-});
-
 test('initialValues pre-fill the form for reopening a draft', () => {
   render(
     <OrganiserRequestFlow
