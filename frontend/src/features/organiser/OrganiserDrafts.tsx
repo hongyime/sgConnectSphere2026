@@ -2,6 +2,12 @@
 // (Scenario 2) that pre-fills OrganiserRequestFlow from a fetched draft.
 // A separate view from OrganiserRequestFlow, per the drafts-UI decision in
 // the SCRUM-27 task list.
+//
+// Post-ADR-015 auth: every fetch here uses `credentials: 'same-origin'` so
+// the session cookie set by /api/auth/session is sent automatically.
+// There is no offline/prototype path — a signed-out visitor sees a "Sign in
+// to see your drafts" error state, which matches the /organiser/drafts route
+// only being reachable after a successful login.
 
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
@@ -22,36 +28,28 @@ type ListState =
   | { status: 'loaded'; drafts: DraftSummary[] }
   | { status: 'error'; message: string };
 
-export function OrganiserDrafts({
-  getAccessToken,
-}: {
-  getAccessToken: () => Promise<string | null>;
-}) {
+export function OrganiserDrafts() {
   const [state, setState] = useState<ListState>({ status: 'loading' });
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
-    let accessToken: string | null;
-    try {
-      accessToken = await getAccessToken();
-    } catch {
-      setState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
-      return;
-    }
-
-    if (!accessToken) {
-      setState({ status: 'error', message: 'Sign in to see your drafts.' });
-      return;
-    }
 
     let response: Response;
     try {
       response = await fetch('/api/events?mine=1&status=draft', {
-        headers: { authorization: `Bearer ${accessToken}` },
+        credentials: 'same-origin',
       });
     } catch {
       setState({ status: 'error', message: 'Drafts could not be loaded.' });
+      return;
+    }
+
+    if (response.status === 401) {
+      // Cookie missing or expired — the session middleware has told us to
+      // sign in. Match the pre-consolidation message so the UI copy is
+      // stable across the ADR-015 refactor.
+      setState({ status: 'error', message: 'Sign in to see your drafts.' });
       return;
     }
 
@@ -62,7 +60,7 @@ export function OrganiserDrafts({
 
     const body = await response.json().catch(() => null);
     setState({ status: 'loaded', drafts: Array.isArray(body?.events) ? body.events : [] });
-  }, [getAccessToken]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -75,13 +73,9 @@ export function OrganiserDrafts({
 
     setDeletingId(id);
     try {
-      const accessToken = await getAccessToken();
-      if (!accessToken) {
-        return;
-      }
       await fetch(`/api/events?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
-        headers: { authorization: `Bearer ${accessToken}` },
+        credentials: 'same-origin',
       });
     } finally {
       setDeletingId(null);
@@ -167,11 +161,7 @@ type EditState =
       };
     };
 
-export function OrganiserDraftEdit({
-  getAccessToken,
-}: {
-  getAccessToken: () => Promise<string | null>;
-}) {
+export function OrganiserDraftEdit() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<EditState>({ status: 'loading' });
 
@@ -184,26 +174,18 @@ export function OrganiserDraftEdit({
         return;
       }
 
-      let accessToken: string | null;
-      try {
-        accessToken = await getAccessToken();
-      } catch {
-        if (!cancelled) setState({ status: 'error', message: 'Your session could not be checked. Please try again.' });
-        return;
-      }
-
-      if (!accessToken) {
-        if (!cancelled) setState({ status: 'error', message: 'Sign in to view this draft.' });
-        return;
-      }
-
       let response: Response;
       try {
         response = await fetch(`/api/events?mine=1&id=${encodeURIComponent(id)}`, {
-          headers: { authorization: `Bearer ${accessToken}` },
+          credentials: 'same-origin',
         });
       } catch {
         if (!cancelled) setState({ status: 'error', message: 'The draft could not be loaded.' });
+        return;
+      }
+
+      if (response.status === 401) {
+        if (!cancelled) setState({ status: 'error', message: 'Sign in to view this draft.' });
         return;
       }
 
@@ -241,7 +223,7 @@ export function OrganiserDraftEdit({
     return () => {
       cancelled = true;
     };
-  }, [id, getAccessToken]);
+  }, [id]);
 
   if (state.status === 'loading') {
     return <main className="organiser-page"><p role="status">Loading draft…</p></main>;
@@ -254,11 +236,7 @@ export function OrganiserDraftEdit({
   return (
     <>
       <p className="organiser-footer"><Link to="/organiser/drafts">← Back to my drafts</Link></p>
-      <OrganiserRequestFlow
-        getAccessToken={getAccessToken}
-        draftId={id}
-        initialValues={state.initialValues}
-      />
+      <OrganiserRequestFlow draftId={id} initialValues={state.initialValues} />
     </>
   );
 }
