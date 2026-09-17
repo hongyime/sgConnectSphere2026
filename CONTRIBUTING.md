@@ -113,6 +113,12 @@ missing condition is resolved.
 - Review and stage intended files; keep credentials, `.env`, dependency folders,
   build outputs, and local databases out of Git. Commit placeholder `.env.template`
   files when configuration is known, plus dependency lockfiles and migrations.
+- Every PR gets a **postplan**: a small standalone HTML review uploaded to
+  `postplan.dev` and linked as a top-level PR comment. See
+  [creating a postplan](docs/contributing/creating-a-postplan.md) for the full
+  workflow. Reviewers can skim the shape of a change and its evidence without
+  opening the diff, which matters most when a teammate is reviewing outside
+  their usual scope.
 - Keep frontend and backend configuration separate. Anything bundled into the
   frontend is public; private credentials belong on the server.
 - Keep real secrets out of Git. Document safe placeholder names in `.env.template`
