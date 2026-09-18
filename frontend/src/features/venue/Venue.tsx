@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, Building2, CalendarClock, CheckCircle2 } from 'lucide-react';
 import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
+import { listVenues, retireVenue, type BlockingBooking, type Venue } from './venueApi';
 import './venue.css';
 
 const statusTone: Record<BookingStatus, string> = {
@@ -47,26 +48,109 @@ export function VenueDashboard() {
   );
 }
 
+type VenueListState =
+  | { status: 'loading' }
+  | { status: 'loaded'; venues: Venue[] }
+  | { status: 'error'; message: string };
+
 export function VenueInventory() {
+  const [state, setState] = useState<VenueListState>({ status: 'loading' });
+  const [retiringId, setRetiringId] = useState<string | null>(null);
+  const [blockedRetire, setBlockedRetire] = useState<Record<string, BlockingBooking[]>>({});
+
+  const load = useCallback(async () => {
+    setState({ status: 'loading' });
+    const result = await listVenues();
+    setState(result.ok ? { status: 'loaded', venues: result.venues } : { status: 'error', message: result.message });
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleRetire = async (venue: Venue) => {
+    if (!window.confirm(`Retire "${venue.name}"? It will no longer be searchable.`)) return;
+    setRetiringId(venue.id);
+    const result = await retireVenue(venue.id);
+    setRetiringId(null);
+
+    if (!result.ok) {
+      window.alert(result.message);
+      return;
+    }
+    if (!result.retired) {
+      setBlockedRetire((current) => ({ ...current, [venue.id]: result.blockingBookings }));
+      return;
+    }
+    setBlockedRetire((current) => {
+      const { [venue.id]: _dropped, ...rest } = current;
+      return rest;
+    });
+    await load();
+  };
+
   return (
     <main className="venue-page">
       <header className="venue-heading">
         <p className="eyebrow">Venue staff</p>
         <h1>Venue inventory</h1>
       </header>
-      <section className="venue-cards" aria-label="Venue catalogue">
-        {venues.map(venue => (
-          <article key={venue.id}>
-            <header>
-              <strong>{venue.name}</strong>
-              <span className={`status-pill status-${venue.status === 'Available' ? 'success' : 'warning'}`}>{venue.status}</span>
-            </header>
-            <p>Capacity: {venue.capacity} · Layouts: {venue.layouts.join(', ')}</p>
-            <p><em>Facilities:</em> {venue.facilities.join(', ')}</p>
-            <p><em>Accessibility:</em> {venue.accessibility.join(', ')}</p>
-          </article>
-        ))}
-      </section>
+
+      <p className="venue-footer">
+        <Link to="/venue/inventory/new" className="primary-action">Add venue</Link>
+      </p>
+
+      {state.status === 'loading' ? <p role="status">Loading venues…</p> : null}
+      {state.status === 'error' ? (
+        <div role="alert" className="login-error">
+          {state.message}{' '}
+          <button type="button" className="secondary-action" onClick={load}>Try again</button>
+        </div>
+      ) : null}
+
+      {state.status === 'loaded' ? (
+        state.venues.length === 0 ? (
+          <p>No venues yet. Add one to get started.</p>
+        ) : (
+          <section className="venue-cards" aria-label="Venue catalogue">
+            {state.venues.map((venue) => (
+              <article key={venue.id}>
+                <header>
+                  <strong>{venue.name}</strong>
+                </header>
+                <p>{venue.location} · {venue.opens_at}–{venue.closes_at}</p>
+                <p>
+                  Capacity: {venue.max_capacity} · Layouts:{' '}
+                  {venue.supported_layouts.map((layout) => `${layout.label} (${layout.capacity})`).join(', ')}
+                </p>
+                <p><em>Facilities:</em> {venue.facilities.join(', ')}</p>
+                <p><em>Accessibility:</em> {venue.accessibility_features.join(', ')}</p>
+                {blockedRetire[venue.id] ? (
+                  <div role="alert" className="venue-alert-block">
+                    <AlertTriangle size={16} aria-hidden="true" /> Cannot retire — future bookings exist:
+                    <ul>
+                      {blockedRetire[venue.id].map((booking) => (
+                        <li key={`${booking.eventCode}-${booking.startsAt}`}>
+                          {booking.title} ({booking.eventCode ?? 'no code'}) — {new Date(booking.startsAt).toLocaleString()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                <div className="venue-card-actions">
+                  <Link to={`/venue/inventory/${venue.id}/edit`} className="secondary-action">Edit</Link>
+                  <button
+                    type="button" className="secondary-action" disabled={retiringId === venue.id}
+                    onClick={() => handleRetire(venue)}
+                  >
+                    {retiringId === venue.id ? 'Retiring…' : 'Retire'}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </section>
+        )
+      ) : null}
     </main>
   );
 }
