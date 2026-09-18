@@ -15,6 +15,7 @@ export function ProfileForm() {
   const [signIn, setSignIn] = useState(false);
   const [revision, setRevision] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [deactivateMessage, setDeactivateMessage] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setBusy(true); setErrors({});
@@ -69,8 +70,19 @@ export function ProfileForm() {
           aria-invalid={Boolean(errors[field.name])} aria-describedby={`${field.name}-errors`} />
         <div id={`${field.name}-errors`} aria-live="polite">{errors[field.name]?.map(message => <p key={message}>{message}</p>)}</div>
       </div>)}
-      {profile.organisation_name && <p>Organisation: {profile.organisation_name}</p>}
+      {profile.organisation_name && (
+        <div className="profile-organisation">
+          <p>Organisation: {profile.organisation_name}</p>
+          <small className="profile-hint">Organisation changes require admin approval — contact your Coordinator to update this.</small>
+        </div>
+      )}
       <button className="primary-action" disabled={busy}>Save profile</button>
     </form> : !busy && <button onClick={() => setRevision(value => value + 1)}>Try again</button>}
+    {profile && !signIn && <section className="profile-danger-zone">
+      <h2>Deactivate account</h2>
+      <p>Deactivating your account signs you out and stops you from using ConnectSphere, while your historical records are retained.</p>
+      <button type="button" className="profile-danger-button" onClick={() => setDeactivateMessage(true)}>Deactivate account</button>
+      {deactivateMessage && <p role="status" className="profile-hint">This feature isn't available yet. Contact your Coordinator or Administrator if you need your account deactivated.</p>}
+    </section>}
   </main>;
 }
