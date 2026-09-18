@@ -98,6 +98,21 @@ for (const [path, method, expected, expectedError] of [
   });
 }
 
+// GET ?mine=1 dispatches to handleGetMine instead of the default browse
+// branch. Both go through currentUser() (post-ADR-015 unified cookie auth)
+// and throw AccessError(401, 'Sign in to continue.') when the cookie is
+// missing, so the response shape matches the default GET row above. Value
+// of a dedicated row: proves the query-param dispatch does not skip auth
+// before hitting handleGetMine's requireOrganiserWithClient() and does not
+// invoke a provider before the guard trips. Matches the runtime-shape
+// contract other query-param variants use (see the outbox-relay
+// ?task=worker rewrite test below).
+test('compiled api/events.js rejects GET ?mine=1 without a session', () => {
+  const response = invoke('api/events.js', 'GET', { url: '/api/events?mine=1' });
+  assert.equal(response.status, 401);
+  assert.equal(response.body.error, 'Sign in to continue.');
+});
+
 const internal = { headers: { authorization: 'Bearer synthetic-internal-credential' } };
 const internalEnvironment = { CRON_SECRET: 'synthetic-internal-credential' }; // pragma: allowlist secret - isolated test process only
 for (const [path, error, request] of [
