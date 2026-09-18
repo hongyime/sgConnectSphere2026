@@ -7,8 +7,23 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { OrganiserRequestFlow } from './OrganiserRequestFlow';
 
+// E02-S03: every non-prototype render fetches the predefined accessibility
+// checklist on mount. Default to an empty list here so tests that don't
+// care about it never hit a real network call; tests that do care override
+// global fetch themselves and must route this URL too.
+function accessibilityFeaturesResponse(features: Array<{ id: string; code: string; label: string }> = []) {
+  return new Response(JSON.stringify({ features }), { status: 200 });
+}
+
+// Narrower than the DOM's own RequestInit (whose headers/body are optional
+// unions) - every fetch call this component makes always passes all three,
+// so typing the mock's second parameter this way avoids fighting
+// unnecessary undefined-narrowing on every assertion below.
+type FetchInit = { method?: string; credentials: string; headers: Record<string, string>; body: string };
+
 beforeEach(() => {
   vi.spyOn(Date, 'now').mockReturnValue(new Date('2026-09-10T00:00:00Z').getTime());
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => accessibilityFeaturesResponse()));
 });
 afterEach(() => {
   cleanup();
@@ -33,13 +48,16 @@ for (const value of ['0', '-1', '1.5']) {
 }
 
 test('sends all request fields with same-origin credentials and confirms API success', async () => {
-  const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 201 }));
+  const fetchMock = vi.fn(async (url: string, _init: FetchInit) => (
+    url.includes('accessibilityFeatures') ? accessibilityFeaturesResponse() : new Response('{}', { status: 201 })
+  ));
   vi.stubGlobal('fetch', fetchMock);
   completeForm();
   fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
   expect(await screen.findByText('Persisted through API and submitted to coordinator queue')).toBeVisible();
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  const [url, init] = fetchMock.mock.calls[0];
+  const eventsCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/events');
+  expect(eventsCalls).toHaveLength(1);
+  const [url, init] = eventsCalls[0];
   expect(url).toBe('/api/events');
   // Post-ADR-015: no Authorization header. Cookie is sent automatically
   // for a same-origin fetch; the explicit credentials value documents intent.
@@ -55,6 +73,7 @@ test('sends all request fields with same-origin credentials and confirms API suc
     expectedAttendance: 180,
     venueRequirements: 'Seminar room with theatre seating',
     accessibilityNote: 'Wheelchair access and front-row reserved seats',
+    accessibilityFeatureIds: [],
     equipmentRequirements: 'none_required', layoutPreference: 'none_required', registrationSetup: 'none_required',
   });
 });
@@ -82,7 +101,11 @@ test('API validation errors show all returned fields without claiming success', 
 // --- SCRUM-27: save/reopen/edit a draft ---
 
 test('Save draft is enabled with optional fields incomplete, and saves as a draft', async () => {
-  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 201 }));
+  const fetchMock = vi.fn(async (url: string, _init: FetchInit) => (
+    url.includes('accessibilityFeatures')
+      ? accessibilityFeaturesResponse()
+      : new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 201 })
+  ));
   vi.stubGlobal('fetch', fetchMock);
   render(<OrganiserRequestFlow />);
 
@@ -94,8 +117,9 @@ test('Save draft is enabled with optional fields incomplete, and saves as a draf
 
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   expect(await screen.findByText('Draft saved.')).toBeVisible();
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  const [url, init] = fetchMock.mock.calls[0];
+  const eventsCalls = fetchMock.mock.calls.filter(([url]) => url === '/api/events');
+  expect(eventsCalls).toHaveLength(1);
+  const [url, init] = eventsCalls[0];
   expect(url).toBe('/api/events');
   expect(init.method).toBe('POST');
   expect(init.credentials).toBe('same-origin');
@@ -111,12 +135,16 @@ test('Save draft is disabled without a title, attendance, or dates', () => {
 });
 
 test('editing an existing draft PATCHes it instead of creating a new one', async () => {
-  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 200 }));
+  const fetchMock = vi.fn(async (url: string, _init: FetchInit) => (
+    url.includes('accessibilityFeatures')
+      ? accessibilityFeaturesResponse()
+      : new Response(JSON.stringify({ event: { id: 'draft-1' } }), { status: 200 })
+  ));
   vi.stubGlobal('fetch', fetchMock);
   render(<OrganiserRequestFlow draftId="draft-1" />);
   fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
   expect(await screen.findByText('Draft saved.')).toBeVisible();
-  const [url, init] = fetchMock.mock.calls[0];
+  const [url, init] = fetchMock.mock.calls.find(([callUrl]) => callUrl === '/api/events?id=draft-1')!;
   expect(url).toBe('/api/events?id=draft-1');
   expect(init.method).toBe('PATCH');
 });
@@ -150,4 +178,44 @@ test('prototype mode simulates submission without hitting the API', async () => 
   // Prototype path advances to "Submitted to coordinator queue" (no API text).
   expect(await screen.findByText('Submitted to coordinator queue')).toBeVisible();
   expect(fetchMock).not.toHaveBeenCalled();
+});
+
+// --- E02-S03: live-fetched predefined accessibility checklist ---
+
+test('the predefined accessibility checklist renders options fetched from the API, not a hardcoded list', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(accessibilityFeaturesResponse([
+    { id: 'f-1', code: 'wheelchair_access', label: 'Wheelchair access' },
+    { id: 'f-2', code: 'hearing_loop', label: 'Hearing loop' },
+  ])));
+  render(<OrganiserRequestFlow />);
+  expect(await screen.findByLabelText('Wheelchair access')).not.toBeChecked();
+  expect(screen.getByLabelText('Hearing loop')).not.toBeChecked();
+});
+
+test('selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note', async () => {
+  const fetchMock = vi.fn(async (url: string, _init: FetchInit) => (
+    url.includes('accessibilityFeatures')
+      ? accessibilityFeaturesResponse([{ id: 'f-1', code: 'wheelchair_access', label: 'Wheelchair access' }])
+      : new Response('{}', { status: 201 })
+  ));
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow />);
+  for (const label of ['Equipment requirements', 'Layout preference', 'Registration setup']) {
+    fireEvent.click(screen.getByLabelText(`${label}: none required`));
+  }
+
+  // Clearing the free-text field alone would block submission - proving the
+  // predefined checkbox satisfies "Accessibility needs" on its own (E02-S03).
+  fireEvent.change(screen.getByLabelText('Accessibility needs'), { target: { value: '' } });
+  expect(screen.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+
+  fireEvent.click(await screen.findByLabelText('Wheelchair access'));
+  expect(screen.getByRole('button', { name: 'Submit request' })).toBeEnabled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+  expect(await screen.findByText('Persisted through API and submitted to coordinator queue')).toBeVisible();
+  const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/events')!;
+  const body = JSON.parse(init.body);
+  expect(body.accessibilityNote).toBe('');
+  expect(body.accessibilityFeatureIds).toEqual(['f-1']);
 });
