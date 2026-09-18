@@ -71,6 +71,49 @@ test('validateVenueInput requires non-empty facility, accessibility and layout l
   assert.ok(validateVenueInput({ ...validBody(), supported_layouts: [{ capacity: 100 }] }).errors?.supported_layouts);
 });
 
+// Regression test for a real bug: submitting two layouts that normalize to
+// the same code (e.g. "Theatre" and "theatre") passed validation and only
+// failed later at the database, where the resulting primary-key violation
+// was misreported by createVenue as "venue name already in use" and left
+// completely unhandled (falling through to a 503) by updateVenue. Confirmed
+// against a live Supabase database before this fix, and again after.
+test('validateVenueInput rejects layouts that normalize to the same code, even with different casing or spacing', () => {
+  const exactDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Theatre', capacity: 200 }, { label: 'Theatre', capacity: 250 }],
+  });
+  assert.ok(exactDuplicate.errors?.supported_layouts);
+
+  const caseInsensitiveDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Banquet', capacity: 200 }, { label: 'BANQUET', capacity: 250 }],
+  });
+  assert.ok(caseInsensitiveDuplicate.errors?.supported_layouts);
+
+  const spacingVariantDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Board Room', capacity: 50 }, { label: 'board-room', capacity: 60 }],
+  });
+  assert.ok(spacingVariantDuplicate.errors?.supported_layouts);
+});
+
+// Same bug class as above, found in a follow-up audit: the duplicate-code
+// check was only ever added to supported_layouts, not generalised to the
+// shared stringList() helper that also builds facilities and
+// accessibility_features — both of which have the identical
+// venue_facilities/venue_accessibility_features primary-key collision shape.
+// Confirmed live against Supabase before and after this fix.
+test('validateVenueInput rejects facilities or accessibility features that normalize to the same code', () => {
+  const duplicateFacility = validateVenueInput({ ...validBody(), facilities: ['Stage', 'STAGE'] });
+  assert.ok(duplicateFacility.errors?.facilities);
+
+  const duplicateFeature = validateVenueInput({
+    ...validBody(),
+    accessibility_features: ['Wheelchair Access', 'wheelchair access'],
+  });
+  assert.ok(duplicateFeature.errors?.accessibility_features);
+});
+
 test('validateVenueInput trims text and accepts a fully valid submission', () => {
   const result = validateVenueInput({
     name: '  Grand Ballroom  ', location: ' 123 Marina Blvd ', max_capacity: 300,

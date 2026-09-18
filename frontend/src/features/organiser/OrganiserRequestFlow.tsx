@@ -37,6 +37,15 @@ type SubmitState =
   | { status: 'submitted'; persisted: boolean }
   | { status: 'error'; message: string; missingFields?: string[] };
 
+// SCRUM-27: a draft only ever requires these three (Option B - see the
+// SCRUM-27 task list). Mirrors the backend's ALWAYS_MANDATORY_KEYS in
+// backend/src/modules/eventLifecycle/service.ts.
+type DraftSaveState =
+  | { status: 'idle' }
+  | { status: 'saving' }
+  | { status: 'saved' }
+  | { status: 'error'; message: string; missingFields?: string[] };
+
 const initialDraft: DraftEvent = {
   eventName: 'Annual Sustainability Forum',
   description: 'A forum bringing together sustainability leads across the client organisation.',
@@ -67,6 +76,11 @@ const requiredFields: { key: FieldKey; label: string; optional?: boolean }[] = [
 
 function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[number]) {
   const value = draft[field.key].trim();
+  // A nonempty number input can still contain zero, a negative value, or a fraction.
+  // Match the API's positive-integer rule before enabling submission.
+  if (field.key === 'expectedAttendance') {
+    return Number.isInteger(Number(value)) && Number(value) > 0;
+  }
   if (field.optional && value === NONE_REQUIRED) {
     return true;
   }
@@ -75,6 +89,19 @@ function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[numbe
 
 function getMissingFields(draft: DraftEvent) {
   const missing = requiredFields.filter((field) => !isFieldComplete(draft, field)).map((field) => field.label);
+  if (!draft.startDate || !draft.endDate) {
+    missing.push('Preferred dates and times');
+  }
+  return missing;
+}
+
+const ALWAYS_MANDATORY_FIELD_KEYS: FieldKey[] = ['eventName', 'expectedAttendance'];
+
+// SCRUM-27 Option B: saving a draft only needs these three, not all ten.
+function getDraftMissingFields(draft: DraftEvent) {
+  const missing = requiredFields
+    .filter((field) => ALWAYS_MANDATORY_FIELD_KEYS.includes(field.key) && !isFieldComplete(draft, field))
+    .map((field) => field.label);
   if (!draft.startDate || !draft.endDate) {
     missing.push('Preferred dates and times');
   }
@@ -106,16 +133,32 @@ function toIsoLocal(value: string) {
 }
 
 export function OrganiserRequestFlow({
-  getAccessToken,
+  prototype = false,
+  draftId,
+  initialValues,
 }: {
-  getAccessToken: () => Promise<string | null>;
+  // When true, "Save draft" and "Submit request" simulate the state
+  // transition locally without hitting the API. Used by the /prototype
+  // demo route which is not attached to a real session.
+  prototype?: boolean;
+  // SCRUM-27: when set, "Save draft" and "Submit request" PATCH this
+  // existing draft instead of POSTing a new one.
+  draftId?: string;
+  // Pre-fills the form when reopening a draft. Omitted (the common case,
+  // e.g. /organiser/new-request) keeps the existing example-filled defaults.
+  initialValues?: Partial<DraftEvent>;
 }) {
-  const [draft, setDraft] = useState(initialDraft);
+  const [draft, setDraft] = useState<DraftEvent>(() => ({ ...initialDraft, ...initialValues }));
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
+  const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>({ status: 'idle' });
   const missingFields = useMemo(() => getMissingFields(draft), [draft]);
+  const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
   const pastDate = isPastDate(draft);
   const canSubmit = missingFields.length === 0 && !invalidDateRange && !pastDate;
+  // SCRUM-27 Option B: a draft only needs title/dates/attendance valid, not
+  // every mandatory field - matches the backend's relaxed validation.
+  const canSaveDraft = draftMissingFields.length === 0 && !invalidDateRange && !pastDate;
   const submitted = submitState.status === 'submitted';
 
   const setNoneRequired = (key: OptionalField, checked: boolean) => {
@@ -128,19 +171,21 @@ export function OrganiserRequestFlow({
     }
 
     setSubmitState({ status: 'submitting' });
-    const accessToken = await getAccessToken();
 
-    if (!accessToken) {
+    // Prototype mode simulates the state transition without touching the
+    // network. The /prototype route uses this so it can demo the flow
+    // without a real session cookie.
+    if (prototype) {
       setSubmitState({ status: 'submitted', persisted: false });
       return;
     }
 
     let response: Response;
     try {
-      response = await fetch('/api/events', {
-        method: 'POST',
+      response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
+        method: draftId ? 'PATCH' : 'POST',
+        credentials: 'same-origin',
         headers: {
-          authorization: `Bearer ${accessToken}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
@@ -182,6 +227,66 @@ export function OrganiserRequestFlow({
     }
 
     setSubmitState({ status: 'submitted', persisted: true });
+  };
+
+  const saveDraft = async () => {
+    if (!canSaveDraft || draftSaveState.status === 'saving') {
+      return;
+    }
+
+    setDraftSaveState({ status: 'saving' });
+
+    if (prototype) {
+      // In the offline demo the draft has nowhere to persist; report a
+      // clear "sign in first" state instead of leaving the form pretending
+      // to have saved.
+      setDraftSaveState({ status: 'error', message: 'Sign in to save a draft.' });
+      return;
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(draftId ? `/api/events?id=${encodeURIComponent(draftId)}` : '/api/events', {
+        method: draftId ? 'PATCH' : 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: draft.eventName,
+          description: draft.description,
+          purpose: draft.purpose,
+          status: 'draft',
+          startAt: toIsoLocal(draft.startDate),
+          endAt: toIsoLocal(draft.endDate),
+          expectedAttendance: Number(draft.expectedAttendance),
+          venueRequirements: draft.venueRequirements,
+          accessibilityNote: draft.accessibilityNeeds,
+          equipmentRequirements: draft.equipmentRequirements,
+          layoutPreference: draft.layoutPreference,
+          registrationSetup: draft.registrationSetup,
+        }),
+      });
+    } catch {
+      setDraftSaveState({ status: 'error', message: 'The draft could not be saved.' });
+      return;
+    }
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      if (body?.error === 'missing_mandatory_fields' && Array.isArray(body.missingFields)) {
+        setDraftSaveState({
+          status: 'error',
+          message: 'The draft could not be saved until these fields are valid.',
+          missingFields: body.missingFields,
+        });
+        return;
+      }
+      setDraftSaveState({ status: 'error', message: 'The draft could not be saved.' });
+      return;
+    }
+
+    setDraftSaveState({ status: 'saved' });
   };
 
   return (
@@ -286,9 +391,14 @@ export function OrganiserRequestFlow({
           </div>
 
           <div className="form-actions">
-            <button className="secondary-action" type="button">
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={!canSaveDraft || draftSaveState.status === 'saving'}
+              onClick={saveDraft}
+            >
               <Save size={16} aria-hidden="true" />
-              Save draft
+              {draftSaveState.status === 'saving' ? 'Saving...' : 'Save draft'}
             </button>
             <button
               className="primary-action"
@@ -300,6 +410,21 @@ export function OrganiserRequestFlow({
               {submitState.status === 'submitting' ? 'Submitting...' : 'Submit request'}
             </button>
           </div>
+          {draftSaveState.status === 'error' ? (
+            <div role="alert" className="field-control">
+              <p className="login-error">{draftSaveState.message}</p>
+              {draftSaveState.missingFields ? (
+                <ul className="validation-list" aria-label="Fields blocking draft save">
+                  {draftSaveState.missingFields.map((label) => (
+                    <li key={label}>{label}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+          {draftSaveState.status === 'saved' ? (
+            <p role="status" className="field-control">Draft saved.</p>
+          ) : null}
         </section>
 
         <aside className="review-panel" aria-label="Validation and status">

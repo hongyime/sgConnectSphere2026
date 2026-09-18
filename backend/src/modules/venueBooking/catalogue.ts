@@ -48,7 +48,22 @@ function stringList(data: Record<string, unknown>, errors: VenueErrors, field: s
     errors[field] = [`${label} must be a non-empty list of names.`];
     return [];
   }
-  return value.map(entry => (entry as string).trim());
+  const trimmed = value.map(entry => (entry as string).trim());
+  // Two entries that normalize to the same code (slugify, defined below —
+  // available here via function hoisting) collide on the venue_facilities /
+  // venue_accessibility_features primary key once linkLookups() tries to
+  // insert both — the same bug class as the supported_layouts duplicate
+  // check just below, reported here for consistency.
+  const seenCodes = new Set<string>();
+  for (const entry of trimmed) {
+    const code = slugify(entry);
+    if (seenCodes.has(code)) {
+      errors[field] = [`"${entry}" is listed more than once.`];
+      return [];
+    }
+    seenCodes.add(code);
+  }
+  return trimmed;
 }
 
 export function validateVenueInput(body: unknown):
@@ -89,6 +104,13 @@ export function validateVenueInput(body: unknown):
   if (!Array.isArray(layoutsRaw) || layoutsRaw.length === 0) {
     errors.supported_layouts = ['At least one supported layout is required.'];
   } else {
+    // Two labels that normalize to the same code (slugify, defined below —
+    // available here via function hoisting) collide on the
+    // venue_supported_layouts primary key once linkLookups() tries to
+    // insert both, which createVenue/updateVenue previously misreported as
+    // a venue-name conflict or an unhandled 503. Reject the duplicate here
+    // instead, before any query runs.
+    const seenCodes = new Set<string>();
     for (const entry of layoutsRaw) {
       const label = isPlainObject(entry) && typeof entry.label === 'string' ? entry.label.trim() : '';
       const capacity = isPlainObject(entry) ? entry.capacity : undefined;
@@ -96,6 +118,12 @@ export function validateVenueInput(body: unknown):
         errors.supported_layouts = ['Each layout needs a name and a whole-number capacity greater than 0.'];
         break;
       }
+      const code = slugify(label);
+      if (seenCodes.has(code)) {
+        errors.supported_layouts = [`"${label}" is listed more than once.`];
+        break;
+      }
+      seenCodes.add(code);
       layouts.push({ label, capacity });
     }
   }

@@ -59,6 +59,7 @@ export function OrganiserDashboard() {
       </section>
       <p className="organiser-footer">
         <Link to="/organiser/requests"><ClipboardList size={14} aria-hidden="true" /> All requests</Link>
+        <Link to="/organiser/drafts">My drafts</Link>
         <Link to="/organiser/new-request" className="primary-action">
           <Send size={14} aria-hidden="true" /> Start a new request
         </Link>

@@ -55,6 +55,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { ClientEvents } from './features/organiser/ClientEvents';
 import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
+import { OrganiserDrafts, OrganiserDraftEdit } from './features/organiser/OrganiserDrafts';
 
 type Tone = 'success' | 'warning' | 'info' | 'danger' | 'future' | 'neutral';
 
@@ -812,7 +813,7 @@ function PrototypeApp() {
         </header>
 
         {viewMode === 'organiser-flow' ? (
-          <OrganiserRequestFlow getAccessToken={async () => null} />
+          <OrganiserRequestFlow prototype />
         ) : null}
 
         <section className={`role-hero accent-${activeRole.accent}`}>
@@ -1018,6 +1019,7 @@ function App() {
       <Route path="/events" element={<ClientEvents />} />
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
+      {/* Without this route, event detail links and denied deep links fall through to the landing page. */}
       <Route path="/attendee/events/*" element={<AttendeeEvents />} />
       <Route path="/attendee/discover" element={<EventDiscovery />} />
       <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
@@ -1029,7 +1031,9 @@ function App() {
       <Route path="/organiser/requests" element={<OrganiserRequestList />} />
       <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
       <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
-      <Route path="/organiser/new-request" element={<OrganiserRequestFlow getAccessToken={async () => 'mock-token'} />} />
+      <Route path="/organiser/new-request" element={<OrganiserRequestFlow />} />
+      <Route path="/organiser/drafts" element={<OrganiserDrafts />} />
+      <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/permission-denied" element={<PermissionDenied />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />

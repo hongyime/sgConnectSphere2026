@@ -11,6 +11,9 @@ test('TC_E01S03_01 — attendee sees only published fields for registered events
   await page.getByRole('link', { name: 'Published event', exact: true }).click();
   await expect(page).toHaveURL(/\/attendee\/events\/published-event$/);
   await expect(page.getByText('Level 2')).toBeVisible();
+  // A direct reload must retain the detail route rather than render the landing page.
+  await page.reload();
+  await expect(page.getByText('Level 2')).toBeVisible();
 });
 
 test('TC_E01S03_02 — direct internal planning request is sent for auditing and denied', async ({ page }) => {

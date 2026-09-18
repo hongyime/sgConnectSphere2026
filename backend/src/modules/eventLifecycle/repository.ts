@@ -1,10 +1,13 @@
 import { getDatabasePool } from '../../database/client.js';
-import type { CreateEventRequest, EventRecord } from './types.js';
+import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
 
 export type EventLifecycleRepository = {
   createEvent(request: CreateEventRequest): Promise<EventRecord>;
   findEventById(eventId: string): Promise<EventRecord | null>;
   updateEventStatus(eventId: string, status: EventRecord['status'], reason?: string): Promise<EventRecord>;
+  listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]>;
+  updateEvent(eventId: string, update: EventUpdate): Promise<EventRecord>;
+  deleteEvent(eventId: string): Promise<void>;
 };
 
 type EventRow = {
@@ -201,5 +204,116 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
     }
 
     return mapEvent(result.rows[0]);
+  }
+
+  async listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]> {
+    const result = await getDatabasePool().query<EventRow>(
+      `
+        SELECT
+          id,
+          title,
+          description,
+          purpose,
+          client_org_id,
+          organiser_id,
+          coordinator_id,
+          status,
+          status_changed_at,
+          lower(event_range) AS start_at,
+          upper(event_range) AS end_at,
+          expected_attendance,
+          layout_id,
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
+        FROM events
+        WHERE organiser_id = $1 AND ($2::event_status IS NULL OR status = $2::event_status)
+        ORDER BY status_changed_at DESC, id
+        LIMIT 100
+      `,
+      [organiserId, status ?? null],
+    );
+
+    return result.rows.map(mapEvent);
+  }
+
+  async updateEvent(eventId: string, update: EventUpdate): Promise<EventRecord> {
+    const result = await getDatabasePool().query<EventRow>(
+      `
+        UPDATE events
+        SET
+          title = $2,
+          description = $3,
+          purpose = $4,
+          status = $5::event_status,
+          event_range = tstzrange($6::timestamptz, $7::timestamptz, '[)'),
+          expected_attendance = $8,
+          layout_id = $9,
+          venue_requirements = $10,
+          accessibility_note = $11,
+          equipment_requirements = $12,
+          layout_preference = $13,
+          registration_setup = $14,
+          status_changed_at = now()
+        WHERE id = $1
+        RETURNING
+          id,
+          title,
+          description,
+          purpose,
+          client_org_id,
+          organiser_id,
+          coordinator_id,
+          status,
+          status_changed_at,
+          lower(event_range) AS start_at,
+          upper(event_range) AS end_at,
+          expected_attendance,
+          layout_id,
+          venue_requirements,
+          accessibility_note,
+          equipment_requirements,
+          layout_preference,
+          registration_setup
+      `,
+      [
+        eventId,
+        update.title,
+        update.description ?? null,
+        update.purpose ?? null,
+        update.status ?? 'draft',
+        update.startAt.toISOString(),
+        update.endAt.toISOString(),
+        update.expectedAttendance,
+        update.layoutId ?? null,
+        update.venueRequirements ?? null,
+        update.accessibilityNote ?? null,
+        update.equipmentRequirements ?? null,
+        update.layoutPreference ?? null,
+        update.registrationSetup ?? null,
+      ],
+    );
+
+    if (!result.rows[0]) {
+      throw new Error(`Event not found: ${eventId}`);
+    }
+
+    return mapEvent(result.rows[0]);
+  }
+
+  async deleteEvent(eventId: string): Promise<void> {
+    // Defense in depth: the service layer already checks status === 'draft'
+    // before calling this, but the WHERE clause keeps a submitted request
+    // from ever being deleted even if a future caller skips that check.
+    const result = await getDatabasePool().query(
+      `DELETE FROM events WHERE id = $1 AND status = 'draft'`,
+      [eventId],
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Draft event not found: ${eventId}`);
+    }
   }
 }
