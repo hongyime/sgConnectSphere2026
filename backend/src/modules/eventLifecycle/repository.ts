@@ -1,7 +1,38 @@
+import type { Pool, PoolClient } from 'pg';
 import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { validateEventStatusTransition } from './status.js';
 import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
+
+type SqlRunner = { query: Pool['query'] };
+
+// E02-S03: event_accessibility_needs is a pure join table (event_id,
+// feature_id), same shape as venue_accessibility_features. Mirrors the
+// venue catalogue's linkLookups/attachDetails pattern in catalogue.ts,
+// except there is no upsert-by-label step here - an event links to
+// accessibility_features ids the organiser picked from the already-existing
+// vocabulary, it never creates new feature rows.
+async function linkAccessibilityNeeds(client: SqlRunner, eventId: string, featureIds: string[]): Promise<void> {
+  for (const featureId of featureIds) {
+    await client.query(
+      `INSERT INTO event_accessibility_needs (event_id, feature_id) VALUES ($1, $2)`,
+      [eventId, featureId],
+    );
+  }
+}
+
+async function replaceAccessibilityNeeds(client: PoolClient, eventId: string, featureIds: string[]): Promise<void> {
+  await client.query(`DELETE FROM event_accessibility_needs WHERE event_id = $1`, [eventId]);
+  await linkAccessibilityNeeds(client, eventId, featureIds);
+}
+
+async function getAccessibilityFeatureIds(runner: SqlRunner, eventId: string): Promise<string[]> {
+  const result = await runner.query<{ feature_id: string }>(
+    `SELECT feature_id FROM event_accessibility_needs WHERE event_id = $1 ORDER BY feature_id`,
+    [eventId],
+  );
+  return result.rows.map(row => row.feature_id);
+}
 
 export type EventLifecycleRepository = {
   createEvent(request: CreateEventRequest): Promise<EventRecord>;
@@ -63,7 +94,8 @@ function mapEvent(row: EventRow): EventRecord {
 
 export class PostgresEventLifecycleRepository implements EventLifecycleRepository {
   async createEvent(request: CreateEventRequest): Promise<EventRecord> {
-    const result = await getDatabasePool().query<EventRow>(
+    return inTransaction(getDatabasePool(), async client => {
+      const result = await client.query<EventRow>(
       `
         INSERT INTO events (
           organiser_id,
@@ -134,9 +166,13 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         request.layoutPreference ?? null,
         request.registrationSetup ?? null,
       ],
-    );
+      );
 
-    return mapEvent(result.rows[0]);
+      const event = mapEvent(result.rows[0]);
+      const featureIds = request.accessibilityFeatureIds ?? [];
+      await linkAccessibilityNeeds(client, event.id, featureIds);
+      return { ...event, accessibilityFeatureIds: featureIds };
+    });
   }
 
   async findEventById(eventId: string): Promise<EventRecord | null> {
@@ -168,7 +204,9 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       [eventId],
     );
 
-    return result.rows[0] ? mapEvent(result.rows[0]) : null;
+    if (!result.rows[0]) return null;
+    const event = mapEvent(result.rows[0]);
+    return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(getDatabasePool(), event.id) };
   }
 
   async updateEventStatus(
@@ -276,11 +314,15 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       [organiserId, status ?? null],
     );
 
-    return result.rows.map(mapEvent);
+    return Promise.all(result.rows.map(async row => {
+      const event = mapEvent(row);
+      return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(getDatabasePool(), event.id) };
+    }));
   }
 
   async updateEvent(eventId: string, update: EventUpdate): Promise<EventRecord> {
-    const result = await getDatabasePool().query<EventRow>(
+    return inTransaction(getDatabasePool(), async client => {
+      const result = await client.query<EventRow>(
       `
         UPDATE events
         SET
@@ -334,13 +376,17 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         update.layoutPreference ?? null,
         update.registrationSetup ?? null,
       ],
-    );
+      );
 
-    if (!result.rows[0]) {
-      throw new Error(`Event not found: ${eventId}`);
-    }
+      if (!result.rows[0]) {
+        throw new Error(`Event not found: ${eventId}`);
+      }
 
-    return mapEvent(result.rows[0]);
+      const event = mapEvent(result.rows[0]);
+      const featureIds = update.accessibilityFeatureIds ?? [];
+      await replaceAccessibilityNeeds(client, eventId, featureIds);
+      return { ...event, accessibilityFeatureIds: featureIds };
+    });
   }
 
   async deleteEvent(eventId: string): Promise<void> {
