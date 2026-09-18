@@ -9,7 +9,7 @@ const roleHome: Record<string, string> = {
   event_organiser:     '/events',
   event_coordinator:   '/events',
   venue_staff:         '/events',
-  technical_support:   '/events',
+  technical_support_staff: '/events',
   admin:               '/events',
 };
 
@@ -47,7 +47,11 @@ export function LoginPage() {
       const who = await fetch('/api/auth/session', { credentials: 'same-origin' })
         .then(response => response.ok ? response.json() as Promise<WhoAmIResponse> : null)
         .catch(() => null);
-      navigate(roleHome[who?.user?.role ?? 'attendee'] ?? '/events', { replace: true });
+      if (!who?.user?.role) {
+        setError('Unable to load your session. Please try signing in again.');
+        return;
+      }
+      navigate(roleHome[who.user.role] ?? '/events', { replace: true });
     } catch {
       setError('Unable to reach the server. Please try again.');
     } finally {
@@ -71,6 +75,7 @@ export function LoginPage() {
           <div role="alert" aria-live="polite" className="login-error">{error}</div>
           <button className="login-submit" type="submit" disabled={pending}>{pending ? 'Signing in...' : 'Sign in'}</button>
         </form>
+        <p className="login-footer"><Link to="/forgot-password">Forgot password or locked out?</Link></p>
         <p className="login-footer">
           No account yet? <Link to="/register">Create an attendee account.</Link>
         </p>

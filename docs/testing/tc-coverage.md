@@ -7,15 +7,15 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **47** (20.4%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **180** (78.3%)
+- Automated (explicit TC_ID in an active test title): **53** (23.0%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **174** (75.7%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
-| E01 | 32 | 15 | 17 | 0 |
+| E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 10 | 3 | 0 |
 | E03 | 26 | 2 | 24 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
@@ -27,7 +27,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **47** | **180** | **3** |
+| **Total** | **230** | **53** | **174** | **3** |
 
 ## Case-by-case status
 
@@ -37,13 +37,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/e2e/e01.spec.ts: TC_E01S01_01 - Verify that a registered user with valid credentials should sign in and reach the dashboard for their role; tests/e2e/profile.spec.ts: TC_E01S |
-| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_02 - Verify that an incorrect password should keep the user signed out without revealing whether the email is registered |
-| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_03 - Verify that after 5 consecutive incorrect password attempts, the next sign-in attempt should show the account locked and explain how to reset  |
-| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_04 - Verify that requesting a password reset on a locked account should send a reset link to the registered email |
-| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_05 - Verify that setting a new password via a valid reset link should lift the lock and allow sign-in with the new password |
-| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_06 - Verify that an account lockout should be recorded in the activity log with the account and time |
-| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_07 - Verify that a sixth sign-in attempt is refused even with the correct password once the account is locked |
+| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_01 — real login normalizes email, reaches organiser events and protects the signed-out route; tests/e2e/profile.spec.ts: TC_E01S01_0 |
+| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_02 — wrong, unknown and inactive accounts show the same error |
+| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
 | `TC_E01S02_01` | E01-S02 | Verify that an Event Organiser's event list should only show events from their o | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_01 - Verify that an Event Organiser |
 | `TC_E01S02_02` | E01-S02 | Verify that direct access to another client's event via URL/ID should be denied  | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_02 — direct access denial shows no event details and offers a return path; tests/e2e/e01.spec.ts: TC_E01S02_02 - Verify that direct acces |
 | `TC_E01S02_03` | E01-S02 | Verify that events created by colleagues within the same client organisation sho | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_03 TC_E01S02_04 — organisation events show colleague attribution and an accessible empty search state; tests/e2e/e01.spec.ts: TC_E01S02_0 |
@@ -53,15 +53,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E01S03_01` | E01-S03 | Verify that an Attendee viewing a registered event should see only published det | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_01 — attendee sees only published fields for registered events; tests/e2e/e01.spec.ts: TC_E01S03_01 - Verify that an Attendee viewing a |
 | `TC_E01S03_02` | E01-S03 | Verify that an Attendee attempting to open an internal planning screen directly  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_02 — direct internal planning request is sent for auditing and denied; tests/e2e/e01.spec.ts: TC_E01S03_02 - Verify that an Attendee at |
 | `TC_E01S03_03` | E01-S03 | Verify that an Attendee should not see events or events they are not registered  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_03 — unregistered direct event is refused with no event fields; tests/e2e/e01.spec.ts: TC_E01S03_03 - Verify that an Attendee should no |
-| `TC_E01S04_01` | E01-S04 | Verify that valid changes to name, organisation, and contact number should all b | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_01 - Verify that valid changes to name, organisation, and contact number should all be saved and shown the next time the profile is opened; tests/e |
-| `TC_E01S04_02` | E01-S04 | Verify that saving a malformed email address should be rejected with the field i | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_02 - Verify that saving a malformed email address should be rejected with the field identified; tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_0 |
-| `TC_E01S04_03` | E01-S04 | Verify that saving an email already registered to another account should be reje | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_03 - Verify that saving an email already registered to another account should be rejected; tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — f |
+| `TC_E01S04_01` | E01-S04 | Verify that valid changes to name, organisation, and contact number should all b | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only; tests/e2e/e01.spec.ts: TC_E01S04_01 - Verify t |
+| `TC_E01S04_02` | E01-S04 | Verify that saving a malformed email address should be rejected with the field i | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected; tests/e2e/e01.spec.ts: TC_E01S04_02 - Verify that saving a malformed e |
+| `TC_E01S04_03` | E01-S04 | Verify that saving an email already registered to another account should be reje | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected; tests/e2e/e01.spec.ts: TC_E01S04_03 - Verify that saving an email alre |
 | `TC_E01S04_04` | E01-S04 | Verify that changing the registered email should route future notifications to t | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S04_04 - Verify that changing the registered email should route future notifications to the new address |
-| `TC_E01S04_05` | E01-S04 | Verify that a user should not be able to change their own role from the account  | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_05 - Verify that a user should not be able to change their own role from the account details screen; tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01 |
-| `TC_E01S08_01` | E01-S08 | Verify that submitting valid sign-up details should create an Attendee account t | ✅ active | tests/e2e/e01.spec.ts: TC_E01S08_01 - Verify that submitting valid sign-up details should create an Attendee account that can then sign in; tests/e2e/registration.spec.ts: TC_E01S0 |
-| `TC_E01S08_02` | E01-S08 | Verify that signing up with an already-registered email should be rejected witho | ✅ active | tests/e2e/e01.spec.ts: TC_E01S08_02 - Verify that signing up with an already-registered email should be rejected without creating a duplicate; tests/e2e/registration.spec.ts: TC_E0 |
-| `TC_E01S08_03` | E01-S08 | Verify that leaving a required sign-up field empty should block account creation | ✅ active | tests/e2e/e01.spec.ts: TC_E01S08_03 - Verify that leaving a required sign-up field empty should block account creation and identify the missing field; tests/e2e/registration.spec.t |
-| `TC_E01S08_04` | E01-S08 | Verify that an account created through the public sign-up form should hold the A | ✅ active | tests/e2e/e01.spec.ts: TC_E01S08_04 - Verify that an account created through the public sign-up form should hold the Attendee role only; tests/e2e/registration.spec.ts: TC_E01S08_0 |
+| `TC_E01S04_05` | E01-S04 | Verify that a user should not be able to change their own role from the account  | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only; tests/e2e/e01.spec.ts: TC_E01S04_05 - Verify t |
+| `TC_E01S08_01` | E01-S08 | Verify that submitting valid sign-up details should create an Attendee account t | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_01 TC_E01S08_04 — registration submits required fields without role and displays success; tests/e2e/e01.spec.ts: TC_E01S08_01 - Verify tha |
+| `TC_E01S08_02` | E01-S08 | Verify that signing up with an already-registered email should be rejected witho | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_02 TC_E01S08_03 — registration displays server field errors and allows correction; tests/e2e/e01.spec.ts: TC_E01S08_02 - Verify that signi |
+| `TC_E01S08_03` | E01-S08 | Verify that leaving a required sign-up field empty should block account creation | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_02 TC_E01S08_03 — registration displays server field errors and allows correction; tests/e2e/e01.spec.ts: TC_E01S08_03 - Verify that leavi |
+| `TC_E01S08_04` | E01-S08 | Verify that an account created through the public sign-up form should hold the A | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_01 TC_E01S08_04 — registration submits required fields without role and displays success; tests/e2e/e01.spec.ts: TC_E01S08_04 - Verify tha |
 | `TC_E01S08_05` | E01-S08 | Verify that the public sign-up form should not offer any internal role as a choi | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S08_05 - Verify that the public sign-up form should not offer any internal role as a choice |
 | `TC_E01S08_06` | E01-S08 | Verify that entering a password that fails the stated policy should block accoun | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S08_06 - Verify that entering a password that fails the stated policy should block account creation and identify the requirement it fails |
 | `TC_E01S11_01` | E01-S11 | Verify that confirming deactivation should sign the user out and block further s | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_01 - Verify that confirming deactivation should sign the user out and block further sign-in with those credentials |
@@ -234,13 +234,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E09S01_01` | E09-S01 | Verify that submitting the required registration information for an open event w | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity; tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the requi |
+| `TC_E09S01_01` | E09-S01 | Verify that submitting the required registration information for an open event w | ✅ active | tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the required registration information for an open event with places remaining should reserve a place and provide a conf |
 | `TC_E09S01_02` | E09-S01 | Verify that registering for a multi-event event should let the Attendee choose w | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
 | `TC_E09S01_03` | E09-S01 | Verify that attempting to register again for a event already registered for shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
 | `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields |
 | `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused |
-| `TC_E09S02_01` | E09-S02 | Verify that an Event Organiser should be able to set a registration limit for a  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit; tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser sh |
-| `TC_E09S02_02` | E09-S02 | Verify that registration should stop once the event reaches the lower of the Org | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join; tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should s |
+| `TC_E09S02_01` | E09-S02 | Verify that an Event Organiser should be able to set a registration limit for a  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser should be able to set a registration limit for a event; tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — |
+| `TC_E09S02_02` | E09-S02 | Verify that registration should stop once the event reaches the lower of the Org | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should stop once the event reaches the lower of the Organiser; tests/e2e/attendee-registration.spec.ts: TC_E09S02_02  |
 | `TC_E09S02_03` | E09-S02 | Verify that when only one place remains, two simultaneous registration attempts  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
 | `TC_E09S02_04` | E09-S02 | Verify that opening the registration page for a full event should close registra | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
 | `TC_E09S02_06` | E09-S02 | Verify that a VIP can be added manually when normal registration is full but ven | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
@@ -258,10 +258,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
-| `TC_E09S05_01` | E09-S05 | Verify that withdrawing from a single event before the withdrawal deadline shoul | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S05_01 — withdrawal requires a reason before recording; tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single e |
+| `TC_E09S05_01` | E09-S05 | Verify that withdrawing from a single event before the withdrawal deadline shoul | ✅ active | tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single event before the withdrawal deadline should cancel that registration and release the place, leaving othe |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
-| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S06_01 — feedback requires a rating; tests/e2e/e09.spec.ts: TC_E09S06_01 - Verify that marking a registered Attendee as attended for  |
+| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/e09.spec.ts: TC_E09S06_01 - Verify that marking a registered Attendee as attended for a event after the event is Completed should update their record without changing the |
 | `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed |
 | `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked |
 | `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_04 - Verify that registration and attendance counts should be viewable side by side for each event |
@@ -352,6 +352,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a draft can be deleted by its owner
 - deleting someone else\
 - deleting an already-submitted request is refused
+- changing status passes the actor and prior status through for the audit entry
+- an illegal status transition is rejected before any audit entry is written
+- changing status to the same status is a no-op that writes no audit entry
+- changing the status of an unknown event is reported as not found
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -361,10 +365,27 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - missing membership and missing event organisation fail closed
 - unauthenticated, unlinked, inactive, locked and other roles cannot query organiser data
+- a role/organisation denial is audited against the screen, not a specific event
 - direct denied access commits actor and attempted event before returning denial
 - audit failure never returns event information or a false logged success
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
+
+### `backend/tests/loginRecovery.integration.test.ts`
+
+- E01-S01 real database, API, registration and recovery acceptance cases
+- registered credentials authenticate; email is normalized; secure cookie and no hash exposure
+- legacy hashes remain readable and wrong passwords are rejected
+- wrong, unknown and inactive accounts have the same response; inactive correct password fails
+- counts each failure, locks on five, writes one audit, refuses correct password; success resets count
+- concurrent incorrect attempts cannot bypass the threshold or duplicate audit
+- reset request API normalizes email and does not expose account eligibility
+- outbox delivers a hashed single-use 15-minute link through the existing provider adapter
+- invalid, expired, inactive and policy-invalid resets are rejected without consuming usable tokens
+- concurrent reset uses token once, invalidates sibling tokens and old sessions
+- queued recovery is not delivered to deactivated or changed recipients
+- reset transaction rolls back token consumption and lock changes on database failure
+- API rejects cross-origin changes and wrong methods
 
 ### `backend/tests/profile.integration.test.ts`
 
@@ -406,8 +427,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateVenueInput enforces a positive whole-number capacity
 - validateVenueInput enforces HH:MM operating hours with opens before closes
 - validateVenueInput requires non-empty facility, accessibility and layout lists
+- validateVenueInput rejects layouts that normalize to the same code, even with different casing or spacing
+- validateVenueInput rejects facilities or accessibility features that normalize to the same code
 - validateVenueInput trims text and accepts a fully valid submission
 - catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them
+- a catalogue role denial is audited against the screen
 - read operations reject unauthorised viewers before querying the database
 - mutating operations reject anyone but venue staff before opening a transaction
 - createVenue reports validation errors without opening a transaction
@@ -451,6 +475,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - initialValues pre-fill the form for reopening a draft
 - clearing the dates disables Save draft too, not just Submit
 - prototype mode simulates submission without hitting the API
+
+### `tests/auth-e2e/loginRecovery.spec.ts`
+
+- invalid and expired reset links guide the user back to recovery
 
 ### `tests/e2e/admin.spec.ts`
 
