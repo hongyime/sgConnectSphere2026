@@ -5,7 +5,7 @@ Items marked Closed were answered by the customer and are retained so the histor
 | ID | Topic | Where it stands | Refs | Priority |
 | --- | --- | --- | --- | --- |
 | O-01 | Performance figures | CLOSED in version 5. Team decision T-51: under three seconds for venue search, calendar load and registration submission, recorded in the Definition of Done. No numerical benchmark exists for venue search, calendar load or registration. No release-1 criterion contains one, deliberately. | C-27 | Closed |
-| O-02 | Account lockout policy | CLOSED in version 5. Team confirmed the assumption: 5 consecutive failures, emailed reset link. Assumed 5 attempts and an emailed reset link. | C-30, T-38 | Closed |
+| O-02 | Account lockout policy | CLOSED in version 5. Team confirmed the assumption: 5 consecutive failures, emailed reset link. On 18 September 2026, the team confirmed a 30-minute lock with automatic expiry; password reset remains an alternative recovery path. See [ADR-016](../adr/ADR-016-thirty-minute-login-lockout.md). | C-30, T-38 | Closed |
 | O-03 | Coordinator assignment basis | CLOSED in version 4 by C-55. The team may choose the rule provided it is fair; fewest active events stands. The system auto-assigns, but no rule was given. Assumed fewest active events. | C-12, C-41, T-14 | Closed |
 | O-04 | Reassignment authority | CLOSED in version 4 by C-56. The assigned Coordinator initiates, agreed offline, and the new Coordinator accepts. Assumed only the currently assigned Coordinator may reassign. | T-15 | Closed |
 | O-05 | Registration data fields | CLOSED in version 5. Team decision: name, email address and contact number. Assumed name and email only, on PDPA grounds. | C-26, T-32 | Closed |
