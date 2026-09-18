@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  changeEventStatus,
   createEventRequest,
   deleteEventRequest,
   EventAccessError,
@@ -33,16 +34,24 @@ function recordFromCreate(id: string, request: CreateEventRequest): EventRecord 
   };
 }
 
+type StatusChange = { eventId: string; status: EventRecord['status']; actorId: string; fromStatus: EventRecord['status']; reason?: string };
+
 // A fake backed by an in-memory map, so the SCRUM-27 update/delete tests can
 // exercise a real find -> mutate -> persist round trip without a database.
-function fakeRepository(): EventLifecycleRepository & { created: CreateEventRequest[]; events: Map<string, EventRecord> } {
+function fakeRepository(): EventLifecycleRepository & {
+  created: CreateEventRequest[];
+  events: Map<string, EventRecord>;
+  statusChanges: StatusChange[];
+} {
   const created: CreateEventRequest[] = [];
   const events = new Map<string, EventRecord>();
+  const statusChanges: StatusChange[] = [];
   let nextId = 1;
 
   return {
     created,
     events,
+    statusChanges,
     async createEvent(request) {
       created.push(request);
       const record = recordFromCreate(`event-${nextId++}`, request);
@@ -52,8 +61,18 @@ function fakeRepository(): EventLifecycleRepository & { created: CreateEventRequ
     async findEventById(eventId) {
       return events.get(eventId) ?? null;
     },
-    async updateEventStatus() {
-      throw new Error('not used in this test');
+    async updateEventStatus(eventId, status, actorId, reason) {
+      const existing = events.get(eventId);
+      if (!existing) {
+        throw new Error(`Event not found: ${eventId}`);
+      }
+      // Mirrors the real repository: no audit entry for a same-status no-op.
+      if (existing.status !== status) {
+        statusChanges.push({ eventId, status, actorId, fromStatus: existing.status, reason });
+      }
+      const record: EventRecord = { ...existing, status, statusChangedAt: new Date() };
+      events.set(eventId, record);
+      return record;
     },
     async listEventsByOrganiser(organiserId, status) {
       return [...events.values()].filter(
@@ -368,4 +387,48 @@ test('deleting an already-submitted request is refused', async () => {
     },
   );
   assert.notEqual(await repository.findEventById(submitted.id), null);
+});
+
+// --- E14-S02 Scenario 1: status change recorded (TC_E14S02_01) ---
+
+test('changing status passes the actor and prior status through for the audit entry', async () => {
+  const repository = fakeRepository();
+  const submitted = await createEventRequest(repository, completeRequest());
+  await changeEventStatus(repository, {
+    eventId: submitted.id,
+    actorId: 'coordinator-1',
+    toStatus: 'under_review',
+  });
+  assert.deepEqual(repository.statusChanges, [{
+    eventId: submitted.id,
+    status: 'under_review',
+    actorId: 'coordinator-1',
+    fromStatus: 'submitted',
+    reason: undefined,
+  }]);
+});
+
+test('an illegal status transition is rejected before any audit entry is written', async () => {
+  const repository = fakeRepository();
+  const submitted = await createEventRequest(repository, completeRequest());
+  await assert.rejects(
+    changeEventStatus(repository, { eventId: submitted.id, actorId: 'coordinator-1', toStatus: 'confirmed' }),
+    { message: 'Illegal event status transition: submitted -> confirmed' },
+  );
+  assert.equal(repository.statusChanges.length, 0);
+});
+
+test('changing status to the same status is a no-op that writes no audit entry', async () => {
+  const repository = fakeRepository();
+  const submitted = await createEventRequest(repository, completeRequest());
+  await changeEventStatus(repository, { eventId: submitted.id, actorId: 'coordinator-1', toStatus: 'submitted' });
+  assert.equal(repository.statusChanges.length, 0);
+});
+
+test('changing the status of an unknown event is reported as not found', async () => {
+  const repository = fakeRepository();
+  await assert.rejects(
+    changeEventStatus(repository, { eventId: 'no-such-event', actorId: 'coordinator-1', toStatus: 'under_review' }),
+    { message: 'Event not found: no-such-event' },
+  );
 });

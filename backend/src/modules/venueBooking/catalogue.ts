@@ -22,17 +22,33 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const LOOKUP_TABLES = ['facilities', 'accessibility_features', 'room_layouts'] as const;
 type LookupTable = (typeof LOOKUP_TABLES)[number];
 
-export function requireVenueStaff(user: AuthenticatedUser | undefined): AuthenticatedUser {
+// The mutating entry points below only receive a Pool (they open their own
+// transaction after the guard passes), whereas the guard's denial write
+// needs a Query-shaped function. Pool.query already has that shape.
+function poolQuery(database: Pool): Query {
+  return (sql, values) => database.query(sql, values);
+}
+
+// E14-S02 Scenario 2: a role-mismatch denial has no specific venue to attach
+// to, so it's logged against the screen the caller was trying to reach.
+async function recordCatalogueDenial(query: Query, user: AuthenticatedUser, screen: string) {
+  await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
+    VALUES ($1, 'screen', gen_random_uuid(), 'Access Denied', $2)`, [user.id, screen]);
+}
+
+export async function requireVenueStaff(query: Query, user: AuthenticatedUser | undefined): Promise<AuthenticatedUser> {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['venue_staff']).allowed) {
+    await recordCatalogueDenial(query, user, 'venue_catalogue');
     throw new AccessError(403, 'Access denied. Only venue staff can maintain the venue catalogue.');
   }
   return user;
 }
 
-export function requireCatalogueViewer(user: AuthenticatedUser | undefined): AuthenticatedUser {
+export async function requireCatalogueViewer(query: Query, user: AuthenticatedUser | undefined): Promise<AuthenticatedUser> {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['venue_staff', 'event_coordinator']).allowed) {
+    await recordCatalogueDenial(query, user, 'venue_catalogue');
     throw new AccessError(403, 'Access denied.');
   }
   return user;
@@ -220,7 +236,7 @@ export async function searchVenues(
   requiredLayout?: string,
   requiredAttendance?: number,
 ) {
-  requireCatalogueViewer(user);
+  await requireCatalogueViewer(query, user);
   const hasLayoutFilter = Boolean(requiredLayout) && typeof requiredAttendance === 'number';
 
   // The layout/attendance suitability check runs in SQL, before LIMIT 100,
@@ -244,7 +260,7 @@ export async function searchVenues(
 }
 
 export async function getVenue(query: Query, user: AuthenticatedUser | undefined, id: string) {
-  requireCatalogueViewer(user);
+  await requireCatalogueViewer(query, user);
   const result = await query<VenueRecord>(`SELECT ${venueProjection} FROM venues v WHERE v.id = $1`, [id]);
   const venue = result.rows[0];
   if (!venue) throw new AccessError(404, 'Venue not found.');
@@ -252,7 +268,7 @@ export async function getVenue(query: Query, user: AuthenticatedUser | undefined
 }
 
 export async function createVenue(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   const validated = validateVenueInput(body);
   if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
   const { input } = validated;
@@ -306,7 +322,7 @@ async function flagAffectedBookings(client: PoolClient, venueId: string, newCapa
 }
 
 export async function updateVenue(database: Pool, user: AuthenticatedUser | undefined, id: string, body: unknown) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   return inTransaction(database, async client => {
     const clientQuery: Query = (sql, values) => client.query(sql, values);
     const existing = await client.query<VenueRecord>(`SELECT ${venueProjection} FROM venues v WHERE v.id = $1 FOR UPDATE`, [id]);
@@ -339,7 +355,7 @@ export async function updateVenue(database: Pool, user: AuthenticatedUser | unde
 }
 
 export async function retireVenue(database: Pool, user: AuthenticatedUser | undefined, id: string) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   return inTransaction(database, async client => {
     const existing = await client.query<{ id: string }>(`SELECT id FROM venues WHERE id = $1 FOR UPDATE`, [id]);
     if (!existing.rows[0]) throw new AccessError(404, 'Venue not found.');
@@ -385,7 +401,7 @@ function validateLayoutInput(body: unknown):
 // facilities or accessibility features — unlike updateVenue, which replaces
 // all lookup links wholesale (E05-S02 Scenario 1).
 export async function addVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, body: unknown) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   const validated = validateLayoutInput(body);
   if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
   const { input } = validated;
@@ -450,7 +466,7 @@ function validateCapacityInput(body: unknown):
 // them) rather than an internal layout_id, so callers never need to know
 // about the shared room_layouts lookup table.
 export async function updateVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, label: string, body: unknown) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   const validated = validateCapacityInput(body);
   if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
   const { capacity } = validated;
@@ -475,7 +491,7 @@ export async function updateVenueLayout(database: Pool, user: AuthenticatedUser 
 }
 
 export async function removeVenueLayout(database: Pool, user: AuthenticatedUser | undefined, venueId: string, label: string) {
-  requireVenueStaff(user);
+  await requireVenueStaff(poolQuery(database), user);
   const code = slugify(label);
 
   return inTransaction(database, async client => {

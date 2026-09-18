@@ -145,7 +145,7 @@ export async function changeEventStatus(
     throw new Error(`Illegal event status transition: ${event.status} -> ${request.toStatus}`);
   }
 
-  return repository.updateEventStatus(request.eventId, request.toStatus, request.reason);
+  return repository.updateEventStatus(request.eventId, request.toStatus, request.actorId, request.reason);
 }
 
 // SCRUM-27: edit a saved draft, optionally re-saving it as a draft again or
