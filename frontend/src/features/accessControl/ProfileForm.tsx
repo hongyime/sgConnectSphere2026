@@ -14,8 +14,10 @@ export function ProfileForm() {
   const [busy, setBusy] = useState(true);
   const [signIn, setSignIn] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [confirming, setConfirming] = useState(false);
+  const [deactivationError, setDeactivationError] = useState('');
+  const [blockingEvents, setBlockingEvents] = useState<{ id: string; title: string; event_code: string | null }[]>([]);
   const [saved, setSaved] = useState(false);
-  const [deactivateMessage, setDeactivateMessage] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setBusy(true); setErrors({});
@@ -51,6 +53,28 @@ export function ProfileForm() {
     finally { setBusy(false); }
   }
 
+  async function deactivate() {
+    if (busy) return;
+    setBusy(true); setSaved(false); setDeactivationError(''); setBlockingEvents([]);
+    try {
+      const response = await fetch('/api/account/profile', {
+        method: 'DELETE', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setDeactivationError(data.error || 'Unable to deactivate your account. Please try again.');
+        setBlockingEvents(data.events ?? []);
+        return;
+      }
+      setProfile(undefined); setSignIn(true);
+      // Full navigation drops in-memory authenticated views; the server revoked
+      // all sessions and expired the HttpOnly cookie before returning success.
+      window.location.replace('/login');
+    } catch { setDeactivationError('Unable to reach the server. Please try again.'); }
+    finally { setBusy(false); }
+  }
+
   return <main className="registration-page">
     <a href="/">ConnectSphere</a><h1>My Profile</h1>
     <div role="alert">{errors.form?.map(message => <p key={message}>{message}</p>)}</div>
@@ -78,11 +102,18 @@ export function ProfileForm() {
       )}
       <button className="primary-action" disabled={busy}>Save profile</button>
     </form> : !busy && <button onClick={() => setRevision(value => value + 1)}>Try again</button>}
-    {profile && !signIn && <section className="profile-danger-zone">
-      <h2>Deactivate account</h2>
-      <p>Deactivating your account signs you out and stops you from using ConnectSphere, while your historical records are retained.</p>
-      <button type="button" className="profile-danger-button" onClick={() => setDeactivateMessage(true)}>Deactivate account</button>
-      {deactivateMessage && <p role="status" className="profile-hint">This feature isn't available yet. Contact your Coordinator or Administrator if you need your account deactivated.</p>}
+    {profile && !signIn && <section className="profile-danger-zone" aria-label="Account deactivation">
+      <h2>Deactivate Account</h2>
+      {!confirming ? <button type="button" className="profile-danger-button" disabled={busy} onClick={() => setConfirming(true)}>Deactivate Account</button> : <>
+        <p>Your account will be disabled and you will be signed out. Your historical records will be retained.
+          Upcoming registrations and waitlist entries will be withdrawn even after the withdrawal deadline.</p>
+        <button type="button" className="profile-danger-button" disabled={busy} onClick={() => void deactivate()}>Confirm deactivation</button>
+        <button type="button" disabled={busy} onClick={() => { setConfirming(false); setDeactivationError(''); setBlockingEvents([]); }}>Cancel deactivation</button>
+      </>}
+      {deactivationError && <p role="alert">{deactivationError}</p>}
+      {blockingEvents.length > 0 && <ul aria-label="Events requiring reassignment">
+        {blockingEvents.map(event => <li key={event.id}>{event.event_code ? `${event.event_code}: ` : ''}{event.title}</li>)}
+      </ul>}
     </section>}
   </main>;
 }
