@@ -10,6 +10,7 @@ import {
   Save,
   Send,
 } from 'lucide-react';
+import { ACCESSIBILITY_OPTIONS } from './accessibilityOptions';
 
 // Must match backend/src/modules/eventLifecycle/service.ts NONE_REQUIRED.
 const NONE_REQUIRED = 'none_required';
@@ -25,6 +26,7 @@ type DraftEvent = {
   expectedAttendance: string;
   venueRequirements: string;
   accessibilityNeeds: string;
+  accessibilityOptions: string[];
   equipmentRequirements: string;
   layoutPreference: string;
   registrationSetup: string;
@@ -55,6 +57,7 @@ const initialDraft: DraftEvent = {
   expectedAttendance: '180',
   venueRequirements: 'Seminar room with theatre seating',
   accessibilityNeeds: 'Wheelchair access and front-row reserved seats',
+  accessibilityOptions: [],
   equipmentRequirements: 'Projector, 2 wireless microphones, livestream support',
   layoutPreference: '',
   registrationSetup: '',
@@ -62,7 +65,7 @@ const initialDraft: DraftEvent = {
 
 const OPTIONAL_FIELDS: OptionalField[] = ['equipmentRequirements', 'layoutPreference', 'registrationSetup'];
 
-const requiredFields: { key: FieldKey; label: string; optional?: boolean }[] = [
+const requiredFields: { key: Exclude<FieldKey, 'accessibilityOptions'>; label: string; optional?: boolean }[] = [
   { key: 'eventName', label: 'Event name' },
   { key: 'description', label: 'Description' },
   { key: 'purpose', label: 'Purpose' },
@@ -80,6 +83,11 @@ function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[numbe
   // Match the API's positive-integer rule before enabling submission.
   if (field.key === 'expectedAttendance') {
     return Number.isInteger(Number(value)) && Number(value) > 0;
+  }
+  if (field.key === 'accessibilityNeeds') {
+    // Satisfied by a predefined checkbox OR free text - either records a
+    // real accessibility requirement (E02-S03).
+    return value.length > 0 || draft.accessibilityOptions.length > 0;
   }
   if (field.optional && value === NONE_REQUIRED) {
     return true;
@@ -132,6 +140,20 @@ function toIsoLocal(value: string) {
   return new Date(value).toISOString();
 }
 
+// Backend only has a single free-text accessibilityNote field (E02-S03: no
+// structured storage exists yet for predefined requirements). Combine the
+// checkbox selections into that same string rather than adding a new wire
+// field, so the payload shape - and existing tests asserting it exactly -
+// stay unchanged when no checkboxes are selected.
+function accessibilityNoteForPayload(draft: DraftEvent) {
+  if (draft.accessibilityOptions.length === 0) {
+    return draft.accessibilityNeeds;
+  }
+  return [draft.accessibilityOptions.join(', '), draft.accessibilityNeeds]
+    .filter((part) => part.trim().length > 0)
+    .join('; ');
+}
+
 export function OrganiserRequestFlow({
   prototype = false,
   draftId,
@@ -163,6 +185,15 @@ export function OrganiserRequestFlow({
 
   const setNoneRequired = (key: OptionalField, checked: boolean) => {
     setDraft(updateDraft(draft, key, checked ? NONE_REQUIRED : ''));
+  };
+
+  const toggleAccessibilityOption = (option: string, checked: boolean) => {
+    setDraft((current) => ({
+      ...current,
+      accessibilityOptions: checked
+        ? [...current.accessibilityOptions, option]
+        : current.accessibilityOptions.filter((item) => item !== option),
+    }));
   };
 
   const submitRequest = async () => {
@@ -197,7 +228,7 @@ export function OrganiserRequestFlow({
           endAt: toIsoLocal(draft.endDate),
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
-          accessibilityNote: draft.accessibilityNeeds,
+          accessibilityNote: accessibilityNoteForPayload(draft),
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -261,7 +292,7 @@ export function OrganiserRequestFlow({
           endAt: toIsoLocal(draft.endDate),
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
-          accessibilityNote: draft.accessibilityNeeds,
+          accessibilityNote: accessibilityNoteForPayload(draft),
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -365,11 +396,32 @@ export function OrganiserRequestFlow({
               value={draft.venueRequirements}
               onChange={(value) => setDraft(updateDraft(draft, 'venueRequirements', value))}
             />
-            <TextArea
-              label="Accessibility needs"
-              value={draft.accessibilityNeeds}
-              onChange={(value) => setDraft(updateDraft(draft, 'accessibilityNeeds', value))}
-            />
+            <div className="field-control field-wide">
+              <label>Accessibility requirements</label>
+              <div className="field-checkbox-group" role="group" aria-label="Predefined accessibility requirements">
+                {ACCESSIBILITY_OPTIONS.map((option) => {
+                  const id = slugify(`accessibility-${option}`);
+                  return (
+                    <label key={option} htmlFor={id} className="field-checkbox">
+                      <input
+                        id={id}
+                        type="checkbox"
+                        checked={draft.accessibilityOptions.includes(option)}
+                        onChange={(event) => toggleAccessibilityOption(option, event.target.checked)}
+                      />
+                      {option}
+                    </label>
+                  );
+                })}
+              </div>
+              <label htmlFor="request-accessibility-other">Other accessibility needs (not listed above)</label>
+              <textarea
+                id="request-accessibility-other"
+                value={draft.accessibilityNeeds}
+                rows={3}
+                onChange={(event) => setDraft(updateDraft(draft, 'accessibilityNeeds', event.target.value))}
+              />
+            </div>
             <OptionalTextArea
               label="Equipment requirements"
               value={draft.equipmentRequirements}
