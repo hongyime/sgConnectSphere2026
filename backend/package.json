@@ -12,10 +12,12 @@
     "notifications:inspect-legacy": "tsx src/database/inspectLegacyNotifications.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/dev.ts",
-    "test": "tsx --test tests/registration.test.ts tests/eventVisibility.test.ts tests/venueCatalogue.test.ts tests/verificationTokens.test.ts tests/eventLifecycle.test.ts",
+    "test": "tsx --test tests/registration.test.ts tests/eventVisibility.test.ts tests/venueCatalogue.test.ts tests/verificationTokens.test.ts tests/eventLifecycle.test.ts tests/deactivation.test.ts",
     "test:db": "tsx --test tests/registration.db.test.ts tests/eventVisibility.integration.test.ts tests/attendeeVisibility.integration.test.ts tests/venueCatalogue.integration.test.ts",
     "test:profile": "tsx --test tests/profile.test.ts",
-    "test:profile:db": "tsx --test tests/profile.integration.test.ts"
+    "test:profile:db": "tsx --test tests/profile.integration.test.ts",
+    "test:deactivation": "tsx --test tests/deactivation.test.ts",
+    "test:deactivation:db": "tsx --test tests/deactivation.integration.test.ts"
   },
   "dependencies": {
     "@upstash/redis": "latest",
