@@ -28,6 +28,7 @@ function recordFromCreate(id: string, request: CreateEventRequest): EventRecord 
     expectedAttendance: request.expectedAttendance,
     venueRequirements: request.venueRequirements,
     accessibilityNote: request.accessibilityNote,
+    accessibilityFeatureIds: request.accessibilityFeatureIds,
     equipmentRequirements: request.equipmentRequirements,
     layoutPreference: request.layoutPreference,
     registrationSetup: request.registrationSetup,
@@ -297,6 +298,51 @@ for (const field of ['startAt', 'endAt'] as const) {
     assert.equal(repository.created.length, 0);
   });
 }
+
+// --- E02-S03: accessibilityFeatureIds ---
+
+test('a predefined accessibility selection alone satisfies the mandatory Accessibility needs field', async () => {
+  const repository = fakeRepository();
+  const event = await createEventRequest(repository, completeRequest({
+    accessibilityNote: undefined,
+    accessibilityFeatureIds: ['feature-wheelchair-access'],
+  }));
+  assert.equal(event.status, 'submitted');
+  assert.deepEqual(repository.created[0].accessibilityFeatureIds, ['feature-wheelchair-access']);
+});
+
+test('neither free text nor a predefined selection still reports Accessibility needs as missing', async () => {
+  const repository = fakeRepository();
+  await assert.rejects(
+    createEventRequest(repository, completeRequest({ accessibilityNote: undefined, accessibilityFeatureIds: undefined })),
+    (error: unknown) => {
+      assert.ok(error instanceof EventValidationError);
+      assert.deepEqual(error.details?.missingFields, ['Accessibility needs']);
+      return true;
+    },
+  );
+});
+
+test('accessibilityFeatureIds round-trips through create and a subsequent update', async () => {
+  const repository = fakeRepository();
+  const created = await createEventRequest(repository, completeRequest({
+    status: 'draft',
+    accessibilityFeatureIds: ['feature-wheelchair-access'],
+  }));
+  assert.deepEqual(created.accessibilityFeatureIds, ['feature-wheelchair-access']);
+
+  // A patch that only touches an unrelated field leaves the existing
+  // selection untouched, same as every other field's merge-against-current
+  // behaviour in updateEventRequest.
+  const untouchedUpdate = await updateEventRequest(repository, created.id, created.organiserId, { venueRequirements: 'Level 3 hall' });
+  assert.deepEqual(untouchedUpdate.accessibilityFeatureIds, ['feature-wheelchair-access']);
+
+  // A patch that explicitly sends a new list replaces it wholesale, not merges.
+  const replacedUpdate = await updateEventRequest(repository, created.id, created.organiserId, {
+    accessibilityFeatureIds: ['feature-hearing-loop'],
+  });
+  assert.deepEqual(replacedUpdate.accessibilityFeatureIds, ['feature-hearing-loop']);
+});
 
 // --- SCRUM-27: updateEventRequest / deleteEventRequest ---
 
