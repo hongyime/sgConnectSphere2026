@@ -18,21 +18,21 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted, #4b5563);
+  color: var(--muted);
 }
 
 .landing-hero h1 {
   margin: 0;
   font-size: clamp(2rem, 4vw, 2.75rem);
   line-height: 1.15;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .landing-lede {
   margin: 0;
   font-size: 1.1rem;
   max-width: 42rem;
-  color: var(--text-muted, #334155);
+  color: var(--muted);
 }
 
 .landing-actions {
@@ -54,25 +54,25 @@
 }
 
 .landing-primary {
-  background: var(--accent, #0f766e);
+  background: var(--teal);
   color: #ffffff;
 }
 
 .landing-primary:hover,
 .landing-primary:focus-visible {
-  background: var(--accent-strong, #0b5c55);
+  background: var(--teal-dark);
 }
 
 .landing-secondary {
-  border: 1px solid var(--border, #cbd5e1);
-  color: var(--text-strong, #0f172a);
+  border: 1px solid var(--border);
+  color: var(--ink);
   background: transparent;
 }
 
 .landing-secondary:hover,
 .landing-secondary:focus-visible {
-  border-color: var(--accent, #0f766e);
-  color: var(--accent, #0f766e);
+  border-color: var(--teal);
+  color: var(--teal);
 }
 
 .landing-highlights {
@@ -83,21 +83,21 @@
 
 .landing-highlights article {
   padding: 1.25rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 10px;
   display: grid;
   gap: 0.5rem;
-  background: var(--surface, #ffffff);
+  background: var(--surface);
 }
 
 .landing-highlights h2 {
   margin: 0;
   font-size: 1.05rem;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .landing-highlights p {
   margin: 0;
-  color: var(--text-muted, #475569);
+  color: var(--muted);
   font-size: 0.95rem;
 }
