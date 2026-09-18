@@ -1,10 +1,17 @@
 import { getDatabasePool } from '../../database/client.js';
+import { inTransaction } from '../../database/pool.js';
+import { validateEventStatusTransition } from './status.js';
 import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
 
 export type EventLifecycleRepository = {
   createEvent(request: CreateEventRequest): Promise<EventRecord>;
   findEventById(eventId: string): Promise<EventRecord | null>;
-  updateEventStatus(eventId: string, status: EventRecord['status'], reason?: string): Promise<EventRecord>;
+  updateEventStatus(
+    eventId: string,
+    status: EventRecord['status'],
+    actorId: string,
+    reason?: string,
+  ): Promise<EventRecord>;
   listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]>;
   updateEvent(eventId: string, update: EventUpdate): Promise<EventRecord>;
   deleteEvent(eventId: string): Promise<void>;
@@ -167,43 +174,76 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
   async updateEventStatus(
     eventId: string,
     status: EventRecord['status'],
+    actorId: string,
     reason?: string,
   ): Promise<EventRecord> {
-    const result = await getDatabasePool().query<EventRow>(
-      `
-        UPDATE events
-        SET status = $2::event_status,
-            decision_reason = COALESCE($3, decision_reason),
-            status_changed_at = now()
-        WHERE id = $1
-        RETURNING
-          id,
-          title,
-          description,
-          purpose,
-          client_org_id,
-          organiser_id,
-          coordinator_id,
-          status,
-          status_changed_at,
-          lower(event_range) AS start_at,
-          upper(event_range) AS end_at,
-          expected_attendance,
-          layout_id,
-          venue_requirements,
-          accessibility_note,
-          equipment_requirements,
-          layout_preference,
-          registration_setup
-      `,
-      [eventId, status, reason ?? null],
-    );
+    return inTransaction(getDatabasePool(), async client => {
+      // Lock the row and read its authoritative current status before trusting
+      // it for the transition check or the audit entry's old_value. The
+      // service layer already did this same read-then-validate before calling
+      // in, but that read is not inside this transaction: a concurrent status
+      // change between that read and this one must not let an now-illegal
+      // transition through, and must not let the audit log record a "before"
+      // state that was never actually true.
+      const locked = await client.query<{ status: EventRecord['status'] }>(
+        `SELECT status FROM events WHERE id = $1 FOR UPDATE`, [eventId],
+      );
+      const fromStatus = locked.rows[0]?.status;
+      if (!fromStatus) {
+        throw new Error(`Event not found: ${eventId}`);
+      }
+      const transition = validateEventStatusTransition(fromStatus, status);
+      if (!transition.allowed) {
+        throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
+      }
 
-    if (!result.rows[0]) {
-      throw new Error(`Event not found: ${eventId}`);
-    }
+      const result = await client.query<EventRow>(
+        `
+          UPDATE events
+          SET status = $2::event_status,
+              decision_reason = COALESCE($3, decision_reason),
+              status_changed_at = now()
+          WHERE id = $1
+          RETURNING
+            id,
+            title,
+            description,
+            purpose,
+            client_org_id,
+            organiser_id,
+            coordinator_id,
+            status,
+            status_changed_at,
+            lower(event_range) AS start_at,
+            upper(event_range) AS end_at,
+            expected_attendance,
+            layout_id,
+            venue_requirements,
+            accessibility_note,
+            equipment_requirements,
+            layout_preference,
+            registration_setup
+        `,
+        [eventId, status, reason ?? null],
+      );
 
-    return mapEvent(result.rows[0]);
+      const updated = result.rows[0]!;
+
+      // E14-S02 Scenario 1: the status change and its audit entry commit
+      // together, so an event never carries a status the log doesn't explain.
+      // Skipped when fromStatus === status (validateEventStatusTransition
+      // allows a same-status call as a no-op): nothing changed, so there is
+      // nothing to record.
+      if (fromStatus !== status) {
+        await client.query(
+          `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+           VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5)`,
+          [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
+        );
+      }
+
+      return mapEvent(updated);
+    });
   }
 
   async listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]> {

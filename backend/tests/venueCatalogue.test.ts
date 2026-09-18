@@ -2,11 +2,11 @@
 // "Maintain the venue catalogue", E05-S02 "Match layout requirements to
 // venue capacity").
 //
-// No database is touched: validateVenueInput and the layout-mutation
+// No business-data query is made: validateVenueInput and the layout-mutation
 // validators are exercised directly, and every guarded or mutating function
-// is checked against denyPool/denyQuery stubs that throw if a query is
-// attempted, proving each one rejects unauthorised or invalid input before
-// opening a transaction.
+// is checked against denyPool/denyQuery stubs that throw if any query other
+// than the expected E14-S02 audit-denial write is attempted, proving each
+// one rejects unauthorised or invalid input before opening a transaction.
 //
 // See venueCatalogue.integration.test.ts for the real-Postgres behavioural
 // scenarios (E05-S01 TC_E05S01_01..07, E05-S02 TC_E05S02_01..08).
@@ -24,8 +24,11 @@ import type { Pool } from 'pg';
 const venueStaff: AuthenticatedUser = { id: 'staff-1', email: 'staff@example.test', role: 'venue_staff', isActive: true, failedLoginCount: 0 };
 const coordinator: AuthenticatedUser = { ...venueStaff, id: 'coord-1', role: 'event_coordinator' };
 const attendee: AuthenticatedUser = { ...venueStaff, id: 'attendee-1', role: 'attendee' };
-const denyQuery: Query = async () => { throw new Error('Unauthorised database read'); };
-const denyPool = {} as Pool;
+const denyQuery: Query = async sql => {
+  if (sql.includes('INSERT INTO audit_logs')) return { rows: [] };
+  throw new Error('Unauthorised database read');
+};
+const denyPool = { query: denyQuery } as unknown as Pool;
 
 function validBody() {
   return {
@@ -130,17 +133,26 @@ test('validateVenueInput trims text and accepts a fully valid submission', () =>
   });
 });
 
-test('catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them', () => {
-  assert.throws(() => requireVenueStaff(undefined), { status: 401 });
-  assert.throws(() => requireVenueStaff(attendee), { status: 403 });
-  assert.throws(() => requireVenueStaff(coordinator), { status: 403 });
-  assert.throws(() => requireVenueStaff({ ...venueStaff, isActive: false }), { status: 403 });
-  assert.doesNotThrow(() => requireVenueStaff(venueStaff));
+test('catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them', async () => {
+  await assert.rejects(requireVenueStaff(denyQuery, undefined), { status: 401 });
+  await assert.rejects(requireVenueStaff(denyQuery, attendee), { status: 403 });
+  await assert.rejects(requireVenueStaff(denyQuery, coordinator), { status: 403 });
+  await assert.rejects(requireVenueStaff(denyQuery, { ...venueStaff, isActive: false }), { status: 403 });
+  await assert.doesNotReject(requireVenueStaff(denyQuery, venueStaff));
 
-  assert.throws(() => requireCatalogueViewer(undefined), { status: 401 });
-  assert.throws(() => requireCatalogueViewer(attendee), { status: 403 });
-  assert.doesNotThrow(() => requireCatalogueViewer(venueStaff));
-  assert.doesNotThrow(() => requireCatalogueViewer(coordinator));
+  await assert.rejects(requireCatalogueViewer(denyQuery, undefined), { status: 401 });
+  await assert.rejects(requireCatalogueViewer(denyQuery, attendee), { status: 403 });
+  await assert.doesNotReject(requireCatalogueViewer(denyQuery, venueStaff));
+  await assert.doesNotReject(requireCatalogueViewer(denyQuery, coordinator));
+});
+
+test('a catalogue role denial is audited against the screen', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const query: Query = async (sql, values) => { calls.push({ sql, values }); return { rows: [] }; };
+  await assert.rejects(requireVenueStaff(query, attendee), { status: 403 });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO audit_logs/);
+  assert.deepEqual(calls[0].values, [attendee.id, 'venue_catalogue']);
 });
 
 test('read operations reject unauthorised viewers before querying the database', async () => {

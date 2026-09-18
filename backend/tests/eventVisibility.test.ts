@@ -5,7 +5,13 @@ import { AccessError, getEvent, listEvents, listNotifications, permittedDelivery
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 
 const user: AuthenticatedUser = { id: 'organiser-a', email: 'organiser@example.test', role: 'event_organiser', clientOrgId: 'client-a', isActive: true, failedLoginCount: 0 };
-const denyQuery: Query = async () => { throw new Error('Unauthorised database read'); };
+// requireOrganiser's 403 branch legitimately writes one audit_logs row (E14-S02
+// Scenario 2) before rejecting, so this fixture still fails closed on any real
+// business-data read while letting that specific, expected write through.
+const denyQuery: Query = async sql => {
+  if (sql.includes('INSERT INTO audit_logs')) return { rows: [] };
+  throw new Error('Unauthorised database read');
+};
 
 test('missing membership and missing event organisation fail closed', () => {
   assert.equal(canAccessClientOrganisation(user, undefined).allowed, false);
@@ -16,13 +22,22 @@ test('missing membership and missing event organisation fail closed', () => {
 });
 
 test('unauthenticated, unlinked, inactive, locked and other roles cannot query organiser data', async () => {
-  assert.throws(() => requireOrganiser(undefined), { status: 401 });
+  await assert.rejects(requireOrganiser(denyQuery, undefined, 'events'), { status: 401 });
   for (const changes of [{ clientOrgId: undefined }, { isActive: false }, { failedLoginCount: 5 }, { lockedUntil: new Date(Date.now() + 60000) }, { role: 'attendee' as const }]) {
     const blocked = { ...user, ...changes };
     await assert.rejects(listEvents(denyQuery, blocked), AccessError);
     await assert.rejects(listNotifications(denyQuery, blocked), AccessError);
     await assert.rejects(getEvent(denyQuery, blocked, 'EVT-B01'), AccessError);
   }
+});
+
+test('a role/organisation denial is audited against the screen, not a specific event', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const query: Query = async (sql, values) => { calls.push({ sql, values }); return { rows: [] }; };
+  await assert.rejects(requireOrganiser(query, { ...user, role: 'attendee' }, 'notifications'), { status: 403 });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO audit_logs/);
+  assert.deepEqual(calls[0].values, [user.id, 'notifications']);
 });
 
 test('direct denied access commits actor and attempted event before returning denial', async () => {

@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { createProfileRepository } from '../src/modules/accessControl/profileRepository.js';
 import { loadProfile, updateProfile } from '../src/modules/accessControl/profile.js';
+import type { Query } from '../src/modules/eventVisibility/service.js';
 import { tokenDigest } from '../src/modules/accessControl/sessions.js';
 import { insertNotificationDelivery } from '../src/modules/notificationDispatcher/postgres.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -33,22 +34,23 @@ test('real sessions, profile persistence, case-insensitive uniqueness and future
       VALUES ($1, $2, 'Alex', 'alex@example.test', 'synthetic-fixture', 'event_organiser', '9123 4567'),
       ($3, $2, 'Other', 'other@example.test', 'synthetic-fixture', 'event_organiser', '9000 0000')`, [id, org, other]);
     const identity: AuthenticatedUser = { id, email: 'alex@example.test', role: 'event_organiser', clientOrgId: org, isActive: true, failedLoginCount: 0 };
-    const repository = createProfileRepository((sql, values) => database!.query(sql, values));
+    const dbQuery: Query = (sql, values) => database!.query(sql, values);
+    const repository = createProfileRepository(dbQuery);
     const changed = { full_name: 'Alexandra', email: ' NEW@EXAMPLE.TEST ', contact_number: '9876 5432' };
-    await updateProfile(repository, identity, changed);
-    const profile = await loadProfile(repository, identity);
+    await updateProfile(dbQuery, repository, identity, changed);
+    const profile = await loadProfile(dbQuery, repository, identity);
     assert.equal(profile.full_name, changed.full_name);
     assert.equal(profile.email, 'new@example.test');
     assert.equal(profile.contact_number, changed.contact_number);
     assert.equal(profile.client_org_id, org);
     assert.equal(profile.organisation_name, 'Client A');
-    assert.equal((await updateProfile(repository, identity, { ...changed, email: 'NEW@example.test' })).email, profile.email);
+    assert.equal((await updateProfile(dbQuery, repository, identity, { ...changed, email: 'NEW@example.test' })).email, profile.email);
     for (const email of ['other@example.test', ' OTHER@EXAMPLE.TEST ']) {
-      await assert.rejects(updateProfile(repository, identity, { ...changed, full_name: 'Should not persist', email }), { status: 409 });
-      assert.equal((await loadProfile(repository, identity)).full_name, changed.full_name);
+      await assert.rejects(updateProfile(dbQuery, repository, identity, { ...changed, full_name: 'Should not persist', email }), { status: 409 });
+      assert.equal((await loadProfile(dbQuery, repository, identity)).full_name, changed.full_name);
     }
     for (const forbidden of ['role', 'user_id', 'client_org_id', 'organisation_name', 'password_hash', 'is_active', 'locked_until', 'deactivated_at', 'failed_login_count']) {
-      await assert.rejects(updateProfile(repository, identity, { ...changed, [forbidden]: other }), { status: 400 });
+      await assert.rejects(updateProfile(dbQuery, repository, identity, { ...changed, [forbidden]: other }), { status: 400 });
     }
     const rows = (await database.query('SELECT * FROM users ORDER BY email')).rows;
     assert.equal(rows.length, 2);

@@ -9,9 +9,15 @@ export class AccessError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-export function requireOrganiser(user: AuthenticatedUser | undefined): string {
+// E14-S02 Scenario 2: a wrong-role or unlinked-organisation denial has no
+// specific event to attach to, so it's logged against the screen the caller
+// was trying to reach rather than an entity_id. Only the 403 branch is
+// logged - an unauthenticated 401 has no actor to attribute it to.
+export async function requireOrganiser(query: Query, user: AuthenticatedUser | undefined, screen: string): Promise<string> {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['event_organiser']).allowed || !user.clientOrgId) {
+    await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
+      VALUES ($1, 'screen', gen_random_uuid(), 'Access Denied', $2)`, [user.id, screen]);
     throw new AccessError(403, 'Access denied. Contact your administrator about your organisation access.');
   }
   return user.clientOrgId;
@@ -21,7 +27,7 @@ const projection = `e.id, e.event_code, e.title, e.description, e.status,
   lower(e.event_range) AS starts_at, u.full_name AS creator_name`;
 
 export async function listEvents(query: Query, user: AuthenticatedUser, search = '') {
-  const org = requireOrganiser(user);
+  const org = await requireOrganiser(query, user, 'events');
   // Position treats search text literally, including SQL wildcard characters.
   // SCRUM-27 Scenario 1: a draft is only visible to the organiser who owns
   // it, not to colleagues browsing the same client organisation (this
@@ -34,7 +40,7 @@ export async function listEvents(query: Query, user: AuthenticatedUser, search =
 }
 
 export async function getEvent(query: Query, user: AuthenticatedUser, identifier: string) {
-  const org = requireOrganiser(user);
+  const org = await requireOrganiser(query, user, 'events');
   // Same draft-privacy rule as listEvents above.
   const result = await query(`SELECT ${projection} FROM events e
     JOIN users u ON u.id = e.organiser_id
@@ -51,7 +57,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 }
 
 export async function listNotifications(query: Query, user: AuthenticatedUser) {
-  const org = requireOrganiser(user);
+  const org = await requireOrganiser(query, user, 'notifications');
   // Eventless messages are excluded because their text cannot be attributed safely.
   return (await query(`SELECT n.id, n.title, n.message, n.event_id, n.created_at, n.is_read
     FROM notifications n JOIN events e ON e.id = n.event_id
