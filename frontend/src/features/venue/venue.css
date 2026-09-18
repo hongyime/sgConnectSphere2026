@@ -40,6 +40,43 @@
 .venue-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
 .venue-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
 
+.venue-alert-block {
+  display: grid; gap: 0.3rem; padding: 0.75rem; margin: 0.5rem 0;
+  border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-weight: 600;
+}
+.venue-alert-block ul { margin: 0.25rem 0 0; padding-left: 1.2rem; font-weight: 500; }
+
+.venue-card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+
+.venue-form { display: grid; gap: 1rem; max-width: 42rem; }
+
+.field-error { margin: 0.2rem 0 0; color: #b91c1c; font-size: 0.85rem; }
+
+.tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
+.tag-chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.25rem 0.6rem; border-radius: 999px; background: var(--surface-strong, #f0f3ef);
+  border: 1px solid var(--border, #e2e8f0); font-size: 0.85rem;
+}
+.tag-chip button { border: 0; background: none; cursor: pointer; font-size: 0.9rem; line-height: 1; color: var(--muted, #5c5c5c); }
+.tag-chip button:hover { color: #b91c1c; }
+
+.tag-input-row { display: flex; gap: 0.5rem; }
+.tag-input-row input { flex: 1; padding: 0.5rem 0.6rem; border: 1px solid var(--border, #cbd5e1); border-radius: 6px; }
+
+.layout-list { list-style: none; margin: 0 0 0.4rem; padding: 0; display: grid; gap: 0.35rem; }
+.layout-list li {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.4rem 0.6rem; border: 1px solid var(--border, #e2e8f0); border-radius: 6px; font-size: 0.9rem;
+}
+.layout-list li button { border: 0; background: none; cursor: pointer; font-size: 0.9rem; color: var(--muted, #5c5c5c); }
+.layout-list li button:hover { color: #b91c1c; }
+
+.layout-input-row { display: flex; gap: 0.5rem; }
+.layout-input-row input { padding: 0.5rem 0.6rem; border: 1px solid var(--border, #cbd5e1); border-radius: 6px; }
+.layout-input-row input[aria-label="Layout name"] { flex: 2; }
+.layout-input-row input[aria-label="Layout capacity"] { flex: 1; min-width: 6rem; }
+
 .venue-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); background: var(--surface); }
 .venue-table th, .venue-table td { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
 .venue-table th { background: rgba(15, 23, 42, 0.03); font-weight: 600; color: var(--ink); }
