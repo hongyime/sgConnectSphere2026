@@ -8,15 +8,15 @@
 .permission-denied-card {
   max-width: 30rem;
   padding: 2rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--surface, #ffffff);
+  background: var(--surface);
   display: grid;
   gap: 1rem;
   justify-items: start;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .permission-denied-card h1 { margin: 0; font-size: 1.65rem; }
-.permission-denied-card p { margin: 0; color: var(--text-muted, #475569); }
+.permission-denied-card p { margin: 0; color: var(--muted); }
 .permission-denied-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }

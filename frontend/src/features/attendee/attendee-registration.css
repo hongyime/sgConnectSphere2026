@@ -7,30 +7,30 @@
 }
 
 .attendee-registration-heading { display: grid; gap: 0.25rem; }
-.attendee-registration-heading h1 { margin: 0; font-size: 1.65rem; color: var(--text-strong, #0f172a); }
-.attendee-registration-heading .eyebrow { margin: 0; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted, #4b5563); }
+.attendee-registration-heading h1 { margin: 0; font-size: 1.65rem; color: var(--ink); }
+.attendee-registration-heading .eyebrow { margin: 0; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 
 .attendee-registration-list { display: grid; gap: 0.5rem; }
 .attendee-registration-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0.85rem 1rem; border: 1px solid var(--border, #e2e8f0); border-radius: 8px;
-  background: var(--surface, #ffffff); text-decoration: none; color: var(--text-strong, #0f172a);
+  padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); text-decoration: none; color: var(--ink);
 }
-.attendee-registration-row:hover, .attendee-registration-row:focus-visible { border-color: var(--accent, #0f766e); }
-.attendee-registration-row small { display: block; color: var(--text-muted, #475569); font-size: 0.85rem; margin-top: 0.1rem; }
-.attendee-registration-capacity { color: var(--text-muted, #475569); font-size: 0.9rem; }
+.attendee-registration-row:hover, .attendee-registration-row:focus-visible { border-color: var(--teal); }
+.attendee-registration-row small { display: block; color: var(--muted); font-size: 0.85rem; margin-top: 0.1rem; }
+.attendee-registration-capacity { color: var(--muted); font-size: 0.9rem; }
 
-.attendee-registration-detail { padding: 1rem; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; background: var(--surface, #ffffff); }
+.attendee-registration-detail { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .attendee-registration-detail dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.75rem; margin: 0; font-size: 0.95rem; }
-.attendee-registration-detail dt { color: var(--text-muted, #475569); }
+.attendee-registration-detail dt { color: var(--muted); }
 
 .attendee-registration-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-.attendee-registration-actions p { margin: 0; color: var(--text-strong, #0f172a); }
+.attendee-registration-actions p { margin: 0; color: var(--ink); }
 
-.attendee-registration-form { display: grid; gap: 0.75rem; max-width: 32rem; padding: 1rem; border: 1px solid var(--border, #e2e8f0); border-radius: 10px; background: var(--surface, #ffffff); }
+.attendee-registration-form { display: grid; gap: 0.75rem; max-width: 32rem; padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .attendee-registration-form fieldset { border: none; padding: 0; margin: 0; }
 .attendee-registration-form legend { font-weight: 600; margin-bottom: 0.25rem; }
-.attendee-registration-form textarea { padding: 0.5rem 0.6rem; border: 1px solid var(--border, #cbd5e1); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
+.attendee-registration-form textarea { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
 .attendee-registration-rating { display: inline-flex; align-items: center; gap: 0.25rem; margin-right: 0.5rem; }
 
 .attendee-registration-ok {

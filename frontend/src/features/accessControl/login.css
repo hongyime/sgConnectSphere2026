@@ -9,9 +9,9 @@
   width: 100%;
   max-width: 28rem;
   padding: 2rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--surface, #ffffff);
+  background: var(--surface);
   display: grid;
   gap: 1rem;
 }
@@ -19,12 +19,12 @@
 .login-card h1 {
   margin: 0;
   font-size: 1.75rem;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .login-copy {
   margin: 0;
-  color: var(--text-muted, #475569);
+  color: var(--muted);
 }
 
 .login-field {
@@ -35,22 +35,22 @@
 .login-field label {
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .login-field input {
   padding: 0.55rem 0.7rem;
-  border: 1px solid var(--border, #cbd5e1);
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 1rem;
   background: #ffffff;
-  color: var(--text-strong, #0f172a);
+  color: var(--ink);
 }
 
 .login-field input:focus-visible {
-  outline: 2px solid var(--accent, #0f766e);
+  outline: 2px solid var(--teal);
   outline-offset: 1px;
-  border-color: var(--accent, #0f766e);
+  border-color: var(--teal);
 }
 
 .login-error {
@@ -63,7 +63,7 @@
   padding: 0.65rem 1rem;
   border: none;
   border-radius: 6px;
-  background: var(--accent, #0f766e);
+  background: var(--teal);
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
@@ -76,16 +76,16 @@
 
 .login-submit:hover:not(:disabled),
 .login-submit:focus-visible:not(:disabled) {
-  background: var(--accent-strong, #0b5c55);
+  background: var(--teal-dark);
 }
 
 .login-footer {
   margin: 0;
   font-size: 0.9rem;
-  color: var(--text-muted, #475569);
+  color: var(--muted);
 }
 
 .login-footer a {
-  color: var(--accent, #0f766e);
+  color: var(--teal);
   font-weight: 600;
 }

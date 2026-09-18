@@ -1,9 +1,9 @@
 .registration-page { max-width: 32rem; margin: 2rem auto; padding: 1.5rem; }
 .registration-field { display: grid; gap: .5rem; margin: 1rem 0; }
-.registration-field input { width: 100%; min-width: 0; padding: .75rem; border: 1px solid #64748b; border-radius: .4rem; }
-.registration-field [aria-invalid="true"] { border-color: #a11; }
-.registration-field p, .registration-page [role="alert"] { color: #a11; }
+.registration-field input { width: 100%; min-width: 0; padding: .75rem; border: 1px solid var(--border); border-radius: .4rem; }
+.registration-field [aria-invalid="true"] { border-color: var(--red); }
+.registration-field p, .registration-page [role="alert"] { color: var(--red); }
 .profile-organisation { margin: 1rem 0; }
-.profile-hint { display: block; margin-top: .35rem; color: #64748b; font-size: .85rem; }
-.profile-danger-zone { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid #e2e2e2; }
-.profile-danger-button { padding: .6rem 1rem; border: 1px solid #a11; border-radius: .4rem; background: #fff; color: #a11; }
+.profile-hint { display: block; margin-top: .35rem; color: var(--muted); font-size: .85rem; }
+.profile-danger-zone { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
+.profile-danger-button { padding: .6rem 1rem; border: 1px solid var(--red); border-radius: .4rem; background: var(--surface); color: var(--red); }
