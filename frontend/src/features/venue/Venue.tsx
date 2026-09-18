@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, Building2, CalendarClock, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Building2, CalendarClock, CheckCircle2, Search } from 'lucide-react';
 import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
 import { listVenues, retireVenue, type BlockingBooking, type Venue } from './venueApi';
 import './venue.css';
@@ -57,16 +57,26 @@ export function VenueInventory() {
   const [state, setState] = useState<VenueListState>({ status: 'loading' });
   const [retiringId, setRetiringId] = useState<string | null>(null);
   const [blockedRetire, setBlockedRetire] = useState<Record<string, BlockingBooking[]>>({});
+  // Search input the user is typing; only takes effect on submit. Kept
+  // separate from the term actually sent to the API so retire/reload can
+  // re-run the last submitted search without racing an in-progress edit.
+  const [searchInput, setSearchInput] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (search: string) => {
     setState({ status: 'loading' });
-    const result = await listVenues();
+    const result = await listVenues(search);
     setState(result.ok ? { status: 'loaded', venues: result.venues } : { status: 'error', message: result.message });
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(appliedSearch);
+  }, [load, appliedSearch]);
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setAppliedSearch(searchInput.trim());
+  };
 
   const handleRetire = async (venue: Venue) => {
     if (!window.confirm(`Retire "${venue.name}"? It will no longer be searchable.`)) return;
@@ -86,7 +96,7 @@ export function VenueInventory() {
       const { [venue.id]: _dropped, ...rest } = current;
       return rest;
     });
-    await load();
+    await load(appliedSearch);
   };
 
   return (
@@ -100,19 +110,32 @@ export function VenueInventory() {
         <Link to="/venue/inventory/new" className="primary-action">Add venue</Link>
       </p>
 
+      <form className="venue-search" role="search" onSubmit={handleSearchSubmit}>
+        <label htmlFor="venue-search-input">Search venues</label>
+        <input
+          id="venue-search-input" type="search" value={searchInput}
+          placeholder="Search by venue name" onChange={(event) => setSearchInput(event.target.value)}
+        />
+        <button type="submit" className="secondary-action"><Search size={14} aria-hidden="true" /> Search</button>
+      </form>
+
       {state.status === 'loading' ? <p role="status">Loading venues…</p> : null}
       {state.status === 'error' ? (
         <div role="alert" className="login-error">
           {state.message}{' '}
-          <button type="button" className="secondary-action" onClick={load}>Try again</button>
+          <button type="button" className="secondary-action" onClick={() => load(appliedSearch)}>Try again</button>
         </div>
       ) : null}
 
       {state.status === 'loaded' ? (
         state.venues.length === 0 ? (
-          <p>No venues yet. Add one to get started.</p>
+          <p>{appliedSearch ? `No venues match "${appliedSearch}".` : 'No venues yet. Add one to get started.'}</p>
         ) : (
-          <section className="venue-cards" aria-label="Venue catalogue">
+          <>
+            {state.venues.length === 100 ? (
+              <p className="venue-search-hint">Showing the first 100 matching venues — refine your search to find others.</p>
+            ) : null}
+            <section className="venue-cards" aria-label="Venue catalogue">
             {state.venues.map((venue) => (
               <article key={venue.id}>
                 <header>
@@ -148,7 +171,8 @@ export function VenueInventory() {
                 </div>
               </article>
             ))}
-          </section>
+            </section>
+          </>
         )
       ) : null}
     </main>

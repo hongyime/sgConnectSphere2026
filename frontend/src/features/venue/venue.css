@@ -37,6 +37,11 @@
 .venue-select { display: inline-flex; align-items: center; gap: 0.5rem; }
 .venue-select select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
 
+.venue-search { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.venue-search label { font-weight: 600; font-size: 0.9rem; }
+.venue-search input { flex: 1; max-width: 20rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border, #cbd5e1); border-radius: 6px; }
+.venue-search-hint { color: var(--muted, #5c5c5c); font-size: 0.85rem; margin: 0 0 0.5rem; }
+
 .venue-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
 .venue-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
 
