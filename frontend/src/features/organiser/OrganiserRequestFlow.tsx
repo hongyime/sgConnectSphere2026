@@ -414,9 +414,9 @@ export function OrganiserRequestFlow({
                   );
                 })}
               </div>
-              <label htmlFor="request-accessibility-other">Other accessibility needs (not listed above)</label>
+              <label htmlFor="request-accessibility-needs">Accessibility needs</label>
               <textarea
-                id="request-accessibility-other"
+                id="request-accessibility-needs"
                 value={draft.accessibilityNeeds}
                 rows={3}
                 onChange={(event) => setDraft(updateDraft(draft, 'accessibilityNeeds', event.target.value))}
