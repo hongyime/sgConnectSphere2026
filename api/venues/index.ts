@@ -5,6 +5,7 @@ import {
   addVenueLayout, createVenue, getVenue, removeVenueLayout, retireVenue,
   searchVenues, updateVenue, updateVenueLayout,
 } from '../../backend/src/modules/venueBooking/catalogue.js';
+import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // GET and POST share one file (create/update/retire/layout mutations all
@@ -15,6 +16,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     await respond(response, async () => {
       const user = await currentUser(request);
       const params = new URL(request.url || '/', 'http://localhost').searchParams;
+
+      // E02-S03: the organiser request form's predefined accessibility
+      // checklist reads this list directly - any signed-in user, not just
+      // venue staff/coordinators (listAccessibilityFeatures enforces that).
+      if (params.get('accessibilityFeatures') === '1') {
+        return { features: await listAccessibilityFeatures(query, user) };
+      }
+
       const id = params.get('id');
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
@@ -27,7 +36,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
           throw new AccessError(400, 'Attendance must be a whole number greater than 0.');
         }
       }
-      return { venues: await searchVenues(query, user, params.get('q') || '', layout, attendance) };
+      const accessibilityParam = params.get('accessibility');
+      const accessibility = accessibilityParam ? accessibilityParam.split(',').filter(Boolean) : undefined;
+      return { venues: await searchVenues(query, user, params.get('q') || '', layout, attendance, accessibility) };
     });
     return;
   }
