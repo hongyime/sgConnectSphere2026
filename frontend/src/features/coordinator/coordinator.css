@@ -242,26 +242,11 @@
   resize: vertical;
 }
 
-.primary-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 6px;
-  background: var(--teal);
-  color: #ffffff;
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.primary-action:hover:not(:disabled):not(.primary-action-disabled),
-.primary-action:focus-visible:not(:disabled):not(.primary-action-disabled) {
-  background: var(--teal-dark);
-}
-
-.primary-action:disabled,
+/* Falls through to the shared .primary-action in styles.css. Only the
+   disabled state needs to stay here: Coordinator.tsx applies this class to
+   a <Link>, which has no native :disabled state for the global stylesheet
+   to hook into. pointer-events: none also prevents :hover from ever
+   registering on it, so no extra hover override is needed here. */
 .primary-action-disabled {
   opacity: 0.55;
   cursor: not-allowed;

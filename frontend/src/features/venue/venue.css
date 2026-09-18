@@ -52,10 +52,3 @@
 .venue-detail-grid dt { color: var(--muted); }
 
 .venue-decision-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-
-.secondary-action {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.55rem 1rem; border: 1px solid var(--border); background: transparent;
-  border-radius: 6px; color: var(--ink); font-weight: 600; cursor: pointer;
-}
-.secondary-action:hover, .secondary-action:focus-visible { border-color: var(--teal); color: var(--teal); }
