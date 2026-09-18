@@ -9,16 +9,16 @@
   width: 100%;
   max-width: 30rem;
   padding: 2rem;
-  border: 1px solid var(--border, #e2e8f0);
+  border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--surface, #ffffff);
+  background: var(--surface);
   display: grid;
   gap: 1rem;
   justify-items: start;
 }
 
-.verify-card h1 { margin: 0; font-size: 1.65rem; color: var(--text-strong, #0f172a); }
-.verify-card p { margin: 0; color: var(--text-muted, #475569); }
+.verify-card h1 { margin: 0; font-size: 1.65rem; color: var(--ink); }
+.verify-card p { margin: 0; color: var(--muted); }
 
 .verify-icon { width: 3.5rem; height: 3.5rem; display: grid; place-items: center; border-radius: 999px; }
 .verify-icon-ok      { background: rgba(5, 150, 105, 0.14);  color: #047857; }
