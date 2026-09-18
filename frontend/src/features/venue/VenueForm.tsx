@@ -296,10 +296,19 @@ function LayoutListField({ layouts, onAdd, onRemove, errors, warning }: {
         ))}
       </ul>
       <div className="layout-input-row">
-        <input aria-label="Layout name" placeholder="Layout name" value={label} onChange={(event) => setLabel(event.target.value)} />
+        <input
+          aria-label="Layout name" placeholder="Layout name" value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === 'Enter') { event.preventDefault(); commit(); }
+          }}
+        />
         <input
           aria-label="Layout capacity" placeholder="Capacity" type="number" value={capacity}
           onChange={(event) => setCapacity(event.target.value)}
+          onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
+            if (event.key === 'Enter') { event.preventDefault(); commit(); }
+          }}
         />
         <button type="button" className="secondary-action" onClick={commit}>Add layout</button>
       </div>
