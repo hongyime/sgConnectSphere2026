@@ -7,8 +7,8 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **44** (19.1%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **183** (79.6%)
+- Automated (explicit TC_ID in an active test title): **47** (20.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **180** (78.3%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -16,7 +16,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 15 | 17 | 0 |
-| E02 | 13 | 7 | 6 | 0 |
+| E02 | 13 | 10 | 3 | 0 |
 | E03 | 26 | 2 | 24 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
@@ -27,7 +27,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **44** | **183** | **3** |
+| **Total** | **230** | **47** | **180** | **3** |
 
 ## Case-by-case status
 
@@ -81,9 +81,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
 | `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators; tests/e2e/organiser.spec.ts: TC_E02S02_01  |
 | `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values; tests/e2e/organiser.spec.ts: TC_E02S02_02 — request list fil |
-| `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
-| `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
-| `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
+| `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
+| `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
+| `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
 | `TC_E02S03_01` | E02-S03 | Verify that selecting predefined accessibility requirements should store them wi | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator |
 | `TC_E02S03_02` | E02-S03 | Verify that a free-text accessibility requirement should be stored and shown to  | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching |
 | `TC_E02S03_03` | E02-S03 | Verify that recorded predefined accessibility requirements should exclude or fla | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them |
@@ -339,7 +339,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty equipment/layout/registration field without
 - an end time at or before the start time is rejected
 - a non-positive or non-integer expected attendance is reported as missing
-- an empty HTTP request reports all ten mandatory fields without writing
+- an empty HTTP request being submitted reports all ten mandatory fields without writing
+- an empty HTTP request saved as a draft reports only the three always-mandatory fields
+- a draft with title, attendance and dates but nothing else is saved
+- a draft missing title, attendance or dates is still rejected
+- a draft can be re-saved as a draft with a changed field
+- a draft can be submitted through the same update entry point
+- submitting an update still requires every mandatory field
+- updating someone else\
+- updating an already-submitted request is refused
+- updating an unknown draft id is reported as not found
+- a draft can be deleted by its owner
+- deleting someone else\
+- deleting an already-submitted request is refused
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -430,9 +442,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
-- sends all request fields and confirms API success
-- a failed session lookup reports an error and allows retry
+- sends all request fields with same-origin credentials and confirms API success
+- a network failure reports an error and allows retry
 - API validation errors show all returned fields without claiming success
+- Save draft is enabled with optional fields incomplete, and saves as a draft
+- Save draft is disabled without a title, attendance, or dates
+- editing an existing draft PATCHes it instead of creating a new one
+- initialValues pre-fill the form for reopening a draft
+- clearing the dates disables Save draft too, not just Submit
+- prototype mode simulates submission without hitting the API
 
 ### `tests/e2e/admin.spec.ts`
 
