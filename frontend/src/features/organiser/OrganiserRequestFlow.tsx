@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   CalendarDays,
@@ -10,7 +10,7 @@ import {
   Save,
   Send,
 } from 'lucide-react';
-import { ACCESSIBILITY_OPTIONS } from './accessibilityOptions';
+import { listAccessibilityFeatures, type AccessibilityFeature } from './accessibilityApi';
 
 // Must match backend/src/modules/eventLifecycle/service.ts NONE_REQUIRED.
 const NONE_REQUIRED = 'none_required';
@@ -26,7 +26,11 @@ type DraftEvent = {
   expectedAttendance: string;
   venueRequirements: string;
   accessibilityNeeds: string;
-  accessibilityOptions: string[];
+  // E02-S03: predefined accessibility_features ids selected from the live
+  // vocabulary, distinct from the free-text accessibilityNeeds above -
+  // which is stored and shown to the Coordinator but excluded from
+  // automated venue matching.
+  accessibilityFeatureIds: string[];
   equipmentRequirements: string;
   layoutPreference: string;
   registrationSetup: string;
@@ -57,7 +61,7 @@ const initialDraft: DraftEvent = {
   expectedAttendance: '180',
   venueRequirements: 'Seminar room with theatre seating',
   accessibilityNeeds: 'Wheelchair access and front-row reserved seats',
-  accessibilityOptions: [],
+  accessibilityFeatureIds: [],
   equipmentRequirements: 'Projector, 2 wireless microphones, livestream support',
   layoutPreference: '',
   registrationSetup: '',
@@ -65,7 +69,7 @@ const initialDraft: DraftEvent = {
 
 const OPTIONAL_FIELDS: OptionalField[] = ['equipmentRequirements', 'layoutPreference', 'registrationSetup'];
 
-const requiredFields: { key: Exclude<FieldKey, 'accessibilityOptions'>; label: string; optional?: boolean }[] = [
+const requiredFields: { key: Exclude<FieldKey, 'accessibilityFeatureIds'>; label: string; optional?: boolean }[] = [
   { key: 'eventName', label: 'Event name' },
   { key: 'description', label: 'Description' },
   { key: 'purpose', label: 'Purpose' },
@@ -87,7 +91,7 @@ function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[numbe
   if (field.key === 'accessibilityNeeds') {
     // Satisfied by a predefined checkbox OR free text - either records a
     // real accessibility requirement (E02-S03).
-    return value.length > 0 || draft.accessibilityOptions.length > 0;
+    return value.length > 0 || draft.accessibilityFeatureIds.length > 0;
   }
   if (field.optional && value === NONE_REQUIRED) {
     return true;
@@ -140,20 +144,6 @@ function toIsoLocal(value: string) {
   return new Date(value).toISOString();
 }
 
-// Backend only has a single free-text accessibilityNote field (E02-S03: no
-// structured storage exists yet for predefined requirements). Combine the
-// checkbox selections into that same string rather than adding a new wire
-// field, so the payload shape - and existing tests asserting it exactly -
-// stay unchanged when no checkboxes are selected.
-function accessibilityNoteForPayload(draft: DraftEvent) {
-  if (draft.accessibilityOptions.length === 0) {
-    return draft.accessibilityNeeds;
-  }
-  return [draft.accessibilityOptions.join(', '), draft.accessibilityNeeds]
-    .filter((part) => part.trim().length > 0)
-    .join('; ');
-}
-
 export function OrganiserRequestFlow({
   prototype = false,
   draftId,
@@ -173,6 +163,18 @@ export function OrganiserRequestFlow({
   const [draft, setDraft] = useState<DraftEvent>(() => ({ ...initialDraft, ...initialValues }));
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>({ status: 'idle' });
+  // E02-S03: the predefined checklist is sourced live, not hardcoded. A
+  // failed fetch just leaves the checklist empty - free text is always
+  // available as a fallback, and prototype mode never needs a real list.
+  const [accessibilityFeatures, setAccessibilityFeatures] = useState<AccessibilityFeature[]>([]);
+  useEffect(() => {
+    if (prototype) return;
+    let cancelled = false;
+    listAccessibilityFeatures().then((result) => {
+      if (!cancelled && result.ok) setAccessibilityFeatures(result.features);
+    });
+    return () => { cancelled = true; };
+  }, [prototype]);
   const missingFields = useMemo(() => getMissingFields(draft), [draft]);
   const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
@@ -187,12 +189,12 @@ export function OrganiserRequestFlow({
     setDraft(updateDraft(draft, key, checked ? NONE_REQUIRED : ''));
   };
 
-  const toggleAccessibilityOption = (option: string, checked: boolean) => {
+  const toggleAccessibilityFeature = (featureId: string, checked: boolean) => {
     setDraft((current) => ({
       ...current,
-      accessibilityOptions: checked
-        ? [...current.accessibilityOptions, option]
-        : current.accessibilityOptions.filter((item) => item !== option),
+      accessibilityFeatureIds: checked
+        ? [...current.accessibilityFeatureIds, featureId]
+        : current.accessibilityFeatureIds.filter((id) => id !== featureId),
     }));
   };
 
@@ -228,7 +230,8 @@ export function OrganiserRequestFlow({
           endAt: toIsoLocal(draft.endDate),
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
-          accessibilityNote: accessibilityNoteForPayload(draft),
+          accessibilityNote: draft.accessibilityNeeds,
+          accessibilityFeatureIds: draft.accessibilityFeatureIds,
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -292,7 +295,8 @@ export function OrganiserRequestFlow({
           endAt: toIsoLocal(draft.endDate),
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
-          accessibilityNote: accessibilityNoteForPayload(draft),
+          accessibilityNote: draft.accessibilityNeeds,
+          accessibilityFeatureIds: draft.accessibilityFeatureIds,
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -399,17 +403,17 @@ export function OrganiserRequestFlow({
             <div className="field-control field-wide">
               <label>Accessibility requirements</label>
               <div className="field-checkbox-group" role="group" aria-label="Predefined accessibility requirements">
-                {ACCESSIBILITY_OPTIONS.map((option) => {
-                  const id = slugify(`accessibility-${option}`);
+                {accessibilityFeatures.map((feature) => {
+                  const id = slugify(`accessibility-${feature.label}`);
                   return (
-                    <label key={option} htmlFor={id} className="field-checkbox">
+                    <label key={feature.id} htmlFor={id} className="field-checkbox">
                       <input
                         id={id}
                         type="checkbox"
-                        checked={draft.accessibilityOptions.includes(option)}
-                        onChange={(event) => toggleAccessibilityOption(option, event.target.checked)}
+                        checked={draft.accessibilityFeatureIds.includes(feature.id)}
+                        onChange={(event) => toggleAccessibilityFeature(feature.id, event.target.checked)}
                       />
-                      {option}
+                      {feature.label}
                     </label>
                   );
                 })}
