@@ -58,9 +58,20 @@ test(
       ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser'),
       ($3, $2, 'coordinator@example.test', 'unused', 'Coordinator', 'event_coordinator')`, [organiser, org, coordinatorId]);
 
-    const scopedUrl = new URL(process.env.TEST_DATABASE_URL!);
-    scopedUrl.searchParams.set('options', `-csearch_path=${schema},public`);
-    pool = new Pool({ connectionString: scopedUrl.toString() });
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    // Every new physical connection the pool opens must be told to use the
+    // disposable schema by running an actual SET command, not by passing
+    // `options=-c search_path=...` on the connection string: poolers like
+    // Supabase's silently drop that startup option, which previously let
+    // writes land in the real public schema instead of the disposable one
+    // (confirmed against a live Supabase project). This SET is not awaited
+    // (pg's Pool does not wait for 'connect' listeners before reusing the
+    // client), but that's safe here: client.query() writes its bytes to the
+    // socket synchronously when called, and this listener and whatever
+    // query the pool goes on to run both execute in the same tick with no
+    // `await` between them, so the SET's bytes always reach Postgres first
+    // and are processed in that order on this one connection.
+    pool.on('connect', client => { void client.query(`SET search_path TO ${schema}, public`); });
     // A Pool, not the single setup Client, because attachDetails() fires its
     // facility/accessibility/layout lookups concurrently via Promise.all.
     const query: Query = (sql, values) => pool!.query(sql, values);
@@ -91,6 +102,67 @@ test(
     const found = await searchVenues(query, coordinatorUser, 'Grand Ballroom');
     assert.equal(found.length, 1);
     assert.equal(found[0].id, grandBallroom.id);
+
+    // Regression: two supported_layouts entries that normalize to the same
+    // code (case/spacing-insensitive, matching the store's own slugify)
+    // must be rejected as a validation error, not misreported as the venue
+    // name being taken (createVenue) or crash unhandled (updateVenue) —
+    // both previously happened because the primary-key violation only
+    // surfaced once linkLookups() tried to insert both. Confirmed this bug
+    // live against Supabase before this fix landed.
+    const duplicateOnCreate = await createVenue(pool, staffUser, {
+      name: 'Duplicate Layout Test Venue', location: 'Somewhere', max_capacity: 300,
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Wifi'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Theatre', capacity: 200 }, { label: 'theatre', capacity: 250 }],
+    });
+    assert.equal(duplicateOnCreate.status, 400);
+    const duplicateOnCreateBody = duplicateOnCreate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateOnCreateBody.error, 'validation_failed');
+    assert.ok(duplicateOnCreateBody.errors.supported_layouts);
+    const noVenueCreated = await db.query(`SELECT id FROM venues WHERE name = 'Duplicate Layout Test Venue'`);
+    assert.equal(noVenueCreated.rows.length, 0, 'the rejected create must not have written a venue row');
+
+    const duplicateOnUpdate = await updateVenue(pool, staffUser, grandBallroom.id, {
+      supported_layouts: [{ label: 'Banquet', capacity: 100 }, { label: 'BANQUET', capacity: 120 }],
+    });
+    assert.equal(duplicateOnUpdate.status, 400);
+    const duplicateOnUpdateBody = duplicateOnUpdate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateOnUpdateBody.error, 'validation_failed');
+    assert.ok(duplicateOnUpdateBody.errors.supported_layouts);
+    const unchangedAfterRejectedUpdate = await getVenue(query, staffUser, grandBallroom.id);
+    assert.deepEqual(
+      [...unchangedAfterRejectedUpdate.supported_layouts].sort((a, b) => a.label.localeCompare(b.label)),
+      [{ label: 'Banquet', capacity: 200 }, { label: 'Theatre', capacity: 280 }],
+    );
+
+    // Same bug class, found in a follow-up audit: the duplicate-code check
+    // above was only ever added for supported_layouts, not generalised to
+    // facilities/accessibility_features, which have the identical
+    // venue_facilities/venue_accessibility_features primary-key collision
+    // shape. Confirmed live against Supabase before this fix landed.
+    const duplicateFacilityOnCreate = await createVenue(pool, staffUser, {
+      name: 'Duplicate Facility Test Venue', location: 'Somewhere', max_capacity: 300,
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Stage', 'STAGE'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Theatre', capacity: 200 }],
+    });
+    assert.equal(duplicateFacilityOnCreate.status, 400);
+    const duplicateFacilityBody = duplicateFacilityOnCreate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateFacilityBody.error, 'validation_failed');
+    assert.ok(duplicateFacilityBody.errors.facilities);
+    const noDuplicateFacilityVenueCreated = await db.query(`SELECT id FROM venues WHERE name = 'Duplicate Facility Test Venue'`);
+    assert.equal(noDuplicateFacilityVenueCreated.rows.length, 0);
+
+    const duplicateFeatureOnUpdate = await updateVenue(pool, staffUser, grandBallroom.id, {
+      accessibility_features: ['Wheelchair Access', 'wheelchair access'],
+    });
+    assert.equal(duplicateFeatureOnUpdate.status, 400);
+    const duplicateFeatureBody = duplicateFeatureOnUpdate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateFeatureBody.error, 'validation_failed');
+    assert.ok(duplicateFeatureBody.errors.accessibility_features);
+    const unchangedAfterRejectedFeatureUpdate = await getVenue(query, staffUser, grandBallroom.id);
+    assert.deepEqual([...unchangedAfterRejectedFeatureUpdate.accessibility_features], ['Wheelchair Access']);
 
     // Scenario 2: reducing capacity below a confirmed booking's expected attendance
     // flags that booking and notifies the assigned coordinator.

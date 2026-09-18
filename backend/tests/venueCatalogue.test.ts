@@ -2,11 +2,11 @@
 // "Maintain the venue catalogue", E05-S02 "Match layout requirements to
 // venue capacity").
 //
-// No database is touched: validateVenueInput and the layout-mutation
+// No business-data query is made: validateVenueInput and the layout-mutation
 // validators are exercised directly, and every guarded or mutating function
-// is checked against denyPool/denyQuery stubs that throw if a query is
-// attempted, proving each one rejects unauthorised or invalid input before
-// opening a transaction.
+// is checked against denyPool/denyQuery stubs that throw if any query other
+// than the expected E14-S02 audit-denial write is attempted, proving each
+// one rejects unauthorised or invalid input before opening a transaction.
 //
 // See venueCatalogue.integration.test.ts for the real-Postgres behavioural
 // scenarios (E05-S01 TC_E05S01_01..07, E05-S02 TC_E05S02_01..08).
@@ -24,8 +24,11 @@ import type { Pool } from 'pg';
 const venueStaff: AuthenticatedUser = { id: 'staff-1', email: 'staff@example.test', role: 'venue_staff', isActive: true, failedLoginCount: 0 };
 const coordinator: AuthenticatedUser = { ...venueStaff, id: 'coord-1', role: 'event_coordinator' };
 const attendee: AuthenticatedUser = { ...venueStaff, id: 'attendee-1', role: 'attendee' };
-const denyQuery: Query = async () => { throw new Error('Unauthorised database read'); };
-const denyPool = {} as Pool;
+const denyQuery: Query = async sql => {
+  if (sql.includes('INSERT INTO audit_logs')) return { rows: [] };
+  throw new Error('Unauthorised database read');
+};
+const denyPool = { query: denyQuery } as unknown as Pool;
 
 function validBody() {
   return {
@@ -71,6 +74,49 @@ test('validateVenueInput requires non-empty facility, accessibility and layout l
   assert.ok(validateVenueInput({ ...validBody(), supported_layouts: [{ capacity: 100 }] }).errors?.supported_layouts);
 });
 
+// Regression test for a real bug: submitting two layouts that normalize to
+// the same code (e.g. "Theatre" and "theatre") passed validation and only
+// failed later at the database, where the resulting primary-key violation
+// was misreported by createVenue as "venue name already in use" and left
+// completely unhandled (falling through to a 503) by updateVenue. Confirmed
+// against a live Supabase database before this fix, and again after.
+test('validateVenueInput rejects layouts that normalize to the same code, even with different casing or spacing', () => {
+  const exactDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Theatre', capacity: 200 }, { label: 'Theatre', capacity: 250 }],
+  });
+  assert.ok(exactDuplicate.errors?.supported_layouts);
+
+  const caseInsensitiveDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Banquet', capacity: 200 }, { label: 'BANQUET', capacity: 250 }],
+  });
+  assert.ok(caseInsensitiveDuplicate.errors?.supported_layouts);
+
+  const spacingVariantDuplicate = validateVenueInput({
+    ...validBody(),
+    supported_layouts: [{ label: 'Board Room', capacity: 50 }, { label: 'board-room', capacity: 60 }],
+  });
+  assert.ok(spacingVariantDuplicate.errors?.supported_layouts);
+});
+
+// Same bug class as above, found in a follow-up audit: the duplicate-code
+// check was only ever added to supported_layouts, not generalised to the
+// shared stringList() helper that also builds facilities and
+// accessibility_features — both of which have the identical
+// venue_facilities/venue_accessibility_features primary-key collision shape.
+// Confirmed live against Supabase before and after this fix.
+test('validateVenueInput rejects facilities or accessibility features that normalize to the same code', () => {
+  const duplicateFacility = validateVenueInput({ ...validBody(), facilities: ['Stage', 'STAGE'] });
+  assert.ok(duplicateFacility.errors?.facilities);
+
+  const duplicateFeature = validateVenueInput({
+    ...validBody(),
+    accessibility_features: ['Wheelchair Access', 'wheelchair access'],
+  });
+  assert.ok(duplicateFeature.errors?.accessibility_features);
+});
+
 test('validateVenueInput trims text and accepts a fully valid submission', () => {
   const result = validateVenueInput({
     name: '  Grand Ballroom  ', location: ' 123 Marina Blvd ', max_capacity: 300,
@@ -87,17 +133,26 @@ test('validateVenueInput trims text and accepts a fully valid submission', () =>
   });
 });
 
-test('catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them', () => {
-  assert.throws(() => requireVenueStaff(undefined), { status: 401 });
-  assert.throws(() => requireVenueStaff(attendee), { status: 403 });
-  assert.throws(() => requireVenueStaff(coordinator), { status: 403 });
-  assert.throws(() => requireVenueStaff({ ...venueStaff, isActive: false }), { status: 403 });
-  assert.doesNotThrow(() => requireVenueStaff(venueStaff));
+test('catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them', async () => {
+  await assert.rejects(requireVenueStaff(denyQuery, undefined), { status: 401 });
+  await assert.rejects(requireVenueStaff(denyQuery, attendee), { status: 403 });
+  await assert.rejects(requireVenueStaff(denyQuery, coordinator), { status: 403 });
+  await assert.rejects(requireVenueStaff(denyQuery, { ...venueStaff, isActive: false }), { status: 403 });
+  await assert.doesNotReject(requireVenueStaff(denyQuery, venueStaff));
 
-  assert.throws(() => requireCatalogueViewer(undefined), { status: 401 });
-  assert.throws(() => requireCatalogueViewer(attendee), { status: 403 });
-  assert.doesNotThrow(() => requireCatalogueViewer(venueStaff));
-  assert.doesNotThrow(() => requireCatalogueViewer(coordinator));
+  await assert.rejects(requireCatalogueViewer(denyQuery, undefined), { status: 401 });
+  await assert.rejects(requireCatalogueViewer(denyQuery, attendee), { status: 403 });
+  await assert.doesNotReject(requireCatalogueViewer(denyQuery, venueStaff));
+  await assert.doesNotReject(requireCatalogueViewer(denyQuery, coordinator));
+});
+
+test('a catalogue role denial is audited against the screen', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const query: Query = async (sql, values) => { calls.push({ sql, values }); return { rows: [] }; };
+  await assert.rejects(requireVenueStaff(query, attendee), { status: 403 });
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].sql, /INSERT INTO audit_logs/);
+  assert.deepEqual(calls[0].values, [attendee.id, 'venue_catalogue']);
 });
 
 test('read operations reject unauthorised viewers before querying the database', async () => {

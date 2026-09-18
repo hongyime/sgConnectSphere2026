@@ -13,8 +13,9 @@
   --ink: #0f0f0f;
   --muted: #5c5c5c;
   --soft: #9b9b9b;
-  --border: #e1e4df;
+  --border: #e5e5e5;
   --teal: #0e7c7b;
+  --teal-hover: #14a3a1;
   --teal-dark: #0a5958;
   --teal-soft: #e4f3f1;
   --blue: #2b6cb0;
@@ -456,6 +457,42 @@ button {
   color: var(--slate);
 }
 
+/* Status chip states used across E-series stories (draft, submitted, under
+   review, awaiting clarification, approved, planning, confirmed, rejected,
+   cancelled, completed), mapped onto the tone classes above per the labels
+   already in docs/design/figma-wireframe-refinement-plan.md ("Success/
+   confirmed/approved", "Warning/pending/at-risk", "Danger/blocked/rejected",
+   "Info/under review"). One color definition per tone; these are aliases. */
+.status-draft {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+.status-submitted,
+.status-under-review,
+.status-planning {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.status-awaiting-clarification {
+  background: var(--amber-soft);
+  color: #8a6200;
+}
+
+.status-approved,
+.status-confirmed,
+.status-completed {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.status-rejected,
+.status-cancelled {
+  background: var(--red-soft);
+  color: var(--red);
+}
+
 .design-stage {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 310px;
@@ -563,6 +600,10 @@ button {
 }
 
 .primary-action:not(:disabled):hover {
+  background: var(--teal-hover);
+}
+
+.primary-action:not(:disabled):active {
   background: var(--teal-dark);
 }
 
@@ -580,7 +621,8 @@ button {
   font-weight: 800;
 }
 
-.secondary-action:hover {
+.secondary-action:hover,
+.secondary-action:focus-visible {
   border-color: var(--teal);
   color: var(--teal-dark);
 }
@@ -896,6 +938,25 @@ button {
 .field-invalid input {
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.field-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 4px;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.field-checkbox input {
+  width: auto;
+  min-height: 0;
 }
 
 .form-actions {

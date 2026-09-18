@@ -84,7 +84,7 @@ test('endpoint authentication, CSRF, identity and cookie clearing', async () => 
   const handler = createProfileHandler(repo, async () => {
     if (!identity) throw new AccessError(401, 'Sign in to continue.');
     return identity;
-  }, () => 'https://app.example.test', async (who, body) => {
+  }, () => 'https://app.example.test', undefined, async (who, body) => {
     called++; assert.equal(who.id, 'self'); assert.deepEqual(body, { confirm: true });
     if (failure) throw failure;
     return { deactivated: true, signedOut: true };

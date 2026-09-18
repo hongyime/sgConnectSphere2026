@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from './types.js';
 import { canActAsRole } from './service.js';
 import { USER_ROLES } from '../shared/roles.js';
-import { AccessError } from '../eventVisibility/service.js';
+import { AccessError, type Query } from '../eventVisibility/service.js';
 
 export type Profile = {
   id: string; full_name: string; email: string; contact_number: string | null;
@@ -21,6 +21,22 @@ export class ProfileValidationError extends AccessError {
 export function requireProfileUser(user: AuthenticatedUser | undefined): asserts user is AuthenticatedUser {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, USER_ROLES).allowed) throw new AccessError(403, 'Access denied.');
+}
+
+// E14-S02 Scenario 2: requireProfileUser must stay a synchronous assertion
+// function for its type-narrowing to work, so the audit write for its 403
+// branch lives here instead, wrapping it rather than being folded into it.
+async function requireProfile(query: Query, user: AuthenticatedUser | undefined): Promise<AuthenticatedUser> {
+  try {
+    requireProfileUser(user);
+    return user;
+  } catch (error) {
+    if (user && error instanceof AccessError && error.status === 403) {
+      await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
+        VALUES ($1, 'screen', gen_random_uuid(), 'Access Denied', 'profile')`, [user.id]);
+    }
+    throw error;
+  }
 }
 
 export function validateProfile(body: unknown): ProfileInput {
@@ -47,17 +63,17 @@ export function validateProfile(body: unknown): ProfileInput {
   return { full_name: (data.full_name as string).trim(), email, contact_number: (data.contact_number as string).trim() };
 }
 
-export async function loadProfile(repository: ProfileRepository, user: AuthenticatedUser | undefined) {
-  requireProfileUser(user);
-  const profile = await repository.load(user.id);
+export async function loadProfile(query: Query, repository: ProfileRepository, user: AuthenticatedUser | undefined) {
+  const authorized = await requireProfile(query, user);
+  const profile = await repository.load(authorized.id);
   if (!profile) throw new AccessError(403, 'Profile unavailable.');
   return profile;
 }
 
-export async function updateProfile(repository: ProfileRepository, user: AuthenticatedUser | undefined, body: unknown) {
-  requireProfileUser(user);
+export async function updateProfile(query: Query, repository: ProfileRepository, user: AuthenticatedUser | undefined, body: unknown) {
+  const authorized = await requireProfile(query, user);
   const input = validateProfile(body);
-  const profile = await repository.update(user.id, input);
+  const profile = await repository.update(authorized.id, input);
   if (!profile) throw new AccessError(403, 'Profile unavailable.');
   return profile;
 }

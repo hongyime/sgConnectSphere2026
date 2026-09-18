@@ -94,15 +94,20 @@ export function ProfileForm() {
           aria-invalid={Boolean(errors[field.name])} aria-describedby={`${field.name}-errors`} />
         <div id={`${field.name}-errors`} aria-live="polite">{errors[field.name]?.map(message => <p key={message}>{message}</p>)}</div>
       </div>)}
-      {profile.organisation_name && <p>Organisation: {profile.organisation_name}</p>}
+      {profile.organisation_name && (
+        <div className="profile-organisation">
+          <p>Organisation: {profile.organisation_name}</p>
+          <small className="profile-hint">Organisation changes require admin approval — contact your Coordinator to update this.</small>
+        </div>
+      )}
       <button className="primary-action" disabled={busy}>Save profile</button>
     </form> : !busy && <button onClick={() => setRevision(value => value + 1)}>Try again</button>}
-    {profile && !signIn && <section aria-label="Account deactivation">
+    {profile && !signIn && <section className="profile-danger-zone" aria-label="Account deactivation">
       <h2>Deactivate Account</h2>
-      {!confirming ? <button type="button" disabled={busy} onClick={() => setConfirming(true)}>Deactivate Account</button> : <>
+      {!confirming ? <button type="button" className="profile-danger-button" disabled={busy} onClick={() => setConfirming(true)}>Deactivate Account</button> : <>
         <p>Your account will be disabled and you will be signed out. Your historical records will be retained.
           Upcoming registrations and waitlist entries will be withdrawn even after the withdrawal deadline.</p>
-        <button type="button" disabled={busy} onClick={() => void deactivate()}>Confirm deactivation</button>
+        <button type="button" className="profile-danger-button" disabled={busy} onClick={() => void deactivate()}>Confirm deactivation</button>
         <button type="button" disabled={busy} onClick={() => { setConfirming(false); setDeactivationError(''); setBlockingEvents([]); }}>Cancel deactivation</button>
       </>}
       {deactivationError && <p role="alert">{deactivationError}</p>}
