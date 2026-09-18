@@ -61,6 +61,9 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
     assert.equal(email.subject,'Published event');
     assert.deepEqual(await attendeeEvents(query,{ ...user,id: other }),[]);
     await assert.rejects(attendeeEvents(query,user,hidden), { status: 403 });
+    // E14-S02 Scenario 2: denied access to a specific unregistered event is audited too.
+    const eventDenialAudit=(await db.query("SELECT * FROM audit_logs WHERE actor_id=$1 AND entity_type='event' AND event_id=$2 AND action='Access Denied'",[attendee,hidden])).rows[0];
+    assert.ok(eventDenialAudit);
     await db.query("UPDATE events SET title='PRIVATE_UNPUBLISHED_EDIT' WHERE id=$1", [event]);
     assert.equal((await attendeeEvents(query,user,event))[0].name,'Published event');
     for (const state of ['withdrawn','waitlisted']) {

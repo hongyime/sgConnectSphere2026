@@ -87,7 +87,7 @@ function serializeEventDetail(event: EventRecord) {
 // event_organiser, but we assert here so the type narrows for callers.
 async function requireOrganiserWithClient(request: VercelRequest): Promise<AuthenticatedUser & { clientOrgId: string }> {
   const user = await currentUser(request);
-  requireOrganiser(user);
+  await requireOrganiser(query, user, 'events');
   if (!user.clientOrgId) {
     throw new AccessError(403, 'forbidden');
   }
@@ -113,7 +113,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const user = await currentUser(request);
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
-    requireOrganiser(user);
+    await requireOrganiser(query, user, 'events');
     if (id) return { event: await getEvent(query, user, id.slice(0, 240)) };
     return {
       events: await listEvents(query, user, params.get('q') || ''),
