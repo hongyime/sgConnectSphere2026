@@ -45,7 +45,9 @@
   --text-lg: 1.1rem;
   --text-xl: 1.4rem;
   --text-2xl: 1.75rem;
-  --weight-normal: 500;
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-semibold: 700;
   --weight-strong: 800;
 }
 
@@ -56,7 +58,8 @@
 html,
 body,
 #root {
-  overflow-x: hidden;
+  /* clip, not hidden: hidden forces overflow-y to auto too, which breaks position: sticky in descendants. */
+  overflow-x: clip;
 }
 
 body {
@@ -866,6 +869,14 @@ button {
 }
 
 .flow-steps,
+.review-panel {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.flow-steps,
 .request-form-panel,
 .review-panel {
   display: grid;
@@ -916,8 +927,11 @@ button {
   display: grid;
   gap: 7px;
   min-width: 0;
-  color: var(--ink);
-  font-weight: 800;
+}
+
+.field-control > label {
+  color: var(--muted);
+  font-weight: var(--weight-medium);
 }
 
 .field-wide {
@@ -933,6 +947,7 @@ button {
   background: #fbfbfa;
   color: var(--ink);
   font: inherit;
+  font-weight: var(--weight-normal);
 }
 
 .field-control input {
@@ -967,12 +982,50 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-weight: 600;
+  font-weight: var(--weight-medium);
 }
 
 .field-checkbox input {
   width: auto;
   min-height: 0;
+}
+
+.field-none-required {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: var(--weight-medium);
+}
+
+.field-none-required input {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.accessibility-fields {
+  gap: 14px;
+}
+
+.accessibility-block {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.accessibility-block:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .form-actions {
@@ -1068,7 +1121,7 @@ button {
   margin: 0;
   color: var(--ink);
   font-size: var(--text-lg);
-  font-weight: var(--weight-strong);
+  font-weight: var(--weight-semibold);
 }
 
 :focus-visible {
@@ -1143,6 +1196,13 @@ button {
 @media (max-width: 720px) {
   .workspace {
     padding: 16px;
+  }
+
+  .flow-steps,
+  .review-panel {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .topbar {
