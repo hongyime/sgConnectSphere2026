@@ -54,8 +54,8 @@
 .venue-select select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
 
 .venue-search.card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4); }
-.venue-search label { flex: 0 0 auto; font-weight: 700; font-size: var(--text-base); color: var(--ink); }
-.venue-search input { flex: 1 1 16rem; max-width: 20rem; min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--border, #cbd5e1); border-radius: 8px; background: #fbfbfa; }
+.venue-search label { flex: 0 0 auto; font-weight: var(--weight-medium); font-size: var(--text-base); color: var(--muted); }
+.venue-search input { flex: 1 1 16rem; max-width: 20rem; min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--border, #cbd5e1); border-radius: 8px; background: #fbfbfa; font-weight: var(--weight-normal); color: var(--ink); }
 .venue-search .secondary-action { flex: 0 0 auto; }
 .venue-search-hint { color: var(--muted, #5c5c5c); font-size: 0.85rem; margin: 0; }
 

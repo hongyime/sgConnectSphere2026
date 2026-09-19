@@ -400,31 +400,41 @@ export function OrganiserRequestFlow({
               value={draft.venueRequirements}
               onChange={(value) => setDraft(updateDraft(draft, 'venueRequirements', value))}
             />
-            <div className="field-control field-wide">
-              <label>Accessibility requirements</label>
-              <div className="field-checkbox-group" role="group" aria-label="Predefined accessibility requirements">
-                {accessibilityFeatures.map((feature) => {
-                  const id = slugify(`accessibility-${feature.label}`);
-                  return (
-                    <label key={feature.id} htmlFor={id} className="field-checkbox">
-                      <input
-                        id={id}
-                        type="checkbox"
-                        checked={draft.accessibilityFeatureIds.includes(feature.id)}
-                        onChange={(event) => toggleAccessibilityFeature(feature.id, event.target.checked)}
-                      />
-                      {feature.label}
-                    </label>
-                  );
-                })}
+            <div className="field-control field-wide accessibility-fields">
+              <div className="accessibility-block">
+                <label>Accessibility requirements</label>
+                <p className="field-hint">
+                  Predefined requirements used to automatically match suitable venues.
+                </p>
+                <div className="field-checkbox-group" role="group" aria-label="Predefined accessibility requirements">
+                  {accessibilityFeatures.map((feature) => {
+                    const id = slugify(`accessibility-${feature.label}`);
+                    return (
+                      <label key={feature.id} htmlFor={id} className="field-checkbox">
+                        <input
+                          id={id}
+                          type="checkbox"
+                          checked={draft.accessibilityFeatureIds.includes(feature.id)}
+                          onChange={(event) => toggleAccessibilityFeature(feature.id, event.target.checked)}
+                        />
+                        {feature.label}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
-              <label htmlFor="request-accessibility-needs">Accessibility needs</label>
-              <textarea
-                id="request-accessibility-needs"
-                value={draft.accessibilityNeeds}
-                rows={3}
-                onChange={(event) => setDraft(updateDraft(draft, 'accessibilityNeeds', event.target.value))}
-              />
+              <div className="accessibility-block">
+                <label htmlFor="request-accessibility-needs">Accessibility needs</label>
+                <p className="field-hint">
+                  Anything not covered above. Shown to the Coordinator, but not used for automatic venue matching.
+                </p>
+                <textarea
+                  id="request-accessibility-needs"
+                  value={draft.accessibilityNeeds}
+                  rows={3}
+                  onChange={(event) => setDraft(updateDraft(draft, 'accessibilityNeeds', event.target.value))}
+                />
+              </div>
             </div>
             <OptionalTextArea
               label="Equipment requirements"
