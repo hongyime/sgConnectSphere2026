@@ -1,0 +1,50 @@
+name: Jira Sync
+
+# Transitions a Jira SCRUM issue to Done after its PR merges to main. Advisory
+# only: because pull_request:closed fires after the merge is already complete,
+# a failure here cannot un-merge the PR. It only surfaces a red run on the
+# Actions dashboard so a teammate notices the sync gap.
+#
+# The reconcile script itself is safe to re-run: it short-circuits when a
+# ticket is already Done. See docs/decisions/0006-jira-status-sync.md.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jira-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  transition:
+    name: transition
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Transition linked SCRUM issue to Done
+        env:
+          JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY || 'SCRUM' }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ -z "${JIRA_API_TOKEN:-}" ]; then
+            echo "::warning::JIRA_API_TOKEN not configured; skipping. See docs/decisions/0006-jira-status-sync.md." >&2
+            exit 0
+          fi
+          python scripts/reconcile_jira.py --event-path "$GITHUB_EVENT_PATH" --yes

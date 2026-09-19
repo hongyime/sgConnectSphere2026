@@ -71,3 +71,26 @@ variables an agent uses when the operator has provisioned a token. Agents that
 have credentials should keep the Jira status column in sync with the PR
 evidence rather than trusting a stale status. See `docs/jira-agent-workflow.md`
 for the mapping between PR events and Jira states.
+
+The variables are `JIRA_SITE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, and
+`JIRA_PROJECT_KEY`.
+
+To reconcile a merged PR against Jira from a teammate's machine:
+
+```
+python scripts/reconcile_jira.py --pr 94              # dry run
+python scripts/reconcile_jira.py --pr 94 --yes        # apply
+```
+
+When the repository has `JIRA_SITE_URL` / `JIRA_EMAIL` / `JIRA_API_TOKEN`
+provisioned as GitHub Actions secrets, `.github/workflows/jira-sync.yml`
+performs the same reconciliation automatically on `pull_request: closed`
+with `merged == true`. The workflow is advisory — a failure is visible in
+Actions but never blocks a merge, because the merge has already happened
+by the time the workflow fires. See `docs/decisions/0006-jira-status-sync.md`
+for the design.
+
+The script only trusts a SCRUM key when it appears in the branch name, the
+PR title, or as an explicit `Closes SCRUM-42` / `Fixes SCRUM-42` clause in
+the body. Bare body mentions ("follow-up to SCRUM-42") are ignored so a PR
+that names an unrelated ticket does not accidentally close it.
