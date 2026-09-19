@@ -66,10 +66,14 @@ regenerates `tc-coverage.md` and fails if it drifts from what is committed.
 
 ## Jira reconciliation
 
-The repository provisions Jira access through four environment variables
-documented in `.env.template`: `JIRA_SITE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`,
-and `JIRA_PROJECT_KEY`. `docs/jira-agent-workflow.md` describes the mapping
-between PR events and Jira states.
+Local Jira access is optional; `.env.template` documents the environment
+variables an agent uses when the operator has provisioned a token. Agents that
+have credentials should keep the Jira status column in sync with the PR
+evidence rather than trusting a stale status. See `docs/jira-agent-workflow.md`
+for the mapping between PR events and Jira states.
+
+The variables are `JIRA_SITE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, and
+`JIRA_PROJECT_KEY`.
 
 To reconcile a merged PR against Jira from a teammate's machine:
 
