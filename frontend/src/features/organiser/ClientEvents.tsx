@@ -66,6 +66,7 @@ export function ClientEvents() {
       <label>Email<input name="email" type="email" autoComplete="username" required /></label>
       <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
       <button disabled={busy}>Sign in</button>
+      <p><a href="/forgot-password">Forgot password or locked out?</a></p>
     </form> : <>
       <nav><a href="/events">All organisation events</a></nav>
       {!identifier && <label>Search your organisation’s events<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Event name or ID" /></label>}

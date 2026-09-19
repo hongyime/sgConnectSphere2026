@@ -7,15 +7,15 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **49** (21.3%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **178** (77.4%)
+- Automated (explicit TC_ID in an active test title): **55** (23.9%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **172** (74.8%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
-| E01 | 32 | 15 | 17 | 0 |
+| E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 26 | 2 | 24 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
@@ -27,7 +27,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **49** | **178** | **3** |
+| **Total** | **230** | **55** | **172** | **3** |
 
 ## Case-by-case status
 
@@ -37,13 +37,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/e2e/e01.spec.ts: TC_E01S01_01 - Verify that a registered user with valid credentials should sign in and reach the dashboard for their role; tests/e2e/profile.spec.ts: TC_E01S |
-| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_02 - Verify that an incorrect password should keep the user signed out without revealing whether the email is registered |
-| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_03 - Verify that after 5 consecutive incorrect password attempts, the next sign-in attempt should show the account locked and explain how to reset  |
-| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_04 - Verify that requesting a password reset on a locked account should send a reset link to the registered email |
-| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_05 - Verify that setting a new password via a valid reset link should lift the lock and allow sign-in with the new password |
-| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_06 - Verify that an account lockout should be recorded in the activity log with the account and time |
-| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_07 - Verify that a sixth sign-in attempt is refused even with the correct password once the account is locked |
+| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_01 — real login normalizes email, reaches organiser events and protects the signed-out route; tests/e2e/profile.spec.ts: TC_E01S01_0 |
+| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_02 — wrong, unknown and inactive accounts show the same error |
+| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
 | `TC_E01S02_01` | E01-S02 | Verify that an Event Organiser's event list should only show events from their o | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_01 - Verify that an Event Organiser |
 | `TC_E01S02_02` | E01-S02 | Verify that direct access to another client's event via URL/ID should be denied  | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_02 — direct access denial shows no event details and offers a return path; tests/e2e/e01.spec.ts: TC_E01S02_02 - Verify that direct acces |
 | `TC_E01S02_03` | E01-S02 | Verify that events created by colleagues within the same client organisation sho | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_03 TC_E01S02_04 — organisation events show colleague attribution and an accessible empty search state; tests/e2e/e01.spec.ts: TC_E01S02_0 |
@@ -386,6 +386,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
 
+### `backend/tests/loginRecovery.integration.test.ts`
+
+- E01-S01 real database, API, registration and recovery acceptance cases
+- registered credentials authenticate; email is normalized; secure cookie and no hash exposure
+- legacy hashes remain readable and wrong passwords are rejected
+- wrong, unknown and inactive accounts have the same response; inactive correct password fails
+- counts each failure, locks on five, writes one audit, refuses correct password; success resets count
+- concurrent incorrect attempts cannot bypass the threshold or duplicate audit
+- reset request API normalizes email and does not expose account eligibility
+- outbox delivers a hashed single-use 15-minute link through the existing provider adapter
+- invalid, expired, inactive and policy-invalid resets are rejected without consuming usable tokens
+- concurrent reset uses token once, invalidates sibling tokens and old sessions
+- queued recovery is not delivered to deactivated or changed recipients
+- reset transaction rolls back token consumption and lock changes on database failure
+- API rejects cross-origin changes and wrong methods
+
 ### `backend/tests/profile.integration.test.ts`
 
 - real sessions, profile persistence, case-insensitive uniqueness and future notification address
@@ -492,6 +508,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `tests/auth-e2e/loginRecovery.spec.ts`
+
+- invalid and expired reset links guide the user back to recovery
 
 ### `tests/e2e/admin.spec.ts`
 

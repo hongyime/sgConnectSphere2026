@@ -68,7 +68,8 @@ transactional row locking, and lockout audit entry. Its seven existing unit
 tests passed during the 18 September 2026 review, using a mocked database.
 They do not establish real-database concurrency behaviour.
 
-Password-reset endpoints, reset-email delivery, reset forms, and login-screen
-reset guidance remain unfinished. This decision resolves the duration
-discrepancy; it does not mark E01-S01 complete or remove its reset acceptance
-criteria.
+At the time this decision was recorded, password-reset endpoints, reset-email
+delivery, reset forms, and login-screen guidance were unfinished. Follow-up
+implementation and verification are tracked in [E01-S01 login and recovery](../testing/login-recovery.md).
+This decision does not itself mark E01-S01 complete or remove its reset
+acceptance criteria.
