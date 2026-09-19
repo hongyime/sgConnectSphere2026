@@ -1,5 +1,8 @@
 # Testing References
 
+E01-S01 has a [live login and recovery suite](login-recovery.md), including
+isolated PostgreSQL, API/provider tests, and desktop/mobile browser workflows.
+
 This folder holds testing plans and imported scaffolds that are useful for
 planning. The active runnable Playwright scaffold now lives in `tests/e2e/`,
 with this folder keeping the source reference copy.

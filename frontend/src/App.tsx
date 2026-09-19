@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
 import { LoginPage } from './features/accessControl/LoginPage';
+import { PasswordRecovery } from './features/accessControl/PasswordRecovery';
 import { VerifyPage } from './features/accessControl/VerifyPage';
 import { PermissionDenied } from './features/access/PermissionDenied';
 import { RegisterForm } from './features/accessControl/RegisterForm';
@@ -1015,6 +1016,8 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<PasswordRecovery key="request" />} />
+      <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/profile" element={<ProfileForm />} />
       <Route path="/events" element={<ClientEvents />} />

@@ -156,12 +156,13 @@ def load_pr_from_event(path: Path) -> PullRequest:
     )
 
 
-def load_pr_from_gh(number: int) -> PullRequest:
+def load_pr_from_gh(number: int, repo: str = "") -> PullRequest:
     """Fetch a PR via the `gh` CLI. Requires `gh auth`."""
     result = subprocess.run(
         [
             "gh", "pr", "view", str(number),
             "--json", "number,title,body,headRefName,mergedAt,state,author",
+            *(["--repo", repo] if repo else []),
         ],
         capture_output=True, text=True, check=False,
     )
@@ -308,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--yes", action="store_true",
                         help="Apply transitions. Without this, only prints what would change.")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""),
-                        help="owner/repo string used in Jira comments. Defaults to $GITHUB_REPOSITORY.")
+                        help="Repository to fetch PRs from and cite in Jira comments. Defaults to $GITHUB_REPOSITORY.")
     args = parser.parse_args(argv)
 
     config = load_jira_config()
@@ -317,7 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         prs.append(load_pr_from_event(args.event_path))
     else:
         for number in args.pr:
-            prs.append(load_pr_from_gh(number))
+            prs.append(load_pr_from_gh(number, args.repo))
     return reconcile(prs, config, apply=args.yes, repo=args.repo or "unknown/repo")
 
 

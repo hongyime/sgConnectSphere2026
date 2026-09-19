@@ -60,7 +60,8 @@ def scan_test_files() -> dict:
     for root in TEST_ROOTS:
         if not root.is_dir():
             continue
-        for path in root.rglob("*"):
+        # Filesystem traversal order differs between developer machines and CI.
+        for path in sorted(root.rglob("*")):
             if any(part in {"node_modules", "dist"} for part in path.parts):
                 continue
             if not path.is_file():

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import importlib.util
 import io
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -54,6 +55,25 @@ CONFIG = JiraConfig(
     api_token="synthetic-token",  # pragma: allowlist secret - test fixture only
     project_key="SCRUM",
 )
+
+
+class PullRequestLookupTests(unittest.TestCase):
+    def test_explicit_repository_is_passed_to_gh(self):
+        with patch.object(module.subprocess, "run") as run:
+            run.return_value.returncode = 0
+            run.return_value.stdout = json.dumps({"number": 42, "mergedAt": "2026-09-19"})
+            pr = module.load_pr_from_gh(42, "example/other-repo")
+        command = run.call_args.args[0]
+        self.assertEqual(command[command.index("--repo") + 1], "example/other-repo")
+        self.assertEqual(pr.number, 42)
+        self.assertTrue(pr.merged)
+
+    def test_cli_routes_repository_to_pr_lookup(self):
+        with patch.object(module, "load_jira_config", return_value=CONFIG), \
+             patch.object(module, "load_pr_from_gh", return_value=_pr()) as lookup, \
+             patch.object(module, "reconcile", return_value=0):
+            self.assertEqual(module.main(["--pr", "42", "--repo", "example/other-repo"]), 0)
+        lookup.assert_called_once_with(42, "example/other-repo")
 
 
 class ExtractKeysTests(unittest.TestCase):
