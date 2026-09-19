@@ -155,6 +155,7 @@ type EditState =
         expectedAttendance: string;
         venueRequirements: string;
         accessibilityNeeds: string;
+        accessibilityFeatureIds: string[];
         equipmentRequirements: string;
         layoutPreference: string;
         registrationSetup: string;
@@ -213,6 +214,7 @@ export function OrganiserDraftEdit() {
           expectedAttendance: event.expectedAttendance != null ? String(event.expectedAttendance) : '',
           venueRequirements: event.venueRequirements ?? '',
           accessibilityNeeds: event.accessibilityNote ?? '',
+          accessibilityFeatureIds: Array.isArray(event.accessibilityFeatureIds) ? event.accessibilityFeatureIds : [],
           equipmentRequirements: event.equipmentRequirements ?? '',
           layoutPreference: event.layoutPreference ?? '',
           registrationSetup: event.registrationSetup ?? '',

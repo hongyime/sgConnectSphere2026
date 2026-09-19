@@ -16,6 +16,11 @@ export type EventRecord = {
   layoutId?: string;
   venueRequirements?: string;
   accessibilityNote?: string;
+  // E02-S03: predefined accessibility_features ids selected from the shared
+  // vocabulary venue records also draw from (BDR T-13). Distinct from
+  // accessibilityNote, which is free text and explicitly excluded from
+  // automated venue matching.
+  accessibilityFeatureIds?: string[];
   equipmentRequirements?: string;
   layoutPreference?: string;
   registrationSetup?: string;
@@ -41,6 +46,7 @@ export type CreateEventRequest = {
   layoutId?: string;
   venueRequirements?: string;
   accessibilityNote?: string;
+  accessibilityFeatureIds?: string[];
   equipmentRequirements?: string;
   layoutPreference?: string;
   registrationSetup?: string;

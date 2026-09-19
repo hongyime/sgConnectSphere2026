@@ -72,6 +72,13 @@ function findMissingMandatoryFields(request: CreateEventRequest, requireAll: boo
       continue;
     }
 
+    // E02-S03: a predefined accessibility selection satisfies the
+    // "Accessibility needs" field on its own, same as the free-text note -
+    // either records a real requirement.
+    if (field.key === 'accessibilityNote' && (request.accessibilityFeatureIds?.length ?? 0) > 0) {
+      continue;
+    }
+
     const value = request[field.key] as string | undefined;
     const satisfiedByNoneRequired = field.noneRequiredAllowed && value === NONE_REQUIRED;
 
@@ -186,6 +193,7 @@ export async function updateEventRequest(
     layoutId: patch.layoutId ?? event.layoutId,
     venueRequirements: patch.venueRequirements ?? event.venueRequirements,
     accessibilityNote: patch.accessibilityNote ?? event.accessibilityNote,
+    accessibilityFeatureIds: patch.accessibilityFeatureIds ?? event.accessibilityFeatureIds,
     equipmentRequirements: patch.equipmentRequirements ?? event.equipmentRequirements,
     layoutPreference: patch.layoutPreference ?? event.layoutPreference,
     registrationSetup: patch.registrationSetup ?? event.registrationSetup,

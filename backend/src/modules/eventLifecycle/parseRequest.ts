@@ -11,6 +11,7 @@ type CreateEventBody = {
   layoutId?: unknown;
   venueRequirements?: unknown;
   accessibilityNote?: unknown;
+  accessibilityFeatureIds?: unknown;
   equipmentRequirements?: unknown;
   layoutPreference?: unknown;
   registrationSetup?: unknown;
@@ -18,6 +19,15 @@ type CreateEventBody = {
 
 function optionalString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+// A non-array, or an array with a non-string entry, is treated as "none
+// selected" rather than rejecting the whole request - the predefined
+// checklist is additive to the free-text field, never mandatory on its own.
+function featureIdList(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const ids = value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
+  return ids.length > 0 ? ids : undefined;
 }
 
 function parseDate(value: unknown) {
@@ -63,6 +73,7 @@ export function parseCreateEventBody(
     layoutId: optionalString(payload.layoutId),
     venueRequirements: optionalString(payload.venueRequirements),
     accessibilityNote: optionalString(payload.accessibilityNote),
+    accessibilityFeatureIds: featureIdList(payload.accessibilityFeatureIds),
     equipmentRequirements: optionalString(payload.equipmentRequirements),
     layoutPreference: optionalString(payload.layoutPreference),
     registrationSetup: optionalString(payload.registrationSetup),
@@ -113,6 +124,12 @@ export function parseUpdateEventBody(body: unknown): Partial<EventUpdate> | null
   }
   if (payload.accessibilityNote !== undefined) {
     patch.accessibilityNote = optionalString(payload.accessibilityNote);
+  }
+  if (payload.accessibilityFeatureIds !== undefined) {
+    // Unlike optionalString's undefined-means-unset, an explicit empty/invalid
+    // array here means "clear the selection", so it can't collapse to the
+    // same undefined that means "key absent, don't touch it" a few lines up.
+    patch.accessibilityFeatureIds = featureIdList(payload.accessibilityFeatureIds) ?? [];
   }
   if (payload.equipmentRequirements !== undefined) {
     patch.equipmentRequirements = optionalString(payload.equipmentRequirements);
