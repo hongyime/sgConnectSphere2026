@@ -1,9 +1,16 @@
-.registration-page { max-width: 32rem; margin: 2rem auto; padding: 1.5rem; }
-.registration-field { display: grid; gap: .5rem; margin: 1rem 0; }
-.registration-field input { width: 100%; min-width: 0; padding: .75rem; border: 1px solid var(--border); border-radius: .4rem; }
-.registration-field [aria-invalid="true"] { border-color: var(--red); }
-.registration-field p, .registration-page [role="alert"] { color: var(--red); }
-.profile-organisation { margin: 1rem 0; }
-.profile-hint { display: block; margin-top: .35rem; color: var(--muted); font-size: .85rem; }
-.profile-danger-zone { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border); }
-.profile-danger-button { padding: .6rem 1rem; border: 1px solid var(--red); border-radius: .4rem; background: var(--surface); color: var(--red); }
+.registration-page { max-width: 32rem; margin: var(--space-6) auto; padding: var(--space-5) var(--space-4); display: grid; gap: var(--space-4); }
+.registration-brand { justify-self: start; color: var(--teal-dark); font-weight: var(--weight-strong); text-decoration: none; }
+.registration-field { display: grid; gap: var(--space-2); margin: var(--space-4) 0; }
+.registration-field label { font-weight: 700; font-size: var(--text-base); color: var(--ink); }
+.registration-field input { width: 100%; min-width: 0; min-height: 42px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: 8px; background: #fbfbfa; color: var(--ink); font: inherit; }
+.registration-field input[type="password"] { padding: 0 var(--space-3); }
+.registration-field [aria-invalid="true"] { border-color: var(--red); box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12); }
+.registration-field:first-child { margin-top: 0; }
+.registration-field:last-child { margin-bottom: 0; }
+.profile-saved-banner { color: var(--green); font-weight: 700; }
+.profile-organisation { margin: 0; padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.profile-organisation p { margin: 0; font-weight: 700; color: var(--ink); }
+.profile-hint { display: block; margin-top: .35rem; color: var(--muted); font-size: var(--text-sm); }
+.profile-danger-zone h2 { color: var(--red); }
+.profile-danger-button { min-height: 40px; padding: 0 var(--space-4); border: 1px solid var(--red); border-radius: 8px; background: var(--surface); color: var(--red); font-weight: 800; }
+.profile-danger-button:hover { background: var(--red-soft); }
