@@ -33,6 +33,13 @@ jobs:
           .venv-tools/bin/python -m pip install -r tooling/requirements.txt
       - name: Repository hygiene and tooling tests
         run: python scripts/check.py
+      - name: docs/testing/tc-coverage.md is current
+        run: |
+          .venv-tools/bin/python scripts/tc_coverage_audit.py
+          if ! git diff --exit-code -- docs/testing/tc-coverage.md; then
+            echo "::error::docs/testing/tc-coverage.md is stale. Re-run scripts/tc_coverage_audit.py and commit the result." >&2
+            exit 1
+          fi
       - name: Report scope
         if: always()
         run: |

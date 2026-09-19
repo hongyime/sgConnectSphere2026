@@ -60,7 +60,8 @@ def scan_test_files() -> dict:
     for root in TEST_ROOTS:
         if not root.is_dir():
             continue
-        for path in root.rglob("*"):
+        # Filesystem traversal order differs between developer machines and CI.
+        for path in sorted(root.rglob("*")):
             if any(part in {"node_modules", "dist"} for part in path.parts):
                 continue
             if not path.is_file():
@@ -217,6 +218,11 @@ def main() -> int:
     scan = scan_test_files()
     report = build_report(cases, scan)
     target = REPO_ROOT / "docs" / "testing" / "tc-coverage.md"
+    # Strip trailing whitespace on every line so the output is stable across
+    # the trailing-whitespace pre-commit hook and CI's drift check.
+    report = "\n".join(line.rstrip() for line in report.splitlines())
+    if not report.endswith("\n"):
+        report += "\n"
     target.write_text(report, encoding="utf-8")
     print(f"Wrote {target.relative_to(REPO_ROOT)}")
     tc_index = scan["tc_index"]
