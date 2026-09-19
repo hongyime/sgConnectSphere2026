@@ -142,8 +142,7 @@ whose work concretely follows something from Sprint 1.
 - **One teammate has zero repository activity.** Amareet has no commits,
   branches, or PRs. Sprint 2 opens with a direct conversation to
   understand blockers and pair-programme onto a small ticket.
-- **PR #79 (SCRUM-27, Aaron's save-draft story) merged with zero recorded
-  reviews.** Review was requested from all five teammates
+- **PR #79 (SCRUM-27, Aaron's save-draft story) merged with zero recorded reviews.** Review was requested from all five teammates
   (`jininggg`/`bryanseah234`/`xiangyingg`/`amareetkm2024-del`/
   `lexinphun2024-debug`) via CODEOWNERS, but GitHub shows no submitted
   review of any kind — `reviews: []`, no approval, no requested-changes,
