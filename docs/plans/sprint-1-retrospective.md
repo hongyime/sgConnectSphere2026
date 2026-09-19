@@ -142,6 +142,19 @@ whose work concretely follows something from Sprint 1.
 - **One teammate has zero repository activity.** Amareet has no commits,
   branches, or PRs. Sprint 2 opens with a direct conversation to
   understand blockers and pair-programme onto a small ticket.
+- **PR #79 (SCRUM-27, Aaron's save-draft story) merged with zero recorded
+  reviews.** Review was requested from all five teammates
+  (`jininggg`/`bryanseah234`/`xiangyingg`/`amareetkm2024-del`/
+  `lexinphun2024-debug`) via CODEOWNERS, but GitHub shows no submitted
+  review of any kind — `reviews: []`, no approval, no requested-changes,
+  no comments — before `bryanseah234` merged it directly. Required CI
+  checks were green, so nothing blocked it structurally; the gap is
+  against `CONTRIBUTING.md`'s Definition of Done, which requires the
+  item be "peer-reviewed by at least one other developer" before it
+  counts as done. Caught retroactively during a 2026-09-19 PR-checklist
+  audit, after the fact — not something to undo on a merged PR, but
+  worth confirming branch protection actually enforces the 1-approval
+  rule, not just CI, before Sprint 2 relies on the same merge path.
 - **Story-point distribution was skewed.** Bryan's re-scored 44 points
   is still ~4–10&times; any teammate's total. Sprint 2 plan holds
   Bryan at &le;10 points of user stories and distributes enabler work.
