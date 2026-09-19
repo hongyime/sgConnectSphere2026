@@ -7,8 +7,8 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **47** (20.4%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **180** (78.3%)
+- Automated (explicit TC_ID in an active test title): **49** (21.3%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **178** (77.4%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -16,7 +16,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 15 | 17 | 0 |
-| E02 | 13 | 10 | 3 | 0 |
+| E02 | 13 | 12 | 1 | 0 |
 | E03 | 26 | 2 | 24 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
@@ -27,7 +27,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **47** | **180** | **3** |
+| **Total** | **230** | **49** | **178** | **3** |
 
 ## Case-by-case status
 
@@ -331,6 +331,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
 
+### `backend/tests/deactivation.integration.test.ts`
+
+- PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback
+
+### `backend/tests/deactivation.test.ts`
+
+- eligible attendee: locks identity, withdraws, deactivates, revokes sessions, audits and commits
+- coordinator assignments block without successful audit or mutations
+- coordinator without blocking assignments succeeds
+- already deactivated returns safe conflict without audit
+- endpoint authentication, CSRF, identity and cookie clearing
+
 ### `backend/tests/eventLifecycle.test.ts`
 
 - a request with all ten mandatory fields complete is submitted
@@ -343,6 +355,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty HTTP request saved as a draft reports only the three always-mandatory fields
 - a draft with title, attendance and dates but nothing else is saved
 - a draft missing title, attendance or dates is still rejected
+- a predefined accessibility selection alone satisfies the mandatory Accessibility needs field
+- neither free text nor a predefined selection still reports Accessibility needs as missing
+- accessibilityFeatureIds round-trips through create and a subsequent update
 - a draft can be re-saved as a draft with a changed field
 - a draft can be submitted through the same update entry point
 - submitting an update still requires every mandatory field
@@ -352,6 +367,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a draft can be deleted by its owner
 - deleting someone else\
 - deleting an already-submitted request is refused
+- changing status passes the actor and prior status through for the audit entry
+- an illegal status transition is rejected before any audit entry is written
+- changing status to the same status is a no-op that writes no audit entry
+- changing the status of an unknown event is reported as not found
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -361,6 +380,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - missing membership and missing event organisation fail closed
 - unauthenticated, unlinked, inactive, locked and other roles cannot query organiser data
+- a role/organisation denial is audited against the screen, not a specific event
 - direct denied access commits actor and attempted event before returning denial
 - audit failure never returns event information or a false logged success
 - list and notification reads use trusted organisation and recipient parameters
@@ -399,6 +419,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
 
+### `backend/tests/venueAccessibility.integration.test.ts`
+
+- E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement
+
+### `backend/tests/venueAccessibility.test.ts`
+
+- matchVenuesByAccessibility returns a venue that supports every requested feature
+- matchVenuesByAccessibility excludes a venue that only partially supports the requested features
+- matchVenuesByAccessibility returns nothing when no venue supports any requested feature
+- matchVenuesByAccessibility with no requested ids matches nothing without querying
+- listAccessibilityFeatures requires a signed-in user
+- listAccessibilityFeatures returns the vocabulary for any signed-in user, including an organiser
+
 ### `backend/tests/venueCatalogue.test.ts`
 
 - validateVenueInput rejects a non-object submission
@@ -406,8 +439,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateVenueInput enforces a positive whole-number capacity
 - validateVenueInput enforces HH:MM operating hours with opens before closes
 - validateVenueInput requires non-empty facility, accessibility and layout lists
+- validateVenueInput rejects layouts that normalize to the same code, even with different casing or spacing
+- validateVenueInput rejects facilities or accessibility features that normalize to the same code
 - validateVenueInput trims text and accepts a fully valid submission
 - catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them
+- a catalogue role denial is audited against the screen
 - read operations reject unauthorised viewers before querying the database
 - mutating operations reject anyone but venue staff before opening a transaction
 - createVenue reports validation errors without opening a transaction
@@ -418,6 +454,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues excludes venues whose matching layout capacity is below the required attendance, boundary at exactly-equal
 - searchVenues finds a suitable venue even when it ranks alphabetically past the first 100 name matches
 - searchVenues caps at 100 results drawn from the suitable venues, not the raw name matches
+- searchVenues excludes a venue missing even one requested accessibility feature
+- searchVenues with no accessibility ids requested applies no accessibility filter
+- searchVenues applies the layout and accessibility filters together
 
 ### `backend/tests/verificationEmail.test.ts`
 
@@ -451,6 +490,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - initialValues pre-fill the form for reopening a draft
 - clearing the dates disables Save draft too, not just Submit
 - prototype mode simulates submission without hitting the API
+- the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
+- selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
 
 ### `tests/e2e/admin.spec.ts`
 
@@ -475,6 +516,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - decision panel requires a reason when rejecting or clarifying
 - final confirmation blocks until readiness is met
 
+### `tests/e2e/deactivation.spec.ts`
+
+- explicit confirmation is required and success redirects to signed-out login
+- blocked coordinator stays on profile and sees assignments requiring reassignment
+
 ### `tests/e2e/landing.spec.ts`
 
 - landing page renders at / and links to login and register
@@ -494,6 +540,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - venue dashboard shows pending and confirmed counts
 - venue inventory lists every venue with capacity
+- inventory search re-fetches venues filtered by the query
+- pressing Enter in the layout inputs adds the layout instead of submitting the form
 - availability calendar filters bookings by selected venue
 - pending booking detail confirms a booking
 

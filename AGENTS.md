@@ -25,3 +25,49 @@ application lint, tests, build, or deployment until those checks are implemented
 Keep imported template material scoped to what this repo actually uses. Do not
 add paid services, AI reviewers, bot auto-merge, privileged `pull_request_target`
 workflows, or deployment secrets without a recorded team decision.
+
+## Pull-request hygiene (enforced in CI)
+
+CI blocks a PR when any of these are missing. Fix them locally before opening
+the PR rather than after CI flags them.
+
+1. **Full PR body.** `.github/pull_request_template.md` defines four sections
+   (`## What and why`, `## Verification`, `## Checklist`, `## Follow-ups`); all
+   four must appear as headers in the body. `scripts/check_metadata.py pr`
+   enforces this; dependabot PRs are exempt.
+2. **Scope in the title.** Prefer `feat(backend): ...` or `fix(frontend): ...`
+   over the bare `feat: ...` form when the change is clearly frontend, backend,
+   or docs-scoped. This is a team convention, not a regex gate; the regex only
+   enforces the type + optional scope shape.
+3. **Traceability.** Cite the Jira issue key (for example `SCRUM-28`) and, when
+   applicable, the story key (`E01-S01`) somewhere in the branch name, commit
+   body, or PR body. Follow-up bug fixes should reference the originating PR
+   number (for example "follow-up to #89"). Design or hygiene passes without a
+   dedicated ticket should cite the source document instead (Figma plan,
+   `docs/source-of-truth.md`, and so on).
+4. **Verification section is honest.** State the commands you actually ran and
+   their outcomes. Do not paste a boilerplate "all green" summary from a
+   previous PR. Note anything you could not verify locally.
+
+## Derived-doc regeneration
+
+Some files are generated from other files. Never hand-edit them without also
+re-running the generator, and commit the regenerated file in the same PR.
+
+| Generated file | Source of truth | Regenerator |
+| --- | --- | --- |
+| `docs/testing/tc-coverage.md` | Every `test(...)`, `test.fixme(...)`, `test.skip(...)` block in `backend/tests/`, `tests/`, and `frontend/src/`, plus `docs/testing/PROJECT TEST CASES.xlsx` | `.venv-tools/bin/python scripts/tc_coverage_audit.py` |
+| `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` | `docs/backlog/` Markdown | `python scripts/export_backlog_xlsx.py` |
+| `docs/testing/PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` | `docs/testing/cases/` Markdown | `python scripts/export_testcases_xlsx.py` |
+
+If a PR flips a test from `test.fixme` or `test.skip` to a live `test(...)`, or
+vice versa, regenerate `docs/testing/tc-coverage.md` and stage the diff. CI
+regenerates `tc-coverage.md` and fails if it drifts from what is committed.
+
+## Jira reconciliation
+
+Local Jira access is optional; `.env.template` documents the environment
+variables an agent uses when the operator has provisioned a token. Agents that
+have credentials should keep the Jira status column in sync with the PR
+evidence rather than trusting a stale status. See `docs/jira-agent-workflow.md`
+for the mapping between PR events and Jira states.

@@ -217,6 +217,11 @@ def main() -> int:
     scan = scan_test_files()
     report = build_report(cases, scan)
     target = REPO_ROOT / "docs" / "testing" / "tc-coverage.md"
+    # Strip trailing whitespace on every line so the output is stable across
+    # the trailing-whitespace pre-commit hook and CI's drift check.
+    report = "\n".join(line.rstrip() for line in report.splitlines())
+    if not report.endswith("\n"):
+        report += "\n"
     target.write_text(report, encoding="utf-8")
     print(f"Wrote {target.relative_to(REPO_ROOT)}")
     tc_index = scan["tc_index"]

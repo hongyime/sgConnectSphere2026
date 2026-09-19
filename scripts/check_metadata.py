@@ -14,6 +14,15 @@ BRANCH = re.compile(
     r"(?:[a-z0-9]+(?:-[a-z0-9]+)*|[A-Z][A-Z0-9]+-\d+(?:-[a-z0-9]+)*)"
 )
 
+# Sections required in a human-authored PR body, in the order the template
+# lists them. See .github/pull_request_template.md. Bot PRs are exempt.
+REQUIRED_BODY_SECTIONS = (
+    "## What and why",
+    "## Verification",
+    "## Checklist",
+    "## Follow-ups",
+)
+
 
 def check_title(title: str) -> bool:
     return bool(TITLE.fullmatch(title)) and len(title) <= 100 and title == title.strip()
@@ -23,6 +32,22 @@ def check_branch(branch: str, *, automated: bool = False) -> bool:
     if automated and branch.startswith("dependabot/"):
         return True
     return bool(BRANCH.fullmatch(branch))
+
+
+def check_body(body: str, *, automated: bool = False) -> tuple[bool, list[str]]:
+    """Return (ok, missing). Bot PRs pass unconditionally.
+
+    A PR body is accepted when every header in REQUIRED_BODY_SECTIONS appears
+    as a whole-line match. This catches "no template used at all" cases; it
+    does not attempt to judge whether each section has substantive content,
+    which stays a reviewer decision.
+    """
+    if automated:
+        return True, []
+    text = body or ""
+    lines = {line.strip() for line in text.splitlines()}
+    missing = [header for header in REQUIRED_BODY_SECTIONS if header not in lines]
+    return not missing, missing
 
 
 def main() -> int:
@@ -70,6 +95,13 @@ def main() -> int:
         valid = False
     if not check_branch(pr["head"]["ref"], automated=automated):
         print("PR branch must use the naming convention in CONTRIBUTING.md.")
+        valid = False
+    ok, missing = check_body(pr.get("body") or "", automated=automated)
+    if not ok:
+        print("PR body must use the repository template. Missing sections:")
+        for header in missing:
+            print(f"  {header}")
+        print("See .github/pull_request_template.md for the required layout.")
         valid = False
     return 0 if valid else 1
 
