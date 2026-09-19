@@ -147,59 +147,69 @@ export function VenueForm({ mode }: { mode: 'create' | 'edit' }) {
 
   return (
     <main className="venue-page">
-      <header className="venue-heading">
+      <header className="page-heading">
         <p className="eyebrow">Venue staff</p>
         <h1>{mode === 'create' ? 'Add venue' : 'Edit venue'}</h1>
       </header>
 
-      <form onSubmit={submit} noValidate className="venue-form">
+      <form onSubmit={submit} noValidate className="venue-form card">
         {formError ? <div role="alert" className="login-error">{formError}</div> : null}
 
-        <TextField
-          id="venue-name" label="Venue name" value={values.name}
-          onChange={(value) => setValues((current) => ({ ...current, name: value }))}
-          errors={errors.name}
-        />
-        <TextField
-          id="venue-location" label="Location" value={values.location}
-          onChange={(value) => setValues((current) => ({ ...current, location: value }))}
-          errors={errors.location}
-        />
-        <TextField
-          id="venue-capacity" label="Max capacity" type="number" value={values.max_capacity}
-          onChange={(value) => setValues((current) => ({ ...current, max_capacity: value }))}
-          errors={errors.max_capacity}
-        />
-        <TextField
-          id="venue-opens" label="Opens at" type="time" value={values.opens_at}
-          onChange={(value) => setValues((current) => ({ ...current, opens_at: value }))}
-          errors={errors.opens_at}
-        />
-        <TextField
-          id="venue-closes" label="Closes at" type="time" value={values.closes_at}
-          onChange={(value) => setValues((current) => ({ ...current, closes_at: value }))}
-          errors={errors.closes_at}
-        />
+        <div className="form-section">
+          <h2>Basic details</h2>
+          <TextField
+            id="venue-name" label="Venue name" value={values.name}
+            onChange={(value) => setValues((current) => ({ ...current, name: value }))}
+            errors={errors.name}
+          />
+          <TextField
+            id="venue-location" label="Location" value={values.location}
+            onChange={(value) => setValues((current) => ({ ...current, location: value }))}
+            errors={errors.location}
+          />
+          <TextField
+            id="venue-capacity" label="Max capacity" type="number" value={values.max_capacity}
+            onChange={(value) => setValues((current) => ({ ...current, max_capacity: value }))}
+            errors={errors.max_capacity}
+          />
+          <TextField
+            id="venue-opens" label="Opens at" type="time" value={values.opens_at}
+            onChange={(value) => setValues((current) => ({ ...current, opens_at: value }))}
+            errors={errors.opens_at}
+          />
+          <TextField
+            id="venue-closes" label="Closes at" type="time" value={values.closes_at}
+            onChange={(value) => setValues((current) => ({ ...current, closes_at: value }))}
+            errors={errors.closes_at}
+          />
+        </div>
 
-        <TagListField
-          label="Facilities" items={values.facilities}
-          onAdd={(value) => addToList('facilities', value)}
-          onRemove={(value) => removeFromList('facilities', value)}
-          errors={errors.facilities}
-        />
-        <TagListField
-          label="Accessibility features" items={values.accessibility_features}
-          onAdd={(value) => addToList('accessibility_features', value)}
-          onRemove={(value) => removeFromList('accessibility_features', value)}
-          errors={errors.accessibility_features}
-        />
-        <LayoutListField
-          layouts={values.supported_layouts}
-          onAdd={addLayout}
-          onRemove={removeLayout}
-          errors={errors.supported_layouts}
-          warning={layoutWarning}
-        />
+        <div className="form-section">
+          <h2>Facilities &amp; accessibility</h2>
+          <TagListField
+            label="Facilities" items={values.facilities}
+            onAdd={(value) => addToList('facilities', value)}
+            onRemove={(value) => removeFromList('facilities', value)}
+            errors={errors.facilities}
+          />
+          <TagListField
+            label="Accessibility features" items={values.accessibility_features}
+            onAdd={(value) => addToList('accessibility_features', value)}
+            onRemove={(value) => removeFromList('accessibility_features', value)}
+            errors={errors.accessibility_features}
+          />
+        </div>
+
+        <div className="form-section">
+          <h2>Supported layouts</h2>
+          <LayoutListField
+            layouts={values.supported_layouts}
+            onAdd={addLayout}
+            onRemove={removeLayout}
+            errors={errors.supported_layouts}
+            warning={layoutWarning}
+          />
+        </div>
 
         <div className="form-actions">
           <Link to="/venue/inventory" className="secondary-action">Cancel</Link>
@@ -286,7 +296,6 @@ function LayoutListField({ layouts, onAdd, onRemove, errors, warning }: {
 
   return (
     <div className="field-control field-wide">
-      <label>Supported layouts</label>
       <ul className="layout-list" aria-label="Supported layouts added">
         {layouts.map((layout) => (
           <li key={layout.label}>
