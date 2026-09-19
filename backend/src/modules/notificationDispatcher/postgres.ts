@@ -1,4 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
+import { runtimeConfig, requireEnv } from '../../config.js';
+import { preparePasswordResetEmail } from '../accessControl/passwordResetDelivery.js';
 import { inTransaction } from '../../database/pool.js';
 import { batchLimit, isDeliveryId } from './durable.js';
 import type { DurableDeliveryStore, SendClaim, SendLease } from './durable.js';
@@ -43,7 +45,7 @@ export async function prepareCommittedDelivery(client: PoolClient, id: string) {
   return { id, status: row.delivery_status };
 }
 
-export function postgresDeliveryStore(database: Pool): DurableDeliveryStore {
+export function postgresDeliveryStore(database: Pool, appUrl = runtimeConfig.appUrl): DurableDeliveryStore {
   return {
     async claimPublish(limit) {
       const { rows } = await database.query<{ id: string; token: string }>(`
@@ -72,8 +74,8 @@ export function postgresDeliveryStore(database: Pool): DurableDeliveryStore {
     async claimSend(id): Promise<SendClaim> {
       if (!isDeliveryId(id)) return { kind: 'missing' };
       return inTransaction(database, async (client) => {
-        const { rows } = await client.query<{ delivery_status: string; dispatch_state: string }>(`
-          SELECT delivery_status, dispatch_state FROM notification_deliveries WHERE id = $1 FOR UPDATE`, [id]);
+        const { rows } = await client.query<{ delivery_status: string; dispatch_state: string; delivery_purpose?: string }>(`
+          SELECT delivery_status, dispatch_state, delivery_purpose FROM notification_deliveries WHERE id = $1 FOR UPDATE`, [id]);
         const current = rows[0];
         if (!current) return { kind: 'missing' };
         if (current.delivery_status === 'sent') return { kind: 'retained', state: 'sent' };
@@ -86,7 +88,16 @@ export function postgresDeliveryStore(database: Pool): DurableDeliveryStore {
             AND dispatch_state IN ('pending', 'publishing', 'published')
           RETURNING id, notification_id AS "notificationId", recipient_email AS "to", subject, html,
             send_token AS token, attempts`, [id]);
-        return result.rows[0] ? { kind: 'claimed', lease: result.rows[0] } : { kind: 'busy' };
+        const lease = result.rows[0];
+        if (!lease) return { kind: 'busy' };
+        if (current.delivery_purpose === 'password_reset') {
+          if (!await preparePasswordResetEmail(client, lease, requireEnv(appUrl, 'APP_URL'))) {
+            await client.query(`UPDATE notification_deliveries SET delivery_status = 'failed', dispatch_state = 'failed',
+              failure_reason = 'reset_recipient_unavailable', send_token = NULL, send_lease_until = NULL WHERE id = $1`, [id]);
+            return { kind: 'retained', state: 'failed' };
+          }
+        }
+        return { kind: 'claimed', lease };
       });
     },
     async finishSend(lease, outcome) {
