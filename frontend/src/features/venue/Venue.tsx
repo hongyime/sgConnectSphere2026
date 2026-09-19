@@ -101,16 +101,13 @@ export function VenueInventory() {
 
   return (
     <main className="venue-page">
-      <header className="venue-heading">
+      <header className="page-heading venue-inventory-heading">
         <p className="eyebrow">Venue staff</p>
         <h1>Venue inventory</h1>
+        <Link to="/venue/inventory/new" className="primary-action">Add venue</Link>
       </header>
 
-      <p className="venue-footer">
-        <Link to="/venue/inventory/new" className="primary-action">Add venue</Link>
-      </p>
-
-      <form className="venue-search" role="search" onSubmit={handleSearchSubmit}>
+      <form className="venue-search card" role="search" onSubmit={handleSearchSubmit}>
         <label htmlFor="venue-search-input">Search venues</label>
         <input
           id="venue-search-input" type="search" value={searchInput}
