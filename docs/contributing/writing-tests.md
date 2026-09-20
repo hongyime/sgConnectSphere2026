@@ -138,3 +138,36 @@ npx playwright test --project=desktop
 
 Cite the actual exit codes and test counts in the PR body. `all good`
 is not a verification statement.
+
+## Red-Green-Refactor discipline (Sprint 2 onwards)
+
+For any story that touches persistence or business logic, follow the
+test-driven development cycle. The `test.fixme` scaffolds from the
+workbook are your Red starters — un-skip them, watch them fail, then
+implement.
+
+1. **Red commit**: un-skip the relevant `test.fixme` scaffold(s) OR write
+   a new `test(...)` that asserts the expected behaviour. Run it. It must
+   fail for the right reason (missing feature, not syntax error). Commit:
+   `test: red — TC_EXXSXX_YY <what the test asserts>`.
+2. **Green commit**: implement just enough code to make the test pass.
+   Commit: `feat: green — TC_EXXSXX_YY <what was implemented>`.
+3. **Refactor** (optional): clean up without breaking the test. Commit:
+   `refactor: TC_EXXSXX_YY <what improved>`.
+
+The git log must show Red before Green for any story-linked test.
+Reviewers check this during PR review — a PR where the implementation
+commit precedes its failing test commit will be sent back.
+
+This convention does not require a new test runner or CI gate. It uses
+the existing `test.fixme` scaffolds, the existing test harnesses, and
+the existing commit conventions. The enforcement mechanism is peer
+review: "show me the Red commit before the Green commit."
+
+### Why this matters
+
+Sprint 1 shipped tests alongside implementations in the same commits.
+This meant nobody could verify that the tests were actually testing the
+right thing — a test written after the code passes trivially and may
+not catch regressions. The Red-Green-Refactor cycle forces the test to
+fail first, proving it actually exercises the behaviour it claims to.
