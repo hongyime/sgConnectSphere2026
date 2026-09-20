@@ -21,9 +21,16 @@
     "test:notifications": "node --import tsx --test \"tests/notifications/*.test.ts\"",
     "test:redis": "node --import tsx --test \"tests/redis/*.test.ts\"",
     "test:e2e:scaffold": "playwright test --reporter=list",
-    "test:e2e:auth": "playwright test --config playwright.auth.config.ts"
+    "test:e2e:auth": "playwright test --config playwright.auth.config.ts",
+    "test:coverage:backend": "npm run test --workspace backend",
+    "test:coverage:frontend": "npm run test:coverage --workspace frontend",
+    "test:coverage:tooling": ".venv-tools/bin/python -m coverage run -m pytest tooling/tests/ && .venv-tools/bin/python -m coverage report",
+    "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend && npm run test:coverage:tooling",
+    "test:mutation": "npx stryker run"
   },
   "devDependencies": {
+    "@stryker-mutator/core": "^8.7.0",
+    "@stryker-mutator/command-runner": "^8.7.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "latest",
     "typescript": "latest"

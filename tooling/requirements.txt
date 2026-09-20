@@ -1,6 +1,7 @@
 # Repository tooling only; this does not select the backend language.
 # Direct and resolved transitive versions; update together and run both CI jobs.
 cfgv==3.5.0
+coverage==7.8.0
 distlib==0.4.3
 et-xmlfile==2.0.0
 filelock==3.32.6
