@@ -4,3 +4,6 @@
 # The delivery ledger names GitHub handles for contribution attribution, which
 # is the same kind of intentional public reference as CODEOWNERS.
 docs/backlog/sprint-1-delivery.md
+# The sprint retrospective quotes GitHub handles in its audit evidence.
+# These are already public on github.com and were committed in PR #99.
+docs/plans/sprint-1-retrospective.md
