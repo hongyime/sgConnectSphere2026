@@ -1,3 +1,6 @@
 # The optional personal identity hook permits these intentional public GitHub
 # review-routing handles. This is not an exception to repository secret scanning.
 .github/CODEOWNERS
+# The delivery ledger names GitHub handles for contribution attribution, which
+# is the same kind of intentional public reference as CODEOWNERS.
+docs/backlog/sprint-1-delivery.md

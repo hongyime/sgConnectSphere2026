@@ -2,6 +2,14 @@
 
 Date: 2026-09-16 · Sprint 1 (in flight)
 
+> Historical mid-sprint audit. Its estimates and "not implemented" statements
+> are superseded by the [20 September delivery ledger](../backlog/sprint-1-delivery.md).
+> At the actual Sprint 1 cutoff, 55 of 230 TC_IDs have active title references;
+> login/recovery, deactivation, submission/drafts, accessibility and venue work
+> have since merged. The catalogue contains 71 distinct product stories in total,
+> including 47 Release 1 stories. Use the ledger for actual completion and
+> contributor attribution; this document preserves the earlier reasoning.
+
 This document is an internal audit of ConnectSphere's automated test
 coverage against the Agile Testing Quadrants framework and against the
 ConnectSphere Release 1 backlog. It answers: what do our tests actually

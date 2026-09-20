@@ -1,5 +1,11 @@
 # Jira SCRUM board — sprint and burndown setup
 
+> Historical setup audit. For the verified Sprint 1 close-out, use the
+> [20 September delivery ledger](backlog/sprint-1-delivery.md). Sprint 1's API
+> window is 14 September 2026 10:00:06 through 20 September 00:00 Singapore time.
+> Its end date has passed, but Jira still reported it active during that audit.
+> Counts and statuses below describe the earlier setup snapshot.
+
 This is a point-in-time audit of the ConnectSphere Jira project (`SCRUM` in
 `theprawnworkspace.atlassian.net`) against the prerequisites for a meaningful
 Sprint Burndown chart. Anyone with the Jira credentials described in
