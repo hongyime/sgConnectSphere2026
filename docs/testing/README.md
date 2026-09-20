@@ -8,17 +8,26 @@ planning. The active runnable Playwright scaffold now lives in `tests/e2e/`,
 with this folder keeping the source reference copy.
 
 Do not implement story assertions in the reference copy under
-`frontend-verification-scaffold-v5/`. Update `docs/testing/PROJECT TEST
-CASES.xlsx` first, then regenerate/promote the matching `test.fixme()` stubs in
-`tests/e2e/` so the runnable scaffold remains traceable to the workbook.
+`frontend-verification-scaffold-v5/`. Update canonical `docs/testing/cases/`
+first, then update/promote the matching runnable tests. Regenerate dated XLSX
+exports with `scripts/export_testcases_xlsx.py`. The coverage auditor still reads
+the legacy undated workbook; catalogue changes must reconcile that input too.
 
-Current scaffold snapshot:
+Original scaffold snapshot (historical, not current execution results):
 
 - 11 Playwright spec files.
 - 227 `test.fixme()` case stubs from `PROJECT TEST CASES.xlsx`.
 - 454 skipped Playwright cases when run across desktop and mobile projects.
 - `github-workflow.example.yml` is an example only, not an active GitHub Actions
   workflow.
+
+At the Sprint 1 cutoff, `tc-coverage.md` inventories 230 IDs: 55 referenced by
+active test titles, 172 scaffold-only, and 3 without a test reference. This is
+23.9% title-linked automation, not an acceptance pass rate. Mocked E03/E09
+screens and conditional database tests can contribute IDs without completing
+their business stories. Deactivation and activity-log tests also contain real
+assertions without TC_ID titles. See the
+[delivery ledger](../backlog/sprint-1-delivery.md) for execution evidence and gaps.
 
 ## Traceability Standard
 

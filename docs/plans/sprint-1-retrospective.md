@@ -1,190 +1,131 @@
-# Sprint 1 retrospective and Sprint 2 carry-forward
+# Sprint 1 review and retrospective
 
-Written 2026-09-17, refreshed at Sprint 1 close on 2026-09-18. Records
-what shipped, what was deferred, and what must not be forgotten when
-Sprint 2 opens.
+Reconciled 20 September 2026 against `main` at `c35b527` and live Jira.
+The [delivery ledger](../backlog/sprint-1-delivery.md) is the detailed evidence,
+contributor and correction record. It supersedes this document's premature
+18 September close-out figures, stale carry-over list and zero-activity claim
+about Amareet. Earlier revisions and PostPlans remain historical snapshots.
 
-Source postplans (hosted, standalone HTML):
+## Release dashboard
 
-- Sprint 1 wrap-up overview &mdash; <https://xafnig65jkvg.postplan.dev>
-- PR #56 review (Bl0oper's submit-event-request) &mdash; <https://ldavmq09qqfo.postplan.dev>
-- PR #73 review (xiangyingg's PR #56 follow-up) &mdash; <https://inoqzljg9d5g.postplan.dev>
-- PR #78 (SCRUM-42 route collision fix) &mdash; <https://4ovp804r75sa.postplan.dev>
-- PR #82 (cookie session consolidation, SCRUM-91) &mdash; <https://dd03xjzncsoa.postplan.dev>
+| Measure | Result |
+| --- | --- |
+| Release 1 | 47 stories / 155 points |
+| Planned Sprint 1 | 12 stories / 36 points |
+| Done against audited accepted scope | 8 stories / 24 points |
+| Merged work needing closure | 4 stories / 12 points |
+| Remaining Release 1 | 39 stories / 131 points |
+| Sprint PR activity | 71 merges: 66 into main, 5 into stacked branches |
+| Automation inventory | 55/230 TC_IDs active; 172 scaffold; 3 without references |
 
-## What shipped in Sprint 1
+Sprint 1's exact Jira window was 14 September 10:00:06 to 20 September midnight,
+Singapore time. Jira was still active at audit time. PR counts are activity,
+not features or velocity; current corrections do not backdate the burndown.
 
-**67 pull requests merged** across the sprint (PRs #2 through #84 minus
-a handful of intermediate scaffolds). **19 SCRUM issues moved to Done**
-in Jira, including two evidence-based transitions at close-out
-(SCRUM-16 login and SCRUM-41 layout capacity) and one duplicate closure
-(SCRUM-105 was a duplicate of SCRUM-93).
+## Bryan's meeting-ready account
 
-Highlights, by area:
+### Sprint Review
 
-- **Access and identity (E01)** &mdash; SCRUM-16 log-in flow end-to-end
-  across PRs #35/#38/#58/#82, SCRUM-93 email verification token flow,
-  SCRUM-94 login lockout at threshold 5, SCRUM-101 Vitest and React
-  Testing Library harness, SCRUM-91 cookie-session consolidation
-  (ADR-015, T-58), plus the SCRUM-95 through SCRUM-99 role-scoped
-  functional screens (mock data) for coordinator, venue staff,
-  technical support, and admin.
-- **Event lifecycle (E02)** &mdash; SCRUM-26 submit-event-request (ten
-  mandatory fields plus none-required sentinel), SCRUM-27 save/reopen/
-  edit/delete draft (T-57 records the title/dates/attendance floor for
-  drafts). PR #56 review fixes for parser hardening, date validation,
-  positive-integer attendance, retryable token failures, and real-route
-  E02 e2e tests landed in PR #73.
-- **Venue catalogue (E05)** &mdash; SCRUM-40 venue catalogue, SCRUM-41
-  layout capacity matching (with a post-merge SQL fix in PR #72 that
-  moved the suitability filter into the WHERE clause so it runs before
-  the 100-result LIMIT).
-- **Backlog and decisions** &mdash; SCRUM-103 ADR/BDR migration to
-  per-section Markdown, SCRUM-104 contribution guides, four
-  deactivation ambiguities promoted to team decisions T-52 through T-55
-  in the BDR with the E01-S11 story and `TC_E01S11_04` test case
-  amended in place. Post-Sprint 1 close-out added T-58 (cookie sessions
-  everywhere) and T-59 (test schema in same Supabase DB).
-- **Architecture** &mdash; ADR-014 one-file-per-Vercel-URL rule with a
-  pre-commit hook enforcing the collision guard, ADR-015 cookie
-  sessions everywhere and no Supabase Auth in Release 1.
-- **Tooling and hygiene** &mdash; pinned Python dependencies for
-  source-doc automation, ADR/BDR Markdown-to-docx export script, TC_ID
-  coverage audit, per-PR postplan practice documented in
-  `docs/contributing/creating-a-postplan.md`, token-backed Vercel
-  deploy mirror workflow so teammates without dashboard access can
-  read the deploy log inside GitHub Actions.
+Implemented the shared foundations and integration work supporting Sprint 1's
+account, event-request and venue features:
 
-Test coverage on `main` at Sprint 1 close: **47 / 230 test cases
-automated (20.4%)**, 180 / 230 scaffold via `test.fixme`, 3 / 230
-cross-cutting with no dedicated test file. That's a jump from 24 / 230
-(10.4%) mid-sprint, produced by PR #56 un-skipping five `TC_E02S01_*`,
-PR #73 adding seven backend and six frontend regressions, PR #79 (Aaron's
-SCRUM-27) un-skipping five `TC_E02S02_*` and adding fourteen frontend
-tests, and PR #82 (auth consolidation) adding six frontend tests.
+- **Access and identity support (E01):** Built the landing/login/router shell,
+  initial lockout state machine, email-verification token flow and outbox wiring.
+  Consolidated authenticated event requests onto cookie sessions under ADR-015.
+  Integrated Xiang Ying's completed login/password-recovery implementation in
+  #95; she authored that feature and its live acceptance tests.
+- **Event-request support (E02):** Built the initial organiser request flow and
+  persistence foundation, resolved the duplicate `/api/events` route and added
+  a route-collision guard. Integrated Xiang Ying's validation/retry regressions
+  in #73 alongside Aaron's submission, draft and accessibility implementations.
+- **Reliable notification infrastructure (ADR-006):** Repaired compiled API
+  imports and implemented durable PostgreSQL delivery records, Redis delivery-ID
+  transport, relay/worker processing, leases, bounded retries and retained outcomes.
+- **Frontend delivery foundation:** Added role-scoped mock screens and route
+  coverage for Coordinator, Venue Staff, Technical Support, admin, organiser and
+  attendee flows. These provided a reusable UI foundation; mock registration and
+  planning screens do not complete the later business stories.
+- **Testing and source management:** Reconciled Playwright test IDs, added
+  Vitest/Testing Library, built the TC_ID coverage audit, migrated backlog/test
+  cases and ADR/BDR to reviewable Markdown, added exports and contribution guides,
+  and recorded the agreed deactivation rules.
+- **Team delivery support:** Added Definition of Done and review-readiness
+  guidance, per-PR PostPlans, deploy logs visible in GitHub Actions, metadata and
+  generated-coverage checks, and advisory Jira reconciliation.
 
-## Team contribution (Sprint 1)
+Merged PR evidence includes unit, component, runtime, database/queue and browser
+checks. The coverage inventory has 55 active title-linked IDs out of 230; that is
+not an acceptance pass rate. Real event-request persistence verification, deployed
+mail delivery/cadence and later E09 seat reuse remain explicit integration work.
+Several merged engineering PRs also still need recorded peer-review acceptance.
 
-Story points delivered per teammate at Sprint 1 close, after the
-2026-09-18 re-scoring that corrected inflated estimates on mock-screen
-and script-tooling tickets:
+### Sprint Retrospective
 
-| Teammate | Points | Merged PRs | Notes |
-| --- | --- | --- | --- |
-| Bryan | **44** | 53 | Extension work: E01-EXT, docs migrations, mock screens, CI/CD, contribution guides. Re-scored down from 63 as SCRUM-96–99 (mock UI), SCRUM-100 (scripted migration), SCRUM-101–104 (small tooling), and SCRUM-105 (duplicate of SCRUM-93) were adjusted to actual sizes. |
-| Xiang Ying | **11** | 3 | SCRUM-17 restrict event visibility, SCRUM-18 hide internal planning, SCRUM-16 log-in. Also authored the SCRUM-91 fix branch that Bryan rebased into PR #73. |
-| Aaron Koh | **8** | 3 | SCRUM-26 submit event request, SCRUM-27 save draft. Caught the PR #42 misattribution during PR #78 review. |
-| Lex In Phun | **6** | 5 | SCRUM-40 venue catalogue, SCRUM-41 layout capacity (plus the post-merge SQL fix). |
-| Ji Ning | **4** | 3 | SCRUM-19 update account details, SCRUM-23 create account. Author of the initial database-schema and user-flow docs. |
-| Amareet | **0** | 0 | No commits, branches, or PRs visible in the repository at close. Needs a direct conversation before Sprint 2 opens. |
-| **Team total** | **73** | | |
+#### 1. What Went Well
 
-## Carry-forward into Sprint 2
+- Shared database, role, status and notification foundations gave teammates
+  consistent starting points for their features.
+- Consolidating sessions and API routing resolved cross-feature integration
+  conflicts and gave later stories one authentication contract.
+- Durable notification storage and concurrency/rollback tests protected work
+  from being lost when transport or provider calls fail.
+- Markdown sources, TC_ID traceability and PostPlans made requirements and
+  implementation evidence easier for the team to inspect.
+- Teammate reviews caught concrete defects, including the venue suitability
+  filter running after the 100-result limit; follow-up fixes were recorded.
+- Final attribution recognises both feature authors and integration support,
+  including Amareet's five frontend PRs and Xiang Ying's code in #73/#95.
 
-Everything below either did not land in Sprint 1 or was correctly
-deferred by an in-scope PR / ambiguity decision. Sprint 2 (Jira sprint
-id 35) now holds 18 issues; the carry-forward set below is the subset
-whose work concretely follows something from Sprint 1.
+#### 2. What Didn't Go Well
 
-| Item | Origin | Notes |
-| --- | --- | --- |
-| **SCRUM-25** deactivate account (E01-S11, 3 pts, Ji Ning) | Amended with T-52–T-55 rules but not implemented in Sprint 1 | Starter task list posted on the ticket 2026-09-18. Backend endpoint plus the four blocking rules. |
-| **SCRUM-28** predefined accessibility matching (E02-S03, 1 pt, Aaron Koh) | Deferred by PR #56 body | Depends on the venue supported-features vocabulary (T-13). Starter task list posted on the ticket 2026-09-18. |
-| **SCRUM-86** activity log (E14-S02, 3 pts, Phun Le Xin) | Partially covered (SCRUM-94 lockout audit entry) but not full E14-S02 | Ordered starter task list on the ticket so partial delivery is honest. |
-| **SCRUM-109** provision `TEST_DATABASE_URL` via a `test` schema | Sprint 1 close-out decision T-59 | Bryan owns. Rescoped from a separate Supabase project to a test schema in the same DB. Blocks SCRUM-110. |
-| **SCRUM-110** live Postgres migration roundtrip for `0005_event_request_fields.sql` | PR #56 verification note | Blocked on SCRUM-109. |
-| **SCRUM-111** decommission Vercel git integration | Sprint 1 close-out task | Optional; run after 3–5 successful deploys through the Actions workflow (PR #76). |
-| **SCRUM-112** preview deploy cleanup workflow | Sprint 1 close-out task | Low-priority housekeeping. |
+- Parallel authentication systems and duplicate API routes integrated poorly;
+  mocked screens and successful builds did not reveal the live-flow failures.
+- Some merged changes lacked a valid recorded human approval. #79 is an
+  explicitly documented example; admin-merge cascades should not be treated
+  as a successful substitute for peer review.
+- Some acceptance rules remained unclear or unfinished: organisation editing,
+  database-backed event submission verification and booking-decision audit logs.
+- Source guides and the early retrospective became stale. The old review
+  omitted late work and incorrectly reported that a teammate had no activity.
+- Jira updates lagged behind delivery, and the new sync script also produced
+  a false Done result for the venue calendar by reading an example closing clause.
+- Prototype tasks, duplicate tickets, mid-sprint additions and retrospective
+  re-estimation made the old combined point total unsuitable as sprint velocity.
 
-## What went well
+**Suggested improvements:** Resolve business rules during refinement; preserve
+the original commitment and label added scope; require current human review and
+relevant application checks; demonstrate critical paths with real backend state;
+update GitHub evidence and Jira together after merges; and check sync decisions
+against actual story scope rather than issue-key text alone.
 
-- **Postplan practice worked on its first outing.** Reviewers who don't
-  want to open a diff read one HTML doc; those who do read the diff
-  find the same shape mapped out for them. Five postplans landed
-  (Sprint 1 wrap-up, PR #56, PR #73, PR #78, PR #82) and were
-  consistently the entry point for review.
-- **Rebase + admin-merge cascade** cleared PR queues safely. The
-  pattern of temporarily disabling `enforce_admins`, merging, then
-  restoring protection was cheap and left an audit trail.
-- **Cross-agent collaboration.** The SCRUM-42 route collision was
-  found and fixed by a second agent session while the main session was
-  running the auth consolidation. Both branches landed cleanly on the
-  same day.
-- **Retrospective re-score.** Correcting inflated story-point
-  estimates on mock-screen and script-tooling tickets brought Sprint 1
-  velocity to a defensible 73 points, with every adjustment recorded
-  as a per-ticket audit comment.
+## Team review summary
 
-## What did not go as well
+- **Xiang Ying:** client visibility, attendee information boundaries, final
+  login/recovery and event-request regression fixes.
+- **Ji Ning:** attendee account creation, profile updates, account deactivation
+  and useful venue-review findings.
+- **Aaron:** event submission, drafts, accessibility matching and review-gap
+  documentation.
+- **Le Xin:** catalogue/layout backend, suitability and duplicate-label fixes,
+  and partial activity logging.
+- **Amareet:** checklist/profile UX, live venue CRUD/layout management,
+  design-token consistency, search/Enter-key fixes and final form polish.
+- **Bryan:** platform/UI/testing/documentation foundations, durable outbox,
+  API/auth integration and delivery-process support described above.
 
-- **`api/events.ts` route collision went unnoticed for the whole of
-  Sprint 1.** PR #56 (SCRUM-26) added `api/events.ts` alongside the
-  pre-existing `api/events/index.ts` from PR #42 (SCRUM-18, E01-S03
-  hide internal planning). Vercel silently deployed both and one
-  won the route, breaking `GET /api/events` in production. The
-  failure did not surface at review because the collision is invisible
-  in the build log; it only manifested at request time on the deployed
-  URL. Fixed in PR #78 (branch `fix/SCRUM-42-events-routing-collision`
-  &mdash; the branch name inherited an early miscount of the affected
-  Jira ticket; SCRUM-42 in Jira is E05-S03 venue calendar). Records
-  ADR-014 and BDR T-56. A pre-commit hook now prevents recurrence.
-- **Two authentication systems shipped in parallel.** Cookie sessions
-  and Supabase Auth both existed but did not interoperate; App.tsx
-  papered over the gap with `mock-token`. Consolidated in PR #82
-  (ADR-015, T-58).
-- **`fix/SCRUM-26-request-review` was authored days before it became
-  a PR.** The team lost visibility on a ready-to-review fix.
-  Going forward: every branch on origin that has more than one commit
-  and a matching Jira story should open as a draft PR the same day.
-- **Vercel deploy failures piled up unread.** Only Bryan had dashboard
-  access. Fixed by PR #76's token-backed deploy mirror workflow, but
-  the visibility gap ran through most of Sprint 1.
-- **One teammate has zero repository activity.** Amareet has no commits,
-  branches, or PRs. Sprint 2 opens with a direct conversation to
-  understand blockers and pair-programme onto a small ticket.
-- **PR #79 (SCRUM-27, Aaron's save-draft story) merged with zero recorded reviews.** Review was requested from all five teammates
-  (`jininggg`/`bryanseah234`/`xiangyingg`/`amareetkm2024-del`/
-  `lexinphun2024-debug`) via CODEOWNERS, but GitHub shows no submitted
-  review of any kind — `reviews: []`, no approval, no requested-changes,
-  no comments — before `bryanseah234` merged it directly. Required CI
-  checks were green, so nothing blocked it structurally; the gap is
-  against `CONTRIBUTING.md`'s Definition of Done, which requires the
-  item be "peer-reviewed by at least one other developer" before it
-  counts as done. Caught retroactively during a 2026-09-19 PR-checklist
-  audit, after the fact — not something to undo on a merged PR, but
-  worth confirming branch protection actually enforces the 1-approval
-  rule, not just CI, before Sprint 2 relies on the same merge path.
-- **Story-point distribution was skewed.** Bryan's re-scored 44 points
-  is still ~4–10&times; any teammate's total. Sprint 2 plan holds
-  Bryan at &le;10 points of user stories and distributes enabler work.
+## Immediate follow-through
 
-## Action items for Sprint 2 opening
+1. Resolve SCRUM-19's organisation rule, SCRUM-26/SCRUM-110 persistence proof,
+   SCRUM-27 peer review, and SCRUM-86's booking-audit gap.
+2. Review the implemented engineering work held In Review. Its contribution
+   remains credited while acceptance evidence is completed.
+3. Assign the 10-story / 36-point Sprint 2 baseline and agree carry-over before
+   completing Sprint 1 in Jira. Record a sprint goal.
+4. Fix the Jira sync false-positive path, check actual approval enforcement,
+   and reconcile the older shared-test-schema instructions with current CI.
+5. Complete a real deployed recovery-email journey and schedule later
+   cross-story booking/registration integration checks.
 
-1. **Amareet.** Direct conversation before assignments land. Pair her
-   with someone (Xiang Ying or Ji Ning) on a small E13 report-generation
-   story so she has an on-ramp.
-2. **Provision `TEST_DATABASE_URL`** as a `test` schema in the existing
-   Supabase project per SCRUM-109 and T-59. Unblocks SCRUM-110.
-3. **Assign Sprint 2 tickets already on the board.** SCRUM-32–37 (E03
-   coordinator flow), SCRUM-42, 43, 45 (E05/E06 venue), SCRUM-75 (E11
-   notifications) are all pulled in but ownerless.
-4. **Refresh `docs/testing/tc-coverage.md`** any time an integration
-   test un-skips. Automated at Sprint 1 close: 47 / 230 (20.4%).
-5. **Ship the pending Sprint 1 continuations** (SCRUM-25, 28, 86) if
-   the assignees land them today; otherwise slide to Sprint 2 as
-   carry-overs.
-
-## Related documents
-
-- `docs/contributing/creating-a-postplan.md` &mdash; per-PR postplan practice.
-- `docs/deploying-and-debugging.md` &mdash; how to debug a red Vercel
-  deploy without Vercel access.
-- `docs/backlog/decisions/deactivation-and-registration-lifecycle.md`
-  &mdash; the four ambiguity proposals, now promoted to T-52 through
-  T-55.
-- `docs/testing/tc-coverage.md` &mdash; current TC_ID coverage audit
-  (47 / 230 automated at Sprint 1 close).
-- `docs/bdr/B-team-decisions.md` &mdash; canonical team decisions
-  through T-59.
-- `docs/adr/README.md` &mdash; canonical architecture decisions through
-  ADR-015.
+The delivery ledger records 101 Jira records updated and read back successfully,
+including 26 status corrections. Original estimates and sprint assignments were
+retained. The GitHub correction PR is subject to normal teammate review.
