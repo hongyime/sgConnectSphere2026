@@ -52,7 +52,7 @@ All depend on E03-S05's module structure. E03-S01/S02/S03 can run in parallel.
 | Story | Pts | Owner | First slice |
 | --- | ---: | --- | --- |
 | E05-S04 SCRUM-43 Block venue | 3 | — | Create block + conflict detection + coordinator notification |
-| E06-S01 SCRUM-45 Search venues | 5 | — | Extend `searchVenues()` with date-range + availability filter. **Needs team clarification on "near match" algorithm (Scenario 2).** |
+| E06-S01 SCRUM-45 Search venues | 5 | — | Extend `searchVenues()` with date-range + availability filter. Near-match algorithm decided in T-63: return all results with mismatch flags. |
 
 ## Notification routing table (for E11-S01 implementer)
 
@@ -79,14 +79,18 @@ the right notification.
 - Registration confirmation (E09-S01, Sprint 3) → attendee
 - Place released from waitlist (E09-S04, Sprint 3) → waitlisted attendees
 
-## Open question for team
+## E06-S01 near-match algorithm — RESOLVED (T-63)
 
-**E06-S01 Scenario 2 "near match" algorithm**: the AC says "near matches are
-returned rather than an empty result" but does not define which criteria are
-relaxed or in what order. Before anyone picks up E06-S01, the team must agree:
+Decided by Bryan on 2026-09-20. Recorded as BDR T-63.
 
-- Option 1: relax capacity first (show venues within 120% of required attendance), then relax layout
-- Option 2: drop one filter at a time in priority order (accessibility → layout → capacity) until results appear
-- Option 3: always return top 10 by name regardless of filters, with a "does not meet requirements" flag
+**Decision: Option C — return all results with mismatch flags.**
 
-Record the decision as a BDR entry (e.g. T-63) before implementation starts.
+The venue search returns all active venues matching the text query. Each result
+is flagged as `meets requirements` or lists the specific mismatches (capacity
+shortfall, missing layout, missing accessibility feature). The UI distinguishes
+suitable from unsuitable results visually.
+
+For the implementer: extend `searchVenues()` to return a `meetsRequirements:
+boolean` and `mismatches: string[]` per result. The query stays the same (text
+match + active filter + LIMIT 100); the mismatch check is a post-query
+projection against the event's recorded requirements.
