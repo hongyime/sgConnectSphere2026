@@ -24,7 +24,7 @@
     "test:e2e:auth": "playwright test --config playwright.auth.config.ts",
     "test:coverage:backend": "npm run test --workspace backend",
     "test:coverage:frontend": "npm run test:coverage --workspace frontend",
-    "test:coverage:tooling": "python -m coverage run -m pytest tooling/tests/ && python -m coverage report",
+    "test:coverage:tooling": "python scripts/coverage_tooling.py",
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend && npm run test:coverage:tooling",
     "test:mutation": "npx stryker run"
   },
