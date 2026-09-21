@@ -11,16 +11,20 @@ Attach screenshots for visible UI changes and note migrations or configuration c
 
 ## Checklist
 
-- [ ] This PR contains one logical change and has a conventional title.
-- [ ] I ran the relevant checks and added regression tests where needed.
-- [ ] Before requesting review, this branch is up to date with `main` and has no merge conflicts.
-- [ ] Before requesting review, required checks are passing or queued from the latest commit.
-- [ ] Auto-merge is enabled if this PR should merge as soon as review and checks pass.
-- [ ] I updated documentation if setup, behaviour, or contracts changed.
-- [ ] If this PR touched a `CAA DDMMYYYY` source file, I followed the copy-forward rules in `docs/source-of-truth.md` and updated the "Current primary source files" table.
-- [ ] If this PR changed the product backlog, I updated the affected derivatives (C4 diagrams, user flows, test cases, Jira) in this PR or noted which ones I checked and why no update was needed.
-- [ ] I reviewed the diff for secrets and generated files.
-- [ ] Significant reviewer findings are resolved or answered with a reason.
+Each checked box must include the evidence asked for after the dash.
+The CI gate rejects a checked box whose evidence placeholder is still blank.
+
+- [ ] One logical change, conventional title — _PR title:_ `____`
+- [ ] `python scripts/check.py` passes — _CI run:_ `____`
+- [ ] Application tests pass (`npm test` / Playwright) — _CI run or local output:_ `____`
+- [ ] Regression tests added where needed — _test file(s):_ `____` or N/A
+- [ ] Manual verification done — _PostPlan link or screenshot:_ `____`
+- [ ] Branch up to date with `main`, no conflicts, required checks green — _last commit SHA:_ `____`
+- [ ] Documentation/architecture updated if affected — _file:_ `____` or N/A
+- [ ] TC_IDs traced from story → test title — _TC_IDs:_ `____` or N/A
+- [ ] Copy-forward rules followed if CAA-dated file touched — _new filename:_ `____` or N/A
+- [ ] Backlog derivatives updated if backlog changed — _derivatives checked:_ `____` or N/A
+- [ ] Diff reviewed for secrets and generated files — no credentials, `.env` values, or personal paths
 
 ## Follow-ups
 

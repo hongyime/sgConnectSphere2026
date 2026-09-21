@@ -8,6 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **230**
 - Automated (explicit TC_ID in an active test title): **55** (23.9%)
+  - Real-database (`.integration.test` / `.db.test`): **15**
+  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
+  - Live-assertion (other active tests): **40**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **172** (74.8%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 

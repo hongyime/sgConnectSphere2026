@@ -40,6 +40,15 @@ jobs:
             echo "::error::docs/testing/tc-coverage.md is stale. Re-run scripts/tc_coverage_audit.py and commit the result." >&2
             exit 1
           fi
+      - name: ADR-015 — no Supabase Auth SDK in application code
+        run: |
+          if grep -rE "from ['\"]@supabase/supabase-js['\"]|require\(['\"]@supabase/supabase-js['\"]\)" \
+            backend/src/ api/ frontend/src/ --include='*.ts' --include='*.tsx' --include='*.js' 2>/dev/null; then
+            echo "::error::ADR-015 violation: @supabase/supabase-js import found in application code. See docs/adr/ADR-015-cookie-sessions-not-supabase-auth.md" >&2
+            exit 1
+          fi
+      - name: docs/source-of-truth.md file references exist
+        run: python scripts/check_docs_freshness.py
       - name: Report scope
         if: always()
         run: |
