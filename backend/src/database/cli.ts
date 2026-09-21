@@ -501,10 +501,10 @@ async function truncateManagedTables(client: Client) {
 
 async function seed(client: Client) {
   const orgIds = new Map(organisations.map((org) => [org.key, org.id]));
-  const userIds = new Map(users.map((user) => [user.key, stableUuid(`user:${user.email}`)]));
-  const layoutIds = new Map(layouts.map((layout) => [layout.code, stableUuid(`layout:${layout.code}`)]));
-  const venueIds = new Map(venues.map((venue) => [venue.key, stableUuid(`venue:${venue.name}`)]));
-  const eventIds = new Map(events.map((event) => [event.code, stableUuid(`event:${event.code}`)]));
+  const userIds = new Map<string, string>(users.map((user) => [user.key, stableUuid(`user:${user.email}`)]));
+  const layoutIds = new Map<string, string>(layouts.map((layout) => [layout.code, stableUuid(`layout:${layout.code}`)]));
+  const venueIds = new Map<string, string>(venues.map((venue) => [venue.key, stableUuid(`venue:${venue.name}`)]));
+  const eventIds = new Map<string, string>(events.map((event) => [event.code, stableUuid(`event:${event.code}`)]));
 
   await inTransaction(client, async () => {
     for (const org of organisations) {
