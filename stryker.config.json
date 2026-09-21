@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker4s/master/stryker4js-schema.json",
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/core/schema/stryker-core.json",
   "packageManager": "npm",
   "reporters": ["html", "clear-text", "progress", "json"],
   "testRunner": "command",
@@ -13,7 +13,6 @@
     "!backend/src/modules/**/types.ts",
     "!backend/src/modules/**/index.ts"
   ],
-  "coverageAnalysis": "perTest",
   "thresholds": {
     "high": 80,
     "low": 60,
@@ -23,6 +22,5 @@
     "fileName": "reports/mutation/index.html"
   },
   "tempDirName": ".stryker-tmp",
-  "concurrency": 2,
-  "disableTypeChecks": "backend/src/**/*.ts"
+  "concurrency": 2
 }

@@ -30,7 +30,6 @@
   },
   "devDependencies": {
     "@stryker-mutator/core": "^8.7.0",
-    "@stryker-mutator/command-runner": "^8.7.0",
     "@playwright/test": "^1.63.0",
     "@types/node": "latest",
     "typescript": "latest"
