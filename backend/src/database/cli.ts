@@ -206,6 +206,39 @@ const venues = [
     closesAt: '22:00',
     layouts: [{ code: 'boardroom', capacity: 40 }],
   },
+  {
+    key: 'jasmineHall',
+    name: 'Jasmine Hall',
+    location: 'East Wing Level 1',
+    maxCapacity: 300,
+    opensAt: '07:00',
+    closesAt: '23:00',
+    layouts: [
+      { code: 'theatre', capacity: 200 },
+      { code: 'banquet', capacity: 150 },
+    ],
+  },
+  {
+    key: 'mapleRoom',
+    name: 'Maple Room',
+    location: 'West Wing Level 4',
+    maxCapacity: 30,
+    opensAt: '09:00',
+    closesAt: '18:00',
+    layouts: [{ code: 'boardroom', capacity: 25 }],
+  },
+  {
+    key: 'cedarAuditorium',
+    name: 'Cedar Auditorium',
+    location: 'Main Campus Level 1',
+    maxCapacity: 500,
+    opensAt: '08:00',
+    closesAt: '22:00',
+    layouts: [
+      { code: 'theatre', capacity: 450 },
+      { code: 'banquet', capacity: 250 },
+    ],
+  },
 ] as const;
 
 const equipment = [
@@ -280,6 +313,61 @@ const events: SeedEvent[] = [
     range: '[2026-09-30 09:00+08,2026-09-30 12:00+08)',
     expectedAttendance: 80,
     layoutCode: 'banquet',
+  },
+  {
+    code: 'EVT-3001',
+    title: 'EVT-3001 Approved Annual Conference',
+    organiserKey: 'organiserA',
+    coordinatorKey: 'coordA',
+    clientOrg: 'clientA',
+    status: 'approved',
+    range: '[2026-10-15 09:00+08,2026-10-15 17:00+08)',
+    expectedAttendance: 150,
+    layoutCode: 'theatre',
+  },
+  {
+    code: 'EVT-3002',
+    title: 'EVT-3002 Awaiting Clarification Workshop',
+    organiserKey: 'organiserB',
+    coordinatorKey: 'coordB',
+    clientOrg: 'clientA',
+    status: 'awaiting_clarification',
+    range: '[2026-10-20 14:00+08,2026-10-20 17:00+08)',
+    expectedAttendance: 30,
+    layoutCode: 'boardroom',
+  },
+  {
+    code: 'EVT-3003',
+    title: 'EVT-3003 Planning Phase Gala',
+    organiserKey: 'organiserA',
+    coordinatorKey: 'coordA',
+    clientOrg: 'clientA',
+    status: 'planning',
+    range: '[2026-10-25 18:00+08,2026-10-25 22:00+08)',
+    expectedAttendance: 200,
+    layoutCode: 'banquet',
+  },
+  {
+    code: 'EVT-3004',
+    title: 'EVT-3004 Draft Team Retreat',
+    organiserKey: 'organiserC',
+    coordinatorKey: '',
+    clientOrg: 'clientB',
+    status: 'draft',
+    range: '[2026-11-01 09:00+08,2026-11-01 17:00+08)',
+    expectedAttendance: 25,
+    layoutCode: 'boardroom',
+  },
+  {
+    code: 'EVT-3005',
+    title: 'EVT-3005 Rejected Budget Review',
+    organiserKey: 'organiserB',
+    coordinatorKey: 'coordB',
+    clientOrg: 'clientA',
+    status: 'rejected',
+    range: '[2026-10-10 10:00+08,2026-10-10 12:00+08)',
+    expectedAttendance: 50,
+    layoutCode: 'theatre',
   },
 ];
 
@@ -524,7 +612,7 @@ async function seed(client: Client) {
           eventIds.get(event.code),
           event.code,
           userIds.get(event.organiserKey),
-          userIds.get(event.coordinatorKey),
+          event.coordinatorKey ? userIds.get(event.coordinatorKey) : null,
           orgIds.get(event.clientOrg),
           event.title,
           `${event.code} seeded from SEED_DATA.md.`,
@@ -534,6 +622,53 @@ async function seed(client: Client) {
           event.expectedAttendance,
           layoutIds.get(event.layoutCode),
           null,
+        ],
+      );
+    }
+
+    // Venue bookings for E05-S03 calendar demo
+    const bookings = [
+      { venueKey: 'orchidHall', eventCode: 'EVT-2001', range: '[2026-10-06 09:00+08,2026-10-06 12:00+08)', status: 'confirmed' },
+      { venueKey: 'orchidHall', eventCode: 'EVT-3003', range: '[2026-10-25 18:00+08,2026-10-25 22:00+08)', status: 'pending' },
+      { venueKey: 'lotusRoom', eventCode: 'EVT-2002', range: '[2026-10-07 09:00+08,2026-10-07 12:00+08)', status: 'confirmed' },
+      { venueKey: 'lotusRoom', eventCode: 'EVT-2003', range: '[2026-10-08 09:00+08,2026-10-08 12:00+08)', status: 'pending' },
+      { venueKey: 'jasmineHall', eventCode: 'EVT-3001', range: '[2026-10-15 09:00+08,2026-10-15 17:00+08)', status: 'confirmed' },
+    ];
+
+    for (const booking of bookings) {
+      await client.query(
+        `
+          INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status)
+          VALUES ($1, $2, $3, $4::tstzrange, $5::booking_status)
+        `,
+        [
+          stableUuid(`booking:${booking.venueKey}:${booking.eventCode}`),
+          venueIds.get(booking.venueKey),
+          eventIds.get(booking.eventCode),
+          booking.range,
+          booking.status,
+        ],
+      );
+    }
+
+    // Venue blocks for E05-S04 maintenance demo
+    const blocks = [
+      { venueKey: 'mapleRoom', range: '[2026-10-12 00:00+08,2026-10-14 00:00+08)', reason: 'Scheduled HVAC maintenance' },
+      { venueKey: 'cedarAuditorium', range: '[2026-10-22 08:00+08,2026-10-22 18:00+08)', reason: 'Annual fire safety inspection' },
+    ];
+
+    for (const block of blocks) {
+      await client.query(
+        `
+          INSERT INTO venue_blocks (id, venue_id, block_range, reason, created_by)
+          VALUES ($1, $2, $3::tstzrange, $4, $5)
+        `,
+        [
+          stableUuid(`block:${block.venueKey}:${block.reason}`),
+          venueIds.get(block.venueKey),
+          block.range,
+          block.reason,
+          userIds.get('venueA'),
         ],
       );
     }
