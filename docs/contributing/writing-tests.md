@@ -213,17 +213,54 @@ Mutation testing verifies that tests catch real bugs by systematically
 modifying (mutating) the source code and checking that at least one test
 fails for each mutation. A surviving mutant means a test gap exists.
 
-Stryker is configured in `stryker.config.json` and targets backend
-service/repository/status modules. Run it with:
+Stryker runs against Node's built-in test runner via the `tap` test runner
+plugin (`@stryker-mutator/tap-runner`), not the generic `command` runner.
+The `command` runner re-executes the *entire* backend suite for every single
+mutant with no coverage narrowing — measured at ~3+ hours for 686 mutants
+across 3 files. The `tap` runner gets real per-test-file coverage analysis
+(Node's test runner already emits TAP when given `--test-reporter=tap`), so
+each mutant only re-runs the test files that actually cover the mutated line.
+First real run: 686 mutants across the full configured scope in ~4 minutes
+instead of ~3+ hours — roughly a 45x speedup.
+
+**Critical gotcha if you touch `stryker.config.json`'s `tap.nodeArgs`:**
+Node's default (non-explicit) console output on this project's Node version
+is NOT TAP-compliant even when piped to a child process — Stryker's tap-runner
+then can only tell "exit code 0 (survived)" from "exit code non-zero (error)",
+and can never report a clean "Killed" status. If a mutation run shows a 0%
+score with a large `# errors` column and zero `# killed`, this is almost
+certainly the cause. Fix: `nodeArgs` MUST include both
+`--test-reporter=tap` and `--test-reporter-destination=stdout` alongside
+`--import tsx`. Verify by running the exact node invocation manually first
+(`node --import tsx --test-reporter=tap --test-reporter-destination=stdout
+<test-file>`) and confirming the first line of output is `TAP version 13`.
+
+`tap.testFiles` must list exact file paths, not a glob with `!`-negation.
+Unlike the `mutate` option, `tap.testFiles` does not honor negation globs —
+a pattern like `!backend/tests/*.integration.test.ts` will not exclude
+anything, and integration/db test files requiring a live database will get
+picked up and error out. List the plain unit-test files explicitly.
+
+Run mutation testing with:
 
 ```
 npm run test:mutation
 ```
 
-This is expensive (minutes, not seconds). Run it:
+This is still not instant (minutes, not seconds) because Stryker sandboxes
+and re-runs relevant tests per mutant. Run it:
 - After completing a story's tests, to verify they catch real bugs
 - Before Sprint reviews, to measure test suite strength
-- NOT on every commit or in CI (too slow for a required check)
+- NOT on every commit or in CI (still too slow for a required check)
+
+`stryker.config.json`'s `mutate` scope is intentionally narrow (one module
+at a time) rather than the whole backend. Widen it deliberately, one module
+per PR, so each run stays fast and its report stays reviewable. First real
+score on `eventLifecycle/service.ts` + `eventLifecycle/status.ts`: **71.03%**
+(255 killed, 93 survived, 11 no-coverage, 0 errors, 0 timeouts). The
+`status.ts` sub-score (33.33%) is the weakest spot — several status-transition
+array mutations survive because no test asserts the exact allowed-transition
+list contents, only that specific transitions succeed or fail.
 
 A mutation score below 60% on a module means the tests are likely
 decorative for that module. Strengthen them before marking the story Done.
