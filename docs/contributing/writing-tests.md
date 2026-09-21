@@ -139,6 +139,95 @@ npx playwright test --project=desktop
 Cite the actual exit codes and test counts in the PR body. `all good`
 is not a verification statement.
 
+## Four-question test quality checklist (mandatory)
+
+Every test — unit, integration, or e2e — must answer these four questions.
+Reviewers reject tests that cannot.
+
+1. **Setup** — what state is created before the action?
+   Example: "insert a user with `failed_login_count = 4`"
+2. **Action** — what single operation is being tested?
+   Example: "attempt login with wrong password"
+3. **Expected result** — what observable outcome, justified independently of
+   the code?
+   Example: "`locked_until` is set to now + 30 minutes per ADR-016"
+4. **Would a plausible wrong implementation pass this test?** If yes, the
+   test is decorative — strengthen it or delete it.
+   Example: if someone changed `LOCKOUT_THRESHOLD` from 5 to 10 and the
+   test still passed, the test is decorative.
+
+### What makes a test decorative
+
+A test is decorative when it passes regardless of whether the feature
+works correctly. Common patterns:
+
+- Asserts against mock data instead of real behaviour (`Admin.tsx`
+  `AuditLogViewer` reads from `mocks.ts`, not the database)
+- Uses `test.fixme` with no plan to un-skip (acceptable as scaffold, not
+  as coverage)
+- Checks that a component renders without asserting the *right* content
+- Asserts a status code without checking the response body or side effects
+
+### Expected values must be independently justified
+
+The expected value in an assertion must come from a source other than the
+code under test:
+
+- **Good**: `expect(lockedUntil).toBe(now + 30 * 60 * 1000)` — justified
+  by ADR-016 (30-minute lockout policy)
+- **Good**: `expect(result.status).toBe('Submitted')` — justified by
+  E02-S01 Scenario 1 acceptance criterion
+- **Bad**: `expect(result).toEqual(whatTheCodeReturns)` — circular; if the
+  code is wrong, the test is wrong too
+
+### Tests must be deterministic and non-vacuous
+
+- **Deterministic**: same input always produces same result. No
+  `Date.now()` in expected values without mocking time. No random data
+  without seeded generators. No network calls without stubs.
+- **Non-vacuous**: the test exercises the path it claims to test. A test
+  that catches an exception and asserts `true` is vacuous. A test that
+  asserts `array.length > 0` when the array is hardcoded is vacuous.
+
+## Coverage tools
+
+Three coverage tools are configured for the three test runtimes:
+
+| Runtime | Tool | Command |
+| --- | --- | --- |
+| Backend Node (tsx --test) | **c8** | `npm run test --workspace backend` (c8 wraps all test scripts) |
+| Frontend Vitest | **@vitest/coverage-v8** | `npm run test:coverage --workspace frontend` |
+| Python tooling (pytest) | **coverage.py** | `npm run test:coverage:tooling` (or `.venv-tools/bin/python -m coverage run -m pytest tooling/tests/`) |
+| All three | — | `npm run test:coverage` (runs all three sequentially) |
+
+Coverage reports are written to:
+- `backend/coverage/` (c8 lcov + json-summary)
+- `frontend/coverage/` (v8 lcov + json-summary)
+- `htmlcov/` (coverage.py HTML)
+
+Do not commit coverage output directories — they are gitignored.
+
+## Mutation testing (Stryker)
+
+Mutation testing verifies that tests catch real bugs by systematically
+modifying (mutating) the source code and checking that at least one test
+fails for each mutation. A surviving mutant means a test gap exists.
+
+Stryker is configured in `stryker.config.json` and targets backend
+service/repository/status modules. Run it with:
+
+```
+npm run test:mutation
+```
+
+This is expensive (minutes, not seconds). Run it:
+- After completing a story's tests, to verify they catch real bugs
+- Before Sprint reviews, to measure test suite strength
+- NOT on every commit or in CI (too slow for a required check)
+
+A mutation score below 60% on a module means the tests are likely
+decorative for that module. Strengthen them before marking the story Done.
+
 ## Red-Green-Refactor discipline (Sprint 2 onwards)
 
 For any story that touches persistence or business logic, follow the
@@ -158,11 +247,6 @@ implement.
 The git log must show Red before Green for any story-linked test.
 Reviewers check this during PR review — a PR where the implementation
 commit precedes its failing test commit will be sent back.
-
-This convention does not require a new test runner or CI gate. It uses
-the existing `test.fixme` scaffolds, the existing test harnesses, and
-the existing commit conventions. The enforcement mechanism is peer
-review: "show me the Red commit before the Green commit."
 
 ### Why this matters
 
