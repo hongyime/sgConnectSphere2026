@@ -35,19 +35,29 @@ def check_branch(branch: str, *, automated: bool = False) -> bool:
 
 
 def check_body(body: str, *, automated: bool = False) -> tuple[bool, list[str]]:
-    """Return (ok, missing). Bot PRs pass unconditionally.
+    """Return (ok, problems). Bot PRs pass unconditionally.
 
     A PR body is accepted when every header in REQUIRED_BODY_SECTIONS appears
-    as a whole-line match. This catches "no template used at all" cases; it
-    does not attempt to judge whether each section has substantive content,
-    which stays a reviewer decision.
+    as a whole-line match, and no checked checkbox still contains the blank
+    evidence placeholder ``____``.  The placeholder check catches boxes that
+    were ticked without filling in the required evidence pointer.
     """
     if automated:
         return True, []
     text = body or ""
-    lines = {line.strip() for line in text.splitlines()}
-    missing = [header for header in REQUIRED_BODY_SECTIONS if header not in lines]
-    return not missing, missing
+    lines_set = {line.strip() for line in text.splitlines()}
+    problems: list[str] = []
+    for header in REQUIRED_BODY_SECTIONS:
+        if header not in lines_set:
+            problems.append(header)
+    # Reject checked boxes whose evidence placeholder is still blank.
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("- [x]") or stripped.startswith("- [X]"):
+            if "____" in stripped:
+                label = stripped[6:stripped.index("\u2014")].strip() if "\u2014" in stripped else stripped[6:50]
+                problems.append(f"Checked box with blank evidence: {label}")
+    return not problems, problems
 
 
 def main() -> int:
