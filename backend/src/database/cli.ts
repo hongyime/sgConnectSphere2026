@@ -672,6 +672,175 @@ async function seed(client: Client) {
         ],
       );
     }
+
+    // Accessibility features (predefined vocabulary per T-13)
+    const accessibilityFeatures = [
+      { code: 'wheelchair_access', label: 'Wheelchair access' },
+      { code: 'hearing_loop', label: 'Hearing loop' },
+      { code: 'quiet_room', label: 'Quiet room' },
+      { code: 'accessible_parking', label: 'Accessible parking' },
+      { code: 'sign_language', label: 'Sign language interpreter' },
+    ];
+    const featureIds = new Map<string, string>();
+    for (const feat of accessibilityFeatures) {
+      const id = stableUuid(`accessibility:${feat.code}`);
+      featureIds.set(feat.code, id);
+      await client.query(
+        'INSERT INTO accessibility_features (id, code, label) VALUES ($1, $2, $3)',
+        [id, feat.code, feat.label],
+      );
+    }
+
+    // Facilities (predefined vocabulary)
+    const facilitiesList = [
+      { code: 'projector', label: 'Projector' },
+      { code: 'whiteboard', label: 'Whiteboard' },
+      { code: 'video_conferencing', label: 'Video conferencing' },
+      { code: 'pa_system', label: 'PA system' },
+      { code: 'kitchen_access', label: 'Kitchen access' },
+    ];
+    const facilityIds = new Map<string, string>();
+    for (const fac of facilitiesList) {
+      const id = stableUuid(`facility:${fac.code}`);
+      facilityIds.set(fac.code, id);
+      await client.query(
+        'INSERT INTO facilities (id, code, label) VALUES ($1, $2, $3)',
+        [id, fac.code, fac.label],
+      );
+    }
+
+    // Link accessibility features to venues
+    const venueFeatures = [
+      { venueKey: 'orchidHall', features: ['wheelchair_access', 'hearing_loop', 'accessible_parking'] },
+      { venueKey: 'lotusRoom', features: ['wheelchair_access', 'quiet_room'] },
+      { venueKey: 'jasmineHall', features: ['wheelchair_access', 'hearing_loop', 'accessible_parking', 'sign_language'] },
+      { venueKey: 'mapleRoom', features: ['wheelchair_access'] },
+      { venueKey: 'cedarAuditorium', features: ['wheelchair_access', 'hearing_loop', 'accessible_parking', 'quiet_room', 'sign_language'] },
+    ];
+    for (const vf of venueFeatures) {
+      for (const code of vf.features) {
+        await client.query(
+          'INSERT INTO venue_accessibility_features (venue_id, feature_id) VALUES ($1, $2)',
+          [venueIds.get(vf.venueKey), featureIds.get(code)],
+        );
+      }
+    }
+
+    // Link facilities to venues
+    const venueFacilities = [
+      { venueKey: 'orchidHall', facilities: ['projector', 'pa_system', 'video_conferencing'] },
+      { venueKey: 'lotusRoom', facilities: ['whiteboard', 'video_conferencing'] },
+      { venueKey: 'jasmineHall', facilities: ['projector', 'pa_system', 'kitchen_access', 'video_conferencing'] },
+      { venueKey: 'mapleRoom', facilities: ['whiteboard'] },
+      { venueKey: 'cedarAuditorium', facilities: ['projector', 'pa_system', 'video_conferencing', 'kitchen_access', 'whiteboard'] },
+    ];
+    for (const vfac of venueFacilities) {
+      for (const code of vfac.facilities) {
+        await client.query(
+          'INSERT INTO venue_facilities (venue_id, facility_id) VALUES ($1, $2)',
+          [venueIds.get(vfac.venueKey), facilityIds.get(code)],
+        );
+      }
+    }
+
+    // Event threads — comments and clarifications for E03-S02/S06
+    const threads = [
+      { eventCode: 'EVT-2003', authorKey: 'coordB', type: 'clarification_request', body: 'Could you clarify the expected number of VIP guests? This affects the seating arrangement.' },
+      { eventCode: 'EVT-2003', authorKey: 'organiserC', type: 'clarification_response', body: 'We expect around 5 VIP guests who will need reserved front-row seating.' },
+      { eventCode: 'EVT-3002', authorKey: 'coordB', type: 'clarification_request', body: 'The workshop description mentions "hands-on stations" but no equipment was requested. Do you need lab equipment?' },
+      { eventCode: 'EVT-2001', authorKey: 'coordA', type: 'comment', body: 'Venue confirmed. Catering has been arranged for 120 pax.' },
+      { eventCode: 'EVT-2001', authorKey: 'organiserA', type: 'comment', body: 'Thank you. Please ensure vegetarian options are available for approximately 20% of attendees.' },
+      { eventCode: 'EVT-3001', authorKey: 'coordA', type: 'comment', body: 'Budget approved. Moving to venue booking phase.' },
+    ];
+    for (const thread of threads) {
+      await client.query(
+        `INSERT INTO event_threads (id, event_id, author_id, type, body) VALUES ($1, $2, $3, $4::thread_type, $5)`,
+        [
+          stableUuid(`thread:${thread.eventCode}:${thread.body.slice(0, 30)}`),
+          eventIds.get(thread.eventCode),
+          userIds.get(thread.authorKey),
+          thread.type,
+          thread.body,
+        ],
+      );
+    }
+
+    // Event registrations for E09 (Sprint 4 but seed now for forward-looking demo)
+    const registrations = [
+      { eventCode: 'EVT-2001', attendeeKey: 'attendeeA', status: 'registered' },
+      { eventCode: 'EVT-2001', attendeeKey: 'attendeeB', status: 'registered' },
+      { eventCode: 'EVT-2001', attendeeKey: 'attendeeI', status: 'waitlisted' },
+      { eventCode: 'EVT-2002', attendeeKey: 'attendeeA', status: 'registered' },
+      { eventCode: 'EVT-2002', attendeeKey: 'attendeeJ', status: 'registered' },
+      { eventCode: 'EVT-2004', attendeeKey: 'attendeeA', status: 'registered' },
+      { eventCode: 'EVT-2004', attendeeKey: 'attendeeB', status: 'withdrawn' },
+      { eventCode: 'EVT-3001', attendeeKey: 'attendeeI', status: 'registered' },
+    ];
+    for (const reg of registrations) {
+      await client.query(
+        `INSERT INTO event_registrations (id, event_id, attendee_id, status) VALUES ($1, $2, $3, $4::registration_status)`,
+        [
+          stableUuid(`reg:${reg.eventCode}:${reg.attendeeKey}`),
+          eventIds.get(reg.eventCode),
+          userIds.get(reg.attendeeKey),
+          reg.status,
+        ],
+      );
+    }
+
+    // Audit log entries for E14-S02 demo
+    const auditEntries = [
+      { actorKey: 'organiserA', action: 'Status changed to submitted', entityType: 'event', entityId: 'EVT-101', field: 'status', oldVal: 'draft', newVal: 'submitted' },
+      { actorKey: 'coordA', action: 'Status changed to under_review', entityType: 'event', entityId: 'EVT-101', field: 'status', oldVal: 'submitted', newVal: 'under_review' },
+      { actorKey: 'coordA', action: 'Status changed to approved', entityType: 'event', entityId: 'EVT-3001', field: 'status', oldVal: 'under_review', newVal: 'approved' },
+      { actorKey: 'coordB', action: 'Status changed to awaiting_clarification', entityType: 'event', entityId: 'EVT-3002', field: 'status', oldVal: 'under_review', newVal: 'awaiting_clarification' },
+      { actorKey: 'coordB', action: 'Status changed to rejected', entityType: 'event', entityId: 'EVT-3005', field: 'status', oldVal: 'under_review', newVal: 'rejected' },
+      { actorKey: 'coordA', action: 'Status changed to planning', entityType: 'event', entityId: 'EVT-3003', field: 'status', oldVal: 'approved', newVal: 'planning' },
+      { actorKey: 'coordA', action: 'Status changed to confirmed', entityType: 'event', entityId: 'EVT-2001', field: 'status', oldVal: 'planning', newVal: 'confirmed' },
+      { actorKey: 'coordA', action: 'Status changed to completed', entityType: 'event', entityId: 'EVT-2004', field: 'status', oldVal: 'confirmed', newVal: 'completed' },
+      { actorKey: 'attendeeI', action: 'Access Denied', entityType: 'event', entityId: 'EVT-2003', field: null, oldVal: null, newVal: null },
+      { actorKey: 'organiserA', action: 'Account Deactivated', entityType: 'user', entityId: null, field: null, oldVal: null, newVal: null },
+    ];
+    for (const entry of auditEntries) {
+      await client.query(
+        `INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id, field_changed, old_value, new_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          stableUuid(`audit:${entry.action}:${entry.entityId ?? 'self'}:${entry.actorKey}`),
+          userIds.get(entry.actorKey),
+          entry.action,
+          entry.entityType,
+          entry.entityId ? eventIds.get(entry.entityId) : userIds.get(entry.actorKey),
+          entry.field,
+          entry.oldVal,
+          entry.newVal,
+        ],
+      );
+    }
+
+    // Notifications for E11-S01 demo
+    const notificationEntries = [
+      { userKey: 'coordA', eventCode: 'EVT-101', title: 'New event assigned', message: 'You have been assigned to EVT-101 Client A Planning Event.' },
+      { userKey: 'organiserA', eventCode: 'EVT-3001', title: 'Event approved', message: 'Your event EVT-3001 Annual Conference has been approved.' },
+      { userKey: 'organiserC', eventCode: 'EVT-2003', title: 'Clarification requested', message: 'The coordinator has requested clarification on your event EVT-2003.' },
+      { userKey: 'organiserB', eventCode: 'EVT-3005', title: 'Event rejected', message: 'Your event EVT-3005 Budget Review has been rejected. Reason: insufficient justification.' },
+      { userKey: 'coordA', eventCode: 'EVT-2001', title: 'New comment', message: 'Organiser A commented on EVT-2001: Please ensure vegetarian options.' },
+      { userKey: 'attendeeA', eventCode: 'EVT-2001', title: 'Registration confirmed', message: 'You are registered for EVT-2001 Confirmed Registration Event.' },
+      { userKey: 'attendeeI', eventCode: 'EVT-2001', title: 'Waitlisted', message: 'You have been added to the waiting list for EVT-2001.' },
+      { userKey: 'coordA', eventCode: 'EVT-3003', title: 'Venue blocked', message: 'Maple Room is blocked for maintenance 12-14 Oct. Check affected events.' },
+    ];
+    for (const notif of notificationEntries) {
+      await client.query(
+        `INSERT INTO notifications (id, user_id, event_id, title, message, is_read) VALUES ($1, $2, $3, $4, $5, false)`,
+        [
+          stableUuid(`notif:${notif.userKey}:${notif.title}`),
+          userIds.get(notif.userKey),
+          eventIds.get(notif.eventCode),
+          notif.title,
+          notif.message,
+        ],
+      );
+    }
   });
 
   console.log(`seeded ${organisations.length} organisations`);
@@ -679,6 +848,12 @@ async function seed(client: Client) {
   console.log(`seeded ${venues.length} venues`);
   console.log(`seeded ${equipment.length} equipment items`);
   console.log(`seeded ${events.length} events`);
+  console.log('seeded 5 accessibility features');
+  console.log('seeded 5 facilities');
+  console.log('seeded 6 event threads');
+  console.log('seeded 8 registrations');
+  console.log('seeded 10 audit log entries');
+  console.log('seeded 8 notifications');
 }
 
 async function validateConstraints(client: Client) {
