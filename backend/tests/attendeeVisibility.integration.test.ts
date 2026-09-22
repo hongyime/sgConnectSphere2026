@@ -95,7 +95,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
     const before=(await db.query('SELECT clock_timestamp() AS time')).rows[0].time;
     const denied=await call(planning,{method:'GET',url:`/api/internal/planning?id=${event}`,headers:{cookie}});
     assert.equal(denied.status,403); assert.deepEqual(Object.keys(denied.body),['error']);
-    const audit=(await db.query("SELECT * FROM audit_logs WHERE actor_id=$1 AND event_id=$2 AND action='Access Denied'",[attendee,event])).rows[0];
+    const audit=(await db.query("SELECT * FROM audit_logs WHERE actor_id=$1 AND event_id=$2 AND action='Access Denied' AND entity_type='internal_planning' ORDER BY occurred_at DESC LIMIT 1",[attendee,event])).rows[0];
     assert.ok(audit); assert.ok(audit.occurred_at>=before);
     assert.equal((await call(api,{method:'GET',headers:{cookie:'cs_access=forged'}})).status,401);
     assert.equal((await call(session,{method:'DELETE',headers:{cookie,origin:'https://evil.example.test'}})).status,403);
