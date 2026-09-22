@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { Pool } from 'pg';
+import { ensureTestExtensions } from './ensureTestExtensions.js';
 
 // Tests own a random schema in an explicitly selected loopback database.
 // Never connect to the application's configured database or reset public data.
@@ -12,8 +13,7 @@ export async function loginDatabase() {
   assert.match(address.pathname, /^\/connectsphere_notification_test(?:_[a-z0-9_]+)?$/);
   const schema = `login_test_${randomUUID().replaceAll('-', '')}`;
   const admin = new Pool({ connectionString: address.href, max: 2 });
-  await admin.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-  await admin.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+  await ensureTestExtensions(admin);
   await admin.query(`CREATE SCHEMA ${schema}`);
   const connection = new URL(address);
   connection.searchParams.set('options', `-c search_path=${schema},public`);

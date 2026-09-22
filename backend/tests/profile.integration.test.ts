@@ -10,6 +10,7 @@ import { tokenDigest } from '../src/modules/accessControl/sessions.js';
 import { insertNotificationDelivery } from '../src/modules/notificationDispatcher/postgres.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { VercelResponse } from '../src/vercel.js';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 test('real sessions, profile persistence, case-insensitive uniqueness and future notification address', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
@@ -21,8 +22,7 @@ test('real sessions, profile persistence, case-insensitive uniqueness and future
   let runtimePool: Pool | undefined;
   const previous = { url: process.env.DATABASE_URL, pooler: process.env.DATABASE_POOLER_URL, app: process.env.APP_URL };
   try {
-    await admin.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await admin.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(admin);
     await admin.query(`CREATE SCHEMA ${schema}`);
     database = new Pool({ connectionString: address.href, options: `-c search_path=${schema},public` });
     for (const migration of ['0001_connectsphere_schema.sql', '0002_users_email_case_insensitive.sql', '0003_auth_sessions.sql', '0002_durable_notification_dispatch.sql']) {

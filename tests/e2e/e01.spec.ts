@@ -217,28 +217,7 @@ test.describe("E01-S03", () => {
 
 test.describe("E01-S04", () => {
 
-  /**
-   * TC_E01S04_01
-   * AC:      E01-S04 - Scenario 1 (Valid changes saved)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in. Current profile: Name = "Alex Organiser", Organisation = "Client A Pte Ltd", Phone = "9123 4567"
-   *
-   * Test data:
-   *   New Name: Alexandra Organiser | New Organisation: Client A Holdings | New Phone: 9876 5432
-   *
-   * Expected result:
-   *   All three updated fields (Name, Organisation, Phone) show the new values immediately after saving and again after reopening the profile in a new event
-   */
-  test.fixme("TC_E01S04_01 - Verify that valid changes to name, organisation, and contact number should all be saved and shown the next time the profile is opened", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Navigate to "My Profile"
-    // 2. Change Name to "Alexandra Organiser", Organisation to "Client A Holdings", and Phone to "9876 5432"
-    // 3. Click "Save"
-    // 4. Log out, log back in, and reopen "My Profile"
-    void page;
-  });
+  // T-61: TC_E01S04_01 is covered by the live read-only organisation test in profile.spec.ts.
 
   /**
    * TC_E01S04_02
