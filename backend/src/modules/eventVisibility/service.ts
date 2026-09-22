@@ -24,7 +24,7 @@ export async function requireOrganiser(query: Query, user: AuthenticatedUser | u
 }
 
 const projection = `e.id, e.event_code, e.title, e.description, e.status,
-  lower(e.event_range) AS starts_at, u.full_name AS creator_name`;
+  e.status_changed_at, lower(e.event_range) AS starts_at, u.full_name AS creator_name`;
 
 export async function listEvents(query: Query, user: AuthenticatedUser, search = '') {
   const org = await requireOrganiser(query, user, 'events');
@@ -46,7 +46,14 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     JOIN users u ON u.id = e.organiser_id
     WHERE e.client_org_id = $1 AND (e.status <> 'draft' OR e.organiser_id = $3)
       AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier, user.id]);
-  if (result.rows[0]) return result.rows[0];
+  if (result.rows[0]) {
+    const event = result.rows[0] as Record<string, unknown> & { id: string };
+    const history = await query(`SELECT occurred_at, old_value, new_value
+      FROM audit_logs
+      WHERE event_id = $1 AND action = 'status_changed'
+      ORDER BY occurred_at ASC, id ASC`, [event.id]);
+    return { ...event, statusHistory: history.rows };
+  }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
   await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, new_value)
