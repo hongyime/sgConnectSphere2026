@@ -8,6 +8,7 @@ import { attendeeEvents, publishEvent } from '../src/modules/attendeeVisibility/
 import { permittedDelivery } from '../src/modules/eventVisibility/service';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 
 test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial', async () => {
@@ -19,8 +20,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
   const savedEnv = { ...process.env };
   let closeRuntime: (() => Promise<void>) | undefined;
   try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`); await db.query(`SET search_path TO ${schema}, public`);
     for (const migration of ['0001_connectsphere_schema.sql', '0002_event_visibility.sql', '0003_auth_sessions.sql', '0004_attendee_visibility.sql']) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
