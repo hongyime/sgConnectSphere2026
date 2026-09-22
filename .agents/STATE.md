@@ -1,105 +1,100 @@
 # Agent State
 
-Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere.
-Fixing pre-existing integration-test bugs and CI gaps discovered while
-verifying SCRUM-110 (PR #115), per Bryan's explicit "fix it properly, don't
-ask me" mandate. No implementation-mode carryover to other Sprint 2 stories
-unless Bryan asks directly.
+Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
+now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
+review of SCRUM-107/108 (held out from the Jira cleanup), and PR #121's
+review by Jining. No implementation-mode carryover to other Sprint 2
+stories unless Bryan asks directly.
 
-Progress:
+Progress (most recent first):
 
-- Merged **PR #116** (`fix/event-attendee-visibility-integration-bugs`):
-  fixed two real, root-caused pre-existing bugs -- `EVT-A02` defaulted to
-  `status='draft'` in `eventVisibility.integration.test.ts`'s fixture,
-  tripping the (correct) draft-privacy filter and hiding a colleague's event
-  it shouldn't have; and `attendeeVisibility.integration.test.ts`'s audit
-  lookup had no `entity_type` filter so it could grab a stale row from an
-  earlier, unrelated denial in the same test. Both were test-fixture/query
-  bugs, not application bugs. Verified: full `test:db` suite 6/6, backend
-  unit suite 144/144, `application-checks` CI green (2m53s + 3m3s on
-  re-run). Aaron (Bl0oper) independently re-verified both root causes
-  against the actual code before approving.
+- **Closed PR #114** without merging -- superseded by **PR #117** (Ji
+  Ning's, merged), which independently fixed the same T-61 scope gap more
+  comprehensively (also touched docs/decisions/0003-profile-editing.md,
+  the product backlog, test cases, source-of-truth, and the actual
+  tests/e2e/profile.spec.ts). Compared both diffs line-by-line before
+  deciding -- same substance, #117 just more thorough and already merged.
 
-- **PR #118** (`ci/application-checks-required-check-path-gap`), open, CI
-  green, awaiting Aaron's review: `application-checks.yml`'s `paths:`
-  filter meant docs-only PRs (like #114) never got a status for that
-  required check -- permanently `BLOCKED`, not failing, just stuck. Added
-  `.github/workflows/application-checks-skip.yml` (GitHub's documented
-  mirrored-`paths-ignore` workaround) reporting the same check name as a
-  no-op success. Live-proven on this PR's own run (`application-checks`
-  passed in 3s, not the usual ~3min, confirming the skip workflow -- not the
-  real one -- satisfied the check). A team-mode subagent (`bdr-adr-reviewer`)
-  independently determined this clears the bar for a decision record (it
-  changes the required-status-check contract for every future PR) and drafted
-  `docs/decisions/0007-application-checks-skip-workflow.md`, following the
-  0001-0006 format exactly; reviewed and accepted, added to this PR.
+- **Opened PR #121** (`docs/e01-s04-checklist-bullet-readonly-org`):
+  carries over the one thing #114 had that #117 didn't -- a checklist
+  bullet phrasing the read-only-org guidance as a testable acceptance
+  item, added alongside (not replacing) #117's explanatory paragraph.
+  Applied to both the release-1 and product backlog views per the
+  reconciliation rule; xlsx export regenerated (CAA 230926, old 220926
+  retained). CI green (application-checks 2s, confirming #118's
+  skip-workflow fix still works). jininggg requested as reviewer, tagged
+  in the PR body -- nothing for her to action, just a heads-up.
 
-- **PR #119** (`test/fix-create-extension-race-condition`), open, CI green
-  (`application-checks` 3m6s against CI's own fresh Postgres container),
-  awaiting Aaron's review: fixed a `CREATE EXTENSION IF NOT EXISTS` TOCTOU
-  race (flagged as a finding in #116) present identically across 6
-  integration-test call sites. Added `backend/tests/helpers/ensureTestExtensions.ts`
-  (swallows only `23505`/`pg_extension_name_index`, since that means a
-  concurrent session won the race, which is the outcome every caller wanted).
-  Wired into `eventVisibility`, `attendeeVisibility`, `profile`,
-  `venueAccessibility`, `venueCatalogue` integration tests, and
-  `loginDatabase.ts` (used by `loginRecovery.integration.test.ts`). Verified:
-  typecheck clean, 6x repeated runs against a freshly-recreated Docker
-  Postgres container with all 6 files racing concurrently -- 0/6 occurrences
-  of the target race. One run had 2 unrelated `loginRecovery` timing-test
-  failures that never reproduced again and coincided with unrelated heavy
-  concurrent host load; noted transparently in the PR, not hidden.
+- **Merged PR #118 and #119** (Aaron approved both ~17:04-17:10 on 22
+  Sep). #118's fix is proven working repeatedly since (every docs-only
+  PR's `application-checks` now resolves via the skip-workflow in ~2-3s
+  instead of showing no status at all).
 
-- **PR #115** (`fix/scrum-110-eventlifecycle-migration-roundtrip`), open,
-  CI green: fixed per Aaron's `CHANGES_REQUESTED` (stale
-  `docs/testing/tc-coverage.md` regenerated via `scripts/tc_coverage_audit.py`).
-  Also applied the same `CREATE EXTENSION` race fix (see PR #119 below) to
-  `eventLifecycle.integration.test.ts` directly on this branch as a local
-  copy (with a TODO to consolidate on the shared helper once #119 merges),
-  rather than waiting on PR ordering. Re-requested Aaron's review after both
-  changes; verified locally against disposable PostgreSQL.
+- **Closed 13 Jira tickets as Done** (SCRUM-26, 27, 91, 93, 95, 96, 97,
+  98, 99, 100, 101, 103, 104) via `scripts/reconcile_jira.py --pr <N>
+  --yes` for the 10 that map to one PR each, plus a small companion
+  script (reusing that script's own `find_done_transition`/
+  `transition_to_done` functions) for SCRUM-97/98/99, which PR #53's
+  branch name doesn't reference explicitly even though its body covers
+  all four Sprint-2 stories in one commit-per-story PR. Verified via a
+  live Jira status re-query after transitioning -- all 13 confirmed Done.
+  **Held out SCRUM-107 and SCRUM-108 at Bryan's explicit instruction** --
+  investigation found their described work likely shipped under
+  *different* tickets' branches (PR #68 is tagged
+  `feature/SCRUM-93-...` even though its title matches SCRUM-107's
+  description; the actual ADR/BDR docx export script SCRUM-108 describes
+  was added by PR #62, which already ships SCRUM-103) -- probably
+  duplicate/overlapping tickets, not confidently 1:1 mappable, so left
+  for Bryan to eyeball himself. Still "In Review" in Jira as of this
+  writing.
 
-- **PR #114** (`docs/e01-s04-amend-ac-per-t61`), open, Aaron-approved twice,
-  but `mergeStateStatus: BLOCKED` because it's docs-only and hits the exact
-  gap #118 fixes. Should unblock once #118 merges -- **verify and merge #114
-  once #118 lands.**
+- Built and uploaded a PostPlan HTML review-queue report
+  (https://nibmdmkybkwz.postplan.dev) distinguishing the Jira-ticket-
+  status cleanup (housekeeping, Bryan's call) from the GitHub-PR queue
+  (blocked on Aaron's review, not Bryan's). Caught and fixed two real
+  responsive-layout bugs before shipping it (tables and the SVG diagram
+  both overflowed illegibly on a 390px viewport) -- verified via exact
+  DOM measurement (`scrollWidth`/`clientWidth`), not just an AI vision
+  screenshot read, after that read gave an unreliable answer on the
+  fix's first pass.
 
-- Jira: `bdr-adr-reviewer` and `jira-ticket-updater` team-mode subagents
-  confirmed SCRUM-109's existing comment was an unrelated Sprint 1
-  reconciliation note (not the close-as-superseded recommendation) and
-  posted a new comment recommending closure as superseded by the existing
-  per-run-random-schema harness. Not closed -- PO (Bryan) decision pending.
-  SCRUM-17/SCRUM-18 (E01-S02/E01-S03) already Done; no comment needed since
-  #116's fixes were implementation corrections, not scope changes.
+- Made `AGENTS.md`'s `.agents/STATE.md` reference firm (was "if a future
+  file exists," written before the file existed) and named Claude Code,
+  Codex, Cursor, and OpenCode explicitly, per Bryan's ask to make sure
+  the team's agents actually pick this up regardless of harness. **Found
+  while doing this: a live Claude Code session on machine PRAWN-T14 is
+  already auto-appending timestamped "Auto State" blocks to this exact
+  file on its own Stop hook** (see the `<!-- MOLT_AUTO_START -->` block
+  below) -- some MOLT automation already exists on at least Bryan's own
+  machine. Left its uncommitted edits alone throughout all of the above
+  by stashing/restoring around branch switches rather than touching or
+  discarding them.
 
-- **PR #120** (`docs/agents-state-journal`, this file's own PR): adds
-  `.agents/STATE.md` + `.agents/JOURNAL.md`. Touches only `.agents/**`, which
-  is outside `application-checks.yml`'s paths AND outside #118's
-  not-yet-merged skip-workflow's coverage (since `main` doesn't have #118
-  yet) -- so this PR currently shows NO `application-checks` status at all,
-  live-demonstrating the exact bug #118 fixes. Expected; documented in the
-  PR body. Will resolve once #118 merges and this branch picks it up.
+- Merged **PR #116**: fixed two real, root-caused pre-existing bugs --
+  `EVT-A02` defaulted to `status='draft'` in
+  `eventVisibility.integration.test.ts`'s fixture, tripping the (correct)
+  draft-privacy filter and hiding a colleague's event it shouldn't have;
+  and `attendeeVisibility.integration.test.ts`'s audit lookup had no
+  `entity_type` filter so it could grab a stale row from an earlier,
+  unrelated denial in the same test. Both were test-fixture/query bugs,
+  not application bugs. Aaron independently re-verified both root causes
+  before approving.
 
-Next (in order):
+Open and waiting (nothing more to do until one of these moves):
 
-1. **Everything below is now blocked purely on Aaron's review bandwidth** --
-   #118, #119, #120 await a first review; #115 awaits re-review after two
-   rounds of fixes; #114 is already approved but blocked on #118 merging.
-   Nothing else to do here except merge the instant each is approved+green.
-2. Merge #118 first (unblocks #114 and #120's missing-status problem).
-3. Merge #114 once #118 lands (verify it actually unblocks -- may need a
-   push/rebase on #114's branch to force GitHub to re-evaluate the check).
-4. Merge #119, then #115, then #120 as each gets approved.
-5. Once #119 merges, do the small follow-up on #115's branch (or after #115
-   merges, on `main`): replace the local `createExtensionIfNotExists` copy
-   in `eventLifecycle.integration.test.ts` with an import from the now-`main`
-   `backend/tests/helpers/ensureTestExtensions.ts` -- purely a DRY cleanup,
-   not a correctness fix (both copies are already correct).
-6. Re-confirm Jira's "In Review" ticket count -- Bryan said a batch review
-   "already all good" earlier tonight but the live snapshot still showed 15
-   tickets In Review (Aaron's SCRUM-26/27 + 13 legacy Bryan-authored
-   engineering tickets); never re-verified whether statuses need manual
-   transition.
+1. **PR #120** (`.agents/STATE.md` + `JOURNAL.md`, this file) -- awaiting
+   Aaron's first review.
+2. **PR #115** (SCRUM-110 + the 6th `CREATE EXTENSION` race-fix site) --
+   awaiting Aaron's re-review after two rounds of fixes.
+3. **PR #121** (the checklist-bullet carry-over) -- awaiting Jining's
+   review.
+4. **SCRUM-107 / SCRUM-108** -- Bryan wants to eyeball these himself
+   before any decision; do not touch until he says so.
+5. Once #115 merges, a small DRY follow-up remains open: swap
+   `eventLifecycle.integration.test.ts`'s local
+   `createExtensionIfNotExists` copy for an import from
+   `backend/tests/helpers/ensureTestExtensions.ts` (already on `main` via
+   #119) -- cosmetic only, not a correctness fix, low priority.
 
 Known env facts:
 
@@ -113,3 +108,16 @@ Known env facts:
 - Branch protection requires `repository-checks`, `pr-conventions`,
   `lfs-guard`, `application-checks` + a review approval on the latest commit
   (`require_last_push_approval: true`, `enforce_admins: true`) -- no bypass.
+
+<!-- MOLT_AUTO_START -->
+## Auto State
+
+- Updated: 2026-09-23 07:16:29 +08:00
+- Machine: PRAWN-T14
+- Harness: claude
+- Event: stop
+- Branch: docs/agents-state-journal
+- HEAD: f5e174b
+- Dirty files: 1
+- Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
+<!-- MOLT_AUTO_END -->
