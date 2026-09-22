@@ -346,6 +346,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - already deactivated returns safe conflict without audit
 - endpoint authentication, CSRF, identity and cookie clearing
 
+### `backend/tests/eventLifecycle.integration.test.ts`
+
+- SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
+
 ### `backend/tests/eventLifecycle.test.ts`
 
 - a request with all ten mandatory fields complete is submitted
