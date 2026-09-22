@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 
-type Event = { id: string; event_code: string; title: string; description: string; status: string; starts_at: string; creator_name: string };
+type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
+type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; statusHistory?: StatusHistoryEntry[] };
 type Notification = { id: string; title: string; message: string };
+
+function plainStatus(status: string) {
+  return status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
+}
+
+function plainDate(value: string) {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+}
 
 export function ClientEvents() {
   const activeRequest = useRef<AbortController | null>(null);
@@ -84,7 +93,12 @@ export function ClientEvents() {
           {notifications.length === 0 ? <p>No event notifications.</p> : notifications.map(n => <article key={n.id}><h3>{n.title}</h3><p>{n.message}</p></article>)}
         </section>
       </>}
-      {!busy && !error && event && <article><h2>{event.title}</h2><p>{event.event_code} · {event.status.replaceAll('_', ' ')}</p><p>{event.description}</p><p>{new Date(event.starts_at).toLocaleString()}</p><p>Created by {event.creator_name}</p></article>}
+      {!busy && !error && event && <article><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p><p>{event.description}</p><p>{new Date(event.starts_at).toLocaleString()}</p><p>Created by {event.creator_name}</p>
+        <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p></section>
+        <section aria-labelledby="status-history-heading"><h3 id="status-history-heading">Status history</h3>
+          {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
+        </section>
+      </article>}
     </>}
   </main>;
 }

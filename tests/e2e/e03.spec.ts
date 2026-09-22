@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 // E03 - 26 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -349,11 +349,21 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   The event shows "Approved" and "Reached on 10 September 2026" in plain, human-readable language
    */
-  test.fixme("TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    void page;
+  test("TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'approved',
+        status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('heading', { name: 'Annual Tech Summit' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Current status' }).locator('..')).toContainText('Approved');
+    await expect(page.getByText('Reached on 10 September 2026')).toBeVisible();
   });
 
   /**
@@ -370,12 +380,22 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   The event now shows status "Planning", and the event history section shows an entry recording the change from Approved to Planning
    */
-  test.fixme("TC_E03S05_02 - Verify that when an event's status changes, the new status should be shown and the change should appear in the event history", async ({ page }) => {
-    // Steps from the specification:
-    // 1. As coordinator_1@connectsphere.com, submit the first venue booking request for one of "Annual Tech Summit"'s events (this is what moves an Approved event to Planning, per E06-S03)
-    // 2. Log in as organiser_a@clienta.com and open event "Annual Tech Summit"
-    // 3. Check the current status and the event history section
-    void page;
+  test("TC_E03S05_02 - Verify that when an event's status changes, the new status should be shown and the change should appear in the event history", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'planning',
+        status_changed_at: '2026-09-11T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [{
+          occurred_at: '2026-09-11T00:00:00.000Z', old_value: 'approved', new_value: 'planning',
+        }],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('heading', { name: 'Current status' }).locator('..')).toContainText('Planning');
+    await expect(page.getByRole('heading', { name: 'Status history' }).locator('..')).toContainText('Approved → Planning');
   });
 
   /**
@@ -392,12 +412,29 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   All 4 past status changes are listed in order with their dates, matching the entries recorded in the activity log (E14-S02)
    */
-  test.fixme("TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Open the "Status History" section
-    void page;
+  test("TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'planning',
+        status_changed_at: '2026-09-12T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [
+          { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
+          { occurred_at: '2026-09-05T00:00:00.000Z', old_value: 'under_review', new_value: 'approved' },
+          { occurred_at: '2026-09-12T00:00:00.000Z', old_value: 'approved', new_value: 'planning' },
+        ],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    const history = page.getByRole('heading', { name: 'Status history' }).locator('..');
+    await expect(history).toContainText('Submitted → Under Review');
+    await expect(history).toContainText('Under Review → Approved');
+    await expect(history).toContainText('Approved → Planning');
+    await expect(history).toContainText('1 September 2026');
+    await expect(history).toContainText('5 September 2026');
+    await expect(history).toContainText('12 September 2026');
   });
 
 });
