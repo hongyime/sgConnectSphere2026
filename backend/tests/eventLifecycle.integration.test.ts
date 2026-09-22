@@ -29,6 +29,24 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client } from 'pg';
 
+// TODO(follow-up once #119 merges): replace this local copy with the shared
+// backend/tests/helpers/ensureTestExtensions.ts helper -- duplicated here
+// rather than importing from a branch that hasn't merged to main yet.
+// CREATE EXTENSION IF NOT EXISTS has a documented TOCTOU race under
+// concurrent sessions (see #119); swallow only that specific error, since it
+// means a concurrent test file's session created the extension first.
+async function createExtensionIfNotExists(db: Client, name: 'pgcrypto' | 'btree_gist'): Promise<void> {
+  try {
+    await db.query(`CREATE EXTENSION IF NOT EXISTS ${name} WITH SCHEMA public`);
+  } catch (error) {
+    const pgError = error as { code?: string; constraint?: string };
+    if (pgError.code === '23505' && pgError.constraint === 'pg_extension_name_index') {
+      return;
+    }
+    throw error;
+  }
+}
+
 test(
   'SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip',
   async () => {
@@ -38,8 +56,8 @@ test(
     await db.connect();
 
     try {
-      await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-      await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+      await createExtensionIfNotExists(db, 'pgcrypto');
+      await createExtensionIfNotExists(db, 'btree_gist');
       await db.query(`CREATE SCHEMA ${schema}`);
       await db.query(`SET search_path TO ${schema}, public`);
       // 0005 depends only on 0001's base events table -- no other migration
