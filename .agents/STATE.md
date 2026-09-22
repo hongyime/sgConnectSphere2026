@@ -51,9 +51,13 @@ Progress:
   concurrent host load; noted transparently in the PR, not hidden.
 
 - **PR #115** (`fix/scrum-110-eventlifecycle-migration-roundtrip`), open,
-  fixed per Aaron's `CHANGES_REQUESTED` (stale `docs/testing/tc-coverage.md`
-  regenerated via `scripts/tc_coverage_audit.py`), re-requested his review.
-  CI green.
+  CI green: fixed per Aaron's `CHANGES_REQUESTED` (stale
+  `docs/testing/tc-coverage.md` regenerated via `scripts/tc_coverage_audit.py`).
+  Also applied the same `CREATE EXTENSION` race fix (see PR #119 below) to
+  `eventLifecycle.integration.test.ts` directly on this branch as a local
+  copy (with a TODO to consolidate on the shared helper once #119 merges),
+  rather than waiting on PR ordering. Re-requested Aaron's review after both
+  changes; verified locally against disposable PostgreSQL.
 
 - **PR #114** (`docs/e01-s04-amend-ac-per-t61`), open, Aaron-approved twice,
   but `mergeStateStatus: BLOCKED` because it's docs-only and hits the exact
@@ -68,16 +72,30 @@ Progress:
   SCRUM-17/SCRUM-18 (E01-S02/E01-S03) already Done; no comment needed since
   #116's fixes were implementation corrections, not scope changes.
 
+- **PR #120** (`docs/agents-state-journal`, this file's own PR): adds
+  `.agents/STATE.md` + `.agents/JOURNAL.md`. Touches only `.agents/**`, which
+  is outside `application-checks.yml`'s paths AND outside #118's
+  not-yet-merged skip-workflow's coverage (since `main` doesn't have #118
+  yet) -- so this PR currently shows NO `application-checks` status at all,
+  live-demonstrating the exact bug #118 fixes. Expected; documented in the
+  PR body. Will resolve once #118 merges and this branch picks it up.
+
 Next (in order):
 
-1. Merge #118 and #119 the moment Aaron approves (both CI-green already).
-2. Once #118 merges: verify PR #114 unblocks, then merge it.
-3. Once #119 merges: `git merge main` into #115's branch to pick up
-   `ensureTestExtensions.ts`, then apply the same one-line fix to
-   `backend/tests/eventLifecycle.integration.test.ts` (has the identical
-   race, wasn't touched in #119 because it isn't on `main` yet).
-4. Re-verify #115 fully, merge once Aaron approves.
-5. Re-confirm Jira's "In Review" ticket count -- Bryan said a batch review
+1. **Everything below is now blocked purely on Aaron's review bandwidth** --
+   #118, #119, #120 await a first review; #115 awaits re-review after two
+   rounds of fixes; #114 is already approved but blocked on #118 merging.
+   Nothing else to do here except merge the instant each is approved+green.
+2. Merge #118 first (unblocks #114 and #120's missing-status problem).
+3. Merge #114 once #118 lands (verify it actually unblocks -- may need a
+   push/rebase on #114's branch to force GitHub to re-evaluate the check).
+4. Merge #119, then #115, then #120 as each gets approved.
+5. Once #119 merges, do the small follow-up on #115's branch (or after #115
+   merges, on `main`): replace the local `createExtensionIfNotExists` copy
+   in `eventLifecycle.integration.test.ts` with an import from the now-`main`
+   `backend/tests/helpers/ensureTestExtensions.ts` -- purely a DRY cleanup,
+   not a correctness fix (both copies are already correct).
+6. Re-confirm Jira's "In Review" ticket count -- Bryan said a batch review
    "already all good" earlier tonight but the live snapshot still showed 15
    tickets In Review (Aaron's SCRUM-26/27 + 13 legacy Bryan-authored
    engineering tickets); never re-verified whether statuses need manual
