@@ -7,6 +7,7 @@ import { Client } from 'pg';
 import { getEvent, listEvents, listNotifications, permittedDelivery, type Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 test('E01-S02: organisation isolation, colleagues, search, audit and notification delivery', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
@@ -20,8 +21,7 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
   let closeRuntime: (() => Promise<void>) | undefined;
   try {
     await db.query(`CREATE SCHEMA ${schema}`);
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.
     await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));
