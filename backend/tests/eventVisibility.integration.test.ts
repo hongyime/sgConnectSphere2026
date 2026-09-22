@@ -33,9 +33,9 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
       VALUES ($1, $2, 'organiser@example.test', 'unused', 'Organiser A', 'event_organiser'),
       ($3, $2, 'colleague@example.test', 'unused', 'Colleague A', 'event_organiser')`, [organiser, a, colleague]);
     await db.query(`INSERT INTO room_layouts (id, code, label) VALUES ($1, 'test-layout', 'Test layout')`, [a]);
-    await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id)
-      VALUES ($1, 'EVT-A02', $2, $3, 'Colleague conference', '[2027-01-01,2027-01-02)', 10, $3),
-      ($4, 'EVT-B01', $2, $5, 'Confidential conference', '[2027-01-01,2027-01-02)', 10, $3)`, [eventA, colleague, a, eventB, b]);
+    await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id, status)
+      VALUES ($1, 'EVT-A02', $2, $3, 'Colleague conference', '[2027-01-01,2027-01-02)', 10, $3, 'submitted'),
+      ($4, 'EVT-B01', $2, $5, 'Confidential conference', '[2027-01-01,2027-01-02)', 10, $3, 'submitted')`, [eventA, colleague, a, eventB, b]);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
       VALUES ($1, $2, 'organiser-b@example.test', 'unused', 'Organiser B', 'event_organiser')`, [organiserB, b]);
     await db.query('UPDATE events SET organiser_id = $1 WHERE id = $2', [organiserB, eventB]);
