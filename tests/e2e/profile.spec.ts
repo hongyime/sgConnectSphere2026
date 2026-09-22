@@ -25,6 +25,9 @@ test('TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and rel
   await page.reload();
   await expect(page.getByLabel('Full name')).toHaveValue('Alexandra');
   await expect(page.getByLabel('Contact number')).toHaveValue('9876 5432');
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('new@example.test');
+  await expect(page.getByText('Organisation: Client A')).toBeVisible();
+  await expect(page.getByText(/contact your Coordinator/)).toBeVisible();
 });
 
 test('TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected', async ({ page }) => {
