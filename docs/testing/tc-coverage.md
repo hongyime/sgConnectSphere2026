@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **55** (23.9%)
+- Automated (explicit TC_ID in an active test title): **58** (25.2%)
   - Real-database (`.integration.test` / `.db.test`): **15**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **40**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **172** (74.8%)
+  - Live-assertion (other active tests): **43**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **169** (73.5%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 26 | 2 | 24 | 0 |
+| E03 | 26 | 5 | 21 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **55** | **172** | **3** |
+| **Total** | **230** | **58** | **169** | **3** |
 
 ## Case-by-case status
 
@@ -109,9 +109,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser |
 | `TC_E03S03_04` | E03-S03 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_04 - Verify that attempting to reject a request without recording a reason should be blocked |
 | `TC_E03S03_05` | E03-S03 | Verify that a rejected request should show its reason and decision date in plain | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only |
-| `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
-| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
-| `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
+| `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
+| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
+| `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
 | `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
 | `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
 | `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
@@ -385,6 +385,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - unauthenticated, unlinked, inactive, locked and other roles cannot query organiser data
 - a role/organisation denial is audited against the screen, not a specific event
 - direct denied access commits actor and attempted event before returning denial
+- organiser event detail includes current status date and status history
 - audit failure never returns event information or a false logged success
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered

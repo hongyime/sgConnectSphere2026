@@ -50,6 +50,27 @@ test('direct denied access commits actor and attempted event before returning de
   assert.deepEqual(calls[1].values, ['organiser-a', 'EVT-B01']);
 });
 
+test('organiser event detail includes current status date and status history', async () => {
+  const query: Query = async (sql) => {
+    if (sql.includes('SELECT e.id')) return { rows: [{
+      id: 'event-a', status: 'planning', status_changed_at: '2026-09-10T00:00:00.000Z',
+    }] };
+    if (sql.includes("action = 'status_changed'")) return { rows: [
+      { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
+      { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
+    ] };
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+
+  const event = await getEvent(query, user, 'EVT-A01');
+  assert.equal(event.status, 'planning');
+  assert.equal(event.status_changed_at, '2026-09-10T00:00:00.000Z');
+  assert.deepEqual(event.statusHistory, [
+    { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
+    { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
+  ]);
+});
+
 test('audit failure never returns event information or a false logged success', async () => {
   const query: Query = async sql => {
     if (sql.includes('INSERT')) throw new Error('Audit unavailable');
