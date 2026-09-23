@@ -8,6 +8,16 @@ stories unless Bryan asks directly.
 
 Progress (most recent first):
 
+- **Standardized 24 Jira ticket titles** that used `[E01-S05] Title`
+  (brackets) to match the 47 that already used `E01-S05 Title` (no
+  brackets, matching the canonical backlog Markdown heading format) --
+  applied via direct API calls, verified 0 bracketed-story titles remain.
+  Left the 3 other bracket variants alone (`[E01-EXT]`, `[E01]` plain,
+  `[Docs]`/`[DUPLICATE...]`) since those tag genuinely different,
+  non-story technical work, not a story-ID reference. Confirmed branch
+  names reference ticket keys, not title text, so no branches needed
+  renaming.
+
 - **Closed PR #114** without merging -- superseded by **PR #117** (Ji
   Ning's, merged), which independently fixed the same T-61 scope gap more
   comprehensively (also touched docs/decisions/0003-profile-editing.md,
@@ -88,8 +98,13 @@ Open and waiting (nothing more to do until one of these moves):
    awaiting Aaron's re-review after two rounds of fixes.
 3. **PR #121** (the checklist-bullet carry-over) -- awaiting Jining's
    review.
-4. **SCRUM-107 / SCRUM-108** -- Bryan wants to eyeball these himself
-   before any decision; do not touch until he says so.
+4. **SCRUM-107 / SCRUM-108** -- re-examined the tickets' own descriptions
+   (not just branch names) and found an earlier Sep-20 reconciliation pass
+   already documented PR #68/#62 shipping their work, with the same
+   "no human review" caveat that SCRUM-93/103 had when Bryan approved
+   closing those. Built an evidence postplan
+   (https://3wupccg0rklj.postplan.dev) with direct quotes side-by-side;
+   final call is still Bryan's, do not close until he says so.
 5. Once #115 merges, a small DRY follow-up remains open: swap
    `eventLifecycle.integration.test.ts`'s local
    `createExtensionIfNotExists` copy for an import from
