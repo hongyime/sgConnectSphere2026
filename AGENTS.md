@@ -4,10 +4,17 @@ This repository is a school web application monorepo. The stack is not selected
 yet, so repository tooling and documentation are the source of truth until real
 frontend and backend code exists.
 
-Before changing files, read `README.md`, `CONTRIBUTING.md`, and
-`docs/repository-setup.md` enough to understand the current workflow. If a
-future `.agents/STATE.md` file exists, read it as shared handoff context. Do not
-write secrets, personal data, or machine-specific paths into committed files.
+Before changing files, read `README.md`, `CONTRIBUTING.md`, `docs/repository-setup.md`,
+and `.agents/STATE.md` enough to understand the current workflow and any
+in-flight work from a previous session. `.agents/STATE.md` and
+`.agents/JOURNAL.md` hold cross-session, cross-harness continuity state --
+every AI coding agent working in this repo (Claude Code, Codex, Cursor,
+OpenCode, or otherwise) reads them at the start of a task and updates them
+after any significant piece of work, so the next session -- yours or a
+teammate's, on any machine -- can resume with zero ambiguity. Do not write
+secrets, tokens, connection strings, or personal data into either file --
+reference secrets by env-var name only. Never write
+secrets, personal data, or machine-specific paths into any other committed file.
 For product, backlog, design, testing, or Jira work, also read
 `docs/source-of-truth.md` before editing derivative Markdown, Figma notes, Jira
 issues, or scaffold files.

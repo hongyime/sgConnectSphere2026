@@ -140,6 +140,7 @@ Given I change my email address When the change is saved Then future notificatio
 - Be blocked from taking an email address already in use
 - Receive subsequent notifications at the updated address
 - Not be able to change my own role from this screen
+- See my organisation displayed read-only, with a hint to contact my Coordinator for organisation changes (T-61)
 
 Organisation is read-only in Release 1 (T-61, confirmed 20 September 2026).
 Display the current organisation and guidance to contact the Coordinator. Profile
