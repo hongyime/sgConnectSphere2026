@@ -346,6 +346,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - already deactivated returns safe conflict without audit
 - endpoint authentication, CSRF, identity and cookie clearing
 
+### `backend/tests/emailTemplate.test.ts`
+
+- escapeHtml neutralizes all five HTML-significant characters
+- buildNotificationEmailHtml escapes both title and message
+- buildNotificationEmailHtml converts newlines to <br> after escaping
+- buildNotificationEmailHtml linkifies a bare URL as a real, brand-colored anchor
+- buildNotificationEmailHtml trims one trailing sentence-punctuation character out of the link
+- buildNotificationEmailHtml does not linkify a URL injected via message content differently than any other text -- it is still escaped first
+- buildNotificationEmailHtml output carries ConnectSphere branding and is a complete HTML document
+
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
 - SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
