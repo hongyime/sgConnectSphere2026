@@ -215,6 +215,42 @@ export function ClarificationResponse() {
   );
 }
 
+// SCAFFOLD: replace with real E10-S01 implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function ChangeRequest() {
+  return (
+    <main className="organiser-page" data-scaffold="true">
+      <header className="organiser-heading">
+        <p className="eyebrow">Event organiser</p>
+        <h1>Change request</h1>
+      </header>
+      <p>
+        Post-approval change form. Organiser describes what changed, which
+        bookings are affected, and submits for coordinator re-review (E10-S01).
+        Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}
+
+// SCAFFOLD: replace with real E10-S04 implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function Cancellation() {
+  return (
+    <main className="organiser-page" data-scaffold="true">
+      <header className="organiser-heading">
+        <p className="eyebrow">Event organiser</p>
+        <h1>Cancellation</h1>
+      </header>
+      <p>
+        Confirms cancellation with affected attendee count, reason capture, and
+        notification warning before the organiser commits (E10-S04).
+        Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}
+
 function NotFound({ eventCode }: { eventCode: string | undefined }) {
   return (
     <main className="organiser-page">

@@ -273,3 +273,38 @@ export function PendingBookingDetail() {
     </main>
   );
 }
+
+// SCAFFOLD: replace with real E06-S04 implementation. Safe to delete/rewrite entirely.
+export function BookingDecision() {
+  return (
+    <main className="venue-page" data-scaffold="true">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Booking approval or rejection</h1>
+      </header>
+      <p>
+        Standalone decision screen for a single pending booking. Venue staff
+        approve or reject with a required reason; approval flags competing
+        pending requests as conflicting (E06-S04).
+      </p>
+    </main>
+  );
+}
+
+// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function VenueBlockout() {
+  return (
+    <main className="venue-page" data-scaffold="true">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Venue blockout</h1>
+      </header>
+      <p>
+        Maintenance-period form. Sets a blockout date range for a venue and
+        previews any conflicting confirmed bookings.
+        Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}

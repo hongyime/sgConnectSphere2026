@@ -1,5 +1,5 @@
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
-import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback } from './features/attendee/AttendeeRegistration';
+import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback, Waitlist } from './features/attendee/AttendeeRegistration';
 import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
@@ -11,6 +11,7 @@ import { RegisterForm } from './features/accessControl/RegisterForm';
 import { ProfileForm } from './features/accessControl/ProfileForm';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail, ClarificationResponse,
+  ChangeRequest, Cancellation,
 } from './features/organiser/Organiser';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
@@ -18,6 +19,7 @@ import {
 } from './features/coordinator/Coordinator';
 import {
   VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
+  BookingDecision, VenueBlockout,
 } from './features/venue/Venue';
 import { VenueForm } from './features/venue/VenueForm';
 import {
@@ -26,7 +28,12 @@ import {
 } from './features/support/Support';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
+  ReportingDashboard, DigestPreferences, Recommendations,
 } from './features/admin/Admin';
+import { RoleHome } from './features/access/RoleHome';
+import {
+  NotificationCenter, AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading,
+} from './features/operations/Operations';
 import {
   AlertTriangle,
   Bell,
@@ -1020,6 +1027,7 @@ function App() {
       <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/profile" element={<ProfileForm />} />
+      <Route path="/home" element={<RoleHome />} />
       <Route path="/events" element={<ClientEvents />} />
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
@@ -1030,11 +1038,14 @@ function App() {
       <Route path="/attendee/register/:eventCode" element={<RegisterForEvent />} />
       <Route path="/attendee/withdraw/:eventCode" element={<WithdrawFromEvent />} />
       <Route path="/attendee/feedback/:eventCode" element={<EventFeedback />} />
+      <Route path="/attendee/waitlist/:eventCode" element={<Waitlist />} />
       <Route path="/internal/*" element={<AttendeeEvents />} />
       <Route path="/organiser" element={<OrganiserDashboard />} />
       <Route path="/organiser/requests" element={<OrganiserRequestList />} />
       <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
       <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
+      <Route path="/organiser/requests/:eventCode/change" element={<ChangeRequest />} />
+      <Route path="/organiser/requests/:eventCode/cancel" element={<Cancellation />} />
       <Route path="/organiser/new-request" element={<OrganiserRequestFlow />} />
       <Route path="/organiser/drafts" element={<OrganiserDrafts />} />
       <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
@@ -1053,6 +1064,8 @@ function App() {
       <Route path="/venue/inventory/:venueId/edit" element={<VenueForm mode="edit" />} />
       <Route path="/venue/availability" element={<AvailabilityCalendar />} />
       <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
+      <Route path="/venue/bookings/:bookingId/decide" element={<BookingDecision />} />
+      <Route path="/venue/blockout" element={<VenueBlockout />} />
       <Route path="/support" element={<EquipmentDashboard />} />
       <Route path="/support/catalogue" element={<EquipmentCatalogue />} />
       <Route path="/support/queue" element={<RequestQueue />} />
@@ -1063,6 +1076,14 @@ function App() {
       <Route path="/admin/users" element={<UserManagement />} />
       <Route path="/admin/users/:userId/role" element={<RoleAssignment />} />
       <Route path="/admin/audit" element={<AuditLogViewer />} />
+      <Route path="/admin/reports" element={<ReportingDashboard />} />
+      <Route path="/admin/digest" element={<DigestPreferences />} />
+      <Route path="/admin/recommendations" element={<Recommendations />} />
+      <Route path="/notifications" element={<NotificationCenter />} />
+      <Route path="/audit" element={<AuditHistory />} />
+      <Route path="/comments" element={<CommentsActivity />} />
+      <Route path="/search" element={<SearchFilter />} />
+      <Route path="/ui-states" element={<EmptyErrorLoading />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>

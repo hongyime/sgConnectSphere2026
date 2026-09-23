@@ -144,3 +144,56 @@ export function AuditLogViewer() {
     </main>
   );
 }
+
+// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function ReportingDashboard() {
+  return (
+    <main className="admin-page" data-scaffold="true">
+      <header className="admin-heading">
+        <p className="eyebrow">Admin</p>
+        <h1>Reporting dashboard</h1>
+      </header>
+      <p>
+        Event throughput, venue utilisation, and registration trend charts for
+        administrators. Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}
+
+// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function DigestPreferences() {
+  return (
+    <main className="admin-page" data-scaffold="true">
+      <header className="admin-heading">
+        <p className="eyebrow">Admin</p>
+        <h1>Digest preferences</h1>
+      </header>
+      <p>
+        Daily or weekly digest cadence, notification channels, and quiet-hours
+        settings for the organisation.
+        Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}
+
+// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
+// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+export function Recommendations() {
+  return (
+    <main className="admin-page" data-scaffold="true">
+      <header className="admin-heading">
+        <p className="eyebrow">Admin</p>
+        <h1>Recommendations placeholder</h1>
+      </header>
+      <p>
+        Personalised event suggestions for attendees with reason labels and
+        opt-out. Clearly labelled; does not imply an AI feature in Release 1.
+        Future — confirm with Bryan before building.
+      </p>
+    </main>
+  );
+}
