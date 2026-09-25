@@ -472,7 +472,7 @@ test.describe("E03-S06", () => {
     await page.getByLabel('Add a comment').fill('Can we confirm the AV setup by Friday?');
     await page.getByRole('button', { name: 'Post comment' }).click();
     await expect(page.getByText('Can we confirm the AV setup by Friday?')).toBeVisible();
-    await expect(page.getByText(/Organiser A/)).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Can we confirm the AV setup by Friday?' }).getByText(/Organiser A/)).toBeVisible();
   });
 
   /**
