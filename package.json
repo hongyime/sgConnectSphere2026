@@ -26,7 +26,8 @@
     "test:coverage:frontend": "npm run test:coverage --workspace frontend",
     "test:coverage:tooling": "python scripts/coverage_tooling.py",
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend && npm run test:coverage:tooling",
-    "test:mutation": "npx stryker run"
+    "test:mutation": "npx stryker run",
+    "sbom": "python scripts/generate_sbom.py"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
@@ -37,6 +38,9 @@
   },
   "engines": {
     "node": ">=22"
+  },
+  "overrides": {
+    "qs": "6.16.0"
   },
   "allowScripts": {
     "esbuild@0.14.47": true
