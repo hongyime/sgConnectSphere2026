@@ -30,6 +30,7 @@ import { currentUser, query, respond } from '../backend/src/modules/eventVisibil
 import {
   AccessError,
   createEventComment,
+  updateEventInformation,
   getEvent,
   listEvents,
   listNotifications,
@@ -54,6 +55,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return;
   }
   if (request.method === 'PATCH') {
+    const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.get('edit') === '1') {
+      await handleInformationPatch(request, response, params);
+      return;
+    }
     await handlePatch(request, response);
     return;
   }
@@ -63,6 +69,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   response.setHeader('allow', 'GET, POST, PATCH, DELETE');
   sendJson(response, 405, { error: 'method_not_allowed' });
+}
+
+async function handleInformationPatch(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  try {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId) { sendJson(response, 400, { error: 'missing_id' }); return; }
+    const result = await updateEventInformation(query, user, eventId.slice(0, 240), request.body);
+    sendJson(response, 200, { ...result });
+  } catch (error) {
+    if (error instanceof AccessError) {
+      sendJson(response, error.status, { error: error.message, changeRequestUrl: error.status === 409 ? `/change-requests/new?event=${encodeURIComponent(params.get('id') || '')}` : undefined });
+      return;
+    }
+    throw error;
+  }
 }
 
 async function handleCommentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
