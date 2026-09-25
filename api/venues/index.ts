@@ -5,6 +5,7 @@ import {
   addVenueLayout, createVenue, getVenue, removeVenueLayout, retireVenue,
   searchVenues, updateVenue, updateVenueLayout,
 } from '../../backend/src/modules/venueBooking/catalogue.js';
+import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
@@ -25,6 +26,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }
 
       const id = params.get('id');
+      // E05-S03: the availability calendar shares this GET rather than adding
+      // a new file, which would pass ADR-014's eleven-function limit.
+      if (params.get('calendar') === '1') {
+        if (!id) throw new AccessError(400, 'A venue id is required to view its calendar.');
+        return await getVenueCalendar(query, user, id.slice(0, 240), params.get('from'), params.get('to'));
+      }
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
       const layout = params.get('layout') || undefined;
