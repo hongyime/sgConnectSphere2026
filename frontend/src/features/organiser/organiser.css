@@ -64,3 +64,28 @@
 .organiser-form-row { display: grid; gap: 0.35rem; }
 .organiser-form label { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
 .organiser-form textarea { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
+
+/* Live request screens: optional summary rows sit inside the dl grid, and the
+   request table scrolls within its own box on narrow screens instead of
+   widening the page. */
+.organiser-dl-row { display: contents; }
+.organiser-detail-grid dd { margin: 0; }
+.organiser-table-wrap { overflow-x: auto; }
+.organiser-heading small { color: var(--muted); font-size: 0.85rem; }
+.organiser-comments { display: grid; gap: 0.25rem; }
+.organiser-comments h2 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 1.05rem; color: var(--ink); }
+.organiser-comments p { margin: 0; }
+.organiser-comments a { color: var(--teal); font-weight: 600; }
+
+/* On phones each request becomes a stacked card with inline labels, so the
+   status stays visible instead of scrolling out of view. */
+@media (max-width: 640px) {
+  .organiser-table-stack, .organiser-table-stack tbody, .organiser-table-stack tr, .organiser-table-stack td { display: block; }
+  .organiser-table-stack { border: 0; background: transparent; }
+  .organiser-table-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .organiser-table-stack tr { margin-bottom: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+  .organiser-table-stack td { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.5rem; }
+  .organiser-table-stack td:last-child { border-bottom: 0; }
+  .organiser-table-stack td[data-label]::before { content: attr(data-label); color: var(--muted); font-weight: 600; }
+  .organiser-table-stack td[colspan] { display: block; }
+}
