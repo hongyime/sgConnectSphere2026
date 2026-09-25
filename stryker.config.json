@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker-js/master/packages/core/schema/stryker-core.json",
+  "packageManager": "npm",
+  "reporters": ["html", "clear-text", "progress", "json"],
+  "testRunner": "tap",
+  "tap": {
+    "testFiles": [
+      "backend/tests/registration.test.ts",
+      "backend/tests/eventVisibility.test.ts",
+      "backend/tests/venueCatalogue.test.ts",
+      "backend/tests/venueAccessibility.test.ts",
+      "backend/tests/verificationTokens.test.ts",
+      "backend/tests/eventLifecycle.test.ts",
+      "backend/tests/sessions.test.ts",
+      "backend/tests/verificationEmail.test.ts",
+      "backend/tests/deactivation.test.ts"
+    ],
+    "nodeArgs": ["--import", "tsx", "--test-reporter=tap", "--test-reporter-destination=stdout"]
+  },
+  "mutate": [
+    "backend/src/modules/eventLifecycle/service.ts",
+    "backend/src/modules/eventLifecycle/status.ts"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 0
+  },
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "tempDirName": ".stryker-tmp",
+  "concurrency": 4
+}

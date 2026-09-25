@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 
-type Event = { id: string; event_code: string; title: string; description: string; status: string; starts_at: string; creator_name: string };
+type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
+type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
+type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; statusHistory?: StatusHistoryEntry[]; comments?: Comment[]; canPostComment?: boolean };
 type Notification = { id: string; title: string; message: string };
+
+function plainStatus(status: string) {
+  return status.replaceAll('_', ' ').replace(/\b\w/g, character => character.toUpperCase());
+}
+
+function plainDate(value: string) {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(value));
+}
 
 export function ClientEvents() {
   const activeRequest = useRef<AbortController | null>(null);
@@ -13,6 +23,9 @@ export function ClientEvents() {
   const [signIn, setSignIn] = useState(false);
   const [busy, setBusy] = useState(true);
   const [revision, setRevision] = useState(0);
+  const [comment, setComment] = useState('');
+  const [commentError, setCommentError] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
   const pathIdentifier = window.location.pathname.startsWith('/events/') ? window.location.pathname.slice(8) : '';
   let identifier = pathIdentifier;
   try { identifier = decodeURIComponent(pathIdentifier); } catch { /* Invalid identifiers are refused by the API. */ }
@@ -46,6 +59,19 @@ export function ClientEvents() {
     finally { setBusy(false); }
   }
 
+  async function postComment(eventId: string) {
+    setCommentBusy(true); setCommentError('');
+    try {
+      const response = await fetch(`/api/events?id=${encodeURIComponent(eventId)}&comment=1`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: comment }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Unable to post comment.');
+      setComment(''); setRevision(value => value + 1);
+    } catch (failure) { setCommentError(failure instanceof Error ? failure.message : 'Unable to post comment.'); }
+    finally { setCommentBusy(false); }
+  }
+
   return <main className="client-events">
     <header><a href="/">ConnectSphere</a><h1>My organisation’s events</h1>
       <p>View events created by you and your fellow organisers.</p>
@@ -66,6 +92,7 @@ export function ClientEvents() {
       <label>Email<input name="email" type="email" autoComplete="username" required /></label>
       <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
       <button disabled={busy}>Sign in</button>
+      <p><a href="/forgot-password">Forgot password or locked out?</a></p>
     </form> : <>
       <nav><a href="/events">All organisation events</a></nav>
       {!identifier && <label>Search your organisation’s events<input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Event name or ID" /></label>}
@@ -83,7 +110,20 @@ export function ClientEvents() {
           {notifications.length === 0 ? <p>No event notifications.</p> : notifications.map(n => <article key={n.id}><h3>{n.title}</h3><p>{n.message}</p></article>)}
         </section>
       </>}
-      {!busy && !error && event && <article><h2>{event.title}</h2><p>{event.event_code} · {event.status.replaceAll('_', ' ')}</p><p>{event.description}</p><p>{new Date(event.starts_at).toLocaleString()}</p><p>Created by {event.creator_name}</p></article>}
+      {!busy && !error && event && <article><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p><p>{event.description}</p><p>{new Date(event.starts_at).toLocaleString()}</p><p>Created by {event.creator_name}</p>
+        <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p></section>
+        <section aria-labelledby="status-history-heading"><h3 id="status-history-heading">Status history</h3>
+          {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
+        </section>
+        <section aria-labelledby="event-comments-heading"><h3 id="event-comments-heading">Comments</h3>
+          {event.comments?.length ? <ol>{event.comments.map(item => <li key={item.id}><p>{item.body}</p><small>{item.author_name} · {new Date(item.created_at).toLocaleString()}</small></li>)}</ol> : <p>No comments yet.</p>}
+          {event.canPostComment ? <form onSubmit={formEvent => { formEvent.preventDefault(); void postComment(event.id); }}>
+            <label htmlFor="event-comment">Add a comment</label><textarea id="event-comment" value={comment} onChange={changeEvent => setComment(changeEvent.target.value)} maxLength={2000} required />
+            <button type="submit" disabled={commentBusy || !comment.trim()}>{commentBusy ? 'Posting…' : 'Post comment'}</button>
+            {commentError && <p role="alert">{commentError}</p>}
+          </form> : null}
+        </section>
+      </article>}
     </>}
   </main>;
 }

@@ -20,10 +20,19 @@
     "test:runtime": "node --test \"tests/runtime/*.test.mjs\"",
     "test:notifications": "node --import tsx --test \"tests/notifications/*.test.ts\"",
     "test:redis": "node --import tsx --test \"tests/redis/*.test.ts\"",
-    "test:e2e:scaffold": "playwright test --reporter=list"
+    "test:e2e:scaffold": "playwright test --reporter=list",
+    "test:e2e:auth": "playwright test --config playwright.auth.config.ts",
+    "test:coverage:backend": "npm run test --workspace backend",
+    "test:coverage:frontend": "npm run test:coverage --workspace frontend",
+    "test:coverage:tooling": "python scripts/coverage_tooling.py",
+    "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend && npm run test:coverage:tooling",
+    "test:mutation": "npx stryker run",
+    "sbom": "python scripts/generate_sbom.py"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/tap-runner": "^10.0.0",
     "@types/node": "latest",
     "typescript": "latest"
   },

@@ -54,13 +54,15 @@ def load_workbook_cases() -> list[dict]:
 
 
 def scan_test_files() -> dict:
-    tc_index: dict[str, dict] = defaultdict(lambda: {"status": "none", "files": []})
+    tc_index: dict[str, dict] = defaultdict(lambda: {"status": "none", "category": "unknown", "files": []})
     active_no_tc: dict[str, list[str]] = defaultdict(list)
+    test_only_warnings: list[str] = []
 
     for root in TEST_ROOTS:
         if not root.is_dir():
             continue
-        for path in root.rglob("*"):
+        # Filesystem traversal order differs between developer machines and CI.
+        for path in sorted(root.rglob("*")):
             if any(part in {"node_modules", "dist"} for part in path.parts):
                 continue
             if not path.is_file():
@@ -69,23 +71,38 @@ def scan_test_files() -> dict:
                 continue
             rel = path.relative_to(REPO_ROOT).as_posix()
             text = path.read_text(encoding="utf-8", errors="replace")
+            # Classify the file by test category.
+            is_integration_file = ".integration.test." in path.name or ".db.test." in path.name
+            is_mock_file = (
+                "from './mocks'" in text or 'from "./mocks"' in text
+                or "from '../mocks'" in text or 'from "../mocks"' in text
+                or "vi.mock(" in text or "jest.mock(" in text
+            )
             for match in re.finditer(r"(test\.fixme|test\.skip|test\.only|test)\s*\(\s*['\"]([^'\"]+)['\"]", text):
                 keyword = match.group(1)
                 title = match.group(2)
                 is_active = keyword in ("test", "test.only")
+                if keyword == "test.only":
+                    test_only_warnings.append(f"{rel}: {title}")
                 tc_refs = TC_ID_RE.findall(title)
                 if tc_refs:
                     for tc in tc_refs:
                         entry = tc_index[tc]
                         if is_active:
                             entry["status"] = "active"
+                            if is_integration_file:
+                                entry["category"] = "real-db"
+                            elif is_mock_file:
+                                entry["category"] = "mock-backed"
+                            else:
+                                entry["category"] = "live-assertion"
                         elif entry["status"] == "none":
                             entry["status"] = "scaffold"
                         entry["files"].append(f"{rel}: {title}")
                 elif is_active:
                     active_no_tc[rel].append(title)
 
-    return {"tc_index": dict(tc_index), "active_no_tc": dict(active_no_tc)}
+    return {"tc_index": dict(tc_index), "active_no_tc": dict(active_no_tc), "test_only_warnings": test_only_warnings}
 
 
 def build_report(cases: list[dict], scan: dict) -> str:
@@ -128,8 +145,26 @@ def build_report(cases: list[dict], scan: dict) -> str:
     parts.append("")
     parts.append(f"- Total test cases: **{total}**")
     parts.append(f"- Automated (explicit TC_ID in an active test title): **{active}** ({active / total * 100:.1f}%)")
+
+    # Sub-classify automated tests by evidence strength.
+    real_db = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
+                  and tc_index.get(c["case_id"], {}).get("category") == "real-db")
+    mock_backed = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
+                      and tc_index.get(c["case_id"], {}).get("category") == "mock-backed")
+    live_assertion = active - real_db - mock_backed
+    parts.append(f"  - Real-database (`.integration.test` / `.db.test`): **{real_db}**")
+    parts.append(f"  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **{mock_backed}**")
+    parts.append(f"  - Live-assertion (other active tests): **{live_assertion}**")
+
     parts.append(f"- Scaffold (mentioned only in `test.fixme` / `test.skip`): **{scaffold}** ({scaffold / total * 100:.1f}%)")
     parts.append(f"- No test yet (no test file mentions the TC_ID): **{absent}** ({absent / total * 100:.1f}%)")
+
+    test_only_warnings = scan.get("test_only_warnings", [])
+    if test_only_warnings:
+        parts.append("")
+        parts.append(f"**WARNING: {len(test_only_warnings)} `test.only` found — these block the full suite from running:**")
+        for w in test_only_warnings:
+            parts.append(f"  - `{w}`")
     parts.append("")
 
     parts.append("## Coverage by epic")
@@ -217,15 +252,34 @@ def main() -> int:
     scan = scan_test_files()
     report = build_report(cases, scan)
     target = REPO_ROOT / "docs" / "testing" / "tc-coverage.md"
+    # Strip trailing whitespace on every line so the output is stable across
+    # the trailing-whitespace pre-commit hook and CI's drift check.
+    report = "\n".join(line.rstrip() for line in report.splitlines())
+    if not report.endswith("\n"):
+        report += "\n"
     target.write_text(report, encoding="utf-8")
     print(f"Wrote {target.relative_to(REPO_ROOT)}")
     tc_index = scan["tc_index"]
     active = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active")
     scaffold = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "scaffold")
     absent = len(cases) - active - scaffold
+    real_db = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
+                  and tc_index.get(c["case_id"], {}).get("category") == "real-db")
+    mock_backed = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
+                      and tc_index.get(c["case_id"], {}).get("category") == "mock-backed")
+    live_assertion = active - real_db - mock_backed
     print(f"  Automated: {active}/{len(cases)} ({active/len(cases)*100:.1f}%)")
+    print(f"    real-db:        {real_db}")
+    print(f"    mock-backed:    {mock_backed}")
+    print(f"    live-assertion: {live_assertion}")
     print(f"  Scaffold:  {scaffold}/{len(cases)} ({scaffold/len(cases)*100:.1f}%)")
     print(f"  No test:   {absent}/{len(cases)} ({absent/len(cases)*100:.1f}%)")
+    test_only_warnings = scan.get("test_only_warnings", [])
+    if test_only_warnings:
+        print(f"  WARNING: {len(test_only_warnings)} test.only found — these block the full suite:")
+        for w in test_only_warnings:
+            print(f"    {w}")
+        return 1
     return 0
 
 

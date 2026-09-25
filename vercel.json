@@ -19,6 +19,14 @@
       "destination": "/api/auth/session?task=verify"
     },
     {
+      "source": "/api/auth/request-reset",
+      "destination": "/api/auth/session?task=request-reset"
+    },
+    {
+      "source": "/api/auth/reset-password",
+      "destination": "/api/auth/session?task=reset-password"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

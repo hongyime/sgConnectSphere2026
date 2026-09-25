@@ -138,3 +138,157 @@ npx playwright test --project=desktop
 
 Cite the actual exit codes and test counts in the PR body. `all good`
 is not a verification statement.
+
+## Four-question test quality checklist (mandatory)
+
+Every test — unit, integration, or e2e — must answer these four questions.
+Reviewers reject tests that cannot.
+
+1. **Setup** — what state is created before the action?
+   Example: "insert a user with `failed_login_count = 4`"
+2. **Action** — what single operation is being tested?
+   Example: "attempt login with wrong password"
+3. **Expected result** — what observable outcome, justified independently of
+   the code?
+   Example: "`locked_until` is set to now + 30 minutes per ADR-016"
+4. **Would a plausible wrong implementation pass this test?** If yes, the
+   test is decorative — strengthen it or delete it.
+   Example: if someone changed `LOCKOUT_THRESHOLD` from 5 to 10 and the
+   test still passed, the test is decorative.
+
+### What makes a test decorative
+
+A test is decorative when it passes regardless of whether the feature
+works correctly. Common patterns:
+
+- Asserts against mock data instead of real behaviour (`Admin.tsx`
+  `AuditLogViewer` reads from `mocks.ts`, not the database)
+- Uses `test.fixme` with no plan to un-skip (acceptable as scaffold, not
+  as coverage)
+- Checks that a component renders without asserting the *right* content
+- Asserts a status code without checking the response body or side effects
+
+### Expected values must be independently justified
+
+The expected value in an assertion must come from a source other than the
+code under test:
+
+- **Good**: `expect(lockedUntil).toBe(now + 30 * 60 * 1000)` — justified
+  by ADR-016 (30-minute lockout policy)
+- **Good**: `expect(result.status).toBe('Submitted')` — justified by
+  E02-S01 Scenario 1 acceptance criterion
+- **Bad**: `expect(result).toEqual(whatTheCodeReturns)` — circular; if the
+  code is wrong, the test is wrong too
+
+### Tests must be deterministic and non-vacuous
+
+- **Deterministic**: same input always produces same result. No
+  `Date.now()` in expected values without mocking time. No random data
+  without seeded generators. No network calls without stubs.
+- **Non-vacuous**: the test exercises the path it claims to test. A test
+  that catches an exception and asserts `true` is vacuous. A test that
+  asserts `array.length > 0` when the array is hardcoded is vacuous.
+
+## Coverage tools
+
+Three coverage tools are configured for the three test runtimes:
+
+| Runtime | Tool | Command |
+| --- | --- | --- |
+| Backend Node (tsx --test) | **c8** | `npm run test --workspace backend` (c8 wraps all test scripts) |
+| Frontend Vitest | **@vitest/coverage-v8** | `npm run test:coverage --workspace frontend` |
+| Python tooling (pytest) | **coverage.py** | `npm run test:coverage:tooling` (or `.venv-tools/bin/python -m coverage run -m pytest tooling/tests/`) |
+| All three | — | `npm run test:coverage` (runs all three sequentially) |
+
+Coverage reports are written to:
+- `backend/coverage/` (c8 lcov + json-summary)
+- `frontend/coverage/` (v8 lcov + json-summary)
+- `htmlcov/` (coverage.py HTML)
+
+Do not commit coverage output directories — they are gitignored.
+
+## Mutation testing (Stryker)
+
+Mutation testing verifies that tests catch real bugs by systematically
+modifying (mutating) the source code and checking that at least one test
+fails for each mutation. A surviving mutant means a test gap exists.
+
+Stryker runs against Node's built-in test runner via the `tap` test runner
+plugin (`@stryker-mutator/tap-runner`), not the generic `command` runner.
+The `command` runner re-executes the *entire* backend suite for every single
+mutant with no coverage narrowing — measured at ~3+ hours for 686 mutants
+across 3 files. The `tap` runner gets real per-test-file coverage analysis
+(Node's test runner already emits TAP when given `--test-reporter=tap`), so
+each mutant only re-runs the test files that actually cover the mutated line.
+First real run: 686 mutants across the full configured scope in ~4 minutes
+instead of ~3+ hours — roughly a 45x speedup.
+
+**Critical gotcha if you touch `stryker.config.json`'s `tap.nodeArgs`:**
+Node's default (non-explicit) console output on this project's Node version
+is NOT TAP-compliant even when piped to a child process — Stryker's tap-runner
+then can only tell "exit code 0 (survived)" from "exit code non-zero (error)",
+and can never report a clean "Killed" status. If a mutation run shows a 0%
+score with a large `# errors` column and zero `# killed`, this is almost
+certainly the cause. Fix: `nodeArgs` MUST include both
+`--test-reporter=tap` and `--test-reporter-destination=stdout` alongside
+`--import tsx`. Verify by running the exact node invocation manually first
+(`node --import tsx --test-reporter=tap --test-reporter-destination=stdout
+<test-file>`) and confirming the first line of output is `TAP version 13`.
+
+`tap.testFiles` must list exact file paths, not a glob with `!`-negation.
+Unlike the `mutate` option, `tap.testFiles` does not honor negation globs —
+a pattern like `!backend/tests/*.integration.test.ts` will not exclude
+anything, and integration/db test files requiring a live database will get
+picked up and error out. List the plain unit-test files explicitly.
+
+Run mutation testing with:
+
+```
+npm run test:mutation
+```
+
+This is still not instant (minutes, not seconds) because Stryker sandboxes
+and re-runs relevant tests per mutant. Run it:
+- After completing a story's tests, to verify they catch real bugs
+- Before Sprint reviews, to measure test suite strength
+- NOT on every commit or in CI (still too slow for a required check)
+
+`stryker.config.json`'s `mutate` scope is intentionally narrow (one module
+at a time) rather than the whole backend. Widen it deliberately, one module
+per PR, so each run stays fast and its report stays reviewable. First real
+score on `eventLifecycle/service.ts` + `eventLifecycle/status.ts`: **71.03%**
+(255 killed, 93 survived, 11 no-coverage, 0 errors, 0 timeouts). The
+`status.ts` sub-score (33.33%) is the weakest spot — several status-transition
+array mutations survive because no test asserts the exact allowed-transition
+list contents, only that specific transitions succeed or fail.
+
+A mutation score below 60% on a module means the tests are likely
+decorative for that module. Strengthen them before marking the story Done.
+
+## Red-Green-Refactor discipline (Sprint 2 onwards)
+
+For any story that touches persistence or business logic, follow the
+test-driven development cycle. The `test.fixme` scaffolds from the
+workbook are your Red starters — un-skip them, watch them fail, then
+implement.
+
+1. **Red commit**: un-skip the relevant `test.fixme` scaffold(s) OR write
+   a new `test(...)` that asserts the expected behaviour. Run it. It must
+   fail for the right reason (missing feature, not syntax error). Commit:
+   `test: red — TC_EXXSXX_YY <what the test asserts>`.
+2. **Green commit**: implement just enough code to make the test pass.
+   Commit: `feat: green — TC_EXXSXX_YY <what was implemented>`.
+3. **Refactor** (optional): clean up without breaking the test. Commit:
+   `refactor: TC_EXXSXX_YY <what improved>`.
+
+The git log must show Red before Green for any story-linked test.
+Reviewers check this during PR review — a PR where the implementation
+commit precedes its failing test commit will be sent back.
+
+### Why this matters
+
+Sprint 1 shipped tests alongside implementations in the same commits.
+This meant nobody could verify that the tests were actually testing the
+right thing — a test written after the code passes trivially and may
+not catch regressions. The Red-Green-Refactor cycle forces the test to
+fail first, proving it actually exercises the behaviour it claims to.

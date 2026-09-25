@@ -36,10 +36,23 @@ async function fillMandatoryFields(page: import('@playwright/test').Page, overri
   }
 }
 
+// E02-S03: every render of the request form fetches the predefined
+// accessibility checklist. Mocked separately from **/api/events since it's
+// a distinct endpoint (GET /api/venues?accessibilityFeatures=1).
+async function mockAccessibilityFeatures(
+  page: import('@playwright/test').Page,
+  features: Array<{ id: string; code: string; label: string }> = [],
+) {
+  await page.route('**/api/venues?accessibilityFeatures=1', async (route) => {
+    await route.fulfill({ status: 200, json: { features } });
+  });
+}
+
 test.describe("E02-S01", () => {
   test.beforeEach(async ({ page }) => {
     // Freeze the browser clock so the source-case dates stay deterministic.
     await page.clock.setFixedTime(new Date('2026-09-10T00:00:00Z'));
+    await mockAccessibilityFeatures(page);
     await page.route('**/api/events', async (route) => {
       expect(route.request().method()).toBe('POST');
       const payload = route.request().postDataJSON();
@@ -187,6 +200,9 @@ test.describe("E02-S02", () => {
   // submit/delete), which a single stateless route mock can't do.
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-09-10T00:00:00Z'));
+    await mockAccessibilityFeatures(page, [
+      { id: 'f-wheelchair', code: 'wheelchair_access', label: 'Wheelchair Access' },
+    ]);
 
     const events = new Map<string, Record<string, unknown>>();
     let nextId = 1;
@@ -295,11 +311,25 @@ test.describe("E02-S02", () => {
    *   The Event Name field shows "Product Launch" and the Description field shows "Launch of new product line", exactly as last saved
    */
   test("TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values", async ({ page }) => {
-    await saveMinimalDraft(page, { Description: 'Launch of new product line' });
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
+    await page.getByLabel('Event name', { exact: true }).fill('Product Launch');
+    await page.getByLabel('Preferred start date and time').fill('2026-11-15T09:00');
+    await page.getByLabel('Preferred end date and time').fill('2026-11-15T12:00');
+    await page.getByLabel('Expected attendance', { exact: true }).fill('50');
+    await page.getByLabel('Description', { exact: true }).fill('Launch of new product line');
+    // E02-S03 regression: a predefined accessibility selection must also
+    // survive save -> reopen, same as every free-text field (a real bug
+    // found and fixed while implementing SCRUM-28 - OrganiserDraftEdit's
+    // fetched-draft-to-initialValues mapping omitted accessibilityFeatureIds).
+    await page.getByLabel('Wheelchair Access').check();
+    await page.getByRole('button', { name: 'Save draft' }).click();
+    await expect(page.getByText('Draft saved.')).toBeVisible();
+
     await page.goto('/organiser/drafts');
     await page.getByRole('link', { name: /Continue editing/ }).click();
     await expect(page.getByLabel('Event name', { exact: true })).toHaveValue('Product Launch');
     await expect(page.getByLabel('Description', { exact: true })).toHaveValue('Launch of new product line');
+    await expect(page.getByLabel('Wheelchair Access')).toBeChecked();
   });
 
   /**
@@ -385,6 +415,13 @@ test.describe("E02-S02", () => {
 });
 
 test.describe("E02-S03", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-09-10T00:00:00Z'));
+    await mockAccessibilityFeatures(page, [
+      { id: 'f-wheelchair', code: 'wheelchair_access', label: 'Wheelchair Access' },
+      { id: 'f-hearing-loop', code: 'hearing_loop', label: 'Hearing Loop' },
+    ]);
+  });
 
   /**
    * TC_E02S03_01
@@ -399,13 +436,32 @@ test.describe("E02-S03", () => {
    *
    * Expected result:
    *   Both requirements are stored against the request and visible to the assigned Coordinator
+   *
+   * Scope note: there is no real Coordinator-facing endpoint of any kind yet
+   * (Coordinator.tsx reads from mocks.ts, same known gap recorded against
+   * SCRUM-27/E03) - "shown to the Coordinator" can't be exercised end to end
+   * from this browser-only suite. What this proves at the browser-contract
+   * level: selecting predefined requirements sends their ids to the API as
+   * accessibilityFeatureIds, separate from the free-text accessibilityNote.
+   * The backend round-trip (create -> persisted in event_accessibility_needs
+   * -> read back) is covered by backend/tests/eventLifecycle.test.ts.
    */
-  test.fixme("TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator", async ({ page }) => {
-    // Steps from the specification:
-    // 1. In the Accessibility Needs section, select "Wheelchair Access" and "Hearing Loop" from the predefined list
-    // 2. Save/submit the request
-    // 3. Log in as the assigned Coordinator and open the request
-    void page;
+  test("TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator", async ({ page }) => {
+    let submittedPayload: Record<string, unknown> | undefined;
+    await page.route('**/api/events', async (route) => {
+      submittedPayload = route.request().postDataJSON();
+      await route.fulfill({ status: 201, json: { event: { id: 'test-event', status: 'submitted' } } });
+    });
+
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
+    await fillMandatoryFields(page, { 'Accessibility needs': '' });
+    await page.getByLabel('Wheelchair Access').check();
+    await page.getByLabel('Hearing Loop').check();
+    await page.getByRole('button', { name: 'Submit request' }).click();
+
+    await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
+    expect(submittedPayload?.accessibilityFeatureIds).toEqual(['f-wheelchair', 'f-hearing-loop']);
+    expect(submittedPayload?.accessibilityNote).toBe('');
   });
 
   /**
@@ -421,14 +477,30 @@ test.describe("E02-S03", () => {
    *
    * Expected result:
    *   The free-text entry is visible to the Coordinator on the request, but venue search results are filtered only on predefined requirements (unaffected by this entry)
+   *
+   * Scope note: same Coordinator-visibility gap as TC_E02S03_01, and the
+   * "venue search unaffected" half of this scenario is proved at the
+   * backend level (backend/tests/venueCatalogue.test.ts's accessibility
+   * filter tests, and the searchVenues() implementation itself only ever
+   * reads accessibility_features ids, never accessibilityNote) rather than
+   * here - see TC_E02S03_03's scope note for why AC3 has no e2e UI case.
+   * What this proves: free text submits as accessibilityNote with an empty
+   * accessibilityFeatureIds, not merged into the predefined selection.
    */
-  test.fixme("TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Enter "Service animal resting area" in the free-text accessibility box
-    // 2. Save/submit the request
-    // 3. Run a venue search for the event
-    // 4. Log in as the Coordinator and open the request
-    void page;
+  test("TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching", async ({ page }) => {
+    let submittedPayload: Record<string, unknown> | undefined;
+    await page.route('**/api/events', async (route) => {
+      submittedPayload = route.request().postDataJSON();
+      await route.fulfill({ status: 201, json: { event: { id: 'test-event', status: 'submitted' } } });
+    });
+
+    await page.goto(ORGANISER_REQUEST_FORM_PATH);
+    await fillMandatoryFields(page, { 'Accessibility needs': 'Service animal resting area' });
+    await page.getByRole('button', { name: 'Submit request' }).click();
+
+    await expect(page.getByText('Submitted', { exact: true })).toBeVisible();
+    expect(submittedPayload?.accessibilityNote).toBe('Service animal resting area');
+    expect(submittedPayload?.accessibilityFeatureIds).toEqual([]);
   });
 
   /**
@@ -444,6 +516,22 @@ test.describe("E02-S03", () => {
    *
    * Expected result:
    *   Venue X is excluded from the results or clearly marked unsuitable; Venue Y appears as a normal match
+   *
+   * Scope note, deliberate (decided with Aaron before implementing SCRUM-28):
+   * there is no "search venues for this event" screen anywhere in the app to
+   * exercise. This mirrors the team's own precedent for the near-identical
+   * E05-S02 layout/attendance suitability filter, which also shipped with
+   * zero frontend UI and zero e2e coverage - confirmed by checking
+   * Venue.tsx/venueApi.ts/tests/e2e/venue.spec.ts directly, none of which
+   * wire layout/attendance into the UI either. AC3 ships backend-only:
+   * searchVenues()'s accessibility join (backend/src/modules/venueBooking/
+   * catalogue.ts), unit-tested in backend/tests/venueCatalogue.test.ts and
+   * backend/tests/venueAccessibility.test.ts, integration-tested against a
+   * real database in backend/tests/venueAccessibility.integration.test.ts
+   * (which reproduces this exact Venue X / Venue Y scenario). Left as
+   * test.fixme rather than deleted, so this AC's browser-level case stays
+   * visible in test-case coverage as a known, documented gap - not silently
+   * dropped.
    */
   test.fixme("TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them", async ({ page }) => {
     // Steps from the specification:

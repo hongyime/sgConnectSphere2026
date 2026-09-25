@@ -1,8 +1,9 @@
 # Source Data Concerns
 
-The Word and Excel files in `docs/` remain the source of truth. Markdown files,
-the frontend shell, Jira issues, and generated Figma plans are derivative and
-must be corrected when the source documents change.
+Historical source-data notes. Canonical backlog, ADR, BDR and acceptance-case
+Markdown now governs the project; see [source-of-truth.md](source-of-truth.md).
+The frontend shell, Jira and Figma remain derivative views. The
+[Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) records the current audit.
 
 ## Current Concerns
 

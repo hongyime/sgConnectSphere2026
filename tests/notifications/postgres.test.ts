@@ -31,6 +31,7 @@ async function fixture(beforeMigration?: (pool: Pool) => Promise<void>) {
   await pool.query(original);
   if (beforeMigration) await beforeMigration(pool);
   await pool.query(migration);
+  await pool.query(await readFile(new URL('../../backend/database/migrations/0007_password_reset_delivery.sql', import.meta.url), 'utf8'));
   const store = postgresDeliveryStore(pool);
   return { pool, store, schema };
 }

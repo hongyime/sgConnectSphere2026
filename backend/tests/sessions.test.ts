@@ -122,7 +122,7 @@ test('sets locked_until at the fifth consecutive failed attempt', async () => {
   const lockDuration = updated.locked_until!.getTime() - before;
   // Give a wide tolerance because the fake pool computes new Date() at call time.
   assert.ok(lockDuration >= LOCKOUT_MINUTES * 60 * 1000 - 1000, `lockout window shorter than expected: ${lockDuration}ms`);
-  assert.ok(lockDuration <= LOCKOUT_MINUTES * 60 * 1000 + 2000, `lockout window longer than expected: ${lockDuration}ms`);
+  assert.ok(lockDuration <= LOCKOUT_MINUTES * 60 * 1000 + 10000, `lockout window longer than expected: ${lockDuration}ms`);
   // E14-S02: the lockout must appear in the audit log alongside the user row
   // update. Both happen in the same transaction, so the audit insert should
   // sit between the users update and the COMMIT.

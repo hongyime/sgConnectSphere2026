@@ -76,7 +76,7 @@ and script-tooling tickets:
 | Aaron Koh | **8** | 3 | SCRUM-26 submit event request, SCRUM-27 save draft. Caught the PR #42 misattribution during PR #78 review. |
 | Lex In Phun | **6** | 5 | SCRUM-40 venue catalogue, SCRUM-41 layout capacity (plus the post-merge SQL fix). |
 | Ji Ning | **4** | 3 | SCRUM-19 update account details, SCRUM-23 create account. Author of the initial database-schema and user-flow docs. |
-| Amareet | **0** | 0 | No commits, branches, or PRs visible in the repository at close. Needs a direct conversation before Sprint 2 opens. |
+| Amareet | **5** | 5 | PRs #87 (frontend accessibility+profile UX, E02-S03/E01-S04/E01-S11), #89 (venue inventory create/edit/retire, E05-S01/E05-S02), #90 (design token reconciliation), #92 (venue layout Enter-key + search fix), #98 (profile/venue/request form polish). All merged 18–19 Sep, after the initial retro was written 17 Sep. Corrected 2026-09-20. |
 | **Team total** | **73** | | |
 
 ## Carry-forward into Sprint 2
@@ -139,9 +139,21 @@ whose work concretely follows something from Sprint 1.
 - **Vercel deploy failures piled up unread.** Only Bryan had dashboard
   access. Fixed by PR #76's token-backed deploy mirror workflow, but
   the visibility gap ran through most of Sprint 1.
-- **One teammate has zero repository activity.** Amareet has no commits,
-  branches, or PRs. Sprint 2 opens with a direct conversation to
-  understand blockers and pair-programme onto a small ticket.
+- **~~One teammate has zero repository activity.~~** Corrected 2026-09-20:
+  Amareet has 5 merged PRs (#87, #89, #90, #92, #98), all landing 18–19 Sep
+  after the initial retro was written on 17 Sep. The original claim was wrong.
+- **PR #79 (SCRUM-27, Aaron's save-draft story) merged with zero recorded reviews.** Review was requested from all five teammates
+  (`jininggg`/`bryanseah234`/`xiangyingg`/`amareetkm2024-del`/
+  `lexinphun2024-debug`) via CODEOWNERS, but GitHub shows no submitted
+  review of any kind — `reviews: []`, no approval, no requested-changes,
+  no comments — before `bryanseah234` merged it directly. Required CI
+  checks were green, so nothing blocked it structurally; the gap is
+  against `CONTRIBUTING.md`'s Definition of Done, which requires the
+  item be "peer-reviewed by at least one other developer" before it
+  counts as done. Caught retroactively during a 2026-09-19 PR-checklist
+  audit, after the fact — not something to undo on a merged PR, but
+  worth confirming branch protection actually enforces the 1-approval
+  rule, not just CI, before Sprint 2 relies on the same merge path.
 - **Story-point distribution was skewed.** Bryan's re-scored 44 points
   is still ~4–10&times; any teammate's total. Sprint 2 plan holds
   Bryan at &le;10 points of user stories and distributes enabler work.
@@ -161,6 +173,10 @@ whose work concretely follows something from Sprint 1.
 5. **Ship the pending Sprint 1 continuations** (SCRUM-25, 28, 86) if
    the assignees land them today; otherwise slide to Sprint 2 as
    carry-overs.
+6. **Docker documentation action item closed as N/A** (2026-09-20). Docker is
+   not used anywhere in the repository. CI PostgreSQL and Redis services are
+   provisioned by GitHub Actions service containers in
+   `.github/workflows/application-checks.yml`. Nothing to document.
 
 ## Related documents
 

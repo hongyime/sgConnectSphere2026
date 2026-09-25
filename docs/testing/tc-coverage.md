@@ -7,17 +7,20 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **47** (20.4%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **180** (78.3%)
+- Automated (explicit TC_ID in an active test title): **61** (26.5%)
+  - Real-database (`.integration.test` / `.db.test`): **15**
+  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
+  - Live-assertion (other active tests): **46**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **166** (72.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
-| E01 | 32 | 15 | 17 | 0 |
-| E02 | 13 | 10 | 3 | 0 |
-| E03 | 26 | 2 | 24 | 0 |
+| E01 | 32 | 21 | 11 | 0 |
+| E02 | 13 | 12 | 1 | 0 |
+| E03 | 26 | 8 | 18 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -27,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **47** | **180** | **3** |
+| **Total** | **230** | **61** | **166** | **3** |
 
 ## Case-by-case status
 
@@ -37,13 +40,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/e2e/e01.spec.ts: TC_E01S01_01 - Verify that a registered user with valid credentials should sign in and reach the dashboard for their role; tests/e2e/profile.spec.ts: TC_E01S |
-| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_02 - Verify that an incorrect password should keep the user signed out without revealing whether the email is registered |
-| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_03 - Verify that after 5 consecutive incorrect password attempts, the next sign-in attempt should show the account locked and explain how to reset  |
-| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_04 - Verify that requesting a password reset on a locked account should send a reset link to the registered email |
-| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_05 - Verify that setting a new password via a valid reset link should lift the lock and allow sign-in with the new password |
-| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_06 - Verify that an account lockout should be recorded in the activity log with the account and time |
-| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S01_07 - Verify that a sixth sign-in attempt is refused even with the correct password once the account is locked |
+| `TC_E01S01_01` | E01-S01 | Verify that a registered user with valid credentials should sign in and reach th | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_01 — real login normalizes email, reaches organiser events and protects the signed-out route; tests/e2e/profile.spec.ts: TC_E01S01_0 |
+| `TC_E01S01_02` | E01-S01 | Verify that an incorrect password should keep the user signed out without reveal | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_02 — wrong, unknown and inactive accounts show the same error |
+| `TC_E01S01_03` | E01-S01 | Verify that after 5 consecutive incorrect password attempts, the next sign-in at | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_04` | E01-S01 | Verify that requesting a password reset on a locked account should send a reset  | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
+| `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
 | `TC_E01S02_01` | E01-S02 | Verify that an Event Organiser's event list should only show events from their o | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_01 - Verify that an Event Organiser |
 | `TC_E01S02_02` | E01-S02 | Verify that direct access to another client's event via URL/ID should be denied  | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_02 — direct access denial shows no event details and offers a return path; tests/e2e/e01.spec.ts: TC_E01S02_02 - Verify that direct acces |
 | `TC_E01S02_03` | E01-S02 | Verify that events created by colleagues within the same client organisation sho | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_03 TC_E01S02_04 — organisation events show colleague attribution and an accessible empty search state; tests/e2e/e01.spec.ts: TC_E01S02_0 |
@@ -53,7 +56,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E01S03_01` | E01-S03 | Verify that an Attendee viewing a registered event should see only published det | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_01 — attendee sees only published fields for registered events; tests/e2e/e01.spec.ts: TC_E01S03_01 - Verify that an Attendee viewing a |
 | `TC_E01S03_02` | E01-S03 | Verify that an Attendee attempting to open an internal planning screen directly  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_02 — direct internal planning request is sent for auditing and denied; tests/e2e/e01.spec.ts: TC_E01S03_02 - Verify that an Attendee at |
 | `TC_E01S03_03` | E01-S03 | Verify that an Attendee should not see events or events they are not registered  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_03 — unregistered direct event is refused with no event fields; tests/e2e/e01.spec.ts: TC_E01S03_03 - Verify that an Attendee should no |
-| `TC_E01S04_01` | E01-S04 | Verify that valid changes to name, organisation, and contact number should all b | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_01 - Verify that valid changes to name, organisation, and contact number should all be saved and shown the next time the profile is opened; tests/e |
+| `TC_E01S04_01` | E01-S04 | Verify that name, email and contact changes persist while organisation remains r | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only |
 | `TC_E01S04_02` | E01-S04 | Verify that saving a malformed email address should be rejected with the field i | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_02 - Verify that saving a malformed email address should be rejected with the field identified; tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_0 |
 | `TC_E01S04_03` | E01-S04 | Verify that saving an email already registered to another account should be reje | ✅ active | tests/e2e/e01.spec.ts: TC_E01S04_03 - Verify that saving an email already registered to another account should be rejected; tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — f |
 | `TC_E01S04_04` | E01-S04 | Verify that changing the registered email should route future notifications to t | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S04_04 - Verify that changing the registered email should route future notifications to the new address |
@@ -84,8 +87,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
 | `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
 | `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
-| `TC_E02S03_01` | E02-S03 | Verify that selecting predefined accessibility requirements should store them wi | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator |
-| `TC_E02S03_02` | E02-S03 | Verify that a free-text accessibility requirement should be stored and shown to  | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching |
+| `TC_E02S03_01` | E02-S03 | Verify that selecting predefined accessibility requirements should store them wi | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator |
+| `TC_E02S03_02` | E02-S03 | Verify that a free-text accessibility requirement should be stored and shown to  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching |
 | `TC_E02S03_03` | E02-S03 | Verify that recorded predefined accessibility requirements should exclude or fla | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them |
 
 ### E03
@@ -106,12 +109,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser |
 | `TC_E03S03_04` | E03-S03 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_04 - Verify that attempting to reject a request without recording a reason should be blocked |
 | `TC_E03S03_05` | E03-S03 | Verify that a rejected request should show its reason and decision date in plain | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only |
-| `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
-| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
-| `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
-| `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
-| `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
-| `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
+| `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
+| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
+| `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
+| `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
+| `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
+| `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
 | `TC_E03S07_01` | E03-S07 | Verify that an Organiser should be able to directly edit any field while the eve | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved |
 | `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log |
 | `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
@@ -331,6 +334,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
 
+### `backend/tests/deactivation.integration.test.ts`
+
+- PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback
+
+### `backend/tests/deactivation.test.ts`
+
+- eligible attendee: locks identity, withdraws, deactivates, revokes sessions, audits and commits
+- coordinator assignments block without successful audit or mutations
+- coordinator without blocking assignments succeeds
+- already deactivated returns safe conflict without audit
+- endpoint authentication, CSRF, identity and cookie clearing
+
+### `backend/tests/eventLifecycle.integration.test.ts`
+
+- SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
+
 ### `backend/tests/eventLifecycle.test.ts`
 
 - a request with all ten mandatory fields complete is submitted
@@ -343,6 +362,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty HTTP request saved as a draft reports only the three always-mandatory fields
 - a draft with title, attendance and dates but nothing else is saved
 - a draft missing title, attendance or dates is still rejected
+- a predefined accessibility selection alone satisfies the mandatory Accessibility needs field
+- neither free text nor a predefined selection still reports Accessibility needs as missing
+- accessibilityFeatureIds round-trips through create and a subsequent update
 - a draft can be re-saved as a draft with a changed field
 - a draft can be submitted through the same update entry point
 - submitting an update still requires every mandatory field
@@ -352,6 +374,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a draft can be deleted by its owner
 - deleting someone else\
 - deleting an already-submitted request is refused
+- changing status passes the actor and prior status through for the audit entry
+- an illegal status transition is rejected before any audit entry is written
+- changing status to the same status is a no-op that writes no audit entry
+- changing the status of an unknown event is reported as not found
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -361,10 +387,36 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - missing membership and missing event organisation fail closed
 - unauthenticated, unlinked, inactive, locked and other roles cannot query organiser data
+- a role/organisation denial is audited against the screen, not a specific event
 - direct denied access commits actor and attempted event before returning denial
+- organiser event detail includes current status date and status history
 - audit failure never returns event information or a false logged success
+- an organiser can post an accessible event comment and notify its coordinator
+- comment posting refuses an event outside the organiser organisation
+- organiser can update a pre-approval field and the change is audited
+- organiser post-approval restricted edits return the change-request hand-off
+- only the assigned coordinator can edit an approved event
+- assigned coordinator can edit approved event fields and every change is audited
+- organiser can update registration dates before approval
+- organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
+
+### `backend/tests/loginRecovery.integration.test.ts`
+
+- E01-S01 real database, API, registration and recovery acceptance cases
+- registered credentials authenticate; email is normalized; secure cookie and no hash exposure
+- legacy hashes remain readable and wrong passwords are rejected
+- wrong, unknown and inactive accounts have the same response; inactive correct password fails
+- counts each failure, locks on five, writes one audit, refuses correct password; success resets count
+- concurrent incorrect attempts cannot bypass the threshold or duplicate audit
+- reset request API normalizes email and does not expose account eligibility
+- outbox delivers a hashed single-use 15-minute link through the existing provider adapter
+- invalid, expired, inactive and policy-invalid resets are rejected without consuming usable tokens
+- concurrent reset uses token once, invalidates sibling tokens and old sessions
+- queued recovery is not delivered to deactivated or changed recipients
+- reset transaction rolls back token consumption and lock changes on database failure
+- API rejects cross-origin changes and wrong methods
 
 ### `backend/tests/profile.integration.test.ts`
 
@@ -399,6 +451,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
 
+### `backend/tests/venueAccessibility.integration.test.ts`
+
+- E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement
+
+### `backend/tests/venueAccessibility.test.ts`
+
+- matchVenuesByAccessibility returns a venue that supports every requested feature
+- matchVenuesByAccessibility excludes a venue that only partially supports the requested features
+- matchVenuesByAccessibility returns nothing when no venue supports any requested feature
+- matchVenuesByAccessibility with no requested ids matches nothing without querying
+- listAccessibilityFeatures requires a signed-in user
+- listAccessibilityFeatures returns the vocabulary for any signed-in user, including an organiser
+
 ### `backend/tests/venueCatalogue.test.ts`
 
 - validateVenueInput rejects a non-object submission
@@ -406,8 +471,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateVenueInput enforces a positive whole-number capacity
 - validateVenueInput enforces HH:MM operating hours with opens before closes
 - validateVenueInput requires non-empty facility, accessibility and layout lists
+- validateVenueInput rejects layouts that normalize to the same code, even with different casing or spacing
+- validateVenueInput rejects facilities or accessibility features that normalize to the same code
 - validateVenueInput trims text and accepts a fully valid submission
 - catalogue role gates admit only venue staff to maintain venues, and staff or coordinators to view them
+- a catalogue role denial is audited against the screen
 - read operations reject unauthorised viewers before querying the database
 - mutating operations reject anyone but venue staff before opening a transaction
 - createVenue reports validation errors without opening a transaction
@@ -418,6 +486,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues excludes venues whose matching layout capacity is below the required attendance, boundary at exactly-equal
 - searchVenues finds a suitable venue even when it ranks alphabetically past the first 100 name matches
 - searchVenues caps at 100 results drawn from the suitable venues, not the raw name matches
+- searchVenues excludes a venue missing even one requested accessibility feature
+- searchVenues with no accessibility ids requested applies no accessibility filter
+- searchVenues applies the layout and accessibility filters together
 
 ### `backend/tests/verificationEmail.test.ts`
 
@@ -440,6 +511,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
 
+### `frontend/src/features/notifications/NotificationInbox.test.tsx`
+
+- shows a loading state before notifications arrive
+- renders notifications newest first once loaded
+- distinguishes unread notifications from read ones
+- marking a notification as read updates it and removes the action
+
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
 - sends all request fields with same-origin credentials and confirms API success
@@ -451,6 +529,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - initialValues pre-fill the form for reopening a draft
 - clearing the dates disables Save draft too, not just Submit
 - prototype mode simulates submission without hitting the API
+- the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
+- selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `tests/auth-e2e/loginRecovery.spec.ts`
+
+- invalid and expired reset links guide the user back to recovery
 
 ### `tests/e2e/admin.spec.ts`
 
@@ -475,6 +559,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - decision panel requires a reason when rejecting or clarifying
 - final confirmation blocks until readiness is met
 
+### `tests/e2e/deactivation.spec.ts`
+
+- explicit confirmation is required and success redirects to signed-out login
+- blocked coordinator stays on profile and sees assignments requiring reassignment
+
 ### `tests/e2e/landing.spec.ts`
 
 - landing page renders at / and links to login and register
@@ -494,6 +583,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - venue dashboard shows pending and confirmed counts
 - venue inventory lists every venue with capacity
+- inventory search re-fetches venues filtered by the query
+- pressing Enter in the layout inputs adds the layout instead of submitting the form
 - availability calendar filters bookings by selected venue
 - pending booking detail confirms a booking
 

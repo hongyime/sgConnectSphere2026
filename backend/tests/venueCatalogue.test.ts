@@ -216,35 +216,40 @@ test('updateVenueLayout reports validation errors without opening a transaction'
 
 type FakeVenueRow = { id: string; name: string; location: string; max_capacity: number; opens_at: string; closes_at: string; is_active: boolean };
 
-// Simulates the two SQL shapes searchVenues issues, closely enough to prove
-// the *ordering* of filter-then-limit is correct: a plain name search, and
-// (when a layout + attendance filter is given) a join against
-// venue_supported_layouts/room_layouts whose WHERE clause narrows the rows
-// BEFORE `ORDER BY v.name LIMIT 100` runs — this is what makes it safe for
-// a suitable venue to rank past the 100th name match (see the regression
-// test below). A real Postgres slugify-by-code join is mirrored here with a
-// plain lower-case compare, which is close enough for these ASCII labels.
+// Simulates the SQL shapes searchVenues issues, closely enough to prove the
+// *ordering* of filter-then-limit is correct: a plain name search, optionally
+// joined against venue_supported_layouts/room_layouts (layout + attendance)
+// and/or filtered by the accessibility relational-division clause, whose
+// WHERE clause narrows the rows BEFORE `ORDER BY v.name LIMIT 100` runs —
+// this is what makes it safe for a suitable venue to rank past the 100th
+// name match (see the regression tests below). A real Postgres slugify-by-code
+// join is mirrored here with a plain lower-case compare, which is close
+// enough for these ASCII labels. Params are positional in the same order
+// searchVenues() builds them: search, then [code, attendance] if a layout
+// filter is present, then [featureIds] if an accessibility filter is present.
 function makeFakeCatalogueQuery(
   venueRows: FakeVenueRow[],
   layoutsByVenue: Record<string, Array<{ label: string; capacity: number }>>,
+  accessibilityByVenue: Record<string, string[]> = {},
 ): Query {
   const matchesLayout = (venueId: string, code: string, attendance: number) =>
     (layoutsByVenue[venueId] ?? []).some(layout => layout.label.toLowerCase() === code && layout.capacity >= attendance);
+  const matchesAccessibility = (venueId: string, featureIds: string[]) =>
+    featureIds.every(id => (accessibilityByVenue[venueId] ?? []).includes(id));
 
   return async (sql, values) => {
-    if (sql.includes('JOIN venue_supported_layouts') && sql.includes('FROM venues v')) {
-      const [search, code, attendance] = values as [string, string, number];
+    if (sql.includes('FROM venues v') && sql.includes('WHERE')) {
+      const hasLayoutJoin = sql.includes('JOIN venue_supported_layouts');
+      const hasAccessibility = sql.includes('unnest(');
+      const params = [...(values ?? [])];
+      const search = params.shift() as string;
+      const [code, attendance] = hasLayoutJoin ? (params.splice(0, 2) as [string, number]) : [undefined, undefined];
+      const [featureIds] = hasAccessibility ? (params.splice(0, 1) as [string[]]) : [undefined];
+
       const rows = venueRows
         .filter(venue => venue.is_active && venue.name.toLowerCase().includes(search.toLowerCase()))
-        .filter(venue => matchesLayout(venue.id, code, attendance))
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .slice(0, 100);
-      return { rows: rows as never[] };
-    }
-    if (sql.includes('FROM venues v')) {
-      const [search] = values as [string];
-      const rows = venueRows
-        .filter(venue => venue.is_active && venue.name.toLowerCase().includes(search.toLowerCase()))
+        .filter(venue => !hasLayoutJoin || matchesLayout(venue.id, code!, attendance!))
+        .filter(venue => !hasAccessibility || matchesAccessibility(venue.id, featureIds!))
         .sort((a, b) => a.name.localeCompare(b.name))
         .slice(0, 100);
       return { rows: rows as never[] };
@@ -322,4 +327,58 @@ test('searchVenues caps at 100 results drawn from the suitable venues, not the r
   const matches = await searchVenues(makeFakeCatalogueQuery(venueRows, layoutsByVenue), coordinator, '', 'Theatre', 200);
   assert.equal(matches.length, 100);
   assert.deepEqual(matches.map(venue => venue.id), Array.from({ length: 100 }, (_, i) => `v-${i + 31}`));
+});
+
+// --- E02-S03: accessibility filter on searchVenues ---
+
+test('searchVenues excludes a venue missing even one requested accessibility feature', async () => {
+  const venueRows: FakeVenueRow[] = [
+    { id: 'v-full-match', name: 'Grand Ballroom', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+    { id: 'v-partial-match', name: 'Small Room', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+    { id: 'v-no-match', name: 'No Features Here', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+  ];
+  const accessibilityByVenue: Record<string, string[]> = {
+    'v-full-match': ['wheelchair-access', 'hearing-loop'],
+    'v-partial-match': ['wheelchair-access'],
+    'v-no-match': [],
+  };
+
+  const matches = await searchVenues(
+    makeFakeCatalogueQuery(venueRows, {}, accessibilityByVenue), coordinator, '', undefined, undefined,
+    ['wheelchair-access', 'hearing-loop'],
+  );
+  assert.deepEqual(matches.map(venue => venue.id), ['v-full-match']);
+});
+
+test('searchVenues with no accessibility ids requested applies no accessibility filter', async () => {
+  const venueRows: FakeVenueRow[] = [
+    { id: 'v-1', name: 'Grand Ballroom', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+  ];
+  const matches = await searchVenues(makeFakeCatalogueQuery(venueRows, {}, {}), coordinator, '', undefined, undefined, []);
+  assert.deepEqual(matches.map(venue => venue.id), ['v-1']);
+});
+
+// Combined with the existing layout/attendance filter, since both can be
+// requested together (an organiser's event has both a layout preference and
+// accessibility needs) - proves the two conditions AND together rather than
+// one silently overriding the other.
+test('searchVenues applies the layout and accessibility filters together', async () => {
+  const venueRows: FakeVenueRow[] = [
+    { id: 'v-both', name: 'Grand Ballroom', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+    { id: 'v-layout-only', name: 'Small Room', location: '', max_capacity: 300, opens_at: '08:00', closes_at: '22:00', is_active: true },
+  ];
+  const layoutsByVenue = {
+    'v-both': [{ label: 'Theatre', capacity: 200 }],
+    'v-layout-only': [{ label: 'Theatre', capacity: 200 }],
+  };
+  const accessibilityByVenue = {
+    'v-both': ['wheelchair-access'],
+    'v-layout-only': [],
+  };
+
+  const matches = await searchVenues(
+    makeFakeCatalogueQuery(venueRows, layoutsByVenue, accessibilityByVenue), coordinator, '', 'Theatre', 150,
+    ['wheelchair-access'],
+  );
+  assert.deepEqual(matches.map(venue => venue.id), ['v-both']);
 });

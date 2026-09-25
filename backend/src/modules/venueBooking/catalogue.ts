@@ -4,6 +4,7 @@ import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { insertNotificationDelivery } from '../notificationDispatcher/postgres.js';
+import { accessibilityMatchCondition } from './matchAccessibility.js';
 
 export type VenueLayoutInput = { label: string; capacity: number };
 export type VenueInput = {
@@ -235,26 +236,41 @@ export async function searchVenues(
   search = '',
   requiredLayout?: string,
   requiredAttendance?: number,
+  requiredAccessibilityFeatureIds?: string[],
 ) {
   await requireCatalogueViewer(query, user);
   const hasLayoutFilter = Boolean(requiredLayout) && typeof requiredAttendance === 'number';
+  const accessibilityIds = (requiredAccessibilityFeatureIds ?? []).filter(Boolean);
+  const hasAccessibilityFilter = accessibilityIds.length > 0;
 
-  // The layout/attendance suitability check runs in SQL, before LIMIT 100,
-  // not as a JS filter afterward — otherwise a suitable venue ranked past
-  // the 100th alphabetical name match would be cut by the LIMIT before its
-  // suitability was ever checked (E05-S02 Scenario 2).
-  const result = hasLayoutFilter
-    ? await query<VenueRecord>(`
-      SELECT ${venueProjection} FROM venues v
-      JOIN venue_supported_layouts vl ON vl.venue_id = v.id
-      JOIN room_layouts r ON r.id = vl.layout_id
-      WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
-        AND r.code = $2 AND vl.capacity >= $3
-      ORDER BY v.name LIMIT 100
-    `, [search.slice(0, 240), slugify(requiredLayout!), requiredAttendance])
-    : await query<VenueRecord>(`SELECT ${venueProjection} FROM venues v
-      WHERE v.is_active AND strpos(lower(v.name), lower($1)) > 0
-      ORDER BY v.name LIMIT 100`, [search.slice(0, 240)]);
+  // Every suitability check below runs in SQL, before LIMIT 100, not as a JS
+  // filter afterward — otherwise a suitable venue ranked past the 100th
+  // alphabetical name match would be cut by the LIMIT before its suitability
+  // was ever checked (E05-S02 Scenario 2; the same reasoning applies to the
+  // E02-S03 accessibility filter added here).
+  const params: unknown[] = [search.slice(0, 240)];
+  const conditions = ['v.is_active', 'strpos(lower(v.name), lower($1)) > 0'];
+  let joins = '';
+
+  if (hasLayoutFilter) {
+    joins += ` JOIN venue_supported_layouts vl ON vl.venue_id = v.id JOIN room_layouts r ON r.id = vl.layout_id`;
+    params.push(slugify(requiredLayout!));
+    conditions.push(`r.code = $${params.length}`);
+    params.push(requiredAttendance);
+    conditions.push(`vl.capacity >= $${params.length}`);
+  }
+
+  if (hasAccessibilityFilter) {
+    params.push(accessibilityIds);
+    conditions.push(accessibilityMatchCondition(params.length));
+  }
+
+  const result = await query<VenueRecord>(`
+    SELECT ${venueProjection} FROM venues v
+    ${joins}
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY v.name LIMIT 100
+  `, params);
 
   return Promise.all(result.rows.map(venue => attachDetails(query, venue)));
 }

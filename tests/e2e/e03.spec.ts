@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 // E03 - 26 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -349,11 +349,21 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   The event shows "Approved" and "Reached on 10 September 2026" in plain, human-readable language
    */
-  test.fixme("TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    void page;
+  test("TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'approved',
+        status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('heading', { name: 'Annual Tech Summit' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Current status' }).locator('..')).toContainText('Approved');
+    await expect(page.getByText('Reached on 10 September 2026')).toBeVisible();
   });
 
   /**
@@ -370,12 +380,22 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   The event now shows status "Planning", and the event history section shows an entry recording the change from Approved to Planning
    */
-  test.fixme("TC_E03S05_02 - Verify that when an event's status changes, the new status should be shown and the change should appear in the event history", async ({ page }) => {
-    // Steps from the specification:
-    // 1. As coordinator_1@connectsphere.com, submit the first venue booking request for one of "Annual Tech Summit"'s events (this is what moves an Approved event to Planning, per E06-S03)
-    // 2. Log in as organiser_a@clienta.com and open event "Annual Tech Summit"
-    // 3. Check the current status and the event history section
-    void page;
+  test("TC_E03S05_02 - Verify that when an event's status changes, the new status should be shown and the change should appear in the event history", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'planning',
+        status_changed_at: '2026-09-11T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [{
+          occurred_at: '2026-09-11T00:00:00.000Z', old_value: 'approved', new_value: 'planning',
+        }],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('heading', { name: 'Current status' }).locator('..')).toContainText('Planning');
+    await expect(page.getByRole('heading', { name: 'Status history' }).locator('..')).toContainText('Approved → Planning');
   });
 
   /**
@@ -392,12 +412,29 @@ test.describe("E03-S05", () => {
    * Expected result:
    *   All 4 past status changes are listed in order with their dates, matching the entries recorded in the activity log (E14-S02)
    */
-  test.fixme("TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Open the "Status History" section
-    void page;
+  test("TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({
+      status: 200,
+      json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit',
+        description: 'A summit for the tech community', status: 'planning',
+        status_changed_at: '2026-09-12T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+        creator_name: 'Organiser A', statusHistory: [
+          { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
+          { occurred_at: '2026-09-05T00:00:00.000Z', old_value: 'under_review', new_value: 'approved' },
+          { occurred_at: '2026-09-12T00:00:00.000Z', old_value: 'approved', new_value: 'planning' },
+        ],
+      } },
+    }));
+
+    await page.goto('/events/EVT-ANNUAL');
+    const history = page.getByRole('heading', { name: 'Status history' }).locator('..');
+    await expect(history).toContainText('Submitted → Under Review');
+    await expect(history).toContainText('Under Review → Approved');
+    await expect(history).toContainText('Approved → Planning');
+    await expect(history).toContainText('1 September 2026');
+    await expect(history).toContainText('5 September 2026');
+    await expect(history).toContainText('12 September 2026');
   });
 
 });
@@ -418,12 +455,24 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The comment appears on the event showing "organiser_a@clienta.com" and the posting time; coordinator_1@connectsphere.com receives a notification of the new comment
    */
-  test.fixme("TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Enter the comment "Can we confirm the AV setup by Friday?" and click "Post"
-    void page;
+  test("TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator", async ({ page }) => {
+    const comments: { id: string; body: string; created_at: string; author_name: string; author_email: string }[] = [];
+    await page.route('**/api/events?*', async route => {
+      if (route.request().method() === 'POST') {
+        const payload = route.request().postDataJSON() as { body: string };
+        comments.push({ id: 'comment-new', body: payload.body, created_at: '2026-09-09T15:00:00.000Z', author_name: 'Organiser A', author_email: 'organiser_a@clienta.com' });
+        await route.fulfill({ status: 201, json: { comment: comments.at(-1) } });
+        return;
+      }
+      await route.fulfill({ status: 200, json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'Summit', status: 'approved', status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', creator_name: 'Organiser A', comments, canPostComment: true,
+      } } });
+    });
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByLabel('Add a comment').fill('Can we confirm the AV setup by Friday?');
+    await page.getByRole('button', { name: 'Post comment' }).click();
+    await expect(page.getByText('Can we confirm the AV setup by Friday?')).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Can we confirm the AV setup by Friday?' }).getByText(/Organiser A/)).toBeVisible();
   });
 
   /**
@@ -440,12 +489,21 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The 3 comments are displayed in chronological order (09:00, then 10:30, then 14:00)
    */
-  test.fixme("TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com or coordinator_1@connectsphere.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Review the comments section
-    void page;
+  test("TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ status: 200, json: { event: {
+      id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'Summit', status: 'approved', status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', creator_name: 'Organiser A', canPostComment: true,
+      comments: [
+        { id: 'c1', body: 'Morning update', created_at: '2026-09-09T09:00:00+08:00', author_name: 'Coordinator A', author_email: 'coord_a@connectsphere.com' },
+        { id: 'c2', body: 'Midday update', created_at: '2026-09-09T10:30:00+08:00', author_name: 'Organiser A', author_email: 'organiser_a@clienta.com' },
+        { id: 'c3', body: 'Afternoon update', created_at: '2026-09-09T14:00:00+08:00', author_name: 'Coordinator A', author_email: 'coord_a@connectsphere.com' },
+      ],
+    } } }));
+    await page.goto('/events/EVT-ANNUAL');
+    const comments = page.getByRole('heading', { name: 'Comments' }).locator('..').getByRole('listitem');
+    await expect(comments).toHaveCount(3);
+    await expect(comments.nth(0)).toContainText('Morning update');
+    await expect(comments.nth(1)).toContainText('Midday update');
+    await expect(comments.nth(2)).toContainText('Afternoon update');
   });
 
   /**
@@ -462,11 +520,11 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The comment action is refused; organiser_b@clienta.com cannot post on an event they do not have access to
    */
-  test.fixme("TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_b@clienta.com
-    // 2. Attempt to open event "Annual Tech Summit" and post a comment
-    void page;
+  test("TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ status: 403, json: { error: 'Access denied. This event is not available to your organisation.' } }));
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('alert')).toContainText('Access denied');
+    await expect(page.getByLabel('Add a comment')).toHaveCount(0);
   });
 
 });

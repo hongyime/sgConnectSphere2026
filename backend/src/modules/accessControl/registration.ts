@@ -1,4 +1,4 @@
-import { hashPassword } from './password.js';
+import { hashPassword, passwordPolicyErrors } from './password.js';
 
 export type RegistrationInput = {
   full_name: string;
@@ -39,11 +39,7 @@ export function validateRegistration(body: unknown):
   }
   if (!errors.password) {
     const password = data.password as string;
-    const messages = [];
-    if ([...password].length < 12) messages.push('Password must be at least 12 characters.');
-    if (!/[A-Z]/.test(password)) messages.push('Password must include at least one uppercase letter.');
-    if (!/[0-9]/.test(password)) messages.push('Password must include at least one number.');
-    if (!/[\p{P}\p{S}]/u.test(password)) messages.push('Password must include at least one special character.');
+    const messages = passwordPolicyErrors(password);
     if (messages.length) errors.password = messages;
   }
   if (Object.keys(errors).length) return { errors };

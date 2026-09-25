@@ -51,7 +51,7 @@ export async function login(pool: Pool, email: string, password: string) {
         const nextCount = user.failed_login_count + 1;
         if (nextCount >= LOCKOUT_THRESHOLD) {
           await db.query(
-            `UPDATE users SET failed_login_count = $1, locked_until = now() + ($2 || ' minutes')::interval WHERE id = $3`,
+            `UPDATE users SET failed_login_count = $1, locked_until = clock_timestamp() + ($2 || ' minutes')::interval WHERE id = $3`,
             [nextCount, String(LOCKOUT_MINUTES), user.id],
           );
           // E14-S02: the lockout is a significant action and must appear in
@@ -68,7 +68,7 @@ export async function login(pool: Pool, email: string, password: string) {
         }
       }
       await db.query('COMMIT');
-      throw new AccessError(401, 'Unable to sign in. Check your credentials or contact your administrator.');
+      throw new AccessError(401, 'Invalid email or password. After five incorrect attempts, sign-in is locked for 30 minutes. Reset your password to regain access sooner.');
     }
 
     // Successful sign-in clears any accumulated counter and any expired

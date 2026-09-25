@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AlertTriangle,
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   Save,
   Send,
 } from 'lucide-react';
+import { listAccessibilityFeatures, type AccessibilityFeature } from './accessibilityApi';
 
 // Must match backend/src/modules/eventLifecycle/service.ts NONE_REQUIRED.
 const NONE_REQUIRED = 'none_required';
@@ -25,6 +26,11 @@ type DraftEvent = {
   expectedAttendance: string;
   venueRequirements: string;
   accessibilityNeeds: string;
+  // E02-S03: predefined accessibility_features ids selected from the live
+  // vocabulary, distinct from the free-text accessibilityNeeds above -
+  // which is stored and shown to the Coordinator but excluded from
+  // automated venue matching.
+  accessibilityFeatureIds: string[];
   equipmentRequirements: string;
   layoutPreference: string;
   registrationSetup: string;
@@ -55,6 +61,7 @@ const initialDraft: DraftEvent = {
   expectedAttendance: '180',
   venueRequirements: 'Seminar room with theatre seating',
   accessibilityNeeds: 'Wheelchair access and front-row reserved seats',
+  accessibilityFeatureIds: [],
   equipmentRequirements: 'Projector, 2 wireless microphones, livestream support',
   layoutPreference: '',
   registrationSetup: '',
@@ -62,7 +69,7 @@ const initialDraft: DraftEvent = {
 
 const OPTIONAL_FIELDS: OptionalField[] = ['equipmentRequirements', 'layoutPreference', 'registrationSetup'];
 
-const requiredFields: { key: FieldKey; label: string; optional?: boolean }[] = [
+const requiredFields: { key: Exclude<FieldKey, 'accessibilityFeatureIds'>; label: string; optional?: boolean }[] = [
   { key: 'eventName', label: 'Event name' },
   { key: 'description', label: 'Description' },
   { key: 'purpose', label: 'Purpose' },
@@ -80,6 +87,11 @@ function isFieldComplete(draft: DraftEvent, field: (typeof requiredFields)[numbe
   // Match the API's positive-integer rule before enabling submission.
   if (field.key === 'expectedAttendance') {
     return Number.isInteger(Number(value)) && Number(value) > 0;
+  }
+  if (field.key === 'accessibilityNeeds') {
+    // Satisfied by a predefined checkbox OR free text - either records a
+    // real accessibility requirement (E02-S03).
+    return value.length > 0 || draft.accessibilityFeatureIds.length > 0;
   }
   if (field.optional && value === NONE_REQUIRED) {
     return true;
@@ -151,6 +163,18 @@ export function OrganiserRequestFlow({
   const [draft, setDraft] = useState<DraftEvent>(() => ({ ...initialDraft, ...initialValues }));
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const [draftSaveState, setDraftSaveState] = useState<DraftSaveState>({ status: 'idle' });
+  // E02-S03: the predefined checklist is sourced live, not hardcoded. A
+  // failed fetch just leaves the checklist empty - free text is always
+  // available as a fallback, and prototype mode never needs a real list.
+  const [accessibilityFeatures, setAccessibilityFeatures] = useState<AccessibilityFeature[]>([]);
+  useEffect(() => {
+    if (prototype) return;
+    let cancelled = false;
+    listAccessibilityFeatures().then((result) => {
+      if (!cancelled && result.ok) setAccessibilityFeatures(result.features);
+    });
+    return () => { cancelled = true; };
+  }, [prototype]);
   const missingFields = useMemo(() => getMissingFields(draft), [draft]);
   const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
@@ -163,6 +187,15 @@ export function OrganiserRequestFlow({
 
   const setNoneRequired = (key: OptionalField, checked: boolean) => {
     setDraft(updateDraft(draft, key, checked ? NONE_REQUIRED : ''));
+  };
+
+  const toggleAccessibilityFeature = (featureId: string, checked: boolean) => {
+    setDraft((current) => ({
+      ...current,
+      accessibilityFeatureIds: checked
+        ? [...current.accessibilityFeatureIds, featureId]
+        : current.accessibilityFeatureIds.filter((id) => id !== featureId),
+    }));
   };
 
   const submitRequest = async () => {
@@ -198,6 +231,7 @@ export function OrganiserRequestFlow({
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
           accessibilityNote: draft.accessibilityNeeds,
+          accessibilityFeatureIds: draft.accessibilityFeatureIds,
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -262,6 +296,7 @@ export function OrganiserRequestFlow({
           expectedAttendance: Number(draft.expectedAttendance),
           venueRequirements: draft.venueRequirements,
           accessibilityNote: draft.accessibilityNeeds,
+          accessibilityFeatureIds: draft.accessibilityFeatureIds,
           equipmentRequirements: draft.equipmentRequirements,
           layoutPreference: draft.layoutPreference,
           registrationSetup: draft.registrationSetup,
@@ -365,11 +400,42 @@ export function OrganiserRequestFlow({
               value={draft.venueRequirements}
               onChange={(value) => setDraft(updateDraft(draft, 'venueRequirements', value))}
             />
-            <TextArea
-              label="Accessibility needs"
-              value={draft.accessibilityNeeds}
-              onChange={(value) => setDraft(updateDraft(draft, 'accessibilityNeeds', value))}
-            />
+            <div className="field-control field-wide accessibility-fields">
+              <div className="accessibility-block">
+                <label>Accessibility requirements</label>
+                <p className="field-hint">
+                  Predefined requirements used to automatically match suitable venues.
+                </p>
+                <div className="field-checkbox-group" role="group" aria-label="Predefined accessibility requirements">
+                  {accessibilityFeatures.map((feature) => {
+                    const id = slugify(`accessibility-${feature.label}`);
+                    return (
+                      <label key={feature.id} htmlFor={id} className="field-checkbox">
+                        <input
+                          id={id}
+                          type="checkbox"
+                          checked={draft.accessibilityFeatureIds.includes(feature.id)}
+                          onChange={(event) => toggleAccessibilityFeature(feature.id, event.target.checked)}
+                        />
+                        {feature.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="accessibility-block">
+                <label htmlFor="request-accessibility-needs">Accessibility needs</label>
+                <p className="field-hint">
+                  Anything not covered above. Shown to the Coordinator, but not used for automatic venue matching.
+                </p>
+                <textarea
+                  id="request-accessibility-needs"
+                  value={draft.accessibilityNeeds}
+                  rows={3}
+                  onChange={(event) => setDraft(updateDraft(draft, 'accessibilityNeeds', event.target.value))}
+                />
+              </div>
+            </div>
             <OptionalTextArea
               label="Equipment requirements"
               value={draft.equipmentRequirements}

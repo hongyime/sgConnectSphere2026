@@ -14,6 +14,9 @@ export function ProfileForm() {
   const [busy, setBusy] = useState(true);
   const [signIn, setSignIn] = useState(false);
   const [revision, setRevision] = useState(0);
+  const [confirming, setConfirming] = useState(false);
+  const [deactivationError, setDeactivationError] = useState('');
+  const [blockingEvents, setBlockingEvents] = useState<{ id: string; title: string; event_code: string | null }[]>([]);
   const [saved, setSaved] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -50,27 +53,84 @@ export function ProfileForm() {
     finally { setBusy(false); }
   }
 
+  async function deactivate() {
+    if (busy) return;
+    setBusy(true); setSaved(false); setDeactivationError(''); setBlockingEvents([]);
+    try {
+      const response = await fetch('/api/account/profile', {
+        method: 'DELETE', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setDeactivationError(data.error || 'Unable to deactivate your account. Please try again.');
+        setBlockingEvents(data.events ?? []);
+        return;
+      }
+      setProfile(undefined); setSignIn(true);
+      // Full navigation drops in-memory authenticated views; the server revoked
+      // all sessions and expired the HttpOnly cookie before returning success.
+      window.location.replace('/login');
+    } catch { setDeactivationError('Unable to reach the server. Please try again.'); }
+    finally { setBusy(false); }
+  }
+
   return <main className="registration-page">
-    <a href="/">ConnectSphere</a><h1>My Profile</h1>
-    <div role="alert">{errors.form?.map(message => <p key={message}>{message}</p>)}</div>
+    <a href="/" className="registration-brand">ConnectSphere</a>
+    <header className="page-heading">
+      <p className="eyebrow">Account</p>
+      <h1>My Profile</h1>
+    </header>
+    {errors.form?.length ? <div role="alert" className="login-error">{errors.form.map(message => <p key={message}>{message}</p>)}</div> : null}
     {busy && <p role="status">Loading...</p>}
-    {saved && <p role="status">Your profile has been saved.</p>}
-    {signIn ? <form onSubmit={submit}>
-      <h2>Sign in</h2>
-      <label>Email<input name="email" type="email" autoComplete="username" required /></label>
-      <label>Password<input name="password" type="password" autoComplete="current-password" required /></label>
-      <button disabled={busy}>Sign in</button>
-    </form> : profile ? <form onSubmit={submit} noValidate>
-      <p>Name, email and contact number are required.</p>
-      {fields.map(field => <div className="registration-field" key={field.name}>
-        <label htmlFor={`profile-${field.name}`}>{field.label}</label>
-        <input {...field} id={`profile-${field.name}`} required disabled={busy}
-          value={profile[field.name] ?? ''} onChange={event => { setSaved(false); setProfile({ ...profile, [field.name]: event.target.value }); }}
-          aria-invalid={Boolean(errors[field.name])} aria-describedby={`${field.name}-errors`} />
-        <div id={`${field.name}-errors`} aria-live="polite">{errors[field.name]?.map(message => <p key={message}>{message}</p>)}</div>
-      </div>)}
-      {profile.organisation_name && <p>Organisation: {profile.organisation_name}</p>}
-      <button className="primary-action" disabled={busy}>Save profile</button>
-    </form> : !busy && <button onClick={() => setRevision(value => value + 1)}>Try again</button>}
+    {saved && <p role="status" className="profile-saved-banner">Your profile has been saved.</p>}
+    {signIn ? <form onSubmit={submit} className="card">
+      <div className="form-section">
+        <h2>Sign in</h2>
+        <div className="registration-field"><label>Email<input name="email" type="email" autoComplete="username" required /></label></div>
+        <div className="registration-field"><label>Password<input name="password" type="password" autoComplete="current-password" required /></label></div>
+      </div>
+      <div className="form-actions">
+        <button className="primary-action" disabled={busy}>Sign in</button>
+      </div>
+    </form> : profile ? <form onSubmit={submit} noValidate className="card">
+      <div className="form-section">
+        <h2>Your details</h2>
+        <p className="profile-hint">Name, email and contact number are required.</p>
+        {fields.map(field => <div className="registration-field" key={field.name}>
+          <label htmlFor={`profile-${field.name}`}>{field.label}</label>
+          <input {...field} id={`profile-${field.name}`} required disabled={busy}
+            value={profile[field.name] ?? ''} onChange={event => { setSaved(false); setProfile({ ...profile, [field.name]: event.target.value }); }}
+            aria-invalid={Boolean(errors[field.name])} aria-describedby={`${field.name}-errors`} />
+          <div id={`${field.name}-errors`} aria-live="polite">{errors[field.name]?.map(message => <p key={message} className="field-error">{message}</p>)}</div>
+        </div>)}
+        {profile.organisation_name && (
+          <div className="profile-organisation">
+            <p>Organisation: {profile.organisation_name}</p>
+            <small className="profile-hint">Organisation changes require admin approval — contact your Coordinator to update this.</small>
+          </div>
+        )}
+      </div>
+      <div className="form-actions">
+        <button className="primary-action" disabled={busy}>Save profile</button>
+      </div>
+    </form> : !busy && <button className="secondary-action" onClick={() => setRevision(value => value + 1)}>Try again</button>}
+    {profile && !signIn && <section className="card profile-danger-zone" aria-label="Account deactivation">
+      <div className="form-section">
+        <h2>Deactivate Account</h2>
+        {!confirming ? <button type="button" className="profile-danger-button" disabled={busy} onClick={() => setConfirming(true)}>Deactivate Account</button> : <>
+          <p>Your account will be disabled and you will be signed out. Your historical records will be retained.
+            Upcoming registrations and waitlist entries will be withdrawn even after the withdrawal deadline.</p>
+          <div className="form-actions">
+            <button type="button" className="secondary-action" disabled={busy} onClick={() => { setConfirming(false); setDeactivationError(''); setBlockingEvents([]); }}>Cancel deactivation</button>
+            <button type="button" className="profile-danger-button" disabled={busy} onClick={() => void deactivate()}>Confirm deactivation</button>
+          </div>
+        </>}
+        {deactivationError && <p role="alert" className="field-error">{deactivationError}</p>}
+        {blockingEvents.length > 0 && <ul aria-label="Events requiring reassignment" className="validation-list">
+          {blockingEvents.map(event => <li key={event.id}>{event.event_code ? `${event.event_code}: ` : ''}{event.title}</li>)}
+        </ul>}
+      </div>
+    </section>}
   </main>;
 }

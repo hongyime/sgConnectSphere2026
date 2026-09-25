@@ -306,6 +306,7 @@ erDiagram
     NOTIFICATION_DELIVERIES {
         uuid id PK
         uuid notification_id FK
+        text delivery_purpose "notification or password_reset; reset link generated in worker memory"
         notification_channel channel "in_app or email"
         delivery_status delivery_status "queued, sent, failed"
         timestamptz sent_at
