@@ -6,6 +6,25 @@ review of SCRUM-107/108 (held out from the Jira cleanup), and PR #121's
 review by Jining. No implementation-mode carryover to other Sprint 2
 stories unless Bryan asks directly.
 
+## Frontend / Scrum Master track (Amareet) -- Sprint 2
+
+Updated 2026-09-25. Backend work on these stories is Aaron / Jining /
+Le Xin's scope; this track builds frontend against mocks until the APIs land.
+
+- **PR #123** (`feature/sprint2-notifications`) -- E11-S01 notification
+  inbox, frontend-only with mocked data, pending the backend API. CI green on
+  `14f52ff` after regenerating `docs/testing/tc-coverage.md`; awaiting
+  review approval.
+- **Overlap with PR #127** (Bryan, `feature/scaffold-all-screens`): both
+  edit `frontend/src/App.tsx` and both register a `/notifications` route.
+  #127's `NotificationCenter` placeholder notes it defers to #123. Merge
+  order is to be agreed between Amareet and Bryan before either merges;
+  whichever lands second resolves the `App.tsx` conflict.
+- **Agreed Sprint 2 frontend build order:** E11-S01 (in review, #123) ->
+  E05-S04 -> E05-S03 -> E06-S01 -> E03-S02 + E03-S03 (paired) -> E03-S01 ->
+  E03-S06 -> E03-S07 (Scenario 4 deferred, blocked on E10-S01). E03-S05 is
+  already satisfied by #112 on `main`.
+
 Progress (most recent first):
 
 - **Standardized 24 Jira ticket titles** that used `[E01-S05] Title`
