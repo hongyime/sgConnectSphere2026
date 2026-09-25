@@ -32,7 +32,7 @@ import {
 } from './features/admin/Admin';
 import { RoleHome } from './features/access/RoleHome';
 import {
-  NotificationCenter, AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading,
+  AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading,
 } from './features/operations/Operations';
 import {
   AlertTriangle,
@@ -1079,7 +1079,6 @@ function App() {
       <Route path="/admin/reports" element={<ReportingDashboard />} />
       <Route path="/admin/digest" element={<DigestPreferences />} />
       <Route path="/admin/recommendations" element={<Recommendations />} />
-      <Route path="/notifications" element={<NotificationCenter />} />
       <Route path="/audit" element={<AuditHistory />} />
       <Route path="/comments" element={<CommentsActivity />} />
       <Route path="/search" element={<SearchFilter />} />

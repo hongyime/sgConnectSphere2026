@@ -2,24 +2,6 @@
 // Each export corresponds to one screen in the roleAreas 'operations' area (Shared Operations).
 import './operations.css';
 
-// SCAFFOLD: replace with real E11-S01 implementation. Safe to delete/rewrite entirely.
-// Note: Amareet is building the real notification inbox in PR #123 — coordinate before replacing.
-export function NotificationCenter() {
-  return (
-    <main className="operations-page" data-scaffold="true">
-      <header>
-        <p className="eyebrow">Shared operations</p>
-        <h1>Notification centre</h1>
-      </header>
-      <p>
-        Inbox of unread notifications with delivery status and links to related
-        items. Filters by role and event. Redis-backed outbox jobs drained by
-        cron (E11-S01).
-      </p>
-    </main>
-  );
-}
-
 // SCAFFOLD: replace with real E14-S02 implementation. Safe to delete/rewrite entirely.
 export function AuditHistory() {
   return (
