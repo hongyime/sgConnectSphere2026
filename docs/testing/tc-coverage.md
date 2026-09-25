@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **61** (26.5%)
+- Automated (explicit TC_ID in an active test title): **66** (28.7%)
   - Real-database (`.integration.test` / `.db.test`): **15**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **46**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **166** (72.2%)
+  - Live-assertion (other active tests): **51**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **161** (70.0%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 26 | 8 | 18 | 0 |
-| E05 | 24 | 15 | 9 | 0 |
+| E05 | 24 | 20 | 4 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **61** | **166** | **3** |
+| **Total** | **230** | **66** | **161** | **3** |
 
 ## Case-by-case status
 
@@ -141,11 +141,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
-| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_01 - Verify that opening a venue |
-| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event |
-| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar |
-| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar |
-| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time |
+| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_01 - Verify that opening a venue |
+| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event |
+| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar |
+| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar |
+| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time |
 | `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates |
 | `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_03 - Verify that creating a block over an upcoming event |
@@ -542,6 +542,29 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
 
+### `frontend/src/features/venue/VenueCalendar.test.tsx`
+
+- loads the current month for the first venue
+- labels free, tentative, confirmed and blocked entries distinctly
+- shows a maintenance block with its reason and never as a booking
+- shows an unavailable period without any event details
+- expands a permitted booking to show event, code, date and time
+- navigates to the next month and then to a custom range
+- refuses a reversed or oversized range without calling the API
+- splits a multi-day block across each day it covers
+- opens the venue named in a coordinator calendar link
+- reloads when a different venue is chosen
+- notes that a retired venue offers no free time
+- shows a sign-in message on 403 and retries on request
+- does not present a plain venue record as an empty calendar
+
+### `frontend/src/features/venue/calendarDates.test.ts`
+
+- month bounds cover leap and non-leap Februaries
+- shifting months crosses year boundaries
+- Singapore day keys and times use UTC+8 regardless of browser timezone
+- day counts are inclusive and invalid dates are rejected
+
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
 - invalid and expired reset links guide the user back to recovery
@@ -595,7 +618,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - venue inventory lists every venue with capacity
 - inventory search re-fetches venues filtered by the query
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
-- availability calendar filters bookings by selected venue
+- availability calendar loads the selected venue from the API
 - pending booking detail confirms a booking
 
 ### `tests/notifications/postgres.test.ts`

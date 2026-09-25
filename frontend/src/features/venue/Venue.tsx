@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, Building2, CalendarClock, CheckCircle2, Search } from 'lucide-react';
 import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
 import { listVenues, retireVenue, type BlockingBooking, type Venue } from './venueApi';
+import { VenueCalendar } from './VenueCalendar';
 import './venue.css';
 
 const statusTone: Record<BookingStatus, string> = {
@@ -176,49 +177,10 @@ export function VenueInventory() {
   );
 }
 
+// E05-S03: the live calendar replaced the fixture table that used to live
+// here. The export name is kept so the /venue/availability route is unchanged.
 export function AvailabilityCalendar() {
-  const [selectedVenue, setSelectedVenue] = useState(venues[0].id);
-  const cellsForVenue = useMemo(
-    () => bookings.filter(booking => booking.venueId === selectedVenue),
-    [selectedVenue],
-  );
-  const conflicts = cellsForVenue.filter(booking => booking.status === 'Blocked').length;
-  return (
-    <main className="venue-page">
-      <header className="venue-heading">
-        <p className="eyebrow">Venue staff</p>
-        <h1>Availability calendar</h1>
-      </header>
-      <label className="venue-select">
-        <span>Venue</span>
-        <select value={selectedVenue} onChange={event => setSelectedVenue(event.target.value)}>
-          {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
-        </select>
-      </label>
-      {conflicts > 0 ? (
-        <p className="venue-alert"><AlertTriangle size={16} aria-hidden="true" /> {conflicts} conflict(s) on this venue.</p>
-      ) : (
-        <p className="venue-ok"><CheckCircle2 size={16} aria-hidden="true" /> No conflicts on this venue.</p>
-      )}
-      <table className="venue-table">
-        <thead><tr><th>Booking</th><th>Event</th><th>Date</th><th>Window</th><th>Status</th></tr></thead>
-        <tbody>
-          {cellsForVenue.map(booking => (
-            <tr key={booking.id}>
-              <td><Link to={`/venue/bookings/${booking.id}`}>{booking.id}</Link></td>
-              <td>{booking.eventTitle}</td>
-              <td>{booking.date}</td>
-              <td>{booking.window}</td>
-              <td><span className={`status-pill status-${statusTone[booking.status]}`}>{booking.status}</span></td>
-            </tr>
-          ))}
-          {cellsForVenue.length === 0 ? (
-            <tr><td colSpan={5}>No bookings held for this venue in the current window.</td></tr>
-          ) : null}
-        </tbody>
-      </table>
-    </main>
-  );
+  return <VenueCalendar audience="venue" />;
 }
 
 export function PendingBookingDetail() {
