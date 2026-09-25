@@ -52,7 +52,8 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       FROM audit_logs
       WHERE event_id = $1 AND action = 'status_changed'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
-    return { ...event, statusHistory: history.rows };
+    const comments = await listEventComments(query, event.id);
+    return { ...event, statusHistory: history.rows, comments, canPostComment: user.role === 'event_organiser' };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
@@ -61,6 +62,33 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     FROM (SELECT 1) anchor LEFT JOIN events e ON e.id::text = $2 OR e.event_code = $2`,
   [user.id, identifier]);
   throw new AccessError(403, 'Access denied. This event is not available to your organisation.');
+}
+
+export async function listEventComments(query: Query, eventId: string) {
+  return (await query(`SELECT t.id, t.body, t.created_at, u.full_name AS author_name, u.email AS author_email
+    FROM event_threads t JOIN users u ON u.id = t.author_id
+    WHERE t.event_id = $1 AND t.type = 'comment'
+    ORDER BY t.created_at ASC, t.id ASC`, [eventId])).rows;
+}
+
+export async function createEventComment(query: Query, user: AuthenticatedUser, identifier: string, body: unknown) {
+  const comment = typeof body === 'string' ? body.trim() : '';
+  if (!comment || comment.length > 2000) throw new AccessError(400, 'Comment must be between 1 and 2000 characters.');
+  const org = await requireOrganiser(query, user, 'events');
+  const eventResult = await query<{ id: string; coordinator_id: string | null }>(
+    `SELECT e.id, e.coordinator_id FROM events e
+     WHERE e.client_org_id = $1 AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier]);
+  const event = eventResult.rows[0];
+  if (!event) throw new AccessError(403, 'Access denied. This event is not available to your organisation.');
+  const commentResult = await query(`INSERT INTO event_threads (event_id, author_id, type, body)
+    VALUES ($1, $2, 'comment', $3) RETURNING id, body, created_at`, [event.id, user.id, comment]);
+  if (event.coordinator_id) {
+    await query(`INSERT INTO notifications (user_id, event_id, title, message, is_read)
+      VALUES ($1, $2, 'New event comment', $3, false)`,
+    [event.coordinator_id, event.id, `${user.email} commented on an event: ${comment}`]);
+  }
+  const author = await query<{ full_name: string }>('SELECT full_name FROM users WHERE id = $1', [user.id]);
+  return { ...commentResult.rows[0], author_name: author.rows[0]?.full_name ?? user.email, author_email: user.email };
 }
 
 export async function listNotifications(query: Query, user: AuthenticatedUser) {

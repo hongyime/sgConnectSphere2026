@@ -29,6 +29,7 @@ import { refusePlanning } from '../backend/src/modules/attendeeVisibility/servic
 import { currentUser, query, respond } from '../backend/src/modules/eventVisibility/runtime.js';
 import {
   AccessError,
+  createEventComment,
   getEvent,
   listEvents,
   listNotifications,
@@ -44,6 +45,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return;
   }
   if (request.method === 'POST') {
+    const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.get('comment') === '1') {
+      await handleCommentPost(request, response, params);
+      return;
+    }
     await handlePost(request, response);
     return;
   }
@@ -57,6 +63,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   response.setHeader('allow', 'GET, POST, PATCH, DELETE');
   sendJson(response, 405, { error: 'method_not_allowed' });
+}
+
+async function handleCommentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  try {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId || typeof request.body !== 'object' || request.body === null) {
+      sendJson(response, 400, { error: 'invalid_payload' });
+      return;
+    }
+    const comment = await createEventComment(query, user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
+    sendJson(response, 201, { comment });
+  } catch (error) {
+    if (error instanceof AccessError) { sendJson(response, error.status, { error: error.message }); return; }
+    throw error;
+  }
 }
 
 // Full detail shape for the SCRUM-27 draft list/reopen endpoints - unlike
