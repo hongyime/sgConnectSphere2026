@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **58** (25.2%)
+- Automated (explicit TC_ID in an active test title): **61** (26.5%)
   - Real-database (`.integration.test` / `.db.test`): **15**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **43**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **169** (73.5%)
+  - Live-assertion (other active tests): **46**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **166** (72.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 26 | 5 | 21 | 0 |
+| E03 | 26 | 8 | 18 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 0 | 22 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **58** | **169** | **3** |
+| **Total** | **230** | **61** | **166** | **3** |
 
 ## Case-by-case status
 
@@ -112,9 +112,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
 | `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
 | `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
-| `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
-| `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
-| `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
+| `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
+| `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
+| `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
 | `TC_E03S07_01` | E03-S07 | Verify that an Organiser should be able to directly edit any field while the eve | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved |
 | `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log |
 | `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
@@ -401,6 +401,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - direct denied access commits actor and attempted event before returning denial
 - organiser event detail includes current status date and status history
 - audit failure never returns event information or a false logged success
+- an organiser can post an accessible event comment and notify its coordinator
+- comment posting refuses an event outside the organiser organisation
+- organiser can update a pre-approval field and the change is audited
+- organiser post-approval restricted edits return the change-request hand-off
+- only the assigned coordinator can edit an approved event
+- assigned coordinator can edit approved event fields and every change is audited
+- organiser can update registration dates before approval
+- organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
 
@@ -512,6 +520,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - submits the four required fields as JSON and shows the success message on 201
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
+
+### `frontend/src/features/notifications/NotificationInbox.test.tsx`
+
+- shows a loading state before notifications arrive
+- renders notifications newest first once loaded
+- distinguishes unread notifications from read ones
+- marking a notification as read updates it and removes the action
 
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
