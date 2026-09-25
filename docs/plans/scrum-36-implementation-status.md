@@ -30,9 +30,8 @@ This implementation follows the Sprint 2 story in the authoritative E03 backlog:
 
 - Frontend typecheck and tests passed.
 - Backend typecheck passed.
-- Backend test files passed when run directly with `tsx` (146 tests); the
-  package test wrapper currently fails before execution because `c8` is not
-  installed in this checkout.
+- `npm test --prefix backend` — passed (146 tests) after installing the
+  repository-declared dependencies; c8 coverage reporting completed.
 - E03-S06 desktop Playwright tests passed (3/3).
 - Frontend/backend builds passed.
 - Repository checks passed.
@@ -40,3 +39,11 @@ This implementation follows the Sprint 2 story in the authoritative E03 backlog:
 The browser acceptance tests use deterministic API responses because the
 repository's disposable E2E database reset/seed setup is still scaffold-only.
 The backend service tests cover the real SQL contract and access decisions.
+
+## Remaining validation
+
+- Configure a disposable Supabase/PostgreSQL test database through
+  `TEST_DATABASE_URL` or an equivalent isolated database configuration.
+- Replace the scaffold-only E2E setup with a reset-and-seed run for that
+  database, then rerun the three SCRUM-36 browser cases without API mocks.
+- Obtain teammate review and merge the pull request.
