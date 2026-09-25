@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { canAccessClientOrganisation, scopeClientOrganisationFilter } from '../src/modules/accessControl/service';
-import { AccessError, createEventComment, getEvent, listEvents, listNotifications, permittedDelivery, requireOrganiser, type Query } from '../src/modules/eventVisibility/service';
+import { AccessError, createEventComment, getEvent, listEvents, listNotifications, permittedDelivery, requireOrganiser, updateEventInformation, type Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 
 const user: AuthenticatedUser = { id: 'organiser-a', email: 'organiser@example.test', role: 'event_organiser', clientOrgId: 'client-a', isActive: true, failedLoginCount: 0 };
@@ -100,6 +100,68 @@ test('an organiser can post an accessible event comment and notify its coordinat
 test('comment posting refuses an event outside the organiser organisation', async () => {
   const query: Query = async sql => sql.includes('SELECT e.id, e.coordinator_id') ? { rows: [] } : { rows: [] };
   await assert.rejects(createEventComment(query, user, 'EVT-B01', 'Not allowed'), { status: 403 });
+});
+
+test('organiser can update a pre-approval field and the change is audited', async () => {
+  const calls: string[] = [];
+  const query: Query = async sql => {
+    calls.push(sql);
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status: 'under_review', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    return { rows: [] };
+  };
+  const result = await updateEventInformation(query, user, 'EVT-A01', { expectedAttendance: 250 });
+  assert.deepEqual(result.fields, ['expectedAttendance']);
+  assert.ok(calls.some(sql => sql.startsWith('UPDATE events SET')));
+  assert.ok(calls.some(sql => sql.includes('INSERT INTO audit_logs')));
+});
+
+test('organiser post-approval restricted edits return the change-request hand-off', async () => {
+  const query: Query = async sql => sql.includes('SELECT id, status')
+    ? { rows: [{ id: 'event-a', status: 'approved', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] }
+    : { rows: [] };
+  await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { expectedAttendance: 250 }), { status: 409 });
+});
+
+test('only the assigned coordinator can edit an approved event', async () => {
+  const query: Query = async sql => sql.includes('SELECT id, status')
+    ? { rows: [{ id: 'event-a', status: 'approved', organiser_id: 'organiser-a', coordinator_id: 'coord-a', client_org_id: 'client-a' }] }
+    : { rows: [] };
+  await assert.rejects(updateEventInformation(query, { ...user, id: 'coord-b', role: 'event_coordinator', clientOrgId: undefined }, 'EVT-A01', { purpose: 'Updated' }), { status: 403 });
+});
+
+test('assigned coordinator can edit approved event fields and every change is audited', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const coordinator = { ...user, id: 'coord-a', role: 'event_coordinator' as const, clientOrgId: undefined };
+  const query: Query = async (sql, values) => {
+    calls.push({ sql, values });
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status: 'approved', organiser_id: 'organiser-a', coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    return { rows: [] };
+  };
+  const result = await updateEventInformation(query, coordinator, 'EVT-A01', { venueRequirements: 'Theatre seating', purpose: 'Team planning' });
+  assert.deepEqual(result.fields, ['venueRequirements', 'purpose']);
+  assert.equal(calls.filter(call => call.sql.includes('INSERT INTO audit_logs')).length, 2);
+});
+
+test('organiser can update registration dates before approval', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const query: Query = async (sql, values) => {
+    calls.push({ sql, values });
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status: 'under_review', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    return { rows: [] };
+  };
+  await updateEventInformation(query, user, 'EVT-A01', { registrationDates: { opensAt: '2026-09-01T00:00:00Z', closesAt: '2026-09-09T00:00:00Z' } });
+  assert.match(calls.find(call => call.sql.startsWith('UPDATE events SET'))!.sql, /registration_opens_at/);
+});
+
+test('organiser post-approval unrestricted edits are audited', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const query: Query = async (sql, values) => {
+    calls.push({ sql, values });
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status: 'approved', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    return { rows: [] };
+  };
+  await updateEventInformation(query, user, 'EVT-A01', { purpose: 'Updated purpose' });
+  assert.equal(calls.filter(call => call.sql.includes('INSERT INTO audit_logs')).length, 1);
 });
 
 test('list and notification reads use trusted organisation and recipient parameters', async () => {

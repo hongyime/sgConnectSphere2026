@@ -24,7 +24,8 @@ export async function requireOrganiser(query: Query, user: AuthenticatedUser | u
 }
 
 const projection = `e.id, e.event_code, e.title, e.description, e.status,
-  e.status_changed_at, lower(e.event_range) AS starts_at, u.full_name AS creator_name`;
+  e.status_changed_at, lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
+  e.organiser_id, e.coordinator_id, u.full_name AS creator_name`;
 
 export async function listEvents(query: Query, user: AuthenticatedUser, search = '') {
   const org = await requireOrganiser(query, user, 'events');
@@ -53,7 +54,14 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       WHERE event_id = $1 AND action = 'status_changed'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const comments = await listEventComments(query, event.id);
-    return { ...event, statusHistory: history.rows, comments, canPostComment: user.role === 'event_organiser' };
+    const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
+    const assignedCoordinator = user.role === 'event_coordinator' && event.coordinator_id === user.id;
+    const organiser = user.role === 'event_organiser';
+    const canEdit = assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id));
+    const editableFields = assignedCoordinator || (organiser && !approved)
+      ? ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference']
+      : ['title', 'description', 'purpose'];
+    return { ...event, statusHistory: history.rows, comments, canPostComment: organiser, canEdit, editableFields };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
@@ -89,6 +97,79 @@ export async function createEventComment(query: Query, user: AuthenticatedUser, 
   }
   const author = await query<{ full_name: string }>('SELECT full_name FROM users WHERE id = $1', [user.id]);
   return { ...commentResult.rows[0], author_name: author.rows[0]?.full_name ?? user.email, author_email: user.email };
+}
+
+const unrestrictedAfterApproval = new Set(['title', 'description', 'purpose', 'registrationDates']);
+const editableFields = new Set(['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates']);
+
+export async function updateEventInformation(query: Query, user: AuthenticatedUser, identifier: string, input: unknown) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AccessError(400, 'invalid_payload');
+  const patch = input as Record<string, unknown>;
+  const org = user.clientOrgId;
+  if (user.role !== 'event_organiser' && user.role !== 'event_coordinator') throw new AccessError(403, 'Edit access denied.');
+  const result = await query<{ id: string; status: string; organiser_id: string; coordinator_id: string | null; client_org_id: string }>(
+    `SELECT id, status, organiser_id, coordinator_id, client_org_id FROM events
+     WHERE id::text = $1 OR event_code = $1`, [identifier]);
+  const event = result.rows[0];
+  if (!event || (user.role === 'event_organiser' && (!org || event.client_org_id !== org || event.organiser_id !== user.id))) {
+    throw new AccessError(403, 'Edit access denied.');
+  }
+  if (user.role === 'event_coordinator' && (event.coordinator_id !== user.id || !['approved', 'planning', 'confirmed', 'completed'].includes(event.status))) {
+    throw new AccessError(403, 'Only the assigned Coordinator may edit an approved event.');
+  }
+  const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(event.status);
+  const changed = Object.keys(patch).filter(field => editableFields.has(field));
+  if (!changed.length) throw new AccessError(400, 'No editable fields supplied.');
+  if (user.role === 'event_organiser' && approved) {
+    const restricted = changed.find(field => !unrestrictedAfterApproval.has(field));
+    if (restricted) throw new AccessError(409, `Direct editing of ${restricted} is not allowed after approval. Raise a change request.`,);
+  }
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  const audit: { field: string; value: unknown }[] = [];
+  const add = (sql: string, value: unknown, field: string) => { assignments.push(sql); values.push(value); audit.push({ field, value }); };
+  for (const field of changed) {
+    const value = patch[field];
+    if (['title', 'description', 'purpose', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference'].includes(field)) {
+      if (typeof value !== 'string' || !value.trim()) throw new AccessError(400, `${field} must be non-empty.`);
+      const column = field === 'venueRequirements' ? 'venue_requirements' : field === 'accessibilityNote' ? 'accessibility_note' : field === 'equipmentRequirements' ? 'equipment_requirements' : field === 'layoutPreference' ? 'layout_preference' : field;
+      add(`${column} = $${values.length + 1}`, value.trim(), field);
+    } else if (field === 'expectedAttendance') {
+      if (!Number.isInteger(value) || Number(value) <= 0) throw new AccessError(400, 'expectedAttendance must be a positive integer.');
+      add('expected_attendance = $' + (values.length + 1), value, field);
+    } else if (field === 'startAt' || field === 'endAt') {
+      if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) throw new AccessError(400, `${field} must be a valid date.`);
+      // Dates are applied together below as one range; retaining the value here
+      // lets the audit identify which boundary the caller changed.
+      audit.push({ field, value });
+    } else if (field === 'registrationDates') {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AccessError(400, 'registrationDates must include opensAt and closesAt.');
+      const dates = value as { opensAt?: unknown; closesAt?: unknown };
+      if (typeof dates.opensAt !== 'string' || typeof dates.closesAt !== 'string' || Number.isNaN(Date.parse(dates.opensAt)) || Number.isNaN(Date.parse(dates.closesAt)) || new Date(dates.closesAt) <= new Date(dates.opensAt)) {
+        throw new AccessError(400, 'registrationDates must contain a valid opening and closing date.');
+      }
+      assignments.push(`registration_opens_at = $${values.length + 1}, registration_closes_at = $${values.length + 2}`);
+      values.push(dates.opensAt, dates.closesAt);
+      audit.push({ field: 'registrationDates', value: `${dates.opensAt} to ${dates.closesAt}` });
+    }
+  }
+  const startAt = patch.startAt as string | undefined;
+  const endAt = patch.endAt as string | undefined;
+  if (startAt || endAt) {
+    const current = await query<{ start_at: Date; end_at: Date }>('SELECT lower(event_range) AS start_at, upper(event_range) AS end_at FROM events WHERE id = $1', [event.id]);
+    const start = startAt ?? current.rows[0]?.start_at?.toISOString();
+    const end = endAt ?? current.rows[0]?.end_at?.toISOString();
+    if (!start || !end || new Date(end) <= new Date(start)) throw new AccessError(400, 'Event end must be after its start.');
+    assignments.push(`event_range = tstzrange($${values.length + 1}, $${values.length + 2}, '[)')`);
+    values.push(start, end);
+  }
+  values.push(event.id);
+  await query(`UPDATE events SET ${assignments.join(', ')} WHERE id = $${values.length}`, values);
+  for (const change of audit) {
+    await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
+      VALUES ($1, 'event', $2, $2, 'Record updated', $3, $4)`, [user.id, event.id, change.field, String(change.value)]);
+  }
+  return { updated: true, eventId: event.id, fields: changed };
 }
 
 export async function listNotifications(query: Query, user: AuthenticatedUser) {

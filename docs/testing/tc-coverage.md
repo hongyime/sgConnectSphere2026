@@ -393,6 +393,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - audit failure never returns event information or a false logged success
 - an organiser can post an accessible event comment and notify its coordinator
 - comment posting refuses an event outside the organiser organisation
+- organiser can update a pre-approval field and the change is audited
+- organiser post-approval restricted edits return the change-request hand-off
+- only the assigned coordinator can edit an approved event
+- assigned coordinator can edit approved event fields and every change is audited
+- organiser can update registration dates before approval
+- organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
 
