@@ -65,6 +65,7 @@ import type { LucideIcon } from 'lucide-react';
 import { ClientEvents } from './features/organiser/ClientEvents';
 import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
 import { OrganiserDrafts, OrganiserDraftEdit } from './features/organiser/OrganiserDrafts';
+import { NotificationInbox } from './features/notifications/NotificationInbox';
 
 type Tone = 'success' | 'warning' | 'info' | 'danger' | 'future' | 'neutral';
 
@@ -1051,6 +1052,8 @@ function App() {
       <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/permission-denied" element={<PermissionDenied />} />
+      {/* E11-S01 minimal slice: frontend-only, mocked data — see notificationsApi.ts */}
+      <Route path="/notifications" element={<NotificationInbox />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />
       <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
       <Route path="/coordinator/events/:eventCode" element={<CoordinatorRequestDetail />} />
