@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
-type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; statusHistory?: StatusHistoryEntry[] };
+type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
+type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; statusHistory?: StatusHistoryEntry[]; comments?: Comment[]; canPostComment?: boolean };
 type Notification = { id: string; title: string; message: string };
 
 function plainStatus(status: string) {
@@ -22,6 +23,9 @@ export function ClientEvents() {
   const [signIn, setSignIn] = useState(false);
   const [busy, setBusy] = useState(true);
   const [revision, setRevision] = useState(0);
+  const [comment, setComment] = useState('');
+  const [commentError, setCommentError] = useState('');
+  const [commentBusy, setCommentBusy] = useState(false);
   const pathIdentifier = window.location.pathname.startsWith('/events/') ? window.location.pathname.slice(8) : '';
   let identifier = pathIdentifier;
   try { identifier = decodeURIComponent(pathIdentifier); } catch { /* Invalid identifiers are refused by the API. */ }
@@ -53,6 +57,19 @@ export function ClientEvents() {
       form.reset(); setRevision(value => value + 1);
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to sign in.'); }
     finally { setBusy(false); }
+  }
+
+  async function postComment(eventId: string) {
+    setCommentBusy(true); setCommentError('');
+    try {
+      const response = await fetch(`/api/events?id=${encodeURIComponent(eventId)}&comment=1`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: comment }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Unable to post comment.');
+      setComment(''); setRevision(value => value + 1);
+    } catch (failure) { setCommentError(failure instanceof Error ? failure.message : 'Unable to post comment.'); }
+    finally { setCommentBusy(false); }
   }
 
   return <main className="client-events">
@@ -97,6 +114,14 @@ export function ClientEvents() {
         <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p></section>
         <section aria-labelledby="status-history-heading"><h3 id="status-history-heading">Status history</h3>
           {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
+        </section>
+        <section aria-labelledby="event-comments-heading"><h3 id="event-comments-heading">Comments</h3>
+          {event.comments?.length ? <ol>{event.comments.map(item => <li key={item.id}><p>{item.body}</p><small>{item.author_name} · {new Date(item.created_at).toLocaleString()}</small></li>)}</ol> : <p>No comments yet.</p>}
+          {event.canPostComment ? <form onSubmit={formEvent => { formEvent.preventDefault(); void postComment(event.id); }}>
+            <label htmlFor="event-comment">Add a comment</label><textarea id="event-comment" value={comment} onChange={changeEvent => setComment(changeEvent.target.value)} maxLength={2000} required />
+            <button type="submit" disabled={commentBusy || !comment.trim()}>{commentBusy ? 'Posting…' : 'Post comment'}</button>
+            {commentError && <p role="alert">{commentError}</p>}
+          </form> : null}
         </section>
       </article>}
     </>}

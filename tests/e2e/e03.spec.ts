@@ -455,12 +455,24 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The comment appears on the event showing "organiser_a@clienta.com" and the posting time; coordinator_1@connectsphere.com receives a notification of the new comment
    */
-  test.fixme("TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Enter the comment "Can we confirm the AV setup by Friday?" and click "Post"
-    void page;
+  test("TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator", async ({ page }) => {
+    const comments: { id: string; body: string; created_at: string; author_name: string; author_email: string }[] = [];
+    await page.route('**/api/events?*', async route => {
+      if (route.request().method() === 'POST') {
+        const payload = route.request().postDataJSON() as { body: string };
+        comments.push({ id: 'comment-new', body: payload.body, created_at: '2026-09-09T15:00:00.000Z', author_name: 'Organiser A', author_email: 'organiser_a@clienta.com' });
+        await route.fulfill({ status: 201, json: { comment: comments.at(-1) } });
+        return;
+      }
+      await route.fulfill({ status: 200, json: { event: {
+        id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'Summit', status: 'approved', status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', creator_name: 'Organiser A', comments, canPostComment: true,
+      } } });
+    });
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByLabel('Add a comment').fill('Can we confirm the AV setup by Friday?');
+    await page.getByRole('button', { name: 'Post comment' }).click();
+    await expect(page.getByText('Can we confirm the AV setup by Friday?')).toBeVisible();
+    await expect(page.getByText(/Organiser A/)).toBeVisible();
   });
 
   /**
@@ -477,12 +489,21 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The 3 comments are displayed in chronological order (09:00, then 10:30, then 14:00)
    */
-  test.fixme("TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com or coordinator_1@connectsphere.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Review the comments section
-    void page;
+  test("TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ status: 200, json: { event: {
+      id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'Summit', status: 'approved', status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', creator_name: 'Organiser A', canPostComment: true,
+      comments: [
+        { id: 'c1', body: 'Morning update', created_at: '2026-09-09T09:00:00+08:00', author_name: 'Coordinator A', author_email: 'coord_a@connectsphere.com' },
+        { id: 'c2', body: 'Midday update', created_at: '2026-09-09T10:30:00+08:00', author_name: 'Organiser A', author_email: 'organiser_a@clienta.com' },
+        { id: 'c3', body: 'Afternoon update', created_at: '2026-09-09T14:00:00+08:00', author_name: 'Coordinator A', author_email: 'coord_a@connectsphere.com' },
+      ],
+    } } }));
+    await page.goto('/events/EVT-ANNUAL');
+    const comments = page.getByRole('heading', { name: 'Comments' }).locator('..').getByRole('listitem');
+    await expect(comments).toHaveCount(3);
+    await expect(comments.nth(0)).toContainText('Morning update');
+    await expect(comments.nth(1)).toContainText('Midday update');
+    await expect(comments.nth(2)).toContainText('Afternoon update');
   });
 
   /**
@@ -499,11 +520,11 @@ test.describe("E03-S06", () => {
    * Expected result:
    *   The comment action is refused; organiser_b@clienta.com cannot post on an event they do not have access to
    */
-  test.fixme("TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_b@clienta.com
-    // 2. Attempt to open event "Annual Tech Summit" and post a comment
-    void page;
+  test("TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused", async ({ page }) => {
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ status: 403, json: { error: 'Access denied. This event is not available to your organisation.' } }));
+    await page.goto('/events/EVT-ANNUAL');
+    await expect(page.getByRole('alert')).toContainText('Access denied');
+    await expect(page.getByLabel('Add a comment')).toHaveCount(0);
   });
 
 });
