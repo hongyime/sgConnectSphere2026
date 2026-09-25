@@ -503,6 +503,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
 
+### `frontend/src/features/notifications/NotificationInbox.test.tsx`
+
+- shows a loading state before notifications arrive
+- renders notifications newest first once loaded
+- distinguishes unread notifications from read ones
+- marking a notification as read updates it and removes the action
+
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
 - sends all request fields with same-origin credentials and confirms API success
