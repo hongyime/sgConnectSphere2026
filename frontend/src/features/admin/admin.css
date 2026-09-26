@@ -39,3 +39,73 @@
 .admin-audit li strong { color: var(--ink); }
 .admin-audit li span { color: var(--muted); font-size: 0.85rem; }
 .admin-audit li p { margin: 0.2rem 0 0; color: var(--ink); }
+
+/* ReportingDashboard additions */
+.admin-chart-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1rem;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  text-align: center;
+}
+.admin-chart-placeholder p { margin: 0; font-size: 1rem; font-weight: 600; color: var(--ink); }
+.admin-chart-placeholder span { font-size: 0.85rem; max-width: 36rem; line-height: 1.5; }
+
+/* DigestPreferences additions */
+.admin-pref-section {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.admin-pref-section h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.admin-radio-group { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.admin-radio-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.95rem; cursor: pointer; }
+.admin-checkbox-group { display: grid; gap: 0.5rem; }
+.admin-checkbox-label { display: flex; align-items: center; gap: 0.45rem; font-size: 0.95rem; cursor: pointer; }
+
+/* Recommendations additions */
+.admin-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--muted);
+}
+.admin-empty-state h3 { margin: 0; font-size: 1rem; color: var(--ink); }
+.admin-empty-state p { margin: 0; font-size: 0.9rem; }
+
+.admin-rec-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.75rem; }
+.admin-rec-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+@media (max-width: 600px) {
+  .admin-rec-card { flex-direction: column; }
+}
+.admin-rec-body { flex: 1; display: grid; gap: 0.35rem; }
+.admin-rec-body h3 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--ink); }
+.admin-rec-body p { margin: 0; font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+.admin-rec-actions { display: flex; gap: 0.5rem; flex-shrink: 0; align-items: flex-start; flex-wrap: wrap; }

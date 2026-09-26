@@ -24,7 +24,7 @@ measure legible.
 
 ## 1. Gap: the aggregate command covers only the backend `test` suite
 
-`backend/package.json` wraps each suite independently with `c8`:
+`backend/package.json` wraps several suites independently with `c8`:
 
 ```json
 "test":    "c8 tsx --test tests/registration.test.ts tests/eventVisibility.test.ts ...",
@@ -65,7 +65,8 @@ for eligible files actually loaded by the Node process during the test run.
 Its default `allowExternal: false` also excludes files outside the backend
 working directory, including the sibling `api/` directory. The
 Vercel serverless handlers under `api/` (11 files as of this audit) are
-imported by exactly three backend tests today:
+imported by three backend unit-test files in the audit snapshot (integration
+suites additionally import some handlers):
 
 | Test file | api/ file loaded |
 | --- | --- |
