@@ -235,3 +235,23 @@ test('does not present a plain venue record as an empty calendar', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('not available yet');
   expect(screen.queryByRole('heading', { level: 3 })).not.toBeInTheDocument();
 });
+
+test('two blocks clipped to the same start get separate rows and keys', async () => {
+  // venue_blocks allows overlapping blocks, and the API clips any block that
+  // began before the window to the window's start, so both of these arrive
+  // starting at 00:00 on 1 Nov (16:00Z the day before).
+  const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  calendarReply = url => ({ body: calendarBody(url, [
+    { state: 'blocked', kind: 'block', start: '2026-10-31T16:00:00.000Z', end: '2026-11-01T04:00:00.000Z', reason: 'Roof repair' },
+    { state: 'blocked', kind: 'block', start: '2026-10-31T16:00:00.000Z', end: '2026-11-01T08:00:00.000Z', reason: 'Fire inspection' },
+  ]) });
+  renderCalendar();
+
+  const day = await dayItem(/\b1 Nov 2026/);
+  expect(within(day).getAllByText('Blocked')).toHaveLength(2);
+  expect(day).toHaveTextContent('Roof repair');
+  expect(day).toHaveTextContent('Fire inspection');
+  const duplicateKeyWarnings = consoleError.mock.calls.filter(call => call.some(arg => String(arg).includes('same key')));
+  consoleError.mockRestore();
+  expect(duplicateKeyWarnings).toHaveLength(0);
+});

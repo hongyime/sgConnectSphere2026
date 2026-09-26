@@ -570,6 +570,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - notes that a retired venue offers no free time
 - shows a sign-in message on 403 and retries on request
 - does not present a plain venue record as an empty calendar
+- two blocks clipped to the same start get separate rows and keys
 
 ### `frontend/src/features/venue/calendarDates.test.ts`
 

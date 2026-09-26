@@ -227,9 +227,11 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
                     <p className="calendar-empty">No bookable hours.</p>
                   ) : (
                     <ul>
-                      {daySegments.map((segment) => {
+                      {daySegments.map((segment, index) => {
                         const { entry } = segment;
-                        const key = `${day}-${entry.state}-${segment.start}`;
+                        // Position within the day, not start time: overlapping blocks
+                        // clipped to the window start share a start and a state.
+                        const key = `${day}-${index}`;
                         const detailsId = `calendar-details-${key}`;
                         const time = timeLabel(segment);
                         return (
