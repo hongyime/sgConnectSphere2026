@@ -14,7 +14,7 @@
 // Response is still backed by mocks.ts fixtures and records a mock success:
 // its backend is E03-S02, which has not been built yet.
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, MessageSquareText, Send,
@@ -96,13 +96,23 @@ type RequestsState =
 
 function useOwnRequests() {
   const [state, setState] = useState<RequestsState>({ status: 'loading' });
-  const load = useCallback(async () => {
+  const [reloadToken, setReloadToken] = useState(0);
+  useEffect(() => {
+    let active = true;
     setState({ status: 'loading' });
-    const result = await listOwnRequests();
-    setState(result.ok ? { status: 'loaded', requests: result.requests } : { status: 'error', message: result.message });
-  }, []);
-  useEffect(() => { load(); }, [load]);
-  return { state, reload: load };
+    listOwnRequests().then(result => {
+      if (active) setState(result.ok ? { status: 'loaded', requests: result.requests } : { status: 'error', message: result.message });
+    });
+    return () => { active = false; };
+  }, [reloadToken]);
+  return { state, reload: () => setReloadToken(token => token + 1) };
+}
+
+// The current own-request API returns the 100 most recently updated rows.
+function RequestWindowNote({ count }: { count: number }) {
+  return count >= 100 ? (
+    <p role="note">Showing the 100 most recently updated requests. Counts and filters apply to these requests.</p>
+  ) : null;
 }
 
 function LoadProblem({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -133,6 +143,7 @@ export function OrganiserDashboard() {
         <article><span>Need clarification</span><strong>{metric(count(['awaiting_clarification']))}</strong></article>
         <article><span>Approved</span><strong>{metric(count(approvedStatuses))}</strong></article>
       </section>
+      <RequestWindowNote count={requests.length} />
       <section className="organiser-list" aria-label="Next actions">
         <h2>Next actions</h2>
         {state.status === 'loading' ? <p role="status">Loading your requests…</p> : null}
@@ -187,6 +198,7 @@ export function RequestList() {
         <p className="eyebrow">Event organiser</p>
         <h1>Requests</h1>
       </header>
+      <RequestWindowNote count={requests.length} />
       <div className="organiser-filters" role="group" aria-label="Request filter">
         {filterButton('all', state.status === 'loaded' ? `All (${requests.length})` : 'All')}
         {filterButton('drafts', 'Drafts')}
@@ -231,21 +243,27 @@ type DetailState =
 export function SubmittedDetail() {
   const { eventCode: identifier = '' } = useParams();
   const [state, setState] = useState<DetailState>({ status: 'loading' });
+  const [reloadToken, setReloadToken] = useState(0);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
+    let active = true;
     setState({ status: 'loading' });
-    const result = await getRequestDetail(identifier);
-    if (result.ok) setState({ status: 'loaded', request: result.request });
-    else setState({ status: result.notFound ? 'not-found' : 'error', message: result.message });
-  }, [identifier]);
-  useEffect(() => { load(); }, [load]);
+    getRequestDetail(identifier).then(result => {
+      // A previous route or retry may finish after this request. Its success
+      // and error responses must both be ignored once the effect is obsolete.
+      if (!active) return;
+      if (result.ok) setState({ status: 'loaded', request: result.request });
+      else setState({ status: result.notFound ? 'not-found' : 'error', message: result.message });
+    });
+    return () => { active = false; };
+  }, [identifier, reloadToken]);
 
   if (state.status === 'loading') {
     return <main className="organiser-page"><p role="status">Loading request…</p></main>;
   }
   if (state.status === 'not-found') return <NotFound eventCode={identifier} message={state.message} />;
   if (state.status === 'error') {
-    return <main className="organiser-page"><LoadProblem message={state.message} onRetry={load} /></main>;
+    return <main className="organiser-page"><LoadProblem message={state.message} onRetry={() => setReloadToken(token => token + 1)} /></main>;
   }
 
   const { request } = state;

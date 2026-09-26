@@ -39,6 +39,7 @@ export function CoordinatorHome() {
       <header className="coordinator-heading">
         <p className="eyebrow">Coordinator workspace</p>
         <h1>Workload dashboard</h1>
+        <Link to="/coordinator/venues">Search venues</Link>
       </header>
       <section className="coordinator-metrics" aria-label="Workload counts">
         <article><span>Assigned</span><strong>{coordinatorSummary.assigned}</strong></article>
@@ -197,7 +198,7 @@ export function PlanningWorkspace() {
       </header>
       <CoordinatorNav eventCode={event.eventCode} />
       <section className="coordinator-grid" aria-label="Planning status">
-        <PlanningRow icon={CalendarClock} label="Venue" state={event.planning.venue} link="/venue" />
+        <PlanningRow icon={CalendarClock} label="Venue" state={event.planning.venue} link={`/coordinator/events/${event.eventCode}/venues`} />
         <PlanningRow icon={ClipboardList} label="Equipment" state={event.planning.equipment} link="/support" />
         <PlanningRow icon={ClipboardCheck} label="Technical support" state={event.planning.technicalSupport} link="/support" />
       </section>

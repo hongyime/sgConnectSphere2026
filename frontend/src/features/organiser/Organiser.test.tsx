@@ -147,6 +147,16 @@ test('request list says so when there are no requests', async () => {
   expect(await screen.findByText('You have no requests yet.')).toBeInTheDocument();
 });
 
+// The API caps the response at 100; these screens must not imply that the
+// returned subset is an unlimited total of the organiser's entire history.
+test.each(['/organiser', '/organiser/requests'])('labels the limited request window on %s', async path => {
+  reply = () => ({ body: { events: Array.from({ length: 100 }, (_, index) => ({
+    ...ownRequests[0], id: `request-${index}`,
+  })) } });
+  renderAt(path);
+  expect(await screen.findByRole('note')).toHaveTextContent('100 most recently updated requests');
+});
+
 test('request list shows a sign-in message on 401 and retries', async () => {
   reply = () => ({ status: 401, body: { error: 'unauthenticated' } });
   renderAt('/organiser/requests');
