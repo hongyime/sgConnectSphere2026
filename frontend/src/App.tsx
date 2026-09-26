@@ -12,13 +12,14 @@ import { RegisterForm } from './features/accessControl/RegisterForm';
 import { ProfileForm } from './features/accessControl/ProfileForm';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail, ClarificationResponse,
+  ChangeRequest, CancellationForm,
 } from './features/organiser/Organiser';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
 } from './features/coordinator/Coordinator';
 import {
-  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
+  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, VenueBlockout,
 } from './features/venue/Venue';
 import { VenueForm } from './features/venue/VenueForm';
 import {
@@ -27,7 +28,11 @@ import {
 } from './features/support/Support';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
+  ReportingDashboard, DigestPreferences, Recommendations,
 } from './features/admin/Admin';
+import {
+  AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading,
+} from './features/operations/Operations';
 import {
   AlertTriangle,
   Bell,
@@ -395,7 +400,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'venue-blockout',
         title: 'Venue Blockout',
-        story: 'Future',
+        story: 'E05-S04',
         tone: 'future',
         state: 'Later',
         mobile: 'Maintenance period form and conflict preview.',
@@ -548,7 +553,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'post-event-feedback',
         title: 'Post-event Feedback',
-        story: 'Future',
+        story: 'E09-S06',
         tone: 'future',
         state: 'Later',
         mobile: 'Rating and short comment after event completion.',
@@ -635,7 +640,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'user-management',
         title: 'User Management',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Search users and view role assignments.',
@@ -647,7 +652,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'role-assignment',
         title: 'Role Assignment',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Assign staff roles with approval trace.',
@@ -1059,6 +1064,7 @@ function App() {
       <Route path="/venue/inventory/:venueId/edit" element={<VenueForm mode="edit" />} />
       <Route path="/venue/availability" element={<AvailabilityCalendar />} />
       <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
+      <Route path="/venue/blockout" element={<VenueBlockout />} />
       <Route path="/support" element={<EquipmentDashboard />} />
       <Route path="/support/catalogue" element={<EquipmentCatalogue />} />
       <Route path="/support/queue" element={<RequestQueue />} />
@@ -1069,6 +1075,15 @@ function App() {
       <Route path="/admin/users" element={<UserManagement />} />
       <Route path="/admin/users/:userId/role" element={<RoleAssignment />} />
       <Route path="/admin/audit" element={<AuditLogViewer />} />
+      <Route path="/admin/reports" element={<ReportingDashboard />} />
+      <Route path="/admin/digest" element={<DigestPreferences />} />
+      <Route path="/admin/recommendations" element={<Recommendations />} />
+      <Route path="/audit" element={<AuditHistory />} />
+      <Route path="/comments" element={<CommentsActivity />} />
+      <Route path="/search" element={<SearchFilter />} />
+      <Route path="/ui-states" element={<EmptyErrorLoading />} />
+      <Route path="/organiser/requests/:eventCode/change" element={<ChangeRequest />} />
+      <Route path="/organiser/requests/:eventCode/cancel" element={<CancellationForm />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>
