@@ -1,5 +1,7 @@
 # Agent State
 
+- 2026-09-26: Resolved main conflicts for PR #134 while retaining calendar, venue search and email test commands; regenerated coverage. SCRUM-42 / E05-S03. Validation evidence is recorded in the PR review follow-up.
+
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
 review of SCRUM-107/108 (held out from the Jira cleanup), and PR #121's
@@ -8,22 +10,29 @@ stories unless Bryan asks directly.
 
 ## Frontend / Scrum Master track (Amareet) -- Sprint 2
 
-Updated 2026-09-25. Backend work on these stories is Aaron / Jining /
-Le Xin's scope; this track builds frontend against mocks until the APIs land.
+Updated 2026-09-26.
 
-- **PR #123** (`feature/sprint2-notifications`) -- E11-S01 notification
-  inbox, frontend-only with mocked data, pending the backend API. CI green on
-  `14f52ff` after regenerating `docs/testing/tc-coverage.md`; awaiting
-  review approval.
-- **Overlap with PR #127** (Bryan, `feature/scaffold-all-screens`): both
-  edit `frontend/src/App.tsx` and both register a `/notifications` route.
-  #127's `NotificationCenter` placeholder notes it defers to #123. Merge
-  order is to be agreed between Amareet and Bryan before either merges;
-  whichever lands second resolves the `App.tsx` conflict.
-- **Agreed Sprint 2 frontend build order:** E11-S01 (in review, #123) ->
+**Role split (whole project, not just Sprint 2):** Amareet is frontend-only
+(plus Scrum Master). Aaron, Jining, Le Xin, Bryan and Xiang Ying do backend.
+Before Amareet starts a story's frontend, the backend owner is confirmed
+(their PR, Jira assignee, or an explicit statement); the frontend is then
+built against that API, or against mocks of its contract if not yet live.
+
+- **E11-S01** -- PR #123 merged 2026-09-25 (notification inbox, mocked,
+  pending the backend API).
+- **PR #127** (Bryan's scaffold) dropped its `/notifications` route, so the
+  merge-order clash with #123 is resolved. It still adds a `/venue/blockout`
+  placeholder for E05-S04.
+- **E05-S03** -- frontend calendar screen in progress, built against Le Xin's
+  calendar API in PR #134 (`GET /api/venues?id=&calendar=1&from=&to=`). The
+  frontend PR will be marked "merge after #134".
+- **E05-S04** -- frontend waits until a backend owner is confirmed (a #127
+  review comment says SCRUM-43 is assigned to Le Xin).
+- **Agreed Sprint 2 frontend build order:** E11-S01 (done, #123) ->
   E05-S04 -> E05-S03 -> E06-S01 -> E03-S02 + E03-S03 (paired) -> E03-S01 ->
   E03-S06 -> E03-S07 (Scenario 4 deferred, blocked on E10-S01). E03-S05 is
-  already satisfied by #112 on `main`.
+  already satisfied by #112 on `main`. E05-S03 was pulled ahead of E05-S04
+  because its backend PR landed first.
 
 Progress (most recent first):
 

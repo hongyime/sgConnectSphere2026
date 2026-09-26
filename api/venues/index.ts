@@ -1,3 +1,4 @@
+import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { currentUser, databasePool, query, respond, respondWithResult } from '../../backend/src/modules/eventVisibility/runtime.js';
@@ -14,6 +15,14 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method === 'GET') {
+    const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (searchParams.get('mode') === 'suitability') {
+      await respondWithResult(response, async () => {
+        const result = await venueSearch(query, await currentUser(request), searchParams);
+        return { status: result.errors ? 400 : 200, body: result };
+      });
+      return;
+    }
     await respond(response, async () => {
       const user = await currentUser(request);
       const params = new URL(request.url || '/', 'http://localhost').searchParams;
