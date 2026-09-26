@@ -76,6 +76,11 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
   // previous venue or month cannot overwrite the one the user is looking at.
   const latestRequest = useRef(0);
 
+  // React Router reuses this screen between venue-specific URLs.
+  useEffect(() => {
+    if (routeVenueId) setSelectedId(routeVenueId);
+  }, [routeVenueId]);
+
   useEffect(() => {
     let active = true;
     listVenues('').then((result) => {
@@ -99,6 +104,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
       if (request !== latestRequest.current) return;
       setCalendarState(result.ok ? { status: 'loaded', calendar: result.calendar } : { status: 'error', message: result.message });
     });
+    return () => { latestRequest.current += 1; };
   }, [selectedId, period.from, period.to, reloadToken]);
 
   const goToMonth = (delta: number) => {

@@ -1,3 +1,4 @@
+import { VenueSearch } from './features/venue/VenueSearch';
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
 import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback } from './features/attendee/AttendeeRegistration';
 import { useMemo, useState } from 'react';
@@ -1053,6 +1054,8 @@ function App() {
       <Route path="/coordinator/events/:eventCode/confirm" element={<FinalConfirmation />} />
       <Route path="/coordinator/calendar" element={<VenueCalendar audience="coordinator" />} />
       <Route path="/coordinator/venues/:venueId/calendar" element={<VenueCalendar audience="coordinator" />} />
+      <Route path="/coordinator/venues" element={<VenueSearch />} />
+      <Route path="/coordinator/events/:eventCode/venues" element={<VenueSearch />} />
       <Route path="/venue" element={<VenueDashboard />} />
       <Route path="/venue/inventory" element={<VenueInventory />} />
       <Route path="/venue/inventory/new" element={<VenueForm mode="create" />} />
