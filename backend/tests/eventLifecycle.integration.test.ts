@@ -61,8 +61,11 @@ test(
       await db.query(`CREATE SCHEMA ${schema}`);
       await db.query(`SET search_path TO ${schema}, public`);
       // 0005 depends only on 0001's base events table -- no other migration
-      // in the chain touches the four columns this test asserts on.
-      for (const migration of ['0001_connectsphere_schema.sql', '0005_event_request_fields.sql']) {
+      // in the chain touches the four columns this test asserts on. 0008 is
+      // needed because a submission now also runs SCRUM-32's Coordinator
+      // auto-assignment; this fixture has no Coordinators, so both requests
+      // stay 'submitted' (unassigned), which the assertions below rely on.
+      for (const migration of ['0001_connectsphere_schema.sql', '0005_event_request_fields.sql', '0008_coordinator_assignment.sql']) {
         await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
       }
 

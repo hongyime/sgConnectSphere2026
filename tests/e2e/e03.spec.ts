@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-// E03 - 26 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E03 - 27 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E03-S01", () => {
@@ -50,6 +50,9 @@ test.describe("E03-S01", () => {
 
   /**
    * TC_E03S01_03
+   * RETIRED (SCRUM-32): contradicts Scenarios 3 and 4, where ownership moves
+   * only once the colleague accepts. Superseded by TC_E03S01_07. Kept as a
+   * fixme so the retired case stays visible; do not implement it.
    * AC:      E03-S01 - Scenario 3 (Reassignment requested)
    * Sprint:  2.0
    *
@@ -91,6 +94,30 @@ test.describe("E03-S01", () => {
     // 1. Log in as coordinator_2@connectsphere.com
     // 2. Open request "Annual Tech Summit"
     // 3. Attempt to reassign it to another Coordinator
+    void page;
+  });
+
+  /**
+   * TC_E03S01_05
+   * AC:      E03-S01 - Scenario 5 (Reassignment declined)
+   * Sprint:  2.0
+   *
+   * Pre-conditions:
+   *   Event EVT-1004 is assigned to coord_a@connectsphere.com. coord_a@connectsphere.com has requested reassignment of EVT-1004 to coord_b@connectsphere.com, and the request is awaiting coord_b@connectsphere.com's response
+   *
+   * Test data:
+   *   Event: EVT-1004 - From: coord_a@connectsphere.com - To: coord_b@connectsphere.com - Response: Decline
+   *
+   * Expected result:
+   *   The assigned Coordinator on EVT-1004 is still coord_a@connectsphere.com, the reassignment request is recorded as declined, and coord_a@connectsphere.com is notified that the reassignment was declined
+   */
+  test.fixme("TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal", async ({ page }) => {
+    // Steps from the specification:
+    // 1. Sign in as coord_b@connectsphere.com
+    // 2. Open the pending reassignment request for EVT-1004
+    // 3. Decline the request
+    // 4. Re-read the assigned Coordinator on EVT-1004
+    // 5. Sign in as coord_a@connectsphere.com and check notifications
     void page;
   });
 

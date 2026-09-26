@@ -41,6 +41,8 @@ erDiagram
 
     EVENTS ||--o{ EVENT_THREADS : "discussed_in"
     USERS ||--o{ EVENT_THREADS : "authors"
+    EVENTS ||--o{ COORDINATOR_REASSIGNMENTS : "handed_over_by"
+    USERS ||--o{ COORDINATOR_REASSIGNMENTS : "requests_or_receives"
     EVENTS ||--o{ CHANGE_REQUESTS : "amended_by"
     USERS ||--o{ CHANGE_REQUESTS : "raises"
 
@@ -85,7 +87,8 @@ erDiagram
     EVENTS {
         uuid id PK
         uuid organiser_id FK
-        uuid coordinator_id FK "null until auto-assigned"
+        uuid coordinator_id FK "null until auto-assigned on submission (E03-S01)"
+        timestamptz coordinator_assigned_at "when the current Coordinator took over; T-14 tie-break"
         uuid client_org_id FK
         varchar title
         text description
@@ -277,6 +280,16 @@ erDiagram
         uuid parent_id FK
         timestamptz resolved_at
         timestamptz created_at
+    }
+
+    COORDINATOR_REASSIGNMENTS {
+        uuid id PK
+        uuid event_id FK
+        uuid from_coordinator_id FK "the assigned Coordinator who asked"
+        uuid to_coordinator_id FK "the named colleague; must accept before ownership moves"
+        reassignment_status status "pending, accepted, declined; at most one pending per event"
+        timestamptz requested_at
+        timestamptz decided_at "null while pending"
     }
 
     CHANGE_REQUESTS {
