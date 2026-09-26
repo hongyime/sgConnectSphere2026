@@ -107,6 +107,21 @@
   .organiser-date-row { grid-template-columns: 1fr; }
 }
 
+/* The change and cancel forms' textareas had no rule and fell back to the
+   browser's monospace font and default border. */
+.organiser-form-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+}
+
 .organiser-form-row input[type="date"] {
   padding: 0.45rem 0.6rem;
   border: 1px solid var(--border);

@@ -1124,9 +1124,25 @@ button {
   font-weight: var(--weight-semibold);
 }
 
+/* Solid teal keeps the focus outline at 3:1 or better against every surface
+   in the app (4.4-5.0:1 on light pages, cards and tinted panels, 3.5:1 on
+   the dark phone frame), as WCAG 2.2 requires for focus indicators. */
 :focus-visible {
-  outline: 3px solid rgba(14, 124, 123, 0.32);
+  outline: 3px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* Single-form pages read as one centred column, as on /profile: the heading,
+   intro, form and any buttons below it share the form's width instead of the
+   form sitting against the left edge of a wide page. Keyed on the form's
+   class so no page component needs a layout class of its own. */
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page):has(> form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form)) {
+  max-width: 44rem;
+}
+
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page)
+  > form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form) {
+  max-width: none;
 }
 
 @media (max-width: 1500px) {
