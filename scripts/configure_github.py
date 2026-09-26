@@ -30,11 +30,38 @@ def api(endpoint: str, *, method: str = "GET", payload: dict | None = None, not_
         capture_output=True, text=True, check=False,
     )
     if result.returncode:
-        combined = (result.stderr + result.stdout).lower()
-        if not_found_ok and ("not protected" in combined or "404" in combined):
+        try:
+            error_body = json.loads(result.stdout)
+        except (ValueError, TypeError):
+            error_body = {}
+        if (not_found_ok and "(HTTP 404)" in result.stderr
+                and error_body.get("message") == "Branch not protected"):
             return None
         raise RuntimeError(result.stderr.strip() or "GitHub request failed")
     return json.loads(result.stdout) if result.stdout.strip() else None
+
+
+def verify_ruleset(observed: dict, expected: dict) -> None:
+    """Refuse migration when the replacement weakens any requested protection."""
+    for key in ("name", "target", "enforcement", "bypass_actors", "conditions"):
+        if observed.get(key) != expected[key]:
+            raise RuntimeError(f"Ruleset read-back differs for {key}.")
+    observed_rules = {rule["type"]: rule for rule in observed.get("rules", [])}
+    for rule in expected["rules"]:
+        actual = observed_rules.get(rule["type"])
+        if actual is None:
+            raise RuntimeError(f"Ruleset read-back missing expected rule type: {rule['type']}.")
+        for key, value in rule.get("parameters", {}).items():
+            actual_value = actual.get("parameters", {}).get(key)
+            if key == "required_status_checks" and isinstance(actual_value, list):
+                # The API may reorder checks or add metadata. Check names and
+                # their trusted integration IDs must still match exactly.
+                actual_value = sorted(
+                    [{"context": check.get("context"), "integration_id": check.get("integration_id")}
+                     for check in actual_value], key=lambda check: check["context"] or "")
+                value = sorted(value, key=lambda check: check["context"])
+            if actual_value != value:
+                raise RuntimeError(f"Ruleset read-back differs for {rule['type']}.{key}.")
 
 
 def main() -> int:
@@ -84,22 +111,16 @@ def main() -> int:
         api(f"/rulesets/{ruleset_id}", method="PUT", payload=ruleset)
         print(f"Ruleset '{ruleset['name']}' updated (id={ruleset_id}).")
 
-    # Remove classic branch protection to complete the one-time migration.
-    # not_found_ok=True treats a 404 as success: protection was already absent.
-    api("/branches/main/protection", method="DELETE", not_found_ok=True)
-    print("Classic branch protection removed (or was already absent).")
-
     observed_repo = api("")
     observed_ruleset = api(f"/rulesets/{ruleset_id}")
     if any(observed_repo.get(key) != value for key, value in settings.items()):
         raise RuntimeError("Repository settings read-back differs from the requested values.")
-    if observed_ruleset["enforcement"] != "active":
-        raise RuntimeError("Ruleset enforcement read-back is not active.")
-    observed_types = {r["type"] for r in observed_ruleset.get("rules", [])}
-    for required_type in ("deletion", "non_fast_forward", "required_linear_history",
-                          "pull_request", "required_status_checks"):
-        if required_type not in observed_types:
-            raise RuntimeError(f"Ruleset read-back missing expected rule type: {required_type}.")
+    verify_ruleset(observed_ruleset, ruleset)
+
+    # Keep the existing protection until the replacement is read back in full.
+    # Only an explicit "Branch not protected" 404 is an idempotent no-op.
+    api("/branches/main/protection", method="DELETE", not_found_ok=True)
+    print("Classic branch protection removed (or was already absent).")
     print("PASS: GitHub merge settings and main ruleset applied and read back.")
     print("Verify enforcement with a failing PR and a PR awaiting another person's approval.")
     return 0

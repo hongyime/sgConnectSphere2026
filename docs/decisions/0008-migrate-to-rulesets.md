@@ -2,8 +2,10 @@
 
 ## Status
 
-Accepted — landed with this PR. Supersedes the classic branch protection
-configured by PR #1 and maintained via `.github/settings/main-protection.json`.
+Accepted as the intended migration. Merging this PR does not change live
+protection: an administrator must explicitly run `--apply`. A successful apply
+supersedes the classic protection configured by PR #1 and maintained via
+`.github/settings/main-protection.json`.
 
 ## Context
 
@@ -72,11 +74,15 @@ During `--apply`, the script:
 1. Creates (or updates) the named Ruleset — at this point both classic
    protection and the Ruleset coexist. GitHub layers them and enforces the most
    restrictive version of each rule, so there is no protection gap.
-2. Deletes classic branch protection, completing the migration.
+2. Reads back repository settings and the replacement Ruleset, verifying its
+   target, enforcement, bypass actors, branch conditions, all required rule
+   types, and their parameters (including approvals and trusted check sources).
+   Any mismatch stops the migration while classic protection remains active.
+3. Deletes classic branch protection only after that verification succeeds.
 
 The `not_found_ok=True` parameter on the DELETE call makes the step idempotent:
-if classic protection was already absent (e.g., the script is re-run after a
-partial run), the DELETE silently succeeds.
+only an HTTP 404 with the explicit `Branch not protected` response is treated
+as already absent. Generic 404s and other failures remain errors.
 
 ## Alternatives considered
 
@@ -104,8 +110,9 @@ partial run), the DELETE silently succeeds.
 
 - `scripts/configure_github.py` now manages a Ruleset instead of classic
   protection. The old `main-protection.json` is no longer read by the script.
-- When the administrator next runs `--apply`, classic protection is removed and
-  replaced by the Ruleset atomically (with a brief overlap period, not a gap).
+- When the administrator next runs `--apply`, classic protection is removed
+  only after the replacement passes read-back verification. The two protections
+  overlap during the transition; this is not an atomic API operation.
 - Future required-check changes: update `main-ruleset.json`, then run the
   script. The flow is identical to the previous process except the settings file
   name changed.
