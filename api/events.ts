@@ -7,11 +7,25 @@
 // wasted slot. Method dispatch below picks the branch. See ADR-014 for the
 // rule this file follows.
 //
+// SCRUM-32 (E03-S01) adds the Event Coordinator branches - assigned-event
+// reads, the reassignment colleague list, and reassignment request/answer -
+// as query-param dispatch here rather than a new file (ADR-014: `api/` is at
+// the team's 11-function soft cap).
+//
 // Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
 // consolidation removed the Supabase Auth bearer-token path that used to
 // cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
 
 import { sendJson } from '../backend/src/http.js';
+import { getDatabasePool } from '../backend/src/database/client.js';
+import {
+  getAssignedEvent,
+  listAssignedEvents,
+  listCoordinatorColleagues,
+  listPendingReassignments,
+  requestCoordinatorReassignment,
+  respondToCoordinatorReassignment,
+} from '../backend/src/modules/eventLifecycle/coordinatorAssignment.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
 import {
   createEventRequest,
@@ -26,7 +40,7 @@ import { isEventStatus } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
-import { currentUser, query, respond } from '../backend/src/modules/eventVisibility/runtime.js';
+import { currentUser, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
 import {
   AccessError,
   createEventComment,
@@ -49,6 +63,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
     if (params.get('comment') === '1') {
       await handleCommentPost(request, response, params);
+      return;
+    }
+    if (params.get('reassign') === '1' || params.has('reassignment')) {
+      await handleReassignmentPost(request, response, params);
       return;
     }
     await handlePost(request, response);
@@ -85,6 +103,29 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
     }
     throw error;
   }
+}
+
+// SCRUM-32 (E03-S01) Scenarios 3 to 6. Only the assigned Coordinator may
+// request, and only the named colleague may answer; every rule is enforced
+// in coordinatorAssignment.ts.
+//   POST /api/events?reassign=1&id=<event id or code>  { toCoordinatorId }
+//     -> 201 { reassignment }
+//   POST /api/events?reassignment=<reassignment id>&decision=accept|decline
+//     -> 200 { reassignment }
+async function handleReassignmentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const reassignmentId = params.get('reassignment');
+    if (reassignmentId !== null) {
+      const reassignment = await respondToCoordinatorReassignment(
+        getDatabasePool(), user, reassignmentId.slice(0, 64), params.get('decision'));
+      return { status: 200, body: { reassignment } };
+    }
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    const reassignment = await requestCoordinatorReassignment(getDatabasePool(), user, eventId.slice(0, 240), request.body);
+    return { status: 201, body: { reassignment } };
+  });
 }
 
 async function handleCommentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
@@ -154,6 +195,11 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1') {
+    await handleGetCoordinator(request, response, params);
+    return;
+  }
+
   await respond(response, async () => {
     const user = await currentUser(request);
     const id = params.get('id');
@@ -165,6 +211,24 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
       notifications: await listNotifications(query, user),
       organisationId: user.clientOrgId,
     };
+  });
+}
+
+// SCRUM-32 (E03-S01): Event Coordinator reads. Coordinators see only the
+// events assigned to them, never drafts (decision D2 in the SCRUM-32 plan).
+//   GET /api/events?assigned=1[&status=<status>]  -> { events }
+//   GET /api/events?assigned=1&id=<id or code>    -> { event } incl. pendingReassignment
+//   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
+//   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
+async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respond(response, async () => {
+    const user = await currentUser(request);
+    const database = getDatabasePool();
+    if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
+    if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
+    const id = params.get('id');
+    if (id) return { event: await getAssignedEvent(database, user, id.slice(0, 240)) };
+    return { events: await listAssignedEvents(database, user, params.get('status')) };
   });
 }
 

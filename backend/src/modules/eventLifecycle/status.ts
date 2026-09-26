@@ -13,6 +13,20 @@ export const EVENT_STATUSES = [
 
 export type EventStatus = (typeof EVENT_STATUSES)[number];
 
+// BDR T-52: the statuses in which an event still has Coordinator work to do.
+// E03-S01 counts these as a Coordinator's "active events" when choosing who
+// to auto-assign (T-14), and only these events can be reassigned. Must stay
+// equal to accessControl's DEACTIVATION_BLOCKING_STATUSES (the same T-52
+// list); a unit test asserts they match.
+export const ACTIVE_EVENT_STATUSES = [
+  'submitted',
+  'under_review',
+  'awaiting_clarification',
+  'approved',
+  'planning',
+  'confirmed',
+] as const satisfies readonly EventStatus[];
+
 const ALLOWED_TRANSITIONS: Record<EventStatus, readonly EventStatus[]> = {
   draft: ['submitted', 'cancelled'],
   submitted: ['under_review', 'cancelled'],

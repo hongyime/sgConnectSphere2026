@@ -25,7 +25,12 @@ export async function requireOrganiser(query: Query, user: AuthenticatedUser | u
 
 const projection = `e.id, e.event_code, e.title, e.description, e.status,
   e.status_changed_at, lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
-  e.organiser_id, e.coordinator_id, u.full_name AS creator_name`;
+  e.organiser_id, e.coordinator_id, u.full_name AS creator_name,
+  c.full_name AS coordinator_name`;
+
+// E03-S01: the assigned Coordinator's name, shown to the Organiser (NULL
+// until one is assigned). Joined wherever `projection` is used.
+const coordinatorJoin = 'LEFT JOIN users c ON c.id = e.coordinator_id';
 
 export async function listEvents(query: Query, user: AuthenticatedUser, search = '') {
   const org = await requireOrganiser(query, user, 'events');
@@ -34,7 +39,7 @@ export async function listEvents(query: Query, user: AuthenticatedUser, search =
   // it, not to colleagues browsing the same client organisation (this
   // endpoint is already unreachable for Coordinators - see requireOrganiser).
   return (await query(`SELECT ${projection} FROM events e
-    JOIN users u ON u.id = e.organiser_id
+    JOIN users u ON u.id = e.organiser_id ${coordinatorJoin}
     WHERE e.client_org_id = $1 AND (e.status <> 'draft' OR e.organiser_id = $2) AND
       (strpos(lower(e.title), lower($3)) > 0 OR strpos(lower(coalesce(e.event_code, '')), lower($3)) > 0)
     ORDER BY lower(e.event_range), e.id LIMIT 100`, [org, user.id, search.slice(0, 240)])).rows;
@@ -44,7 +49,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
   const org = await requireOrganiser(query, user, 'events');
   // Same draft-privacy rule as listEvents above.
   const result = await query(`SELECT ${projection} FROM events e
-    JOIN users u ON u.id = e.organiser_id
+    JOIN users u ON u.id = e.organiser_id ${coordinatorJoin}
     WHERE e.client_org_id = $1 AND (e.status <> 'draft' OR e.organiser_id = $3)
       AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier, user.id]);
   if (result.rows[0]) {
