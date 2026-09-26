@@ -235,3 +235,156 @@ export function PendingBookingDetail() {
     </main>
   );
 }
+
+// ─── VenueBlockout ───────────────────────────────────────────────────────────
+
+type Blockout = {
+  id: string;
+  from: string;
+  to: string;
+  reason: string;
+  createdBy: string;
+};
+
+const mockBlockouts: Blockout[] = [
+  { id: 'b1', from: '2026-10-05', to: '2026-10-06', reason: 'Annual maintenance inspection', createdBy: 'Carol Ng' },
+  { id: 'b2', from: '2026-10-14', to: '2026-10-14', reason: 'Emergency electrical repairs', createdBy: 'Carol Ng' },
+  { id: 'b3', from: '2026-11-01', to: '2026-11-03', reason: 'Public holiday closure', createdBy: 'Admin' },
+];
+
+export function VenueBlockout() {
+  const [blockouts, setBlockouts] = useState<Blockout[]>(mockBlockouts);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [reason, setReason] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function validate() {
+    const errs: Record<string, string> = {};
+    if (!from) errs.from = 'Start date is required.';
+    if (!to) errs.to = 'End date is required.';
+    if (from && to && to < from) errs.to = 'End date must be on or after start date.';
+    if (!reason.trim()) errs.reason = 'Reason is required.';
+    return errs;
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
+    const newBlockout: Blockout = {
+      id: `b${Date.now()}`,
+      from, to, reason,
+      createdBy: 'You (mock)',
+    };
+    setBlockouts(prev => [newBlockout, ...prev]);
+    setFrom(''); setTo(''); setReason('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  function cancelBlockout(id: string) {
+    setBlockouts(prev => prev.filter(b => b.id !== id));
+  }
+
+  return (
+    <main className="venue-page">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Block out dates</h1>
+      </header>
+
+      <form className="venue-blockout-form" onSubmit={handleSubmit} noValidate>
+        <div className="venue-blockout-dates">
+          <div className="venue-form-field">
+            <label htmlFor="blockout-from">Start date <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-from"
+              type="date"
+              value={from}
+              onChange={e => setFrom(e.target.value)}
+              aria-invalid={Boolean(errors.from)}
+              aria-describedby={errors.from ? 'blockout-from-error' : undefined}
+            />
+            {errors.from && <span id="blockout-from-error" role="alert" className="venue-field-error">{errors.from}</span>}
+          </div>
+          <div className="venue-form-field">
+            <label htmlFor="blockout-to">End date <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-to"
+              type="date"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              aria-invalid={Boolean(errors.to)}
+              aria-describedby={errors.to ? 'blockout-to-error' : undefined}
+            />
+            {errors.to && <span id="blockout-to-error" role="alert" className="venue-field-error">{errors.to}</span>}
+          </div>
+          <div className="venue-form-field venue-form-field-wide">
+            <label htmlFor="blockout-reason">Reason <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-reason"
+              type="text"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="e.g. Maintenance, public holiday, deep clean"
+              aria-invalid={Boolean(errors.reason)}
+              aria-describedby={errors.reason ? 'blockout-reason-error' : undefined}
+            />
+            {errors.reason && <span id="blockout-reason-error" role="alert" className="venue-field-error">{errors.reason}</span>}
+          </div>
+        </div>
+        <button type="submit" className="primary-action">
+          <CalendarClock size={14} aria-hidden="true" /> Add blockout
+        </button>
+        <div role="status" aria-live="polite">
+          {saved && <span style={{ fontSize: '0.9rem', color: 'var(--green)' }}>
+            <CheckCircle2 size={14} aria-hidden="true" /> Blockout added (mock).
+          </span>}
+        </div>
+      </form>
+
+      <section aria-label="Upcoming blockouts">
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Upcoming blockouts</h2>
+        {blockouts.length === 0 ? (
+          <p style={{ color: 'var(--muted)', fontSize: '0.95rem' }}>No upcoming blockouts.</p>
+        ) : (
+          <table className="venue-table">
+            <thead>
+              <tr>
+                <th scope="col">Dates</th>
+                <th scope="col">Reason</th>
+                <th scope="col">Created by</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {blockouts.map(b => (
+                <tr key={b.id}>
+                  <td>
+                    <time dateTime={b.from}>{b.from}</time>
+                    {b.from !== b.to && <> &ndash; <time dateTime={b.to}>{b.to}</time></>}
+                  </td>
+                  <td>{b.reason}</td>
+                  <td>{b.createdBy}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      style={{ minHeight: '32px', padding: '0 10px', fontSize: '0.82rem' }}
+                      onClick={() => cancelBlockout(b.id)}
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+    </main>
+  );
+}
