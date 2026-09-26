@@ -168,6 +168,9 @@ export function OrganiserDraftEdit() {
 
   useEffect(() => {
     let cancelled = false;
+    // React Router reuses this screen between draft URLs: show loading rather
+    // than the previous draft while this one loads.
+    setState({ status: 'loading' });
 
     (async () => {
       if (!id) {
@@ -238,7 +241,8 @@ export function OrganiserDraftEdit() {
   return (
     <>
       <p className="organiser-footer"><Link to="/organiser/drafts">← Back to my drafts</Link></p>
-      <OrganiserRequestFlow draftId={id} initialValues={state.initialValues} />
+      {/* The form reads initialValues only when it mounts, so each draft gets its own instance. */}
+      <OrganiserRequestFlow key={id} draftId={id} initialValues={state.initialValues} />
     </>
   );
 }

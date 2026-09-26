@@ -34,6 +34,13 @@ export function VenueForm({ mode }: { mode: 'create' | 'edit' }) {
   useEffect(() => {
     if (mode !== 'edit' || !venueId) return;
     let cancelled = false;
+    // React Router reuses this form between venue URLs: hide the previous
+    // venue's values and messages until this venue has loaded, so they can
+    // never be saved against the new venue.
+    setLoad({ status: 'loading' });
+    setErrors({});
+    setFormError(null);
+    setLayoutWarning(null);
     (async () => {
       const result = await getVenue(venueId);
       if (cancelled) return;
