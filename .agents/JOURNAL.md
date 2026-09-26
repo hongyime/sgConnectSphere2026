@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-09-26: PR #134 refreshed after #138 merged. Calendar API implementation and prior review fixes retained; SCRUM-42 / E05-S03. Required review and CI are checked on the refreshed head before merge.
+
 - 2026-09-26: Resolved main conflicts for PR #134 while retaining calendar, venue search and email test commands; regenerated coverage. SCRUM-42 / E05-S03. Validation evidence is recorded in the PR review follow-up.
 
 - 2026-09-22: Opened PR #119 (`test/fix-create-extension-race-condition`) fixing a `CREATE EXTENSION IF NOT EXISTS` TOCTOU race across 6 integration-test files via a shared helper; CI green (application-checks 3m6s against a genuinely fresh Postgres container). eventLifecycle.integration.test.ts (on #115, unmerged) deliberately left out -- will fast-follow once #115 picks up main.
