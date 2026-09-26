@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **61** (26.5%)
+- Automated (explicit TC_ID in an active test title): **65** (28.3%)
   - Real-database (`.integration.test` / `.db.test`): **15**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **46**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **166** (72.2%)
+  - Live-assertion (other active tests): **50**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **162** (70.4%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 26 | 8 | 18 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
-| E06 | 22 | 0 | 22 | 0 |
+| E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
 | E09 | 35 | 5 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **61** | **166** | **3** |
+| **Total** | **230** | **65** | **162** | **3** |
 
 ## Case-by-case status
 
@@ -155,10 +155,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E06S01_01` | E06-S01 | Verify that running a search where multiple criteria match an available venue sh | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_01 - Verify that running a search where multiple criteria match an available venue should list it with its capacity, layouts and facilities |
-| `TC_E06S01_02` | E06-S01 | Verify that when no venue matches every criterion, near matches should be return | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_02 - Verify that when no venue matches every criterion, near matches should be returned instead of an empty result |
-| `TC_E06S01_03` | E06-S01 | Verify that a venue available but with capacity below the event's expected atten | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_03 - Verify that a venue available but with capacity below the event |
-| `TC_E06S01_04` | E06-S01 | Verify that a venue that is blocked or already confirmed for the requested perio | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_04 - Verify that a venue that is blocked or already confirmed for the requested period should not appear as available |
+| `TC_E06S01_01` | E06-S01 | Verify that running a search where multiple criteria match an available venue sh | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; backend/tests/ |
+| `TC_E06S01_02` | E06-S01 | Verify that when no venue matches every criterion, near matches should be return | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
+| `TC_E06S01_03` | E06-S01 | Verify that a venue available but with capacity below the event's expected atten | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
+| `TC_E06S01_04` | E06-S01 | Verify that a venue that is blocked or already confirmed for the requested perio | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_01 - Verify that viewing a venue in the context of a event with recorded requirements should show a suitability status for that event |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_02 - Verify that a venue failing one or more recorded requirements should be marked unsuitable with every failing requirement named |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_03 - Verify that a venue meeting all recorded requirements for the event should be marked suitable |
@@ -500,6 +500,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues with no accessibility ids requested applies no accessibility filter
 - searchVenues applies the layout and accessibility filters together
 
+### `backend/tests/venueSearch.test.ts`
+
+- capacity without layout uses venue maximum and respects separate minimum
+- anonymous search is rejected
+- inactive coordinator is rejected
+- coordinator can load search options
+- invalid input identifies fields before venue query
+
 ### `backend/tests/verificationEmail.test.ts`
 
 - sendVerificationEmail issues one token, one notification, one delivery
@@ -588,6 +596,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reservation detail records a shortfall
 - technician assignment lists available technicians
 - conflict state lists shortfall requests
+
+### `tests/e2e/venue-search.spec.ts`
+
+- search access denial shows safe error and no criteria form
 
 ### `tests/e2e/venue.spec.ts`
 
