@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 230 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 231 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **65** (28.3%)
+- Total test cases: **231**
+- Automated (explicit TC_ID in an active test title): **65** (28.1%)
   - Real-database (`.integration.test` / `.db.test`): **15**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
   - Live-assertion (other active tests): **50**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **162** (70.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **163** (70.6%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 26 | 8 | 18 | 0 |
+| E03 | 27 | 8 | 19 | 0 |
 | E05 | 24 | 15 | 9 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 8 | 0 | 8 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **65** | **162** | **3** |
+| **Total** | **231** | **65** | **163** | **3** |
 
 ## Case-by-case status
 
@@ -97,8 +97,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E03S01_01` | E03-S01 | Verify that submitting a request should trigger automatic assignment of exactly  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review |
 | `TC_E03S01_02` | E03-S01 | Verify that when several Coordinators are available, the system should assign th | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_02 - Verify that when several Coordinators are available, the system should assign the one with the fewest active events |
-| `TC_E03S01_03` | E03-S01 | Verify that the currently assigned Coordinator should be able to reassign the ev | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
+| `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
+| `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal |
 | `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment |
 | `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
 | `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator; tests/e2e/organis |
@@ -333,6 +334,31 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
+
+### `backend/tests/coordinatorAssignment.integration.test.ts`
+
+- SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL
+
+### `backend/tests/coordinatorAssignment.test.ts`
+
+- the active statuses used for assignment match the T-52 list deactivation uses
+- S1: a submitted request gets exactly one Coordinator, moves to Under Review, is audited and the Coordinator is notified
+- S2: the pick orders by fewest active events, then least recently assigned, then id, among eligible Coordinators only
+- D4: with no eligible Coordinator the request stays Submitted and unassigned, and the gap is audited
+- a request that is not Submitted, or already has a Coordinator, is left alone
+- S3: the assigned Coordinator names a colleague; the request is recorded and the colleague notified, and ownership does not move
+- S6: a Coordinator who is not assigned is refused, with the denial committed after the rollback
+- S6: an unknown event is refused exactly like one assigned to someone else
+- non-Coordinators cannot request a reassignment, and the attempt is audited against the screen
+- a reassignment must name a valid colleague other than the requester
+- an ineligible colleague, an inactive event and a second pending request are all refused without writing
+- S4: accepting moves ownership to the colleague, ends the request and logs the change
+- S5: declining leaves the original Coordinator assigned and tells them
+- only the named colleague may answer; anyone else is refused and audited
+- a request can be answered only once, and not after the event changed hands or ended
+- an unknown request, an invalid id or a missing decision is rejected
+- the assigned-event list is limited to the caller and never includes drafts
+- an event not assigned to the caller is refused like an unknown one, and audited
 
 ### `backend/tests/deactivation.integration.test.ts`
 
