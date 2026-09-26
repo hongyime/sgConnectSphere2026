@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 type PublishedEvent = { id: string; name: string; starts_at: string; ends_at: string; venue_name: string; venue_location: string };
 export function AttendeeEvents() {
@@ -8,8 +9,11 @@ export function AttendeeEvents() {
   const [signedOut, setSignedOut] = useState(false);
   const [revision, setRevision] = useState(0);
   const active = useRef<AbortController | null>(null);
-  const internal = window.location.pathname.startsWith('/internal/');
-  const raw = internal ? window.location.pathname.slice('/internal/planning/'.length) : window.location.pathname.slice('/attendee/events/'.length);
+  // Read the router's location, not window.location, so moving between event
+  // URLs re-renders this screen and loads the new event.
+  const { pathname } = useLocation();
+  const internal = pathname.startsWith('/internal/');
+  const raw = internal ? pathname.slice('/internal/planning/'.length) : pathname.slice('/attendee/events/'.length);
   let identifier = raw;
   try { identifier = decodeURIComponent(raw); } catch { /* Invalid IDs are refused by the server. */ }
   useEffect(() => {

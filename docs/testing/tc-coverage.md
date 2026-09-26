@@ -536,6 +536,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - distinguishes unread notifications from read ones
 - marking a notification as read updates it and removes the action
 
+### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
+
+- switching drafts shows the new draft\
+
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
 - sends all request fields with same-origin credentials and confirms API success
@@ -549,6 +553,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
+
+- venue A\
 
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
