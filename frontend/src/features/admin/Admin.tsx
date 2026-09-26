@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { CheckCircle2, ScrollText, ShieldCheck, Users } from 'lucide-react';
+import { BarChart3, CheckCircle2, ScrollText, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { adminSummary, auditLog, findUser, users, type UserRole } from './mocks';
 import './admin.css';
 
@@ -145,55 +145,238 @@ export function AuditLogViewer() {
   );
 }
 
-// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
-// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+// ─── ReportingDashboard ──────────────────────────────────────────────────────
+
+const reportMetrics = [
+  { label: 'Events this month', value: '12' },
+  { label: 'Active coordinators', value: '5' },
+  { label: 'Avg lead time (days)', value: '14' },
+];
+
+const recentEvents = [
+  { id: 'e1', title: 'Annual Sustainability Forum', organiser: 'Alice Tan', date: '2026-10-08', status: 'Approved' },
+  { id: 'e2', title: 'Faculty Career Mixer', organiser: 'Alice Tan', date: '2026-09-25', status: 'Confirmed' },
+  { id: 'e3', title: 'Design Studio Recital', organiser: 'Bob Lim', date: '2026-11-04', status: 'Draft' },
+  { id: 'e4', title: 'Tech Workshop Q4', organiser: 'Carol Ng', date: '2026-10-20', status: 'Under review' },
+  { id: 'e5', title: 'Year-End Gala', organiser: 'Dan Wu', date: '2026-12-12', status: 'Planning' },
+];
+
+const reportStatusTone: Record<string, string> = {
+  Draft: 'neutral', Submitted: 'info', 'Under review': 'info',
+  Approved: 'success', Confirmed: 'success', Planning: 'info',
+  Rejected: 'danger', Cancelled: 'neutral',
+};
+
 export function ReportingDashboard() {
   return (
-    <main className="admin-page" data-scaffold="true">
+    <main className="admin-page">
       <header className="admin-heading">
         <p className="eyebrow">Admin</p>
-        <h1>Reporting dashboard</h1>
+        <h1>Reporting</h1>
       </header>
-      <p>
-        Event throughput, venue utilisation, and registration trend charts for
-        administrators. Future — confirm with Bryan before building.
-      </p>
+
+      <section className="admin-metrics" aria-label="Key metrics">
+        {reportMetrics.map(m => (
+          <article key={m.label}>
+            <span>{m.label}</span>
+            <strong>{m.value}</strong>
+          </article>
+        ))}
+      </section>
+
+      <div className="admin-chart-placeholder">
+        <BarChart3 size={26} aria-hidden="true" />
+        <p>Charts coming in a future sprint.</p>
+        <span>This area will show event volume trends, lead time distributions, and venue utilisation over time.</span>
+      </div>
+
+      <section aria-label="Recent events">
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.05rem' }}>Recent events</h2>
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th scope="col">Event</th>
+              <th scope="col">Organiser</th>
+              <th scope="col">Date</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentEvents.map(e => (
+              <tr key={e.id}>
+                <td>{e.title}</td>
+                <td>{e.organiser}</td>
+                <td>{e.date}</td>
+                <td><span className={`status-pill status-${reportStatusTone[e.status] ?? 'neutral'}`}>{e.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </main>
   );
 }
 
-// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
-// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+// ─── DigestPreferences ───────────────────────────────────────────────────────
+
+const eventTypeOptions = [
+  'New submissions', 'Approvals', 'Cancellations', 'Comments', 'Venue blockouts',
+];
+
+const deliveryTimes = ['06:00', '08:00', '09:00', '12:00', '17:00', '20:00'];
+
 export function DigestPreferences() {
+  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'none'>('daily');
+  const [eventTypes, setEventTypes] = useState<string[]>(['New submissions', 'Approvals', 'Cancellations']);
+  const [deliveryTime, setDeliveryTime] = useState('08:00');
+  const [saved, setSaved] = useState(false);
+
+  function toggleType(type: string) {
+    setEventTypes(prev =>
+      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
+    );
+  }
+
+  function handleSave(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
   return (
-    <main className="admin-page" data-scaffold="true">
+    <main className="admin-page" style={{ maxWidth: '42rem' }}>
       <header className="admin-heading">
         <p className="eyebrow">Admin</p>
         <h1>Digest preferences</h1>
       </header>
-      <p>
-        Daily or weekly digest cadence, notification channels, and quiet-hours
-        settings for the organisation.
-        Future — confirm with Bryan before building.
-      </p>
+
+      <form onSubmit={handleSave} noValidate>
+        <div className="admin-pref-section">
+          <h2>Frequency</h2>
+          <div className="admin-radio-group" role="radiogroup" aria-label="Digest frequency">
+            {(['daily', 'weekly', 'none'] as const).map(f => (
+              <label key={f} className="admin-radio-label">
+                <input
+                  type="radio"
+                  name="frequency"
+                  value={f}
+                  checked={frequency === f}
+                  onChange={() => setFrequency(f)}
+                />
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="admin-pref-section">
+          <h2>Event types to include</h2>
+          <div className="admin-checkbox-group">
+            {eventTypeOptions.map(opt => (
+              <label key={opt} className="admin-checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={eventTypes.includes(opt)}
+                  onChange={() => toggleType(opt)}
+                />
+                {opt}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="admin-pref-section">
+          <h2>Delivery time</h2>
+          <div className="admin-form" style={{ padding: '0', border: '0', borderRadius: '0', background: 'transparent', maxWidth: 'none' }}>
+            <label htmlFor="delivery-time">Send digest at</label>
+            <select id="delivery-time" value={deliveryTime} onChange={e => setDeliveryTime(e.target.value)}>
+              {deliveryTimes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <button type="submit" className="primary-action">
+            <CheckCircle2 size={14} aria-hidden="true" /> Save preferences
+          </button>
+          <div role="status" aria-live="polite" style={{ fontSize: '0.9rem', color: 'var(--green)' }}>
+            {saved && 'Preferences saved (mock).'}
+          </div>
+        </div>
+      </form>
     </main>
   );
 }
 
-// SCAFFOLD: replace with real future implementation. Safe to delete/rewrite entirely.
-// Marked future/out-of-scope for Release 1 -- confirm with Bryan before building real functionality here.
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+type Recommendation = {
+  id: string;
+  title: string;
+  context: string;
+};
+
+const initialRecommendations: Recommendation[] = [
+  { id: 'r1', title: 'Set a lead-time policy', context: 'Average event lead time has fallen below 10 days. Consider requiring requests at least 14 days in advance.' },
+  { id: 'r2', title: 'Review inactive coordinators', context: '2 coordinators have had no assignments in the past 60 days. Consider reassigning or archiving their accounts.' },
+  { id: 'r3', title: 'Enable weekly digest for all staff', context: 'Only 3 of 12 staff members have enabled email digests. Enabling by default reduces missed updates.' },
+];
+
 export function Recommendations() {
+  const [recs, setRecs] = useState<Recommendation[]>(initialRecommendations);
+  const [applied, setApplied] = useState<string[]>([]);
+
+  function dismiss(id: string) {
+    setRecs(prev => prev.filter(r => r.id !== id));
+  }
+
+  function apply(id: string) {
+    setApplied(prev => [...prev, id]);
+    setTimeout(() => {
+      setRecs(prev => prev.filter(r => r.id !== id));
+      setApplied(prev => prev.filter(x => x !== id));
+    }, 1500);
+  }
+
   return (
-    <main className="admin-page" data-scaffold="true">
+    <main className="admin-page">
       <header className="admin-heading">
         <p className="eyebrow">Admin</p>
-        <h1>Recommendations placeholder</h1>
+        <h1>Recommendations</h1>
       </header>
-      <p>
-        Personalised event suggestions for attendees with reason labels and
-        opt-out. Clearly labelled; does not imply an AI feature in Release 1.
-        Future — confirm with Bryan before building.
-      </p>
+
+      {recs.length === 0 ? (
+        <div className="admin-empty-state">
+          <Sparkles size={26} aria-hidden="true" />
+          <h3>No recommendations right now</h3>
+          <p>Check back later — recommendations appear based on system activity.</p>
+        </div>
+      ) : (
+        <ul className="admin-rec-list" aria-label="Recommendations">
+          {recs.map(rec => (
+            <li key={rec.id} className="admin-rec-card">
+              <div className="admin-rec-body">
+                <h3>{rec.title}</h3>
+                <p>{rec.context}</p>
+              </div>
+              <div className="admin-rec-actions">
+                <button
+                  type="button"
+                  className="primary-action"
+                  onClick={() => apply(rec.id)}
+                  disabled={applied.includes(rec.id)}
+                >
+                  <CheckCircle2 size={14} aria-hidden="true" />
+                  {applied.includes(rec.id) ? 'Applying…' : 'Apply'}
+                </button>
+                <button type="button" className="secondary-action" onClick={() => dismiss(rec.id)}>
+                  Dismiss
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   );
 }

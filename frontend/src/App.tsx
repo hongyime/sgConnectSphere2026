@@ -1,6 +1,7 @@
 import { VenueSearch } from './features/venue/VenueSearch';
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
 import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback, Waitlist } from './features/attendee/AttendeeRegistration';
+import { RoleHome } from './features/access/RoleHome';
 import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
@@ -12,15 +13,14 @@ import { RegisterForm } from './features/accessControl/RegisterForm';
 import { ProfileForm } from './features/accessControl/ProfileForm';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail, ClarificationResponse,
-  ChangeRequest, Cancellation,
+  ChangeRequest, CancellationForm,
 } from './features/organiser/Organiser';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
 } from './features/coordinator/Coordinator';
 import {
-  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
-  BookingDecision, VenueBlockout,
+  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, BookingDecision, VenueBlockout,
 } from './features/venue/Venue';
 import { VenueForm } from './features/venue/VenueForm';
 import {
@@ -31,7 +31,6 @@ import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
   ReportingDashboard, DigestPreferences, Recommendations,
 } from './features/admin/Admin';
-import { RoleHome } from './features/access/RoleHome';
 import {
   AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading,
 } from './features/operations/Operations';
@@ -402,7 +401,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'venue-blockout',
         title: 'Venue Blockout',
-        story: 'Future',
+        story: 'E05-S04',
         tone: 'future',
         state: 'Later',
         mobile: 'Maintenance period form and conflict preview.',
@@ -555,7 +554,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'post-event-feedback',
         title: 'Post-event Feedback',
-        story: 'Future',
+        story: 'E09-S06',
         tone: 'future',
         state: 'Later',
         mobile: 'Rating and short comment after event completion.',
@@ -642,7 +641,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'user-management',
         title: 'User Management',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Search users and view role assignments.',
@@ -654,7 +653,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'role-assignment',
         title: 'Role Assignment',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Assign staff roles with approval trace.',
@@ -1046,8 +1045,6 @@ function App() {
       <Route path="/organiser/requests" element={<OrganiserRequestList />} />
       <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
       <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
-      <Route path="/organiser/requests/:eventCode/change" element={<ChangeRequest />} />
-      <Route path="/organiser/requests/:eventCode/cancel" element={<Cancellation />} />
       <Route path="/organiser/new-request" element={<OrganiserRequestFlow />} />
       <Route path="/organiser/drafts" element={<OrganiserDrafts />} />
       <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
@@ -1089,6 +1086,8 @@ function App() {
       <Route path="/comments" element={<CommentsActivity />} />
       <Route path="/search" element={<SearchFilter />} />
       <Route path="/ui-states" element={<EmptyErrorLoading />} />
+      <Route path="/organiser/requests/:eventCode/change" element={<ChangeRequest />} />
+      <Route path="/organiser/requests/:eventCode/cancel" element={<CancellationForm />} />
       <Route path="/prototype" element={<PrototypeApp />} />
       <Route path="*" element={<LandingPage />} />
     </Routes>
