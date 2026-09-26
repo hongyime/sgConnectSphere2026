@@ -1,6 +1,7 @@
 import { VenueSearch } from './features/venue/VenueSearch';
 import { AttendeeEvents } from './features/attendee/AttendeeEvents';
-import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback } from './features/attendee/AttendeeRegistration';
+import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback, Waitlist } from './features/attendee/AttendeeRegistration';
+import { RoleHome } from './features/access/RoleHome';
 import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LandingPage } from './features/landing/LandingPage';
@@ -19,7 +20,7 @@ import {
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
 } from './features/coordinator/Coordinator';
 import {
-  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, VenueBlockout,
+  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, BookingDecision, VenueBlockout,
 } from './features/venue/Venue';
 import { VenueForm } from './features/venue/VenueForm';
 import {
@@ -1027,6 +1028,7 @@ function App() {
       <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
       <Route path="/register" element={<RegisterForm />} />
       <Route path="/profile" element={<ProfileForm />} />
+      <Route path="/home" element={<RoleHome />} />
       <Route path="/events" element={<ClientEvents />} />
       <Route path="/events/*" element={<ClientEvents />} />
       <Route path="/attendee/events" element={<AttendeeEvents />} />
@@ -1037,6 +1039,7 @@ function App() {
       <Route path="/attendee/register/:eventCode" element={<RegisterForEvent />} />
       <Route path="/attendee/withdraw/:eventCode" element={<WithdrawFromEvent />} />
       <Route path="/attendee/feedback/:eventCode" element={<EventFeedback />} />
+      <Route path="/attendee/waitlist/:eventCode" element={<Waitlist />} />
       <Route path="/internal/*" element={<AttendeeEvents />} />
       <Route path="/organiser" element={<OrganiserDashboard />} />
       <Route path="/organiser/requests" element={<OrganiserRequestList />} />
@@ -1064,6 +1067,7 @@ function App() {
       <Route path="/venue/inventory/:venueId/edit" element={<VenueForm mode="edit" />} />
       <Route path="/venue/availability" element={<AvailabilityCalendar />} />
       <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
+      <Route path="/venue/bookings/:bookingId/decide" element={<BookingDecision />} />
       <Route path="/venue/blockout" element={<VenueBlockout />} />
       <Route path="/support" element={<EquipmentDashboard />} />
       <Route path="/support/catalogue" element={<EquipmentCatalogue />} />

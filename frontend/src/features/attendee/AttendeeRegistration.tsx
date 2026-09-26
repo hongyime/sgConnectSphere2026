@@ -221,6 +221,23 @@ export function EventFeedback() {
   );
 }
 
+// SCAFFOLD: replace with real E09-S04 implementation. Safe to delete/rewrite entirely.
+export function Waitlist() {
+  return (
+    <main className="attendee-registration-page" data-scaffold="true">
+      <header className="attendee-registration-heading">
+        <p className="eyebrow">Attendee</p>
+        <h1>Waitlist</h1>
+      </header>
+      <p>
+        Shown when an event is full. Displays the attendee&apos;s position in the
+        waitlist and explains automatic seat promotion when a registered
+        attendee withdraws (E09-S04).
+      </p>
+    </main>
+  );
+}
+
 function NotFound({ eventCode }: { eventCode: string | undefined }) {
   return (
     <main className="attendee-registration-page">

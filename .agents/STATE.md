@@ -1,5 +1,7 @@
 # Agent State
 
+- 2026-09-26: PR #127 reconciled after #138: preserve the richer handoff screens and retain only the three remaining scaffolds (role home, attendee waitlist, venue booking decision) and their routes. These placeholders do not implement business behavior. Source: frontend handoff and docs/source-of-truth.md.
+
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
 review of SCRUM-107/108 (held out from the Jira cleanup), and PR #121's
