@@ -7,6 +7,7 @@ const fields = [
   { name: 'email', label: 'Email', type: 'email', autoComplete: 'email', maxLength: 255 },
   { name: 'contact_number', label: 'Contact number', type: 'tel', autoComplete: 'tel', maxLength: 32 },
 ] as const;
+const LOAD_FAILED = 'Your profile could not be loaded. Please try again.';
 
 export function ProfileForm() {
   const [profile, setProfile] = useState<Profile>();
@@ -22,11 +23,14 @@ export function ProfileForm() {
     const controller = new AbortController();
     setBusy(true); setErrors({});
     fetch('/api/account/profile', { signal: controller.signal }).then(async response => {
-      const data = await response.json();
-      if (!response.ok) { setSignIn(response.status === 401); setProfile(undefined); throw new Error(data.error); }
+      // A crash page is not JSON, and an error or empty reply may carry no
+      // message: fall back to a plain one so the retry never appears alone.
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) { setSignIn(response.status === 401); setProfile(undefined); throw new Error(data.error || LOAD_FAILED); }
+      if (!data.profile) throw new Error(LOAD_FAILED);
       setSignIn(false); setProfile(data.profile);
     }).catch(error => {
-      if (!controller.signal.aborted) setErrors({ form: [error instanceof Error ? error.message : 'Unable to load profile.'] });
+      if (!controller.signal.aborted) setErrors({ form: [error instanceof Error && !(error instanceof TypeError) && error.message ? error.message : LOAD_FAILED] });
     }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
     return () => controller.abort();
   }, [revision]);
