@@ -40,6 +40,7 @@ export function CoordinatorHome() {
         <p className="eyebrow">Coordinator workspace</p>
         <h1>Workload dashboard</h1>
         <Link to="/coordinator/venues">Search venues</Link>
+        <Link to="/coordinator/calendar">Venue availability calendar</Link>
       </header>
       <section className="coordinator-metrics" aria-label="Workload counts">
         <article><span>Assigned</span><strong>{coordinatorSummary.assigned}</strong></article>

@@ -22,6 +22,7 @@ import {
   VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, VenueBlockout,
 } from './features/venue/Venue';
 import { VenueForm } from './features/venue/VenueForm';
+import { VenueCalendar } from './features/venue/VenueCalendar';
 import {
   EquipmentDashboard, EquipmentCatalogue, RequestQueue, ReservationDetail,
   TechnicianAssignment, ConflictState,
@@ -1056,6 +1057,8 @@ function App() {
       <Route path="/coordinator/events/:eventCode/plan" element={<PlanningWorkspace />} />
       <Route path="/coordinator/events/:eventCode/readiness" element={<ReadinessChecklist />} />
       <Route path="/coordinator/events/:eventCode/confirm" element={<FinalConfirmation />} />
+      <Route path="/coordinator/calendar" element={<VenueCalendar audience="coordinator" />} />
+      <Route path="/coordinator/venues/:venueId/calendar" element={<VenueCalendar audience="coordinator" />} />
       <Route path="/coordinator/venues" element={<VenueSearch />} />
       <Route path="/coordinator/events/:eventCode/venues" element={<VenueSearch />} />
       <Route path="/venue" element={<VenueDashboard />} />
