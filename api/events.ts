@@ -1,3 +1,5 @@
+import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
+import { getDatabasePool } from '../backend/src/database/client.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -30,7 +32,6 @@ import { currentUser, query, respond } from '../backend/src/modules/eventVisibil
 import {
   AccessError,
   createEventComment,
-  updateEventInformation,
   getEvent,
   listEvents,
   listNotifications,
@@ -76,7 +77,7 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
     const user = await currentUser(request);
     const eventId = params.get('id');
     if (!eventId) { sendJson(response, 400, { error: 'missing_id' }); return; }
-    const result = await updateEventInformation(query, user, eventId.slice(0, 240), request.body);
+    const result = await updateEventInformationWithNotifications(getDatabasePool(), user, eventId.slice(0, 240), request.body);
     sendJson(response, 200, { ...result });
   } catch (error) {
     if (error instanceof AccessError) {
