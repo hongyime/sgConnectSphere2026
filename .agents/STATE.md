@@ -1,6 +1,7 @@
 # Agent State
 
 - 2026-09-26: PR #127 reconciled after #138: preserve the richer handoff screens and retain only the three remaining scaffolds (role home, attendee waitlist, venue booking decision) and their routes. These placeholders do not implement business behavior. Source: frontend handoff and docs/source-of-truth.md.
+- 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
@@ -164,3 +165,5 @@ Known env facts:
 - Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+- 2026-09-27: PR #127 refreshed after #124/#140; preserve the three remaining scaffold routes and all merged UX fixes. Source: docs/source-of-truth.md.
