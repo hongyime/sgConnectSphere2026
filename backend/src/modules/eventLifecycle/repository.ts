@@ -1,10 +1,31 @@
 import type { Pool, PoolClient } from 'pg';
 import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
+import { assignCoordinatorOnSubmit } from './coordinatorAssignment.js';
 import { validateEventStatusTransition } from './status.js';
+import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
 import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
 
 type SqlRunner = { query: Pool['query'] };
+
+// E03-S01 Scenario 1: a request that has just become Submitted is assigned a
+// Coordinator (and moved to Under Review) inside the same transaction, so no
+// submitted request is ever committed without the assignment attempt. The
+// returned record reflects the post-assignment state.
+async function assignIfSubmitted(client: PoolClient, event: EventRecord): Promise<EventRecord> {
+  if (event.status !== 'submitted') return event;
+  const assignment = await assignCoordinatorOnSubmit(client, event.id);
+  if (!assignment) return event;
+  const current = await client.query<{ status: EventRecord['status']; status_changed_at: Date }>(
+    `SELECT status, status_changed_at FROM events WHERE id = $1`, [event.id],
+  );
+  return {
+    ...event,
+    coordinatorId: assignment.coordinatorId,
+    status: current.rows[0]!.status,
+    statusChangedAt: current.rows[0]!.status_changed_at,
+  };
+}
 
 // E02-S03: event_accessibility_needs is a pure join table (event_id,
 // feature_id), same shape as venue_accessibility_features. Mirrors the
@@ -93,8 +114,12 @@ function mapEvent(row: EventRow): EventRecord {
 }
 
 export class PostgresEventLifecycleRepository implements EventLifecycleRepository {
+  constructor(private readonly notificationOptions: NotificationOptions = {}, private readonly pool?: Pool) {}
+
+  private database() { return this.pool ?? getDatabasePool(); }
+
   async createEvent(request: CreateEventRequest): Promise<EventRecord> {
-    return inTransaction(getDatabasePool(), async client => {
+    return inTransaction(this.database(), async client => {
       const result = await client.query<EventRow>(
       `
         INSERT INTO events (
@@ -171,12 +196,22 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       const event = mapEvent(result.rows[0]);
       const featureIds = request.accessibilityFeatureIds ?? [];
       await linkAccessibilityNeeds(client, event.id, featureIds);
-      return { ...event, accessibilityFeatureIds: featureIds };
+      if (event.status === 'submitted') {
+        const audit = await client.query<{ id: string; occurred_at: Date }>(
+          `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,new_value)
+           VALUES($1,'event',$2,$2,'Status changed to submitted','status','submitted') RETURNING id,occurred_at`,
+          [request.organiserId,event.id]);
+        const after = await captureEventAudience(client, event.id, this.notificationOptions);
+        await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
+          actorId:request.organiserId, before:{...after,status:'draft'}, after,
+          change:{kind:'status',from:'draft',to:'submitted'} });
+      }
+      return assignIfSubmitted(client, { ...event, accessibilityFeatureIds: featureIds });
     });
   }
 
   async findEventById(eventId: string): Promise<EventRecord | null> {
-    const result = await getDatabasePool().query<EventRow>(
+    const result = await this.database().query<EventRow>(
       `
         SELECT
           id,
@@ -206,7 +241,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
 
     if (!result.rows[0]) return null;
     const event = mapEvent(result.rows[0]);
-    return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(getDatabasePool(), event.id) };
+    return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(this.database(), event.id) };
   }
 
   async updateEventStatus(
@@ -215,7 +250,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
     actorId: string,
     reason?: string,
   ): Promise<EventRecord> {
-    return inTransaction(getDatabasePool(), async client => {
+    return inTransaction(this.database(), async client => {
       // Lock the row and read its authoritative current status before trusting
       // it for the transition check or the audit entry's old_value. The
       // service layer already did this same read-then-validate before calling
@@ -235,12 +270,13 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
       }
 
+      const before = await captureEventAudience(client, eventId, this.notificationOptions);
       const result = await client.query<EventRow>(
         `
           UPDATE events
           SET status = $2::event_status,
-              decision_reason = COALESCE($3, decision_reason),
-              status_changed_at = now()
+              decision_reason = CASE WHEN status <> $2::event_status THEN COALESCE($3, decision_reason) ELSE decision_reason END,
+              status_changed_at = CASE WHEN status <> $2::event_status THEN now() ELSE status_changed_at END
           WHERE id = $1
           RETURNING
             id,
@@ -273,11 +309,14 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       // allows a same-status call as a no-op): nothing changed, so there is
       // nothing to record.
       if (fromStatus !== status) {
-        await client.query(
+        const audit = await client.query<{ id: string; occurred_at: Date }>(
           `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
-           VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5)`,
+           VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5) RETURNING id, occurred_at`,
           [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
         );
+        const after = await captureEventAudience(client, eventId, this.notificationOptions);
+        await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
+          actorId, before, after, change:{kind:'status',from:fromStatus,to:status} });
       }
 
       return mapEvent(updated);
@@ -285,7 +324,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
   }
 
   async listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]> {
-    const result = await getDatabasePool().query<EventRow>(
+    const result = await this.database().query<EventRow>(
       `
         SELECT
           id,
@@ -316,12 +355,15 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
 
     return Promise.all(result.rows.map(async row => {
       const event = mapEvent(row);
-      return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(getDatabasePool(), event.id) };
+      return { ...event, accessibilityFeatureIds: await getAccessibilityFeatureIds(this.database(), event.id) };
     }));
   }
 
   async updateEvent(eventId: string, update: EventUpdate): Promise<EventRecord> {
-    return inTransaction(getDatabasePool(), async client => {
+    return inTransaction(this.database(), async client => {
+      const current = await client.query<{ status: string; organiser_id: string }>(
+        'SELECT status,organiser_id FROM events WHERE id=$1 FOR UPDATE', [eventId]);
+      if (!current.rows[0] || current.rows[0].status !== 'draft') throw new Error('Only a draft can be updated.');
       const result = await client.query<EventRow>(
       `
         UPDATE events
@@ -385,7 +427,17 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       const event = mapEvent(result.rows[0]);
       const featureIds = update.accessibilityFeatureIds ?? [];
       await replaceAccessibilityNeeds(client, eventId, featureIds);
-      return { ...event, accessibilityFeatureIds: featureIds };
+      if (event.status === 'submitted') {
+        const audit = await client.query<{ id: string; occurred_at: Date }>(
+          `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
+           VALUES($1,'event',$2,$2,'Status changed to submitted','status','draft','submitted') RETURNING id,occurred_at`,
+          [current.rows[0].organiser_id,eventId]);
+        const after = await captureEventAudience(client, eventId, this.notificationOptions);
+        await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
+          actorId:current.rows[0].organiser_id, before:{...after,status:'draft'}, after,
+          change:{kind:'status',from:'draft',to:'submitted'} });
+      }
+      return assignIfSubmitted(client, { ...event, accessibilityFeatureIds: featureIds });
     });
   }
 
@@ -393,7 +445,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
     // Defense in depth: the service layer already checks status === 'draft'
     // before calling this, but the WHERE clause keeps a submitted request
     // from ever being deleted even if a future caller skips that check.
-    const result = await getDatabasePool().query(
+    const result = await this.database().query(
       `DELETE FROM events WHERE id = $1 AND status = 'draft'`,
       [eventId],
     );

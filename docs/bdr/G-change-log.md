@@ -91,3 +91,11 @@ O-02, O-06, O-09, O-14, O-16 and O-17 closed unchanged, confirming the assumptio
 Six items remain open, all outside Release 1: O-08, O-11, O-12, O-13, O-18, O-19.
 
 No change was required to the architecture, the C4 model, the database schema or the sprint plan.
+
+## 27 September 2026: E11-S01 routing and transactional integration
+
+T-64 records the repository owner's approved recipient matrix, actor suppression,
+waitlisted/Coordinator arrangement notices, explicit Venue Staff assignment
+dependency and incremental integration scope. ADR-006 now specifies business
+write/audit/in-app/outbox atomicity and retry identity. Original sprint estimates
+are unchanged; missing workflow and inbox acceptance remains open.

@@ -3,11 +3,6 @@ import { Bell, CheckCircle2 } from 'lucide-react';
 import { listNotifications, markNotificationRead, type NotificationRecord } from './notificationsApi';
 import './notifications.css';
 
-// E11-S01 minimal slice: list + mark-as-read only (Scenarios 5 and 6).
-// notificationsApi.ts is MOCKED — pending backend — so this screen is
-// frontend-only for now; see that file's header for the intended real
-// contract.
-
 type InboxState =
   | { status: 'loading' }
   | { status: 'loaded'; notifications: NotificationRecord[] }
@@ -19,15 +14,15 @@ function plainDate(value: string) {
   }).format(new Date(value));
 }
 
-// Scenario 5: newest first. Sorted here rather than trusted from the API,
-// so the UI's ordering guarantee doesn't silently depend on the backend
-// already doing it once the mock is replaced with a real fetch.
+// Keep the server ordering when updating individual entries in the inbox.
 function byNewestFirst(a: NotificationRecord, b: NotificationRecord) {
   return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
 }
 
 export function NotificationInbox() {
   const [state, setState] = useState<InboxState>({ status: 'loading' });
+  const [openedId, setOpenedId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -41,11 +36,12 @@ export function NotificationInbox() {
   useEffect(() => { load(); }, [load]);
 
   async function handleMarkRead(id: string) {
+    setActionError(null);
     setMarkingId(id);
     const result = await markNotificationRead(id);
     setMarkingId(null);
     if (!result.ok) {
-      window.alert(result.message);
+      setActionError(result.message);
       return;
     }
     setState(current => current.status === 'loaded'
@@ -62,6 +58,7 @@ export function NotificationInbox() {
         <h1>Your notifications{state.status === 'loaded' && unreadCount > 0 ? ` (${unreadCount} unread)` : ''}</h1>
       </header>
 
+      {actionError ? <p role="alert">{actionError}</p> : null}
       {state.status === 'loading' ? <p role="status">Loading notifications…</p> : null}
 
       {state.status === 'error' ? (
@@ -84,8 +81,14 @@ export function NotificationInbox() {
                 <div className="notification-body">
                   {!notification.is_read ? <span className="notification-dot" aria-hidden="true" /> : null}
                   <div>
-                    <strong>{notification.title}</strong>
-                    <p>{notification.message}</p>
+                    <button type="button" className="secondary-action"
+                      aria-expanded={openedId === notification.id}
+                      disabled={markingId === notification.id}
+                      onClick={() => {
+                        setOpenedId(openedId === notification.id ? null : notification.id);
+                        if (!notification.is_read) void handleMarkRead(notification.id);
+                      }}>{notification.title}</button>
+                    {openedId === notification.id ? <p>{notification.message}</p> : null}
                     <p className="notification-meta">
                       {plainDate(notification.created_at)} · {notification.is_read ? 'Read' : 'Unread'}
                     </p>

@@ -11,6 +11,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/notifications",
+      "destination": "/api/notifications/send?task=inbox"
+    },
+    {
       "source": "/api/cron/notification-worker",
       "destination": "/api/cron/outbox-relay?task=worker"
     },

@@ -9,8 +9,9 @@
 // against a real, disposable schema, including the NONE_REQUIRED
 // sentinel value (T-11) specifically.
 //
-// PostgresEventLifecycleRepository has no dependency-injection seam --
-// it calls the process-wide getDatabasePool() singleton internally, which
+// This historical test uses the repository's default connection, which calls
+// the process-wide getDatabasePool() singleton internally. Notification tests
+// use its optional injected Pool instead. The default singleton
 // reads DATABASE_URL once at import time (see backend/src/config.ts and
 // backend/src/database/client.ts). Schema isolation is therefore done via
 // the connection string's `options=-c search_path=...` libpq parameter,
@@ -26,7 +27,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
 
 // TODO(follow-up once #119 merges): replace this local copy with the shared
@@ -60,9 +61,9 @@ test(
       await createExtensionIfNotExists(db, 'btree_gist');
       await db.query(`CREATE SCHEMA ${schema}`);
       await db.query(`SET search_path TO ${schema}, public`);
-      // 0005 depends only on 0001's base events table -- no other migration
-      // in the chain touches the four columns this test asserts on.
-      for (const migration of ['0001_connectsphere_schema.sql', '0005_event_request_fields.sql']) {
+      // Production event writes now also persist notification outbox rows;
+      // exercise the current migration chain rather than a partial schema.
+      for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort()) {
         await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
       }
 
