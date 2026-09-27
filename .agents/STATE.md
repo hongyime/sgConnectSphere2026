@@ -1,6 +1,7 @@
 # Agent State
 
 - 2026-09-26: PR #126 review: corrected c8 aggregation commands, external API filtering, handler imports and JSON report availability against installed tooling. Documentation audit only; no thresholds or runtime configuration changed. Source: docs/repository-setup.md.
+- 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
@@ -164,3 +165,5 @@ Known env facts:
 - Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+- 2026-09-27: PR #126 refreshed with main after #124/#140; preserved both continuity entries and the corrected coverage audit. No application change beyond main integration.
