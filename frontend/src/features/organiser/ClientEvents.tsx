@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
@@ -26,7 +27,10 @@ export function ClientEvents() {
   const [comment, setComment] = useState('');
   const [commentError, setCommentError] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
-  const pathIdentifier = window.location.pathname.startsWith('/events/') ? window.location.pathname.slice(8) : '';
+  // Read the router's location, not window.location, so moving between
+  // /events/<id> URLs re-renders this screen and loads the new event.
+  const { pathname } = useLocation();
+  const pathIdentifier = pathname.startsWith('/events/') ? pathname.slice(8) : '';
   let identifier = pathIdentifier;
   try { identifier = decodeURIComponent(pathIdentifier); } catch { /* Invalid identifiers are refused by the API. */ }
 

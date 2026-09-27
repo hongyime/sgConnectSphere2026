@@ -9,6 +9,67 @@
   thresholds remain unchanged. Responds to issuecomment-5844795205.
 
 - 2026-09-26: PR #126 review: corrected c8 aggregation commands, external API filtering, handler imports and JSON report availability against installed tooling. Documentation audit only; no thresholds or runtime configuration changed. Source: docs/repository-setup.md.
+- 2026-09-27: PR #143 review revision is LOCAL, uncommitted and unpushed by user
+  instruction. Main 84e8180 is merged with --no-commit; conflict entries resolved,
+  but MERGE_HEAD intentionally remains until authorized completion. Preserve both
+  main's PR #141 integration and the inbox work. Eventless notices are excluded
+  from GET and POST RETURNING; inbox capped at 100. Verification email delivery
+  stays intact; regression tests cover hidden capabilities, normal event/read
+  behavior and auth/reset. Database security 12, auth DB 13, provider 26, Redis 2,
+  backend units 208, frontend 48, runtime 15 and browser 10 passed; build/typecheck
+  passed. Broad backend DB has 9 pass / 1 unchanged registration concurrency failure
+  (users_email_key) after disposable schema setup. Do not tick final CI or mark PR
+  approved/merged; no push authorized. Postplan follows the established public HTML
+  convention: https://0lympnguubta.postplan.dev. Linked in a top-level PR comment and
+  updated PR evidence/checklist without pushing code. Hygiene passed (45 tooling
+  tests). See docs/testing/event-notifications.md for evidence and follow-ups.
+
+- 2026-09-27: E11-S01 / SCRUM-75 inbox follow-up on
+  `feature/SCRUM-75-notification-inbox`: replaced frontend fixtures with the
+  authenticated all-role list/read API, using the existing notification function
+  rewrite and cookie sessions. Opening marks read, other-recipient writes fail,
+  and read timestamps remain stable. Shared event hooks/outbox already present
+  are reused. Backend unit suite, 7 inbox component tests, 10 notification DB
+  tests, 26 dispatcher/provider tests, 2 Redis tests, 2 real desktop/mobile inbox
+  browser tests, typecheck/build, 15 runtime tests and repository checks passed.
+  Initial DB/Redis attempts lacked test URLs; isolated local containers resolved
+  that setup issue. No live data changes or real emails. Full-story gaps and
+  owning Jira references are in docs/testing/event-notifications.md. Venue
+  assignment, future workflow integrations and deployed mailbox verification
+  remain incomplete; do not mark SCRUM-75 Done. The user subsequently authorized
+  committing and opening a PR; prepare a draft with remaining dependencies and
+  leave Jira open. No Jira transition was made.
+
+- 2026-09-27: PR #141 integrated with approved notification foundation #142.
+  Preserved submission auditing plus automatic assignment, combined backend test
+  commands and full migration-chain fixtures, and removed a duplicate API pool
+  import from the textual auto-merge. Assignment and generic status notices share
+  a change ID: one Coordinator message/email job plus the Organiser status notice.
+  Reassignment notifications now prepare transactional email deliveries too.
+  23 focused unit tests and 13 PostgreSQL integration tests passed, including
+  rollback of creation, draft submission, requests and accept/decline responses.
+  The cross-PR impact and merge order are in docs/plans/e11-notification-hooks.md.
+  Merge #142 first; hold #141 auto-merge until main contains that foundation and
+  refresh/recheck before requesting final approval. No new/live migration needed.
+
+- 2026-09-26: SCRUM-32 (E03-S01) backend by Aaron: submissions auto-assign the eligible Coordinator with the fewest active events (T-14/T-52; tie-break least recently assigned; advisory lock), and the assigned Coordinator can request reassignment that moves only when the named colleague accepts (C-56). Migration 0008, Coordinator endpoints in `api/events.ts`, in-app notifications via `notifyUser()`. Frontend and e2e are Amareet's, built against the API contract in the PR. TC_E03S01_03 retired; TC_E03S01_05 added.
+- 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
+  BDR T-64 and the existing ADR-006. The event-notification hook now captures
+  active linked recipients, suppresses the actor, deduplicates by business change,
+  uses public attendee content and writes notifications/outbox rows atomically
+  with existing status/submission/date-edit transactions. Real PostgreSQL tests
+  cover rollback, concurrent retries and pre-release cancellation membership.
+  Full build, backend unit suite, 37 database checks and 15 compiled runtime
+  checks passed; the final notification database rerun passed 8/8 after the
+  same-status reason-preservation fix. Runtime cleanup initially rejected a
+  temporary dependency junction; rerunning with a real local cache passed.
+  Dated backlog, test, BDR and ADR exports regenerated for 270926, including
+  the test compatibility workbook and coverage inventory. This is partial
+  E11-S01 work: venue assignment, downstream workflow callers, all-role inbox
+  and deployed email verification remain in docs/plans/e11-notification-hooks.md.
+  Do not mark SCRUM-75 Done or reconcile Jira until reviewed canonical changes
+  merge. No live migration or provider call was made for this implementation.
+
 - 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
@@ -175,3 +236,5 @@ Known env facts:
 <!-- MOLT_AUTO_END -->
 
 - 2026-09-27: PR #126 refreshed with main after #124/#140; preserved both continuity entries and the corrected coverage audit. No application change beyond main integration.
+- 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
+- 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.

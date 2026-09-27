@@ -1,22 +1,6 @@
-// Mock fixtures for the notification inbox (E11-S01). MOCKED — pending
-// backend. Fields mirror the `notifications` table (see
-// backend/database/migrations/0001_connectsphere_schema.sql): id, title,
-// message, is_read, read_at, created_at, event_id. No live network calls.
+// Test fixtures only; production uses the authenticated notification API.
+import type { NotificationRecord } from './notificationsApi';
 
-export type NotificationRecord = {
-  id: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  read_at: string | null;
-  created_at: string;
-  event_id: string | null;
-};
-
-// Pre-sorted newest first, matching how the real endpoint is expected to
-// order results (ORDER BY created_at DESC) so the mock behaves like the API
-// it stands in for. NotificationInbox re-sorts defensively rather than
-// trusting that ordering.
 export const notifications: NotificationRecord[] = [
   {
     id: 'N-1005',
@@ -56,11 +40,11 @@ export const notifications: NotificationRecord[] = [
   },
   {
     id: 'N-1001',
-    title: 'Account verified',
-    message: 'Your ConnectSphere account is now verified.',
+    title: 'Event completed',
+    message: 'The event has completed.',
     is_read: true,
     read_at: '2026-09-10T09:31:00Z',
     created_at: '2026-09-10T09:00:00Z',
-    event_id: null,
+    event_id: 'EVT-C04',
   },
 ];
