@@ -1,3 +1,7 @@
+// E11-S01 / PR #143: real browser, API and isolated PostgreSQL fixtures from
+// loginDatabase.ts; no mocked inbox responses. Verify unverified-user login cannot
+// retrieve a verification capability while event notifications remain usable.
+import { sendVerificationEmail } from '../../backend/src/modules/accessControl/verificationEmail.js';
 import { test, expect } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
@@ -35,8 +39,9 @@ test('TC_E11S01_01 TC_E11S01_06 TC_E11S01_07: real status notification reaches o
   await database.pool.query(`INSERT INTO events(id,organiser_id,client_org_id,title,status,event_range,expected_attendance)
     VALUES($1,$2,$3,'Inbox event','under_review','[2027-01-01 09:00Z,2027-01-01 12:00Z)',20)`,[event,owner,org]);
   await new PostgresEventLifecycleRepository({},database.pool).updateEventStatus(event,'approved',other);
-  const hidden=(await database.pool.query(`INSERT INTO notifications(user_id,title,message) VALUES($1,'Other account','Private') RETURNING id`,[other])).rows[0].id;
-  await database.pool.query(`INSERT INTO notifications(user_id,title,message,created_at) VALUES($1,'Older notification','Older public update','2020-01-01')`,[owner]);
+  const hidden=(await database.pool.query(`INSERT INTO notifications(user_id,event_id,title,message) VALUES($1,$2,'Other account','Private') RETURNING id`,[other,event])).rows[0].id;
+  await database.pool.query(`INSERT INTO notifications(user_id,event_id,title,message,created_at) VALUES($1,$2,'Older notification','Older public update','2020-01-01')`,[owner,event]);
+  const verification=await sendVerificationEmail({pool:database.pool,userId:owner,appUrl});
   await page.goto('/notifications');
   await expect(page.getByRole('alert')).toContainText('Sign in');
   await page.goto('/login');
@@ -45,6 +50,15 @@ test('TC_E11S01_01 TC_E11S01_06 TC_E11S01_07: real status notification reaches o
   await page.getByRole('button',{name:'Sign in',exact:true}).click();
   await expect(page).toHaveURL(`${appUrl}/events`);
   await page.goto('/notifications');
+  const response=await page.request.get('/api/notifications');
+  const json=await response.json();
+  expect(JSON.stringify(json).includes(verification.token)).toBe(false);
+  expect(json.notifications).toHaveLength(2);
+  const hiddenVerification=await page.request.post('/api/notifications',{
+    headers:{origin:appUrl},data:{action:'mark_read',id:verification.notificationId},
+  });
+  expect(hiddenVerification.status()).toBe(404);
+  expect((await hiddenVerification.text()).includes(verification.token)).toBe(false);
   const items=page.getByRole('listitem');
   await expect(items).toHaveCount(2);
   await expect(items.first()).toContainText('Event update');

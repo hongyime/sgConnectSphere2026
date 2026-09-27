@@ -1,3 +1,6 @@
+// E11-S01 inbox rendering against event-only fixtures in mocks.ts and stubbed fetch.
+// Covers loading, ordering, read interactions and recoverable network errors;
+// API authorization and security filtering are covered by database/browser tests.
 import { cleanup, fireEvent, render, screen, waitForElementToBeRemoved, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { NotificationInbox } from './NotificationInbox';
@@ -28,14 +31,14 @@ test('renders notifications newest first once loaded', async () => {
   expect(items).toHaveLength(fixtureNotifications.length);
   // N-1005 (2026-09-22) is the newest fixture, N-1001 (2026-09-10) the oldest.
   expect(items[0]).toHaveTextContent('Booking flagged for review');
-  expect(items[items.length - 1]).toHaveTextContent('Account verified');
+  expect(items[items.length - 1]).toHaveTextContent('Event completed');
 });
 
 test('distinguishes unread notifications from read ones', async () => {
   render(<NotificationInbox />);
   const list = await screen.findByRole('list', { name: 'Notifications' });
   const unreadItem = within(list).getByText('Booking flagged for review').closest('li') as HTMLElement;
-  const readItem = within(list).getByText('Account verified').closest('li') as HTMLElement;
+  const readItem = within(list).getByText('Event completed').closest('li') as HTMLElement;
 
   expect(unreadItem).toHaveClass('notification-unread');
   expect(within(unreadItem).getByRole('button', { name: 'Mark as read' })).toBeVisible();

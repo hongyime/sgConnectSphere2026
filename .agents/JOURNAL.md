@@ -1,5 +1,18 @@
 # Agent Journal
 
+- 2026-09-27: PR #141 integrated with approved notification foundation #142.
+  Preserved submission auditing plus automatic assignment, combined backend test
+  commands and full migration-chain fixtures, and removed a duplicate API pool
+  import from the textual auto-merge. Assignment and generic status notices share
+  a change ID: one Coordinator message/email job plus the Organiser status notice.
+  Reassignment notifications now prepare transactional email deliveries too.
+  23 focused unit tests and 13 PostgreSQL integration tests passed, including
+  rollback of creation, draft submission, requests and accept/decline responses.
+  The cross-PR impact and merge order are in docs/plans/e11-notification-hooks.md.
+  Merge #142 first; hold #141 auto-merge until main contains that foundation and
+  refresh/recheck before requesting final approval. No new/live migration needed.
+
+- 2026-09-26: SCRUM-32 (E03-S01) backend by Aaron: submissions auto-assign the eligible Coordinator with the fewest active events (T-14/T-52; tie-break least recently assigned; advisory lock), and the assigned Coordinator can request reassignment that moves only when the named colleague accepts (C-56). Migration 0008, Coordinator endpoints in `api/events.ts`, in-app notifications via `notifyUser()`. Frontend and e2e are Amareet's, built against the API contract in the PR. TC_E03S01_03 retired; TC_E03S01_05 added.
 - 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
   BDR T-64 and the existing ADR-006. The event-notification hook now captures
   active linked recipients, suppresses the actor, deduplicates by business change,
@@ -41,6 +54,7 @@
 - 2026-09-23: Re-examined SCRUM-107/108 by reading the tickets' own descriptions (not just branch names this time) -- found an earlier, independent Sep-20 reconciliation pass had already documented PR #68 and #62 as shipping their work, with a "no human review yet" caveat identical in wording to SCRUM-93/103, which were already closed with Bryan's approval. Found SCRUM-105 (`[DUPLICATE of SCRUM-93]`) as the team's real precedent for how true duplicates get labeled -- 107/108 never got that label, which argues against them being duplicates in that sense. Built and uploaded an evidence postplan (https://3wupccg0rklj.postplan.dev) with direct quotes side-by-side rather than asserting a conclusion; final call left to Bryan.
 - 2026-09-23: Audited all 111 Jira tickets' title conventions at Bryan's request. Found 4 genuinely different, historically-mixed patterns: 47 tickets `E01-S01 Title` (no brackets), 24 tickets `[E01-S05] Title` (brackets, interleaved chronologically with the no-bracket ones, not a clean early/late split), plus `[E01-EXT]`/`[E01]`/`[Docs]`/`[DUPLICATE...]` variants for non-story technical work. Standardized the 24 bracketed story tickets to match the no-bracket majority (which also matches the canonical backlog Markdown format's own documented heading convention) via direct Jira API calls; verified 0 remain bracketed. Confirmed branch names reference ticket keys, not title text, so no branch renames were needed.
 
+- 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
 - 2026-09-27: Implemented SCRUM-75 all-role authenticated notification inbox on
   feature/SCRUM-75-notification-inbox, reusing T-64 event hooks and email outbox.
@@ -54,3 +68,16 @@
 - 2026-09-27: User authorized commit and PR for SCRUM-75 inbox follow-up.
   Preparing a conventional draft PR with the required four sections, actual test
   evidence and explicit outstanding dependencies; do not close the full story.
+
+- 2026-09-27: PR #143 security review: prepared local merge of main 84e8180,
+  preserving coordinator assignment/audit/outbox fixes and migration 0008. Resolved
+  STATE, package scripts, hook plan and generated coverage conflicts by combining
+  current intent. Filter eventless notices in list and mark-read responses, cap
+  inbox at 100, and add real verification-capability/database/browser regressions.
+  Relevant suites pass; broad DB registration concurrency test still fails in
+  unchanged code. Legacy organisation-filtered read-path consolidation remains a
+  follow-up. No commit, push, live migration, approval or PR merge authorized.
+
+- PR #143 postplan uploaded and linked: https://0lympnguubta.postplan.dev.
+  Updated PR description/checklist with local evidence and remaining DB failure;
+  final-head CI remains unchecked. No commits or code push.

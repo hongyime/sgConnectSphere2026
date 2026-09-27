@@ -29,7 +29,7 @@ do not mark it Done merely because the inbox and reusable hooks pass tests.
 | --- | --- | --- |
 | Status change / booking decision notified | Existing status flows integrated; booking hooks tested, callers pending | E06-S03 SCRUM-47 and E06-S04 SCRUM-48 |
 | All affected parties notified for arrangements | Current date/time edit and shared old/new audience hooks tested; not complete for every workflow | Explicit Venue Staff assignment relationship: E05/E06 owners, no dedicated ticket identified; E07-S04..S07 SCRUM-54..57; E08-S03..S05 SCRUM-60..62; E10-S01..S05 SCRUM-70..74 |
-| Unaffected users not notified | Recipient selection enforced/tested for integrated flows; future callers must use the same hook | Same workflow integrations above; assignment reconciliation E03-S01 SCRUM-32 / PR 141 |
+| Unaffected users not notified | Recipient selection enforced/tested for integrated flows; future callers must use the same hook | Same workflow integrations above; PR #141 assignment integration is now on main |
 | Delivered in-app and by email | In-app, durable email generation, provider success/failure handling implemented/tested | Authorized deployed relay/worker configuration and actual mailbox delivery verification remain deployment-owner work |
 | Newest-first list and unread distinction | Fully implemented and verified | None |
 | Opening marks notification read | Fully implemented and verified, including reload and ownership denial | None |
@@ -79,3 +79,58 @@ After starting disposable local services and setting test-only environment value
 both suites passed. No live Supabase data was modified and no production email
 was sent. Inbox traceability: TC_E11S01_06 (list), TC_E11S01_07 (read); the browser
 also exercises a real status-repository notification (TC_E11S01_01).
+
+## PR #143 review revision
+
+This local revision integrates main's PR #141 coordinator assignment, audit and
+outbox fixes, including its existing migration 0008 unchanged. No new migration.
+Resolved conflicts preserve both continuity histories and both test commands;
+the plan drops obsolete pending tasks for assignment and inbox integration, and
+test coverage is regenerated from the combined suite.
+
+The inbox now excludes all eventless notifications from GET and POST read
+responses and returns at most 100 event-linked notices, newest first. Verification
+email rows can still be prepared and sent; their raw capability is never returned
+by either inbox action. Password-reset notices are also hidden; their email-only
+capability preparation remains unchanged. An audit of production notification
+writers found verification and password reset as the eventless security producers.
+
+Regression evidence lives in `notificationInbox.integration.test.ts`: real
+verification-email preparation/delivery, hidden verification/reset/unknown eventless
+rows, denied known-ID read attempts, successful email-token consumption, retained
+event notices and the 100-row boundary. The real browser test uses an unverified
+account and tests GET/POST non-disclosure alongside read persistence and ordering.
+
+Follow-up: retire or align the legacy Organiser notification read path in
+`api/events.ts` only after reviewing its current-organisation filter versus the
+all-role recipient-history contract. Eventless filtering and the result cap now
+agree; broader authorization changes and pagination are outside this security fix.
+
+Changes remain local until the user authorizes pushing. CI success on f379d6d
+is historical evidence only; do not tick the final-head checks item before new
+remote CI passes. The hosted postplan documents this distinction.
+
+### Review-revision checks (2026-09-27)
+
+- `npm test --workspace backend`: 208 passed (includes verification-email/token tests).
+- `npm run test:event-notifications:db --workspace backend`: 12 passed, including
+  verification-token isolation and the 100-result cap.
+- `npm run test:auth:db --workspace backend`: 13 passed.
+- `npm run test:notifications`: 26 passed; `npm run test:redis`: 2 passed.
+- `npm test --workspace frontend`: 48 passed.
+- `npx playwright test --config playwright.auth.config.ts`: 10 passed, desktop
+  and mobile real login, inbox non-disclosure/read persistence and password reset.
+- `npm run test:runtime`: 15 passed; typecheck and build passed.
+- `npm run test:db --workspace backend`: 9 passed, 1 failed. First attempt lacked
+  migrated public tables required by the older registration fixture. After local
+  disposable migration, the unchanged registration concurrency test failed on
+  `users_email_key` during concurrent inserts. Its repository, test and migration
+  files match main. Record/fix that registration issue separately; do not describe
+  the entire database suite or the final unpublished state as all-green.
+
+Only the disposable local database was migrated; no live schema or email changed.
+
+Postplan for this local review revision: https://0lympnguubta.postplan.dev (linked on PR #143).
+`python scripts/check.py` passed with 45 tooling tests; the postplan HTML checker
+and desktop/mobile visual inspection passed. Remote checklist now identifies
+the unpublished revision and leaves final-head checks unchecked.

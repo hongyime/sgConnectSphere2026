@@ -42,6 +42,20 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
     await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id)
       VALUES ($1, 'EVT-A01', $2, $3, 'Own workshop', '[2027-01-01,2027-01-02)', 10, $3)`, [ownEvent, organiser, a]);
     const query: Query = (sql, values) => db.query(sql, values);
+    // Production audit writers use human-readable actions, with the stable
+    // field_changed discriminator identifying status history (PR #141).
+    await db.query(`INSERT INTO audit_logs
+      (entity_type, entity_id, event_id, action, field_changed, old_value, new_value, occurred_at)
+      VALUES
+      ('event', $1, $1, 'Status changed to submitted', 'status', 'draft', 'submitted', '2026-01-01T00:00:00Z'),
+      ('event', $1, $1, 'Status changed to under_review', 'status', 'submitted', 'under_review', '2026-01-02T00:00:00Z'),
+      ('event', $1, $1, 'Coordinator assigned', 'coordinator_id', NULL, $3, '2026-01-02T00:00:00Z'),
+      ('event', $2, $2, 'Status changed to confirmed', 'status', 'planning', 'confirmed', '2026-01-03T00:00:00Z')`,
+      [eventA, eventB, organiser]);
+    const history = (await getEvent(query, user, 'EVT-A02')).statusHistory;
+    assert.deepEqual(history.map(row => [row.old_value, row.new_value]), [
+      ['draft', 'submitted'], ['submitted', 'under_review'],
+    ], 'status history includes real audit actions, in order, and excludes other events/fields');
     assert.deepEqual((await listEvents(query, user)).map(e => e.event_code).sort(), ['EVT-A01', 'EVT-A02']);
     assert.equal((await getEvent(query, user, 'EVT-A02')).creator_name, 'Colleague A');
     assert.deepEqual(await listEvents(query, user, 'Confidential'), []);
@@ -50,7 +64,7 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
     const before = (await db.query('SELECT clock_timestamp() AS time')).rows[0].time;
     await assert.rejects(getEvent(query, user, 'EVT-B01'), { status: 403 });
     await assert.rejects(getEvent(query, user, eventB), { status: 403 });
-    const audits = (await db.query('SELECT * FROM audit_logs ORDER BY occurred_at')).rows;
+    const audits = (await db.query('SELECT * FROM audit_logs WHERE occurred_at >= $1 ORDER BY occurred_at', [before])).rows;
     assert.equal(audits.length, 2);
     for (const audit of audits) {
       assert.equal(audit.actor_id, organiser); assert.equal(audit.event_id, eventB);

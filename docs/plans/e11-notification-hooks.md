@@ -67,6 +67,39 @@ Known recipients still receive their notifications; Venue Staff integration
 remains incomplete. There is no `decided_by` or all-Venue-Staff fallback. Tests
 inject an explicit assignment resolver and also verify the unresolved path.
 
+## Coordinator integration and merge coordination
+
+PR #141 integrates this foundation with E03-S01. Submission still attempts
+Coordinator assignment inside the transaction. The system-generated Under Review
+change notifies the Organiser and the assigned Coordinator. The specific
+assignment notice and generic status notice share the same audit/change ID, so
+that Coordinator gets one in-app record and one prepared email job. Reassignment
+requests and responses also use the shared outbox writer, with the actor excluded
+by their targeted recipient rules. Outbox failure rolls back creation, draft
+submission, reassignment requests and either response.
+
+Integration evidence is in `backend/tests/coordinatorNotifications.integration.test.ts`.
+The shared writer is `writeEventNotification`; workflow-specific content must
+already be authorized for the target recipient. It filters inactive accounts.
+
+Merge the foundation PR #142 first, then refresh/review PR #141 against main.
+PR #141 includes #142's commits to make the combined behaviour reviewable; its
+protected auto-merge is held until that foundation lands. Preserve both test
+commands, all migrations and both API route branches when integrating.
+
+| Other open PR | Impact when #142 lands | Required follow-up |
+| --- | --- | --- |
+| #134 venue calendar API | Backend test-script and generated-coverage overlap; read-only calendar logic unaffected | Keep calendar and notification tests, regenerate coverage; merge before #136 |
+| #136 calendar UI / #137 organiser UI | Generated coverage and continuity overlap; API response contracts unchanged | Refresh main and regenerate coverage without dropping either PR's test cases |
+| #139 navigation guards | Trial merge is textually clean; shares the generated inventory | Regenerate and compare the inventory after refreshing main |
+| #127 screen scaffolds | Continuity-note overlap only with this feature | Preserve both session histories; keep actual inbox integration as a separate task |
+| #126 coverage audit | Continuity-note overlap; its report is a point-in-time snapshot | Preserve history; distinguish notification unit coverage from the separate PostgreSQL suite |
+
+This table is an integration snapshot from 2026-09-27, not a replacement for live
+PR checks. Do not copy the unmerged foundation into every unrelated branch.
+After each main merge, refresh affected branches and regenerate their derived
+files. Jira remains unchanged until the approved backlog change merges.
+
 ## Remaining tasks and owners
 
 | Task | Owning work | Completion evidence |
@@ -76,7 +109,6 @@ inject an explicit assignment resolver and also verify the unresolved path.
 | Call equipment/support hooks with explicit affected-role flags | E07 owners | Reservation, shortfall and availability changes notify only affected responsibilities |
 | Integrate change approval, publication updates, reconfirmation and cancellation release flows | E08 / E10 owners | Effective public changes and cancellation retain correct before/after recipients |
 | Call place-release hook after a real place becomes available | E09-S04 / E09-S05 | All eligible waitlisted users invited, with no automatic promotion or hold |
-| Reconcile Coordinator assignment notifications with this shared routing | E03-S01 / PR #141 owner | Preserve assignment/reassignment notices and avoid duplicate notifications for one change |
 | Validate configured relay/worker and one real inbox delivery | Deployment owner | Authorized deployed delivery evidence; local intercepted HTTP is insufficient |
 | Reconcile Jira and scope estimates after this backlog change merges | Scrum Master | Link the approved merged decision; keep unfinished acceptance criteria open |
 
@@ -104,3 +136,20 @@ change occurs, so cancellation messages are not lost after release.
 The shared hooks and existing outbox are reused without a second notification
 system. No schema migration, production email enablement or provider change was
 needed. See [verification and acceptance coverage](../testing/event-notifications.md).
+
+## PR #143 security review and read-path alignment
+
+The event inbox returns only the newest 100 notifications with a non-null
+`event_id`. Both list and mark-read (`UPDATE RETURNING`) enforce this boundary.
+Email-verification messages contain an email-only capability; filtering only the
+list would still expose it through a known-ID mark-read request. All eventless
+notices, including password reset and unknown future security notices, are hidden.
+The existing email outbox and verification/reset consumption flows are unchanged.
+
+The legacy Organiser `listNotifications` in `api/events.ts` already excludes
+eventless notices and caps results at 100. It additionally filters current client
+organisation, whereas this all-role inbox preserves recipient history (including
+cancellation after withdrawal). Retiring or unifying that endpoint requires an
+explicit historical/tenant-access decision and is a follow-up, not a silent change
+to either permission model. Pagination beyond the consistent 100-result cap is
+also deferred. PR #141's assignment integration is preserved from current main.

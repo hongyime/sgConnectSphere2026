@@ -40,11 +40,11 @@ export const notifications: NotificationRecord[] = [
   },
   {
     id: 'N-1001',
-    title: 'Account verified',
-    message: 'Your ConnectSphere account is now verified.',
+    title: 'Event completed',
+    message: 'The event has completed.',
     is_read: true,
     read_at: '2026-09-10T09:31:00Z',
     created_at: '2026-09-10T09:00:00Z',
-    event_id: null,
+    event_id: 'EVT-C04',
   },
 ];

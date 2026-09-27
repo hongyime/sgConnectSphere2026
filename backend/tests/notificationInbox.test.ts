@@ -1,3 +1,5 @@
+// E11-S01 / PR #143: handler tests use the local query/auth doubles below.
+// Prove all-role ownership, Origin and request validation before database access.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInboxHandler } from '../src/modules/eventNotifications/inbox.js';
@@ -34,7 +36,7 @@ for (const role of USER_ROLES) {
     const f=fixture({user:{...user,role}}); const result=await f.request();
     assert.equal(result.status,200);
     assert.deepEqual(f.calls[0].values,[user.id]);
-    assert.match(f.calls[0].sql,/WHERE user_id = \$1 ORDER BY created_at DESC, id DESC/);
+    assert.match(f.calls[0].sql,/WHERE user_id = \$1 AND event_id IS NOT NULL\s+ORDER BY created_at DESC, id DESC LIMIT 100/);
     assert.equal(result.headers['Cache-Control'],'private, no-store');
   });
 }
@@ -43,7 +45,7 @@ test('TC_E11S01_07: read update is owned and preserves the original read timesta
   assert.equal(result.status,200); assert.equal(result.body.notification.is_read,true);
   assert.deepEqual(f.calls[0].values,[id,user.id]);
   assert.match(f.calls[0].sql,/read_at = COALESCE/);
-  assert.match(f.calls[0].sql,/WHERE id = \$1 AND user_id = \$2/);
+  assert.match(f.calls[0].sql,/WHERE id = \$1 AND user_id = \$2 AND event_id IS NOT NULL/);
 });
 test('TC_E11S01_07: another user notification and missing notification return the same 404', async () => {
   const f=fixture({missing:true}); assert.equal((await f.request({method:'POST',body:{action:'mark_read',id}})).status,404);

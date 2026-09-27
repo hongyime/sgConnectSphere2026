@@ -56,7 +56,7 @@ test('organiser event detail includes current status date and status history', a
       id: 'event-a', status: 'planning', status_changed_at: '2026-09-10T00:00:00.000Z',
     }] };
     if (sql.includes('FROM event_threads')) return { rows: [] };
-    if (sql.includes("action = 'status_changed'")) return { rows: [
+    if (sql.includes("field_changed = 'status'")) return { rows: [
       { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
       { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
     ] };
