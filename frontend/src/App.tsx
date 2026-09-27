@@ -817,7 +817,7 @@ function PrototypeApp() {
             <a href="/register">Create Account</a>
             <IconButton icon={Search} label="Search screens" />
             <IconButton icon={SlidersHorizontal} label="Filter screens" />
-            <IconButton icon={Bell} label="Open notifications" />
+            <a href="/notifications" className="icon-button" aria-label="Open notifications"><Bell size={18} aria-hidden="true" /></a>
           </div>
         </header>
 
@@ -1047,7 +1047,6 @@ function App() {
       <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/permission-denied" element={<PermissionDenied />} />
-      {/* E11-S01 minimal slice: frontend-only, mocked data — see notificationsApi.ts */}
       <Route path="/notifications" element={<NotificationInbox />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />
       <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
