@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import './venue.css';
 
@@ -21,7 +21,11 @@ export function VenueSearch() {
   const [ready, setReady] = useState(false);
   const [note, setNote] = useState('');
   const [title, setTitle] = useState('');
+  // Bumped when the event changes and on every search, so a search that
+  // finishes after either no longer updates the page.
+  const searchRequest = useRef(0);
   useEffect(() => {
+    searchRequest.current += 1;
     const controller = new AbortController();
     setReady(false); setBusy(true); setError(''); setVenues(null);
     const params = new URLSearchParams({ mode: 'suitability', ...(eventCode ? { event_id: eventCode } : {}) });
@@ -39,17 +43,20 @@ export function VenueSearch() {
   }, [eventCode]);
   async function search(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(''); setErrors({}); setVenues(null);
+    const request = ++searchRequest.current;
+    const current = () => request === searchRequest.current;
     try {
       const params = new URLSearchParams({ mode: 'suitability', search: '1', ...fields, start: new Date(fields.start).toISOString(), end: new Date(fields.end).toISOString(), accessibility: selected.accessibility.join(','), facilities: selected.facilities.join(',') });
       if (!fields.capacity) params.delete('capacity');
       if (eventCode) params.set('event_id', eventCode);
       const response = await fetch(`/api/venues?${params}`, { credentials: 'same-origin' });
       const body = await response.json();
+      if (!current()) return;
       if (body.errors) { setErrors(body.errors); return; }
       if (!response.ok) throw new Error(body.error || 'Unable to search venues.');
       setVenues(body.venues);
-    } catch (e) { setError(e instanceof Error ? e.message : 'Unable to search venues.'); }
-    finally { setBusy(false); }
+    } catch (e) { if (current()) setError(e instanceof Error ? e.message : 'Unable to search venues.'); }
+    finally { if (current()) setBusy(false); }
   }
   return <main className="venue-page">
     <h1>Search for suitable venues</h1>
