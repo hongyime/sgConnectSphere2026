@@ -1,5 +1,18 @@
 # Agent State
 
+- 2026-09-27: PR #141 integrated with approved notification foundation #142.
+  Preserved submission auditing plus automatic assignment, combined backend test
+  commands and full migration-chain fixtures, and removed a duplicate API pool
+  import from the textual auto-merge. Assignment and generic status notices share
+  a change ID: one Coordinator message/email job plus the Organiser status notice.
+  Reassignment notifications now prepare transactional email deliveries too.
+  23 focused unit tests and 13 PostgreSQL integration tests passed, including
+  rollback of creation, draft submission, requests and accept/decline responses.
+  The cross-PR impact and merge order are in docs/plans/e11-notification-hooks.md.
+  Merge #142 first; hold #141 auto-merge until main contains that foundation and
+  refresh/recheck before requesting final approval. No new/live migration needed.
+
+- 2026-09-26: SCRUM-32 (E03-S01) backend by Aaron: submissions auto-assign the eligible Coordinator with the fewest active events (T-14/T-52; tie-break least recently assigned; advisory lock), and the assigned Coordinator can request reassignment that moves only when the named colleague accepts (C-56). Migration 0008, Coordinator endpoints in `api/events.ts`, in-app notifications via `notifyUser()`. Frontend and e2e are Amareet's, built against the API contract in the PR. TC_E03S01_03 retired; TC_E03S01_05 added.
 - 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
   BDR T-64 and the existing ADR-006. The event-notification hook now captures
   active linked recipients, suppresses the actor, deduplicates by business change,
@@ -182,4 +195,5 @@ Known env facts:
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
 
+- 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.

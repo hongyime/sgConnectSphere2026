@@ -131,6 +131,23 @@ function notificationId(eventId: string, changeId: string, recipientId: string):
   return `${hex.slice(0,8)}-${hex.slice(8,12)}-5${hex.slice(13,16)}-8${hex.slice(17,20)}-${hex.slice(20,32)}`;
 }
 
+// Shared transactional writer for recipient-matrix and targeted workflow notices.
+// Reusing the same change ID means a specific assignment notice can also satisfy
+// the generic status notice for that recipient without a second in-app/email row.
+export async function writeEventNotification(client: PoolClient, input: {
+  eventId: string; changeId: string; userId: string; occurredAt: Date; title: string; message: string;
+}) {
+  if (!input.changeId || !Number.isFinite(input.occurredAt.getTime())) throw new Error('invalid_notification_change');
+  const id = notificationId(input.eventId, input.changeId, input.userId);
+  const result = await client.query(`INSERT INTO notifications(user_id,event_id,title,message,id,created_at)
+    SELECT $1,$2,$3,$4,$5,$6 FROM users WHERE id=$1 AND is_active
+    ON CONFLICT(id) DO NOTHING RETURNING id`,
+  [input.userId,input.eventId,input.title,input.message,id,input.occurredAt]);
+  if (!result.rowCount) return null;
+  await insertNotificationDelivery(client, id);
+  return id;
+}
+
 // The caller owns the transaction and the business write. changeId is a durable
 // server-side change/audit ID reused on retries, never a fresh ID per recipient.
 // Do not catch notification failures and then commit the business transaction.
@@ -145,15 +162,9 @@ export async function notifyEventChange(client: PoolClient, input: {
     const publicName = change.kind==='status' && change.to==='cancelled' ? before.publicName : after.publicName;
     const eventName = audience==='attendee' ? publicName : after.title;
     if (!eventName) throw new Error('public_notification_name_missing');
-    const id = notificationId(after.eventId, changeId, userId);
     const message = `${eventName}: ${description(change)} Changed at ${occurredAt.toISOString()}.`;
-    const result = await client.query(`INSERT INTO notifications(id,user_id,event_id,title,message,created_at)
-      VALUES($1,$2,$3,'Event update',$4,$5) ON CONFLICT(id) DO NOTHING RETURNING id`,
-    [id,userId,after.eventId,message,occurredAt]);
-    if (result.rowCount) {
-      await insertNotificationDelivery(client, id);
-      inserted.push(id);
-    }
+    const id = await writeEventNotification(client, {eventId:after.eventId,changeId,userId,occurredAt,title:'Event update',message});
+    if (id) inserted.push(id);
   }
   // Explicit unresolved integration signal; never infer assignments or fan out
   // to every Venue Staff user. Existing business workflows continue for known
