@@ -1,5 +1,22 @@
 # Agent Journal
 
+- 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
+  BDR T-64 and the existing ADR-006. The event-notification hook now captures
+  active linked recipients, suppresses the actor, deduplicates by business change,
+  uses public attendee content and writes notifications/outbox rows atomically
+  with existing status/submission/date-edit transactions. Real PostgreSQL tests
+  cover rollback, concurrent retries and pre-release cancellation membership.
+  Full build, backend unit suite, 37 database checks and 15 compiled runtime
+  checks passed; the final notification database rerun passed 8/8 after the
+  same-status reason-preservation fix. Runtime cleanup initially rejected a
+  temporary dependency junction; rerunning with a real local cache passed.
+  Dated backlog, test, BDR and ADR exports regenerated for 270926, including
+  the test compatibility workbook and coverage inventory. This is partial
+  E11-S01 work: venue assignment, downstream workflow callers, all-role inbox
+  and deployed email verification remain in docs/plans/e11-notification-hooks.md.
+  Do not mark SCRUM-75 Done or reconcile Jira until reviewed canonical changes
+  merge. No live migration or provider call was made for this implementation.
+
 - 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 - 2026-09-22: Opened PR #119 (`test/fix-create-extension-race-condition`) fixing a `CREATE EXTENSION IF NOT EXISTS` TOCTOU race across 6 integration-test files via a shared helper; CI green (application-checks 3m6s against a genuinely fresh Postgres container). eventLifecycle.integration.test.ts (on #115, unmerged) deliberately left out -- will fast-follow once #115 picks up main.
