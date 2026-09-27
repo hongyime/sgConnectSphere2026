@@ -77,7 +77,6 @@ inject an explicit assignment resolver and also verify the unresolved path.
 | Integrate change approval, publication updates, reconfirmation and cancellation release flows | E08 / E10 owners | Effective public changes and cancellation retain correct before/after recipients |
 | Call place-release hook after a real place becomes available | E09-S04 / E09-S05 | All eligible waitlisted users invited, with no automatic promotion or hold |
 | Reconcile Coordinator assignment notifications with this shared routing | E03-S01 / PR #141 owner | Preserve assignment/reassignment notices and avoid duplicate notifications for one change |
-| Connect all-role inbox/list/read APIs and the existing mocked screen | E11-S01 backend and frontend owners | Ownership-protected unread/read/list tests; real browser integration |
 | Validate configured relay/worker and one real inbox delivery | Deployment owner | Authorized deployed delivery evidence; local intercepted HTTP is insufficient |
 | Reconcile Jira and scope estimates after this backlog change merges | Scrum Master | Link the approved merged decision; keep unfinished acceptance criteria open |
 
@@ -85,3 +84,23 @@ Reusable hook tests establish infrastructure behaviour; they do not claim that t
 future booking, equipment, cancellation or waitlist workflows are implemented.
 The existing status repository does not acquire those workflows' release or
 readiness responsibilities merely because it now sends notifications.
+
+## Authenticated inbox integration (2026-09-27)
+
+E11-S01 now exposes `GET /api/notifications` and `POST /api/notifications`
+with `{ "action": "mark_read", "id": "notification UUID" }`. The existing
+notification function hosts this route via a rewrite, keeping the deployment
+function count unchanged. Cookie authentication derives the recipient; writes
+require the configured application Origin. All five roles can read their own
+notifications. Inactive/locked sessions, other users' IDs and client-supplied
+identity fields are refused. Responses are private and non-cacheable.
+
+The `/notifications` screen uses these endpoints, orders newest first, distinguishes
+unread messages and persists read state when a notification is opened. Reading
+again retains the first read timestamp. Historical notifications remain visible to
+their recipient after registration withdrawal; membership is resolved when the
+change occurs, so cancellation messages are not lost after release.
+
+The shared hooks and existing outbox are reused without a second notification
+system. No schema migration, production email enablement or provider change was
+needed. See [verification and acceptance coverage](../testing/event-notifications.md).

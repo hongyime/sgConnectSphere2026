@@ -1,5 +1,21 @@
 # Agent State
 
+- 2026-09-27: E11-S01 / SCRUM-75 inbox follow-up on
+  `feature/SCRUM-75-notification-inbox`: replaced frontend fixtures with the
+  authenticated all-role list/read API, using the existing notification function
+  rewrite and cookie sessions. Opening marks read, other-recipient writes fail,
+  and read timestamps remain stable. Shared event hooks/outbox already present
+  are reused. Backend unit suite, 7 inbox component tests, 10 notification DB
+  tests, 26 dispatcher/provider tests, 2 Redis tests, 2 real desktop/mobile inbox
+  browser tests, typecheck/build, 15 runtime tests and repository checks passed.
+  Initial DB/Redis attempts lacked test URLs; isolated local containers resolved
+  that setup issue. No live data changes or real emails. Full-story gaps and
+  owning Jira references are in docs/testing/event-notifications.md. Venue
+  assignment, future workflow integrations and deployed mailbox verification
+  remain incomplete; do not mark SCRUM-75 Done. The user subsequently authorized
+  committing and opening a PR; prepare a draft with remaining dependencies and
+  leave Jira open. No Jira transition was made.
+
 - 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
   BDR T-64 and the existing ADR-006. The event-notification hook now captures
   active linked recipients, suppresses the actor, deduplicates by business change,

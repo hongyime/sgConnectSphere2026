@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **237**
-- Automated (explicit TC_ID in an active test title): **75** (31.6%)
-  - Real-database (`.integration.test` / `.db.test`): **20**
-  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **55**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **159** (67.1%)
+- Automated (explicit TC_ID in an active test title): **77** (32.5%)
+  - Real-database (`.integration.test` / `.db.test`): **19**
+  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
+  - Live-assertion (other active tests): **57**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **157** (66.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -27,10 +27,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 15 | 0 | 15 | 0 |
 | E09 | 35 | 5 | 30 | 0 |
 | E10 | 15 | 0 | 15 | 0 |
-| E11 | 15 | 10 | 5 | 0 |
+| E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **237** | **75** | **159** | **3** |
+| **Total** | **237** | **77** | **157** | **3** |
 
 ## Case-by-case status
 
@@ -297,12 +297,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/e2e/e11.spec.ts: TC_E1 |
+| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
 | `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; tests/e2e/e11.spec.ts: |
 | `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_03 - Verify that a user whose responsibilities are unaffected by a change should not be notified |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
-| `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_06 - Verify that opening the notification list with several unread notifications should show them newest first with unread ones distinguished |
-| `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_07 - Verify that opening an unread notification should mark it as read |
+| `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; tests/auth-e2e/notificati |
+| `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
 | `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
 | `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_09: an outbox failure rolls back status, audit, notification and actual date edit; tests/e2e/e11.spec.ts: TC_E11S01_ |
 | `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/eventNotifications.test.ts: TC_E11S01_10: approved recipient matrix distinguishes internal decisions from public changes |
@@ -439,6 +439,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reset transaction rolls back token consumption and lock changes on database failure
 - API rejects cross-origin changes and wrong methods
 
+### `backend/tests/notificationInbox.integration.test.ts`
+
+- prepared email uses current account email and a provider rejection preserves the inbox
+
+### `backend/tests/notificationInbox.test.ts`
+
+- rejects anonymous, inactive and locked callers before database access
+- rejects cross-origin writes and client supplied identity
+- storage errors never disclose database details
+
 ### `backend/tests/profile.integration.test.ts`
 
 - real sessions, profile persistence, case-insensitive uniqueness and future notification address
@@ -546,6 +556,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - renders notifications newest first once loaded
 - distinguishes unread notifications from read ones
 - marking a notification as read updates it and removes the action
+- API failures show a safe retryable error
+- a failed read request leaves the notification unread and shows the error
 
 ### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
 

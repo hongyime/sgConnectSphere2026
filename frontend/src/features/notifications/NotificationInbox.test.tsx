@@ -1,13 +1,20 @@
-// MOCKED — pending backend (see notificationsApi.ts). These tests exercise
-// the real component against that mock layer rather than re-mocking fetch,
-// since notificationsApi.ts already stands in for the real
-// /api/notifications endpoints.
 import { cleanup, fireEvent, render, screen, waitForElementToBeRemoved, within } from '@testing-library/react';
-import { afterEach, expect, test } from 'vitest';
+import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { NotificationInbox } from './NotificationInbox';
 import { notifications as fixtureNotifications } from './mocks';
 
-afterEach(() => { cleanup(); });
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
+    if (init?.method === 'POST') {
+      const { id } = JSON.parse(init.body);
+      return { ok: true, json: async () => ({ notification: {
+        ...fixtureNotifications.find(item => item.id === id), is_read: true, read_at: new Date().toISOString(),
+      } }) };
+    }
+    return { ok: true, json: async () => ({ notifications: [...fixtureNotifications].reverse() }) };
+  }));
+});
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 test('shows a loading state before notifications arrive', () => {
   render(<NotificationInbox />);
@@ -42,15 +49,39 @@ test('marking a notification as read updates it and removes the action', async (
   await screen.findByRole('list', { name: 'Notifications' });
   const item = screen.getByText('Booking flagged for review').closest('li') as HTMLElement;
 
-  // The button's own label flips to "Marking…" the instant it's clicked
-  // (state update is synchronous, the mock's resolution isn't), so wait for
-  // any button in this item to disappear rather than one still named
-  // "Mark as read" — that specific name is already gone by the time this
-  // check first runs.
   fireEvent.click(within(item).getByRole('button', { name: 'Mark as read' }));
-  await waitForElementToBeRemoved(() => within(item).queryByRole('button'));
+  await waitForElementToBeRemoved(() => within(item).queryByRole('button', { name: /Mark/ }));
 
   expect(item).not.toHaveClass('notification-unread');
   expect(item.textContent).toContain('Read');
   expect(item.textContent).not.toContain('Unread');
+});
+
+
+test('TC_E11S01_07: opening a notification marks it read and shows its content', async () => {
+  render(<NotificationInbox />);
+  const button = await screen.findByRole('button', { name: fixtureNotifications[0].title });
+  fireEvent.click(button);
+  expect(await screen.findByText(fixtureNotifications[0].message)).toBeVisible();
+  expect(fetch).toHaveBeenCalledWith('/api/notifications', expect.objectContaining({
+    method: 'POST', credentials: 'same-origin',
+    body: JSON.stringify({ action: 'mark_read', id: fixtureNotifications[0].id }),
+  }));
+});
+
+test('API failures show a safe retryable error', async () => {
+  vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+  render(<NotificationInbox />);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load notifications');
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+});
+
+
+test('a failed read request leaves the notification unread and shows the error', async () => {
+  render(<NotificationInbox />);
+  const button = await screen.findByRole('button', { name: fixtureNotifications[0].title });
+  vi.mocked(fetch).mockRejectedValue(new Error('offline'));
+  fireEvent.click(button);
+  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to mark notification as read');
+  expect(button.closest('li')).toHaveClass('notification-unread');
 });

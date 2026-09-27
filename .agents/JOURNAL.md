@@ -42,3 +42,15 @@
 - 2026-09-23: Audited all 111 Jira tickets' title conventions at Bryan's request. Found 4 genuinely different, historically-mixed patterns: 47 tickets `E01-S01 Title` (no brackets), 24 tickets `[E01-S05] Title` (brackets, interleaved chronologically with the no-bracket ones, not a clean early/late split), plus `[E01-EXT]`/`[E01]`/`[Docs]`/`[DUPLICATE...]` variants for non-story technical work. Standardized the 24 bracketed story tickets to match the no-bracket majority (which also matches the canonical backlog Markdown format's own documented heading convention) via direct Jira API calls; verified 0 remain bracketed. Confirmed branch names reference ticket keys, not title text, so no branch renames were needed.
 
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
+- 2026-09-27: Implemented SCRUM-75 all-role authenticated notification inbox on
+  feature/SCRUM-75-notification-inbox, reusing T-64 event hooks and email outbox.
+  Added database ownership/current-email/provider-failure regressions and real
+  desktop/mobile login-to-inbox tests. Unit/component, notification database,
+  dispatcher/provider, Redis, browser, build/typecheck, runtime and hygiene checks
+  passed. Coverage inventory regenerated. See docs/testing/event-notifications.md
+  for exact commands and unfinished owning-story dependencies. No production
+  schema/data/email changes, commits, pushes or Jira status changes.
+
+- 2026-09-27: User authorized commit and PR for SCRUM-75 inbox follow-up.
+  Preparing a conventional draft PR with the required four sections, actual test
+  evidence and explicit outstanding dependencies; do not close the full story.
