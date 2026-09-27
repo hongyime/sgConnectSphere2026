@@ -605,6 +605,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - login page posts to /api/auth/session and surfaces server errors without leaking credentials
 - login page redirects to the role home on success
 
+### `tests/e2e/layout-and-focus.spec.ts`
+
+- keyboard focus outline is visible against the page (WCAG 3:1)
+
 ### `tests/e2e/organiser.spec.ts`
 
 - organiser dashboard shows request status counts from the API

@@ -3,6 +3,7 @@
 - 2026-09-26: PR #137 refreshed after #138: preserve live organiser request screens and stale-response fixes alongside the new mock change/cancel forms. Separate mock status colours from live API statuses to avoid a TypeScript integration regression. Follow-up to #105 and #138.
 
 - 2026-09-26: Resolved main conflicts for PR #137, ignored obsolete organiser detail/list responses, labeled the 100-request window and added navigation/error-order regressions; regenerated coverage. Follow-up to SCRUM-105. Validation evidence is recorded in the PR review follow-up.
+- 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
@@ -166,3 +167,5 @@ Known env facts:
 - Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+- 2026-09-27: PR #137 refreshed after #124/#140; preserve live organiser screens and merged error/layout improvements, regenerate the combined test inventory. Follow-up to #105.
