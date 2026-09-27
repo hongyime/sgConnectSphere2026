@@ -40,13 +40,22 @@ raw coverage by default. `npm run test:coverage:backend` from the root runs
 only the backend `test` script; c8 emits its report as part of that run.
 The separate backend `test:coverage` command re-reports the most recent raw
 coverage; the root command does not invoke it. The root report reflects
-**only the files loaded by `test` and accepted by c8's filters**. Integration tests
-under `test:db`, `test:profile:db`, and `test:auth:db` never contribute
-to the aggregate report even though they exercise real code paths.
+**only the files loaded by `test` and accepted by c8's filters**. Results
+are not added from the separate `test:db`, `test:profile`, `test:profile:db`,
+`test:auth:db`, `test:deactivation`, `test:deactivation:db`,
+`test:venue-search`, or `test:venue-search:db` commands: the root aggregate
+invokes none of them. The two venue-search commands use plain `tsx`, without
+`c8` instrumentation. Runtime, notification/Redis and browser suites at the
+root are also outside this coverage command.
 
-This is not "wrong" in isolation — the `test` suite is the intended
-unit-test coverage gate — but the report's headline percentage understates
-what the full suite exercises. Two remediations, either is fine:
+`deactivation.test.ts` and `venueSearch.test.ts` are already listed in the
+main backend `test` command, so those tests do contribute when run there.
+Running their dedicated commands separately does not add or merge another
+suite's coverage into the root aggregate. `profile.test.ts` is only in the
+separate profile command in this snapshot.
+
+This report describes the unit suite. It does not show every path exercised
+by the separate suites. Two options for making that scope explicit:
 
 - Run all selected suites under a single `c8` invocation, or use one shared
   `--temp-directory`: clean it on the first run, pass `--clean=false` to each
@@ -65,8 +74,10 @@ for eligible files actually loaded by the Node process during the test run.
 Its default `allowExternal: false` also excludes files outside the backend
 working directory, including the sibling `api/` directory. The
 Vercel serverless handlers under `api/` (11 files as of this audit) are
-imported by three backend unit-test files in the audit snapshot (integration
-suites additionally import some handlers):
+**all excluded from this backend coverage report**, even when a test imports
+one. The following unit-test files import two distinct handlers; the profile
+test is run separately, while registration and deactivation are in the main
+`test` command. Integration suites additionally import some handlers:
 
 | Test file | api/ file loaded |
 | --- | --- |
@@ -74,12 +85,15 @@ suites additionally import some handlers):
 | `backend/tests/profile.test.ts` | `api/account/profile.ts` |
 | `backend/tests/deactivation.test.ts` | `api/account/profile.ts` (deactivation uses the profile handler) |
 
-These imports exercise two distinct handlers. The remaining nine `api/` files
+These imports exercise two distinct handlers, but neither appears in the
+backend report because of the external-file filter. The remaining nine `api/` files
 (`events.ts`, `health.ts`, `attendee/events.ts`,
 `auth/session.ts`, `cron/outbox-relay.ts`, `events/publish.ts`,
 `internal/planning.ts`, `notifications/send.ts`, `venues/index.ts`) are
 never loaded by any test in the current `test` set, so `c8` neither
-reports them as 0% nor lists them at all. They are **silently unmeasured**,
+reports them as 0% nor lists them at all. All 11 handlers are
+**unmeasured by this report**: two are exercised by the main unit command but
+excluded by location, and nine are also absent from that command,
 which is a legitimate reporting bug: a rubric-driven reader looking at
 the coverage output would not know these files exist.
 
@@ -125,11 +139,12 @@ reviewer wants it.
 
 ## 4. Deliberate: no enforced thresholds
 
-`docs/repository-setup.md:256` records the deliberate decision to defer
-threshold choice:
+[The repository testing policy](../repository-setup.md#9-test-strategy)
+records the deliberate decision to defer threshold choice:
 
-> Coverage numbers on their own are not proof of correctness. Choose
-> thresholds after seeing the real code and its shape.
+> Coverage reports reveal untested areas but are not proof of correctness.
+> Choose thresholds after seeing the real code and risks, rather than
+> inventing an arbitrary percentage now.
 
 Nothing in `docs/decisions/` overrides this. `docs/plans/sprint-1-retrospective.md`
 and `docs/testing/qa-audit-agile-quadrants.md` both discuss coverage

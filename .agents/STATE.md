@@ -1,5 +1,13 @@
 # Agent State
 
+- 2026-09-27: PR #126 peer-review follow-up: replaced the paraphrased coverage
+  blockquote with the exact repository testing-policy wording, made clear that
+  all 11 external API handlers are absent from the backend coverage report, and
+  enumerated separate suite commands while distinguishing deactivation/venue
+  tests already included in the main unit command. Verified against package
+  scripts and source text. Documentation only; coverage configuration and
+  thresholds remain unchanged. Responds to issuecomment-5844795205.
+
 - 2026-09-26: PR #126 review: corrected c8 aggregation commands, external API filtering, handler imports and JSON report availability against installed tooling. Documentation audit only; no thresholds or runtime configuration changed. Source: docs/repository-setup.md.
 - 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
