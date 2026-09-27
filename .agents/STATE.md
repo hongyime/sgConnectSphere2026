@@ -181,3 +181,5 @@ Known env facts:
 - Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+- 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
