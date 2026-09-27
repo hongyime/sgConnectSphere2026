@@ -1,6 +1,34 @@
 # Agent Journal
 
+- 2026-09-27: PR #141 integrated with approved notification foundation #142.
+  Preserved submission auditing plus automatic assignment, combined backend test
+  commands and full migration-chain fixtures, and removed a duplicate API pool
+  import from the textual auto-merge. Assignment and generic status notices share
+  a change ID: one Coordinator message/email job plus the Organiser status notice.
+  Reassignment notifications now prepare transactional email deliveries too.
+  23 focused unit tests and 13 PostgreSQL integration tests passed, including
+  rollback of creation, draft submission, requests and accept/decline responses.
+  The cross-PR impact and merge order are in docs/plans/e11-notification-hooks.md.
+  Merge #142 first; hold #141 auto-merge until main contains that foundation and
+  refresh/recheck before requesting final approval. No new/live migration needed.
+
 - 2026-09-26: SCRUM-32 (E03-S01) backend by Aaron: submissions auto-assign the eligible Coordinator with the fewest active events (T-14/T-52; tie-break least recently assigned; advisory lock), and the assigned Coordinator can request reassignment that moves only when the named colleague accepts (C-56). Migration 0008, Coordinator endpoints in `api/events.ts`, in-app notifications via `notifyUser()`. Frontend and e2e are Amareet's, built against the API contract in the PR. TC_E03S01_03 retired; TC_E03S01_05 added.
+- 2026-09-27: Approved E11-S01 recipient matrix recorded in both backlog views,
+  BDR T-64 and the existing ADR-006. The event-notification hook now captures
+  active linked recipients, suppresses the actor, deduplicates by business change,
+  uses public attendee content and writes notifications/outbox rows atomically
+  with existing status/submission/date-edit transactions. Real PostgreSQL tests
+  cover rollback, concurrent retries and pre-release cancellation membership.
+  Full build, backend unit suite, 37 database checks and 15 compiled runtime
+  checks passed; the final notification database rerun passed 8/8 after the
+  same-status reason-preservation fix. Runtime cleanup initially rejected a
+  temporary dependency junction; rerunning with a real local cache passed.
+  Dated backlog, test, BDR and ADR exports regenerated for 270926, including
+  the test compatibility workbook and coverage inventory. This is partial
+  E11-S01 work: venue assignment, downstream workflow callers, all-role inbox
+  and deployed email verification remain in docs/plans/e11-notification-hooks.md.
+  Do not mark SCRUM-75 Done or reconcile Jira until reviewed canonical changes
+  merge. No live migration or provider call was made for this implementation.
 
 - 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 

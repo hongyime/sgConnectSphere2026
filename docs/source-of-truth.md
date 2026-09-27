@@ -8,11 +8,11 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 220926.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 270926.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 170926.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 170926.docx` |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 260926.xlsx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 270926.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 270926.docx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 270926.xlsx` |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
 The Markdown authority for ADR/BDR was accepted in
@@ -63,6 +63,8 @@ The legacy `docs/testing/PROJECT TEST CASES.xlsx` remains the current input of
 Markdown authority. Regenerate `docs/testing/tc-coverage.md` whenever active,
 skipped or fixme test declarations change. Reconcile catalogue changes with that
 legacy audit input before claiming the generated inventory covers a new case set.
+The 2026-09-27 E11 routing update refreshed that compatibility input from the
+regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
 
 ## Requirement changes flow downstream
 

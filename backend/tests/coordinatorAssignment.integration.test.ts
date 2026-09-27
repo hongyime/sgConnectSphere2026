@@ -17,7 +17,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -33,7 +33,7 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
     await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
-    for (const migration of ['0001_connectsphere_schema.sql', '0005_event_request_fields.sql', '0008_coordinator_assignment.sql']) {
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort()) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
     }
 

@@ -9,8 +9,8 @@
 // - Coordinator reads: an assigned Coordinator's own event list and detail,
 //   eligible colleagues for the reassignment picker, and pending requests.
 //
-// Notifications are in-app rows written through notifyUser() (see
-// notificationDispatcher/inApp.ts for why E03 does not wait on E11-S01).
+// Targeted notices and generic status notices share E11 transactional outbox
+// delivery and stable change IDs, so one recipient receives one combined notice.
 // Audit entries follow E14-S02: every change and every refusal is recorded.
 
 import type { Pool, PoolClient } from 'pg';
@@ -19,9 +19,10 @@ import { canActAsRole, LOCKOUT_FAILURE_THRESHOLD } from '../accessControl/servic
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError } from '../eventVisibility/service.js';
 import { notifyUser } from '../notificationDispatcher/inApp.js';
+import { captureEventAudience, notifyEventChange } from '../eventNotifications/service.js';
 import { ACTIVE_EVENT_STATUSES, isEventStatus, validateEventStatusTransition } from './status.js';
 
-type Runner = Pick<PoolClient, 'query'>;
+type Runner = PoolClient;
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -87,6 +88,7 @@ export async function assignCoordinatorOnSubmit(client: Runner, eventId: string)
     return null;
   }
 
+  const before = await captureEventAudience(client, eventId);
   const transition = validateEventStatusTransition('submitted', 'under_review');
   if (!transition.allowed) throw new Error('Illegal event status transition: submitted -> under_review');
 
@@ -103,17 +105,22 @@ export async function assignCoordinatorOnSubmit(client: Runner, eventId: string)
      VALUES (NULL, 'event', $1, $1, 'Coordinator assigned', 'coordinator_id', NULL, $2)`,
     [eventId, coordinator.id],
   );
-  await client.query(
+  const statusAudit = await client.query<{id:string; occurred_at:Date}>(
     `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
-     VALUES (NULL, 'event', $1, $1, 'Status changed to under_review', 'status', 'submitted', 'under_review')`,
+     VALUES (NULL, 'event', $1, $1, 'Status changed to under_review', 'status', 'submitted', 'under_review') RETURNING id,occurred_at`,
     [eventId],
   );
   await notifyUser(client, {
     userId: coordinator.id,
     eventId,
+    changeId: statusAudit.rows[0].id, occurredAt: statusAudit.rows[0].occurred_at,
     title: 'New event assigned',
     message: `You have been assigned to ${eventLabel(event)}. It is now Under Review.`,
   });
+
+  const after = await captureEventAudience(client, eventId);
+  await notifyEventChange(client, {changeId:statusAudit.rows[0].id, occurredAt:statusAudit.rows[0].occurred_at,
+    before,after,change:{kind:'status',from:'submitted',to:'under_review'}});
 
   return { coordinatorId: coordinator.id, coordinatorName: coordinator.full_name };
 }
@@ -321,6 +328,7 @@ export async function requestCoordinatorReassignment(
       await notifyUser(client, {
         userId: toCoordinatorId,
         eventId: event.id,
+        changeId: `${reassignmentId}:requested`,
         title: 'Reassignment requested',
         message: `${reassignment.fromCoordinator.name} has asked you to take over ${eventLabel(event)}. `
           + 'Accept or decline the request in ConnectSphere.',
@@ -399,6 +407,7 @@ export async function respondToCoordinatorReassignment(
       await notifyUser(client, {
         userId: row.from_coordinator_id,
         eventId: row.event_id,
+        changeId: `${row.id}:accepted`,
         title: 'Reassignment accepted',
         message: `${row.to_coordinator_name} accepted your reassignment of ${label} and is now its assigned Coordinator.`,
       });
@@ -415,6 +424,7 @@ export async function respondToCoordinatorReassignment(
       await notifyUser(client, {
         userId: row.from_coordinator_id,
         eventId: row.event_id,
+        changeId: `${row.id}:declined`,
         title: 'Reassignment declined',
         message: `${row.to_coordinator_name} declined your reassignment of ${label}. You remain its assigned Coordinator.`,
       });

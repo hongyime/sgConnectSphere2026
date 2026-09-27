@@ -84,6 +84,11 @@ jobs:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
         run: npm run test:auth:db --workspace backend
 
+      - name: E11-S01 transactional notification recipient acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npm run test:event-notifications:db --workspace backend
+
       - name: SCRUM-110 migration 0005 PostgreSQL roundtrip
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
@@ -93,7 +98,7 @@ jobs:
       - name: SCRUM-32 coordinator assignment PostgreSQL acceptance test
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
-        run: npx tsx --test tests/coordinatorAssignment.integration.test.ts
+        run: npx tsx --test tests/coordinatorAssignment.integration.test.ts tests/coordinatorNotifications.integration.test.ts
         working-directory: backend
 
       - name: Build

@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 2
 - **Points**: 5
-- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48
+- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64
 - **Owner**:
 
 ### User story
@@ -15,11 +15,11 @@ As a user involved in an event, I want to be notified when its status or arrange
 
 #### Scenario 1 — Status change notified
 
-Given I am linked to an event When its status changes or a booking decision is made Then I receive a notification stating what changed, when, and which event it concerns
+Given I am a recipient under the approved routing matrix When an event status changes or a booking decision is made Then I receive a notification stating what changed, when, and which event it concerns, unless I performed the action myself
 
 #### Scenario 2 — All affected parties notified
 
-Given the event's date, time or venue changes When the change takes effect Then the Event Organiser, assigned Venue Staff, assigned Technical Support Staff and registered Attendees are all notified
+Given the event's date, time or venue changes When the change takes effect Then the Event Organiser, assigned Event Coordinator, affected assigned Venue Staff, affected assigned Technical Support Staff, registered Attendees and waitlisted Attendees are notified according to the routing matrix, excluding the acting user
 
 #### Scenario 3 — Unaffected users not notified
 
@@ -37,12 +37,54 @@ Given I have several unread notifications When I open my notification list Then 
 
 Given I open an unread notification When I have read it Then it is marked as read
 
+### Approved recipient routing (T-64, 2026-09-27)
+
+Specific routing is a team decision under C-53. The repository owner approved
+this matrix and the integration boundary on 2026-09-27. It extends general
+arrangement notifications to the assigned Coordinator and waitlisted Attendees.
+
+| Change | Organiser | Coordinator | Venue Staff | Technical Staff | Registered | Waitlisted |
+| --- | --- | --- | --- | --- | --- | --- |
+| Internal review, clarification, approval or rejection | Yes | Yes | No | No | No | No |
+| New venue booking request | No | No | Responsible staff | No | No | No |
+| Venue booking confirmed, rejected or released | No | Yes | No | No | No | No |
+| Equipment result or operational shortfall | No | Yes | If affected | If affected | No | No |
+| Effective date/time/venue change | Yes | Yes | If affected | If affected | Yes | Yes |
+| Event confirmed or reverted from Confirmed to Planning | Yes | Yes | If affected | If affected | Yes | Yes |
+| Event cancelled | Yes | Yes | Affected staff before release | Affected staff before release | Yes | Yes |
+| Event completed | Yes | Yes | If affected | If affected | Yes | Yes |
+| Waitlist place released | No | No | No | No | No | All eligible waitlisted |
+| Description-only edit | No general notice | No general notice | No | No | No | No |
+
+- Suppress the acting user's routine self-notification; preserve the audit and UI
+  acknowledgement. System-generated changes have no actor to exclude.
+- Deduplicate each logical change per user. Exclude inactive, withdrawn and
+  unrelated users. Temporary account lockout does not remove membership.
+- Venue Staff means active users explicitly assigned to the affected venue;
+  `venue_bookings.decided_by` is not an assignment. A venue move affects both old
+  and new responsible staff. Missing assignment data is an explicit integration
+  dependency, never permission to notify every Venue Staff user.
+- Cancellation captures recipients before releasing bookings, staff assignments
+  and registrations. Ordinary changes use current attendee memberships.
+- Attendees receive public change descriptions using the published event name,
+  never internal planning titles, decisions or comments. A published snapshot is
+  required. Effective arrangement changes and their publication are the owning
+  workflow's responsibility; pending operational decisions are internal.
+- Build and test reusable transactional hooks now; integrate existing business
+  writes. Booking, assignment, equipment and change workflows stay in their owning
+  stories. Track missing integrations; hooks alone do not complete all E11-S01 ACs.
+
+See [implementation and remaining tasks](../../plans/e11-notification-hooks.md).
+
 ### Checklist
 
 - Receive a notification when an event I am linked to changes status
 - Receive a notification when a booking decision is made
 - Confirm all affected parties are notified when the event's date, time or venue changes
-- Confirm users whose responsibilities are unaffected are not notified
+- Confirm unaffected, inactive, withdrawn and unrelated users are not notified
+- Confirm the acting user is excluded and each recipient gets one notification per logical change
+- Confirm cancellation preserves recipients before links are released
+- Confirm internal booking decisions do not reach Attendees
 - See what changed, when, and which event and event it concerns
 - Receive the same notification in the system and by email
 - See notifications newest first with unread ones distinguished

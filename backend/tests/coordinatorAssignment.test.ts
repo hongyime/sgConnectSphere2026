@@ -4,7 +4,7 @@
 // coordinatorAssignment.integration.test.ts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import {
   assignCoordinatorOnSubmit,
   getAssignedEvent,
@@ -26,18 +26,34 @@ type Script = (sql: string, values?: unknown[]) => unknown[] | Error | undefined
 // inside versus after a ROLLBACK.
 function fakeDatabase(script: Script) {
   const calls: Call[] = [];
+  const insertedNotifications = new Set<string>();
+  let assignedId: string | null = null;
   const run = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
     const outcome = script(sql, values);
     if (outcome instanceof Error) throw outcome;
-    const rows = outcome ?? [];
+    if (sql.includes("status = 'under_review'::event_status")) assignedId = String(values?.[1]);
+    let fallback: unknown[] = [];
+    if (sql.includes('FROM events e LEFT JOIN event_publications')) fallback = [{
+      id:eventId,title:'Annual Tech Summit',public_name:null,status:assignedId ? 'under_review' : 'submitted',
+      starts_at:new Date('2027-01-01T09:00:00Z'),ends_at:new Date('2027-01-01T12:00:00Z'),
+      organiser_id:organiser.id,coordinator_id:assignedId,
+    }];
+    if (sql.includes('INSERT INTO audit_logs')) fallback = [{id:'00000000-0000-4000-8000-0000000000d1',occurred_at:new Date('2027-01-01T00:00:00Z')}];
+    if (sql.includes('INSERT INTO notifications')) {
+      const id=String(values?.[4]);
+      if (!insertedNotifications.has(id)) { fallback=[{id}]; insertedNotifications.add(id); }
+    }
+    if (sql.includes('INSERT INTO notification_deliveries')) fallback=[{id:'00000000-0000-4000-8000-0000000000d2'}];
+    if (sql.includes('SELECT d.delivery_status')) fallback=[{delivery_status:'queued',dispatch_state:'pending',recipient_email:null,email:'recipient@example.test',title:'Event notice',message:'Synthetic notice'}];
+    const rows = outcome ?? fallback;
     return { rows, rowCount: rows.length };
   };
   const pool = {
     query: run,
     async connect() { return { query: run, release() {} }; },
   } as unknown as Pool;
-  return { pool, calls, client: { query: run } as unknown as Pool };
+  return { pool, calls, client: { query: run } as unknown as PoolClient };
 }
 
 const coordA: AuthenticatedUser = {
