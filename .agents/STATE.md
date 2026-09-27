@@ -3,6 +3,7 @@
 - 2026-09-26: PR #136 refreshed after #138: combine calendar styles with the new venue blockout form, retain live calendar routes/navigation and stale-response regressions. SCRUM-42 / E05-S03; backend #134 remains a merge dependency.
 
 - 2026-09-26: Resolved main conflicts for PR #136, retained both venue search and calendar routes, synchronized route venue changes, added coordinator navigation and regression tests; regenerated coverage. SCRUM-42 / E05-S03. Validation evidence is recorded in the PR review follow-up.
+- 2026-09-26: PR #124 review: verify replacement ruleset parameters before deleting classic protection; only explicit absent-protection responses are idempotent. Added mocked migration regressions. ADR 0008 distinguishes merged tooling from an administrator applying live settings. No live migration performed.
 
 Current task: Sprint 2 CI/test-infrastructure hardening for ConnectSphere is
 now mostly landed. Remaining: Aaron's review on #120/#115, Bryan's own
@@ -166,3 +167,5 @@ Known env facts:
 - Dirty files: 1
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
+
+- 2026-09-27: PR #136 refreshed after #124/#140, retaining the author's overlapping-block key fix and its regression test. SCRUM-42 / E05-S03; backend #134 remains the merge prerequisite.

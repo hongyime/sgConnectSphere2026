@@ -199,7 +199,14 @@ export function OrganiserDraftEdit() {
 
       const body = await response.json().catch(() => null);
       const event = body?.event;
-      if (cancelled || !event) {
+      if (cancelled) {
+        return;
+      }
+
+      // A successful reply with no draft in it used to leave the screen on
+      // "Loading draft…" forever.
+      if (!event) {
+        setState({ status: 'error', message: 'The draft could not be loaded.' });
         return;
       }
 
@@ -232,7 +239,12 @@ export function OrganiserDraftEdit() {
   }
 
   if (state.status === 'error') {
-    return <main className="organiser-page"><p role="alert" className="login-error">{state.message}</p></main>;
+    return (
+      <main className="organiser-page">
+        <p role="alert" className="login-error">{state.message}</p>
+        <p className="organiser-footer"><Link to="/organiser/drafts">← Back to my drafts</Link></p>
+      </main>
+    );
   }
 
   return (
