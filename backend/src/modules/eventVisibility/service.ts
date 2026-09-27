@@ -56,7 +56,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     const event = result.rows[0] as Record<string, unknown> & { id: string };
     const history = await query(`SELECT occurred_at, old_value, new_value
       FROM audit_logs
-      WHERE event_id = $1 AND action = 'status_changed'
+      WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const comments = await listEventComments(query, event.id);
     const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
