@@ -109,7 +109,6 @@ files. Jira remains unchanged until the approved backlog change merges.
 | Call equipment/support hooks with explicit affected-role flags | E07 owners | Reservation, shortfall and availability changes notify only affected responsibilities |
 | Integrate change approval, publication updates, reconfirmation and cancellation release flows | E08 / E10 owners | Effective public changes and cancellation retain correct before/after recipients |
 | Call place-release hook after a real place becomes available | E09-S04 / E09-S05 | All eligible waitlisted users invited, with no automatic promotion or hold |
-| Connect all-role inbox/list/read APIs and the existing mocked screen | E11-S01 backend and frontend owners | Ownership-protected unread/read/list tests; real browser integration |
 | Validate configured relay/worker and one real inbox delivery | Deployment owner | Authorized deployed delivery evidence; local intercepted HTTP is insufficient |
 | Reconcile Jira and scope estimates after this backlog change merges | Scrum Master | Link the approved merged decision; keep unfinished acceptance criteria open |
 
@@ -117,3 +116,40 @@ Reusable hook tests establish infrastructure behaviour; they do not claim that t
 future booking, equipment, cancellation or waitlist workflows are implemented.
 The existing status repository does not acquire those workflows' release or
 readiness responsibilities merely because it now sends notifications.
+
+## Authenticated inbox integration (2026-09-27)
+
+E11-S01 now exposes `GET /api/notifications` and `POST /api/notifications`
+with `{ "action": "mark_read", "id": "notification UUID" }`. The existing
+notification function hosts this route via a rewrite, keeping the deployment
+function count unchanged. Cookie authentication derives the recipient; writes
+require the configured application Origin. All five roles can read their own
+notifications. Inactive/locked sessions, other users' IDs and client-supplied
+identity fields are refused. Responses are private and non-cacheable.
+
+The `/notifications` screen uses these endpoints, orders newest first, distinguishes
+unread messages and persists read state when a notification is opened. Reading
+again retains the first read timestamp. Historical notifications remain visible to
+their recipient after registration withdrawal; membership is resolved when the
+change occurs, so cancellation messages are not lost after release.
+
+The shared hooks and existing outbox are reused without a second notification
+system. No schema migration, production email enablement or provider change was
+needed. See [verification and acceptance coverage](../testing/event-notifications.md).
+
+## PR #143 security review and read-path alignment
+
+The event inbox returns only the newest 100 notifications with a non-null
+`event_id`. Both list and mark-read (`UPDATE RETURNING`) enforce this boundary.
+Email-verification messages contain an email-only capability; filtering only the
+list would still expose it through a known-ID mark-read request. All eventless
+notices, including password reset and unknown future security notices, are hidden.
+The existing email outbox and verification/reset consumption flows are unchanged.
+
+The legacy Organiser `listNotifications` in `api/events.ts` already excludes
+eventless notices and caps results at 100. It additionally filters current client
+organisation, whereas this all-role inbox preserves recipient history (including
+cancellation after withdrawal). Retiring or unifying that endpoint requires an
+explicit historical/tenant-access decision and is a follow-up, not a silent change
+to either permission model. Pagination beyond the consistent 100-result cap is
+also deferred. PR #141's assignment integration is preserved from current main.

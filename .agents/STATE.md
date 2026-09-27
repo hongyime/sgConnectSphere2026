@@ -1,5 +1,36 @@
 # Agent State
 
+- 2026-09-27: PR #143 review revision is LOCAL, uncommitted and unpushed by user
+  instruction. Main 84e8180 is merged with --no-commit; conflict entries resolved,
+  but MERGE_HEAD intentionally remains until authorized completion. Preserve both
+  main's PR #141 integration and the inbox work. Eventless notices are excluded
+  from GET and POST RETURNING; inbox capped at 100. Verification email delivery
+  stays intact; regression tests cover hidden capabilities, normal event/read
+  behavior and auth/reset. Database security 12, auth DB 13, provider 26, Redis 2,
+  backend units 208, frontend 48, runtime 15 and browser 10 passed; build/typecheck
+  passed. Broad backend DB has 9 pass / 1 unchanged registration concurrency failure
+  (users_email_key) after disposable schema setup. Do not tick final CI or mark PR
+  approved/merged; no push authorized. Postplan follows the established public HTML
+  convention: https://0lympnguubta.postplan.dev. Linked in a top-level PR comment and
+  updated PR evidence/checklist without pushing code. Hygiene passed (45 tooling
+  tests). See docs/testing/event-notifications.md for evidence and follow-ups.
+
+- 2026-09-27: E11-S01 / SCRUM-75 inbox follow-up on
+  `feature/SCRUM-75-notification-inbox`: replaced frontend fixtures with the
+  authenticated all-role list/read API, using the existing notification function
+  rewrite and cookie sessions. Opening marks read, other-recipient writes fail,
+  and read timestamps remain stable. Shared event hooks/outbox already present
+  are reused. Backend unit suite, 7 inbox component tests, 10 notification DB
+  tests, 26 dispatcher/provider tests, 2 Redis tests, 2 real desktop/mobile inbox
+  browser tests, typecheck/build, 15 runtime tests and repository checks passed.
+  Initial DB/Redis attempts lacked test URLs; isolated local containers resolved
+  that setup issue. No live data changes or real emails. Full-story gaps and
+  owning Jira references are in docs/testing/event-notifications.md. Venue
+  assignment, future workflow integrations and deployed mailbox verification
+  remain incomplete; do not mark SCRUM-75 Done. The user subsequently authorized
+  committing and opening a PR; prepare a draft with remaining dependencies and
+  leave Jira open. No Jira transition was made.
+
 - 2026-09-27: PR #141 integrated with approved notification foundation #142.
   Preserved submission auditing plus automatic assignment, combined backend test
   commands and full migration-chain fixtures, and removed a duplicate API pool

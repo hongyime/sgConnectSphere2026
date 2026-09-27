@@ -56,3 +56,28 @@
 
 - 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
+- 2026-09-27: Implemented SCRUM-75 all-role authenticated notification inbox on
+  feature/SCRUM-75-notification-inbox, reusing T-64 event hooks and email outbox.
+  Added database ownership/current-email/provider-failure regressions and real
+  desktop/mobile login-to-inbox tests. Unit/component, notification database,
+  dispatcher/provider, Redis, browser, build/typecheck, runtime and hygiene checks
+  passed. Coverage inventory regenerated. See docs/testing/event-notifications.md
+  for exact commands and unfinished owning-story dependencies. No production
+  schema/data/email changes, commits, pushes or Jira status changes.
+
+- 2026-09-27: User authorized commit and PR for SCRUM-75 inbox follow-up.
+  Preparing a conventional draft PR with the required four sections, actual test
+  evidence and explicit outstanding dependencies; do not close the full story.
+
+- 2026-09-27: PR #143 security review: prepared local merge of main 84e8180,
+  preserving coordinator assignment/audit/outbox fixes and migration 0008. Resolved
+  STATE, package scripts, hook plan and generated coverage conflicts by combining
+  current intent. Filter eventless notices in list and mark-read responses, cap
+  inbox at 100, and add real verification-capability/database/browser regressions.
+  Relevant suites pass; broad DB registration concurrency test still fails in
+  unchanged code. Legacy organisation-filtered read-path consolidation remains a
+  follow-up. No commit, push, live migration, approval or PR merge authorized.
+
+- PR #143 postplan uploaded and linked: https://0lympnguubta.postplan.dev.
+  Updated PR description/checklist with local evidence and remaining DB failure;
+  final-head CI remains unchecked. No commits or code push.
