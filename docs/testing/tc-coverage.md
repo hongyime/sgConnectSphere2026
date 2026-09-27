@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 230 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 237 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **65** (28.3%)
-  - Real-database (`.integration.test` / `.db.test`): **15**
+- Total test cases: **237**
+- Automated (explicit TC_ID in an active test title): **75** (31.6%)
+  - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **50**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **162** (70.4%)
+  - Live-assertion (other active tests): **55**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **159** (67.1%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -27,10 +27,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 15 | 0 | 15 | 0 |
 | E09 | 35 | 5 | 30 | 0 |
 | E10 | 15 | 0 | 15 | 0 |
-| E11 | 8 | 0 | 8 | 0 |
+| E11 | 15 | 10 | 5 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **65** | **162** | **3** |
+| **Total** | **237** | **75** | **159** | **3** |
 
 ## Case-by-case status
 
@@ -297,14 +297,21 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_01 - Verify that a user linked to an event should be notified when its status changes or a booking decision is made, with details of what/when/whic |
-| `TC_E11S01_02` | E11-S01 | Verify that a change to a event's date, time or venue should notify the Organise | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_02 - Verify that a change to a event |
+| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/e2e/e11.spec.ts: TC_E1 |
+| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; tests/e2e/e11.spec.ts: |
 | `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_03 - Verify that a user whose responsibilities are unaffected by a change should not be notified |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_06 - Verify that opening the notification list with several unread notifications should show them newest first with unread ones distinguished |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_07 - Verify that opening an unread notification should mark it as read |
 | `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
-| `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_09 - Verify that a rolled-back business transaction publishes no notification |
+| `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_09: an outbox failure rolls back status, audit, notification and actual date edit; tests/e2e/e11.spec.ts: TC_E11S01_ |
+| `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/eventNotifications.test.ts: TC_E11S01_10: approved recipient matrix distinguishes internal decisions from public changes |
+| `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/eventNotifications.test.ts: TC_E11S01_11: actor is excluded and duplicate links yield one recipient |
+| `TC_E11S01_12` | E11-S01 | Preserve before/after recipients during cancellation and venue moves | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_12: cancellation notifications retain recipients after registrations and staff are released; backend/tests/eventNoti |
+| `TC_E11S01_13` | E11-S01 | Expose missing Venue Staff assignments without an unsafe fallback | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_13: decided_by and unrelated Venue Staff never stand in for assignments; backend/tests/eventNotifications.test.ts: T |
+| `TC_E11S01_14` | E11-S01 | Protect attendee notification content and membership boundaries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; backend/tests/eventNot |
+| `TC_E11S01_15` | E11-S01 | Deduplicate concurrent notification-hook retries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_15: concurrent retries yield one in-app and email record per recipient |
+| `TC_E11S01_16` | E11-S01 | Keep uncommitted notifications invisible and roll back all writes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_16: uncommitted messages are invisible and rollback leaves no jobs |
 
 ### E14
 
@@ -388,6 +395,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an illegal status transition is rejected before any audit entry is written
 - changing status to the same status is a no-op that writes no audit entry
 - changing the status of an unknown event is reported as not found
+
+### `backend/tests/eventNotifications.integration.test.ts`
+
+- E11-S01: real PostgreSQL recipient selection and atomic business changes
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
