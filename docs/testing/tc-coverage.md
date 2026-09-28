@@ -142,11 +142,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
-| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_01 - Verify that opening a venue |
-| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event |
-| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar |
-| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar |
-| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | tests/e2e/e05.spec.ts: TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time |
+| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
+| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
 | `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates |
 | `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_03 - Verify that creating a block over an upcoming event |
@@ -522,6 +522,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - matchVenuesByAccessibility with no requested ids matches nothing without querying
 - listAccessibilityFeatures requires a signed-in user
 - listAccessibilityFeatures returns the vocabulary for any signed-in user, including an organiser
+
+### `backend/tests/venueCalendar.test.ts`
+
+- getVenueCalendar requires a signed-in user
+- getVenueCalendar refuses roles other than Venue Staff and Event Coordinators, logging the denial
+- getVenueCalendar returns 404 for an unknown venue
+- parseCalendarRange lists every Singapore day in an inclusive range
+- parseCalendarRange rejects missing, malformed, impossible, reversed and oversized ranges
+- an unassigned event is Unavailable to every Coordinator but visible to Venue Staff
+- Free periods skip overlapping bookings and blocks and stay within opening hours
+- a retired venue shows its bookings and blocks but no Free period
+- a day fully covered by a block has no Free period
 
 ### `backend/tests/venueCatalogue.test.ts`
 
