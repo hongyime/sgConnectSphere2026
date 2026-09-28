@@ -91,3 +91,5 @@
 - PR #143 postplan uploaded and linked: https://0lympnguubta.postplan.dev.
   Updated PR description/checklist with local evidence and remaining DB failure;
   final-head CI remains unchecked. No commits or code push.
+
+- 2026-09-28: Instructor-guidance documentation makes story-sized AI increments, 1-3 day branches, team validation and consistent sprint duration explicit. Existing scaffold PRs remain partial; no Jira or sprint dates changed. Source: operator announcement and docs/source-of-truth.md.

@@ -24,7 +24,11 @@ not a successful skipped check. Application checks will be added with the stack.
 
 ## Branches and commits
 
-Create one short-lived branch per logical change, off an up-to-date `main`:
+Create one short-lived branch per user story (or one focused maintenance task),
+off an up-to-date `main`. Aim to merge within 1-3 days after review. Do not keep
+a personal, frontend/backend or sprint-long integration branch. If a story is
+too large, split it into independently reviewable increments and keep the parent
+story open until all acceptance criteria are validated:
 
 ```text
 git switch main
@@ -107,6 +111,33 @@ A product backlog item is considered done only when all of these conditions are 
 An item that does not meet all Definition of Done conditions is not counted as
 complete. Return it to the product backlog or keep it open in review until the
 missing condition is resolved.
+
+## AI-assisted work and sprint discipline
+
+Generate and change code in small user-story increments. Use sprint time to
+review behaviour, test acceptance criteria and audit test quality, including
+code generated earlier. Use targeted fixes and update affected diagrams and
+API/design documents when the implementation changes.
+
+Generated code, placeholders, passing CI or a merged PR alone do not make a
+story ready or done. Team audit and acceptance validation are required. A PR
+may be technically ready for review under the checklist above while its parent
+story remains incomplete; label partial scope explicitly.
+
+Keep sprint lengths consistent. Do not routinely shorten, extend or reschedule
+a sprint. A proposed change before or after a sprint must explain what changed
+in the team's process and how metrics remain interpretable. During a sprint,
+change duration only for an exceptional circumstance and record the reason.
+If validated work finishes early through AI assistance, the team may close the
+sprint early and adapt subsequent planning; record the actual duration and do
+not compare raw velocity directly with a different-length sprint.
+
+Preserve original commitments, estimates and actual Jira timestamps. Discuss
+early mistakes and corrective actions in class reviews and retrospectives;
+do not rewrite history or count generated scope as delivered work.
+
+See [the instructor-guidance review](docs/plans/instructor-guidance-2026-09-28.md)
+for the current repository implications.
 
 ## Shared practices
 
