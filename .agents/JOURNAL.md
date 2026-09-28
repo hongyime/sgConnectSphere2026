@@ -92,4 +92,6 @@
   Updated PR description/checklist with local evidence and remaining DB failure;
   final-head CI remains unchecked. No commits or code push.
 
-- 2026-09-28: PR #144 review correction retains chardet 5.2.0 for cyclonedx-bom 7.4 compatibility and excludes incompatible chardet releases in Dependabot. The remaining five updates require fresh installation/check evidence and peer approval.
+- 2026-09-28: PR #145 review narrowed imported workflows to repository policy, proposed ADR 0009, disabled public Scorecard publishing and credential verification, restored honest scanner failures, and removed unsupported fleet-sync claims. Team acceptance and final-head scan evidence remain required.
+
+- 2026-09-29: PR #144 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
