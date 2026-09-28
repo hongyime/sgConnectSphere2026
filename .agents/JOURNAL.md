@@ -91,3 +91,5 @@
 - PR #143 postplan uploaded and linked: https://0lympnguubta.postplan.dev.
   Updated PR description/checklist with local evidence and remaining DB failure;
   final-head CI remains unchecked. No commits or code push.
+
+- 2026-09-28: PR #144 review correction retains chardet 5.2.0 for cyclonedx-bom 7.4 compatibility and excludes incompatible chardet releases in Dependabot. The remaining five updates require fresh installation/check evidence and peer approval.
