@@ -1,12 +1,9 @@
 name: CodeQL Analysis
 
-# COST-OPTIMISED (2026-07-04):
-# - `paths` filter so CodeQL only fires when actual code changes (not markdown/config).
-# - `concurrency: cancel-in-progress` cancels stale runs when new commits land.
-# - Weekly cron kept but shifted off Monday spike (spreads load, avoids stacking with sync workflows).
+# Repository-specific scanner policy: docs/decisions/0009-security-scanners.md
 on:
   push:
-    branches: [main, master]
+    branches: [main]
     paths:
       - "**.ts"
       - "**.tsx"
@@ -14,17 +11,15 @@ on:
       - "**.jsx"
       - "**.mjs"
       - "**.cjs"
-      - "**.vue"
       - "**.py"
       - "**.pyi"
       - "**/package.json"
-      - "**/pnpm-lock.yaml"
       - "**/package-lock.json"
       - "**/requirements*.txt"
       - "**/pyproject.toml"
       - ".github/workflows/codeql.yml"
   pull_request:
-    branches: [main, master]
+    branches: [main]
     paths:
       - "**.ts"
       - "**.tsx"
@@ -32,14 +27,14 @@ on:
       - "**.jsx"
       - "**.mjs"
       - "**.cjs"
-      - "**.vue"
       - "**.py"
       - "**.pyi"
       - "**/package.json"
-      - "**/pnpm-lock.yaml"
       - "**/package-lock.json"
       - "**/requirements*.txt"
       - "**/pyproject.toml"
+      - ".github/workflows/codeql.yml"
+  workflow_dispatch:
   schedule:
     - cron: "0 14 * * 3" # Weekly Wed 10 PM SGT (off Monday spike)
 
@@ -47,19 +42,14 @@ concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
-  # Auto-detect languages present in the repo so we don't spin up a matrix leg
-  # for a language the repo doesn't use (was previously always JS+Py = 2 legs).
-  #
-  # COST FIX (2026-08-04): job-level `if` skips the runner boot entirely on
-  # private repos. The previous shell-level check still spun up a runner and
-  # did a full checkout (~30-60s each) before exiting — ~100 wasted min/week
-  # on push-heavy private repos like unifiedcollector.
   detect:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     outputs:
       languages: ${{ steps.langs.outputs.languages }}
       any: ${{ steps.langs.outputs.any }}
@@ -94,6 +84,7 @@ jobs:
     if: needs.detect.result == 'success' && needs.detect.outputs.any == 'true'
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       security-events: write
       actions: read

@@ -1,9 +1,6 @@
 name: OSSF Scorecard
 
-# COST-OPTIMISED (2026-07-04):
-# - Removed push trigger — Scorecard doesn't need to run on every push. Monthly is fine.
-# - Concurrency to cancel stacked runs.
-# - Shifted to first of month, off Monday spike.
+# Repository-specific scanner policy: docs/decisions/0009-security-scanners.md
 on:
   schedule:
     - cron: "0 3 1 * *" # 1st of month, 11am SGT
@@ -13,17 +10,21 @@ concurrency:
   group: scorecard-${{ github.ref }}
   cancel-in-progress: true
 
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       security-events: write
-      id-token: write
       contents: read
       actions: read
+      checks: read
+      issues: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -34,7 +35,7 @@ jobs:
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: true
+          publish_results: false
 
       - name: Upload results
         uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
