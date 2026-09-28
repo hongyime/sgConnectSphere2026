@@ -91,3 +91,5 @@
 - PR #143 postplan uploaded and linked: https://0lympnguubta.postplan.dev.
   Updated PR description/checklist with local evidence and remaining DB failure;
   final-head CI remains unchecked. No commits or code push.
+
+- 2026-09-28: PR #145 review narrowed imported workflows to repository policy, proposed ADR 0009, disabled public Scorecard publishing and credential verification, restored honest scanner failures, and removed unsupported fleet-sync claims. Team acceptance and final-head scan evidence remain required.
