@@ -1,5 +1,14 @@
 # Agent Journal
 
+- 2026-09-27: PR #134 main refresh after #143 merged as af97522. Retained
+  calendar, coordinator and notification test commands and both CI database
+  steps; regenerated the combined test inventory. Existing inbox/security and
+  coordinator changes are preserved. Prior local-only #143 notes are historical;
+  that PR is now merged. Validation is recorded in the PR follow-up. SCRUM-42.
+
+- 2026-09-26: PR #134 refreshed after #138 merged. Calendar API implementation and prior review fixes retained; SCRUM-42 / E05-S03. Required review and CI are checked on the refreshed head before merge.
+
+- 2026-09-26: Resolved main conflicts for PR #134 while retaining calendar, venue search and email test commands; regenerated coverage. SCRUM-42 / E05-S03. Validation evidence is recorded in the PR review follow-up.
 - 2026-09-27: PR #141 integrated with approved notification foundation #142.
   Preserved submission auditing plus automatic assignment, combined backend test
   commands and full migration-chain fixtures, and removed a duplicate API pool
@@ -54,6 +63,7 @@
 - 2026-09-23: Re-examined SCRUM-107/108 by reading the tickets' own descriptions (not just branch names this time) -- found an earlier, independent Sep-20 reconciliation pass had already documented PR #68 and #62 as shipping their work, with a "no human review yet" caveat identical in wording to SCRUM-93/103, which were already closed with Bryan's approval. Found SCRUM-105 (`[DUPLICATE of SCRUM-93]`) as the team's real precedent for how true duplicates get labeled -- 107/108 never got that label, which argues against them being duplicates in that sense. Built and uploaded an evidence postplan (https://3wupccg0rklj.postplan.dev) with direct quotes side-by-side rather than asserting a conclusion; final call left to Bryan.
 - 2026-09-23: Audited all 111 Jira tickets' title conventions at Bryan's request. Found 4 genuinely different, historically-mixed patterns: 47 tickets `E01-S01 Title` (no brackets), 24 tickets `[E01-S05] Title` (brackets, interleaved chronologically with the no-bracket ones, not a clean early/late split), plus `[E01-EXT]`/`[E01]`/`[Docs]`/`[DUPLICATE...]` variants for non-story technical work. Standardized the 24 bracketed story tickets to match the no-bracket majority (which also matches the canonical backlog Markdown format's own documented heading convention) via direct Jira API calls; verified 0 remain bracketed. Confirmed branch names reference ticket keys, not title text, so no branch renames were needed.
 
+- 2026-09-27: PR #134 refreshed after #124/#140; continuity conflicts resolved by retaining both histories; generated test inventory refreshed. SCRUM-42 / E05-S03.
 - 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
 - 2026-09-27: Implemented SCRUM-75 all-role authenticated notification inbox on

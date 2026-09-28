@@ -1,5 +1,14 @@
 # Agent State
 
+- 2026-09-27: PR #134 main refresh after #143 merged as af97522. Retained
+  calendar, coordinator and notification test commands and both CI database
+  steps; regenerated the combined test inventory. Existing inbox/security and
+  coordinator changes are preserved. Prior local-only #143 notes are historical;
+  that PR is now merged. Validation is recorded in the PR follow-up. SCRUM-42.
+
+- 2026-09-26: PR #134 refreshed after #138 merged. Calendar API implementation and prior review fixes retained; SCRUM-42 / E05-S03. Required review and CI are checked on the refreshed head before merge.
+
+- 2026-09-26: Resolved main conflicts for PR #134 while retaining calendar, venue search and email test commands; regenerated coverage. SCRUM-42 / E05-S03. Validation evidence is recorded in the PR review follow-up.
 - 2026-09-27: PR #143 review revision is LOCAL, uncommitted and unpushed by user
   instruction. Main 84e8180 is merged with --no-commit; conflict entries resolved,
   but MERGE_HEAD intentionally remains until authorized completion. Preserve both
@@ -226,5 +235,6 @@ Known env facts:
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
 
+- 2026-09-27: PR #134 refreshed after #124/#140; continuity conflicts resolved by retaining both histories; generated test inventory refreshed. SCRUM-42 / E05-S03.
 - 2026-09-27: PR #141 / SCRUM-32 review: migration 0008 applied with explicit operator approval and verified against the live ledger/schema, assignment backfill, indexes, RLS and browser-role grants. Only 0008 applied. Fixed the reproduced empty status-history query using event/status audit fields; real PostgreSQL regression excludes other events and field changes. Assignment/visibility units and both PostgreSQL integration tests pass (36 total), and backend typecheck passes. Updated against merged #140; current CI and peer approval remain required.
 - 2026-09-27: PR #139 reviewed and refreshed after #140; retain all five navigation guards plus the merged draft-error handling, and regenerate the combined test inventory. Follow-up to #136/#137.
