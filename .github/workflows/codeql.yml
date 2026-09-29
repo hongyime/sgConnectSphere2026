@@ -1,0 +1,110 @@
+name: CodeQL Analysis
+
+# Repository-specific scanner policy: docs/decisions/0009-security-scanners.md
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**.ts"
+      - "**.tsx"
+      - "**.js"
+      - "**.jsx"
+      - "**.mjs"
+      - "**.cjs"
+      - "**.py"
+      - "**.pyi"
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/requirements*.txt"
+      - "**/pyproject.toml"
+      - ".github/workflows/codeql.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "**.ts"
+      - "**.tsx"
+      - "**.js"
+      - "**.jsx"
+      - "**.mjs"
+      - "**.cjs"
+      - "**.py"
+      - "**.pyi"
+      - "**/package.json"
+      - "**/package-lock.json"
+      - "**/requirements*.txt"
+      - "**/pyproject.toml"
+      - ".github/workflows/codeql.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 14 * * 3" # Weekly Wed 10 PM SGT (off Monday spike)
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      languages: ${{ steps.langs.outputs.languages }}
+      any: ${{ steps.langs.outputs.any }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Detect languages
+        id: langs
+        shell: bash
+        run: |
+          set -e
+          langs=()
+          if find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.mjs" -o -name "*.cjs" -o -name "*.vue" \) \
+              -not -path "./node_modules/*" -not -path "./.git/*" -print -quit | grep -q .; then
+            langs+=("javascript-typescript")
+          fi
+          if find . -type f \( -name "*.py" -o -name "*.pyi" \) \
+              -not -path "./.venv/*" -not -path "./venv/*" -not -path "./.git/*" -print -quit | grep -q .; then
+            langs+=("python")
+          fi
+          if [ ${#langs[@]} -eq 0 ]; then
+            echo "languages=[]" >> "$GITHUB_OUTPUT"
+            echo "any=false" >> "$GITHUB_OUTPUT"
+          else
+            json=$(printf '"%s",' "${langs[@]}" | sed 's/,$//')
+            echo "languages=[${json}]" >> "$GITHUB_OUTPUT"
+            echo "any=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Detected: ${langs[*]:-none}"
+
+  analyze:
+    needs: detect
+    if: needs.detect.result == 'success' && needs.detect.outputs.any == 'true'
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ${{ fromJson(needs.detect.outputs.languages) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4
+        with:
+          category: /language:${{ matrix.language }}
