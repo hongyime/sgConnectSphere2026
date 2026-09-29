@@ -24,6 +24,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # cyclonedx-bom 7.4 requires chardet >=5.1,<6; revisit with its upgrade.
+    ignore:
+      - dependency-name: chardet
+        versions: [">=6"]
     groups:
       tooling:
         patterns: ['*']
