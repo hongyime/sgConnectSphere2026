@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { coordA, coordB, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 
 // E03 - 27 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -19,12 +20,33 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   Exactly one Event Coordinator is assigned, the request status changes from "Submitted" to "Under Review", and that Coordinator receives a notification of the new assignment
    */
-  test.fixme("TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Submit the request "Annual Tech Summit"
-    // 2. Open the request and check the "Assigned Coordinator" field and status
-    // 3. Log in as the assigned Coordinator and check their notifications
-    void page;
+  test("TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review", async ({ page }) => {
+    // Assignment itself runs in the submit transaction and is proven against
+    // PostgreSQL in backend/tests/coordinatorNotifications.integration.test.ts.
+    // This covers what users see: step 2 (Organiser) and step 3 (Coordinator).
+    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ json: { event: {
+      id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'A summit for the tech community',
+      status: 'under_review', status_changed_at: '2026-09-28T01:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
+      creator_name: 'Organiser A', coordinator_id: coordA.id, coordinator_name: coordA.name,
+      statusHistory: [{ old_value: 'submitted', new_value: 'under_review', occurred_at: '2026-09-28T01:00:00.000Z' }],
+    } } }));
+    await page.goto('/events/EVT-ANNUAL');
+    const status = page.getByRole('heading', { name: 'Current status' }).locator('..');
+    await expect(status).toContainText('Under Review');
+    await expect(status).toContainText(`Assigned Coordinator: ${coordA.name}`);
+    await expect(page.getByText('Submitted → Under Review')).toBeVisible();
+
+    await page.unrouteAll();
+    await page.route('**/api/auth/session', route => route.fulfill({ json: { user: { id: coordA.id, email: coordA.email, role: 'event_coordinator', clientOrgId: null } } }));
+    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [{
+      id: 'n-1', title: 'New event assigned', message: 'Annual Tech Summit has been assigned to you for review.',
+      is_read: false, read_at: null, created_at: '2026-09-28T01:00:00.000Z', event_id: 'event-annual',
+    }] } }));
+    await page.route('**/api/events?*', route => route.fulfill({ json: { events: [], incoming: [], outgoing: [] } }));
+    await page.goto('/coordinator');
+    await expect(page.getByRole('link', { name: 'Notifications, 1 unread' })).toBeVisible();
+    await page.getByRole('link', { name: 'Notifications, 1 unread' }).click();
+    await expect(page.getByText('New event assigned')).toBeVisible();
   });
 
   /**
@@ -89,12 +111,13 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   The reassignment action is refused, e.g. with a message that only the assigned Coordinator can reassign this request
    */
-  test.fixme("TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_2@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Attempt to reassign it to another Coordinator
-    void page;
+  test("TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it", async ({ page }) => {
+    await fakeCoordinatorBackend(page, { eventCode: 'EVT-ANNUAL', title: 'Annual Tech Summit', assignedTo: coordA })
+      .then(backend => backend.signInAs(coordB));
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    await expect(page.getByRole('alert')).toContainText('Access denied. This event is not assigned to you.');
+    await expect(page.getByRole('heading', { level: 1, name: 'Event unavailable' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Reassign event' })).toHaveCount(0);
   });
 
   /**
@@ -111,14 +134,22 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   The assigned Coordinator on EVT-1004 is still coord_a@connectsphere.com, the reassignment request is recorded as declined, and coord_a@connectsphere.com is notified that the reassignment was declined
    */
-  test.fixme("TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Sign in as coord_b@connectsphere.com
-    // 2. Open the pending reassignment request for EVT-1004
-    // 3. Decline the request
-    // 4. Re-read the assigned Coordinator on EVT-1004
-    // 5. Sign in as coord_a@connectsphere.com and check notifications
-    void page;
+  test("TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal", async ({ page }) => {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA, pendingTo: coordB });
+    backend.signInAs(coordB);
+    await page.goto('/coordinator/reassignments');
+    const request = page.getByRole('article', { name: 'Reassignment of Charity Run' });
+    await expect(request).toContainText('from Coord A');
+    await request.getByRole('button', { name: 'Decline' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'You declined' })).toContainText('Coord A remains the assigned Coordinator for Charity Run');
+    await expect(page.getByText('Nothing waiting for you')).toBeVisible();
+
+    backend.signInAs(coordA);
+    await page.goto('/coordinator/events/EVT-1004');
+    await expect(page.getByRole('region', { name: 'Event summary' })).toContainText('Assigned CoordinatorCoord A');
+    await expect(page.getByRole('button', { name: 'Reassign event' })).toBeVisible();
+    await page.getByRole('link', { name: 'Notifications, 1 unread' }).click();
+    await expect(page.getByText('Reassignment declined')).toBeVisible();
   });
 
   /**
@@ -135,13 +166,28 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   After step 2 the assigned Coordinator is still coord_a@connectsphere.com and coord_b has been notified. After step 4 the assigned Coordinator is coord_b@connectsphere.com, the previous assignment has ended, and the change is recorded in the activity log
    */
-  test.fixme("TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Sign in as coord_a@connectsphere.com and request reassignment of EVT-1004 to coord_b@connectsphere.com
-    // 2. Re-read the assigned Coordinator on EVT-1004
-    // 3. Sign in as coord_b@connectsphere.com and accept the request
-    // 4. Re-read the assigned Coordinator
-    void page;
+  test("TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment", async ({ page }) => {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA });
+    await page.goto('/coordinator/events/EVT-1004');
+    await page.getByRole('button', { name: 'Reassign event' }).click();
+    await page.getByLabel('Colleague').selectOption({ label: 'Coord B — 1 active event' });
+    await page.getByRole('button', { name: 'Send request' }).click();
+    await expect(page.getByText('Request sent to Coord B. You stay assigned until they accept.')).toBeVisible();
+
+    // Step 2: ownership has not moved yet.
+    await page.reload();
+    await expect(page.getByRole('region', { name: 'Event summary' })).toContainText('Assigned CoordinatorCoord A');
+    await expect(page.getByText('Waiting for Coord B to respond')).toBeVisible();
+
+    backend.signInAs(coordB);
+    await page.goto('/coordinator/reassignments');
+    await page.getByRole('article', { name: 'Reassignment of Charity Run' }).getByRole('button', { name: 'Accept' }).click();
+    await expect(page.getByText('You accepted. Charity Run is now assigned to you.')).toBeVisible();
+
+    // Step 4: ownership moved to the colleague who accepted.
+    await page.getByRole('link', { name: 'Open event' }).click();
+    await expect(page.getByRole('region', { name: 'Event summary' })).toContainText('Assigned CoordinatorCoord B');
+    expect(backend.assignedTo.name).toBe('Coord B');
   });
 
 });

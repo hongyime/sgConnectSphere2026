@@ -16,9 +16,12 @@ import {
   ChangeRequest, CancellationForm,
 } from './features/organiser/Organiser';
 import {
-  CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
   DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
 } from './features/coordinator/Coordinator';
+import {
+  CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
+  Reassignments as CoordinatorReassignments,
+} from './features/coordinator/CoordinatorWorkspace';
 import {
   VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, BookingDecision, VenueBlockout,
 } from './features/venue/Venue';
@@ -1053,6 +1056,7 @@ function App() {
       <Route path="/notifications" element={<NotificationInbox />} />
       <Route path="/coordinator" element={<CoordinatorHome />} />
       <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
+      <Route path="/coordinator/reassignments" element={<CoordinatorReassignments />} />
       <Route path="/coordinator/events/:eventCode" element={<CoordinatorRequestDetail />} />
       <Route path="/coordinator/events/:eventCode/decide" element={<DecisionPanel />} />
       <Route path="/coordinator/events/:eventCode/plan" element={<PlanningWorkspace />} />
