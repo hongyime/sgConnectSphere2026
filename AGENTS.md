@@ -66,10 +66,19 @@ re-running the generator, and commit the regenerated file in the same PR.
 | `docs/testing/tc-coverage.md` | Every `test(...)`, `test.fixme(...)`, `test.skip(...)` block in `backend/tests/`, `tests/`, and `frontend/src/`, plus `docs/testing/PROJECT TEST CASES.xlsx` | `.venv-tools/bin/python scripts/tc_coverage_audit.py` |
 | `docs/CONNECTSPHERE BACKLOGS CAA <DDMMYYYY>.xlsx` | `docs/backlog/` Markdown | `python scripts/export_backlog_xlsx.py` |
 | `docs/testing/PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` | `docs/testing/cases/` Markdown | `python scripts/export_testcases_xlsx.py` |
+| `.env.template` | Environment variable references in `api/`, `backend/`, `frontend/`, `scripts/`, `tooling/`, `tests/` (five patterns: `process.env.NAME`, `import.meta.env.NAME`, `read('NAME')`, `requireEnv(_, 'NAME')`, `os.environ[...]`) | `.venv-tools/bin/python scripts/generate_env_template.py` |
 
 If a PR flips a test from `test.fixme` or `test.skip` to a live `test(...)`, or
 vice versa, regenerate `docs/testing/tc-coverage.md` and stage the diff. CI
 regenerates `tc-coverage.md` and fails if it drifts from what is committed.
+
+If a PR adds, removes, or renames an environment variable read by any code
+in the scanned roots, re-run `scripts/generate_env_template.py` and commit
+the regenerated `.env.template` in the same PR. `scripts/check.py` fails when
+`.env.template` drifts from what the generator would produce. Use
+`python scripts/generate_env_template.py --check-env <path-to-.env>` as a
+doctor to diagnose an incomplete local `.env` -- it reports missing keys by
+NAME only and never reads or prints any values.
 
 ## Jira reconciliation
 
