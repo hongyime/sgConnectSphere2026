@@ -14,7 +14,7 @@ export function LandingPage() {
     <main className="landing-page">
       <section className="landing-hero">
         <p className="landing-eyebrow">SG ConnectSphere</p>
-        <h1>Coordinate every event that your school runs.</h1>
+        <h1>Coordinate every event your organisation runs.</h1>
         <p className="landing-lede">
           One place for organisers to request events, for coordinators to plan them, and for venue,
           support, and attendees to track the outcome.
