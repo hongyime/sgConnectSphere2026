@@ -1,4 +1,4 @@
-import { runtimeConfig, requireEnv, isAllowedOrigin } from '../../backend/src/config.js';
+import { isAllowedOrigin } from '../../backend/src/config.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { login, sessionToken, tokenDigest } from '../../backend/src/modules/accessControl/sessions.js';
 import { currentUser, respond, databasePool, query } from '../../backend/src/modules/eventVisibility/runtime.js';
