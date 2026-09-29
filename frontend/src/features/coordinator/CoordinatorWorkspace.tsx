@@ -164,7 +164,12 @@ export function CoordinatorHome() {
     <Page
       eyebrow="Coordinator workspace"
       title="Workload dashboard"
-      aside={<Link to="/coordinator/venues" className="secondary-action">Search venues</Link>}
+      aside={(
+        <div className="coordinator-actions">
+          <Link to="/coordinator/venues" className="secondary-action">Search venues</Link>
+          <Link to="/coordinator/calendar" className="secondary-action">Venue availability calendar</Link>
+        </div>
+      )}
     >
       {result.state === 'loading' ? <LoadingState label="Loading your assigned events…" /> : null}
       {result.state === 'error' ? <FailureState failure={result.failure} onRetry={reload} context="your assigned events" /> : null}

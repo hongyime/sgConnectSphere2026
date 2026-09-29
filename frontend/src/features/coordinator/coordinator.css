@@ -352,6 +352,16 @@
   overflow-wrap: anywhere;
 }
 
+/* Heading links sit in a row (wrapping on phones), not the stacked grid
+   the title block above uses. */
+.page-heading.coordinator-page-heading > .coordinator-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .card.coordinator-state {
   justify-items: start;
   gap: var(--space-3);
