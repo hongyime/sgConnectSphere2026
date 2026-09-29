@@ -5,7 +5,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { MemoryRouter, Route, Routes, Link } from 'react-router-dom';
 import { test, expect, vi, afterEach } from 'vitest';
 import { VenueCalendar } from './VenueCalendar';
-import { CoordinatorHome } from '../coordinator/Coordinator';
+import { CoordinatorHome } from '../coordinator/CoordinatorWorkspace';
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 test('changing the calendar route loads the new venue', async () => {
   const ids: string[] = [];
@@ -27,7 +27,10 @@ test('changing the calendar route loads the new venue', async () => {
   expect(await screen.findByRole('list', { name: /Availability for v-2/ })).toBeInTheDocument();
 });
 
-test('coordinators can reach the calendar from their dashboard', () => {
+test('coordinators can reach the calendar from their dashboard', async () => {
+  // The live dashboard (E03-S01, #147) loads assigned events; empty lists are enough here.
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ events: [], incoming: [], outgoing: [], notifications: [] }) })));
   render(<MemoryRouter><CoordinatorHome /></MemoryRouter>);
-  expect(screen.getByRole('link', { name: 'Venue availability calendar' })).toHaveAttribute('href', '/coordinator/calendar');
+  expect(await screen.findByRole('link', { name: 'Venue availability calendar' })).toHaveAttribute('href', '/coordinator/calendar');
+  expect(screen.getByRole('link', { name: 'Search venues' })).toHaveAttribute('href', '/coordinator/venues');
 });

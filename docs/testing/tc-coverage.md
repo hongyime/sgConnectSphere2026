@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **238**
-- Automated (explicit TC_ID in an active test title): **85** (35.7%)
-  - Real-database (`.integration.test` / `.db.test`): **22**
+- Automated (explicit TC_ID in an active test title): **86** (36.1%)
+  - Real-database (`.integration.test` / `.db.test`): **19**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **62**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **150** (63.0%)
+  - Live-assertion (other active tests): **66**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **149** (62.6%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 27 | 11 | 16 | 0 |
+| E03 | 27 | 12 | 15 | 0 |
 | E05 | 24 | 20 | 4 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **238** | **85** | **150** | **3** |
+| **Total** | **238** | **86** | **149** | **3** |
 
 ## Case-by-case status
 
@@ -98,7 +98,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S01_01` | E03-S01 | Verify that submitting a request should trigger automatic assignment of exactly  | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
 | `TC_E03S01_02` | E03-S01 | Verify that when several Coordinators are available, the system should assign th | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_02 - Verify that when several Coordinators are available, the system should assign the one with the fewest active events |
 | `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
-| `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
+| `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
 | `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
 | `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
@@ -590,6 +590,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
 
+### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
+
+- requesting a reassignment sends the chosen colleague and keeps the current Coordinator assigned
+- sending without choosing a colleague is blocked with a message
+- a refused reassignment shows the server reason
+- an unassigned Coordinator is refused and sees no reassignment action
+- an event that is no longer active cannot be reassigned
+- declining leaves the original Coordinator assigned
+- accepting moves the event to the incoming Coordinator and links to it
+- an answer that was already recorded shows the server reason
+- the dashboard counts active work and flags incoming requests
+- the dashboard explains automatic assignment when nothing is assigned
+- the queue filters by status and shows a filter-specific empty state
+- a signed-out Coordinator is asked to sign in
+- a failed load can be retried
+
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
 - shows a loading state before notifications arrive
@@ -616,6 +632,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `frontend/src/features/shell/AppHeader.test.tsx`
+
+- shows the Coordinator links with the current page marked
+- shows Organiser links for an Organiser
+- announces the unread notification count
+- signs out through the session endpoint and returns to the login page
+- keeps the user on the page and explains when sign out fails
+- offers sign in when there is no session
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -671,9 +696,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `tests/e2e/coordinator.spec.ts`
 
-- coordinator dashboard renders the workload metrics
-- review queue filters between all and needs-decision
-- request detail exposes the event workflow tabs
+- coordinator dashboard shows live workload counts inside the shared header
+- review queue filters assigned events by status
+- request detail shows the assigned Coordinator and request details
 - decision panel requires a reason when rejecting or clarifying
 - final confirmation blocks until readiness is met
 
