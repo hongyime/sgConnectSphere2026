@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 // E05 - 24 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -352,6 +352,49 @@ test.describe("E05-S02", () => {
 
 test.describe("E05-S03", () => {
 
+  // E05-S03 is live against the calendar API from PR #134. These cases mock
+  // GET /api/venues (the venue picker and ?calendar=1) with the shape that
+  // API returns, so they check the screen, not the database. Who may see an
+  // event's details is decided server-side and covered by
+  // backend/tests/venueCalendar.integration.test.ts. Times are UTC; 09:00 in
+  // Singapore is 01:00Z.
+  const grandBallroom = { id: "v-grand", name: "Grand Ballroom" };
+  type Entry = Record<string, unknown>;
+
+  async function openCalendar(page: Page, entries: Entry[]) {
+    await page.clock.setFixedTime(new Date("2026-11-15T04:00:00Z"));
+    await page.route("**/api/venues?*", async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get("calendar") !== "1") {
+        await route.fulfill({ json: { venues: [{ ...grandBallroom, location: "Level 1", max_capacity: 300,
+          opens_at: "08:00", closes_at: "22:00", facilities: [], accessibility_features: [], supported_layouts: [] }] } });
+        return;
+      }
+      await route.fulfill({ json: {
+        venue: { ...grandBallroom, opens_at: "08:00", closes_at: "22:00", is_active: true },
+        from: url.searchParams.get("from"), to: url.searchParams.get("to"), timezone: "Asia/Singapore", entries,
+      } });
+    });
+    await page.goto(`/coordinator/venues/${grandBallroom.id}/calendar`);
+    await expect(page.getByRole("heading", { level: 2, name: "November 2026" })).toBeVisible();
+  }
+
+  async function showRange(page: Page, from: string, to: string) {
+    const range = page.getByRole("form", { name: "Custom date range" });
+    await range.getByLabel("From").fill(from);
+    await range.getByLabel("To").fill(to);
+    await range.getByRole("button", { name: "Show range" }).click();
+  }
+
+  function day(page: Page, date: RegExp) {
+    return page.locator(".calendar-day").filter({ has: page.getByRole("heading", { level: 3, name: date }) });
+  }
+
+  const confirmedTechSummit: Entry = { state: "confirmed", kind: "booking", start: "2026-11-12T01:00:00.000Z",
+    end: "2026-11-12T04:00:00.000Z", event: { id: "e-summit", code: "EVT-2002", title: "Annual Tech Summit" } };
+  const maintenanceBlock: Entry = { state: "blocked", kind: "block", start: "2026-11-12T16:00:00.000Z",
+    end: "2026-11-13T16:00:00.000Z", reason: "Scheduled maintenance" };
+
   /**
    * TC_E05S03_01
    * AC:      E05-S03 - Scenario 1 (Four states distinguishable)
@@ -366,12 +409,35 @@ test.describe("E05-S03", () => {
    * Expected result:
    *   All four states are shown correctly for their respective dates, each with a visually distinct color/icon so they can be told apart at a glance
    */
-  test.fixme("TC_E05S03_01 - Verify that opening a venue's calendar for a period with bookings and blocks should show each entry's state, visually distinguishable", async ({ page }) => {
+  test("TC_E05S03_01 - Verify that opening a venue's calendar for a period with bookings and blocks should show each entry's state, visually distinguishable", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as an Event Coordinator
     // 2. Open venue "Grand Ballroom"'s calendar
     // 3. Navigate to the period 10/11/2026-13/11/2026
-    void page;
+    await openCalendar(page, [
+      { state: "free", kind: "free", start: "2026-11-10T00:00:00.000Z", end: "2026-11-10T14:00:00.000Z" },
+      { state: "tentative", kind: "booking", start: "2026-11-11T01:00:00.000Z", end: "2026-11-11T04:00:00.000Z",
+        event: { id: "e-pending", code: "EVT-2001", title: "Quarterly Town Hall" } },
+      confirmedTechSummit,
+      maintenanceBlock,
+    ]);
+    await showRange(page, "2026-11-10", "2026-11-13");
+
+    const expected: Array<[RegExp, string, string]> = [
+      [/10 Nov 2026/, "Free", "entry-free"],
+      [/11 Nov 2026/, "Tentative", "entry-tentative"],
+      [/12 Nov 2026/, "Confirmed", "entry-confirmed"],
+      [/13 Nov 2026/, "Blocked", "entry-blocked"],
+    ];
+    for (const [date, label, className] of expected) {
+      const entry = day(page, date).locator(".calendar-entry").first();
+      await expect(entry).toContainText(label);
+      await expect(entry).toHaveClass(new RegExp(className));
+    }
+    // Each state is drawn differently, not just labelled differently.
+    const looks = await page.locator(".calendar-entry").evaluateAll(nodes =>
+      nodes.map(node => `${getComputedStyle(node).borderLeftColor}|${getComputedStyle(node).backgroundImage}`));
+    expect(new Set(looks).size).toBe(4);
   });
 
   /**
@@ -388,11 +454,21 @@ test.describe("E05-S03", () => {
    * Expected result:
    *   12/11/2026 is shown simply as "Unavailable", without revealing the event name "Spring Networking Night" or any of its details
    */
-  test.fixme("TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event's details", async ({ page }) => {
+  test("TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event's details", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Open venue "Grand Ballroom"'s calendar for 12/11/2026
-    void page;
+    // The API withholds the event for a Coordinator who is not assigned to it.
+    await openCalendar(page, [
+      { state: "unavailable", kind: "booking", start: "2026-11-12T01:00:00.000Z", end: "2026-11-12T04:00:00.000Z" },
+    ]);
+    await showRange(page, "2026-11-12", "2026-11-12");
+
+    const entry = day(page, /12 Nov 2026/).locator(".calendar-entry");
+    await expect(entry).toContainText("Unavailable");
+    await expect(entry).toContainText("Event details are not shown");
+    await expect(page.getByText("Spring Networking Night")).toHaveCount(0);
+    await expect(entry.getByRole("button")).toHaveCount(0);
   });
 
   /**
@@ -409,11 +485,24 @@ test.describe("E05-S03", () => {
    * Expected result:
    *   12/11 and 13/11 are shown with clearly different visual treatments, so a maintenance block is never mistaken for a booking
    */
-  test.fixme("TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar", async ({ page }) => {
+  test("TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as an Event Coordinator
     // 2. Open venue "Grand Ballroom"'s calendar for 12/11/2026-13/11/2026
-    void page;
+    await openCalendar(page, [confirmedTechSummit, maintenanceBlock]);
+    await showRange(page, "2026-11-12", "2026-11-13");
+
+    const booking = day(page, /12 Nov 2026/).locator(".calendar-entry");
+    const block = day(page, /13 Nov 2026/).locator(".calendar-entry");
+    await expect(booking).toContainText("Confirmed");
+    await expect(block).toContainText("Blocked");
+    await expect(block).toContainText("Maintenance block");
+    await expect(block).toContainText("Scheduled maintenance");
+    await expect(block.getByRole("button")).toHaveCount(0);
+
+    const look = (node: Element) => `${getComputedStyle(node).borderLeftColor}|${getComputedStyle(node).backgroundImage}`;
+    expect(await block.evaluate(look)).not.toBe(await booking.evaluate(look));
+    expect(await block.evaluate(node => getComputedStyle(node).backgroundImage)).toContain("repeating-linear-gradient");
   });
 
   /**
@@ -430,12 +519,27 @@ test.describe("E05-S03", () => {
    * Expected result:
    *   The calendar updates to show December 2026, and then correctly displays only the selected 05/12/2026-10/12/2026 range
    */
-  test.fixme("TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar", async ({ page }) => {
+  test("TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as an Event Coordinator and open venue "Grand Ballroom"'s calendar
     // 2. Click "Next Month" to navigate to December 2026
     // 3. Select a custom date range 05/12/2026-10/12/2026
-    void page;
+    const requested: string[] = [];
+    page.on("request", request => {
+      const url = new URL(request.url());
+      if (url.searchParams.get("calendar") === "1") requested.push(`${url.searchParams.get("from")}..${url.searchParams.get("to")}`);
+    });
+    await openCalendar(page, []);
+
+    await page.getByRole("button", { name: /Next month/ }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "December 2026" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 3, name: /31 Dec 2026/ })).toBeVisible();
+
+    await showRange(page, "2026-12-05", "2026-12-10");
+    await expect(page.getByRole("heading", { level: 3 })).toHaveCount(6);
+    await expect(page.getByRole("heading", { level: 3 }).first()).toHaveText(/5 Dec 2026/);
+    await expect(page.getByRole("heading", { level: 3 }).last()).toHaveText(/10 Dec 2026/);
+    expect(requested).toEqual(expect.arrayContaining(["2026-11-01..2026-11-30", "2026-12-01..2026-12-31", "2026-12-05..2026-12-10"]));
   });
 
   /**
@@ -452,12 +556,20 @@ test.describe("E05-S03", () => {
    * Expected result:
    *   The entry shows Event = Annual Tech Summit, Event = the event, Date = 12/11/2026, Time = 09:00-12:00
    */
-  test.fixme("TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time", async ({ page }) => {
+  test("TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Open venue "Grand Ballroom"'s calendar for 12/11/2026
     // 3. Click on the 12/11/2026 entry
-    void page;
+    await openCalendar(page, [confirmedTechSummit]);
+    await showRange(page, "2026-11-12", "2026-11-12");
+
+    await day(page, /12 Nov 2026/).getByRole("button", { name: "Annual Tech Summit" }).click();
+    const details = page.locator(".calendar-details");
+    await expect(details).toContainText("Annual Tech Summit");
+    await expect(details).toContainText("EVT-2002");
+    await expect(details).toContainText("12 Nov 2026");
+    await expect(details).toContainText("09:00–12:00");
   });
 
 });
