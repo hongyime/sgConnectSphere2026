@@ -62,7 +62,7 @@ export function LoginPage() {
     <main className="login-page">
       <div className="login-card">
         <h1>Sign in</h1>
-        <p className="login-copy">Use your school email and account password.</p>
+        <p className="login-copy">Use your work email and account password.</p>
         <form onSubmit={submit} noValidate>
           <div className="login-field">
             <label htmlFor="login-email">Email</label>

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
-type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; statusHistory?: StatusHistoryEntry[]; comments?: Comment[]; canPostComment?: boolean };
+type Event = { id: string; event_code: string; title: string; description: string; status: string; status_changed_at: string; starts_at: string; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; comments?: Comment[]; canPostComment?: boolean };
 type Notification = { id: string; title: string; message: string };
 
 function plainStatus(status: string) {
@@ -115,7 +115,7 @@ export function ClientEvents() {
         </section>
       </>}
       {!busy && !error && event && <article><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p><p>{event.description}</p><p>{new Date(event.starts_at).toLocaleString()}</p><p>Created by {event.creator_name}</p>
-        <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p></section>
+        <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p><p>Assigned Coordinator: <strong>{event.coordinator_name ?? 'Not yet assigned'}</strong></p></section>
         <section aria-labelledby="status-history-heading"><h3 id="status-history-heading">Status history</h3>
           {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
         </section>
