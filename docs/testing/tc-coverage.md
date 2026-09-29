@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **238**
 - Automated (explicit TC_ID in an active test title): **90** (37.8%)
-  - Real-database (`.integration.test` / `.db.test`): **24**
+  - Real-database (`.integration.test` / `.db.test`): **23**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **65**
+  - Live-assertion (other active tests): **66**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **145** (60.9%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
@@ -662,9 +662,38 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - keeps the user on the page and explains when sign out fails
 - offers sign in when there is no session
 
+### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
+
+- changing the calendar route loads the new venue
+- coordinators can reach the calendar from their dashboard
+
+### `frontend/src/features/venue/VenueCalendar.test.tsx`
+
+- loads the current month for the first venue
+- labels free, tentative, confirmed and blocked entries distinctly
+- shows a maintenance block with its reason and never as a booking
+- shows an unavailable period without any event details
+- expands a permitted booking to show event, code, date and time
+- navigates to the next month and then to a custom range
+- refuses a reversed or oversized range without calling the API
+- splits a multi-day block across each day it covers
+- opens the venue named in a coordinator calendar link
+- reloads when a different venue is chosen
+- notes that a retired venue offers no free time
+- shows a sign-in message on 403 and retries on request
+- does not present a plain venue record as an empty calendar
+- two blocks clipped to the same start get separate rows and keys
+
 ### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
 
 - venue A\
+
+### `frontend/src/features/venue/calendarDates.test.ts`
+
+- month bounds cover leap and non-leap Februaries
+- shifting months crosses year boundaries
+- Singapore day keys and times use UTC+8 regardless of browser timezone
+- day counts are inclusive and invalid dates are rejected
 
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
@@ -728,7 +757,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - venue inventory lists every venue with capacity
 - inventory search re-fetches venues filtered by the query
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
-- availability calendar filters bookings by selected venue
+- availability calendar loads the selected venue from the API
 - pending booking detail confirms a booking
 
 ### `tests/notifications/postgres.test.ts`
