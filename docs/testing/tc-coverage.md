@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **238**
-- Automated (explicit TC_ID in an active test title): **86** (36.1%)
-  - Real-database (`.integration.test` / `.db.test`): **20**
+- Automated (explicit TC_ID in an active test title): **90** (37.8%)
+  - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **65**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **149** (62.6%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **145** (60.9%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 27 | 12 | 15 | 0 |
-| E05 | 24 | 20 | 4 | 0 |
+| E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **238** | **86** | **149** | **3** |
+| **Total** | **238** | **90** | **145** | **3** |
 
 ## Case-by-case status
 
@@ -147,10 +147,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
 | `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
 | `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
-| `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates |
-| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect |
-| `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_03 - Verify that creating a block over an upcoming event |
-| `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that removing or shortening an existing block should restore the venue |
+| `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable for those dates; tests/e2e/e05.spec.ts: TC_E05S04_01 - Verif |
+| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
+| `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
+| `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
 
 ### E06
 
@@ -522,6 +522,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - matchVenuesByAccessibility with no requested ids matches nothing without querying
 - listAccessibilityFeatures requires a signed-in user
 - listAccessibilityFeatures returns the vocabulary for any signed-in user, including an organiser
+
+### `backend/tests/venueBlocks.integration.test.ts`
+
+- E05-S04: a block saved with hours accepts its own day back and keeps those hours
+
+### `backend/tests/venueBlocks.test.ts`
+
+- validateBlockInput stores whole Singapore days with an exclusive end
+- validateBlockInput accepts a single-day block
+- validateBlockInput rejects a non-object submission
+- validateBlockInput requires a reason (E05-S04 checklist: recorded reason)
+- validateBlockInput rejects malformed, impossible and reversed dates
+- validateBlockInput makes the reason optional only when shortening
+- block changes require a signed-in Venue Staff member
+- listing blocks is limited to the venue catalogue roles
+- invalid input is rejected before a transaction opens
 
 ### `backend/tests/venueCalendar.test.ts`
 
