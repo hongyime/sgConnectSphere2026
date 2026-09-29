@@ -8,6 +8,9 @@ import {
 } from '../../backend/src/modules/venueBooking/catalogue.js';
 import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
+import {
+  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+} from '../../backend/src/modules/venueBooking/blocks.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // GET and POST share one file (create/update/retire/layout mutations all
@@ -41,6 +44,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
         if (!id) throw new AccessError(400, 'A venue id is required to view its calendar.');
         return await getVenueCalendar(query, user, id.slice(0, 240), params.get('from'), params.get('to'));
       }
+      // E05-S04: a venue's current and upcoming maintenance blocks, with the
+      // ids staff need to shorten or remove one.
+      if (id && params.get('blocks') === '1') return listVenueBlocks(query, user, id.slice(0, 240));
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
       const layout = params.get('layout') || undefined;
@@ -94,9 +100,23 @@ export default async function handler(request: VercelRequest, response: VercelRe
         : removeVenueLayout(databasePool(), user, id, label);
     }
 
+    if (action === 'block' || action === 'shorten_block' || action === 'remove_block') {
+      const { id, block_id: blockId, ...rest } = fields;
+      if (typeof id !== 'string' || !id) {
+        return { status: 400, body: { error: 'validation_failed', errors: { id: ['A venue id is required.'] } } };
+      }
+      if (action === 'block') return createVenueBlock(databasePool(), user, id, rest);
+      if (typeof blockId !== 'string' || !blockId) {
+        return { status: 400, body: { error: 'validation_failed', errors: { block_id: ['A block id is required.'] } } };
+      }
+      return action === 'shorten_block'
+        ? shortenVenueBlock(databasePool(), user, id, blockId, rest)
+        : removeVenueBlock(databasePool(), user, id, blockId);
+    }
+
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', or 'remove_layout'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', or 'remove_block'."] },
     } };
   });
 }

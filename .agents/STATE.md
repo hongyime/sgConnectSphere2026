@@ -106,6 +106,22 @@ built against that API, or against mocks of its contract if not yet live.
 
 Progress (most recent first):
 
+- **SCRUM-43 / E05-S04 backend in progress** on
+  `feature/SCRUM-43-block-venue-maintenance` (updated to main `388c639`,
+  which includes merged #134; uncommitted at time of writing). New `venueBooking/blocks.ts` plus
+  `block` / `shorten_block` / `remove_block` POST actions and
+  `GET /api/venues?id=...&blocks=1` in the existing `api/venues/index.ts`
+  (still 11 api files, ADR-014). Decisions made without team sign-off yet:
+  Scenario 3's "affected Coordinators" = coordinators of upcoming events with
+  a **pending** booking overlapping the block (confirmed ones are refused by
+  Scenario 2); overlapping blocks are refused; blocks can only be shortened,
+  not lengthened. Unit tests pass locally; `venueBlocks.integration.test.ts`
+  (TC_E05S04_01..04) was NOT run locally (no disposable Postgres
+  credentials on this machine) -- it runs in the new CI step. Frontend is a
+  separate later PR. The #134 overlap (calendar + blocks in
+  `api/venues/index.ts`, both test lists, both CI steps) is already resolved
+  and `tc-coverage.md` regenerated.
+
 - **Standardized 24 Jira ticket titles** that used `[E01-S05] Title`
   (brackets) to match the 47 that already used `E01-S05 Title` (no
   brackets, matching the canonical backlog Markdown heading format) --
