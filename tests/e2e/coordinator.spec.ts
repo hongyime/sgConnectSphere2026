@@ -1,33 +1,42 @@
-// Playwright tests for /coordinator/* routes (SCRUM-96). Each test exercises a
-// user-visible flow — dashboard rendering, queue filtering, decision-panel
-// validation, readiness gating — against the mock data in
-// frontend/src/features/coordinator/mocks.ts. No backend is hit; these tests
-// confirm that the mock-data functional screens satisfy the acceptance
-// criteria captured in E03-S01, E03-S03, and E06-S03 without depending on
-// implementation of the coordinator API endpoints.
+// Playwright tests for /coordinator/* routes.
+//
+// The dashboard, queue and event detail are live E03-S01 screens (SCRUM-32):
+// these tests run them against the in-memory fake in helpers/coordinatorBackend.ts,
+// which answers with the response shapes of api/events.ts. The decision and
+// confirmation screens further down still use the mock data in
+// frontend/src/features/coordinator/mocks.ts (SCRUM-96) until their stories'
+// backends land.
 import { test, expect } from '@playwright/test';
+import { coordA, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 
-test('coordinator dashboard renders the workload metrics', async ({ page }) => {
+test('coordinator dashboard shows live workload counts inside the shared header', async ({ page }) => {
+  await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA });
   await page.goto('/coordinator');
   await expect(page.getByRole('heading', { name: 'Workload dashboard' })).toBeVisible();
-  await expect(page.getByText('Assigned', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Workload counts' })).toContainText('Active events1');
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('link', { name: /Charity Run/ })).toBeVisible();
 });
 
-test('review queue filters between all and needs-decision', async ({ page }) => {
+test('review queue filters assigned events by status', async ({ page }) => {
+  await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA });
   await page.goto('/coordinator/queue');
   await expect(page.getByRole('heading', { name: 'Review queue' })).toBeVisible();
-  const all = page.getByRole('button', { name: /All \(/ });
-  const needsDecision = page.getByRole('button', { name: 'Needs decision' });
+  const all = page.getByRole('button', { name: /^All/ });
+  const clarification = page.getByRole('button', { name: /Awaiting organiser/ });
   await expect(all).toHaveAttribute('aria-pressed', 'true');
-  await needsDecision.click();
-  await expect(needsDecision).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('link', { name: 'Charity Run' })).toBeVisible();
+  await clarification.click();
+  await expect(clarification).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('No events in “Awaiting organiser”')).toBeVisible();
 });
 
-test('request detail exposes the event workflow tabs', async ({ page }) => {
-  await page.goto('/coordinator/events/EVT-C01');
-  await expect(page.getByRole('heading', { name: /Annual Sustainability Forum/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Decide' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Confirm' })).toBeVisible();
+test('request detail shows the assigned Coordinator and request details', async ({ page }) => {
+  await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA });
+  await page.goto('/coordinator/events/EVT-1004');
+  await expect(page.getByRole('heading', { level: 1, name: 'Charity Run' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Event summary' })).toContainText('Assigned CoordinatorCoord A');
+  await expect(page.getByText('Outdoor start line')).toBeVisible();
 });
 
 test('decision panel requires a reason when rejecting or clarifying', async ({ page }) => {
