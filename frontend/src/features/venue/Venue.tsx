@@ -12,6 +12,23 @@ const statusTone: Record<BookingStatus, string> = {
   Blocked:   'danger',
 };
 
+// SCAFFOLD: replace with real E06-S04 implementation. Safe to delete/rewrite entirely.
+export function BookingDecision() {
+  return (
+    <main className="venue-page" data-scaffold="true">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Booking approval or rejection</h1>
+      </header>
+      <p>
+        Standalone decision screen for a single pending booking. Venue staff
+        approve or reject with a required reason; approval flags competing
+        pending requests as conflicting (E06-S04).
+      </p>
+    </main>
+  );
+}
+
 export function VenueDashboard() {
   return (
     <main className="venue-page">
