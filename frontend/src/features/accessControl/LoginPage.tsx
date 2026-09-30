@@ -7,7 +7,7 @@ type WhoAmIResponse = { user?: { role?: string } };
 const roleHome: Record<string, string> = {
   attendee:            '/attendee/events',
   event_organiser:     '/events',
-  event_coordinator:   '/events',
+  event_coordinator:   '/coordinator',
   venue_staff:         '/events',
   technical_support_staff: '/events',
   admin:               '/events',
