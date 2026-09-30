@@ -1,9 +1,25 @@
 # Test execution records
 
 This directory holds one Markdown file per test run session. A run session is
-one person running one scope of tests in one sitting. The files are the
-authoritative execution log for ConnectSphere; at project end they will be
-exported to an "Execution Records" sheet in the course deliverable workbook.
+one person running one scope of tests in one sitting.
+
+These files are the execution log the team can hand to the marker; at project
+end they export to an "Execution Records" sheet in the course deliverable
+workbook.
+
+## What needs recording
+
+Record a run when it is **used as evidence**: cited in a pull request, offered
+as proof that a story meets its Definition of Done, or shown in a demo.
+
+You do not need a record for exploratory runs while developing -- the `npm test`
+you run twenty times while writing a function is not evidence of anything.
+Neither is a CI run by default: those already have an immutable Actions log with
+a URL. Record a CI run only when citing it as evidence, with `environment: ci`
+and the run URL in `Remarks`.
+
+The test is whether someone later needs to see that this ran, on this commit,
+with this outcome, and who ran it.
 
 ## Why one file per session
 
@@ -39,7 +55,7 @@ runner: Bl0oper                    # GitHub username, not display name
 scope: backend/db                  # fixed enum; see below
 environment: local                 # local | ci
 run_type: manual                   # manual | automated | regression
-test_case_version: 270926          # DDMMYYYY suffix of the test-case workbook in force
+test_case_version: 270926          # DDMMYY suffix of the test-case workbook in force
 commit: 839592e                    # 7-character SHA of HEAD when the run happened
 pr: 161                            # optional; omit if not tied to a PR
 ---
@@ -75,7 +91,7 @@ full re-run of a suite to confirm no regressions after a merge or release.
 
 ### `test_case_version`
 
-The `DDMMYYYY` suffix of the `PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` workbook
+The `DDMMYY` suffix of the `PROJECT TEST CASES CAA <DDMMYY>.xlsx` workbook
 that was the canonical test-case source at the time of the run. For example, if
 the workbook in force was `PROJECT TEST CASES CAA 270926.xlsx`, the value is
 `270926`. This field ties each execution record to a specific snapshot of the
@@ -179,8 +195,8 @@ After running any test command, create exactly one session record file in
   finishes.
 - Derive `date` from the actual clock time (UTC+8) at the moment the run
   finishes. Never fabricate a date.
-- Set `test_case_version` to the `DDMMYYYY` suffix of the most recently dated
-  `docs/testing/PROJECT TEST CASES CAA <DDMMYYYY>.xlsx` file present in the
+- Set `test_case_version` to the `DDMMYY` suffix of the most recently dated
+  `docs/testing/PROJECT TEST CASES CAA <DDMMYY>.xlsx` file present in the
   repository at the time of the run.
 - Record `Outcome` only from observed test output. Never fabricate an outcome
   you did not observe. If a run was aborted, record what actually executed up to
@@ -188,6 +204,36 @@ After running any test command, create exactly one session record file in
   test that did not complete.
 - Use `MULTIPLE` for any suite where the runner does not emit per-test TC_IDs.
 - Do not edit existing session files.
+
+## Relationship to the per-story implementation logs
+
+Some stories keep their own status document, for example
+`docs/plans/scrum-33-implementation-status.md`. Those are **not** replaced by
+this directory, and neither replaces the other. They answer different questions:
+
+| | Per-story status document | Session record |
+| --- | --- | --- |
+| Answers | why the rules are what they are, and which test proves which acceptance criterion | what ran, when, by whom, on which commit, and with what outcome |
+| Shape | narrative plus a traceability matrix | flat rows, one per test case |
+| Scope | one story | the whole project |
+| Lifetime | edited as the story evolves | immutable once merged |
+| Consumed by | a reviewer reading that story | the Excel export, and the marker |
+
+The traceability matrix is required separately by the Traceability Standard in
+`docs/testing/README.md`. Keep it.
+
+**Avoid double entry.** Where a per-story document logs a run, cite the session
+record instead of restating the command and result:
+
+```markdown
+| 2026-09-30 | `npm run test:db` | 29/29 | `20260930-143022-Bl0oper-backend-db.md` |
+```
+
+Most of the apparent overlap dissolves once "used as evidence" is applied. The
+gate runs someone repeats while building a story are exploratory and need no
+session record; only the run that is finally cited as proof does. So a story
+document may log a dozen iterations while this directory holds one or two files
+for that story.
 
 ## Excel export path
 

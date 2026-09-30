@@ -48,9 +48,11 @@ that traceability data instead of replacing it with an unlabelled test.
 
 ## Execution records
 
-`docs/testing/runs/` holds one Markdown file per test run session. Every time
-any test command is run, whether by a team member or an AI agent, a session
-record must be committed to that directory. See
+`docs/testing/runs/` holds one Markdown file per test run session. Record a run
+when it is used as evidence: cited in a pull request, offered as proof that a
+story meets its Definition of Done, or shown in a demo. Exploratory runs during
+development need no record, and CI runs are already covered by their Actions
+logs unless someone cites one. See
 [`docs/testing/runs/README.md`](runs/README.md) for the schema, filename
 convention, scope enum, and agent instructions. Use
 [`docs/testing/runs/TEMPLATE.md`](runs/TEMPLATE.md) as the copy-paste

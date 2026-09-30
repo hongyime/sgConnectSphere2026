@@ -35,12 +35,16 @@ workflows, or deployment secrets without a recorded team decision.
 
 ## Recording test runs
 
-Every execution of every test command must be recorded. After any test run --
-whether manual, automated, or a regression sweep, and whether run by a human
-or an AI agent -- create one session record file in `docs/testing/runs/` before
-committing. The schema, filename convention, scope enum, outcome values, and
-agent-specific instructions are in `docs/testing/runs/README.md`. Use
+Record every test run that is **used as evidence**: cited in a pull request,
+offered as proof that a story meets its Definition of Done, or shown in a demo.
+Create one session record file in `docs/testing/runs/` before committing. The
+schema, filename convention, scope enum, outcome values, and agent-specific
+instructions are in `docs/testing/runs/README.md`. Use
 `docs/testing/runs/TEMPLATE.md` as the starting point.
+
+Exploratory runs during development do not need a record, and CI runs are
+already covered by their own Actions logs -- record a CI run only when citing it
+as evidence, with `environment: ci`.
 
 Key rules for agents: derive `commit` from `git rev-parse --short HEAD`,
 derive `runner` from the GitHub login of the person on whose behalf the tests
