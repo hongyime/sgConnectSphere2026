@@ -18,9 +18,19 @@ re-seeding produces identical UUIDs. Current fixture set: 2 client orgs,
 
 ## Credentials
 
-All seeded accounts use the password defined in the `SEED_PASSWORD`
-environment variable. If `SEED_PASSWORD` is not set, the seed falls back to
-a hardcoded default suitable only for local development.
+All seeded accounts share one password, defined by the `seedCredential`
+constant in `backend/src/database/cli.ts`. The seed hashes that same value
+for every account, so they all change together.
+
+There is no environment-variable override. Setting `SEED_PASSWORD` has no
+effect, because no code reads it -- an earlier version of this guide
+described such a variable and a fallback default, and neither ever existed.
+`tests/seed/SEED_DATA.md` is the authoritative list of seeded accounts and
+records the same password in its accounts table.
+
+The value is suitable only for local development and disposable test
+databases. Treat any environment seeded with it as having publicly known
+credentials, because the constant is committed to this repository.
 
 **Rules:**
 
