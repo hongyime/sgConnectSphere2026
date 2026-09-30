@@ -45,3 +45,18 @@ criterion has at least one test as stories are completed. The generated
 `test.fixme()` cases already include story IDs, acceptance criteria, test data,
 expected results, and steps; when a team member implements one, they should keep
 that traceability data instead of replacing it with an unlabelled test.
+
+## Execution records
+
+`docs/testing/runs/` holds one Markdown file per test run session. Every time
+any test command is run, whether by a team member or an AI agent, a session
+record must be committed to that directory. See
+[`docs/testing/runs/README.md`](runs/README.md) for the schema, filename
+convention, scope enum, and agent instructions. Use
+[`docs/testing/runs/TEMPLATE.md`](runs/TEMPLATE.md) as the copy-paste
+starting point.
+
+A future `scripts/export_test_runs_xlsx.py` will export all session records
+to an "Execution Records" sheet in the course deliverable workbook, following
+the same pattern as `scripts/export_testcases_xlsx.py` for the test-case
+catalogue.

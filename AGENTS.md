@@ -33,6 +33,20 @@ Keep imported template material scoped to what this repo actually uses. Do not
 add paid services, AI reviewers, bot auto-merge, privileged `pull_request_target`
 workflows, or deployment secrets without a recorded team decision.
 
+## Recording test runs
+
+Every execution of every test command must be recorded. After any test run --
+whether manual, automated, or a regression sweep, and whether run by a human
+or an AI agent -- create one session record file in `docs/testing/runs/` before
+committing. The schema, filename convention, scope enum, outcome values, and
+agent-specific instructions are in `docs/testing/runs/README.md`. Use
+`docs/testing/runs/TEMPLATE.md` as the starting point.
+
+Key rules for agents: derive `commit` from `git rev-parse --short HEAD`,
+derive `runner` from the GitHub login of the person on whose behalf the tests
+are being run, record only outcomes you observed, and never edit an existing
+session file.
+
 ## Pull-request hygiene (enforced in CI)
 
 CI blocks a PR when any of these are missing. Fix them locally before opening
