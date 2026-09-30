@@ -224,3 +224,17 @@ test('detail treats an unknown or refused id as not found', async () => {
   expect(await screen.findByRole('heading', { name: 'Request not found' })).toBeInTheDocument();
   expect(requestUrls()).toHaveLength(1);
 });
+
+test('detail treats a successful reply with no event as not found rather than a retry loop', async () => {
+  reply = url => (url.searchParams.get('mine') === '1' ? { body: {} } : defaultReply(url));
+  renderAt('/organiser/requests/id-review');
+  expect(await screen.findByRole('heading', { name: 'Request not found' })).toBeInTheDocument();
+});
+
+test('detail refuses an own-request reply that is missing required fields', async () => {
+  reply = url => (url.searchParams.get('mine') === '1' && url.searchParams.get('id')
+    ? { body: { event: { id: 'id-review' } } }
+    : defaultReply(url));
+  renderAt('/organiser/requests/id-review');
+  expect(await screen.findByRole('button', { name: /try again/i })).toBeInTheDocument();
+});

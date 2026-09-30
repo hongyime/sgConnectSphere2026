@@ -647,6 +647,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - detail flags a clarification request without linking to the unbuilt response form
 - detail treats a colleague\
 - detail treats an unknown or refused id as not found
+- detail treats a successful reply with no event as not found rather than a retry loop
+- detail refuses an own-request reply that is missing required fields
 
 ### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
 

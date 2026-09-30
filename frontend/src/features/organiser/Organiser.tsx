@@ -192,7 +192,8 @@ type RequestFilter = 'all' | 'drafts' | 'awaiting' | 'approved';
 export function RequestList() {
   const { state, reload } = useOwnRequests();
   const [filter, setFilter] = useState<RequestFilter>('all');
-  const requests = useMemo(() => (state.status === 'loaded' ? [...state.requests].sort(byStartDate) : []), [state]);
+  const loaded = state.status === 'loaded' ? state.requests : null;
+  const requests = useMemo(() => (loaded ? [...loaded].sort(byStartDate) : []), [loaded]);
   const visible = useMemo(() => {
     if (filter === 'drafts')   return requests.filter(request => request.status === 'draft');
     if (filter === 'awaiting') return requests.filter(request => awaitingStatuses.includes(request.status));

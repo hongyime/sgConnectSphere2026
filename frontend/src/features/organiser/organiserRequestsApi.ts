@@ -53,6 +53,21 @@ async function getJson(url: string): Promise<{ status: number; body: any } | nul
   }
 }
 
+const EVENT_STATUSES: readonly string[] = [
+  'draft', 'submitted', 'under_review', 'awaiting_clarification', 'rejected',
+  'approved', 'planning', 'confirmed', 'cancelled', 'completed',
+];
+
+// The fields every screen relies on; anything else is optional display data.
+function isOwnRequest(value: unknown): value is OwnRequest {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.id === 'string'
+    && typeof candidate.title === 'string'
+    && typeof candidate.status === 'string'
+    && EVENT_STATUSES.includes(candidate.status);
+}
+
 export async function listOwnRequests(): Promise<ListOwnRequestsResult> {
   const result = await getJson('/api/events?mine=1');
   if (!result) return { ok: false, message: 'Your requests could not be loaded. Please try again.' };
@@ -75,22 +90,28 @@ export async function getRequestDetail(identifier: string): Promise<GetRequestDe
   const summary = await getJson(`/api/events?id=${encodeURIComponent(identifier)}`);
   if (!summary) return failed;
   if (summary.status === 401) return { ok: false, notFound: false, message: SIGN_IN_MESSAGE };
-  // The organisation read answers unknown ids with the same 403 as a refusal,
-  // so as not to reveal whether an event exists.
+  // Intentional: the organisation read answers unknown ids with the same 403 as
+  // a refusal, so as not to reveal whether an event exists. A 403 here can also
+  // mean the caller is not an Organiser; the not-found message says to sign in
+  // as one, and an expired session is a 401, handled above.
   if (summary.status === 403 || summary.status === 404) return notFound;
-  if (summary.status < 200 || summary.status >= 300 || !summary.body?.event?.id) return failed;
+  if (summary.status < 200 || summary.status >= 300) return failed;
+  // A success with no event cannot improve on retry; treat it as not found.
+  if (!summary.body?.event?.id) return notFound;
   const event = summary.body.event;
 
   const own = await getJson(`/api/events?mine=1&id=${encodeURIComponent(event.id)}`);
   if (!own) return failed;
   if (own.status === 404) return notFound;
   if (own.status === 401 || own.status === 403) return { ok: false, notFound: false, message: SIGN_IN_MESSAGE };
-  if (own.status < 200 || own.status >= 300 || !own.body?.event) return failed;
+  if (own.status < 200 || own.status >= 300) return failed;
+  if (!own.body?.event) return notFound;
+  if (!isOwnRequest(own.body.event)) return failed;
 
   return {
     ok: true,
     request: {
-      ...(own.body.event as OwnRequest),
+      ...own.body.event,
       eventCode: event.event_code ?? null,
       statusChangedAt: event.status_changed_at ?? null,
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
