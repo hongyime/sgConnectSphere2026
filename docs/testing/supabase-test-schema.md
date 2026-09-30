@@ -31,11 +31,12 @@ That last row is the one that matters for safety. Every constraint defined in
 `test` resolves inside `test`, so no test fixture can reach a production row
 through a foreign key.
 
-The two tables present in `public` but absent from `test` are
-`_connectsphere_migrations`, which is the migration ledger rather than an
-application table, and `keepalive_logs`, which no migration creates because it
-was made by hand. The `keepalive_logs` gap is a separate open item: a fresh
-database built purely from migrations will not have it.
+The two tables present in `public` but absent from `test` at provisioning time
+were `_connectsphere_migrations`, which is the migration ledger rather than an
+application table, and `keepalive_logs`, which no migration created because it
+had been made by hand. That gap is now closed: migration
+`0009_keepalive_logs.sql` creates it, and `test` carries it too, so `test` holds
+33 base tables as of that migration.
 
 ## Honest scope: one test uses this today
 
@@ -97,37 +98,80 @@ Neither pattern is wrong; they serve different needs.
 
 ## How to run the supported test against Supabase
 
-```bash
-# PowerShell
+Set the variable for the single command only, so it cannot leak into the rest of
+the shell session:
+
+```powershell
 $env:TEST_DATABASE_URL = "<DATABASE_POOLER_URL from your .env>"
 npm run test:deactivation:db --workspace backend
+Remove-Item Env:TEST_DATABASE_URL
 ```
 
-The test already falls back through `TEST_DATABASE_URL`,
-`DATABASE_POOLER_URL`, then `DATABASE_URL`, so setting any one of them is
-enough.
+The test also falls back through `DATABASE_POOLER_URL` then `DATABASE_URL`, so
+any one of the three is enough.
 
-The transaction pooler on port 6543 is fine **for this test**, because
-`SET LOCAL search_path` is scoped to the transaction and transaction pooling
-supports exactly that. Be aware of the wider caveat: a pooler drops
-`search_path` supplied as a connection *startup option*, which is why several
-integration tests set it through a `pool.on('connect')` handler instead. If you
-ever point a schema-per-run test at a pooler, that difference will bite.
+**Do not run any other database suite while `TEST_DATABASE_URL` points at
+Supabase.** Only `deactivation.integration.test.ts` rolls back. The others
+commit, and a commit against this URL is a write to production. Clear the
+variable as shown above rather than relying on remembering.
+
+Two guards now make that failure loud rather than silent. The suites that build
+a schema per run assert a loopback address, and
+`registration.db.test.ts` additionally asserts that `current_schema()` really is
+its disposable schema before it writes anything. Pointed at the pooler it now
+stops with `Use a loopback test database; this test commits and cannot be rolled
+back`, having written nothing.
+
+The transaction pooler on port 6543 is fine **for the deactivation test**,
+because `SET LOCAL search_path` is scoped to the transaction and transaction
+pooling supports exactly that. The wider caveat is the reason for the second
+guard: a pooler discards `search_path` supplied as a connection *startup
+option*, which is how `options: '-c search_path=...'` can silently resolve to
+`public`. Several integration tests therefore set it through a
+`pool.on('connect')` handler instead.
 
 ## Do not do these
 
-- Do not run `npm run db:migrate` or `db:reset` against the Supabase URL while
-  intending to affect `test`. The runner reads `DATABASE_URL` and has no
-  `--schema` flag; it applies to whatever `search_path` resolves to, which is
-  `public`. `db:reset` drops and recreates `public`, and
-  `isSafeResetTarget()` permits it when the database name contains `test` —
-  Supabase's database is literally named `postgres`, so this is not a
-  protection you should lean on.
+- Do not run `npm run db:migrate` against the Supabase URL while intending to
+  affect `test`. The runner reads `DATABASE_URL` and has no `--schema` flag; it
+  applies to whatever `search_path` resolves to, which is `public`.
+- `db:reset` is already protected here, and must stay that way.
+  `isSafeResetTarget()` accepts only a loopback host or a database whose name
+  contains `test` or `dev`. Supabase's host is remote and its database is named
+  `postgres`, so the guard **refuses** the shared project. Never set
+  `ALLOW_DATABASE_RESET=I_UNDERSTAND` against it: that override is the one thing
+  standing between `db:reset` and dropping the production `public` schema.
 - Do not add `CREATE EXTENSION` calls aimed at the shared project. `pgcrypto`
   (in `extensions`) and `btree_gist` (in `public`) are already installed.
   `CREATE EXTENSION IF NOT EXISTS ... WITH SCHEMA public` is a harmless no-op
   there, but provisioning extensions is not a test's job.
 - Do not point CI at Supabase. See below.
+
+## Keeping `test` in step with new migrations
+
+**Whoever adds a migration applies it to `test` in the same pull request.** The
+schema does not update itself, and nothing currently fails if it drifts: the
+deactivation test only checks `to_regclass('test.users')`, so a missing later
+migration is invisible until a test happens to need the new column.
+
+Apply a new migration to `test` by running it with the schema in front of the
+search path, for example through the Supabase SQL editor:
+
+```sql
+SET search_path = test, extensions, public;
+-- paste the new migration file here
+```
+
+Write migrations so this is safe to repeat: `CREATE TABLE IF NOT EXISTS`, and
+guard `CREATE POLICY` on `pg_policies` because it has no `IF NOT EXISTS` form.
+`0009_keepalive_logs.sql` is the worked example, and it also guards every
+`GRANT` on the role existing, because `anon` and `authenticated` are
+Supabase-only and absent from local and CI databases.
+
+This is a documented duty rather than an enforced one, which is a real weakness.
+The stronger fix is for the test harness to assert that every file in
+`backend/database/migrations/` is present in `test` and fail loudly when one is
+not. That is recorded as a follow-up on SCRUM-109.
 
 ## CI deliberately stays on a service container
 
