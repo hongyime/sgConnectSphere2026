@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **238**
-- Automated (explicit TC_ID in an active test title): **90** (37.8%)
+- Automated (explicit TC_ID in an active test title): **88** (37.0%)
   - Real-database (`.integration.test` / `.db.test`): **23**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **66**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **145** (60.9%)
+  - Live-assertion (other active tests): **64**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **147** (61.8%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 27 | 12 | 15 | 0 |
+| E03 | 27 | 10 | 17 | 0 |
 | E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **238** | **90** | **145** | **3** |
+| **Total** | **238** | **88** | **147** | **3** |
 
 ## Case-by-case status
 
@@ -82,8 +82,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
 | `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
 | `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
-| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators; tests/e2e/organiser.spec.ts: TC_E02S02_01  |
-| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values; tests/e2e/organiser.spec.ts: TC_E02S02_02 — request list fil |
+| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators |
+| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values |
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
 | `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
 | `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
@@ -101,8 +101,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
 | `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
-| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
-| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator; tests/e2e/organis |
+| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
+| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator |
 | `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised |
 | `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status |
 | `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser |
@@ -635,6 +635,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - API failures show a safe retryable error
 - a failed read request leaves the notification unread and shows the error
 
+### `frontend/src/features/organiser/Organiser.test.tsx`
+
+- dashboard counts come from the live own-requests list
+- dashboard next actions list open requests by date, without drafts or closed ones
+- request list shows every own request with plain-language status and Singapore times
+- request list filters by status group
+- drafts link to the draft editor and other requests to the detail page
+- request list says so when there are no requests
+- request list shows a sign-in message on 401 and retries
+- detail combines the organisation read and the own-request read
+- detail timeline shows the real status history, newest first
+- detail accepts an event code and resolves it to the request
+- detail links to the event page for comments
+- detail flags a clarification request without linking to the unbuilt response form
+- detail treats a colleague\
+- detail treats an unknown or refused id as not found
+- detail treats a successful reply with no event as not found rather than a retry loop
+- detail refuses an own-request reply that is missing required fields
+
 ### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
 
 - switching drafts shows the new draft\
@@ -737,6 +756,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/layout-and-focus.spec.ts`
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
+
+### `tests/e2e/organiser.spec.ts`
+
+- organiser dashboard shows request status counts from the API
+- request list filters between drafts and awaiting review
+- request list opens the live request detail with its status history
+- request detail shows not found for a request that is not yours
+- clarification response (mock) requires every answer before submit
 
 ### `tests/e2e/support.spec.ts`
 
