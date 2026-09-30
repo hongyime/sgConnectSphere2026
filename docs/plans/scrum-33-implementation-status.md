@@ -34,6 +34,8 @@ case below.
 | Answers are only accepted while the request is Awaiting Clarification | TC_E03S02_11 |
 | Answers are text only. Changes to request fields go through the existing pre-approval edit (`PATCH /api/events?id=<id>&edit=1`) | Not a separate case: the response call accepts no field changes |
 | Notices go through the shared E11-S01 writer (BDR T-64): one in-app notice and one email-outbox row per recipient per change, never a duplicate generic "status changed" notice, and no notice to the person who acted. The Organiser's notice includes the question text | TC_E03S02_01, _02, _12 |
+| Added while building: at most 20 questions per request; each answer is limited to 2000 characters; each question can be answered once; an answer must name an outstanding question | Unit tests in `backend/tests/clarification.test.ts`, and TC_E03S02_12 for the unknown question |
+| The questions, the status change, its audit entry and the notices commit together. If the email-outbox write fails, nothing is stored | TC_E03S02_01 (rollback test) |
 
 ## Test plan
 
@@ -50,23 +52,41 @@ Every automated test must carry its TC ID in its title, so that
 
 | TC ID | Type | What the user sees | Backend test (backend PR) | Browser test (frontend PR) |
 |---|---|---|---|---|
-| TC_E03S02_01 | Happy path | Status becomes Awaiting Clarification. The Organiser gets one notice containing the question text | Planned | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S02_02 | Happy path | Status returns to Under Review. The Coordinator gets one notice | Planned | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S02_03 | Happy path | Each outstanding question is listed with the date raised, e.g. "08/09/2026" | Planned | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S02_04 | Cross-cutting (UI filtering) | Only Awaiting Clarification events are listed | Planned | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S02_05 | Negative | 403 "Only the assigned Coordinator can request clarification on this request." | Planned | Not needed |
-| TC_E03S02_06 | Negative (business rule) | 409 "Clarification can only be requested while the request is Under Review." | Planned | Not needed |
-| TC_E03S02_07 | Negative | 400 "Add at least one question." | Planned | Not needed |
-| TC_E03S02_08 | Boundary | 400 "Each question must be 2000 characters or fewer." (2001); accepted (2000) | Planned | Not needed |
-| TC_E03S02_09 | Negative (business rule) | 400 "Answer every outstanding question before resubmitting." | Planned | Not needed |
-| TC_E03S02_10 | Cross-cutting (security) | 403 "Only the Organiser who submitted this request can answer its questions." | Planned | Not needed |
-| TC_E03S02_11 | Negative (business rule) | 409 "This request is not awaiting clarification." | Planned | Not needed |
-| TC_E03S02_12 | Happy path | Both questions in one notice, both listed, both resolved after one response | Planned | Planned |
+| TC_E03S02_01 | Happy path | Status becomes Awaiting Clarification. The Organiser gets one notice containing the question text | `clarification.integration.test.ts`: "TC_E03S02_01: questions move an Under Review request…" and "TC_E03S02_01: a failed email-outbox write stores no questions…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S02_02 | Happy path | Status returns to Under Review. The Coordinator gets one notice | `clarification.integration.test.ts`: "TC_E03S02_02: a complete answer resolves the question…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S02_03 | Happy path | Each outstanding question is listed with the date raised, e.g. "08/09/2026" | `clarification.integration.test.ts`: "TC_E03S02_03: both event detail reads list the outstanding questions…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S02_04 | Cross-cutting (UI filtering) | Only Awaiting Clarification events are listed | `clarification.integration.test.ts`: "TC_E03S02_04: a Coordinator can filter their events to Awaiting Clarification" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S02_05 | Negative | 403 "Only the assigned Coordinator can request clarification on this request." | `clarification.integration.test.ts`: "TC_E03S02_05: a Coordinator not assigned to the request is refused…" | Not needed |
+| TC_E03S02_06 | Negative (business rule) | 409 "Clarification can only be requested while the request is Under Review." | `clarification.integration.test.ts`: "TC_E03S02_06: clarification cannot be requested on a request that is not Under Review" | Not needed |
+| TC_E03S02_07 | Negative | 400 "Add at least one question." | `clarification.integration.test.ts` and `clarification.test.ts`: "TC_E03S02_07: …" | Not needed |
+| TC_E03S02_08 | Boundary | 400 "Each question must be 2000 characters or fewer." (2001); accepted (2000) | `clarification.integration.test.ts` and `clarification.test.ts`: "TC_E03S02_08: …" | Not needed |
+| TC_E03S02_09 | Negative (business rule) | 400 "Answer every outstanding question before resubmitting." | `clarification.integration.test.ts` and `clarification.test.ts`: "TC_E03S02_09: …" | Not needed |
+| TC_E03S02_10 | Cross-cutting (security) | 403 "Only the Organiser who submitted this request can answer its questions." | `clarification.integration.test.ts`: "TC_E03S02_10: another Organiser in the same organisation cannot answer…" | Not needed |
+| TC_E03S02_11 | Negative (business rule) | 409 "This request is not awaiting clarification." | `clarification.integration.test.ts`: "TC_E03S02_11: answers are refused while the request is not Awaiting Clarification" | Not needed |
+| TC_E03S02_12 | Happy path | Both questions in one notice, both listed, both resolved after one response | `clarification.integration.test.ts`: "TC_E03S02_12: two questions are sent in one notice…" | Planned |
 
 "Planned" is replaced with the test file and test name once the test exists.
-The messages are the planned wording. The final wording is recorded here once
-the code exists, so that a message a customer reports can be searched for and
-traced to its test case.
+Backend test files are in `backend/tests/`. The messages above are the final
+wording in `backend/src/modules/eventLifecycle/clarification.ts` (checked
+word for word by the tests and the real-stack run on `b59c5db`), so a message
+a customer reports can be searched for and traced to its test case.
+
+The notices' final wording (title, then message):
+
+- To the Organiser: **"Clarification requested"**, "&lt;Coordinator&gt; needs
+  more information about &lt;code&gt; &lt;title&gt; before the review can continue.
+  The request is now Awaiting Clarification." followed by the numbered
+  questions.
+- To the Coordinator: **"Clarification answered"**, "&lt;Organiser&gt; answered
+  your questions about &lt;code&gt; &lt;title&gt;. The request is back Under
+  Review." followed by each question and its answer.
+
+Other refusals the code can give (all 400): "Send at most 20 questions at a
+time.", "Each answer must be 2000 characters or fewer.", "Each question can
+only be answered once.", "One of the answers does not match an outstanding
+question." A wrong role gets the existing 403 messages: "Access denied. This
+action is for Event Coordinators." or "Access denied. Contact your
+administrator about your organisation access."
 
 ## Test gates
 
@@ -124,6 +144,14 @@ of these areas, it is outside what was tested:
   hand.
 - **Browser tests use fixed sample data.** The full click-through (frontend
   gate 3) is what joins real screens to the real API.
+- **Seeded titles repeat the event code in notices.** Seeded titles already
+  start with the code (for example "EVT-2003 Client B Isolation Event"), so a
+  notice reads "EVT-2003 EVT-2003 Client B Isolation Event". This comes from
+  SCRUM-32's shared event label and only affects seeded data.
+- **The 2000-character question is accepted only in the database tests.** The
+  real-stack run checks the 2001-character refusal, but doesn't send a
+  2000-character question, because that would change the seeded EVT-2003
+  that the later steps use.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s `test` script, and the
@@ -147,7 +175,17 @@ fix gets its own row.
 
 | When (SGT) | Commit | Gate | TC IDs | Command | Where | Result | What was seen | Run by |
 |---|---|---|---|---|---|---|---|---|
-| _No runs yet._ | | | | | | | | |
+| ≈17:52 | `f45c3f2+local` | 1 | _07, _08, _09 + rules | `npx tsx --test tests/clarification.test.ts` (backend) | local | 7/7 passed | — | Claude (for Aaron) |
+| ≈17:52 | `f45c3f2+local` | 1 | all backend | `npm test` (backend) | local | 236/236 passed | — | Claude (for Aaron) |
+| 17:54 | `f45c3f2+local` | 2 | _01–_12 | `npx tsx --test tests/clarification.integration.test.ts` | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` | **12/13, failed _12** | `AssertionError`: outstanding questions listed as [Q2, Q1], expected [Q1, Q2]. Questions sent together shared one `now()` timestamp and were ordered by random id. Fixed by stamping each with `clock_timestamp()` | Claude (for Aaron) |
+| ≈17:55 | `f45c3f2+local` | 2 | _01–_12 | same, run 3 times after the fix | local, same container | 13/13 passed, 3 times | — | Claude (for Aaron) |
+| ≈17:55 | `f45c3f2+local` | 6 | — | `python scripts/check.py` | local | passed (63 tooling tests) | — | Claude (for Aaron) |
+| ≈17:56 | `b59c5db` | 1 | all backend | `npm test` (backend) | local | 236/236 passed | — | Claude (for Aaron) |
+| ≈17:56 | `b59c5db` | 4 | — | `npm run typecheck` and `npm run build` (root) | local | both passed | — | Claude (for Aaron) |
+| ≈17:57 | `b59c5db` | 2 | _01–_12 | `npx tsx --test tests/clarification.integration.test.ts` | local, same container | 13/13 passed | — | Claude (for Aaron) |
+| ≈17:57 | `b59c5db` | 3 | neighbours | `npm run test:db` (backend; includes the SCRUM-32 pair, `eventLifecycle`, `eventVisibility`, `registration.db` and this story's file; `public` pre-migrated) | local, same container | 29/29 passed | — | Claude (for Aaron) |
+| ≈17:57 | `b59c5db` | 3 | neighbours | `npm run test:event-notifications:db` (backend) | local, same container | 12/12 passed | — | Claude (for Aaron) |
+| 17:58 | `b59c5db` | 5 | _01–_12 | Real HTTP calls to the local API (`tsx src/dev.ts`, port 3033), signed in as coord_a, coord_b, organiser_a, organiser_b and organiser_c, with the database checked after each step | local, freshly reset and seeded `connectsphere_dev_stack` in the same container | 18/18 checks passed | Refusals seen word for word: 403 "Only the assigned Coordinator can request clarification on this request." · 409 "Clarification can only be requested while the request is Under Review." · 400 "Add at least one question." (none, and blank) · 400 "Each question must be 2000 characters or fewer." · 409 "This request is not awaiting clarification." · 400 "Answer every outstanding question before resubmitting." · 403 "Only the Organiser who submitted this request can answer its questions." Notices seen: organiser_c got one "Clarification requested" with both questions numbered; coord_b got one "Clarification answered" with both answers; neither actor got one; both had email-outbox rows | Claude (for Aaron) |
 
 ## Completion boundary
 
