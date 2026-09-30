@@ -37,7 +37,7 @@ jobs:
           cat /tmp/insert.json
 
           if [[ "$HTTP_INSERT" != "201" ]]; then
-            echo "::error::INSERT failed (HTTP $HTTP_INSERT) — run supabase/migrations/001_keepalive.sql in Supabase SQL editor first."
+            echo "::error::INSERT failed (HTTP $HTTP_INSERT) — apply backend/database/migrations/0009_keepalive_logs.sql to this database."
             exit 1
           fi
 
