@@ -600,6 +600,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - token past its expiry is rejected as expired
 - positive ttl is required at issue time
 
+### `frontend/src/features/accessControl/LoginPage.test.tsx`
+
+- an Event Coordinator who is already signed in is sent to /coordinator
+
 ### `frontend/src/features/accessControl/RegisterForm.test.tsx`
 
 - submits the four required fields as JSON and shows the success message on 201
@@ -747,6 +751,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - landing page renders at / and links to login and register
 - login page posts to /api/auth/session and surfaces server errors without leaking credentials
 - login page redirects to the role home on success
+- login page sends an Event Coordinator to the Coordinator workspace
 
 ### `tests/e2e/layout-and-focus.spec.ts`
 
