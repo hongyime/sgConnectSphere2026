@@ -26,6 +26,10 @@ export type EventEditValues = {
 
 type FieldSpec = { field: EditableField; label: string; kind: 'text' | 'textarea' | 'datetime' | 'number'; wide?: boolean; hint?: string };
 
+// Date changes fan out to the Organiser and attendees (informationChange.ts),
+// and datetime-local has no zone of its own, so say both next to the fields.
+const dateHint = `Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZone}. Changing the date notifies the Organiser and registered attendees.`;
+
 const sections: { title: string; fields: FieldSpec[] }[] = [
   { title: 'Basics', fields: [
     { field: 'title', label: 'Event name', kind: 'text', wide: true },
@@ -33,8 +37,8 @@ const sections: { title: string; fields: FieldSpec[] }[] = [
     { field: 'purpose', label: 'Purpose', kind: 'textarea', wide: true },
   ] },
   { title: 'Date and attendance', fields: [
-    { field: 'startAt', label: 'Starts', kind: 'datetime' },
-    { field: 'endAt', label: 'Ends', kind: 'datetime' },
+    { field: 'startAt', label: 'Starts', kind: 'datetime', hint: dateHint },
+    { field: 'endAt', label: 'Ends', kind: 'datetime', hint: dateHint },
     { field: 'expectedAttendance', label: 'Expected attendance', kind: 'number' },
   ] },
   { title: 'Requirements', fields: [
@@ -80,7 +84,7 @@ export function buildPatch(initial: Draft, draft: Draft): { patch: EventPatch; e
     if (value === initial[field].trim()) continue;
     if (field === 'expectedAttendance') {
       const number = Number(value);
-      if (!/^\d+$/.test(value) || number <= 0) errors[field] = 'Enter a whole number greater than 0.';
+      if (!/^[1-9]\d*$/.test(value)) errors[field] = 'Enter a whole number greater than 0.';
       else patch.expectedAttendance = number;
     } else if (field === 'startAt' || field === 'endAt') {
       const date = new Date(value);
@@ -166,7 +170,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
               const locked = !editable.has(spec.field);
               const id = `edit-${spec.field}`;
               const error = errors[spec.field];
-              const describedBy = [error ? `${id}-error` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
+              const describedBy = [error ? `${id}-error` : null, spec.hint ? `${id}-hint` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
               const common = {
                 id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
                 onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
@@ -177,6 +181,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
                   {spec.kind === 'textarea'
                     ? <textarea rows={3} {...common} />
                     : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
+                  {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}
                   {locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null}
                   {error ? <small id={`${id}-error`}>{error}</small> : null}
                 </div>

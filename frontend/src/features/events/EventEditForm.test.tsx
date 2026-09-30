@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { buildPatch, toLocalInput } from './EventEditForm';
+import { cleanup, render, screen } from '@testing-library/react';
+import { buildPatch, EventEditForm, toLocalInput } from './EventEditForm';
 
 const initial = {
   title: 'Charity Run', description: 'Annual fundraiser.', purpose: '', startAt: '2026-11-12T09:00', endAt: '2026-11-12T12:00',
@@ -25,7 +26,7 @@ describe('buildPatch', () => {
     expect(buildPatch(initial, { ...initial, venueRequirements: '' }).errors).toEqual({ venueRequirements: "Venue requirements can't be left empty." });
   });
 
-  test.each(['0', '-5', '12.5', 'many'])('attendance %s is refused', value => {
+  test.each(['0', '-5', '12.5', 'many', '007'])('attendance %s is refused', value => {
     expect(buildPatch(initial, { ...initial, expectedAttendance: value }).errors.expectedAttendance).toBe('Enter a whole number greater than 0.');
   });
 
@@ -44,4 +45,24 @@ test('toLocalInput round-trips through the browser time zone', () => {
   const iso = new Date('2026-11-12T09:30').toISOString();
   expect(toLocalInput(iso)).toBe('2026-11-12T09:30');
   expect(toLocalInput('not a date')).toBe('');
+});
+
+test('date fields warn that a change notifies people and name the time zone', () => {
+  render(
+    <EventEditForm
+      eventId="evt-1"
+      values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+        expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null }}
+      editable={new Set(['startAt', 'endAt'])}
+      onSaved={() => {}}
+      onCancel={() => {}}
+    />,
+  );
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  for (const label of ['Starts', 'Ends']) {
+    expect(screen.getByLabelText(label)).toHaveAccessibleDescription(
+      `Times are in ${zone}. Changing the date notifies the Organiser and registered attendees.`,
+    );
+  }
+  cleanup();
 });
