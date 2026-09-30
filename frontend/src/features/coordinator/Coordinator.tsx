@@ -1,21 +1,10 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  AlertTriangle, CalendarClock, CheckCircle2, ClipboardCheck, ClipboardList,
-  Inbox, MessageSquareText, Send,
+  AlertTriangle, CalendarClock, CheckCircle2, ClipboardCheck, ClipboardList, Send,
 } from 'lucide-react';
-import { coordinatorEvents, coordinatorSummary, findCoordinatorEvent, type CoordinatorStatus } from './mocks';
+import { findCoordinatorEvent } from './mocks';
 import './coordinator.css';
-
-const statusTone: Record<CoordinatorStatus, string> = {
-  'Draft':                   'neutral',
-  'Under review':            'info',
-  'Clarification requested': 'warning',
-  'Approved':                'success',
-  'Planning':                'info',
-  'Confirmed':               'success',
-  'Rejected':                'danger',
-};
 
 function CoordinatorNav({ eventCode }: { eventCode?: string }) {
   return (
@@ -30,115 +19,6 @@ function CoordinatorNav({ eventCode }: { eventCode?: string }) {
         </>
       ) : null}
     </nav>
-  );
-}
-
-export function CoordinatorHome() {
-  return (
-    <main className="coordinator-page">
-      <header className="coordinator-heading">
-        <p className="eyebrow">Coordinator workspace</p>
-        <h1>Workload dashboard</h1>
-      </header>
-      <section className="coordinator-metrics" aria-label="Workload counts">
-        <article><span>Assigned</span><strong>{coordinatorSummary.assigned}</strong></article>
-        <article><span>Awaiting decision</span><strong>{coordinatorSummary.awaitingDecision}</strong></article>
-        <article><span>In planning</span><strong>{coordinatorSummary.inPlanning}</strong></article>
-        <article><span>Ready to confirm</span><strong>{coordinatorSummary.readyToConfirm}</strong></article>
-      </section>
-      <section className="coordinator-list" aria-label="Next actions">
-        <h2>Next actions</h2>
-        {coordinatorEvents.map(event => (
-          <Link key={event.eventCode} to={`/coordinator/events/${event.eventCode}`} className="coordinator-row">
-            <div>
-              <strong>{event.title}</strong>
-              <small>{event.eventCode} · {event.clientOrg} · SLA {event.slaDue}</small>
-            </div>
-            <span className={`status-pill status-${statusTone[event.status]}`}>{event.status}</span>
-          </Link>
-        ))}
-      </section>
-      <p className="coordinator-footer">
-        <Link to="/coordinator/queue"><Inbox size={14} aria-hidden="true" /> Full review queue</Link>
-      </p>
-    </main>
-  );
-}
-
-export function ReviewQueue() {
-  const [filter, setFilter] = useState<'all' | 'needs-decision' | 'overdue'>('all');
-  const events = useMemo(() => {
-    if (filter === 'needs-decision') return coordinatorEvents.filter(e => e.status === 'Under review' || e.status === 'Clarification requested');
-    if (filter === 'overdue') return coordinatorEvents.filter(e => e.slaDue === 'overdue');
-    return coordinatorEvents;
-  }, [filter]);
-  return (
-    <main className="coordinator-page">
-      <header className="coordinator-heading">
-        <p className="eyebrow">Coordinator queue</p>
-        <h1>Review queue</h1>
-      </header>
-      <div className="coordinator-filters" role="group" aria-label="Queue filter">
-        <button type="button" onClick={() => setFilter('all')} aria-pressed={filter === 'all'}>All ({coordinatorEvents.length})</button>
-        <button type="button" onClick={() => setFilter('needs-decision')} aria-pressed={filter === 'needs-decision'}>Needs decision</button>
-        <button type="button" onClick={() => setFilter('overdue')} aria-pressed={filter === 'overdue'}>Overdue</button>
-      </div>
-      <table className="coordinator-table">
-        <thead><tr><th>Event</th><th>Organiser</th><th>Requested</th><th>Status</th><th>SLA</th></tr></thead>
-        <tbody>
-          {events.map(event => (
-            <tr key={event.eventCode}>
-              <td><Link to={`/coordinator/events/${event.eventCode}`}>{event.eventCode} — {event.title}</Link></td>
-              <td>{event.organiser}</td>
-              <td>{event.requestedDate}</td>
-              <td><span className={`status-pill status-${statusTone[event.status]}`}>{event.status}</span></td>
-              <td>{event.slaDue}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
-  );
-}
-
-export function RequestDetail() {
-  const { eventCode } = useParams();
-  const event = findCoordinatorEvent(eventCode ?? '');
-  if (!event) return <PermissionOrNotFound eventCode={eventCode} />;
-  return (
-    <main className="coordinator-page">
-      <header className="coordinator-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>{event.title}</h1>
-        <span className={`status-pill status-${statusTone[event.status]}`}>{event.status}</span>
-      </header>
-      <CoordinatorNav eventCode={event.eventCode} />
-      <section className="coordinator-grid" aria-label="Event summary">
-        <article>
-          <h2>Summary</h2>
-          <dl>
-            <dt>Organiser</dt><dd>{event.organiser} ({event.clientOrg})</dd>
-            <dt>Requested date</dt><dd>{event.requestedDate}</dd>
-            <dt>Expected attendees</dt><dd>{event.capacity}</dd>
-            <dt>Venue</dt><dd>{event.venue ?? 'To be booked'}</dd>
-          </dl>
-        </article>
-        <article>
-          <h2>Requirements</h2>
-          <ul>
-            {event.requirements.map(requirement => (<li key={requirement}>{requirement}</li>))}
-          </ul>
-        </article>
-      </section>
-      <section aria-label="Audit trail">
-        <h2><MessageSquareText size={16} aria-hidden="true" /> Activity</h2>
-        <ul className="coordinator-audit">
-          {event.auditTrail.map(entry => (
-            <li key={entry.at}><strong>{entry.actor}</strong> · <span>{entry.at}</span><p>{entry.note}</p></li>
-          ))}
-        </ul>
-      </section>
-    </main>
   );
 }
 
@@ -197,7 +77,7 @@ export function PlanningWorkspace() {
       </header>
       <CoordinatorNav eventCode={event.eventCode} />
       <section className="coordinator-grid" aria-label="Planning status">
-        <PlanningRow icon={CalendarClock} label="Venue" state={event.planning.venue} link="/venue" />
+        <PlanningRow icon={CalendarClock} label="Venue" state={event.planning.venue} link={`/coordinator/events/${event.eventCode}/venues`} />
         <PlanningRow icon={ClipboardList} label="Equipment" state={event.planning.equipment} link="/support" />
         <PlanningRow icon={ClipboardCheck} label="Technical support" state={event.planning.technicalSupport} link="/support" />
       </section>

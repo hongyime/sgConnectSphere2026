@@ -44,3 +44,20 @@ test('login page redirects to the role home on success', async ({ page }) => {
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(page).toHaveURL(/\/attendee\/events$/);
 });
+
+// /events is the organiser list and refuses Coordinators, so they must land
+// on their own workspace instead.
+test('login page sends an Event Coordinator to the Coordinator workspace', async ({ page }) => {
+  let step = 0;
+  await page.route('**/api/auth/session', route => {
+    const method = route.request().method();
+    if (method === 'GET' && step === 0) return route.fulfill({ status: 401, json: { error: 'Sign in to continue.' } });
+    if (method === 'POST') { step = 1; return route.fulfill({ status: 200, json: { signedIn: true } }); }
+    return route.fulfill({ status: 200, json: { user: { id: 'test-id', email: 'coord_a@connectsphere.com', role: 'event_coordinator' } } });
+  });
+  await page.goto('/login');
+  await page.getByLabel('Email').fill('coord_a@connectsphere.com');
+  await page.getByLabel('Password').fill('AnyPassword12!');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/coordinator$/);
+});

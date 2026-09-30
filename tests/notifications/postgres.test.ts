@@ -76,7 +76,9 @@ test('additive migration preserves old deliveries and prepares escaped authorita
   await inTransaction(f.pool, (client) => prepareCommittedDelivery(client, id));
   const row = (await f.pool.query('SELECT * FROM notification_deliveries WHERE id=$1', [id])).rows[0];
   assert.equal(row.id, id);
-  assert.equal(row.html, '<p>&lt;Synthetic&gt; &amp; retained</p>');
+  assert.match(row.html, /&lt;Synthetic&gt; &amp; retained/, 'message stays HTML-escaped inside the branded template');
+  assert.match(row.html, /ConnectSphere/, 'branded template wraps the message');
+  assert.doesNotMatch(row.html, /<Synthetic>/, 'raw unescaped tag must never appear');
   assert.match(row.recipient_email, /@example\.invalid$/);
   assert.equal(row.delivery_status, 'queued');
   assert.equal((await f.store.claimPublish(5)).length, 1);

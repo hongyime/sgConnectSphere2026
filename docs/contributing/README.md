@@ -25,6 +25,8 @@ underpin all of these.
   the one-shot conversion scripts and when to stop.
 - [Creating a postplan](./creating-a-postplan.md) — the per-PR HTML
   review that gets uploaded to `postplan.dev` and linked in the PR.
+- [Generating an SBOM](./generating-sbom.md) — run `npm run sbom` to produce
+  CycloneDX SBOMs for the npm workspace tree and Python tooling.
 
 ## Shared conventions
 

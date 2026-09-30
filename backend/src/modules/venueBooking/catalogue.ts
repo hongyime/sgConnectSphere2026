@@ -46,10 +46,14 @@ export async function requireVenueStaff(query: Query, user: AuthenticatedUser | 
   return user;
 }
 
-export async function requireCatalogueViewer(query: Query, user: AuthenticatedUser | undefined): Promise<AuthenticatedUser> {
+export async function requireCatalogueViewer(
+  query: Query,
+  user: AuthenticatedUser | undefined,
+  screen = 'venue_catalogue',
+): Promise<AuthenticatedUser> {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['venue_staff', 'event_coordinator']).allowed) {
-    await recordCatalogueDenial(query, user, 'venue_catalogue');
+    await recordCatalogueDenial(query, user, screen);
     throw new AccessError(403, 'Access denied.');
   }
   return user;

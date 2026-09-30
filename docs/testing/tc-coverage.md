@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 230 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 238 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **230**
-- Automated (explicit TC_ID in an active test title): **61** (26.5%)
-  - Real-database (`.integration.test` / `.db.test`): **15**
-  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **0**
-  - Live-assertion (other active tests): **46**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **166** (72.2%)
+- Total test cases: **238**
+- Automated (explicit TC_ID in an active test title): **88** (37.0%)
+  - Real-database (`.integration.test` / `.db.test`): **23**
+  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
+  - Live-assertion (other active tests): **64**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **147** (61.8%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,17 +20,17 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 26 | 8 | 18 | 0 |
-| E05 | 24 | 15 | 9 | 0 |
-| E06 | 22 | 0 | 22 | 0 |
+| E03 | 27 | 10 | 17 | 0 |
+| E05 | 24 | 24 | 0 | 0 |
+| E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
 | E09 | 35 | 5 | 30 | 0 |
 | E10 | 15 | 0 | 15 | 0 |
-| E11 | 8 | 0 | 8 | 0 |
+| E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **230** | **61** | **166** | **3** |
+| **Total** | **238** | **88** | **147** | **3** |
 
 ## Case-by-case status
 
@@ -82,8 +82,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
 | `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
 | `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
-| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators; tests/e2e/organiser.spec.ts: TC_E02S02_01  |
-| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values; tests/e2e/organiser.spec.ts: TC_E02S02_02 — request list fil |
+| `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators |
+| `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values |
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
 | `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
 | `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
@@ -95,13 +95,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E03S01_01` | E03-S01 | Verify that submitting a request should trigger automatic assignment of exactly  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review |
+| `TC_E03S01_01` | E03-S01 | Verify that submitting a request should trigger automatic assignment of exactly  | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
 | `TC_E03S01_02` | E03-S01 | Verify that when several Coordinators are available, the system should assign th | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_02 - Verify that when several Coordinators are available, the system should assign the one with the fewest active events |
-| `TC_E03S01_03` | E03-S01 | Verify that the currently assigned Coordinator should be able to reassign the ev | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
-| `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
-| `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment |
-| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
-| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator; tests/e2e/organis |
+| `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague |
+| `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
+| `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
+| `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
+| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
+| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator |
 | `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised |
 | `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status |
 | `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser |
@@ -141,24 +142,24 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
-| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_01 - Verify that opening a venue |
-| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_02 - Verify that a period the Coordinator is not permitted to view should show as unavailable without revealing the other event |
-| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_03 - Verify that a venue blocked for maintenance should be visually distinct from a booked period on the calendar |
-| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_04 - Verify that an Event Coordinator should be able to select a date or date range and navigate to different periods on the calendar |
-| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S03_05 - Verify that for periods the Coordinator is permitted to view, the calendar should show the event name, event, date and time |
-| `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates |
-| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect |
-| `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_03 - Verify that creating a block over an upcoming event |
-| `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that removing or shortening an existing block should restore the venue |
+| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
+| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable for those dates; tests/e2e/e05.spec.ts: TC_E05S04_01 - Verif |
+| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
+| `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
+| `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
 
 ### E06
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E06S01_01` | E06-S01 | Verify that running a search where multiple criteria match an available venue sh | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_01 - Verify that running a search where multiple criteria match an available venue should list it with its capacity, layouts and facilities |
-| `TC_E06S01_02` | E06-S01 | Verify that when no venue matches every criterion, near matches should be return | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_02 - Verify that when no venue matches every criterion, near matches should be returned instead of an empty result |
-| `TC_E06S01_03` | E06-S01 | Verify that a venue available but with capacity below the event's expected atten | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_03 - Verify that a venue available but with capacity below the event |
-| `TC_E06S01_04` | E06-S01 | Verify that a venue that is blocked or already confirmed for the requested perio | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S01_04 - Verify that a venue that is blocked or already confirmed for the requested period should not appear as available |
+| `TC_E06S01_01` | E06-S01 | Verify that running a search where multiple criteria match an available venue sh | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; backend/tests/ |
+| `TC_E06S01_02` | E06-S01 | Verify that when no venue matches every criterion, near matches should be return | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
+| `TC_E06S01_03` | E06-S01 | Verify that a venue available but with capacity below the event's expected atten | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
+| `TC_E06S01_04` | E06-S01 | Verify that a venue that is blocked or already confirmed for the requested perio | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_01 - Verify that viewing a venue in the context of a event with recorded requirements should show a suitability status for that event |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_02 - Verify that a venue failing one or more recorded requirements should be marked unsuitable with every failing requirement named |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_03 - Verify that a venue meeting all recorded requirements for the event should be marked suitable |
@@ -297,14 +298,21 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_01 - Verify that a user linked to an event should be notified when its status changes or a booking decision is made, with details of what/when/whic |
-| `TC_E11S01_02` | E11-S01 | Verify that a change to a event's date, time or venue should notify the Organise | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_02 - Verify that a change to a event |
+| `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
+| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; tests/e2e/e11.spec.ts: |
 | `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_03 - Verify that a user whose responsibilities are unaffected by a change should not be notified |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
-| `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_06 - Verify that opening the notification list with several unread notifications should show them newest first with unread ones distinguished |
-| `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_07 - Verify that opening an unread notification should mark it as read |
+| `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; tests/auth-e2e/notificati |
+| `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
 | `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
-| `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_09 - Verify that a rolled-back business transaction publishes no notification |
+| `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E11S01_09: email-outbox failure rolls back creation, draft submission, reassignment request and each response; backen |
+| `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/eventNotifications.test.ts: TC_E11S01_10: approved recipient matrix distinguishes internal decisions from public changes |
+| `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
+| `TC_E11S01_12` | E11-S01 | Preserve before/after recipients during cancellation and venue moves | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_12: cancellation notifications retain recipients after registrations and staff are released; backend/tests/eventNoti |
+| `TC_E11S01_13` | E11-S01 | Expose missing Venue Staff assignments without an unsafe fallback | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_13: decided_by and unrelated Venue Staff never stand in for assignments; backend/tests/eventNotifications.test.ts: T |
+| `TC_E11S01_14` | E11-S01 | Protect attendee notification content and membership boundaries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; backend/tests/eventNot |
+| `TC_E11S01_15` | E11-S01 | Deduplicate concurrent notification-hook retries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_15: concurrent retries yield one in-app and email record per recipient |
+| `TC_E11S01_16` | E11-S01 | Keep uncommitted notifications invisible and roll back all writes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_16: uncommitted messages are invisible and rollback leaves no jobs |
 
 ### E14
 
@@ -334,6 +342,31 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
 
+### `backend/tests/coordinatorAssignment.integration.test.ts`
+
+- SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL
+
+### `backend/tests/coordinatorAssignment.test.ts`
+
+- the active statuses used for assignment match the T-52 list deactivation uses
+- S1: a submitted request gets exactly one Coordinator, moves to Under Review, is audited and the Coordinator is notified
+- S2: the pick orders by fewest active events, then least recently assigned, then id, among eligible Coordinators only
+- D4: with no eligible Coordinator the request stays Submitted and unassigned, and the gap is audited
+- a request that is not Submitted, or already has a Coordinator, is left alone
+- S3: the assigned Coordinator names a colleague; the request is recorded and the colleague notified, and ownership does not move
+- S6: a Coordinator who is not assigned is refused, with the denial committed after the rollback
+- S6: an unknown event is refused exactly like one assigned to someone else
+- non-Coordinators cannot request a reassignment, and the attempt is audited against the screen
+- a reassignment must name a valid colleague other than the requester
+- an ineligible colleague, an inactive event and a second pending request are all refused without writing
+- S4: accepting moves ownership to the colleague, ends the request and logs the change
+- S5: declining leaves the original Coordinator assigned and tells them
+- only the named colleague may answer; anyone else is refused and audited
+- a request can be answered only once, and not after the event changed hands or ended
+- an unknown request, an invalid id or a missing decision is rejected
+- the assigned-event list is limited to the caller and never includes drafts
+- an event not assigned to the caller is refused like an unknown one, and audited
+
 ### `backend/tests/deactivation.integration.test.ts`
 
 - PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback
@@ -345,6 +378,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - coordinator without blocking assignments succeeds
 - already deactivated returns safe conflict without audit
 - endpoint authentication, CSRF, identity and cookie clearing
+
+### `backend/tests/emailTemplate.test.ts`
+
+- escapeHtml neutralizes all five HTML-significant characters
+- buildNotificationEmailHtml escapes both title and message
+- buildNotificationEmailHtml converts newlines to <br> after escaping
+- buildNotificationEmailHtml linkifies a bare URL as a real, brand-colored anchor
+- buildNotificationEmailHtml trims one trailing sentence-punctuation character out of the link
+- buildNotificationEmailHtml does not linkify a URL injected via message content differently than any other text -- it is still escaped first
+- buildNotificationEmailHtml output carries ConnectSphere branding and is a complete HTML document
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -379,6 +422,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - changing status to the same status is a no-op that writes no audit entry
 - changing the status of an unknown event is reported as not found
 
+### `backend/tests/eventNotifications.integration.test.ts`
+
+- E11-S01: real PostgreSQL recipient selection and atomic business changes
+
 ### `backend/tests/eventVisibility.integration.test.ts`
 
 - E01-S02: organisation isolation, colleagues, search, audit and notification delivery
@@ -393,6 +440,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - audit failure never returns event information or a false logged success
 - an organiser can post an accessible event comment and notify its coordinator
 - comment posting refuses an event outside the organiser organisation
+- organiser can update a pre-approval field and the change is audited
+- organiser post-approval restricted edits return the change-request hand-off
+- only the assigned coordinator can edit an approved event
+- assigned coordinator can edit approved event fields and every change is audited
+- organiser can update registration dates before approval
+- organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
 
@@ -411,6 +464,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - queued recovery is not delivered to deactivated or changed recipients
 - reset transaction rolls back token consumption and lock changes on database failure
 - API rejects cross-origin changes and wrong methods
+
+### `backend/tests/notificationInbox.integration.test.ts`
+
+- prepared email uses current account email and a provider rejection preserves the inbox
+- PR #143: email verification and other eventless notices never enter inbox responses
+- PR #143: inbox is capped at the newest 100 event notifications
+
+### `backend/tests/notificationInbox.test.ts`
+
+- rejects anonymous, inactive and locked callers before database access
+- rejects cross-origin writes and client supplied identity
+- storage errors never disclose database details
 
 ### `backend/tests/profile.integration.test.ts`
 
@@ -458,6 +523,34 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - listAccessibilityFeatures requires a signed-in user
 - listAccessibilityFeatures returns the vocabulary for any signed-in user, including an organiser
 
+### `backend/tests/venueBlocks.integration.test.ts`
+
+- E05-S04: a block saved with hours accepts its own day back and keeps those hours
+
+### `backend/tests/venueBlocks.test.ts`
+
+- validateBlockInput stores whole Singapore days with an exclusive end
+- validateBlockInput accepts a single-day block
+- validateBlockInput rejects a non-object submission
+- validateBlockInput requires a reason (E05-S04 checklist: recorded reason)
+- validateBlockInput rejects malformed, impossible and reversed dates
+- validateBlockInput makes the reason optional only when shortening
+- block changes require a signed-in Venue Staff member
+- listing blocks is limited to the venue catalogue roles
+- invalid input is rejected before a transaction opens
+
+### `backend/tests/venueCalendar.test.ts`
+
+- getVenueCalendar requires a signed-in user
+- getVenueCalendar refuses roles other than Venue Staff and Event Coordinators, logging the denial
+- getVenueCalendar returns 404 for an unknown venue
+- parseCalendarRange lists every Singapore day in an inclusive range
+- parseCalendarRange rejects missing, malformed, impossible, reversed and oversized ranges
+- an unassigned event is Unavailable to every Coordinator but visible to Venue Staff
+- Free periods skip overlapping bookings and blocks and stay within opening hours
+- a retired venue shows its bookings and blocks but no Free period
+- a day fully covered by a block has no Free period
+
 ### `backend/tests/venueCatalogue.test.ts`
 
 - validateVenueInput rejects a non-object submission
@@ -484,6 +577,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues with no accessibility ids requested applies no accessibility filter
 - searchVenues applies the layout and accessibility filters together
 
+### `backend/tests/venueSearch.test.ts`
+
+- capacity without layout uses venue maximum and respects separate minimum
+- anonymous search is rejected
+- inactive coordinator is rejected
+- coordinator can load search options
+- invalid input identifies fields before venue query
+
 ### `backend/tests/verificationEmail.test.ts`
 
 - sendVerificationEmail issues one token, one notification, one delivery
@@ -499,11 +600,31 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - token past its expiry is rejected as expired
 - positive ttl is required at issue time
 
+### `frontend/src/features/accessControl/LoginPage.test.tsx`
+
+- an Event Coordinator who is already signed in is sent to /coordinator
+
 ### `frontend/src/features/accessControl/RegisterForm.test.tsx`
 
 - submits the four required fields as JSON and shows the success message on 201
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
+
+### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
+
+- requesting a reassignment sends the chosen colleague and keeps the current Coordinator assigned
+- sending without choosing a colleague is blocked with a message
+- a refused reassignment shows the server reason
+- an unassigned Coordinator is refused and sees no reassignment action
+- an event that is no longer active cannot be reassigned
+- declining leaves the original Coordinator assigned
+- accepting moves the event to the incoming Coordinator and links to it
+- an answer that was already recorded shows the server reason
+- the dashboard counts active work and flags incoming requests
+- the dashboard explains automatic assignment when nothing is assigned
+- the queue filters by status and shows a filter-specific empty state
+- a signed-out Coordinator is asked to sign in
+- a failed load can be retried
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
@@ -511,6 +632,31 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - renders notifications newest first once loaded
 - distinguishes unread notifications from read ones
 - marking a notification as read updates it and removes the action
+- API failures show a safe retryable error
+- a failed read request leaves the notification unread and shows the error
+
+### `frontend/src/features/organiser/Organiser.test.tsx`
+
+- dashboard counts come from the live own-requests list
+- dashboard next actions list open requests by date, without drafts or closed ones
+- request list shows every own request with plain-language status and Singapore times
+- request list filters by status group
+- drafts link to the draft editor and other requests to the detail page
+- request list says so when there are no requests
+- request list shows a sign-in message on 401 and retries
+- detail combines the organisation read and the own-request read
+- detail timeline shows the real status history, newest first
+- detail accepts an event code and resolves it to the request
+- detail links to the event page for comments
+- detail flags a clarification request without linking to the unbuilt response form
+- detail treats a colleague\
+- detail treats an unknown or refused id as not found
+- detail treats a successful reply with no event as not found rather than a retry loop
+- detail refuses an own-request reply that is missing required fields
+
+### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
+
+- switching drafts shows the new draft\
 
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
@@ -525,6 +671,48 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `frontend/src/features/shell/AppHeader.test.tsx`
+
+- shows the Coordinator links with the current page marked
+- shows Organiser links for an Organiser
+- announces the unread notification count
+- signs out through the session endpoint and returns to the login page
+- keeps the user on the page and explains when sign out fails
+- offers sign in when there is no session
+
+### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
+
+- changing the calendar route loads the new venue
+- coordinators can reach the calendar from their dashboard
+
+### `frontend/src/features/venue/VenueCalendar.test.tsx`
+
+- loads the current month for the first venue
+- labels free, tentative, confirmed and blocked entries distinctly
+- shows a maintenance block with its reason and never as a booking
+- shows an unavailable period without any event details
+- expands a permitted booking to show event, code, date and time
+- navigates to the next month and then to a custom range
+- refuses a reversed or oversized range without calling the API
+- splits a multi-day block across each day it covers
+- opens the venue named in a coordinator calendar link
+- reloads when a different venue is chosen
+- notes that a retired venue offers no free time
+- shows a sign-in message on 403 and retries on request
+- does not present a plain venue record as an empty calendar
+- two blocks clipped to the same start get separate rows and keys
+
+### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
+
+- venue A\
+
+### `frontend/src/features/venue/calendarDates.test.ts`
+
+- month bounds cover leap and non-leap Februaries
+- shifting months crosses year boundaries
+- Singapore day keys and times use UTC+8 regardless of browser timezone
+- day counts are inclusive and invalid dates are rejected
 
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
@@ -547,9 +735,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `tests/e2e/coordinator.spec.ts`
 
-- coordinator dashboard renders the workload metrics
-- review queue filters between all and needs-decision
-- request detail exposes the event workflow tabs
+- coordinator dashboard shows live workload counts inside the shared header
+- review queue filters assigned events by status
+- request detail shows the assigned Coordinator and request details
 - decision panel requires a reason when rejecting or clarifying
 - final confirmation blocks until readiness is met
 
@@ -563,6 +751,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - landing page renders at / and links to login and register
 - login page posts to /api/auth/session and surfaces server errors without leaking credentials
 - login page redirects to the role home on success
+- login page sends an Event Coordinator to the Coordinator workspace
+
+### `tests/e2e/layout-and-focus.spec.ts`
+
+- keyboard focus outline is visible against the page (WCAG 3:1)
+
+### `tests/e2e/organiser.spec.ts`
+
+- organiser dashboard shows request status counts from the API
+- request list filters between drafts and awaiting review
+- request list opens the live request detail with its status history
+- request detail shows not found for a request that is not yours
+- clarification response (mock) requires every answer before submit
 
 ### `tests/e2e/support.spec.ts`
 
@@ -573,13 +774,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - technician assignment lists available technicians
 - conflict state lists shortfall requests
 
+### `tests/e2e/venue-search.spec.ts`
+
+- search access denial shows safe error and no criteria form
+
 ### `tests/e2e/venue.spec.ts`
 
 - venue dashboard shows pending and confirmed counts
 - venue inventory lists every venue with capacity
 - inventory search re-fetches venues filtered by the query
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
-- availability calendar filters bookings by selected venue
+- availability calendar loads the selected venue from the API
 - pending booking detail confirms a booking
 
 ### `tests/notifications/postgres.test.ts`

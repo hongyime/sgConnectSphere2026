@@ -32,6 +32,7 @@ const managedTables = [
   'venue_bookings',
   'event_facility_needs',
   'event_accessibility_needs',
+  'coordinator_reassignments',
   'events',
   'venue_facilities',
   'facilities',

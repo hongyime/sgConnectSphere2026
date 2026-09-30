@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, Building2, CalendarClock, CheckCircle2, Search } from 'lucide-react';
 import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
 import { listVenues, retireVenue, type BlockingBooking, type Venue } from './venueApi';
+import { VenueCalendar } from './VenueCalendar';
 import './venue.css';
 
 const statusTone: Record<BookingStatus, string> = {
@@ -11,6 +12,23 @@ const statusTone: Record<BookingStatus, string> = {
   Confirmed: 'success',
   Blocked:   'danger',
 };
+
+// SCAFFOLD: replace with real E06-S04 implementation. Safe to delete/rewrite entirely.
+export function BookingDecision() {
+  return (
+    <main className="venue-page" data-scaffold="true">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Booking approval or rejection</h1>
+      </header>
+      <p>
+        Standalone decision screen for a single pending booking. Venue staff
+        approve or reject with a required reason; approval flags competing
+        pending requests as conflicting (E06-S04).
+      </p>
+    </main>
+  );
+}
 
 export function VenueDashboard() {
   return (
@@ -176,49 +194,10 @@ export function VenueInventory() {
   );
 }
 
+// E05-S03: the live calendar replaced the fixture table that used to live
+// here. The export name is kept so the /venue/availability route is unchanged.
 export function AvailabilityCalendar() {
-  const [selectedVenue, setSelectedVenue] = useState(venues[0].id);
-  const cellsForVenue = useMemo(
-    () => bookings.filter(booking => booking.venueId === selectedVenue),
-    [selectedVenue],
-  );
-  const conflicts = cellsForVenue.filter(booking => booking.status === 'Blocked').length;
-  return (
-    <main className="venue-page">
-      <header className="venue-heading">
-        <p className="eyebrow">Venue staff</p>
-        <h1>Availability calendar</h1>
-      </header>
-      <label className="venue-select">
-        <span>Venue</span>
-        <select value={selectedVenue} onChange={event => setSelectedVenue(event.target.value)}>
-          {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
-        </select>
-      </label>
-      {conflicts > 0 ? (
-        <p className="venue-alert"><AlertTriangle size={16} aria-hidden="true" /> {conflicts} conflict(s) on this venue.</p>
-      ) : (
-        <p className="venue-ok"><CheckCircle2 size={16} aria-hidden="true" /> No conflicts on this venue.</p>
-      )}
-      <table className="venue-table">
-        <thead><tr><th>Booking</th><th>Event</th><th>Date</th><th>Window</th><th>Status</th></tr></thead>
-        <tbody>
-          {cellsForVenue.map(booking => (
-            <tr key={booking.id}>
-              <td><Link to={`/venue/bookings/${booking.id}`}>{booking.id}</Link></td>
-              <td>{booking.eventTitle}</td>
-              <td>{booking.date}</td>
-              <td>{booking.window}</td>
-              <td><span className={`status-pill status-${statusTone[booking.status]}`}>{booking.status}</span></td>
-            </tr>
-          ))}
-          {cellsForVenue.length === 0 ? (
-            <tr><td colSpan={5}>No bookings held for this venue in the current window.</td></tr>
-          ) : null}
-        </tbody>
-      </table>
-    </main>
-  );
+  return <VenueCalendar audience="venue" />;
 }
 
 export function PendingBookingDetail() {
@@ -270,6 +249,159 @@ export function PendingBookingDetail() {
           <button type="button" className="secondary-action" onClick={() => setDecision('declined')}>Decline with reason</button>
         </div>
       )}
+    </main>
+  );
+}
+
+// ─── VenueBlockout ───────────────────────────────────────────────────────────
+
+type Blockout = {
+  id: string;
+  from: string;
+  to: string;
+  reason: string;
+  createdBy: string;
+};
+
+const mockBlockouts: Blockout[] = [
+  { id: 'b1', from: '2026-10-05', to: '2026-10-06', reason: 'Annual maintenance inspection', createdBy: 'Carol Ng' },
+  { id: 'b2', from: '2026-10-14', to: '2026-10-14', reason: 'Emergency electrical repairs', createdBy: 'Carol Ng' },
+  { id: 'b3', from: '2026-11-01', to: '2026-11-03', reason: 'Public holiday closure', createdBy: 'Admin' },
+];
+
+export function VenueBlockout() {
+  const [blockouts, setBlockouts] = useState<Blockout[]>(mockBlockouts);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [reason, setReason] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  function validate() {
+    const errs: Record<string, string> = {};
+    if (!from) errs.from = 'Start date is required.';
+    if (!to) errs.to = 'End date is required.';
+    if (from && to && to < from) errs.to = 'End date must be on or after start date.';
+    if (!reason.trim()) errs.reason = 'Reason is required.';
+    return errs;
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
+    setErrors({});
+    const newBlockout: Blockout = {
+      id: `b${Date.now()}`,
+      from, to, reason,
+      createdBy: 'You (mock)',
+    };
+    setBlockouts(prev => [newBlockout, ...prev]);
+    setFrom(''); setTo(''); setReason('');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }
+
+  function cancelBlockout(id: string) {
+    setBlockouts(prev => prev.filter(b => b.id !== id));
+  }
+
+  return (
+    <main className="venue-page">
+      <header className="venue-heading">
+        <p className="eyebrow">Venue staff</p>
+        <h1>Block out dates</h1>
+      </header>
+
+      <form className="venue-blockout-form" onSubmit={handleSubmit} noValidate>
+        <div className="venue-blockout-dates">
+          <div className="venue-form-field">
+            <label htmlFor="blockout-from">Start date <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-from"
+              type="date"
+              value={from}
+              onChange={e => setFrom(e.target.value)}
+              aria-invalid={Boolean(errors.from)}
+              aria-describedby={errors.from ? 'blockout-from-error' : undefined}
+            />
+            {errors.from && <span id="blockout-from-error" role="alert" className="venue-field-error">{errors.from}</span>}
+          </div>
+          <div className="venue-form-field">
+            <label htmlFor="blockout-to">End date <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-to"
+              type="date"
+              value={to}
+              onChange={e => setTo(e.target.value)}
+              aria-invalid={Boolean(errors.to)}
+              aria-describedby={errors.to ? 'blockout-to-error' : undefined}
+            />
+            {errors.to && <span id="blockout-to-error" role="alert" className="venue-field-error">{errors.to}</span>}
+          </div>
+          <div className="venue-form-field venue-form-field-wide">
+            <label htmlFor="blockout-reason">Reason <span aria-hidden="true">*</span></label>
+            <input
+              id="blockout-reason"
+              type="text"
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              placeholder="e.g. Maintenance, public holiday, deep clean"
+              aria-invalid={Boolean(errors.reason)}
+              aria-describedby={errors.reason ? 'blockout-reason-error' : undefined}
+            />
+            {errors.reason && <span id="blockout-reason-error" role="alert" className="venue-field-error">{errors.reason}</span>}
+          </div>
+        </div>
+        <button type="submit" className="primary-action">
+          <CalendarClock size={14} aria-hidden="true" /> Add blockout
+        </button>
+        <div role="status" aria-live="polite">
+          {saved && <span style={{ fontSize: '0.9rem', color: 'var(--green)' }}>
+            <CheckCircle2 size={14} aria-hidden="true" /> Blockout added (mock).
+          </span>}
+        </div>
+      </form>
+
+      <section aria-label="Upcoming blockouts">
+        <h2 style={{ margin: '0 0 0.75rem', fontSize: '1.1rem' }}>Upcoming blockouts</h2>
+        {blockouts.length === 0 ? (
+          <p style={{ color: 'var(--muted)', fontSize: '0.95rem' }}>No upcoming blockouts.</p>
+        ) : (
+          <table className="venue-table">
+            <thead>
+              <tr>
+                <th scope="col">Dates</th>
+                <th scope="col">Reason</th>
+                <th scope="col">Created by</th>
+                <th scope="col"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {blockouts.map(b => (
+                <tr key={b.id}>
+                  <td>
+                    <time dateTime={b.from}>{b.from}</time>
+                    {b.from !== b.to && <> &ndash; <time dateTime={b.to}>{b.to}</time></>}
+                  </td>
+                  <td>{b.reason}</td>
+                  <td>{b.createdBy}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="secondary-action"
+                      style={{ minHeight: '32px', padding: '0 10px', fontSize: '0.82rem' }}
+                      onClick={() => cancelBlockout(b.id)}
+                    >
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
     </main>
   );
 }

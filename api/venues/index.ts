@@ -1,3 +1,4 @@
+import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { currentUser, databasePool, query, respond, respondWithResult } from '../../backend/src/modules/eventVisibility/runtime.js';
@@ -5,7 +6,11 @@ import {
   addVenueLayout, createVenue, getVenue, removeVenueLayout, retireVenue,
   searchVenues, updateVenue, updateVenueLayout,
 } from '../../backend/src/modules/venueBooking/catalogue.js';
+import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
+import {
+  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+} from '../../backend/src/modules/venueBooking/blocks.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // GET and POST share one file (create/update/retire/layout mutations all
@@ -13,6 +18,14 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (request.method === 'GET') {
+    const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (searchParams.get('mode') === 'suitability') {
+      await respondWithResult(response, async () => {
+        const result = await venueSearch(query, await currentUser(request), searchParams);
+        return { status: result.errors ? 400 : 200, body: result };
+      });
+      return;
+    }
     await respond(response, async () => {
       const user = await currentUser(request);
       const params = new URL(request.url || '/', 'http://localhost').searchParams;
@@ -25,6 +38,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }
 
       const id = params.get('id');
+      // E05-S03: the availability calendar shares this GET rather than adding
+      // a new file, which would pass ADR-014's eleven-function limit.
+      if (params.get('calendar') === '1') {
+        if (!id) throw new AccessError(400, 'A venue id is required to view its calendar.');
+        return await getVenueCalendar(query, user, id.slice(0, 240), params.get('from'), params.get('to'));
+      }
+      // E05-S04: a venue's current and upcoming maintenance blocks, with the
+      // ids staff need to shorten or remove one.
+      if (id && params.get('blocks') === '1') return listVenueBlocks(query, user, id.slice(0, 240));
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
       const layout = params.get('layout') || undefined;
@@ -78,9 +100,23 @@ export default async function handler(request: VercelRequest, response: VercelRe
         : removeVenueLayout(databasePool(), user, id, label);
     }
 
+    if (action === 'block' || action === 'shorten_block' || action === 'remove_block') {
+      const { id, block_id: blockId, ...rest } = fields;
+      if (typeof id !== 'string' || !id) {
+        return { status: 400, body: { error: 'validation_failed', errors: { id: ['A venue id is required.'] } } };
+      }
+      if (action === 'block') return createVenueBlock(databasePool(), user, id, rest);
+      if (typeof blockId !== 'string' || !blockId) {
+        return { status: 400, body: { error: 'validation_failed', errors: { block_id: ['A block id is required.'] } } };
+      }
+      return action === 'shorten_block'
+        ? shortenVenueBlock(databasePool(), user, id, blockId, rest)
+        : removeVenueBlock(databasePool(), user, id, blockId);
+    }
+
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', or 'remove_layout'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', or 'remove_block'."] },
     } };
   });
 }
