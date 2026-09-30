@@ -437,6 +437,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a role/organisation denial is audited against the screen, not a specific event
 - direct denied access commits actor and attempted event before returning denial
 - organiser event detail includes current status date and status history
+- SCRUM-37: organiser detail exposes editable fields and full activity log contract
 - audit failure never returns event information or a false logged success
 - an organiser can post an accessible event comment and notify its coordinator
 - comment posting refuses an event outside the organiser organisation
