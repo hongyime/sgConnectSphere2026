@@ -80,29 +80,48 @@ stories unless Bryan asks directly.
 
 ## Frontend / Scrum Master track (Amareet) -- Sprint 2
 
-Updated 2026-09-26.
+Updated 2026-09-30.
 
-**Role split (whole project, not just Sprint 2):** Amareet is frontend-only
-(plus Scrum Master). Aaron, Jining, Le Xin, Bryan and Xiang Ying do backend.
-Before Amareet starts a story's frontend, the backend owner is confirmed
-(their PR, Jira assignee, or an explicit statement); the frontend is then
-built against that API, or against mocks of its contract if not yet live.
+**Role split (whole project) -- changed 2026-09-30, see ADR-017:** each
+story's owner (its Jira assignee) builds that story's **frontend as well as
+its backend**, on a shared frontend skeleton. This replaces the 2026-09-26
+split, in which Amareet was frontend-only and the other five did backend.
+It follows instructor feedback that the team needed a common design language
+and that one frontend developer was a bottleneck.
 
-- **E11-S01** -- PR #123 merged 2026-09-25 (notification inbox, mocked,
-  pending the backend API).
-- **PR #127** (Bryan's scaffold) dropped its `/notifications` route, so the
-  merge-order clash with #123 is resolved. It still adds a `/venue/blockout`
-  placeholder for E05-S04.
-- **E05-S03** -- frontend calendar screen in progress, built against Le Xin's
-  calendar API in PR #134 (`GET /api/venues?id=&calendar=1&from=&to=`). The
-  frontend PR will be marked "merge after #134".
-- **E05-S04** -- frontend waits until a backend owner is confirmed (a #127
-  review comment says SCRUM-43 is assigned to Le Xin).
-- **Agreed Sprint 2 frontend build order:** E11-S01 (done, #123) ->
-  E05-S04 -> E05-S03 -> E06-S01 -> E03-S02 + E03-S03 (paired) -> E03-S01 ->
-  E03-S06 -> E03-S07 (Scenario 4 deferred, blocked on E10-S01). E03-S05 is
-  already satisfied by #112 on `main`. E05-S03 was pulled ahead of E05-S04
-  because its backend PR landed first.
+- **Amareet** -- Scrum Master; owns the frontend skeleton (SCRUM-116): app
+  shell and single route list, design tokens, shared building blocks, four
+  page templates (List, Detail, Form, Decision), data-loading pattern, test
+  helpers and guide. Also moves their own Sprint 2 pages onto it (SCRUM-119),
+  and reviews and pairs on other owners' frontend work.
+- **Bryan** -- owns `design.md`, the design-language rules the skeleton
+  implements (SCRUM-117).
+- **Le Xin** -- E05-S04 maintenance-blocks screen is the skeleton pilot
+  (SCRUM-120, Sprint 3; the backend merged in #151).
+- **Everyone** -- build new story screens on the skeleton once it lands;
+  move an existing page onto it when you next change that page. No big-bang
+  restyle.
+- **Inputs:** a screen inventory of all 47 Release 1 stories (SCRUM-118, under
+  team review), a building-block and template list, and a summary of the
+  current tokens and inconsistencies for `design.md`.
+
+Sprint 2 frontend status at 2026-09-30:
+
+- **Merged:** E03-S01 Coordinator screens (#147), E05-S03 venue calendar
+  (#136), live Organiser request list and detail (#137), landing and login
+  copy (#149, #150).
+- **Open:** E03-S07 Coordinator editing (#148), awaiting approval. The
+  Organiser side of E03-S07 waits on the Organiser read and an activity-log
+  read (asked on #148).
+- **Rolled to Sprint 3** (not started; owner builds both sides): E03-S02
+  (SCRUM-33) and E03-S03 (SCRUM-34).
+- **Known frontend follow-ups:**
+  - sign-in sends staff roles to `/events` (the skeleton's route list fixes
+    this);
+  - no success message after submitting a request;
+  - submitted requests have no event code;
+  - venue search is unstyled;
+  - forms hide the server's error reason.
 
 Progress (most recent first):
 

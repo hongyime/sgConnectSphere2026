@@ -2,11 +2,13 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 5  ·  18 September 2026
+Version 6  ·  30 September 2026
 
-Sixteen Markdown decisions: fourteen Accepted and two Retired. Each records the forces that applied, what was chosen, what was rejected and why, and the consequences including the ones that hurt.
+Seventeen Markdown decisions: fifteen Accepted and two Retired. Each records the forces that applied, what was chosen, what was rejected and why, and the consequences including the ones that hurt.
 
-Version 5 adds ADR-016, confirming a 30-minute login lockout after five consecutive failures, automatic expiry, and password reset as an alternative recovery path.
+Version 6 adds ADR-017, recording that each story's owner builds its frontend as well as its backend, on a shared frontend skeleton and design language, following instructor feedback at the end of Sprint 2.
+
+Version 5 added ADR-016, confirming a 30-minute login lockout after five consecutive failures, automatic expiry, and password reset as an alternative recovery path.
 
 Version 3 retired ADR-004 and ADR-005 following the Week 4 clarification recorded as BDR C-62, which established that a multi-session event must be set up as separate events. Both records are kept rather than deleted: a retired decision with its reasoning intact shows the choice was sound on the evidence available and was superseded, which is a stronger position in the Week 13 Q&A than a document that silently never held the view. Version 4 rewrites ADR-006 to describe the transactional outbox actually shown in the C4 model, and corrects ADR-001's process count from one background process to two.
 
@@ -30,3 +32,4 @@ References to requirements use the Week 1 Customer Briefing (§), the Week 4 cor
 - [ADR-014 — One file per Vercel serverless API route](./ADR-014-one-file-per-vercel-serverless-api-route.md)
 - [ADR-015 — Cookie sessions everywhere; no Supabase Auth in Release 1](./ADR-015-cookie-sessions-not-supabase-auth.md)
 - [ADR-016 — Thirty-minute login lockout after five failures](./ADR-016-thirty-minute-login-lockout.md)
+- [ADR-017 — Story owners build their own frontend on a shared skeleton](./ADR-017-story-owners-build-their-frontend-on-a-shared-skeleton.md)
