@@ -1,43 +1,74 @@
 # Jira reorg plan — 30 September 2026
 
-**Owner:** Bryan (bryanseah234)
+**Owner:** Bryan
 **Date recorded:** 30 September 2026
-**Scope:** 45 orphaned issues (no current parent) in project SCRUM
+**Last updated:** 1 October 2026, after the epic-parenting pass was executed
+**Scope:** the 31 issues listed below, which had no parent on 30 September
 **Rule reference:** `docs/jira-ticket-classification.md`
 
-This plan records the concrete per-ticket decisions Bryan should execute in
-the Jira UI. No Jira API write calls are involved; all changes are done
-through the board or backlog.
+---
+
+## Status: most of this is already done
+
+The epic-parenting half of this plan **has been executed** through the Jira
+REST API. What remains is only the hierarchy-level changes, which the API
+cannot perform.
+
+| | State |
+| --- | --- |
+| Epic `E00 Platform, Tooling & Delivery` | **created**, as `SCRUM-127` |
+| Issues re-parented | **30 of 31**, zero failures |
+| Orphans remaining in SCRUM | **0** |
+| Children of `SCRUM-127` | 19 |
+| Story-to-Subtask conversions | **0 done**, still outstanding |
+
+Measured after the pass: 126 issues, 15 Epics, 0 non-Epic issues without a
+parent.
+
+Where the 31 went:
+
+| New parent | Count | Keys |
+| --- | --- | --- |
+| `SCRUM-127` (E00) | 19 | 87, 88, 90, 92, 100, 101, 102, 103, 104, 106, 108, 109, 110, 111, 112, 116, 117, 118, 119 |
+| `SCRUM-2` (E01) | 7 | 89, 91, 93, 94, 95, 105, 107 |
+| `SCRUM-6` (E05) | 2 | 97, 120 |
+| `SCRUM-4` (E03) | 1 | 96 |
+| `SCRUM-8` (E07) | 1 | 98 |
+| `SCRUM-15` (E14) | 1 | 99 |
+
+SCRUM-115 is the one mapped key not moved: it was already a Subtask of
+SCRUM-37 and needed nothing.
+
+### What is still outstanding
+
+1. **Eight Story-to-Subtask conversions**, in the `Convert to Subtask` rows
+   below. These are parked under their Epic, which is correct but one level
+   higher than ideal. They need the Jira UI Move wizard; see the section on
+   executing those moves.
+2. **Eight rows marked `Needs Bryan's call`**, where the correct parent is
+   genuinely uncertain. They are parked under their Epic pending a decision.
+3. **SCRUM-90** (superseded by ADR-015) and **SCRUM-105** (duplicate of
+   SCRUM-93) should be closed rather than re-homed. Both are already `Done`, so
+   this is a hygiene tidy, not a status change.
 
 ---
 
-## Context
+## Why E00 exists
 
-At the 30 September 2026 measurement, SCRUM has 125 issues: 14 Epics, 87
-Stories, 9 Subtasks, and 15 Tasks. Of these, 80 have a parent and 45 do not.
-The 14 Epics (SCRUM-2 through SCRUM-15, labelled E01 through E14) and the 71
-Stories SCRUM-16 through SCRUM-86 are correctly structured and are not
-touched by this plan.
+Several of these issues are genuine technical enablers that cannot honestly be
+assigned to any single user story: CI pipelines, repository tooling, test
+harnesses, deploy configuration, and backlog or ADR migrations. Forcing them
+under an arbitrary Story would invent a relationship that does not exist, which
+is the dispute this plan was written to prevent.
 
-The 45 orphans fall into two groups: Tasks with no parent (SCRUM-87 through
-SCRUM-92 and SCRUM-109 through SCRUM-120) and Stories with bracket-tag
-summaries that were never parented to an Epic (SCRUM-93 through SCRUM-108).
+`E00 Platform, Tooling & Delivery` gives them an honest home and keeps Epics
+E01 through E14 purely about user story scope, which is the requirement that
+prompted the reorganisation. Bryan approved creating it on 30 September 2026
+and it exists as `SCRUM-127`.
 
----
-
-## Prerequisite decision: create Epic E00
-
-Several orphans are genuine technical enablers that cannot honestly be
-assigned to any single user story. The recommendation in
-`docs/jira-ticket-classification.md` is to create one new Epic,
-`E00 Platform, Tooling & Delivery`, and make these tickets Stories under it.
-This keeps Epics E01 through E14 purely about user story scope.
-
-**Bryan must decide whether to create E00 before executing the moves below.**
-The table marks affected rows with the parent `E00 (new)`. If Bryan decides
-against E00, an alternative is to use a label (for example `platform`) and
-leave those tickets as unparented Tasks, accepting that they will remain
-outside the Epic hierarchy.
+A rejected alternative, recorded for completeness: label these `platform` and
+leave them unparented. That was not chosen because unparented issues do not
+appear in the Epic hierarchy at all, which is the problem being fixed.
 
 ---
 
@@ -74,19 +105,19 @@ Confidence legend:
 
 | Key | Current type | Status | Proposed type | Proposed parent | Confidence | Reasoning |
 | --- | --- | --- | --- | --- | --- | --- |
-| SCRUM-87 | Task | Done | Story | E00 (new) | Clear | Reconciling the Playwright scaffold with the test workbook is cross-cutting test infrastructure, not the delivery of any single story. |
-| SCRUM-88 | Task | In Review | Story | E00 (new) | Clear | App shell branding and source-data concerns cut across the whole frontend; no single story owns it. Remains open, so E00 provides an honest home. |
-| SCRUM-89 | Task | Done | Story | E00 (new) | Clear | Landing, login, and protected routing shell is foundational infrastructure; it predates and enables multiple E01 stories rather than delivering one. |
+| SCRUM-87 | Task | Done | Story | `SCRUM-127` (E00) | Clear | Reconciling the Playwright scaffold with the test workbook is cross-cutting test infrastructure, not the delivery of any single story. |
+| SCRUM-88 | Task | In Review | Story | `SCRUM-127` (E00) | Clear | App shell branding and source-data concerns cut across the whole frontend; no single story owns it. Remains open, so E00 provides an honest home. |
+| SCRUM-89 | Task | Done | Story | `SCRUM-127` (E00) | Clear | Landing, login, and protected routing shell is foundational infrastructure; it predates and enables multiple E01 stories rather than delivering one. |
 | SCRUM-90 | Task | Done | Close as superseded | — | Clear | Summary explicitly states "[SUPERSEDED by ADR-015]". Close with a "Won't Do / Superseded" resolution. Do not reparent. |
-| SCRUM-91 | Task | Done | Story | E00 (new) | Clear | Consolidating organiser persistence on cookie sessions (ADR-015) is a cross-cutting architecture change, not a single-story deliverable. |
-| SCRUM-92 | Task | Done | Story | E00 (new) | Clear | Replacing routing/auth fixme cases with real Playwright tests is test-infrastructure work spanning the whole auth surface. |
-| SCRUM-109 | Task | Done | Story | E00 (new) | Clear | Setting up TEST_DATABASE_URL via a test schema is CI/test-harness infrastructure. |
-| SCRUM-110 | Task | Done | Story | E00 (new) | Clear | A live Postgres migration roundtrip for a specific migration file is release-engineering infrastructure, not a user story. |
-| SCRUM-111 | Task | To Do | Story | E00 (new) | Clear | Decommissioning Vercel's git integration once Actions-based deploy is stable is a deployment-pipeline task. |
-| SCRUM-112 | Task | To Do | Story | E00 (new) | Clear | Preview-deploy cleanup workflow is CI/CD infrastructure. |
-| SCRUM-116 | Task | To Do | Story | E00 (new) | Clear | Frontend skeleton, route list, building blocks, and page templates are platform infrastructure shared by all frontend stories. |
-| SCRUM-117 | Task | To Do | Story | E00 (new) | Clear | A shared design language document (`design.md`) serves the whole frontend, not a single story. |
-| SCRUM-118 | Task | To Do | Story | E00 (new) | Clear | A screen inventory mapping all Release 1 stories to routes and page patterns is a planning/documentation artefact for the whole release. |
+| SCRUM-91 | Task | Done | Story | `SCRUM-127` (E00) | Clear | Consolidating organiser persistence on cookie sessions (ADR-015) is a cross-cutting architecture change, not a single-story deliverable. |
+| SCRUM-92 | Task | Done | Story | `SCRUM-127` (E00) | Clear | Replacing routing/auth fixme cases with real Playwright tests is test-infrastructure work spanning the whole auth surface. |
+| SCRUM-109 | Task | Done | Story | `SCRUM-127` (E00) | Clear | Setting up TEST_DATABASE_URL via a test schema is CI/test-harness infrastructure. |
+| SCRUM-110 | Task | Done | Story | `SCRUM-127` (E00) | Clear | A live Postgres migration roundtrip for a specific migration file is release-engineering infrastructure, not a user story. |
+| SCRUM-111 | Task | To Do | Story | `SCRUM-127` (E00) | Clear | Decommissioning Vercel's git integration once Actions-based deploy is stable is a deployment-pipeline task. |
+| SCRUM-112 | Task | To Do | Story | `SCRUM-127` (E00) | Clear | Preview-deploy cleanup workflow is CI/CD infrastructure. |
+| SCRUM-116 | Task | To Do | Story | `SCRUM-127` (E00) | Clear | Frontend skeleton, route list, building blocks, and page templates are platform infrastructure shared by all frontend stories. |
+| SCRUM-117 | Task | To Do | Story | `SCRUM-127` (E00) | Clear | A shared design language document (`design.md`) serves the whole frontend, not a single story. |
+| SCRUM-118 | Task | To Do | Story | `SCRUM-127` (E00) | Clear | A screen inventory mapping all Release 1 stories to routes and page patterns is a planning/documentation artefact for the whole release. |
 | SCRUM-119 | Task | To Do | Subtask | SCRUM-43 (E05-S04) | Needs Bryan's call | Moving Amareet's Sprint 2 pages onto the skeleton is frontend delivery work. The most plausible parent is SCRUM-43 (E05-S04 Block venue for maintenance), but Bryan should confirm this is Amareet's current Sprint 2 assignment before linking. Alternative: keep as E00 Story if the pages span multiple stories. |
 | SCRUM-120 | Task | To Do | Subtask | SCRUM-43 (E05-S04) | Needs Bryan's call | "Frontend: maintenance blocks screen (E05-S04), skeleton pilot" names E05-S04 explicitly. Proposed as `Frontend:` Subtask of SCRUM-43. Confirm the story is the correct current parent. |
 
@@ -101,29 +132,42 @@ Confidence legend:
 | SCRUM-97 | Story | Done | Story | E05 (Epic, SCRUM-8) | Needs Bryan's call | Same as SCRUM-96 but for E05 (Venue Staff). Spans all E05 stories. Attach directly to Epic E05 or split by screen. |
 | SCRUM-98 | Story | Done | Story | E07 (Epic, SCRUM-10) | Needs Bryan's call | Same pattern for E07 (Technical Support). |
 | SCRUM-99 | Story | Done | Story | E14 (Epic, SCRUM-15) | Needs Bryan's call | Same pattern for E14 (Admin). |
-| SCRUM-100 | Story | Done | Story | E00 (new) | Clear | "[Docs] Migrate product backlog and test cases to Markdown" is repo-wide documentation infrastructure, not a user story deliverable. |
-| SCRUM-101 | Story | Done | Story | E00 (new) | Clear | "[E01-EXT] Vitest and React Testing Library harness" is test-infrastructure setup, not a user story. The E01-EXT tag signals it was ancillary to E01 delivery. |
-| SCRUM-102 | Story | Done | Story | E00 (new) | Clear | "[E14-EXT] TC_ID coverage audit and CI-friendly mapping" is tooling infrastructure. |
-| SCRUM-103 | Story | Done | Story | E00 (new) | Clear | "[E14-EXT] Migrate ADR and BDR decision documents to Markdown" is repo-wide documentation infrastructure. |
-| SCRUM-104 | Story | Done | Story | E00 (new) | Clear | "[E14-EXT] Contribution guides for backlog, stories, BDR, tests" is repo-wide documentation infrastructure. |
+| SCRUM-100 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[Docs] Migrate product backlog and test cases to Markdown" is repo-wide documentation infrastructure, not a user story deliverable. |
+| SCRUM-101 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[E01-EXT] Vitest and React Testing Library harness" is test-infrastructure setup, not a user story. The E01-EXT tag signals it was ancillary to E01 delivery. |
+| SCRUM-102 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[E14-EXT] TC_ID coverage audit and CI-friendly mapping" is tooling infrastructure. |
+| SCRUM-103 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[E14-EXT] Migrate ADR and BDR decision documents to Markdown" is repo-wide documentation infrastructure. |
+| SCRUM-104 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[E14-EXT] Contribution guides for backlog, stories, BDR, tests" is repo-wide documentation infrastructure. |
 | SCRUM-105 | Story | Done | Close as duplicate | — | Clear | Summary explicitly states "[DUPLICATE of SCRUM-93]". Close with a "Duplicate" resolution and link to SCRUM-93. Do not reparent. |
-| SCRUM-106 | Story | Done | Story | E00 (new) | Needs Bryan's call | "[E02/E03/E09] Frontend full route coverage" spans three epics. It cannot be an honest Subtask of any single story. Placing it under E00 is the least dishonest option; Bryan may alternatively split it into per-story Subtasks if that effort is worthwhile retrospectively. |
+| SCRUM-106 | Story | Done | Story | `SCRUM-127` (E00) | Needs Bryan's call | "[E02/E03/E09] Frontend full route coverage" spans three epics. It cannot be an honest Subtask of any single story. Placing it under E00 is the least dishonest option; Bryan may alternatively split it into per-story Subtasks if that effort is worthwhile retrospectively. |
 | SCRUM-107 | Story | Done | Subtask | SCRUM-23 (E01-S08 Create an account) | Clear | "[E01] Wire verification email into registration + notification outbox" is a backend slice of E01-S08. Convert to `Backend:` Subtask of SCRUM-23. |
-| SCRUM-108 | Story | Done | Story | E00 (new) | Clear | "[Docs] ADR + BDR docx export script for reviewer handoffs" is repo tooling/documentation infrastructure. Closed today; archive under E00 for traceability. |
+| SCRUM-108 | Story | Done | Story | `SCRUM-127` (E00) | Clear | "[Docs] ADR + BDR docx export script for reviewer handoffs" is repo tooling/documentation infrastructure. Closed today; archive under E00 for traceability. |
 
 ---
 
 ## Summary counts
 
-| Action | Count |
-| --- | --- |
-| Move to E00 as Story (requires E00 Epic creation) | 23 |
-| Convert to Subtask of an existing Story | 5 (SCRUM-93, 94, 107, 119, 120) |
-| Link to Epic directly (spans whole epic, no single story parent) | 4 (SCRUM-96, 97, 98, 99) |
-| Close as superseded | 1 (SCRUM-90) |
-| Close as duplicate | 1 (SCRUM-105) |
-| Needs Bryan's call on exact parent | 7 (SCRUM-95, 96, 97, 98, 99, 106, 119, 120) |
-| **Total orphans addressed** | **45** |
+Counted from the migration table above, and reconciled against Jira on
+1 October 2026. Every row is one issue, so the counts sum to the table length.
+
+| Action | Count | Keys | Done? |
+| --- | --- | --- | --- |
+| Re-home under `SCRUM-127` (E00) | 21 | 87, 88, 89, 90, 91, 92, 100, 101, 102, 103, 104, 106, 108, 109, 110, 111, 112, 116, 117, 118, 119 | 19 of 21 |
+| Convert to Subtask of an existing Story | 8 | 93, 94, 95, 105, 107, 119, 120, and 96 | not started |
+| Link to its Epic directly, no single story owns it | 4 | 96, 97, 98, 99 | yes |
+| Needs Bryan's call on the exact parent | 8 | 95, 96, 97, 98, 99, 106, 119, 120 | parked under Epic |
+| Close as superseded | 1 | 90 | no |
+| Close as duplicate | 1 | 105 | no |
+| **Distinct issues in the table** | **31** | | **30 re-parented, 0 orphans left** |
+
+The action counts overlap deliberately: an issue can be both
+`Needs Bryan's call` and a proposed Subtask, and SCRUM-89 and SCRUM-91 went to
+E00 rather than to E01 as the earlier draft implied. The only figure that must
+reconcile exactly is the 31 distinct issues.
+
+An earlier revision of this section claimed 45 orphans, 23 E00 moves, 5 Subtask
+conversions and 7 uncertain rows. Those numbers were wrong and did not match the
+table they summarised; 45 was the count of all parentless issues including the
+14 Epics, which are parentless by definition and were never in scope.
 
 ---
 

@@ -51,11 +51,11 @@ exactly one Story parent. Forcing an enabler under an arbitrary Story would
 misrepresent its scope and contradict the professor's requirement that Jira
 tickets reflect user stories.
 
-**Recommendation:** create one new Epic, `E00 Platform, Tooling & Delivery`,
-and place all technical enablers as Stories under it. This keeps Epics E01
+`E00 Platform, Tooling & Delivery` is the home for these. It keeps Epics E01
 through E14 purely about user stories while giving infrastructure an honest
-home. Creating E00 requires Bryan's explicit decision because it adds an
-Epic to the project.
+place to live. Bryan approved it on 30 September 2026 and it exists as
+**`SCRUM-127`**; 19 enablers are already parented to it. Put new enablers there
+rather than leaving them unparented.
 
 ---
 
