@@ -35,8 +35,9 @@ workflows, or deployment secrets without a recorded team decision.
 
 ## Recording test runs
 
-Record every test run that is **used as evidence**: cited in a pull request,
-offered as proof that a story meets its Definition of Done, or shown in a demo.
+Per team decision **T-65** in `docs/bdr/B-team-decisions.md`, record every test
+run that is **used as evidence**: cited in a pull request, offered as proof that
+a story meets its Definition of Done, or shown in a demo.
 Create one session record file in `docs/testing/runs/` before committing. The
 schema, filename convention, scope enum, outcome values, and agent-specific
 instructions are in `docs/testing/runs/README.md`. Use

@@ -10,7 +10,9 @@ workbook.
 ## What needs recording
 
 Record a run when it is **used as evidence**: cited in a pull request, offered
-as proof that a story meets its Definition of Done, or shown in a demo.
+as proof that a story meets its Definition of Done, or shown in a demo. This
+obligation is team decision **T-65** in `docs/bdr/B-team-decisions.md`; this
+document defines only the format that satisfies it.
 
 You do not need a record for exploratory runs while developing -- the `npm test`
 you run twenty times while writing a function is not evidence of anything.
