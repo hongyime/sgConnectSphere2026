@@ -11,7 +11,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 270926.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
 | Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 270926.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 270926.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 300926.docx` |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 270926.xlsx` |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
