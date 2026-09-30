@@ -35,15 +35,27 @@ This implementation follows the Sprint 2 story in the authoritative E03 backlog:
 - E03-S06 desktop Playwright tests passed (3/3).
 - Frontend/backend builds passed.
 - Repository checks passed.
+- PR #131 was approved by a teammate and merged into `main`.
+- Backend comment/access unit tests were rerun successfully.
+- `eventVisibility.integration.test.ts` passed against a disposable PostgreSQL
+  17 database after applying the repository migrations (1 test, 0 failures).
 
 The browser acceptance tests use deterministic API responses because the
 repository's disposable E2E database reset/seed setup is still scaffold-only.
 The backend service tests cover the real SQL contract and access decisions.
 
-## Remaining validation
+## Completion boundary
 
-- Configure a disposable Supabase/PostgreSQL test database through
-  `TEST_DATABASE_URL` or an equivalent isolated database configuration.
-- Replace the scaffold-only E2E setup with a reset-and-seed run for that
-  database, then rerun the three SCRUM-36 browser cases without API mocks.
-- Obtain teammate review and merge the pull request.
+The backend scope for SCRUM-36 / E03-S06 is complete, reviewed, and merged.
+Routine backend verification uses a disposable local PostgreSQL database with
+the repository migrations; live Supabase credentials are not required for
+day-to-day feature work. The three browser acceptance cases remain
+deterministic API-mock tests, and a live seeded browser/E2E run is a separate
+frontend/team follow-up rather than an outstanding backend acceptance item.
+
+## Traceability
+
+- Jira: `SCRUM-36`
+- Story: `E03-S06`
+- Pull request: [#131](https://github.com/hongyime/sgConnectSphere2026/pull/131)
+- Jira status: transitioned to Done through the merged-PR Jira Sync workflow.
