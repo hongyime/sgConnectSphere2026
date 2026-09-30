@@ -62,10 +62,10 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const activity = await query(`SELECT a.occurred_at, a.action, a.field_changed,
-        a.old_value, a.new_value, u.full_name AS actor_name, u.email AS actor_email
+        a.old_value, a.new_value, u.full_name AS actor_name
       FROM audit_logs a
       LEFT JOIN users u ON u.id = a.actor_id
-      WHERE a.event_id = $1 AND a.entity_type = 'event'
+      WHERE a.event_id = $1 AND a.entity_type = 'event' AND a.action <> 'Access Denied'
       ORDER BY a.occurred_at ASC, a.id ASC`, [event.id]);
     const comments = await listEventComments(query, event.id);
     const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
