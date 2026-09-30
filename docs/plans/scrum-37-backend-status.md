@@ -15,6 +15,13 @@
 - Field updates are recorded in `audit_logs` with the acting user and changed
   field.
 - Registration opening/closing dates are validated and persisted together.
+- The organiser event-detail read now returns the event information needed by
+  the edit form, including purpose, attendance, requirements and registration
+  dates.
+- The same read returns a full event activity log with actor, timestamp, action,
+  changed field and old/new values.
+- The read contract exposes the organiser's allowed editable fields, including
+  pre-approval fields and post-approval unrestricted fields.
 
 ## Scope decisions applied
 
@@ -32,6 +39,8 @@
 - `eventVisibility.test.ts` covers pre-approval organiser edits, assigned and
   unassigned Coordinator permissions, post-approval organiser restrictions,
   unrestricted organiser audit logging, registration dates, and field audits.
+- `eventVisibility.test.ts` also covers the organiser detail response's
+  editable-field metadata and full activity-log response contract.
 - The complete backend test command passed with c8 coverage after dependencies
   were installed.
 
