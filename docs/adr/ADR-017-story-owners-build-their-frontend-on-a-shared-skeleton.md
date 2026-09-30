@@ -111,9 +111,9 @@ input for `design.md`.
 
 The existing shared header (`frontend/src/features/shell/AppHeader.tsx`, #147)
 and the Coordinator workspace's state components are the starting point for
-the skeleton. Two Sprint 2 stories not started when this decision was made,
-E03-S02 (SCRUM-33) and E03-S03 (SCRUM-34), were rolled to Sprint 3 and will be
-built end to end by their owner under this model.
+the skeleton. Two Sprint 2 stories not yet started when this decision was
+made, E03-S02 (SCRUM-33) and E03-S03 (SCRUM-34), stay in Sprint 2; their owner
+plans to finish them this sprint and builds both sides under this model.
 
 This decision does not mark any story complete or change any acceptance
 criteria.

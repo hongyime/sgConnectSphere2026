@@ -113,8 +113,8 @@ Sprint 2 frontend status at 2026-09-30:
 - **Open:** E03-S07 Coordinator editing (#148), awaiting approval. The
   Organiser side of E03-S07 waits on the Organiser read and an activity-log
   read (asked on #148).
-- **Rolled to Sprint 3** (not started; owner builds both sides): E03-S02
-  (SCRUM-33) and E03-S03 (SCRUM-34).
+- **Not started, still in Sprint 2:** E03-S02 (SCRUM-33) and E03-S03
+  (SCRUM-34). Aaron plans to finish both this sprint, building both sides.
 - **Known frontend follow-ups:**
   - sign-in sends staff roles to `/events` (the skeleton's route list fixes
     this);
