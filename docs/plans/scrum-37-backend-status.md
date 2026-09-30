@@ -22,6 +22,8 @@
   changed field and old/new values.
 - The read contract exposes the organiser's allowed editable fields, including
   pre-approval fields and post-approval unrestricted fields.
+- The organiser activity-log read excludes `Access Denied` entries and does not
+  expose actor email addresses, preventing cross-organisation identity leakage.
 
 ## Scope decisions applied
 
