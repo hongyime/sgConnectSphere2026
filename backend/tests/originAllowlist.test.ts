@@ -23,6 +23,7 @@ const ENV_KEYS = [
   'PUBLIC_SITE_URL',
   'VERCEL_URL',
   'VERCEL_PROJECT_PRODUCTION_URL',
+  'VERCEL_BRANCH_URL',
   'ADDITIONAL_ALLOWED_ORIGINS',
 ] as const;
 
@@ -76,6 +77,29 @@ test('accepts VERCEL_PROJECT_PRODUCTION_URL as https', () => {
   withEnv({ APP_URL: 'https://sgconnectsphere.hong-yi.me', VERCEL_PROJECT_PRODUCTION_URL: 'sgconnectsphere.vercel.app' }, () => {
     assert.equal(isAllowedOrigin('https://sgconnectsphere.vercel.app'), true);
   });
+});
+
+test('accepts the Vercel branch alias (VERCEL_BRANCH_URL) as https', () => {
+  withEnv({ APP_URL: 'https://sgconnectsphere.hong-yi.me', VERCEL_BRANCH_URL: 'sgconnectsphere-git-fix-login-theprawnvercel.vercel.app' }, () => {
+    assert.equal(isAllowedOrigin('https://sgconnectsphere-git-fix-login-theprawnvercel.vercel.app'), true);
+  });
+});
+
+test('truncates an unparseable attacker-controlled Origin before logging it', () => {
+  const logged: unknown[] = [];
+  withEnv({ APP_URL: 'https://sgconnectsphere.hong-yi.me' }, () => {
+    const quiet = console.warn;
+    console.warn = (...args: unknown[]) => { logged.push(...args); };
+    try {
+      assert.equal(isAllowedOrigin(`not a url ${'x'.repeat(5000)}`), false);
+    } finally {
+      console.warn = quiet;
+    }
+  });
+  const details = logged.find((entry): entry is { receivedOrigin: string } =>
+    typeof entry === 'object' && entry !== null && 'receivedOrigin' in entry);
+  assert.ok(details, 'rejection details were logged');
+  assert.ok(details.receivedOrigin.length <= 200, `logged ${details.receivedOrigin.length} chars`);
 });
 
 test('normalises trailing slash on both stored and received origins', () => {

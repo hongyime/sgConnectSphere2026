@@ -62,10 +62,11 @@ function normaliseOrigin(value: string | string[] | undefined | null): string | 
 //   - APP_URL: the canonical production host (unchanged behaviour).
 //   - PUBLIC_SITE_URL: an additional accepted host, not just a fallback for
 //     APP_URL. Some deployments serve the same app under two brands.
-//   - VERCEL_URL / VERCEL_PROJECT_PRODUCTION_URL: injected by Vercel with the
-//     current deployment's own hostname (no scheme). This is what lets the
-//     `.vercel.app` alias and every preview deployment log in without
-//     hardcoding them. Vercel deployments are always https.
+//   - VERCEL_URL / VERCEL_PROJECT_PRODUCTION_URL / VERCEL_BRANCH_URL: injected
+//     by Vercel with the current deployment's hostnames (no scheme). This is
+//     what lets the `.vercel.app` alias, the unique preview URL and the
+//     `-git-<branch>-` preview alias log in without hardcoding them. Vercel
+//     deployments are always https.
 //   - ADDITIONAL_ALLOWED_ORIGINS: comma-separated escape hatch for local dev
 //     hosts (e.g. `http://localhost:5173`). Defaults to empty. Each entry
 //     must be a full origin; substring/suffix matching is intentionally not
@@ -83,6 +84,8 @@ export function allowedOrigins(): ReadonlySet<string> {
   if (vercelUrl) add(`https://${vercelUrl.replace(/^https?:\/\//i, '')}`);
   const vercelProd = read('VERCEL_PROJECT_PRODUCTION_URL');
   if (vercelProd) add(`https://${vercelProd.replace(/^https?:\/\//i, '')}`);
+  const vercelBranch = read('VERCEL_BRANCH_URL');
+  if (vercelBranch) add(`https://${vercelBranch.replace(/^https?:\/\//i, '')}`);
   const extras = read('ADDITIONAL_ALLOWED_ORIGINS');
   if (extras) {
     for (const entry of extras.split(',')) add(entry);
@@ -107,7 +110,8 @@ export function isAllowedOrigin(origin: string | string[] | undefined | null): b
   }
   if (!normalised) {
     console.warn('[csrf] rejecting request with missing or unparseable Origin header', {
-      receivedOrigin: origin ?? '(missing)',
+      // Raw header text is attacker-controlled; cap what reaches the logs.
+      receivedOrigin: origin == null ? '(missing)' : String(origin).slice(0, 200),
       allowedCount: allowed.size,
     });
     return false;
