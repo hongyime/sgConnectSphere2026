@@ -1,8 +1,9 @@
 # Instructor guidance review - 28 September 2026
 
-Source: instructor announcement supplied by the operator on 28 September 2026.
-This applies that guidance to the existing `CONTRIBUTING.md` Definition of Done
-and `docs/source-of-truth.md`; it changes no story acceptance criteria, estimates,
+Source: instructor announcement to the class (quoted in full under
+[Instructor announcement](#instructor-announcement-verbatim) below). This
+applies that guidance to the existing `CONTRIBUTING.md` Definition of Done and
+`docs/source-of-truth.md`; it changes no story acceptance criteria, estimates,
 sprint dates or Jira states.
 
 ## What changes now
@@ -50,3 +51,62 @@ age target. Record continuity in concise entries and retain existing histories.
    are proposed, record the reason, original commitment and actual timestamps.
 4. Discuss these corrections at the upcoming class review and check progress at
    the next retrospective. No retrospective status or velocity rewrite is implied.
+
+## Instructor announcement (verbatim)
+
+The announcement as posted to the class, reproduced without edits other than
+Markdown blockquote formatting:
+
+> **AI Code Generation**
+>
+> **Is it okay if I generated all the code in one session?**
+> Generating everything at once creates testing and management bottlenecks.
+> Break work down by user story and build incrementally—generating code in small
+> chunks makes auditing, testing, and refining far easier.
+>
+> **Some approaches for AI Workflow:**
+>
+> - Spend sprint time reviewing, testing, and validating code and test cases
+>   against acceptance criteria for each user stories rather than focusing on
+>   initial generation.
+> - Use targeted prompts to fix issues, and update design diagrams to feed back
+>   into the AI as needed.
+> - **Never** mark a story as "done" or "ready" until your team has audited and
+>   validated it, regardless of how much code is already generated.
+>
+> **Branching & Version Control**
+>
+> **Is it okay to use a single branch that lasts the entire sprint?**
+> **No.** Follow trunk-based development with short-lived branches. Each branch
+> should last only for the duration of a single user story (roughly 1 to 3 days)
+> before merging back into main. A 2-week branch represents 25% of your total
+> project timeline, which is too long and risky to manage.
+>
+> **Sprint Duration**
+>
+> **Can we change our sprint duration?**
+>
+> - **Before or After a Sprint:** Not recommended for this project, you must
+>   justify and understand the change and explain what shifted in your project
+>   management process if you decided to do so.
+> - **During a Sprint:** Generally, **no**, unless exceptional circumstances
+>   occur (e.g., severe illness, project cancellation, or running out of work).
+>
+> **Handling AI Speedups & Metrics:**
+>
+> - If AI tools allow your team to complete all planned work early, you may close
+>   the sprint early and adjust planning for subsequent sprints.
+> - Keep sprint lengths consistent wherever possible. Scrum relies on
+>   **velocity** to track progress; inconsistent sprint lengths make metrics hard
+>   to compare and require additional justification.
+>
+> **Mistakes & Grading Concerns**
+>
+> **What if we made these mistakes already? Are we in trouble?**
+> **No.** Making mistakes early in the project is expected.
+>
+> - Use upcoming class reviews to discuss project management concerns so
+>   instructors can help you fix them.
+> - The only problem is repeating the same obvious mistakes late in the term
+>   (e.g., Week 13). Treat early missteps as learning opportunities and adjust
+>   your workflow moving forward.
