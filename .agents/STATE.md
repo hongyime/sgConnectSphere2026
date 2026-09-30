@@ -259,4 +259,5 @@ Known env facts:
 
 - 2026-09-29: PR #126 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
 - 2026-09-29: PR #127 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
-- 2026-09-29: PR #137 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
+- 2026-09-29: PR #136 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
+- 2026-09-30: PR #137 refreshed against current main after #136 merged; main continuity files copied byte-for-byte before appending this entry and tc-coverage.md regenerated. No application change in this refresh; renewed final-head peer approval is required.
