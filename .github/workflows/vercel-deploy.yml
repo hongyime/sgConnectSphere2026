@@ -12,17 +12,35 @@ name: Vercel Deploy
 #   VERCEL_ORG_ID      Vercel team id (theprawnvercel)
 #   VERCEL_PROJECT_ID  Vercel project id (sgconnectsphere)
 #
-# Runs twice per event on purpose during the trial period: Vercel's own
-# git integration continues to deploy in parallel so we can compare outputs.
-# Once this workflow proves reliable, disable the git integration in the
-# Vercel dashboard so Actions becomes the single deploy path.
+# Actions is now the single deploy path. Vercel's own git integration is
+# switched off via "git": { "deploymentEnabled": false } in vercel.json, so
+# each push produces exactly one deployment instead of two. See
+# docs/decisions/0010-single-vercel-deploy-path.md and SCRUM-111.
+#
+# paths-ignore keeps documentation, repository tooling and agent-state commits
+# from consuming the Hobby-plan deployment allowance. Nothing under those
+# paths is ever served by the deployment. This job is NOT a required status
+# check, so a skipped run does not block a merge and no companion skip
+# workflow is needed (contrast docs/decisions/0007).
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - 'scripts/**'
+      - 'tooling/**'
+      - '**/*.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - 'scripts/**'
+      - 'tooling/**'
+      - '**/*.md'
 
 permissions:
   # Only need to read the repo; the workflow authenticates to Vercel
