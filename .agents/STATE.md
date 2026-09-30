@@ -116,8 +116,9 @@ Sprint 2 frontend status at 2026-09-30:
 - **Not started, still in Sprint 2:** E03-S02 (SCRUM-33) and E03-S03
   (SCRUM-34). Aaron plans to finish both this sprint, building both sides.
 - **Known frontend follow-ups:**
-  - sign-in sends staff roles to `/events` (the skeleton's route list fixes
-    this);
+  - sign-in still sends Venue Staff, Technical Support and Admins to
+    `/events` (#158 fixed Coordinators; the skeleton's route list fixes the
+    rest);
   - no success message after submitting a request;
   - submitted requests have no event code;
   - venue search is unstyled;

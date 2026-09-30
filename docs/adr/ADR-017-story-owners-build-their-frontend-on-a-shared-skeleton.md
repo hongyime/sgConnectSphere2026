@@ -86,9 +86,10 @@ that a single frontend developer was too great a bottleneck.
 - Correct behaviour comes built in: loading, empty, error and refused states,
   late-response handling, and phone layouts, which were previously easy to
   miss.
-- One route list removes a class of bug. For example, sign-in currently sends
-  every staff role to the Organiser-only `/events` page, because the login
-  redirect was never updated when role pages went live.
+- One route list removes a class of bug. For example, the login redirect was
+  never updated when role pages went live, so sign-in sent every staff role to
+  the Organiser-only `/events` page. #158 fixed it for Event Coordinators;
+  Venue Staff, Technical Support and Admins still land on `/events`.
 
 ### What it costs
 
