@@ -28,8 +28,12 @@ sprint dates or Jira states.
   acceptance scope and obtain renewed peer review after the main refresh.
 - #137 connects organiser reads. Its remaining mocked clarification/change/cancel
   behaviour stays outside delivered scope and needs the owning-story work.
-- #144 and #145 are focused maintenance PRs. Dependency installation and scanner
-  configuration checks are not application acceptance evidence.
+- #144 (closed) and #145 (merged) were focused maintenance PRs. Dependency
+  installation and scanner configuration checks are not application acceptance
+  evidence.
+- Separate backend and frontend PRs for one story, each with its own Jira ticket
+  (SCRUM-32 as #141 plus #147; SCRUM-42 as #134 plus #136), are independently
+  reviewable increments and fit the per-story branch rule.
 
 Repeated main updates have conflicted in shared agent-history files and dismissed
 approvals. Resolve conflicts and regenerate inventories before asking for the

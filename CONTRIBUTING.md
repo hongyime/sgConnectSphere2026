@@ -25,10 +25,13 @@ not a successful skipped check. Application checks will be added with the stack.
 ## Branches and commits
 
 Create one short-lived branch per user story (or one focused maintenance task),
-off an up-to-date `main`. Aim to merge within 1-3 days after review. Do not keep
-a personal, frontend/backend or sprint-long integration branch. If a story is
-too large, split it into independently reviewable increments and keep the parent
-story open until all acceptance criteria are validated:
+off an up-to-date `main`. Aim for branches that last roughly 1-3 days, including
+review. Do not keep a personal, sprint-long or combined frontend+backend
+integration branch. If a story is too large, split it into independently
+reviewable increments and keep the parent story open until all acceptance
+criteria are validated. Separate backend and frontend PRs for one story, each
+with its own Jira ticket (for example SCRUM-32 as #141 backend plus #147
+frontend), count as independently reviewable increments:
 
 ```text
 git switch main
