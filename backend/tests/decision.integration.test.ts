@@ -214,7 +214,7 @@ test('TC_E03S03_04: a rejection without a reason is refused and the request stay
   assert.equal((await f.audits(eventId)).length, 0);
 }));
 
-test('TC_E03S03_05: the Organiser sees a rejected request\'s reason and decision date, cannot edit it, and the edit is refused', () => withFixture(async f => {
+test('TC_E03S03_05: the Organiser sees the reason and decision date of a rejected request, cannot edit it, and the edit is refused', () => withFixture(async f => {
   const eventId = await f.event('EVT-4003', f.ids.organiserA, f.ids.coordA, 'under_review');
   await decideEventRequest(f.pool, f.user(f.ids.coordA), eventId, { decision: 'reject', reason: REASON });
   await f.pool.query(`UPDATE audit_logs SET occurred_at = '2026-09-10T02:00:00Z' WHERE event_id = $1 AND field_changed = 'status'`, [eventId]);
@@ -278,7 +278,7 @@ test('TC_E03S03_07: a decision is refused while the request is Awaiting Clarific
   assert.equal((await f.notices(waiting)).length + (await f.notices(approved)).length, 0);
 }));
 
-test('TC_E03S03_08: the request\'s own Organiser cannot approve it, and the attempt is audited', () => withFixture(async f => {
+test('TC_E03S03_08: the Organiser who submitted the request cannot approve it, and the attempt is audited', () => withFixture(async f => {
   const eventId = await f.event('EVT-2003', f.ids.organiserC, f.ids.coordB, 'under_review');
 
   await refused(decideEventRequest(f.pool, f.user(f.ids.organiserC), 'EVT-2003', { decision: 'approve' }), 403, NOT_ASSIGNED);
