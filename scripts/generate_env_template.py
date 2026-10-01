@@ -100,6 +100,10 @@ PLATFORM_ALLOWLIST: dict[str, str] = {
     # Injected by Vercel for OIDC-authenticated deployments; never a
     # developer secret.
     "VERCEL_OIDC_TOKEN": "Injected by Vercel at deploy time; never developer config.",
+    # Deployment hostnames injected by Vercel; read by the CSRF origin allowlist.
+    "VERCEL_URL": "Injected by Vercel at deploy time; never developer config.",
+    "VERCEL_PROJECT_PRODUCTION_URL": "Injected by Vercel at deploy time; never developer config.",
+    "VERCEL_BRANCH_URL": "Injected by Vercel at deploy time; never developer config.",
 }
 
 # Section layout preserves the shape of the previous hand-maintained template
@@ -142,8 +146,8 @@ SECTIONS: list[tuple[str, str, list]] = [
     ),
     (
         "Local development",
-        "Frontend dev-server proxy target and Playwright seed mode.",
-        ["API_PROXY_TARGET", "CONNECTSPHERE_E2E_SEED"],
+        "Dev proxy target, Playwright seed mode, extra CSRF origins (comma-separated).",
+        ["API_PROXY_TARGET", "CONNECTSPHERE_E2E_SEED", "ADDITIONAL_ALLOWED_ORIGINS"],
     ),
 ]
 

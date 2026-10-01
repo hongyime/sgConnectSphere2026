@@ -116,7 +116,10 @@ test('disables the submit button while the request is in flight', async () => {
   a heavyweight mocking library.
 - Backend integration tests use `TEST_DATABASE_URL` pointing at a
   disposable Postgres and create their own schemas. Never touch the
-  shared `public` schema.
+  shared `public` schema. One test, `deactivation.integration.test.ts`,
+  instead uses the shared Supabase `test` schema inside a rolled-back
+  transaction; see `docs/testing/supabase-test-schema.md` if you want to
+  run that one without a local Postgres.
 - Assert on side effects (rows inserted, rows updated, audit entries
   present) rather than internal function calls.
 
