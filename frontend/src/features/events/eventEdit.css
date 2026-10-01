@@ -1,0 +1,97 @@
+/* E03-S07 edit form. Sits on the shared .card, .form-section, .form-grid,
+   .field-control and .form-actions classes in styles.css; these rules only
+   add the header, alert, fieldset reset and locked-field look. */
+
+.card.event-edit-form {
+  gap: var(--space-5);
+  box-shadow: none;
+}
+
+.event-edit-header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.event-edit-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.event-edit-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.event-edit-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(192, 57, 43, 0.3);
+  border-radius: 8px;
+  background: var(--red-soft);
+  color: var(--red);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.event-edit-alert svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+fieldset.event-edit-section {
+  min-width: 0;
+  margin: 0;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+fieldset.event-edit-section:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.event-edit-section legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-3);
+  padding: 0;
+  color: var(--ink);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+}
+
+.event-edit-section legend + .form-grid {
+  clear: both;
+}
+
+.event-edit-locked > label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.event-edit-locked input,
+.event-edit-locked textarea {
+  border-style: dashed;
+  background: var(--surface-strong);
+  color: var(--muted);
+}
+
+.event-edit-header h2:focus,
+.event-edit-alert:focus {
+  outline: none;
+}
+
+.event-edit-form .field-control textarea {
+  min-height: 88px;
+}
