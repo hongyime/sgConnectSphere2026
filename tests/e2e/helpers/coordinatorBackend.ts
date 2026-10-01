@@ -26,6 +26,9 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     status: options.status ?? 'under_review',
     pending: options.pendingTo ? { id: 'reassignment-1', from: options.assignedTo, to: options.pendingTo, at: '2026-09-28T02:00:00.000Z' } : null as null | { id: string; from: Coordinator; to: Coordinator; at: string },
     notices: new Map<string, Notice[]>(),
+    // E03-S07: current editable values and the audit rows each edit writes.
+    fields: { title: options.title, description: 'Charity fundraiser run.', venue_requirements: 'Outdoor start line', expected_attendance: 250 } as Record<string, unknown>,
+    audit: [] as { actor: string; field: string; value: string }[],
   };
 
   function notify(to: Coordinator, title: string, message: string) {
@@ -45,9 +48,9 @@ export async function fakeCoordinatorBackend(page: Page, options: {
   }
 
   const summary = () => ({
-    id: eventId, event_code: options.eventCode, title: options.title, status: state.status,
+    id: eventId, event_code: options.eventCode, title: state.fields.title, status: state.status,
     status_changed_at: '2026-09-20T01:00:00.000Z', starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
-    expected_attendance: 250, coordinator_assigned_at: '2026-09-20T01:00:00.000Z', organiser_name: 'Organiser A',
+    expected_attendance: state.fields.expected_attendance, coordinator_assigned_at: '2026-09-20T01:00:00.000Z', organiser_name: 'Organiser A',
   });
 
   const json = (route: Route, status: number, body: unknown) => route.fulfill({ status, json: body });
@@ -76,7 +79,7 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     if (request.method() === 'GET' && params.get('assigned') === '1' && params.get('id')) {
       if (!mine) return json(route, 403, { error: 'Access denied. This event is not assigned to you.' });
       return json(route, 200, { event: {
-        ...summary(), description: 'Charity fundraiser run.', purpose: null, venue_requirements: 'Outdoor start line',
+        ...summary(), description: state.fields.description, purpose: null, venue_requirements: state.fields.venue_requirements,
         accessibility_note: null, equipment_requirements: null, layout_preference: null, registration_setup: null,
         coordinator_id: state.assignedTo.id, coordinator_name: state.assignedTo.name, organiser_email: 'organiser_a@clienta.com',
         pendingReassignment: state.pending ? reassignment('pending') : null,
@@ -106,11 +109,25 @@ export async function fakeCoordinatorBackend(page: Page, options: {
       state.pending = null;
       return json(route, 200, { reassignment: answered });
     }
+    if (request.method() === 'PATCH' && params.get('edit') === '1') {
+      // Mirrors updateEventInformation (#132) for a Coordinator caller.
+      if (!mine || !['approved', 'planning', 'confirmed', 'completed'].includes(state.status)) {
+        return json(route, 403, { error: 'Only the assigned Coordinator may edit an approved event.' });
+      }
+      const patch = request.postDataJSON() as Record<string, unknown>;
+      const columns: Record<string, string> = { title: 'title', description: 'description', venueRequirements: 'venue_requirements', expectedAttendance: 'expected_attendance' };
+      for (const [field, value] of Object.entries(patch)) {
+        if (columns[field]) state.fields[columns[field]] = value;
+        state.audit.push({ actor: state.user.email, field, value: String(value) });
+      }
+      return json(route, 200, { updated: true, eventId, fields: Object.keys(patch) });
+    }
     return json(route, 404, { error: 'Not handled by the test backend.' });
   });
 
   return {
     signInAs(user: Coordinator) { state.user = user; },
     get assignedTo() { return state.assignedTo; },
+    get audit() { return state.audit; },
   };
 }
