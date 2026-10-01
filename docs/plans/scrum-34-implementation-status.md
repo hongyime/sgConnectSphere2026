@@ -250,4 +250,4 @@ a passing run recorded above.
     (Organiser rejected-request view)
 - Story: `E03-S03`
 - Test cases: `docs/testing/cases/E03.md`, TC_E03S03_01 to _12
-- Pull requests: to be added
+- Pull requests: #174 (backend). Frontend PR to follow

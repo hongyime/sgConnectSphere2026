@@ -6,7 +6,7 @@ environment: local
 run_type: regression
 test_case_version: 011026
 commit: b163245
-pr: TBD
+pr: 174
 ---
 
 | TC_ID | Test Name | Outcome | Remarks |
