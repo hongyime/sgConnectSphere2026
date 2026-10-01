@@ -27,19 +27,20 @@ From `docs/backlog/release-1/E03-review-coordination-status.md`:
 
 These rules were settled by the story owner before building (D10–D14 in the
 story's task list; D11 was narrowed on 2026-10-01 so that this story only
-changes its own code). Each has a test case below. The messages are the planned
-wording; this table is updated if the code's final wording differs.
+changes its own code). Each has a test case below. The messages are the
+code's final wording, word for word as the runs below saw them.
 
 | Rule | What the user sees | Test case |
 |---|---|---|
 | Only the Coordinator assigned to the request can approve or reject it | 403 "Only the assigned Coordinator can decide on this request." | TC_E03S03_06, _08 |
 | A decision can only be made while the request is Under Review. Rejected is final (T-41) | 409 "A decision can only be made while the request is Under Review." | TC_E03S03_07, _09 |
-| Approval needs the same required information as submission, checked against the stored request (D10). No past-date block | 409 "This request can't be approved until its required information is complete." with the missing items listed, e.g. "Venue requirements" | TC_E03S03_02 |
+| Approval needs the same required information as submission, checked against the stored request (D10). No past-date block | 409 "This request can't be approved until its required information is complete." with the missing items listed in `missingFields`, in the request form's order and with the form's labels, e.g. "Venue requirements" | TC_E03S03_02 |
 | Accessibility needs are met by a free-text note **or** predefined features, the same as at submission (E02-S03) | Approval goes ahead | TC_E03S03_12 |
 | A rejection needs a reason | 400 "Add a reason for rejecting this request." | TC_E03S03_04 |
 | The reason is limited to 2000 characters, the same as event comments and clarification questions | 400 "The reason must be 2000 characters or fewer." | TC_E03S03_10 |
 | A rejected request is read-only for its Organiser (D11). Coordinators already can't edit rejected requests. The refusal offers no change request | 409 "This request is rejected, so it can no longer be changed." | TC_E03S03_05, _11 |
-| The Organiser's view of a decided request shows the reason and decision date, and a rejected one has no edit actions (`canEdit: false`) | "Rejected on 10 September 2026 — <reason>" | TC_E03S03_05 |
+| The Organiser's view of a decided request shows the reason and decision date, and a rejected one has no edit actions (`canEdit: false`, `editableFields: []`). The date is the decision's own audit entry, so it stays right after later status changes; seeded rows without one use `status_changed_at`. Only a rejection's reason is shown | The read carries `decision: { outcome, reason, decidedAt }`; the frontend PR shows it as "Rejected on 10 September 2026 — <reason>" | TC_E03S03_05 |
+| A decision must say approve or reject | 400 "Choose whether to approve or reject this request." | SCRUM-34 unit test |
 | The decision, its audit entry and the notice commit together, through the shared status-change path (`applyEventStatusChange`, D12) | — | TC_E03S03_01, _03 |
 | Notices go through the shared E11-S01 writer (BDR T-64): the Organiser gets one in-app notice and one email-outbox row, never a duplicate generic "status changed" notice. A rejection notice includes the reason. The deciding Coordinator gets none | "Request approved" / "Request rejected" with the reason | TC_E03S03_01, _03 |
 | Refusals change nothing and are audited (E14-S02), and don't show in the Organiser's activity log (#168) | — | TC_E03S03_06 |
@@ -60,18 +61,18 @@ Every automated test must carry its TC ID in its title, so that
 
 | TC ID | Type | What the user sees | Backend test (backend PR) | Browser test (frontend PR) |
 |---|---|---|---|---|
-| TC_E03S03_01 | Happy path | Status becomes Approved. The Organiser gets one "Request approved" notice | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_02 | Negative | Approval blocked, missing items listed, e.g. "Venue requirements" | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_03 | Happy path | Status becomes Rejected. The Organiser gets one "Request rejected" notice with the reason | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_04 | Negative | 400 "Add a reason for rejecting this request." | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_05 | Happy path | "Rejected on 10 September 2026 — <reason>"; no edit actions | To be written (the decision in the event read, and the rejected-edit check) | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_06 | Negative | 403 "Only the assigned Coordinator can decide on this request." | To be written | Not needed |
-| TC_E03S03_07 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | To be written | Not needed |
-| TC_E03S03_08 | Negative | 403 "Only the assigned Coordinator can decide on this request." | To be written | Not needed |
-| TC_E03S03_09 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | To be written | Not needed |
-| TC_E03S03_10 | Boundary | 400 "The reason must be 2000 characters or fewer." at 2001; 2000 accepted | To be written | Not needed |
-| TC_E03S03_11 | Negative (business rule) | 409 "This request is rejected, so it can no longer be changed.", with no change-request link | To be written | Not needed |
-| TC_E03S03_12 | Boundary | Approval goes ahead with features-only accessibility | To be written | Not needed |
+| TC_E03S03_01 | Happy path | Status becomes Approved. The Organiser gets one "Request approved" notice | `decision.integration.test.ts`: "TC_E03S03_01: approving a complete Under Review request…" and "…a failed email-outbox write leaves the request Under Review…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_02 | Negative | Approval blocked, missing items listed, e.g. "Venue requirements" | `decision.integration.test.ts`: "TC_E03S03_02: approval is blocked while Venue requirements is missing…" and "…every missing item is listed…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_03 | Happy path | Status becomes Rejected. The Organiser gets one "Request rejected" notice with the reason | `decision.integration.test.ts`: "TC_E03S03_03: rejecting with a reason…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_04 | Negative | 400 "Add a reason for rejecting this request." | `decision.test.ts` and `decision.integration.test.ts`: "TC_E03S03_04: …" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_05 | Happy path | "Rejected on 10 September 2026 — <reason>"; no edit actions | `decision.integration.test.ts`: "TC_E03S03_05: the Organiser sees the reason and decision date of a rejected request…" and "…an approved request shows its decision date…" | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_06 | Negative | 403 "Only the assigned Coordinator can decide on this request." | `decision.integration.test.ts`: "TC_E03S03_06: …" | Not needed |
+| TC_E03S03_07 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | `decision.integration.test.ts`: "TC_E03S03_07: …" | Not needed |
+| TC_E03S03_08 | Negative | 403 "Only the assigned Coordinator can decide on this request." | `decision.test.ts` and `decision.integration.test.ts`: "TC_E03S03_08: …" | Not needed |
+| TC_E03S03_09 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | `decision.integration.test.ts`: "TC_E03S03_09: …" | Not needed |
+| TC_E03S03_10 | Boundary | 400 "The reason must be 2000 characters or fewer." at 2001; 2000 accepted | `decision.test.ts` and `decision.integration.test.ts`: "TC_E03S03_10: …" | Not needed |
+| TC_E03S03_11 | Negative (business rule) | 409 "This request is rejected, so it can no longer be changed.", with no change-request link | `decision.integration.test.ts`: "TC_E03S03_11: …" | Not needed |
+| TC_E03S03_12 | Boundary | Approval goes ahead with features-only accessibility | `decision.integration.test.ts`: "TC_E03S03_12: …" | Not needed |
 
 ## Test gates
 
@@ -131,6 +132,24 @@ object names:
 - how many Under Review requests are missing required information, since
   those can't be approved until the Organiser completes them.
 
+## API (for the frontend PR)
+
+All in `api/events.ts`, no new `api/` file. The rules are in
+`backend/src/modules/eventLifecycle/decision.ts`.
+
+- `POST /api/events?decide=1&id=<event id or code>` with
+  `{ "decision": "approve" }` or `{ "decision": "reject", "reason": "…" }`
+  (assigned Coordinator only).
+  - 200 `{ decision: { eventId, eventCode, status, statusChangedAt, decisionReason } }`
+  - 409 `{ error, missingFields: string[] }` when approval is blocked
+  - 400 / 403 / 409 `{ error }` for the refusals in the rules table above
+- `GET /api/events?id=<event id or code>` (the Organiser's read) also returns
+  `decision: { outcome: 'approved' | 'rejected', reason, decidedAt } | null`.
+  For a rejected request, `canEdit` is `false` and `editableFields` is `[]`.
+- `PATCH /api/events?edit=1&id=…` on a rejected request, by its Organiser:
+  409 `{ error: "This request is rejected, so it can no longer be changed." }`,
+  with no `changeRequestUrl`.
+
 ## Known limits
 
 What the tests above do **not** prove. If a customer reports a problem in one
@@ -152,9 +171,18 @@ of these areas, it is outside what was tested:
   completed requests can still be edited the way they could before (the
   edit rules are SCRUM-37's code); a lock for those was suggested to its
   owner instead.
-- **The 2000-character reason is accepted only in the database tests.** The
-  real-stack run checks the 2001-character refusal, but doesn't use a
-  seeded event up on the 2000-character case.
+- **The rejected-edit check sits in the edit route, not inside
+  `updateEventInformation`** (SCRUM-37's code, not changed by this story).
+  Today that route is the function's only caller. A new route that calls it
+  would not get the check unless it calls `rejectedEditRefusal` too; TC_11's
+  real-stack run exercises the route itself.
+- **The seed's rejected request has no reason.** EVT-3005 is seeded as
+  Rejected with no `decision_reason` and no status audit entry, so its
+  decision shows no reason, dated from `status_changed_at`. Requests rejected
+  through this story always carry both.
+- **The missing-item labels are the request form's**, e.g. "Venue
+  requirements". TC_E03S03_02's catalogue text writes "Venue Requirements";
+  only the capitalisation differs.
 - **One neighbouring database suite fails on `main`.** Since #161,
   `eventVisibility.integration.test.ts` (E01-S02) fails with "column
   e.venue_requirements does not exist", with or without this story. CI
@@ -183,6 +211,20 @@ fix gets its own row.
 
 | When (SGT) | Commit | Gate | TC IDs | Command | Where | Result | What was seen | Run by |
 |---|---|---|---|---|---|---|---|---|
+| 2026-10-02 ≈00:00 | `e26732e+local` (the tree later committed as `b163245`) | 1 | _04, _08, _10 | `npm test` (backend) | local | 259/259 passed | — | Claude (for Aaron) |
+| 2026-10-02 ≈00:01 | `e26732e+local` | 2 | _01–_12 | `npx tsx --test tests/decision.integration.test.ts`, run twice in one command | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` (`public` migrated 0001–0009) | 16/16 passed, both times | — | Claude (for Aaron) |
+| 2026-10-02 ≈00:02 | `e26732e+local`, with bugs put in on purpose | 2 | _01, _03, _05, _10, _12 | The same file, three times, each with one deliberate bug in `decision.ts`, restored byte for byte afterwards | local, same container | **Each bug was caught**, as intended: features not loaded failed _12; no targeted notice (generic only) failed _01, _03, _10, _12; rejected requests left editable failed _05 | Shows the tests check these rules rather than passing regardless | Claude (for Aaron) |
+| 2026-10-02 ≈00:03 | `e26732e+local` | 3 | neighbours | `npm run test:db` and `npm run test:event-notifications:db` (backend) | local, same container | **test:db 44/45, failed E01-S02 (`eventVisibility`)**; notifications 12/12 | `error: 'column e.venue_requirements does not exist'`. On `main` since #161, not from this story (see Known limits). All 16 SCRUM-34 tests passed again in the batch | Claude (for Aaron) |
+| 2026-10-02 00:04 | `e26732e+local` | 4 | — | `npm run typecheck` and `npm run build` (root) | local | both passed | — | Claude (for Aaron) |
+| 2026-10-02 00:06 | `b163245` | 5 | _01–_12 | Real HTTP calls to the local API (`tsx src/dev.ts`, port 3033, `APP_URL=http://localhost:5173`), signed in as coord_a, coord_b, organiser_a, organiser_b and organiser_c, with the database checked after each step | local, freshly reset and seeded `connectsphere_dev_stack` in the same container | 23/23 checks passed. Session record `20261002-000649-Bl0oper-backend-api.md` | Refusals word for word: 403 "Only the assigned Coordinator can decide on this request." (coord_a; organiser_c on their own request) · 409 "A decision can only be made while the request is Under Review." (EVT-3002, EVT-3001, EVT-3005) · 400 "Add a reason for rejecting this request." (missing, empty, blank) · 400 "The reason must be 2000 characters or fewer." · 409 "This request can't be approved until its required information is complete." with missingFields ["Venue requirements","Accessibility needs","Equipment requirements","Layout preference","Registration setup"] (EVT-2003) · 409 "This request is rejected, so it can no longer be changed." with no `changeRequestUrl` (EVT-3005, Winter Gala) · 403 "Edit access denied." (organiser_a on EVT-3005). Notices: "Coordinator B approved Annual Tech Summit. The request is now Approved and moves to planning." and "Coordinator B rejected Winter Gala. The request is now Rejected and can no longer be changed. Reason: Requested date unavailable across all venues", one each, with email-outbox rows; the Coordinator got none. organiser_c's activity log on EVT-2003 had 0 rows with 3 `Access Denied` rows in the database | Claude (for Aaron) |
+| 2026-10-02 00:07 | `b163245` | 1 | _04, _08, _10 | `npm test` (backend) | local | 259/259 passed. Session record `20261002-000718-Bl0oper-backend-unit.md` | — | Claude (for Aaron) |
+| 2026-10-02 00:07 | `b163245` | 2 | _01–_12 | `npx tsx --test tests/decision.integration.test.ts` | local, same container | 16/16 passed. Session record `20261002-000725-Bl0oper-backend-db.md` | — | Claude (for Aaron) |
+| 2026-10-02 00:07 | `b163245` | 3 | neighbours | `npm run test:db` and `npm run test:event-notifications:db` (backend) | local, same container | **test:db 44/45, failed E01-S02 (`eventVisibility`)**; notifications 12/12. Same session record | Same error as the 00:03 run, `column e.venue_requirements does not exist` | Claude (for Aaron) |
+| 2026-10-02 00:07 | `b163245` | 4 | — | `npm run typecheck` and `npm run build` (root) | local | both passed | — | Claude (for Aaron) |
+| 2026-10-02 00:10 | `b163245` | 2 | _01–_12 | `npx tsx --test tests/decision.integration.test.ts` (rerun while rewording two titles; the rewording hadn't applied yet) | local, same container | 16/16 passed | — | Claude (for Aaron) |
+| 2026-10-02 00:10 | `4247a63` (two test titles reworded so the coverage audit shows them in full; no code change) | 1, 2 | _01–_12 | `npm test` (backend), then `npx tsx --test tests/decision.integration.test.ts` | local, same container | 259/259 and 16/16 passed | — | Claude (for Aaron) |
+| 2026-10-02 00:11 | `4247a63+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
+| 2026-10-02 00:11 | `4247a63` | 4 | — | `npm run test:runtime` (root; the compiled API runtime tests CI runs, since `api/events.ts` changed) | local | 15/15 passed | — | Claude (for Aaron) |
 
 ## Completion boundary
 
