@@ -773,6 +773,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a busy button is disabled and shows its busy label
 - the /ui-kit reference page renders every block without calling the API
 
+### `frontend/src/templates/templates.test.tsx`
+
+- List: loads, filters with counts, and shows a filter-specific empty state
+- Detail: shows the facts, and a 404 shows the server message with a way back
+- Form: client validation mirrors the server rules
+- Form: errors appear next to fields, a server refusal is shown, and a save opens the detail page
+- Decision: rejecting requires a reason, then the outcome is confirmed
+- Decision: a request that is not under review has nothing to decide
+
+### `frontend/src/testing/fakeApi.test.ts`
+
+- answers by method, path and the query params the key names
+- records each call with its parsed JSON body
+- answers the header session call for the chosen role, or 401 when signed out
+- an unstubbed request fails loudly with 404
+- handlers can be functions, and deferred holds a reply back
+
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
 - invalid and expired reset links guide the user back to recovery
@@ -827,6 +844,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request list opens the live request detail with its status history
 - request detail shows not found for a request that is not yours
 - clarification response (mock) requires every answer before submit
+
+### `tests/e2e/skeleton.spec.ts`
+
+- the page templates run end to end on sample data
+- signInAs gives a signed-in page the role navigation
 
 ### `tests/e2e/support.spec.ts`
 

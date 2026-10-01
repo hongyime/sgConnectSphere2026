@@ -116,6 +116,11 @@
 @keyframes ui-rotate { to { transform: rotate(360deg); } }
 
 /* --- Forms --- */
+.ui-form {
+  display: grid;
+  gap: var(--space-5);
+}
+
 fieldset.ui-form-section {
   min-width: 0;
   margin: 0;
