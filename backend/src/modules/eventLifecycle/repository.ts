@@ -113,6 +113,99 @@ function mapEvent(row: EventRow): EventRecord {
   };
 }
 
+export type EventStatusChange = { auditId: string; occurredAt: Date; from: EventRecord['status'] };
+
+// The one status-change path (lock, transition check, audit entry, T-64
+// notices), run inside the caller's transaction. updateEventStatus() wraps it
+// in its own; E03-S02 calls it directly so its questions or answers commit
+// with the status change. beforeNotify runs after the audit entry and before
+// the generic notices: a targeted notice written there with the same change
+// ID replaces the generic one for that recipient instead of duplicating it.
+export async function applyEventStatusChange(
+  client: PoolClient,
+  eventId: string,
+  status: EventRecord['status'],
+  actorId: string,
+  options: {
+    reason?: string;
+    notificationOptions?: NotificationOptions;
+    beforeNotify?: (change: EventStatusChange) => Promise<void>;
+  } = {},
+): Promise<{ event: EventRecord; change: EventStatusChange | null }> {
+  // Lock the row and read its authoritative current status before trusting
+  // it for the transition check or the audit entry's old_value. The
+  // service layer already did this same read-then-validate before calling
+  // in, but that read is not inside this transaction: a concurrent status
+  // change between that read and this one must not let an now-illegal
+  // transition through, and must not let the audit log record a "before"
+  // state that was never actually true.
+  const locked = await client.query<{ status: EventRecord['status'] }>(
+    `SELECT status FROM events WHERE id = $1 FOR UPDATE`, [eventId],
+  );
+  const fromStatus = locked.rows[0]?.status;
+  if (!fromStatus) {
+    throw new Error(`Event not found: ${eventId}`);
+  }
+  const transition = validateEventStatusTransition(fromStatus, status);
+  if (!transition.allowed) {
+    throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
+  }
+
+  const before = await captureEventAudience(client, eventId, options.notificationOptions);
+  const result = await client.query<EventRow>(
+    `
+      UPDATE events
+      SET status = $2::event_status,
+          decision_reason = CASE WHEN status <> $2::event_status THEN COALESCE($3, decision_reason) ELSE decision_reason END,
+          status_changed_at = CASE WHEN status <> $2::event_status THEN now() ELSE status_changed_at END
+      WHERE id = $1
+      RETURNING
+        id,
+        title,
+        description,
+        purpose,
+        client_org_id,
+        organiser_id,
+        coordinator_id,
+        status,
+        status_changed_at,
+        lower(event_range) AS start_at,
+        upper(event_range) AS end_at,
+        expected_attendance,
+        layout_id,
+        venue_requirements,
+        accessibility_note,
+        equipment_requirements,
+        layout_preference,
+        registration_setup
+    `,
+    [eventId, status, options.reason ?? null],
+  );
+
+  const updated = result.rows[0]!;
+
+  // E14-S02 Scenario 1: the status change and its audit entry commit
+  // together, so an event never carries a status the log doesn't explain.
+  // Skipped when fromStatus === status (validateEventStatusTransition
+  // allows a same-status call as a no-op): nothing changed, so there is
+  // nothing to record.
+  let change: EventStatusChange | null = null;
+  if (fromStatus !== status) {
+    const audit = await client.query<{ id: string; occurred_at: Date }>(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+       VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5) RETURNING id, occurred_at`,
+      [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
+    );
+    change = { auditId: audit.rows[0].id, occurredAt: audit.rows[0].occurred_at, from: fromStatus };
+    await options.beforeNotify?.(change);
+    const after = await captureEventAudience(client, eventId, options.notificationOptions);
+    await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
+      actorId, before, after, change:{kind:'status',from:fromStatus,to:status} });
+  }
+
+  return { event: mapEvent(updated), change };
+}
+
 export class PostgresEventLifecycleRepository implements EventLifecycleRepository {
   constructor(private readonly notificationOptions: NotificationOptions = {}, private readonly pool?: Pool) {}
 
@@ -250,77 +343,8 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
     actorId: string,
     reason?: string,
   ): Promise<EventRecord> {
-    return inTransaction(this.database(), async client => {
-      // Lock the row and read its authoritative current status before trusting
-      // it for the transition check or the audit entry's old_value. The
-      // service layer already did this same read-then-validate before calling
-      // in, but that read is not inside this transaction: a concurrent status
-      // change between that read and this one must not let an now-illegal
-      // transition through, and must not let the audit log record a "before"
-      // state that was never actually true.
-      const locked = await client.query<{ status: EventRecord['status'] }>(
-        `SELECT status FROM events WHERE id = $1 FOR UPDATE`, [eventId],
-      );
-      const fromStatus = locked.rows[0]?.status;
-      if (!fromStatus) {
-        throw new Error(`Event not found: ${eventId}`);
-      }
-      const transition = validateEventStatusTransition(fromStatus, status);
-      if (!transition.allowed) {
-        throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
-      }
-
-      const before = await captureEventAudience(client, eventId, this.notificationOptions);
-      const result = await client.query<EventRow>(
-        `
-          UPDATE events
-          SET status = $2::event_status,
-              decision_reason = CASE WHEN status <> $2::event_status THEN COALESCE($3, decision_reason) ELSE decision_reason END,
-              status_changed_at = CASE WHEN status <> $2::event_status THEN now() ELSE status_changed_at END
-          WHERE id = $1
-          RETURNING
-            id,
-            title,
-            description,
-            purpose,
-            client_org_id,
-            organiser_id,
-            coordinator_id,
-            status,
-            status_changed_at,
-            lower(event_range) AS start_at,
-            upper(event_range) AS end_at,
-            expected_attendance,
-            layout_id,
-            venue_requirements,
-            accessibility_note,
-            equipment_requirements,
-            layout_preference,
-            registration_setup
-        `,
-        [eventId, status, reason ?? null],
-      );
-
-      const updated = result.rows[0]!;
-
-      // E14-S02 Scenario 1: the status change and its audit entry commit
-      // together, so an event never carries a status the log doesn't explain.
-      // Skipped when fromStatus === status (validateEventStatusTransition
-      // allows a same-status call as a no-op): nothing changed, so there is
-      // nothing to record.
-      if (fromStatus !== status) {
-        const audit = await client.query<{ id: string; occurred_at: Date }>(
-          `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
-           VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5) RETURNING id, occurred_at`,
-          [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
-        );
-        const after = await captureEventAudience(client, eventId, this.notificationOptions);
-        await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
-          actorId, before, after, change:{kind:'status',from:fromStatus,to:status} });
-      }
-
-      return mapEvent(updated);
-    });
+    return inTransaction(this.database(), async client =>
+      (await applyEventStatusChange(client, eventId, status, actorId, { reason, notificationOptions: this.notificationOptions })).event);
   }
 
   async listEventsByOrganiser(organiserId: string, status?: EventRecord['status']): Promise<EventRecord[]> {

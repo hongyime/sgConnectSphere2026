@@ -13,6 +13,9 @@ import { updateEventInformationWithNotifications } from '../backend/src/modules/
 // as query-param dispatch here rather than a new file (ADR-014: `api/` is at
 // the team's 11-function soft cap).
 //
+// SCRUM-33 (E03-S02) adds the clarification request and response the same
+// way, and the outstanding questions to both event detail reads.
+//
 // Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
 // consolidation removed the Supabase Auth bearer-token path that used to
 // cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
@@ -27,6 +30,11 @@ import {
   requestCoordinatorReassignment,
   respondToCoordinatorReassignment,
 } from '../backend/src/modules/eventLifecycle/coordinatorAssignment.js';
+import {
+  requestClarification,
+  respondToClarification,
+  withOutstandingQuestions,
+} from '../backend/src/modules/eventLifecycle/clarification.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
 import {
   createEventRequest,
@@ -67,6 +75,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('reassign') === '1' || params.has('reassignment')) {
       await handleReassignmentPost(request, response, params);
+      return;
+    }
+    if (params.has('clarification')) {
+      await handleClarificationPost(request, response, params);
       return;
     }
     await handlePost(request, response);
@@ -125,6 +137,31 @@ async function handleReassignmentPost(request: VercelRequest, response: VercelRe
     if (!eventId) throw new AccessError(400, 'missing_id');
     const reassignment = await requestCoordinatorReassignment(getDatabasePool(), user, eventId.slice(0, 240), request.body);
     return { status: 201, body: { reassignment } };
+  });
+}
+
+// SCRUM-33 (E03-S02) Scenarios 1 and 2. Only the assigned Coordinator may
+// ask, only the owning Organiser may answer; every rule is enforced in
+// clarification.ts.
+//   POST /api/events?clarification=request&id=<event id or code>  { questions: string[] }
+//     -> 201 { clarification }
+//   POST /api/events?clarification=response&id=<event id or code>  { answers: [{ questionId, answer }] }
+//     -> 200 { clarification }
+async function handleClarificationPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    const action = params.get('clarification');
+    if (action === 'request') {
+      const clarification = await requestClarification(getDatabasePool(), user, eventId.slice(0, 240), request.body);
+      return { status: 201, body: { clarification } };
+    }
+    if (action === 'response') {
+      const clarification = await respondToClarification(getDatabasePool(), user, eventId.slice(0, 240), request.body);
+      return { status: 200, body: { clarification } };
+    }
+    throw new AccessError(400, 'Unknown clarification action.');
   });
 }
 
@@ -205,7 +242,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
     await requireOrganiser(query, user, 'events');
-    if (id) return { event: await getEvent(query, user, id.slice(0, 240)) };
+    if (id) return { event: await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240))) };
     return {
       events: await listEvents(query, user, params.get('q') || ''),
       notifications: await listNotifications(query, user),
@@ -218,6 +255,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
 // events assigned to them, never drafts (decision D2 in the SCRUM-32 plan).
 //   GET /api/events?assigned=1[&status=<status>]  -> { events }
 //   GET /api/events?assigned=1&id=<id or code>    -> { event } incl. pendingReassignment
+//                                                    and outstandingQuestions (SCRUM-33)
 //   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
 //   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
 async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
@@ -227,7 +265,7 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
     if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');
-    if (id) return { event: await getAssignedEvent(database, user, id.slice(0, 240)) };
+    if (id) return { event: await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240))) };
     return { events: await listAssignedEvents(database, user, params.get('status')) };
   });
 }

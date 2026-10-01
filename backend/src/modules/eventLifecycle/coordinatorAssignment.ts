@@ -52,7 +52,7 @@ const PICK_COORDINATOR_SQL = `
 // pick-and-assign step is serialised, and the lock is released at COMMIT.
 const ASSIGNMENT_LOCK_SQL = `SELECT pg_advisory_xact_lock(hashtext('connectsphere:coordinator-assignment'))`;
 
-function eventLabel(event: { event_code: string | null; title: string }) {
+export function eventLabel(event: { event_code: string | null; title: string }) {
   return event.event_code ? `${event.event_code} ${event.title}` : event.title;
 }
 
@@ -128,7 +128,7 @@ export async function assignCoordinatorOnSubmit(client: Runner, eventId: string)
 // --- Access helpers ---------------------------------------------------------
 
 // E14-S02 Scenario 2: a wrong-role denial is recorded against the screen.
-async function requireCoordinator(database: Pool, user: AuthenticatedUser | undefined, screen: string) {
+export async function requireCoordinator(database: Pool, user: AuthenticatedUser | undefined, screen: string) {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['event_coordinator']).allowed) {
     await database.query(
@@ -145,7 +145,7 @@ async function requireCoordinator(database: Pool, user: AuthenticatedUser | unde
 // refused transaction, so rolling that transaction back cannot lose it.
 // Unknown identifiers are recorded the same way, without revealing whether
 // an event exists.
-async function recordEventDenial(database: Pool, user: AuthenticatedUser, identifier: string, attempted: string) {
+export async function recordEventDenial(database: Pool, user: AuthenticatedUser, identifier: string, attempted: string) {
   await database.query(
     `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
      SELECT $1, 'event', coalesce(e.id, gen_random_uuid()), e.id, 'Access Denied', $3, $2
