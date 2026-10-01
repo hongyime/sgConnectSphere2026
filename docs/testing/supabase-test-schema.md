@@ -73,10 +73,22 @@ Seven files in `npm run test:db` do neither. They only check that
 - `venueCalendar.integration.test.ts`
 - `venueCatalogue.integration.test.ts`
 
-None of those seven calls `loginDatabase()`. Each sets `search_path` with
-`SET` after connecting, not as a connection startup option, but that does not
-stop a commit against the production pooler. The warning in "How to run" is
-the only real protection for them. Adding the same loopback and
+None of those seven calls `loginDatabase()`. Three of them set `search_path`
+with `SET` on each pooled connection: `venueAccessibility`, `venueCalendar`,
+and `venueCatalogue`. The other four set up a scratch schema with `SET`, then
+point the code under test at a `DATABASE_URL` that carries
+`options=-c search_path=…`:
+
+- `attendeeVisibility.integration.test.ts`
+- `eventVisibility.integration.test.ts`
+- `coordinatorAssignment.integration.test.ts`
+- `eventLifecycle.integration.test.ts`
+
+The pooler drops that startup option. `venueCatalogue.integration.test.ts`
+notes that this once let writes land in the real `public` schema. Pointed at
+Supabase, the code under test in those four reads and writes production
+`public`, not the scratch schema. The warning in "How to run" is the only
+real protection for all seven. Adding the same loopback and
 `current_schema()` checks that `registration.db.test.ts` already has is
 [SCRUM-128](https://theprawnworkspace.atlassian.net/browse/SCRUM-128), under
 E00 (`SCRUM-127`). SCRUM-109 is Done and does not hold this follow-up.
@@ -133,11 +145,12 @@ have neither check.
 
 The transaction pooler on port 6543 is fine **for the deactivation test**,
 because `SET LOCAL search_path` is scoped to the transaction and transaction
-pooling supports exactly that. The wider caveat is the reason for the second
-guard: a pooler discards `search_path` supplied as a connection *startup
-option*, which is how `options: '-c search_path=...'` can silently resolve to
-`public`. Several integration tests therefore set it through a
-`pool.on('connect')` handler instead.
+pooling supports exactly that. A pooler discards `search_path` supplied as a
+connection *startup option*. That is the `options=-c search_path=…` query
+parameter the four suites above put on `DATABASE_URL`. Pointed at Supabase,
+their code under test resolves to `public`. The three venue suites avoid that
+particular drop by running `SET` from `pool.on('connect')` instead. They
+still commit, so the warning above covers them too.
 
 ## Do not do these
 
