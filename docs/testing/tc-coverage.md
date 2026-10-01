@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 238 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 246 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **238**
-- Automated (explicit TC_ID in an active test title): **89** (37.4%)
-  - Real-database (`.integration.test` / `.db.test`): **23**
+- Total test cases: **246**
+- Automated (explicit TC_ID in an active test title): **101** (41.1%)
+  - Real-database (`.integration.test` / `.db.test`): **32**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **65**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **146** (61.3%)
-- No test yet (no test file mentions the TC_ID): **3** (1.3%)
+  - Live-assertion (other active tests): **68**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **142** (57.7%)
+- No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 27 | 11 | 16 | 0 |
+| E03 | 35 | 23 | 12 | 0 |
 | E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **238** | **89** | **146** | **3** |
+| **Total** | **246** | **101** | **142** | **3** |
 
 ## Case-by-case status
 
@@ -101,10 +101,18 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
 | `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
-| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the O |
-| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator |
-| `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised |
-| `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status |
+| `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_01: questions move an Under Review request to Awaiting Clarification and notify the Organiser once, with the question tex |
+| `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_02: a complete answer resolves the question, returns the request to Under Review and notifies the Coordinator once; tests |
+| `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_03: both event detail reads list the outstanding questions with the date each was raised; tests/e2e/e03.spec.ts: TC_E03S0 |
+| `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_04: a Coordinator can filter their events to Awaiting Clarification; tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an |
+| `TC_E03S02_05` | E03-S02 | Verify that a Coordinator who is not assigned to a request should be refused whe | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_05: a Coordinator not assigned to the request is refused, nothing changes and the attempt is audited |
+| `TC_E03S02_06` | E03-S02 | Verify that clarification cannot be requested on a request that is not Under Rev | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_06: clarification cannot be requested on a request that is not Under Review |
+| `TC_E03S02_07` | E03-S02 | Verify that a clarification request with no question, or only a blank question,  | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_07: a request with no question, or only blank questions, is rejected; backend/tests/clarification.test.ts: TC_E03S02_07:  |
+| `TC_E03S02_08` | E03-S02 | Verify the 2000-character limit on a clarification question | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_08: a 2001-character question is rejected and a 2000-character question is accepted; backend/tests/clarification.test.ts: |
+| `TC_E03S02_09` | E03-S02 | Verify that the Organiser must answer every outstanding question before the requ | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_09: a partial answer is rejected and every question stays outstanding; backend/tests/clarification.test.ts: TC_E03S02_09: |
+| `TC_E03S02_10` | E03-S02 | Verify that only the Organiser who owns a request can answer its clarification q | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_10: another Organiser in the same organisation cannot answer, and the attempt is audited |
+| `TC_E03S02_11` | E03-S02 | Verify that answers are refused when the request is not Awaiting Clarification | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_11: answers are refused while the request is not Awaiting Clarification |
+| `TC_E03S02_12` | E03-S02 | Verify that several questions can be sent together, are all shown, and are all r | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_12: two questions are sent in one notice, both listed, and both resolved by one complete response |
 | `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser |
 | `TC_E03S03_02` | E03-S03 | Verify that approval should be blocked while required information is incomplete, | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_02 - Verify that approval should be blocked while required information is incomplete, with the missing items listed |
 | `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser |
@@ -341,6 +349,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
+
+### `backend/tests/clarification.test.ts`
+
+- SCRUM-33: at most 20 questions can be sent at once
+- SCRUM-33: answers must name a question once, and are limited to 2000 characters
+- SCRUM-33: only Event Coordinators can ask and only Event Organisers can answer; refusals are audited, no event is read
 
 ### `backend/tests/coordinatorAssignment.integration.test.ts`
 
