@@ -33,6 +33,25 @@ Keep imported template material scoped to what this repo actually uses. Do not
 add paid services, AI reviewers, bot auto-merge, privileged `pull_request_target`
 workflows, or deployment secrets without a recorded team decision.
 
+## Recording test runs
+
+Per team decision **T-65** in `docs/bdr/B-team-decisions.md`, record every test
+run that is **used as evidence**: cited in a pull request, offered as proof that
+a story meets its Definition of Done, or shown in a demo.
+Create one session record file in `docs/testing/runs/` before committing. The
+schema, filename convention, scope enum, outcome values, and agent-specific
+instructions are in `docs/testing/runs/README.md`. Use
+`docs/testing/runs/TEMPLATE.md` as the starting point.
+
+Exploratory runs during development do not need a record, and CI runs are
+already covered by their own Actions logs -- record a CI run only when citing it
+as evidence, with `environment: ci`.
+
+Key rules for agents: derive `commit` from `git rev-parse --short HEAD`,
+derive `runner` from the GitHub login of the person on whose behalf the tests
+are being run, record only outcomes you observed, and never edit an existing
+session file.
+
 ## Pull-request hygiene (enforced in CI)
 
 CI blocks a PR when any of these are missing. Fix them locally before opening
