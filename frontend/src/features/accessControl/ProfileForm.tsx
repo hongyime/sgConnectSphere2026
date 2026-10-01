@@ -80,7 +80,6 @@ export function ProfileForm() {
   }
 
   return <main className="registration-page">
-    <a href="/" className="registration-brand">ConnectSphere</a>
     <header className="page-heading">
       <p className="eyebrow">Account</p>
       <h1>My Profile</h1>

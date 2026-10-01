@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
-import { AppHeader } from '../shell/AppHeader';
 import {
   ACTIVE_STATUSES, eventRef, formatDate, getAssignedEvent, listAssignedEvents, listColleagues,
   listReassignments, requestReassignment, respondToReassignment, statusLabel,
@@ -61,7 +60,6 @@ function useLoad<T>(load: (signal: AbortSignal) => Promise<{ ok: true; data: T }
 function Page({ eyebrow, title, aside, children }: { eyebrow: string; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <>
-      <AppHeader />
       <main className="coordinator-page">
         <header className="page-heading coordinator-page-heading">
           <div>

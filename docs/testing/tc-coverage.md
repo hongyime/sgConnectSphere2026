@@ -622,6 +622,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - token past its expiry is rejected as expired
 - positive ttl is required at issue time
 
+### `frontend/src/app/AppShell.test.tsx`
+
+- a signed-in page gets exactly one shared header
+- older pages now sit inside the shared header too
+- public pages have no shared header
+- /home sends a signed-in user to their role home
+- /home sends a signed-out visitor to sign in
+- a placeholder route shows the Coming soon page with its story
+
+### `frontend/src/app/routes.test.tsx`
+
+- every path is registered once
+- coming-soon pages name a Release 1 story
+- story IDs use the backlog format
+- sign-in and registration pages are public; profile and notifications are not
+- an unknown or missing role goes to the landing page
+
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 
 - an Event Coordinator who is already signed in is sent to /coordinator

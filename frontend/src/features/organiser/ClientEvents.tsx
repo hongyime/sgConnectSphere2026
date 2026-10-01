@@ -78,18 +78,9 @@ export function ClientEvents() {
   }
 
   return <main className="client-events">
-    <header><a href="/">ConnectSphere</a><h1>My organisation’s events</h1>
+    {/* Brand link and Sign out come from the shared header (app/AppShell). */}
+    <header><h1>My organisation’s events</h1>
       <p>View events created by you and your fellow organisers.</p>
-      {!signIn && <button disabled={busy} onClick={async () => {
-        activeRequest.current?.abort();
-        setEvents([]); setNotifications([]); setEvent(undefined); setBusy(true);
-        try {
-          const result = await fetch('/api/auth/session', { method: 'DELETE' });
-          if (!result.ok) throw new Error('Unable to sign out. Please try again.');
-          setSignIn(true); setError('');
-        } catch (failure) { setError(failure instanceof Error ? failure.message : 'Unable to sign out.'); }
-        finally { setBusy(false); }
-      }}>Sign out</button>}
     </header>
     {error && <p role="alert">{error}</p>}
     {signIn ? <form onSubmit={e => { e.preventDefault(); void login(e.currentTarget); }}>
