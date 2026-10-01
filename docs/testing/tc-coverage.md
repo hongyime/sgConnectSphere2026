@@ -732,6 +732,28 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Singapore day keys and times use UTC+8 regardless of browser timezone
 - day counts are inclusive and invalid dates are rejected
 
+### `frontend/src/shared/shared.test.tsx`
+
+- returns the data on success and sends the session cookie
+- uses the server
+- a network failure becomes status 0; an abort is re-thrown
+- a late response for an earlier id never replaces the current one
+- reload keeps the current data on screen while refreshing
+- a failure becomes an error state with the message
+- links the label, hint and error to the control
+- no error means no aria-invalid
+- 401 asks the user to sign in
+- 403 shows the server
+- anything else offers a retry
+- requires the reason before confirming, then passes it on
+- shows a server refusal inside the panel
+- DataTable has a caption and labels every cell for the phone layout
+- FilterChips marks the chosen option and reports changes
+- FactList shows
+- errors and warnings are announced immediately; success politely
+- a busy button is disabled and shows its busy label
+- the /ui-kit reference page renders every block without calling the API
+
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
 - invalid and expired reset links guide the user back to recovery

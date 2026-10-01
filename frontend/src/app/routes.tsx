@@ -51,6 +51,7 @@ import {
 import { AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading } from '../features/operations/Operations';
 import { ComingSoon } from './ComingSoon';
 import { HomeRedirect } from './HomeRedirect';
+import { UiKit } from './UiKit';
 
 export type RouteAccess = 'public' | 'signed-in';
 export type RouteStatus = 'live' | 'mock' | 'coming-soon' | 'redirect';
@@ -76,6 +77,8 @@ export const routes: AppRoute[] = [
   pub('/reset-password', <PasswordRecovery key="reset" reset />, 'E01-S01'),
   pub('/register', <RegisterForm />, 'E01-S08'),
   pub('/verify', <VerifyPage />, 'E01-S08'),
+  // Reference page for the shared building blocks (no API calls).
+  pub('/ui-kit', <UiKit />),
 
   // Every role
   page('/home', <HomeRedirect />, 'redirect', 'E01-S01'),
