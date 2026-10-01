@@ -2,7 +2,7 @@
 // signed-out visitor to sign in. Links such as "Back to my home page" use it
 // so they never need to know the user's role.
 import { Navigate } from 'react-router-dom';
-import { useSession } from '../features/shell/AppHeader';
+import { useSession } from '../shared/session';
 import { homeFor } from './roles';
 
 export function HomeRedirect() {
