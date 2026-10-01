@@ -16,6 +16,10 @@ import { updateEventInformationWithNotifications } from '../backend/src/modules/
 // SCRUM-33 (E03-S02) adds the clarification request and response the same
 // way, and the outstanding questions to both event detail reads.
 //
+// SCRUM-34 (E03-S03) adds the Coordinator's approve/reject decision, the
+// decision on the Organiser's event read, and a rejected-request check ahead
+// of the information edit. The rules are in decision.ts.
+//
 // Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
 // consolidation removed the Supabase Auth bearer-token path that used to
 // cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
@@ -35,6 +39,12 @@ import {
   respondToClarification,
   withOutstandingQuestions,
 } from '../backend/src/modules/eventLifecycle/clarification.js';
+import {
+  decideEventRequest,
+  DecisionBlockedError,
+  rejectedEditRefusal,
+  withDecision,
+} from '../backend/src/modules/eventLifecycle/decision.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
 import {
   createEventRequest,
@@ -81,6 +91,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       await handleClarificationPost(request, response, params);
       return;
     }
+    if (params.get('decide') === '1') {
+      await handleDecisionPost(request, response, params);
+      return;
+    }
     await handlePost(request, response);
     return;
   }
@@ -106,6 +120,9 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
     const user = await currentUser(request);
     const eventId = params.get('id');
     if (!eventId) { sendJson(response, 400, { error: 'missing_id' }); return; }
+    // SCRUM-34 (E03-S03, D11): a rejected request is read-only for its Organiser; no change-request link.
+    const rejected = await rejectedEditRefusal(query, user, eventId.slice(0, 240));
+    if (rejected) { sendJson(response, 409, { error: rejected }); return; }
     const result = await updateEventInformationWithNotifications(getDatabasePool(), user, eventId.slice(0, 240), request.body);
     sendJson(response, 200, { ...result });
   } catch (error) {
@@ -162,6 +179,30 @@ async function handleClarificationPost(request: VercelRequest, response: VercelR
       return { status: 200, body: { clarification } };
     }
     throw new AccessError(400, 'Unknown clarification action.');
+  });
+}
+
+// SCRUM-34 (E03-S03) Scenarios 1 to 4. Only the assigned Coordinator may
+// decide, only on an Under Review request; every rule is enforced in
+// decision.ts.
+//   POST /api/events?decide=1&id=<event id or code>
+//     { decision: 'approve' } | { decision: 'reject', reason: string }
+//     -> 200 { decision }
+//     -> 409 { error, missingFields } when approval is blocked (Scenario 2)
+async function handleDecisionPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    try {
+      const decision = await decideEventRequest(getDatabasePool(), user, eventId.slice(0, 240), request.body);
+      return { status: 200, body: { decision } };
+    } catch (error) {
+      if (error instanceof DecisionBlockedError) {
+        return { status: error.status, body: { error: error.message, missingFields: error.missingFields } };
+      }
+      throw error;
+    }
   });
 }
 
@@ -242,7 +283,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
     await requireOrganiser(query, user, 'events');
-    if (id) return { event: await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240))) };
+    if (id) return { event: await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240)))) };
     return {
       events: await listEvents(query, user, params.get('q') || ''),
       notifications: await listNotifications(query, user),
