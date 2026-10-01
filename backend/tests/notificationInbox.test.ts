@@ -20,7 +20,7 @@ function fixture(options: { user?: AuthenticatedUser; anonymous?: boolean; missi
   const handler = createInboxHandler(query, async () => {
     if (options.anonymous) throw new AccessError(401, 'Sign in to continue.');
     return options.user ?? user;
-  }, () => 'https://app.example.test');
+  }, (origin) => origin === 'https://app.example.test');
   return {calls, async request(request: Partial<VercelRequest> = {}) {
     let status = 200; let body: any;
     const headers: Record<string, string> = {};

@@ -110,13 +110,13 @@ async function invoke(handler: ReturnType<typeof createProfileHandler>, request:
 
 test('endpoint uses authenticated identity, rejects unauthenticated and cross-origin writes, and returns field errors', async () => {
   const { repository } = fixture();
-  const handler = createProfileHandler(repository, async () => user, () => 'https://app.example.test');
+  const handler = createProfileHandler(repository, async () => user, (origin) => origin === 'https://app.example.test');
   const loaded = await invoke(handler, { url: '/api/account/profile?user_id=user-b' });
   assert.equal(loaded.body.profile.id, user.id);
   assert.equal(loaded.headers['Cache-Control'], 'private, no-store');
   assert.equal('password_hash' in loaded.body.profile, false);
   assert.equal('role' in loaded.body.profile, false);
-  const denied = createProfileHandler(repository, async () => { throw new AccessError(401, 'Sign in'); }, () => 'https://app.example.test');
+  const denied = createProfileHandler(repository, async () => { throw new AccessError(401, 'Sign in'); }, (origin) => origin === 'https://app.example.test');
   assert.equal((await invoke(denied, {})).status, 401);
   assert.equal((await invoke(denied, { method: 'PUT', body: valid })).status, 401);
   assert.equal((await invoke(handler, { method: 'PUT', body: valid })).status, 403);
@@ -138,7 +138,7 @@ for (const constraint of ['users_email_key', 'users_email_normalized_key', 'user
 
 test('unexpected database errors do not expose internals', async () => {
   const repository = createProfileRepository(async () => { throw new Error('private database detail'); });
-  const handler = createProfileHandler(repository, async () => user, () => 'https://app.example.test');
+  const handler = createProfileHandler(repository, async () => user, (origin) => origin === 'https://app.example.test');
   const result = await invoke(handler, {});
   assert.equal(result.status, 503);
   assert.equal(JSON.stringify(result.body).includes('private database detail'), false);
