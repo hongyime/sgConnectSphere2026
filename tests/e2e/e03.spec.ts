@@ -1,6 +1,29 @@
 import { expect, test } from '@playwright/test';
 import { coordA, coordB, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 
+async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend>[0], status: string) {
+  let event = {
+    id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'Summit', purpose: 'Community learning',
+    status, status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', ends_at: '2026-10-10T12:00:00.000Z',
+    expected_attendance: 200, venue_requirements: 'Outdoor start line', accessibility_note: 'Step-free access', equipment_requirements: 'PA system', layout_preference: 'Theatre',
+    registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z', creator_name: 'Organiser A', canEdit: true,
+    editableFields: status === 'under_review' ? ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'] : ['title', 'description', 'purpose', 'registrationDates'],
+    activityLog: [],
+  };
+  await page.route('**/api/events?*', async route => {
+    if (!route.request().url().includes('id=event-annual') && !route.request().url().includes('id=EVT-ANNUAL')) return route.fallback();
+    if (route.request().method() === 'PATCH') {
+      const patch = route.request().postDataJSON() as Record<string, unknown>;
+      if (patch.expectedAttendance) event = { ...event, expected_attendance: patch.expectedAttendance as number };
+      if (patch.description) event = { ...event, description: patch.description as string };
+      if (patch.purpose) event = { ...event, purpose: patch.purpose as string };
+      await route.fulfill({ status: 200, json: { updated: true, fields: Object.keys(patch) } });
+      return;
+    }
+    await route.fulfill({ status: 200, json: { event } });
+  });
+}
+
 // E03 - 27 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
@@ -618,13 +641,14 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The change is saved directly against the event without restriction
    */
-  test.fixme("TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Edit the Expected Attendance from 200 to 250
-    // 4. Save
-    void page;
+  test("TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved", async ({ page }) => {
+    await fakeOrganiserEvent(page, 'under_review');
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await form.getByLabel('Expected attendance').fill('250');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status')).toContainText('expectedAttendance');
   });
 
   /**
@@ -682,13 +706,14 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The change is saved directly against the event without being redirected to a change request
    */
-  test.fixme("TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Edit the Description field
-    // 4. Save
-    void page;
+  test("TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval", async ({ page }) => {
+    await fakeOrganiserEvent(page, 'approved');
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await form.getByLabel('Description').fill('Updated description');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status')).toContainText('description');
   });
 
   /**
@@ -705,12 +730,13 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   Direct editing is refused; the Organiser is directed to the change request form (E10-S01), pre-filled for the Date field
    */
-  test.fixme("TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request form", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Attempt to directly edit the Date field
-    void page;
+  test("TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request form", async ({ page }) => {
+    await fakeOrganiserEvent(page, 'approved');
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await expect(form.getByLabel('Starts')).toHaveAttribute('readonly', '');
+    await expect(form.getByRole('link', { name: 'Request a change' }).first()).toHaveAttribute('href', /change-requests\/new/);
   });
 
   /**
@@ -755,14 +781,14 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The change is saved, and an activity log entry records the edit with actor = organiser_a@clienta.com, confirming every post-approval edit is logged regardless of who makes it
    */
-  test.fixme("TC_E03S07_06 - Verify that an Organiser's unrestricted post-approval edit should also be recorded in the activity log", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Edit the Purpose field
-    // 4. Save
-    // 5. Check the activity log
-    void page;
+  test("TC_E03S07_06 - Verify that an Organiser's unrestricted post-approval edit should also be recorded in the activity log", async ({ page }) => {
+    await fakeOrganiserEvent(page, 'approved');
+    await page.goto('/events/EVT-ANNUAL');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await form.getByLabel('Purpose').fill('Updated purpose');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status')).toContainText('purpose');
   });
 
 });
