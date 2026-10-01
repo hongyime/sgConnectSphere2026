@@ -126,6 +126,16 @@ Review the issue's actual story and accepted scope before applying a transition.
 An explicit body saying "partial" is not evidence that the whole story is Done.
 The current automation still needs this guard; see the delivery ledger's actions.
 
+The free Jira plan cannot run an automation rule that fills an empty Team or
+an empty assignee. `.github/workflows/jira-hygiene-sweep.yml` does that
+instead, every day at 00:00 Asia/Singapore, and on demand. It sets Team to
+IS212 when Team is empty, and sets an empty assignee to the reporter.
+Subtasks inherit Team from their parent, so the sweep does not write Team on
+a subtask. A Team that is already set is left alone. Run
+`python scripts/jira_hygiene_sweep.py` to preview, and add `--yes` to write.
+The scheduled run uses `--yes`. The first apply assigns every currently
+unassigned issue to its reporter.
+
 ## Agent operating checklist
 
 Before an agent updates Jira:
