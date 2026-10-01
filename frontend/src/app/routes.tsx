@@ -51,6 +51,7 @@ import {
 import { AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading } from '../features/operations/Operations';
 import { ComingSoon } from './ComingSoon';
 import { HomeRedirect } from './HomeRedirect';
+import { UiKit } from './UiKit';
 
 export type RouteAccess = 'public' | 'signed-in';
 export type RouteStatus = 'live' | 'mock' | 'coming-soon' | 'redirect';
@@ -82,6 +83,8 @@ export const routes: AppRoute[] = [
   page('/profile', <ProfileForm />, 'live', 'E01-S04'),
   page('/notifications', <NotificationInbox />, 'live', 'E11-S01'),
   page('/permission-denied', <PermissionDenied />, 'live'),
+  // Reference page for the shared building blocks (sample data, no API calls).
+  page('/ui-kit', <UiKit />, 'live'),
 
   // Event Organiser
   page('/events', <ClientEvents />, 'live', 'E01-S02'),

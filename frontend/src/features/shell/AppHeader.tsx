@@ -9,30 +9,8 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, UserRound } from 'lucide-react';
 import { listNotifications } from '../notifications/notificationsApi';
 import { homeFor, isRole, roleLabel, roleNavigation } from '../../app/roles';
+import { useSession } from '../../shared/session';
 import './appHeader.css';
-
-export type SessionUser = { id: string; email: string; role: string; clientOrgId: string | null };
-export type SessionState =
-  | { status: 'loading' }
-  | { status: 'signed-in'; user: SessionUser }
-  | { status: 'signed-out' };
-
-export function useSession(): SessionState {
-  const [state, setState] = useState<SessionState>({ status: 'loading' });
-  useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/auth/session', { credentials: 'same-origin', signal: controller.signal })
-      .then(async response => {
-        const body = response.ok ? await response.json() as { user?: SessionUser } : null;
-        setState(body?.user ? { status: 'signed-in', user: body.user } : { status: 'signed-out' });
-      })
-      .catch(error => {
-        if (!(error instanceof DOMException && error.name === 'AbortError')) setState({ status: 'signed-out' });
-      });
-    return () => controller.abort();
-  }, []);
-  return state;
-}
 
 function useUnreadCount(enabled: boolean) {
   const [count, setCount] = useState<number | null>(null);
