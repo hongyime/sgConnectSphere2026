@@ -56,22 +56,30 @@ After that run, `public` was still at 34 tables, `test` still at 32, `test` held
 0 rows, no stray schemas existed, and `public.users` still held its 13 accounts.
 The rollback is real.
 
-**Every other database test still needs a local PostgreSQL.** There are twelve
-of them under `npm run test:db`, plus the auth, profile, venue-search and
-notification suites. They go through `backend/tests/helpers/loginDatabase.ts`,
-which does three things incompatible with the shared project:
+**Not every other database test refuses a Supabase URL.** Suites that go
+through `backend/tests/helpers/loginDatabase.ts` do. That helper asserts a
+loopback host and a database named `connectsphere_notification_test`, then
+creates a fresh schema per run. `registration.db.test.ts` and
+`profile.integration.test.ts` assert loopback themselves.
 
-1. It asserts the host is loopback (`loginDatabase.ts:12`), so a Supabase
-   hostname fails immediately and by design.
-2. It asserts the database is named `connectsphere_notification_test`
-   (`loginDatabase.ts:13`), whereas Supabase's is `postgres`.
-3. It creates a **fresh random schema per run** and applies all ten migrations
-   into it, then drops it. Against the shared project that would mean repeated
-   DDL churn in the production database and a much slower run over the network.
+Seven files in `npm run test:db` do neither. They only check that
+`TEST_DATABASE_URL` is set, then connect and commit:
 
-So the design gap is real and is not closed by the schema existing. Converting
-those tests is tracked as a follow-up on SCRUM-109 rather than assumed done,
-which is the mistake that ticket made the first time it was marked complete.
+- `attendeeVisibility.integration.test.ts`
+- `coordinatorAssignment.integration.test.ts`
+- `eventLifecycle.integration.test.ts`
+- `eventVisibility.integration.test.ts`
+- `venueAccessibility.integration.test.ts`
+- `venueCalendar.integration.test.ts`
+- `venueCatalogue.integration.test.ts`
+
+None of those seven calls `loginDatabase()`. Each sets `search_path` with
+`SET` after connecting, not as a connection startup option, but that does not
+stop a commit against the production pooler. The warning in "How to run" is
+the only real protection for them. Adding the same loopback and
+`current_schema()` checks that `registration.db.test.ts` already has is
+[SCRUM-128](https://theprawnworkspace.atlassian.net/browse/SCRUM-128), under
+E00 (`SCRUM-127`). SCRUM-109 is Done and does not hold this follow-up.
 
 ## Why the two patterns differ
 
@@ -115,12 +123,13 @@ Supabase.** Only `deactivation.integration.test.ts` rolls back. The others
 commit, and a commit against this URL is a write to production. Clear the
 variable as shown above rather than relying on remembering.
 
-Two guards now make that failure loud rather than silent. The suites that build
-a schema per run assert a loopback address, and
-`registration.db.test.ts` additionally asserts that `current_schema()` really is
-its disposable schema before it writes anything. Pointed at the pooler it now
-stops with `Use a loopback test database; this test commits and cannot be rolled
-back`, having written nothing.
+That warning is what actually covers every suite. A loopback assertion exists
+only in `loginDatabase.ts`, in `registration.db.test.ts`, and in
+`profile.integration.test.ts`. `registration.db.test.ts` also asserts that
+`current_schema()` is its disposable schema before it writes. Pointed at the
+pooler it stops with `Use a loopback test database; this test commits and
+cannot be rolled back`, having written nothing. The seven suites listed above
+have neither check.
 
 The transaction pooler on port 6543 is fine **for the deactivation test**,
 because `SET LOCAL search_path` is scoped to the transaction and transaction
@@ -154,6 +163,12 @@ schema does not update itself, and nothing currently fails if it drifts: the
 deactivation test only checks `to_regclass('test.users')`, so a missing later
 migration is invisible until a test happens to need the new column.
 
+**That apply is a write to the production Supabase project.** `test` lives in
+the same database as `public`. Run the SQL only in a session whose
+`search_path` starts with `test`, and only with a repeatable migration. A
+wrong schema, or `npm run db:migrate` with no schema flag, writes to
+production `public`.
+
 Apply a new migration to `test` by running it with the schema in front of the
 search path, for example through the Supabase SQL editor:
 
@@ -171,7 +186,9 @@ Supabase-only and absent from local and CI databases.
 This is a documented duty rather than an enforced one, which is a real weakness.
 The stronger fix is for the test harness to assert that every file in
 `backend/database/migrations/` is present in `test` and fail loudly when one is
-not. That is recorded as a follow-up on SCRUM-109.
+not. Both that check and the loopback guards for the seven suites above are
+[SCRUM-128](https://theprawnworkspace.atlassian.net/browse/SCRUM-128), not
+SCRUM-109.
 
 ## CI deliberately stays on a service container
 
@@ -210,4 +227,6 @@ never points at a database whose loss would matter, and that no test writes to
   other tests use.
 - `.github/workflows/application-checks.yml` — the CI service container.
 - `docs/contributing/seed-data-convention.md` — why Docker is absent.
-- SCRUM-109 — provisioning ticket, with the follow-up to widen test support.
+- SCRUM-109 — provisioning ticket. It is Done; new follow-ups do not go there.
+- SCRUM-128 — guard the seven unguarded database suites, and assert that every
+  migration is present in `test`.
