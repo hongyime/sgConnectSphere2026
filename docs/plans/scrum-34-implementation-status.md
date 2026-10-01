@@ -235,6 +235,7 @@ fix gets its own row.
 | 2026-10-02 01:13 | `a67513a` | 4 | — | `npm run typecheck`, `npm run build`, `npm run test:runtime` (root) | local | all passed; runtime 15/15 | — | Claude (for Aaron) |
 | 2026-10-02 01:14 | `a67513a` | 5 | _01–_12 | The same real HTTP run as at 00:06 | local, freshly reset and seeded `connectsphere_dev_stack` | 23/23 checks passed. Session record `20261002-011404-Bl0oper-backend-api.md` | Same messages as the 00:06 run, word for word. The rejected refusals (EVT-3005, Winter Gala) still carry no `changeRequestUrl`; organiser_a's restricted edit on approved EVT-3001 still does | Claude (for Aaron) |
 | 2026-10-02 01:15 | `a67513a+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
+| 2026-10-02 ≈01:20 | `18ca0dc` | 7 | _01–_12 | GitHub Actions on PR #174, checked per commit (`gh run list --commit`) | CI: Application Checks https://github.com/hongyime/sgConnectSphere2026/actions/runs/36898201158, CI https://github.com/hongyime/sgConnectSphere2026/actions/runs/36898270186 | All workflows passed, none held: Application Checks (its "SCRUM-34 decision PostgreSQL acceptance test" step 17/17, the race test included), CI (`repository-checks`, `pr-conventions`), LFS Guard, CodeQL, Semgrep, Dependency Review, TruffleHog, Vercel Deploy, Application Checks (skip). One CI run was cancelled because editing the PR body started a newer one, which passed | — | Claude (for Aaron) |
 
 ## Completion boundary
 
