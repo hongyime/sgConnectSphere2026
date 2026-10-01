@@ -19,22 +19,29 @@ sprint dates or Jira states.
 
 ## Current PR implications
 
-- #126 is a point-in-time coverage audit, not proof of story completion or a
-  newly enforced coverage threshold.
-- #127 contains three explicit presentation placeholders (E01-S01, E09-S04,
-  E06-S04). Its existing multi-story scaffold history is an early workflow
-  exception, not a pattern to extend. Review it as scaffolding and implement each
-  owning story separately; merging it cannot mark those stories Done.
-- #136 follows the now-merged calendar API #134. Verify the combined UI/API
-  acceptance scope and obtain renewed peer review after the main refresh.
-- #137 connects organiser reads. Its remaining mocked clarification/change/cancel
-  behaviour stays outside delivered scope and needs the owning-story work.
-- #144 (closed) and #145 (merged) were focused maintenance PRs. Dependency
-  installation and scanner configuration checks are not application acceptance
-  evidence.
-- Separate backend and frontend PRs for one story, each with its own Jira ticket
-  (SCRUM-32 as #141 plus #147; SCRUM-42 as #134 plus #136), are independently
-  reviewable increments and fit the per-story branch rule.
+
+Read on 1 October 2026, against main `9dd1959`. The pull requests named in
+earlier drafts of this list have since merged or closed.
+
+
+- #126 merged. It remains a point-in-time coverage audit, not proof of story
+  completion and not a newly enforced coverage threshold.
+- #127 merged. It shipped presentation placeholders for E01-S01, E09-S04 and
+  E06-S04 as scaffolding. That multi-story history stays an early exception,
+  not a pattern to extend. Merging it did not mark those stories Done.
+- #134 and #136 both merged. The venue calendar API and its screen are in
+  main. Their combined acceptance is the merged review record.
+- #137 merged. It wired the organiser request list and detail to the live
+  events API. Clarification, change and cancel stayed outside that pull
+  request. The owning-story work is #163 (SCRUM-33), which is open and
+  currently conflicting with main.
+- #144 was closed and #145 merged. They were maintenance. Dependency
+  installation and scanner configuration checks are not application
+  acceptance evidence.
+- Separate backend and frontend pull requests for one story, each with its
+  own Jira ticket, count as independently reviewable increments. The finished
+  examples are SCRUM-32 (#141 plus #147) and SCRUM-42 (#134 plus #136).
+
 
 Repeated main updates have conflicted in shared agent-history files and dismissed
 approvals. Resolve conflicts and regenerate inventories before asking for the
