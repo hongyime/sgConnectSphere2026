@@ -186,7 +186,7 @@ is needed.
 
 ## Agent instruction block
 
-After running any test command, create exactly one session record file in
+After a test run that is used as evidence, create exactly one session record file in
 `docs/testing/runs/`.
 
 - Derive `runner` from the GitHub username associated with `git config user.name`
@@ -225,7 +225,7 @@ The traceability matrix is required separately by the Traceability Standard in
 `docs/testing/README.md`. Keep it.
 
 **Avoid double entry.** Where a per-story document logs a run, cite the session
-record instead of restating the command and result:
+record as well as keeping the command, the result, and the exact message seen:
 
 ```markdown
 | 2026-09-30 | `npm run test:db` | 29/29 | `20260930-143022-Bl0oper-backend-db.md` |
