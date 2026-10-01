@@ -744,26 +744,32 @@ async function seed(client: Client) {
       }
     }
 
-    // Event threads — comments and clarifications for E03-S02/S06
-    const threads = [
+    // Event threads — comments and clarifications for E03-S02/S06. A response
+    // names the question it answers (`answers`, the question's first 30
+    // characters); that question is then resolved, so EVT-2003 (Under Review)
+    // has no outstanding question and EVT-3002 has exactly one.
+    const threads: { eventCode: string; authorKey: string; type: string; body: string; answers?: string }[] = [
       { eventCode: 'EVT-2003', authorKey: 'coordB', type: 'clarification_request', body: 'Could you clarify the expected number of VIP guests? This affects the seating arrangement.' },
-      { eventCode: 'EVT-2003', authorKey: 'organiserC', type: 'clarification_response', body: 'We expect around 5 VIP guests who will need reserved front-row seating.' },
+      { eventCode: 'EVT-2003', authorKey: 'organiserC', type: 'clarification_response', body: 'We expect around 5 VIP guests who will need reserved front-row seating.', answers: 'Could you clarify the expected number of VIP guests? This affects the seating arrangement.' },
       { eventCode: 'EVT-3002', authorKey: 'coordB', type: 'clarification_request', body: 'The workshop description mentions "hands-on stations" but no equipment was requested. Do you need lab equipment?' },
       { eventCode: 'EVT-2001', authorKey: 'coordA', type: 'comment', body: 'Venue confirmed. Catering has been arranged for 120 pax.' },
       { eventCode: 'EVT-2001', authorKey: 'organiserA', type: 'comment', body: 'Thank you. Please ensure vegetarian options are available for approximately 20% of attendees.' },
       { eventCode: 'EVT-3001', authorKey: 'coordA', type: 'comment', body: 'Budget approved. Moving to venue booking phase.' },
     ];
     for (const thread of threads) {
+      const parentId = thread.answers ? stableUuid(`thread:${thread.eventCode}:${thread.answers.slice(0, 30)}`) : null;
       await client.query(
-        `INSERT INTO event_threads (id, event_id, author_id, type, body) VALUES ($1, $2, $3, $4::thread_type, $5)`,
+        `INSERT INTO event_threads (id, event_id, author_id, type, body, parent_id) VALUES ($1, $2, $3, $4::thread_type, $5, $6)`,
         [
           stableUuid(`thread:${thread.eventCode}:${thread.body.slice(0, 30)}`),
           eventIds.get(thread.eventCode),
           userIds.get(thread.authorKey),
           thread.type,
           thread.body,
+          parentId,
         ],
       );
+      if (parentId) await client.query(`UPDATE event_threads SET resolved_at = now() WHERE id = $1`, [parentId]);
     }
 
     // Event registrations for E09 (Sprint 4 but seed now for forward-looking demo)
