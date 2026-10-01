@@ -225,6 +225,7 @@ fix gets its own row.
 | 2026-10-02 00:10 | `4247a63` (two test titles reworded so the coverage audit shows them in full; no code change) | 1, 2 | _01–_12 | `npm test` (backend), then `npx tsx --test tests/decision.integration.test.ts` | local, same container | 259/259 and 16/16 passed | — | Claude (for Aaron) |
 | 2026-10-02 00:11 | `4247a63+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
 | 2026-10-02 00:11 | `4247a63` | 4 | — | `npm run test:runtime` (root; the compiled API runtime tests CI runs, since `api/events.ts` changed) | local | 15/15 passed | — | Claude (for Aaron) |
+| 2026-10-02 ≈00:17 | `3b57523` | 7 | _01–_12 | GitHub Actions on PR #174, checked per commit (`gh run list --commit`) | CI: Application Checks https://github.com/hongyime/sgConnectSphere2026/actions/runs/36890582155, CI https://github.com/hongyime/sgConnectSphere2026/actions/runs/36890582026 | All 9 workflows passed, none held: Application Checks (its "SCRUM-34 decision PostgreSQL acceptance test" step 16/16), CI (`repository-checks`, `pr-conventions`), LFS Guard, CodeQL, Semgrep, Dependency Review, TruffleHog, Vercel Deploy, Application Checks (skip) | — | Claude (for Aaron) |
 
 ## Completion boundary
 
