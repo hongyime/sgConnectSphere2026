@@ -8,6 +8,16 @@ import { verifyPassword } from '../src/modules/accessControl/password';
 
 test('PostgreSQL persists defaults, enforces concurrent uniqueness and prevents internal roles', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable migrated PostgreSQL database');
+  // This test commits real rows and has no rollback, so it must never reach a
+  // shared database. Two independent guards, because either alone is escapable:
+  // the address check stops an obviously remote target, and the search_path
+  // assertion below catches a pooler silently discarding the startup options
+  // that are supposed to confine writes to the disposable schema.
+  const target = new URL(process.env.TEST_DATABASE_URL);
+  assert.ok(
+    ['127.0.0.1', 'localhost', '[::1]'].includes(target.hostname),
+    'Use a loopback test database; this test commits and cannot be rolled back',
+  );
   const admin = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
   const schema = `registration_test_${randomUUID().replaceAll('-', '')}`;
   let pool: Pool | undefined;
@@ -15,6 +25,14 @@ test('PostgreSQL persists defaults, enforces concurrent uniqueness and prevents 
     await admin.query(`CREATE SCHEMA ${schema}`);
     await admin.query(`CREATE TABLE ${schema}.users (LIKE public.users INCLUDING ALL)`);
     pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL, options: `-c search_path=${schema},public` });
+    // Fail closed if search_path did not take. Without this, every write below
+    // would land in the first schema on the default path, which is public.
+    const resolved = await pool.query<{ schema: string | null }>('SELECT current_schema() AS schema');
+    assert.equal(
+      resolved.rows[0]?.schema,
+      schema,
+      'search_path did not resolve to the disposable schema; refusing to write',
+    );
     const repository = createAccountRepository(pool);
     const input = { full_name: 'Jamie Lee', email: 'jamie@example.com', password: 'LongPassword12!', contact_number: '+65 9000 0000' }; // pragma: allowlist secret - synthetic test credential
     const results = await Promise.all([registerAccount({ ...input, email: '  Jamie@Example.COM  ' }, repository), registerAccount(input, repository)]);
