@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **238**
-- Automated (explicit TC_ID in an active test title): **88** (37.0%)
+- Automated (explicit TC_ID in an active test title): **89** (37.4%)
   - Real-database (`.integration.test` / `.db.test`): **23**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **64**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **147** (61.8%)
+  - Live-assertion (other active tests): **65**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **146** (61.3%)
 - No test yet (no test file mentions the TC_ID): **3** (1.3%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 27 | 10 | 17 | 0 |
+| E03 | 27 | 11 | 16 | 0 |
 | E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **238** | **88** | **147** | **3** |
+| **Total** | **238** | **89** | **146** | **3** |
 
 ## Case-by-case status
 
@@ -120,7 +120,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log |
 | `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
 | `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
-| `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
+| `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
 | `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser |
 
 ### E05
@@ -628,6 +628,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
 
+### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
+
+- the assigned Coordinator edits an approved event and only the changed field is sent
+- before approval the Coordinator sees the details read-only with an explanation
+- a refused edit keeps the form open and shows the server reason
+- invalid values are flagged next to the field and nothing is sent
+- cancelling closes the form without saving
+
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
 - requesting a reassignment sends the chosen colleague and keeps the current Coordinator assigned
@@ -643,6 +651,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the queue filters by status and shows a filter-specific empty state
 - a signed-out Coordinator is asked to sign in
 - a failed load can be retried
+
+### `frontend/src/features/events/EventEditForm.test.tsx`
+
+- sends only the fields that changed, trimmed and typed
+- sends nothing when nothing changed, including whitespace-only edits
+- an empty optional field left empty is not sent
+- clearing a field that had a value is refused, as the server does
+- an end before the start is refused
+- changed dates are sent as ISO timestamps
+- toLocalInput round-trips through the browser time zone
+- date fields warn that a change notifies people and name the time zone
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
@@ -763,6 +782,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - explicit confirmation is required and success redirects to signed-out login
 - blocked coordinator stays on profile and sees assignments requiring reassignment
+
+### `tests/e2e/e03.spec.ts`
+
+- E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
 
 ### `tests/e2e/landing.spec.ts`
 
