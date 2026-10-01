@@ -14,9 +14,10 @@ import { loginDatabase } from './helpers/loginDatabase.js';
 import {
   decideEventRequest,
   DecisionBlockedError,
-  rejectedEditRefusal,
+  RejectedRequestError,
   withDecision,
 } from '../src/modules/eventLifecycle/decision.js';
+import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 import { AccessError, getEvent, type Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
@@ -108,6 +109,17 @@ async function refused(action: Promise<unknown>, status: number, message: string
     assert.ok(error instanceof AccessError, `expected AccessError, got ${String(error)}`);
     assert.equal(error.status, status);
     assert.equal(error.message, message);
+    return true;
+  });
+}
+
+// The rejected refusal has its own type, which the edit route uses to leave
+// out the change-request link it adds to other 409s.
+async function rejectedEdit(action: Promise<unknown>) {
+  await assert.rejects(action, (error: unknown) => {
+    assert.ok(error instanceof RejectedRequestError, `expected RejectedRequestError, got ${String(error)}`);
+    assert.equal(error.status, 409);
+    assert.equal(error.message, 'This request is rejected, so it can no longer be changed.');
     return true;
   });
 }
@@ -230,8 +242,8 @@ test('TC_E03S03_05: the Organiser sees the reason and decision date of a rejecte
   assert.equal(view.canEdit, false);
   assert.deepEqual(view.editableFields, []);
 
-  assert.equal(await rejectedEditRefusal(f.query, f.user(f.ids.organiserA), 'EVT-4003'),
-    'This request is rejected, so it can no longer be changed.');
+  await rejectedEdit(updateEventInformationWithNotifications(f.pool, f.user(f.ids.organiserA), 'EVT-4003', { title: 'Winter Gala (revised)' }));
+  assert.equal((await f.row(eventId)).title, 'Event EVT-4003');
 }));
 
 test('TC_E03S03_05: an approved request shows its decision date with no reason and keeps its edit rules', () => withFixture(async f => {
@@ -244,7 +256,9 @@ test('TC_E03S03_05: an approved request shows its decision date with no reason a
   assert.equal(view.decision?.reason, null);
   assert.equal(view.canEdit, before.canEdit);
   assert.deepEqual(view.editableFields, before.editableFields);
-  assert.equal(await rejectedEditRefusal(f.query, f.user(f.ids.organiserA), eventId), null);
+  // An approved request is not locked: an unrestricted field still saves.
+  await updateEventInformationWithNotifications(f.pool, f.user(f.ids.organiserA), eventId, { description: 'Updated after approval' });
+  assert.equal((await f.row(eventId)).description, 'Updated after approval');
 
   const undecided = await f.event('EVT-4005', f.ids.organiserA, f.ids.coordA, 'under_review');
   assert.equal((await withDecision(f.query, await getEvent(f.query, f.user(f.ids.organiserA), undecided))).decision, null);
@@ -317,16 +331,45 @@ test('TC_E03S03_10: a 2001-character reason is refused and a 2000-character reas
 test('TC_E03S03_11: the Organiser of a rejected request is refused an edit with no change-request offer; others keep their usual refusal', () => withFixture(async f => {
   const eventId = await f.event('EVT-3005', f.ids.organiserB, f.ids.coordB, 'rejected');
 
-  assert.equal(await rejectedEditRefusal(f.query, f.user(f.ids.organiserB), 'EVT-3005'),
-    'This request is rejected, so it can no longer be changed.');
-  assert.equal(await rejectedEditRefusal(f.query, f.user(f.ids.organiserB), eventId),
-    'This request is rejected, so it can no longer be changed.');
-  // Not theirs: the check stays silent, so a rejected request's status isn't
-  // revealed and updateEventInformation gives its own refusal.
-  for (const other of [f.ids.organiserA, f.ids.organiserC, f.ids.coordB]) {
-    assert.equal(await rejectedEditRefusal(f.query, f.user(other), 'EVT-3005'), null);
+  await rejectedEdit(updateEventInformationWithNotifications(f.pool, f.user(f.ids.organiserB), 'EVT-3005', { title: 'EVT-3005 Budget Review (revised)' }));
+  await rejectedEdit(updateEventInformationWithNotifications(f.pool, f.user(f.ids.organiserB), eventId, { description: 'Revised description' }));
+  // Not theirs: the edit rules' usual refusal, so a rejected request's status
+  // isn't revealed to them.
+  for (const other of [f.ids.organiserA, f.ids.organiserC]) {
+    await refused(updateEventInformationWithNotifications(f.pool, f.user(other), 'EVT-3005', { title: 'Not mine' }), 403, 'Edit access denied.');
   }
+  await refused(updateEventInformationWithNotifications(f.pool, f.user(f.ids.coordB), 'EVT-3005', { title: 'Not mine' }),
+    403, 'Only the assigned Coordinator may edit an approved event.');
   assert.deepEqual(await f.row(eventId), { status: 'rejected', decision_reason: null, title: 'Event EVT-3005', description: COMPLETE.description });
+}));
+
+test('TC_E03S03_11: an edit waiting on the row lock is refused when a rejection commits first', () => withFixture(async f => {
+  const eventId = await f.event('EVT-4011', f.ids.organiserA, f.ids.coordA, 'under_review');
+
+  // A decision holds the row lock and rejects; the Organiser's edit starts
+  // meanwhile and has to wait for the lock.
+  const decision = await f.pool.connect();
+  try {
+    await decision.query('BEGIN');
+    await decision.query('SELECT id FROM events WHERE id = $1 FOR UPDATE', [eventId]);
+    await decision.query(`UPDATE events SET status = 'rejected', decision_reason = $2 WHERE id = $1`, [eventId, REASON]);
+    const edit = updateEventInformationWithNotifications(f.pool, f.user(f.ids.organiserA), eventId, { title: 'Edited during the decision' });
+    edit.catch(() => undefined);
+    for (let waited = 0; ; waited += 20) {
+      const waiting = await f.pool.query<{ count: string }>(
+        `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock'
+           AND query LIKE 'SELECT id FROM events WHERE id::text=$1 OR event_code=$1 FOR UPDATE%'`);
+      if (Number(waiting.rows[0]!.count) > 0) break;
+      assert.ok(waited < 5000, 'the edit should be waiting on the row lock');
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    await decision.query('COMMIT');
+    await rejectedEdit(edit);
+  } finally {
+    decision.release();
+  }
+
+  assert.deepEqual(await f.row(eventId), { status: 'rejected', decision_reason: REASON, title: 'Event EVT-4011', description: COMPLETE.description });
 }));
 
 test('TC_E03S03_12: a request whose accessibility needs are given only as predefined features can be approved', () => withFixture(async f => {

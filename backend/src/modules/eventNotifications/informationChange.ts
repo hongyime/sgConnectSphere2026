@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { inTransaction } from '../../database/pool.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, updateEventInformation, type Query } from '../eventVisibility/service.js';
+import { assertEditableAfterDecision } from '../eventLifecycle/decision.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from './service.js';
 
 // Existing E03-S06 edit behaviour, now atomic with its audit and E11 deliveries.
@@ -16,6 +17,7 @@ export async function updateEventInformationWithNotifications(
     if (!event) throw new AccessError(403, 'Edit access denied.');
     const before = await captureEventAudience(client, event.id, options);
     const query: Query = (sql, values) => client.query(sql, values);
+    await assertEditableAfterDecision(query, user, event.id); // SCRUM-34 (E03-S03, D11): rejected is read-only, checked under the row lock
     const result = await updateEventInformation(query, user, identifier, input);
     const after = await captureEventAudience(client, event.id, options);
     if (after.status!=='draft' && (before.startsAt!==after.startsAt || before.endsAt!==after.endsAt)) {

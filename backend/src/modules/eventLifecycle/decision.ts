@@ -17,7 +17,9 @@
 // own connection, as in SCRUM-32 and SCRUM-33 (E14-S02).
 //
 // This story only changes its own code: getEvent and updateEventInformation
-// (SCRUM-37) are wrapped and called around, not edited.
+// (SCRUM-37) are wrapped and called around, not edited. The one exception is a
+// single call in the edit transaction (informationChange.ts, #142), the only
+// place the rejected check can run under the row lock.
 
 import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
@@ -223,15 +225,20 @@ export async function withDecision<T extends { id: string }>(query: Query, event
   return { ...event, decision, canEdit: false, editableFields: [] as string[] };
 }
 
-// Scenario 5, TC_E03S03_05 and _11: called by the edit route before
-// updateEventInformation. Returns the refusal for the request's own Organiser
-// when it is rejected, otherwise null and the edit rules there apply as before
-// (other users get their usual refusal, so a rejected request's status is not
-// revealed to them). The route sends it without a change-request link.
-export async function rejectedEditRefusal(query: Query, user: AuthenticatedUser, identifier: string) {
+// A rejected request's refusal. Its own type so the edit route can send it
+// without the change-request link it adds to other 409s.
+export class RejectedRequestError extends AccessError {
+  constructor() { super(409, DECISION_MESSAGES.rejectedReadOnly); }
+}
+
+// Scenario 5, TC_E03S03_05 and _11: called inside the edit transaction
+// (updateEventInformationWithNotifications), after it has locked the event row
+// and before updateEventInformation. Under that lock a rejection can't commit
+// between this check and the edit, so Rejected stays final. Only the request's
+// own Organiser is refused here; anyone else gets the edit rules' usual
+// refusal, so a rejected request's status is not revealed to them.
+export async function assertEditableAfterDecision(query: Query, user: AuthenticatedUser, eventId: string) {
   const result = await query<{ status: string }>(
-    `SELECT status FROM events WHERE (id::text = $1 OR event_code = $1) AND organiser_id = $2`,
-    [identifier, user.id],
-  );
-  return result.rows[0]?.status === 'rejected' ? DECISION_MESSAGES.rejectedReadOnly : null;
+    'SELECT status FROM events WHERE id = $1 AND organiser_id = $2', [eventId, user.id]);
+  if (result.rows[0]?.status === 'rejected') throw new RejectedRequestError();
 }
