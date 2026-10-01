@@ -641,6 +641,10 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The change is saved, and an activity log entry records the edit with actor = coordinator_1@connectsphere.com
    */
+  // TC_E03S07_02 stays a fixme until an activity-log read exists: step 5
+  // ("check the activity log") has no endpoint to read from yet (#132 writes
+  // the audit rows but nothing returns them). Steps 1-4 are covered by the
+  // Scenario 2 test straight after it.
   test.fixme("TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log", async ({ page }) => {
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
@@ -649,6 +653,19 @@ test.describe("E03-S07", () => {
     // 4. Save
     // 5. Check the activity log
     void page;
+  });
+
+  test("E03-S07 Scenario 2 - the assigned Coordinator edits an approved event's venue requirements (steps 1-4)", async ({ page }) => {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-ANNUAL', title: 'Annual Tech Summit', assignedTo: coordA, status: 'approved' });
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    await page.getByRole('button', { name: 'Edit details' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await expect(form.getByLabel('Venue requirements')).toHaveValue('Outdoor start line');
+    await form.getByLabel('Venue requirements').fill('Outdoor start line with a covered registration tent');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText("Saved your changes to the venue requirements. They're recorded in the event's activity log.");
+    await expect(page.getByText('Outdoor start line with a covered registration tent')).toBeVisible();
+    expect(backend.audit).toEqual([{ actor: coordA.email, field: 'venueRequirements', value: 'Outdoor start line with a covered registration tent' }]);
   });
 
   /**
@@ -710,12 +727,18 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The edit action is refused since coordinator_2@connectsphere.com is not the assigned Coordinator
    */
-  test.fixme("TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_2@connectsphere.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Attempt to edit any field
-    void page;
+  test("TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it", async ({ page }) => {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-ANNUAL', title: 'Annual Tech Summit', assignedTo: coordA, status: 'approved' });
+    backend.signInAs(coordB);
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    await expect(page.getByRole('alert')).toContainText('Access denied. This event is not assigned to you.');
+    await expect(page.getByRole('button', { name: 'Edit details' })).toHaveCount(0);
+    // A direct edit call from the same user is refused as well, and nothing is written.
+    const status = await page.evaluate(async () => (await fetch('/api/events?edit=1&id=EVT-ANNUAL', {
+      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Renamed' }),
+    })).status);
+    expect(status).toBe(403);
+    expect(backend.audit).toHaveLength(0);
   });
 
   /**
