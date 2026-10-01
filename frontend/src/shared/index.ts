@@ -9,4 +9,4 @@ export { Button, ButtonLink } from './buttons';
 export { FormField, FormSection, FormActions, ConfirmPanel, type ControlProps } from './forms';
 export { StatusPill, Alert, LoadingState, EmptyState, ErrorState } from './feedback';
 export { DataTable, FilterChips, type Column, type FilterOption } from './data';
-export { useSession, type SessionState, type SessionUser } from '../features/shell/AppHeader';
+export { useSession, type SessionState, type SessionUser } from './session';

@@ -790,6 +790,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - returns the data on success and sends the session cookie
 - uses the server
+- keeps field errors and conflict details, and swaps a machine code for the fallback
 - a network failure becomes status 0; an abort is re-thrown
 - a late response for an earlier id never replaces the current one
 - reload keeps the current data on screen while refreshing
@@ -802,6 +803,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - requires the reason before confirming, then passes it on
 - shows a server refusal inside the panel
 - DataTable has a caption and labels every cell for the phone layout
+- DataTable can hide a header visually and tell apart columns that share one
 - FilterChips marks the chosen option and reports changes
 - FactList shows
 - errors and warnings are announced immediately; success politely

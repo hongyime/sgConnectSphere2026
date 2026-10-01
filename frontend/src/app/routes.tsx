@@ -71,7 +71,7 @@ export type AppRoute = {
 const pub = (path: string, element: ReactElement, story?: string): AppRoute =>
   ({ path, element, access: 'public', status: 'live', story });
 const sample = (path: string, element: ReactElement): AppRoute =>
-  ({ path, element, access: 'public', status: 'mock' });
+  ({ path, element, access: 'signed-in', status: 'mock' });
 const page = (path: string, element: ReactElement, status: RouteStatus, story?: string): AppRoute =>
   ({ path, element, access: 'signed-in', status, story });
 
@@ -83,20 +83,20 @@ export const routes: AppRoute[] = [
   pub('/reset-password', <PasswordRecovery key="reset" reset />, 'E01-S01'),
   pub('/register', <RegisterForm />, 'E01-S08'),
   pub('/verify', <VerifyPage />, 'E01-S08'),
-  // Reference page for the shared building blocks (no API calls).
-  pub('/ui-kit', <UiKit />),
-  // Copyable page templates running on in-memory sample data (frontend/src/templates).
-  sample('/ui-kit/templates/list', <ListTemplate />),
-  sample('/ui-kit/templates/new', <FormTemplate />),
-  sample('/ui-kit/templates/items/:id', <DetailTemplate />),
-  sample('/ui-kit/templates/items/:id/edit', <FormTemplate />),
-  sample('/ui-kit/templates/items/:id/decide', <DecisionTemplate />),
 
   // Every role
   page('/home', <HomeRedirect />, 'redirect', 'E01-S01'),
   page('/profile', <ProfileForm />, 'live', 'E01-S04'),
   page('/notifications', <NotificationInbox />, 'live', 'E11-S01'),
   page('/permission-denied', <PermissionDenied />, 'live'),
+  // Reference page for the shared building blocks (sample data, no API calls).
+  page('/ui-kit', <UiKit />, 'live'),
+  // Copyable page templates running on in-memory sample data (frontend/src/templates).
+  sample('/ui-kit/templates/list', <ListTemplate />),
+  sample('/ui-kit/templates/new', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id', <DetailTemplate />),
+  sample('/ui-kit/templates/items/:id/edit', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id/decide', <DecisionTemplate />),
 
   // Event Organiser
   page('/events', <ClientEvents />, 'live', 'E01-S02'),

@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 import { signInAs } from './helpers/fakeSession';
 
 test('the page templates run end to end on sample data', async ({ page }) => {
+  await signInAs(page, 'event_coordinator');
   await page.goto('/ui-kit');
   await page.getByRole('link', { name: 'List', exact: true }).click();
   await page.getByRole('link', { name: 'Leadership Summit' }).click();

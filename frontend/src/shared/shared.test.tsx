@@ -28,6 +28,19 @@ describe('apiCall', () => {
     expect(await apiCall('/x', undefined, 'Unable to load.')).toEqual({ ok: false, status: 500, message: 'Unable to load.' });
   });
 
+  test('keeps field errors and conflict details, and swaps a machine code for the fallback', async () => {
+    stub(async () => response(400, { error: 'validation_failed', errors: { from: ['Start date is required.'], to: 'End must be after start.' } }));
+    expect(await apiCall('/x', undefined, 'Unable to save.')).toMatchObject({
+      ok: false, status: 400, message: 'Unable to save.', code: 'validation_failed',
+      fieldErrors: { from: ['Start date is required.'], to: ['End must be after start.'] },
+    });
+    const clash = { eventCode: 'EV-1', title: 'Summit', startsAt: '2026-10-02T09:00:00Z', endsAt: '2026-10-02T12:00:00Z' };
+    stub(async () => response(409, { error: 'booking_conflict', conflictingBookings: [clash] }));
+    const result = await apiCall('/x', undefined, 'This block clashes with a booking.');
+    expect(result).toMatchObject({ ok: false, status: 409, message: 'This block clashes with a booking.', code: 'booking_conflict' });
+    expect(!result.ok && result.details?.conflictingBookings).toEqual([clash]);
+  });
+
   test('a network failure becomes status 0; an abort is re-thrown', async () => {
     stub(async () => { throw new TypeError('Failed to fetch'); });
     expect(await apiCall('/x', undefined, 'Unable to load.')).toMatchObject({ ok: false, status: 0 });
@@ -147,6 +160,16 @@ describe('lists and feedback', () => {
       columns={[{ header: 'Event', primary: true, cell: row => row.title }, { header: 'Status', cell: () => 'Approved' }]} />);
     const table = screen.getByRole('table', { name: 'Events assigned to you' });
     expect(within(table).getByText('Approved').closest('td')).toHaveAttribute('data-label', 'Status');
+  });
+
+  test('DataTable can hide a header visually and tell apart columns that share one', () => {
+    render(<DataTable caption="Venue blocks" rows={[{ id: '1' }]} rowKey={row => row.id} columns={[
+      { header: 'Actions', key: 'shorten', hideHeader: true, cell: () => <button type="button">Shorten</button> },
+      { header: 'Actions', key: 'remove', hideHeader: true, cell: () => <button type="button">Remove</button> },
+    ]} />);
+    const table = screen.getByRole('table', { name: 'Venue blocks' });
+    expect(within(table).getAllByRole('columnheader', { name: 'Actions' })).toHaveLength(2);
+    expect(within(table).getByRole('button', { name: 'Remove' }).closest('td')).not.toHaveAttribute('data-label');
   });
 
   test('FilterChips marks the chosen option and reports changes', () => {

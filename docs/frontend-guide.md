@@ -57,8 +57,12 @@ export function createBlock(venueId: string, input: { from: string; to: string; 
 }
 ```
 
-`apiCall` shows the server's `error` message when there is one (the API writes
-them to be safe to show) and your fallback otherwise.
+`apiCall` shows the server's `error` message when it is a sentence (the API
+writes those to be safe to show) and your fallback otherwise. A machine code
+such as `booking_conflict` arrives in `result.code`, per-field messages from
+`{ errors: { from: [...] } }` in `result.fieldErrors` (pass them to each
+`FormField`), and the whole error body in `result.details` (for example
+`details.conflictingBookings`).
 
 ### 3. Copy the matching template
 

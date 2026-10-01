@@ -14,9 +14,10 @@
 //   if (result.state === 'error') return <ErrorState failure={result.failure} onRetry={reload} context="this event" />;
 //   return <EventView event={result.data} />;
 import { useEffect, useRef, useState } from 'react';
-import { isAbort, type ApiResult } from './api';
+import { isAbort, type ApiFailure, type ApiResult } from './api';
 
-export type Failure = { status: number; message: string };
+// The failure keeps apiCall's `code`, `fieldErrors` and `details` when present.
+export type Failure = Omit<ApiFailure, 'ok'>;
 export type Load<T> =
   | { state: 'loading' }
   | { state: 'error'; failure: Failure }

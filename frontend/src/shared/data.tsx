@@ -4,10 +4,17 @@ import type { ReactNode } from 'react';
 import './shared.css';
 
 export type Column<Row> = {
+  // Always give a header, even for an actions column: screen readers use it.
   header: string;
   cell: (row: Row) => ReactNode;
   // Hide the label on phones for this column (e.g. the main title column).
   primary?: boolean;
+  // Show the header to screen readers only, with no label on phones
+  // (e.g. header: 'Actions' over a column of buttons).
+  hideHeader?: boolean;
+  // Unique id for the column. Defaults to `header`; set it when two columns
+  // share a header.
+  key?: string;
 };
 
 // Give every table a caption (visually hidden) describing what it lists.
@@ -22,13 +29,21 @@ export function DataTable<Row>({ caption, columns, rows, rowKey }: {
       <table className="ui-table">
         <caption className="visually-hidden">{caption}</caption>
         <thead>
-          <tr>{columns.map(column => <th key={column.header} scope="col">{column.header}</th>)}</tr>
+          <tr>{columns.map(column => (
+            <th key={column.key ?? column.header} scope="col">
+              {column.hideHeader ? <span className="visually-hidden">{column.header}</span> : column.header}
+            </th>
+          ))}</tr>
         </thead>
         <tbody>
           {rows.map(row => (
             <tr key={rowKey(row)}>
               {columns.map(column => (
-                <td key={column.header} data-label={column.header} className={column.primary ? 'ui-table-primary' : undefined}>
+                <td
+                  key={column.key ?? column.header}
+                  data-label={column.hideHeader ? undefined : column.header}
+                  className={column.primary || column.hideHeader ? 'ui-table-primary' : undefined}
+                >
                   {column.cell(row)}
                 </td>
               ))}
