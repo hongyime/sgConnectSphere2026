@@ -77,14 +77,14 @@ export const routes: AppRoute[] = [
   pub('/reset-password', <PasswordRecovery key="reset" reset />, 'E01-S01'),
   pub('/register', <RegisterForm />, 'E01-S08'),
   pub('/verify', <VerifyPage />, 'E01-S08'),
-  // Reference page for the shared building blocks (no API calls).
-  pub('/ui-kit', <UiKit />),
 
   // Every role
   page('/home', <HomeRedirect />, 'redirect', 'E01-S01'),
   page('/profile', <ProfileForm />, 'live', 'E01-S04'),
   page('/notifications', <NotificationInbox />, 'live', 'E11-S01'),
   page('/permission-denied', <PermissionDenied />, 'live'),
+  // Reference page for the shared building blocks (sample data, no API calls).
+  page('/ui-kit', <UiKit />, 'live'),
 
   // Event Organiser
   page('/events', <ClientEvents />, 'live', 'E01-S02'),

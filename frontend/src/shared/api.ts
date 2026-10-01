@@ -3,16 +3,28 @@
 // - Sends the session cookie (credentials: 'same-origin').
 // - Returns { ok: true, data } or { ok: false, status, message } instead of
 //   throwing, so screens handle every outcome explicitly.
-// - Uses the server's `error` message when it sends one: the API writes those
-//   to be safe to show. Otherwise uses your fallback message.
+// - Uses the server's `error` message when it is a sentence: the API writes
+//   those to be safe to show. A machine code such as `booking_conflict` goes
+//   in `code` instead, and the message falls back to yours.
+// - Keeps the rest of the error body: `fieldErrors` holds per-field messages
+//   (`{ errors: { from: ['…'] } }`) for FormField, and `details` holds the
+//   whole parsed body (e.g. `conflictingBookings`) for screens that need it.
 // - A network failure becomes status 0 with a "check your connection" message.
 // - An aborted request (route changed) is re-thrown so useLoad can ignore it.
 //
 // Example:
 //   const result = await apiCall<{ venues: Venue[] }>('/api/venues', { signal }, 'Unable to load venues.');
 //   if (!result.ok) show(result.message); else use(result.data.venues);
+//   if (!result.ok && result.code === 'booking_conflict') listClashes(result.details?.conflictingBookings);
 
-export type ApiFailure = { ok: false; status: number; message: string };
+export type ApiFailure = {
+  ok: false;
+  status: number;
+  message: string;
+  code?: string;
+  fieldErrors?: Record<string, string[]>;
+  details?: Record<string, unknown>;
+};
 export type ApiResult<T> = { ok: true; data: T } | ApiFailure;
 
 export function isAbort(error: unknown): boolean {
@@ -27,9 +39,34 @@ export async function apiCall<T>(url: string, init: RequestInit | undefined, fal
     if (isAbort(error)) throw error;
     return { ok: false, status: 0, message: `${fallback} Check your connection and try again.` };
   }
-  const body = await response.json().catch(() => ({})) as { error?: string } & T;
-  if (!response.ok) return { ok: false, status: response.status, message: body.error ?? fallback };
-  return { ok: true, data: body };
+  const body: unknown = await response.json().catch(() => ({}));
+  if (!response.ok) return failure(response.status, body, fallback);
+  return { ok: true, data: body as T };
+}
+
+const MACHINE_CODE = /^[a-z][a-z0-9]*(_[a-z0-9]+)+$/;
+
+function failure(status: number, body: unknown, fallback: string): ApiFailure {
+  const details = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
+  const error = typeof details.error === 'string' ? details.error.trim() : '';
+  const isCode = MACHINE_CODE.test(error);
+  const result: ApiFailure = { ok: false, status, message: error && !isCode ? error : fallback };
+  if (isCode) result.code = error;
+  const fieldErrors = readFieldErrors(details.errors);
+  if (fieldErrors) result.fieldErrors = fieldErrors;
+  if (Object.keys(details).some(key => key !== 'error')) result.details = details;
+  return result;
+}
+
+// Accepts `{ field: 'message' }` or `{ field: ['message', …] }`.
+function readFieldErrors(value: unknown): Record<string, string[]> | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const fields: Record<string, string[]> = {};
+  for (const [field, messages] of Object.entries(value)) {
+    const list = (Array.isArray(messages) ? messages : [messages]).filter((m): m is string => typeof m === 'string');
+    if (list.length) fields[field] = list;
+  }
+  return Object.keys(fields).length ? fields : undefined;
 }
 
 // JSON request helper for POST, PATCH, PUT and DELETE.
