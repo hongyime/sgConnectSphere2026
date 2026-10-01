@@ -38,7 +38,7 @@ code's final wording, word for word as the runs below saw them.
 | Accessibility needs are met by a free-text note **or** predefined features, the same as at submission (E02-S03) | Approval goes ahead | TC_E03S03_12 |
 | A rejection needs a reason | 400 "Add a reason for rejecting this request." | TC_E03S03_04 |
 | The reason is limited to 2000 characters, the same as event comments and clarification questions | 400 "The reason must be 2000 characters or fewer." | TC_E03S03_10 |
-| A rejected request is read-only for its Organiser (D11). Coordinators already can't edit rejected requests. The refusal offers no change request | 409 "This request is rejected, so it can no longer be changed." | TC_E03S03_05, _11 |
+| A rejected request is read-only for its Organiser (D11). Coordinators already can't edit rejected requests. The refusal offers no change request. The check runs inside the edit transaction, after its row lock, so a rejection can't slip in between the check and the edit | 409 "This request is rejected, so it can no longer be changed." | TC_E03S03_05, _11 |
 | The Organiser's view of a decided request shows the reason and decision date, and a rejected one has no edit actions (`canEdit: false`, `editableFields: []`). The date is the decision's own audit entry, so it stays right after later status changes; seeded rows without one use `status_changed_at`. Only a rejection's reason is shown | The read carries `decision: { outcome, reason, decidedAt }`; the frontend PR shows it as "Rejected on 10 September 2026 — <reason>" | TC_E03S03_05 |
 | A decision must say approve or reject | 400 "Choose whether to approve or reject this request." | SCRUM-34 unit test |
 | The decision, its audit entry and the notice commit together, through the shared status-change path (`applyEventStatusChange`, D12) | — | TC_E03S03_01, _03 |
@@ -71,7 +71,7 @@ Every automated test must carry its TC ID in its title, so that
 | TC_E03S03_08 | Negative | 403 "Only the assigned Coordinator can decide on this request." | `decision.test.ts` and `decision.integration.test.ts`: "TC_E03S03_08: …" | Not needed |
 | TC_E03S03_09 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | `decision.integration.test.ts`: "TC_E03S03_09: …" | Not needed |
 | TC_E03S03_10 | Boundary | 400 "The reason must be 2000 characters or fewer." at 2001; 2000 accepted | `decision.test.ts` and `decision.integration.test.ts`: "TC_E03S03_10: …" | Not needed |
-| TC_E03S03_11 | Negative (business rule) | 409 "This request is rejected, so it can no longer be changed.", with no change-request link | `decision.integration.test.ts`: "TC_E03S03_11: …" | Not needed |
+| TC_E03S03_11 | Negative (business rule) | 409 "This request is rejected, so it can no longer be changed.", with no change-request link | `decision.integration.test.ts`: "TC_E03S03_11: the Organiser of a rejected request is refused an edit…" and "…an edit waiting on the row lock is refused when a rejection commits first" | Not needed |
 | TC_E03S03_12 | Boundary | Approval goes ahead with features-only accessibility | `decision.integration.test.ts`: "TC_E03S03_12: …" | Not needed |
 
 ## Test gates
@@ -171,11 +171,12 @@ of these areas, it is outside what was tested:
   completed requests can still be edited the way they could before (the
   edit rules are SCRUM-37's code); a lock for those was suggested to its
   owner instead.
-- **The rejected-edit check sits in the edit route, not inside
-  `updateEventInformation`** (SCRUM-37's code, not changed by this story).
-  Today that route is the function's only caller. A new route that calls it
-  would not get the check unless it calls `rejectedEditRefusal` too; TC_11's
-  real-stack run exercises the route itself.
+- **The rejected-edit check lives in the edit transaction,
+  `updateEventInformationWithNotifications`** (#142's code; one call added by
+  this story), not inside `updateEventInformation` (SCRUM-37's code, not
+  changed). Every edit of event details goes through that transaction today.
+  A future path that called `updateEventInformation` directly would not get
+  the check.
 - **The seed's rejected request has no reason.** EVT-3005 is seeded as
   Rejected with no `decision_reason` and no status audit entry, so its
   decision shows no reason, dated from `status_changed_at`. Requests rejected
@@ -226,6 +227,14 @@ fix gets its own row.
 | 2026-10-02 00:11 | `4247a63+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
 | 2026-10-02 00:11 | `4247a63` | 4 | — | `npm run test:runtime` (root; the compiled API runtime tests CI runs, since `api/events.ts` changed) | local | 15/15 passed | — | Claude (for Aaron) |
 | 2026-10-02 ≈00:17 | `3b57523` | 7 | _01–_12 | GitHub Actions on PR #174, checked per commit (`gh run list --commit`) | CI: Application Checks https://github.com/hongyime/sgConnectSphere2026/actions/runs/36890582155, CI https://github.com/hongyime/sgConnectSphere2026/actions/runs/36890582026 | All 9 workflows passed, none held: Application Checks (its "SCRUM-34 decision PostgreSQL acceptance test" step 16/16), CI (`repository-checks`, `pr-conventions`), LFS Guard, CodeQL, Semgrep, Dependency Review, TruffleHog, Vercel Deploy, Application Checks (skip) | — | Claude (for Aaron) |
+| 2026-10-02 01:12 | `80d004b+local` (rejected check moved into the edit transaction, after Amareet's review and the Strix finding: a rejection committing between the old pre-check and the edit still let the edit land) | 2 | _01–_12 | `npx tsx --test tests/decision.integration.test.ts`, run twice in one command | local, same container | 17/17 passed, both times, including the new race test | — | Claude (for Aaron) |
+| 2026-10-02 ≈01:12 | `80d004b+local`, with the new in-transaction call removed on purpose, restored afterwards | 2 | _05, _11 | The same file | local, same container | **14/17, failed _05, _11 and the race test**, as intended | Shows the tests, including the race test, depend on the check inside the edit transaction | Claude (for Aaron) |
+| 2026-10-02 01:13 | `a67513a` | 1 | _04, _08, _10 | `npm test` (backend) | local | 259/259 passed. Session record `20261002-011304-Bl0oper-backend-unit.md` | — | Claude (for Aaron) |
+| 2026-10-02 01:13 | `a67513a` | 2 | _01–_12 | `npx tsx --test tests/decision.integration.test.ts` | local, same container | 17/17 passed. Session record `20261002-011316-Bl0oper-backend-db.md` | — | Claude (for Aaron) |
+| 2026-10-02 01:13 | `a67513a` | 3 | neighbours | `npm run test:db` and `npm run test:event-notifications:db` (backend) | local, same container | **test:db 45/46, failed E01-S02 (`eventVisibility`)**; notifications 12/12. Same session record | Same known error, `column e.venue_requirements does not exist`. All 17 SCRUM-34 tests passed again in the batch, the race test included | Claude (for Aaron) |
+| 2026-10-02 01:13 | `a67513a` | 4 | — | `npm run typecheck`, `npm run build`, `npm run test:runtime` (root) | local | all passed; runtime 15/15 | — | Claude (for Aaron) |
+| 2026-10-02 01:14 | `a67513a` | 5 | _01–_12 | The same real HTTP run as at 00:06 | local, freshly reset and seeded `connectsphere_dev_stack` | 23/23 checks passed. Session record `20261002-011404-Bl0oper-backend-api.md` | Same messages as the 00:06 run, word for word. The rejected refusals (EVT-3005, Winter Gala) still carry no `changeRequestUrl`; organiser_a's restricted edit on approved EVT-3001 still does | Claude (for Aaron) |
+| 2026-10-02 01:15 | `a67513a+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
 
 ## Completion boundary
 

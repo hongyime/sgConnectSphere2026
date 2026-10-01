@@ -1,11 +1,11 @@
 ---
-date: 2026-10-02T00:06:49+08:00
+date: 2026-10-02T01:14:04+08:00
 runner: Bl0oper
 scope: backend/api
 environment: local
 run_type: regression
 test_case_version: 011026
-commit: b163245
+commit: a67513a
 pr: 174
 ---
 
