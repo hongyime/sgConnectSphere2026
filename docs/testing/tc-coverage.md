@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 246 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 253 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **246**
-- Automated (explicit TC_ID in an active test title): **101** (41.1%)
-  - Real-database (`.integration.test` / `.db.test`): **32**
+- Total test cases: **253**
+- Automated (explicit TC_ID in an active test title): **113** (44.7%)
+  - Real-database (`.integration.test` / `.db.test`): **41**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **68**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **142** (57.7%)
+  - Live-assertion (other active tests): **71**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **137** (54.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 35 | 23 | 12 | 0 |
+| E03 | 42 | 35 | 7 | 0 |
 | E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **246** | **101** | **142** | **3** |
+| **Total** | **253** | **113** | **137** | **3** |
 
 ## Case-by-case status
 
@@ -113,11 +113,18 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S02_10` | E03-S02 | Verify that only the Organiser who owns a request can answer its clarification q | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_10: another Organiser in the same organisation cannot answer, and the attempt is audited |
 | `TC_E03S02_11` | E03-S02 | Verify that answers are refused when the request is not Awaiting Clarification | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_11: answers are refused while the request is not Awaiting Clarification |
 | `TC_E03S02_12` | E03-S02 | Verify that several questions can be sent together, are all shown, and are all r | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_12: two questions are sent in one notice, both listed, and both resolved by one complete response |
-| `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser |
-| `TC_E03S03_02` | E03-S03 | Verify that approval should be blocked while required information is incomplete, | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_02 - Verify that approval should be blocked while required information is incomplete, with the missing items listed |
-| `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser |
-| `TC_E03S03_04` | E03-S03 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_04 - Verify that attempting to reject a request without recording a reason should be blocked |
-| `TC_E03S03_05` | E03-S03 | Verify that a rejected request should show its reason and decision date in plain | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only |
+| `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_01: approving a complete Under Review request makes it Approved, audits it and notifies the Organiser once; backend/tests/deci |
+| `TC_E03S03_02` | E03-S03 | Verify that approval should be blocked while required information is incomplete, | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_02: approval is blocked while Venue requirements is missing, the item is listed and nothing changes; backend/tests/decision.in |
+| `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_03: rejecting with a reason makes the request Rejected, stores the reason and notifies the Organiser once, with the reason; te |
+| `TC_E03S03_04` | E03-S03 | Verify that attempting to reject a request without recording a reason should be  | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_04: a rejection without a reason is refused and the request stays Under Review; backend/tests/decision.test.ts: TC_E03S03_04:  |
+| `TC_E03S03_05` | E03-S03 | Verify that a rejected request should show its reason and decision date in plain | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_05: the Organiser sees the reason and decision date of a rejected request, cannot edit it, and the edit is refused; backend/te |
+| `TC_E03S03_06` | E03-S03 | Verify that a Coordinator who is not assigned to a request should be refused whe | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_06: a Coordinator not assigned to the request is refused for both decisions; nothing changes, the attempts are audited and hid |
+| `TC_E03S03_07` | E03-S03 | Verify that a decision cannot be made on a request that is not Under Review | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_07: a decision is refused while the request is Awaiting Clarification or already Approved |
+| `TC_E03S03_08` | E03-S03 | Verify that an Event Organiser should not be able to approve their own request | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_08: the Organiser who submitted the request cannot approve it, and the attempt is audited; backend/tests/decision.test.ts: TC_ |
+| `TC_E03S03_09` | E03-S03 | Verify that a rejected request cannot be decided again | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_09: a rejected request cannot be decided again |
+| `TC_E03S03_10` | E03-S03 | Verify the 2000-character limit on a rejection reason | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_10: a 2001-character reason is refused and a 2000-character reason is stored in full; backend/tests/decision.test.ts: TC_E03S0 |
+| `TC_E03S03_11` | E03-S03 | Verify that an Event Organiser cannot edit their rejected request | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_11: the Organiser of a rejected request is refused an edit with no change-request offer; others keep their usual refusal |
+| `TC_E03S03_12` | E03-S03 | Verify that a request whose accessibility needs are given only as predefined fea | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_12: a request whose accessibility needs are given only as predefined features can be approved |
 | `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
 | `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
 | `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
@@ -392,6 +399,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - coordinator without blocking assignments succeeds
 - already deactivated returns safe conflict without audit
 - endpoint authentication, CSRF, identity and cookie clearing
+
+### `backend/tests/decision.integration.test.ts`
+
+- SCRUM-34 D10: a start date already in the past does not block approval
+
+### `backend/tests/decision.test.ts`
+
+- SCRUM-34: the reason is trimmed, an approval ignores any reason, and an unknown decision is refused
 
 ### `backend/tests/emailTemplate.test.ts`
 
