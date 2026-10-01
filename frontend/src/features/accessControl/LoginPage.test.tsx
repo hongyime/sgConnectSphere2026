@@ -20,6 +20,11 @@ function renderLogin() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/coordinator" element={<p>Coordinator workspace</p>} />
         <Route path="/events" element={<p>Organisation events</p>} />
+        <Route path="/venue/inventory" element={<p>Venue inventory</p>} />
+        <Route path="/support" element={<p>Support dashboard</p>} />
+        <Route path="/admin" element={<p>Admin dashboard</p>} />
+        <Route path="/attendee/events" element={<p>Attendee events</p>} />
+        <Route path="/" element={<p>Landing page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -28,6 +33,13 @@ function renderLogin() {
 test.each([
   ['event_coordinator', 'Coordinator workspace'],
   ['event_organiser', 'Organisation events'],
+  // Before the skeleton's roles.ts these three were all sent to /events,
+  // which refuses anyone without a client organisation.
+  ['venue_staff', 'Venue inventory'],
+  ['technical_support_staff', 'Support dashboard'],
+  ['admin', 'Admin dashboard'],
+  ['attendee', 'Attendee events'],
+  ['an_unknown_role', 'Landing page'],
 ])('signing in as %s lands on its home', async (role, home) => {
   let signedIn = false;
   vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {

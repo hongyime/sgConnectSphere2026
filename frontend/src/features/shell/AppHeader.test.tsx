@@ -39,7 +39,7 @@ test('shows the Coordinator links with the current page marked', async () => {
   stub({ role: 'event_coordinator' });
   renderHeader();
   const nav = await screen.findByRole('navigation', { name: 'Main' });
-  expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Dashboard', 'Review queue', 'Reassignments', 'Venue search']);
+  expect(within(nav).getAllByRole('link').map(link => link.textContent)).toEqual(['Dashboard', 'Review queue', 'Reassignments', 'Venue search', 'Venue calendar']);
   expect(within(nav).getByRole('link', { name: 'Review queue' })).toHaveAttribute('aria-current', 'page');
   expect(within(nav).getByRole('link', { name: 'Dashboard' })).not.toHaveAttribute('aria-current');
   expect(screen.getByRole('link', { name: 'ConnectSphere' })).toHaveAttribute('href', '/coordinator');
