@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Clock, Lock, Wrench, type LucideIcon,
 } from 'lucide-react';
+import { Alert, Button, EmptyState, ErrorState, LoadingState, PageLayout, useLoad, type ApiResult } from '../../shared';
 import { listVenues, type Venue } from './venueApi';
 import { getVenueCalendar, MAX_CALENDAR_DAYS, type CalendarState, type VenueCalendar as CalendarData } from './venueCalendarApi';
 import {
@@ -15,7 +16,8 @@ import './venue.css';
 // the calendar API in PR #134. Shared by Venue Staff (/venue/availability)
 // and Event Coordinators (/coordinator/calendar and
 // /coordinator/venues/:venueId/calendar); the server decides which event
-// details each viewer receives.
+// details each viewer receives. The page frame, loading and error states
+// come from the shared blocks (ADR-017); the calendar itself is its own.
 
 // Each state carries an icon and a text label as well as a colour, so the
 // four states can be told apart without relying on colour (Scenario 1).
@@ -30,17 +32,6 @@ const stateMeta: Record<CalendarState, { label: string; icon: LucideIcon }> = {
 const legendOrder: CalendarState[] = ['free', 'tentative', 'confirmed', 'blocked', 'unavailable'];
 
 type Period = { from: string; to: string; mode: 'month' | 'custom' };
-
-type VenueOptionsState =
-  | { status: 'loading' }
-  | { status: 'loaded'; venues: Venue[] }
-  | { status: 'error'; message: string };
-
-type CalendarLoadState =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'loaded'; calendar: CalendarData }
-  | { status: 'error'; message: string };
 
 function monthPeriod(dayKey: string): Period {
   return { ...monthBounds(dayKey), mode: 'month' };
@@ -63,49 +54,34 @@ function timeLabel(segment: DaySegment) {
 
 export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' }) {
   const { venueId: routeVenueId } = useParams();
-  const [venueOptions, setVenueOptions] = useState<VenueOptionsState>({ status: 'loading' });
   const [selectedId, setSelectedId] = useState(routeVenueId ?? '');
   const [period, setPeriod] = useState<Period>(() => monthPeriod(todayKey()));
   const [customFrom, setCustomFrom] = useState(period.from);
   const [customTo, setCustomTo] = useState(period.to);
   const [rangeError, setRangeError] = useState('');
-  const [calendarState, setCalendarState] = useState<CalendarLoadState>({ status: 'idle' });
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
-  // Only the latest request may update the screen, so a slow response for a
-  // previous venue or month cannot overwrite the one the user is looking at.
-  const latestRequest = useRef(0);
+
+  // useLoad cancels the previous request, so a slow response for a previous
+  // venue or month cannot overwrite the one the user is looking at.
+  const options = useLoad(signal => listVenues('', signal), []);
+  const calendar = useLoad(async (signal): Promise<ApiResult<CalendarData | null>> => (
+    selectedId ? getVenueCalendar(selectedId, period.from, period.to, signal) : { ok: true, data: null }
+  ), [selectedId, period.from, period.to]);
 
   // React Router reuses this screen between venue-specific URLs.
   useEffect(() => {
     if (routeVenueId) setSelectedId(routeVenueId);
   }, [routeVenueId]);
 
+  // With no venue in the URL, show the first one in the catalogue.
   useEffect(() => {
-    let active = true;
-    listVenues('').then((result) => {
-      if (!active) return;
-      if (!result.ok) {
-        setVenueOptions({ status: 'error', message: result.message });
-        return;
-      }
-      setVenueOptions({ status: 'loaded', venues: result.venues });
-      setSelectedId(current => current || result.venues[0]?.id || '');
-    });
-    return () => { active = false; };
-  }, []);
+    if (options.result.state === 'ready') {
+      const first = options.result.data[0]?.id ?? '';
+      setSelectedId(current => current || first);
+    }
+  }, [options.result]);
 
-  useEffect(() => {
-    if (!selectedId) return;
-    const request = ++latestRequest.current;
-    setCalendarState({ status: 'loading' });
-    setExpanded(null);
-    getVenueCalendar(selectedId, period.from, period.to).then((result) => {
-      if (request !== latestRequest.current) return;
-      setCalendarState(result.ok ? { status: 'loaded', calendar: result.calendar } : { status: 'error', message: result.message });
-    });
-    return () => { latestRequest.current += 1; };
-  }, [selectedId, period.from, period.to, reloadToken]);
+  useEffect(() => { setExpanded(null); }, [selectedId, period.from, period.to]);
 
   const goToMonth = (delta: number) => {
     const next = monthPeriod(shiftMonth(period.from, delta));
@@ -137,47 +113,37 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
     ? formatMonth(period.from)
     : `${formatDay(period.from)} – ${formatDay(period.to)}`;
 
+  const loaded = calendar.result.state === 'ready' ? calendar.result.data : null;
   const days = useMemo(() => daysInRange(period.from, period.to), [period.from, period.to]);
-  const segments = useMemo(
-    () => (calendarState.status === 'loaded' ? segmentsByDay(calendarState.calendar.entries, days) : null),
-    [calendarState, days],
-  );
+  const segments = useMemo(() => (loaded ? segmentsByDay(loaded.entries, days) : null), [loaded, days]);
 
-  const venues = withSelectedVenue(venueOptions.status === 'loaded' ? venueOptions.venues : [], selectedId, calendarState);
+  const venueList = options.result.state === 'ready' ? options.result.data : [];
+  const venues = withSelectedVenue(venueList, selectedId, loaded?.venue.name);
+  const optionsLoading = options.result.state === 'loading' && !selectedId;
 
   return (
-    <main className="venue-page venue-calendar-page">
-      <header className="venue-heading">
-        <p className="eyebrow">{audience === 'venue' ? 'Venue staff' : 'Event coordinator'}</p>
-        <h1>Availability calendar</h1>
-        <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time.</p>
-      </header>
+    <PageLayout eyebrow={audience === 'venue' ? 'Venue staff' : 'Event coordinator'} title="Availability calendar">
+      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time.</p>
 
       <section className="calendar-controls card" aria-label="Calendar controls">
-        {venueOptions.status === 'error' && !selectedId ? (
-          <div role="alert" className="login-error">{venueOptions.message}</div>
+        {options.result.state === 'error' && !selectedId ? (
+          <Alert tone="error">{options.result.failure.message}</Alert>
         ) : (
           <label className="venue-select">
             <span>Venue</span>
-            <select
-              value={selectedId}
-              disabled={venueOptions.status === 'loading' && !selectedId}
-              onChange={event => setSelectedId(event.target.value)}
-            >
-              {venueOptions.status === 'loading' && !selectedId ? <option value="">Loading venues…</option> : null}
+            <select value={selectedId} disabled={optionsLoading} onChange={event => setSelectedId(event.target.value)}>
+              {optionsLoading ? <option value="">Loading venues…</option> : null}
               {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
             </select>
           </label>
         )}
 
         <div className="calendar-period">
-          <button type="button" className="secondary-action" onClick={() => goToMonth(-1)}>
-            <ChevronLeft size={16} aria-hidden="true" /> Previous month
-          </button>
+          <Button icon={<ChevronLeft size={16} aria-hidden="true" />} onClick={() => goToMonth(-1)}>Previous month</Button>
           <h2 aria-live="polite">{periodLabel}</h2>
-          <button type="button" className="secondary-action" onClick={() => goToMonth(1)}>
+          <Button onClick={() => goToMonth(1)}>
             Next month <ChevronRight size={16} aria-hidden="true" />
-          </button>
+          </Button>
         </div>
 
         <form className="calendar-range" aria-label="Custom date range" onSubmit={handleRangeSubmit} noValidate>
@@ -189,7 +155,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
             <span>To</span>
             <input type="date" value={customTo} onChange={event => setCustomTo(event.target.value)} />
           </label>
-          <button type="submit" className="secondary-action">Show range</button>
+          <Button type="submit">Show range</Button>
           {rangeError ? <p role="alert" className="field-error">{rangeError}</p> : null}
         </form>
       </section>
@@ -198,26 +164,21 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
         {legendOrder.map(state => (<li key={state}><StateBadge state={state} /></li>))}
       </ul>
 
-      {venueOptions.status === 'loaded' && venueOptions.venues.length === 0 && !selectedId ? (
-        <p>No venues to show yet.</p>
+      {options.result.state === 'ready' && venueList.length === 0 && !selectedId ? (
+        <EmptyState title="No venues to show yet">Venues appear here once Venue Staff add them to the catalogue.</EmptyState>
       ) : null}
 
-      {calendarState.status === 'loading' ? <p role="status">Loading availability…</p> : null}
-      {calendarState.status === 'error' ? (
-        <div role="alert" className="login-error">
-          {calendarState.message}{' '}
-          <button type="button" className="secondary-action" onClick={() => setReloadToken(token => token + 1)}>Try again</button>
-        </div>
+      {calendar.result.state === 'loading' && selectedId ? <LoadingState label="Loading availability…" rows={4} /> : null}
+      {calendar.result.state === 'error' ? (
+        <ErrorState failure={calendar.result.failure} onRetry={calendar.reload} context="the availability calendar" />
       ) : null}
 
-      {calendarState.status === 'loaded' && segments ? (
+      {loaded && segments ? (
         <>
-          {!calendarState.calendar.venue.is_active ? (
-            <p className="venue-alert-block" role="note">
-              {calendarState.calendar.venue.name} is retired, so none of its time is offered as Free.
-            </p>
+          {!loaded.venue.is_active ? (
+            <Alert tone="info">{loaded.venue.name} is retired, so none of its time is offered as Free.</Alert>
           ) : null}
-          <ol className="calendar-days" aria-label={`Availability for ${calendarState.calendar.venue.name}, ${periodLabel}`}>
+          <ol className="calendar-days" aria-label={`Availability for ${loaded.venue.name}, ${periodLabel}`}>
             {days.map((day) => {
               const daySegments = segments.get(day) ?? [];
               return (
@@ -275,14 +236,13 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
           </ol>
         </>
       ) : null}
-    </main>
+    </PageLayout>
   );
 }
 
 // A venue opened by id (for example a retired one, which search omits) may be
 // missing from the picker; keep it selectable under its calendar name.
-function withSelectedVenue(list: Venue[], selectedId: string, calendarState: CalendarLoadState) {
+function withSelectedVenue(list: Venue[], selectedId: string, calendarName: string | undefined) {
   if (!selectedId || list.some(venue => venue.id === selectedId)) return list;
-  const name = calendarState.status === 'loaded' ? calendarState.calendar.venue.name : 'Selected venue';
-  return [{ id: selectedId, name } as Venue, ...list];
+  return [{ id: selectedId, name: calendarName ?? 'Selected venue' } as Venue, ...list];
 }

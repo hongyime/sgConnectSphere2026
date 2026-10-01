@@ -18,7 +18,7 @@ test.each([200, 403, 503])('late detail response (%i) does not overwrite the cur
       aStarted = true;
       return new Promise(resolve => { finishA = resolve; });
     }
-    return { status: 200, json: async () => ({ event: { id, title: id === 'a' ? 'Request A' : 'Request B', status: 'submitted', statusHistory: [], comments: [] } }) };
+    return { ok: true, status: 200, json: async () => ({ event: { id, title: id === 'a' ? 'Request A' : 'Request B', status: 'submitted', statusHistory: [], comments: [] } }) };
   }));
   render(<MemoryRouter initialEntries={['/organiser/requests/a']}>
     <Link to='/organiser/requests/b'>Open B</Link>
@@ -27,6 +27,6 @@ test.each([200, 403, 503])('late detail response (%i) does not overwrite the cur
   await waitFor(() => expect(aStarted).toBe(true));
   fireEvent.click(screen.getByText('Open B'));
   await screen.findByRole('heading', { name: 'Request B' });
-  await act(async () => { finishA({ status, json: async () => ({ event: { id: 'a', statusHistory: [], comments: [] } }) }); });
+  await act(async () => { finishA({ ok: status < 300, status, json: async () => ({ event: { id: 'a', statusHistory: [], comments: [] } }) }); });
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Request B');
 });
