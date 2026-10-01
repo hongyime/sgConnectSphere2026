@@ -7,9 +7,10 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle, ArrowRight, CalendarDays, CheckCircle2, Clock3, Inbox, Loader2,
-  LockKeyhole, RefreshCw, Send, UserRoundCheck, Users,
+  LockKeyhole, PencilLine, RefreshCw, Send, UserRoundCheck, Users,
 } from 'lucide-react';
-import { AppHeader } from '../shell/AppHeader';
+import { EventEditForm } from '../events/EventEditForm';
+import type { EditableField } from '../events/eventEditApi';
 import {
   ACTIVE_STATUSES, eventRef, formatDate, getAssignedEvent, listAssignedEvents, listColleagues,
   listReassignments, requestReassignment, respondToReassignment, statusLabel,
@@ -59,7 +60,6 @@ function useLoad<T>(load: (signal: AbortSignal) => Promise<{ ok: true; data: T }
 function Page({ eyebrow, title, aside, children }: { eyebrow: string; title: string; aside?: ReactNode; children: ReactNode }) {
   return (
     <>
-      <AppHeader />
       <main className="coordinator-page">
         <header className="page-heading coordinator-page-heading">
           <div>
@@ -319,25 +319,91 @@ export function RequestDetail() {
             </article>
             <ReassignPanel key={event.id} event={event} onChanged={reload} />
           </section>
-          <section className="card" aria-labelledby="requirements-heading">
-            <h2 id="requirements-heading">Request details</h2>
-            <dl className="coordinator-facts coordinator-facts-wide">
-              {([
-                ['Description', event.description], ['Purpose', event.purpose],
-                ['Venue requirements', event.venue_requirements], ['Accessibility needs', event.accessibility_note],
-                ['Equipment', event.equipment_requirements], ['Layout', event.layout_preference],
-                ['Registration', event.registration_setup],
-              ] as const).map(([label, value]) => (
-                <div key={label}>
-                  <dt>{label}</dt>
-                  <dd className={value ? undefined : 'coordinator-none'}>{value || 'None recorded'}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
+          <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
         </>
       ) : null}
     </Page>
+  );
+}
+
+// E03-S07 (SCRUM-37) Scenarios 2 and 5: only the assigned Coordinator can
+// open this page (the read refuses anyone else), and the server accepts
+// their edits only once the event is approved or later.
+const EDITABLE_AFTER_APPROVAL = ['approved', 'planning', 'confirmed', 'completed'];
+const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>([
+  'title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance',
+  'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference',
+]);
+
+function fieldList(fields: string[]) {
+  const labels: Record<string, string> = {
+    title: 'event name', description: 'description', purpose: 'purpose', startAt: 'start', endAt: 'end',
+    expectedAttendance: 'expected attendance', venueRequirements: 'venue requirements', accessibilityNote: 'accessibility needs',
+    equipmentRequirements: 'equipment', layoutPreference: 'layout', registrationDates: 'registration dates',
+  };
+  const names = fields.map(field => labels[field] ?? field);
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? 'details';
+}
+
+function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const canEdit = EDITABLE_AFTER_APPROVAL.includes(event.status);
+
+  // After saving (or cancelling) a long form, return to the details card
+  // so the confirmation and updated values are in view.
+  useEffect(() => {
+    if (!editing && saved) sectionRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [editing, saved]);
+
+  if (editing) {
+    return (
+      <EventEditForm
+        eventId={event.id}
+        values={event}
+        editable={COORDINATOR_EDITABLE}
+        intro={<p>Changes are saved straight to the event and recorded in its activity log under your name.</p>}
+        onCancel={() => setEditing(false)}
+        onSaved={fields => {
+          setEditing(false);
+          setSaved(`Saved your changes to the ${fieldList(fields)}. They're recorded in the event's activity log.`);
+          onSaved();
+        }}
+      />
+    );
+  }
+
+  return (
+    <section className="card" aria-labelledby="requirements-heading" ref={sectionRef}>
+      <div className="coordinator-section-heading">
+        <h2 id="requirements-heading">Request details</h2>
+        {canEdit ? (
+          <button type="button" className="secondary-action" onClick={() => { setEditing(true); setSaved(null); }}>
+            <PencilLine size={14} aria-hidden="true" /> Edit details
+          </button>
+        ) : null}
+      </div>
+      <div role="status" aria-live="polite" className="coordinator-inline-status">
+        {saved ? <p className="coordinator-success"><CheckCircle2 size={16} aria-hidden="true" /> {saved}</p> : null}
+      </div>
+      {!canEdit ? (
+        <p className="coordinator-subtle">You can edit these details once the event is approved. Until then, the Organiser keeps them up to date.</p>
+      ) : null}
+      <dl className="coordinator-facts coordinator-facts-wide">
+        {([
+          ['Description', event.description], ['Purpose', event.purpose],
+          ['Venue requirements', event.venue_requirements], ['Accessibility needs', event.accessibility_note],
+          ['Equipment', event.equipment_requirements], ['Layout', event.layout_preference],
+          ['Registration', event.registration_setup],
+        ] as const).map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd className={value ? undefined : 'coordinator-none'}>{value || 'None recorded'}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 

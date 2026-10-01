@@ -1,4 +1,4 @@
-import { runtimeConfig, requireEnv } from '../../backend/src/config.js';
+import { isAllowedOrigin } from '../../backend/src/config.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { login, sessionToken, tokenDigest } from '../../backend/src/modules/accessControl/sessions.js';
 import { currentUser, respond, databasePool, query } from '../../backend/src/modules/eventVisibility/runtime.js';
@@ -17,7 +17,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     if (task === 'request-reset' || task === 'reset-password') {
       if (request.method !== 'POST') throw new AccessError(405, 'Method not allowed.');
-      if (request.headers.origin !== requireEnv(runtimeConfig.appUrl, 'APP_URL')) throw new AccessError(403, 'Access denied.');
+      if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       const body = request.body as Record<string, unknown> | undefined;
       if (task === 'request-reset') {
         if (typeof body?.email !== 'string' || body.email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim())) {
@@ -67,7 +67,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return { user: { id: user.id, email: user.email, role: user.role, clientOrgId: user.clientOrgId } };
     }
     if (request.method !== 'POST' && request.method !== 'DELETE') throw new AccessError(405, 'Method not allowed.');
-    if (request.headers.origin !== requireEnv(runtimeConfig.appUrl, 'APP_URL')) throw new AccessError(403, 'Access denied.');
+    if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
     const flags = `Path=/; HttpOnly; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
     if (request.method === 'DELETE') {
       const token = sessionToken(request);

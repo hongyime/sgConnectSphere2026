@@ -26,7 +26,7 @@ export async function markInboxRead(query: Query, userId: string, id: string) {
 }
 
 export function createInboxHandler(query: Query,
-  authenticate: (request: VercelRequest) => Promise<AuthenticatedUser>, appUrl: () => string) {
+  authenticate: (request: VercelRequest) => Promise<AuthenticatedUser>, isOriginAllowed: (origin: string | string[] | undefined) => boolean) {
   return async (request: VercelRequest, response: VercelResponse) => {
     response.setHeader('Cache-Control', 'private, no-store');
     response.setHeader('Vary', 'Cookie');
@@ -41,7 +41,7 @@ export function createInboxHandler(query: Query,
         sendJson(response, 200, { notifications: await listInbox(query, user.id) });
         return;
       }
-      if (request.headers.origin !== appUrl()) throw new AccessError(403, 'Access denied.');
+      if (!isOriginAllowed(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       const body = request.body as Record<string, unknown> | null;
       if (!body || typeof body !== 'object' || Array.isArray(body)
         || Object.keys(body).some(key => !['action', 'id'].includes(key))

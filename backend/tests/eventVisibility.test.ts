@@ -51,6 +51,7 @@ test('direct denied access commits actor and attempted event before returning de
 });
 
 test('organiser event detail includes current status date and status history', async () => {
+  let activitySql = '';
   const query: Query = async (sql) => {
     if (sql.includes('SELECT e.id')) return { rows: [{
       id: 'event-a', status: 'planning', status_changed_at: '2026-09-10T00:00:00.000Z',
@@ -60,6 +61,9 @@ test('organiser event detail includes current status date and status history', a
       { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
       { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
     ] };
+    if (sql.includes('FROM audit_logs a')) { activitySql = sql; return { rows: [
+      { occurred_at: '2026-09-05T00:00:00.000Z', action: 'Record updated', field_changed: 'purpose', old_value: null, new_value: 'Planning', actor_name: 'Organiser A' },
+    ] }; }
     throw new Error(`Unexpected query: ${sql}`);
   };
 
@@ -70,6 +74,31 @@ test('organiser event detail includes current status date and status history', a
     { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
     { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
   ]);
+  assert.deepEqual(event.activityLog, [
+    { occurred_at: '2026-09-05T00:00:00.000Z', action: 'Record updated', field_changed: 'purpose', old_value: null, new_value: 'Planning', actor_name: 'Organiser A' },
+  ]);
+  assert.match(activitySql, /a\.action <> 'Access Denied'/);
+  assert.doesNotMatch(activitySql, /actor_email/);
+});
+
+// SCRUM-37 / E03-S07 Scenarios 1, 3 and checklist: the organiser detail
+// response exposes the fields needed by the edit form and the activity log
+// read used after an edit.
+test('SCRUM-37: organiser detail exposes editable fields and full activity log contract', async () => {
+  const query: Query = async sql => {
+    if (sql.includes('SELECT e.id')) return { rows: [{
+      id: 'event-a', status: 'approved', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: user.clientOrgId,
+    }] };
+    if (sql.includes("field_changed = 'status'")) return { rows: [] };
+    if (sql.includes('FROM audit_logs a')) return { rows: [] };
+    if (sql.includes('FROM event_threads')) return { rows: [] };
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+  const event = await getEvent(query, user, 'EVT-A01');
+  assert.equal(event.canEdit, true);
+  assert.deepEqual(event.editableFields, ['title', 'description', 'purpose', 'registrationDates']);
+  assert.deepEqual(event.activityLog, []);
+  assert.equal(JSON.stringify(event.activityLog).includes('actor_email'), false);
 });
 
 test('audit failure never returns event information or a false logged success', async () => {

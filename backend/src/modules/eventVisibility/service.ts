@@ -26,7 +26,10 @@ export async function requireOrganiser(query: Query, user: AuthenticatedUser | u
 const projection = `e.id, e.event_code, e.title, e.description, e.status,
   e.status_changed_at, lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
   e.organiser_id, e.coordinator_id, u.full_name AS creator_name,
-  c.full_name AS coordinator_name`;
+  c.full_name AS coordinator_name, e.purpose, e.expected_attendance,
+  e.venue_requirements, e.accessibility_note, e.equipment_requirements,
+  e.layout_preference, e.registration_setup, e.registration_opens_at,
+  e.registration_closes_at`;
 
 // E03-S01: the assigned Coordinator's name, shown to the Organiser (NULL
 // until one is assigned). Joined wherever `projection` is used.
@@ -58,15 +61,22 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       FROM audit_logs
       WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
+    const activity = await query(`SELECT a.occurred_at, a.action, a.field_changed,
+        a.old_value, a.new_value, u.full_name AS actor_name
+      FROM audit_logs a
+      LEFT JOIN users u ON u.id = a.actor_id
+      WHERE a.event_id = $1 AND a.entity_type = 'event' AND a.action <> 'Access Denied'
+      ORDER BY a.occurred_at ASC, a.id ASC`, [event.id]);
     const comments = await listEventComments(query, event.id);
     const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
     const assignedCoordinator = user.role === 'event_coordinator' && event.coordinator_id === user.id;
     const organiser = user.role === 'event_organiser';
     const canEdit = assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id));
-    const editableFields = assignedCoordinator || (organiser && !approved)
-      ? ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference']
-      : ['title', 'description', 'purpose'];
-    return { ...event, statusHistory: history.rows, comments, canPostComment: organiser, canEdit, editableFields };
+    const organiserFields = approved
+      ? ['title', 'description', 'purpose', 'registrationDates']
+      : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'];
+    const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'] : organiserFields;
+    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canPostComment: organiser, canEdit, editableFields: canEdit ? editable : [] };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
