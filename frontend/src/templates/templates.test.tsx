@@ -60,7 +60,10 @@ test('Form: errors appear next to fields, a server refusal is shown, and a save 
 
   fireEvent.change(name, { target: { value: 'duplicate' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save request' }));
-  expect(await screen.findByText('A request with this name already exists.')).toBeInTheDocument();
+  // The server's message appears in the alert and, from fieldErrors, next to the field.
+  expect(await screen.findByRole('alert')).toHaveTextContent('A request with this name already exists.');
+  expect(name).toHaveAccessibleDescription(/A request with this name already exists\./);
+  expect(name).toHaveAttribute('aria-invalid', 'true');
 
   fireEvent.change(name, { target: { value: 'Leadership Summit 2027' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save request' }));

@@ -3,7 +3,8 @@
 //   1. Swap `getRequest` / `saveRequest` for your API module's functions.
 //   2. Replace the fields and `validate` with your story's rules. Mirror the
 //      server's rules so errors appear next to the field before a round trip,
-//      but always show the server's refusal too (it has the final say).
+//      but always show the server's refusal too (it has the final say): its
+//      message in the alert, and its `fieldErrors` next to the fields.
 //   3. Decide where to go after saving (here: the detail page).
 // Keep: errors linked to fields (FormField), the busy button, and the error
 // summary alert at the top.
@@ -80,7 +81,17 @@ function RequestForm({ id, initial }: { id: string | null; initial: SampleReques
     const result = await saveRequest(id, { ...values, title: values.title.trim(), organiser: values.organiser.trim(), notes: values.notes.trim() });
     if (!mounted.current) return;
     setSaving(false);
-    if (!result.ok) { setServerError(result.message); return; }
+    if (!result.ok) {
+      // Show the server's per-field messages next to their fields (first one
+      // each), and its overall message in the alert at the top.
+      const fromServer: Errors = {};
+      for (const [field, messages] of Object.entries(result.fieldErrors ?? {})) {
+        if (field in blank && messages[0]) fromServer[field as keyof SampleInput] = messages[0];
+      }
+      setErrors(current => ({ ...current, ...fromServer }));
+      setServerError(result.message);
+      return;
+    }
     navigate(`/ui-kit/templates/items/${result.data.id}`, { state: { saved: true } });
   }
 

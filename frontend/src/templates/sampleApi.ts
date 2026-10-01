@@ -58,8 +58,12 @@ export function getRequest(id: string, signal?: AbortSignal) {
 
 export function saveRequest(id: string | null, input: SampleInput) {
   if (input.title.trim().toLowerCase() === 'duplicate') {
-    // Lets the Form template show a server refusal.
-    return respond<SampleRequest>({ ok: false, status: 409, message: 'A request with this name already exists.' });
+    // Lets the Form template show a server refusal, with the per-field message
+    // apiCall puts in `fieldErrors` when the API sends { errors: { title: [...] } }.
+    return respond<SampleRequest>({
+      ok: false, status: 409, message: 'A request with this name already exists.',
+      fieldErrors: { title: ['A request with this name already exists.'] },
+    });
   }
   if (id) {
     const index = store.findIndex(item => item.id === id);
