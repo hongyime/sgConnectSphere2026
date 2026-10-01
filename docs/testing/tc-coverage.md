@@ -478,6 +478,27 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - rejects cross-origin writes and client supplied identity
 - storage errors never disclose database details
 
+### `backend/tests/originAllowlist.test.ts`
+
+- accepts the configured APP_URL exactly
+- accepts PUBLIC_SITE_URL as an additional allowed origin, not only as an APP_URL fallback
+- accepts a Vercel-injected hostname (VERCEL_URL) as https, matching the deployment
+- accepts VERCEL_PROJECT_PRODUCTION_URL as https
+- accepts the Vercel branch alias (VERCEL_BRANCH_URL) as https
+- truncates an unparseable attacker-controlled Origin before logging it
+- normalises trailing slash on both stored and received origins
+- compares case-insensitively on scheme and host
+- rejects a foreign origin
+- rejects a suffix-spoof of a vercel.app hostname (evil-vercel.app)
+- rejects a subdomain-spoof appending an attacker-controlled TLD
+- rejects a missing, empty, or whitespace-only Origin header
+- rejects a non-http(s) scheme even if the host matches
+- rejects a malformed origin string (not a URL) rather than throwing
+- fails closed when no origins are configured at all
+- ADDITIONAL_ALLOWED_ORIGINS accepts comma-separated local dev hosts and ignores blanks
+- the allowed set deduplicates identical origins from multiple env vars
+- does not accept an origin that only matches a superstring of an allowed value
+
 ### `backend/tests/profile.integration.test.ts`
 
 - real sessions, profile persistence, case-insensitive uniqueness and future notification address
@@ -600,6 +621,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - token that was already consumed is rejected as consumed
 - token past its expiry is rejected as expired
 - positive ttl is required at issue time
+
+### `frontend/src/app/AppShell.test.tsx`
+
+- a signed-in page gets exactly one shared header
+- older pages now sit inside the shared header too
+- public pages have no shared header
+- /home sends a signed-in user to their role home
+- /home sends a signed-out visitor to sign in
+- a placeholder route shows the Coming soon page with its story
+
+### `frontend/src/app/routes.test.tsx`
+
+- every path is registered once
+- coming-soon pages name a Release 1 story
+- story IDs use the backlog format
+- sign-in and registration pages are public; profile and notifications are not
+- an unknown or missing role goes to the landing page
 
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 

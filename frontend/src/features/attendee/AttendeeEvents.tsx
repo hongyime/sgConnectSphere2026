@@ -42,17 +42,9 @@ export function AttendeeEvents() {
     finally { setBusy(false); }
   }
   return <main className="client-events">
-    <header><a href="/attendee/events">ConnectSphere · My registered events</a><h1>{internal ? 'Internal planning' : 'My registered events'}</h1>
+    {/* Brand link and Sign out come from the shared header (app/AppShell). */}
+    <header><h1>{internal ? 'Internal planning' : 'My registered events'}</h1>
       <p>Published event details for your registrations.</p>
-      {!signedOut && <button disabled={busy} onClick={async () => {
-        active.current?.abort(); setEvents([]); setBusy(true);
-        try {
-          const response = await fetch('/api/auth/session', { method: 'DELETE' });
-          if (!response.ok) throw new Error();
-          setSignedOut(true); setError('');
-        } catch { setError('Unable to sign out. Please try again.'); }
-        finally { setBusy(false); }
-      }}>Sign out</button>}
     </header>
     {busy && <p role="status">Loading…</p>}
     {error && <p role="alert">{error}</p>}

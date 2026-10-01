@@ -2,12 +2,13 @@
 // sign out. Reads the signed-in user from GET /api/auth/session and signs out
 // with DELETE /api/auth/session (both from api/auth/session.ts).
 //
-// Only the E03-S01 / E03-S07 screens use it so far. Moving the other routes
-// onto it is separate, deferred work, so keep it free of page-specific logic.
+// AppShell (app/AppShell.tsx) renders it above every signed-in route. Each
+// role's links and home page come from app/roles.ts.
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, UserRound } from 'lucide-react';
 import { listNotifications } from '../notifications/notificationsApi';
+import { homeFor, isRole, roleLabel, roleNavigation } from '../../app/roles';
 import './appHeader.css';
 
 export type SessionUser = { id: string; email: string; role: string; clientOrgId: string | null };
@@ -15,51 +16,6 @@ export type SessionState =
   | { status: 'loading' }
   | { status: 'signed-in'; user: SessionUser }
   | { status: 'signed-out' };
-
-type NavItem = { to: string; label: string; end?: boolean };
-
-// Links per role. Each list starts with that role's home, which the brand
-// also points to. Roles match USER_ROLES in the backend.
-export const roleNavigation: Record<string, NavItem[]> = {
-  event_coordinator: [
-    { to: '/coordinator', label: 'Dashboard', end: true },
-    { to: '/coordinator/queue', label: 'Review queue' },
-    { to: '/coordinator/reassignments', label: 'Reassignments' },
-    { to: '/coordinator/venues', label: 'Venue search' },
-  ],
-  event_organiser: [
-    { to: '/organiser', label: 'Dashboard', end: true },
-    { to: '/organiser/requests', label: 'My requests' },
-    { to: '/organiser/drafts', label: 'Drafts' },
-    { to: '/organiser/new-request', label: 'New request' },
-  ],
-  venue_staff: [
-    { to: '/venue', label: 'Dashboard', end: true },
-    { to: '/venue/inventory', label: 'Inventory' },
-    { to: '/venue/availability', label: 'Availability' },
-  ],
-  technical_support_staff: [
-    { to: '/support', label: 'Dashboard', end: true },
-    { to: '/support/queue', label: 'Request queue' },
-  ],
-  admin: [
-    { to: '/admin', label: 'Dashboard', end: true },
-    { to: '/admin/users', label: 'Users' },
-  ],
-  attendee: [
-    { to: '/attendee/events', label: 'My events', end: true },
-    { to: '/attendee/discover', label: 'Discover' },
-  ],
-};
-
-const roleLabel: Record<string, string> = {
-  event_coordinator: 'Event Coordinator',
-  event_organiser: 'Event Organiser',
-  venue_staff: 'Venue Staff',
-  technical_support_staff: 'Technical Support',
-  admin: 'Administrator',
-  attendee: 'Attendee',
-};
 
 export function useSession(): SessionState {
   const [state, setState] = useState<SessionState>({ status: 'loading' });
@@ -99,8 +55,9 @@ export function AppHeader() {
   const [signingOut, setSigningOut] = useState(false);
   const [signOutError, setSignOutError] = useState<string | null>(null);
 
-  const links = signedIn ? roleNavigation[session.user.role] ?? [] : [];
-  const home = links[0]?.to ?? '/';
+  const role = signedIn && isRole(session.user.role) ? session.user.role : null;
+  const links = role ? roleNavigation[role] : [];
+  const home = signedIn ? homeFor(session.user.role) : '/';
 
   async function signOut() {
     setSigningOut(true);
@@ -141,7 +98,7 @@ export function AppHeader() {
               <NavLink to="/profile" className="app-header-icon" aria-label="Profile">
                 <UserRound size={18} aria-hidden="true" />
               </NavLink>
-              <span className="app-header-role">{roleLabel[session.user.role] ?? session.user.role}</span>
+              <span className="app-header-role">{role ? roleLabel[role] : session.user.role}</span>
               <button type="button" className="app-header-signout" onClick={signOut} disabled={signingOut} aria-label={signingOut ? 'Signing out' : 'Sign out'}>
                 <LogOut size={16} aria-hidden="true" />
                 <span>{signingOut ? 'Signing out…' : 'Sign out'}</span>

@@ -1,17 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { homeFor } from '../../app/roles';
 import './login.css';
 
 type WhoAmIResponse = { user?: { role?: string } };
 
-const roleHome: Record<string, string> = {
-  attendee:            '/attendee/events',
-  event_organiser:     '/events',
-  event_coordinator:   '/coordinator',
-  venue_staff:         '/events',
-  technical_support_staff: '/events',
-  admin:               '/events',
-};
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -22,7 +15,7 @@ export function LoginPage() {
     let cancelled = false;
     fetch('/api/auth/session', { credentials: 'same-origin' })
       .then(response => response.ok ? response.json() as Promise<WhoAmIResponse> : null)
-      .then(payload => { if (!cancelled && payload?.user?.role) navigate(roleHome[payload.user.role] ?? '/events', { replace: true }); })
+      .then(payload => { if (!cancelled && payload?.user?.role) navigate(homeFor(payload.user.role), { replace: true }); })
       .catch(() => { /* Silent on network failure - fall through to the form. */ });
     return () => { cancelled = true; };
   }, [navigate]);
@@ -51,7 +44,7 @@ export function LoginPage() {
         setError('Unable to load your session. Please try signing in again.');
         return;
       }
-      navigate(roleHome[who.user.role] ?? '/events', { replace: true });
+      navigate(homeFor(who.user.role), { replace: true });
     } catch {
       setError('Unable to reach the server. Please try again.');
     } finally {
