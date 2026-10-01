@@ -25,8 +25,9 @@ From `docs/backlog/release-1/E03-review-coordination-status.md`:
 
 ## Rules this story applies
 
-These rules were settled by the story owner before building (D10–D15 in the
-story's task list). Each has a test case below. The messages are the planned
+These rules were settled by the story owner before building (D10–D14 in the
+story's task list; D11 was narrowed on 2026-10-01 so that this story only
+changes its own code). Each has a test case below. The messages are the planned
 wording; this table is updated if the code's final wording differs.
 
 | Rule | What the user sees | Test case |
@@ -37,7 +38,8 @@ wording; this table is updated if the code's final wording differs.
 | Accessibility needs are met by a free-text note **or** predefined features, the same as at submission (E02-S03) | Approval goes ahead | TC_E03S03_12 |
 | A rejection needs a reason | 400 "Add a reason for rejecting this request." | TC_E03S03_04 |
 | The reason is limited to 2000 characters, the same as event comments and clarification questions | 400 "The reason must be 2000 characters or fewer." | TC_E03S03_10 |
-| Rejected, cancelled and completed requests are read-only, for the Organiser **and** the Coordinator (D11, D15) | 409 "This request is rejected, so it can no longer be changed." (or cancelled, or completed) | TC_E03S03_05, _11 |
+| A rejected request is read-only for its Organiser (D11). Coordinators already can't edit rejected requests. The refusal offers no change request | 409 "This request is rejected, so it can no longer be changed." | TC_E03S03_05, _11 |
+| The Organiser's view of a decided request shows the reason and decision date, and a rejected one has no edit actions (`canEdit: false`) | "Rejected on 10 September 2026 — <reason>" | TC_E03S03_05 |
 | The decision, its audit entry and the notice commit together, through the shared status-change path (`applyEventStatusChange`, D12) | — | TC_E03S03_01, _03 |
 | Notices go through the shared E11-S01 writer (BDR T-64): the Organiser gets one in-app notice and one email-outbox row, never a duplicate generic "status changed" notice. A rejection notice includes the reason. The deciding Coordinator gets none | "Request approved" / "Request rejected" with the reason | TC_E03S03_01, _03 |
 | Refusals change nothing and are audited (E14-S02), and don't show in the Organiser's activity log (#168) | — | TC_E03S03_06 |
@@ -62,13 +64,13 @@ Every automated test must carry its TC ID in its title, so that
 | TC_E03S03_02 | Negative | Approval blocked, missing items listed, e.g. "Venue requirements" | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
 | TC_E03S03_03 | Happy path | Status becomes Rejected. The Organiser gets one "Request rejected" notice with the reason | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
 | TC_E03S03_04 | Negative | 400 "Add a reason for rejecting this request." | To be written | `tests/e2e/e03.spec.ts` (fixme until then) |
-| TC_E03S03_05 | Happy path | "Rejected on 10 September 2026 — <reason>"; no edit actions | To be written (`getEvent` and the edit lock) | `tests/e2e/e03.spec.ts` (fixme until then) |
+| TC_E03S03_05 | Happy path | "Rejected on 10 September 2026 — <reason>"; no edit actions | To be written (the decision in the event read, and the rejected-edit check) | `tests/e2e/e03.spec.ts` (fixme until then) |
 | TC_E03S03_06 | Negative | 403 "Only the assigned Coordinator can decide on this request." | To be written | Not needed |
 | TC_E03S03_07 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | To be written | Not needed |
 | TC_E03S03_08 | Negative | 403 "Only the assigned Coordinator can decide on this request." | To be written | Not needed |
 | TC_E03S03_09 | Negative (business rule) | 409 "A decision can only be made while the request is Under Review." | To be written | Not needed |
 | TC_E03S03_10 | Boundary | 400 "The reason must be 2000 characters or fewer." at 2001; 2000 accepted | To be written | Not needed |
-| TC_E03S03_11 | Negative (business rule) | 409 "This request is completed, so it can no longer be changed." | To be written | Not needed |
+| TC_E03S03_11 | Negative (business rule) | 409 "This request is rejected, so it can no longer be changed.", with no change-request link | To be written | Not needed |
 | TC_E03S03_12 | Boundary | Approval goes ahead with features-only accessibility | To be written | Not needed |
 
 ## Test gates
@@ -85,7 +87,7 @@ as evidence also get a session file in `docs/testing/runs/` (T-65).
    against a disposable PostgreSQL 17 database named
    `connectsphere_notification_test`.
 3. **Neighbouring database tests**, because this story changes event status,
-   sends notices and locks edits through shared code: the SCRUM-32
+   sends notices and adds a check to the shared edit route: the SCRUM-32
    coordinator pair, SCRUM-33's clarification tests, the event notification
    hooks, `eventLifecycle.integration.test.ts`, and the full `test:db` batch,
    which includes suites CI never runs. (`eventVisibility.integration.test.ts`
@@ -146,6 +148,10 @@ of these areas, it is outside what was tested:
 - **Older requests may be missing required information.** Requests created
   before every field was mandatory can't be approved until the Organiser
   completes them; the read-only production check counts them.
+- **Only rejected requests are locked by this story.** Cancelled and
+  completed requests can still be edited the way they could before (the
+  edit rules are SCRUM-37's code); a lock for those was suggested to its
+  owner instead.
 - **The 2000-character reason is accepted only in the database tests.** The
   real-stack run checks the 2001-character refusal, but doesn't use a
   seeded event up on the 2000-character case.
@@ -181,8 +187,9 @@ fix gets its own row.
 ## Completion boundary
 
 - **Backend PR**: approve and reject, the approval completeness check, the
-  final-status edit lock, the decision in the event detail reads, and the
-  backend tests above.
+  rejected-edit check, the decision in the Organiser's event read, and the
+  backend tests above. All in this story's own code; other owners'
+  functions aren't changed.
 - **Frontend PR** (after `design.md`): the Coordinator's decision panel
   (Approve, and Reject with a required reason, with the missing items listed
   when approval is blocked), and the Organiser's read-only rejected view,
@@ -194,9 +201,9 @@ a passing run recorded above.
 ## Traceability
 
 - Jira: `SCRUM-34`, with subtasks:
-  - Backend PR: `SCRUM-129` (approve or reject), `SCRUM-130` (final-status
-    lock and the decision in event details), `SCRUM-131` (tests, CI wiring
-    and this run record)
+  - Backend PR: `SCRUM-129` (approve or reject), `SCRUM-130` (rejected
+    requests read-only, and the decision in event details), `SCRUM-131`
+    (tests, CI wiring and this run record)
   - Frontend PR: `SCRUM-132` (Coordinator decision panel), `SCRUM-133`
     (Organiser rejected-request view)
 - Story: `E03-S03`
