@@ -152,6 +152,11 @@ of these areas, it is outside what was tested:
   real-stack run checks the 2001-character refusal, but doesn't send a
   2000-character question, because that would change the seeded EVT-2003
   that the later steps use.
+- **One neighbouring database suite fails on `main`.** Since #161,
+  `eventVisibility.integration.test.ts` (E01-S02) fails with "column
+  e.venue_requirements does not exist", with or without this PR. Its
+  organisation-isolation checks therefore aren't re-proven by the 2026-10-01
+  runs. CI doesn't run that suite.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s `test` script, and the
@@ -186,6 +191,14 @@ fix gets its own row.
 | ≈17:57 | `b59c5db` | 3 | neighbours | `npm run test:db` (backend; includes the SCRUM-32 pair, `eventLifecycle`, `eventVisibility`, `registration.db` and this story's file; `public` pre-migrated) | local, same container | 29/29 passed | — | Claude (for Aaron) |
 | ≈17:57 | `b59c5db` | 3 | neighbours | `npm run test:event-notifications:db` (backend) | local, same container | 12/12 passed | — | Claude (for Aaron) |
 | 17:58 | `b59c5db` | 5 | _01–_12 | Real HTTP calls to the local API (`tsx src/dev.ts`, port 3033), signed in as coord_a, coord_b, organiser_a, organiser_b and organiser_c, with the database checked after each step | local, freshly reset and seeded `connectsphere_dev_stack` in the same container | 18/18 checks passed | Refusals seen word for word: 403 "Only the assigned Coordinator can request clarification on this request." · 409 "Clarification can only be requested while the request is Under Review." · 400 "Add at least one question." (none, and blank) · 400 "Each question must be 2000 characters or fewer." · 409 "This request is not awaiting clarification." · 400 "Answer every outstanding question before resubmitting." · 403 "Only the Organiser who submitted this request can answer its questions." Notices seen: organiser_c got one "Clarification requested" with both questions numbered; coord_b got one "Clarification answered" with both answers; neither actor got one; both had email-outbox rows | Claude (for Aaron) |
+| 2026-10-01 22:24 | `42b635d` (after merging `main` `ceba772`) | 1 | all backend | `npm test` (backend) | local | 255/255 passed. Session record `20261001-222419-Bl0oper-backend-unit.md` | — | Claude (for Aaron) |
+| 2026-10-01 22:24 | `42b635d` | 2 | _01–_12 | `npx tsx --test tests/clarification.integration.test.ts` | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` | 13/13 passed. Session record `20261001-222457-Bl0oper-backend-db.md` | — | Claude (for Aaron) |
+| 2026-10-01 22:24 | `42b635d` | 3 | neighbours | `npm run test:db` (backend; `public` pre-migrated) | local, same container | **28/29, failed E01-S02 (`eventVisibility`)**. Same session record | `error: column e.venue_requirements does not exist` (42703) in `getEvent`. Not from this PR: the same test fails on `main` `ceba772` (next row). All 13 SCRUM-33 tests passed again in this batch | Claude (for Aaron) |
+| 2026-10-01 ≈22:25 | `ceba772` (`main`, without this PR) | 3 | — | `npx tsx --test tests/eventVisibility.integration.test.ts`, in a temporary worktree | local, same container | **0/1, failed E01-S02** | Same error, `column e.venue_requirements does not exist`. #161 added the column to `getEvent`; the test applies only migrations 0001–0004 | Claude (for Aaron) |
+| 2026-10-01 22:24 | `42b635d` | 3 | neighbours | `npm run test:event-notifications:db` (backend) | local, same container | 12/12 passed. Same session record | — | Claude (for Aaron) |
+| 2026-10-01 22:25 | `42b635d` | 4 | — | `npm run typecheck` and `npm run build` (root) | local | both passed | — | Claude (for Aaron) |
+| 2026-10-01 22:26 | `42b635d` | 5 | _01–_12 | Real HTTP calls to the local API (`tsx src/dev.ts`, port 3033, `APP_URL=http://localhost:5173` for #155's origin check), signed in as coord_a, coord_b, organiser_a, organiser_b and organiser_c, with the database checked after each step. New since #168: each Organiser's activity log is checked for the refused attempts | local, freshly reset and seeded `connectsphere_dev_stack` in the same container | 20/20 checks passed. Session record `20261001-222619-Bl0oper-backend-api.md` | Same refusals, word for word, as the 17:58 run. Activity logs: organiser_c's on EVT-2003 showed 2 rows (status changes by Coordinator B and Organiser C), with no sign of coord_a's refusal; organiser_b's on EVT-3002 showed 1 row, with no sign of organiser_a's refusal. Both refusals are in `audit_logs` | Claude (for Aaron) |
+| 2026-10-01 22:28 | `42b635d+local` (these records) | 6 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
 
 ## Completion boundary
 
@@ -210,4 +223,6 @@ a passing run recorded above.
     (Organiser questions and answer screen)
 - Story: `E03-S02`
 - Test cases: `docs/testing/cases/E03.md`, TC_E03S02_01 to _12
-- Pull requests: to be added
+- Pull requests: backend #163; frontend to follow
+- Session records (T-65): `docs/testing/runs/20261001-222419-Bl0oper-backend-unit.md`,
+  `20261001-222457-Bl0oper-backend-db.md`, `20261001-222619-Bl0oper-backend-api.md`
