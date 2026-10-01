@@ -135,5 +135,7 @@ and leave it for Bryan to resolve.
 
 - Sprint assignment and point estimation: see `docs/jira-agent-workflow.md`.
 - Backlog Markdown format: see `docs/backlog/README.md`.
-- The concrete per-ticket migration plan for the 45 current orphans: see
-  `docs/plans/jira-reorg-2026-09-30.md`.
+- Where the 31 former non-Epic orphans sit, and what is still open: see
+  `docs/plans/jira-reorg-2026-09-30.md`. Jira now has zero non-Epic issues
+  without a parent. The old "45 orphans" figure counted Epics, which are
+  parentless by definition and were never in that plan.
