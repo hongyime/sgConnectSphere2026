@@ -107,6 +107,13 @@ have credentials should keep the Jira status column in sync with the PR
 evidence rather than trusting a stale status. See `docs/jira-agent-workflow.md`
 for the mapping between PR events and Jira states.
 
+When creating or editing Jira tickets, follow the ticket classification rule
+in `docs/jira-ticket-classification.md`. That document defines the three
+permitted types (Story, Subtask, technical enabler), the discipline prefix
+convention for Subtasks, and the rule agents must apply before inventing a
+parent: if no single story owns the work, it is a technical enabler and must
+not be forced under an arbitrary Story.
+
 The variables are `JIRA_SITE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN`, and
 `JIRA_PROJECT_KEY`.
 
