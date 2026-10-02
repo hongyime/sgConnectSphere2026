@@ -1,5 +1,11 @@
 # Agent Journal
 
+- 2026-10-02: Review on #182. Merged main and removed the design.md
+  section 11 Typeface row instead of leaving it marked resolved. Added
+  docs/decisions/0011-load-inter-from-google-fonts.md and pointed section
+  3.2 at it. Google Fonts kept, per the recorded choice. Verification:
+  python scripts/check.py.
+
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
   Coordinator, venue and Organiser pages moved onto the shared blocks), #179

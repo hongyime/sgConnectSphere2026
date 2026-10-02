@@ -1,5 +1,10 @@
 # Agent State
 
+- 2026-10-02: Review on #182. Merged main (1780b3c) into
+  feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
+  Typeface row, per design.md section 14. Google Fonts stays; the choice
+  and the IP trade-off are in docs/decisions/0011. SCRUM-117.
+
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
   Coordinator, venue and Organiser pages moved onto the shared blocks), #179
