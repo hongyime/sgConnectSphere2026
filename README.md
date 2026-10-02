@@ -36,6 +36,8 @@ setup after cloning, moving the repository, or changing the tooling dependencies
 - [Full repository setup and engineering guide](docs/repository-setup.md): the
   rationale, conventions, teammate reviews, tests, CI/CD, security, and staged rollout.
 - [Contributing](CONTRIBUTING.md): everyday commands and the PR workflow.
+- [Building your story's frontend](docs/frontend-guide.md): the shared skeleton,
+  page templates and test helpers every story owner uses (ADR-017).
 - [Team handoff](docs/team-handoff.md): teammate environment setup, Jira linking,
   and split frontend/foundation work plan.
 - [GitHub owner setup](docs/github-owner-setup.md): activate the merge protections

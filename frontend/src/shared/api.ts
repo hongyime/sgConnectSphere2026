@@ -5,7 +5,8 @@
 //   throwing, so screens handle every outcome explicitly.
 // - Uses the server's `error` message when it is a sentence: the API writes
 //   those to be safe to show. A machine code such as `booking_conflict` goes
-//   in `code` instead, and the message falls back to yours.
+//   in `code` instead, and the message is the body's `message` sentence if
+//   there is one, otherwise your fallback.
 // - Keeps the rest of the error body: `fieldErrors` holds per-field messages
 //   (`{ errors: { from: ['…'] } }`) for FormField, and `details` holds the
 //   whole parsed body (e.g. `conflictingBookings`) for screens that need it.
@@ -50,7 +51,11 @@ function failure(status: number, body: unknown, fallback: string): ApiFailure {
   const details = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : {};
   const error = typeof details.error === 'string' ? details.error.trim() : '';
   const isCode = MACHINE_CODE.test(error);
-  const result: ApiFailure = { ok: false, status, message: error && !isCode ? error : fallback };
+  // Some endpoints send a code in `error` and the sentence in `message`
+  // (e.g. the venue blocks API's booking_conflict); show that sentence.
+  const sentence = typeof details.message === 'string' ? details.message.trim() : '';
+  const shown = error && !isCode ? error : isCode && sentence ? sentence : fallback;
+  const result: ApiFailure = { ok: false, status, message: shown };
   if (isCode) result.code = error;
   const fieldErrors = readFieldErrors(details.errors);
   if (fieldErrors) result.fieldErrors = fieldErrors;
