@@ -11,3 +11,6 @@ docs/plans/sprint-1-retrospective.md
 # the tests (the `runner:` frontmatter field). These are intentional public
 # attribution for the Execution Records export, not a repository identity leak.
 docs/testing/runs/
+
+# T-65 requires public runner attribution for this verification record.
+docs/testing/runs/20261002-230319-*-tooling.md

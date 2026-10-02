@@ -17,6 +17,8 @@
   screenshots (no horizontal overflow). Built on behalf of Le Xin as the
   skeleton pilot with Bryan's authorisation; Le Xin remains the Jira assignee.
 
+- 2026-10-02: PR #191 review refresh: integrated main 139217e and retained all three original calendar execution records unchanged. Their backend/browser scope remains unit or mocked API, with PostgreSQL validation explicitly outstanding. New verification covers repository tooling only. Awaiting peer review; no business story completion asserted.
+
 - 2026-10-02: Review on #182. Merged main and removed the design.md
   section 11 Typeface row instead of leaving it marked resolved. Added
   docs/decisions/0011-load-inter-from-google-fonts.md and pointed section
