@@ -5,7 +5,7 @@
   C-70 verbatim, T-66 to T-73, O-20 to O-44 with defaults and Q&A wording,
   README version 6 with Safety Review inserted between Planning and Confirmed
   (interim, O-39), E05-S05 and E10-S05 returned, G change log, BDR docx CAA
-  021026 regenerated and registered in source-of-truth. Docs only; no backlog
+  031026 regenerated and registered in source-of-truth (first export was 021026; the post-midnight rerun superseded it before merge). Docs only; no backlog
   Markdown, test cases, ADRs or diagrams touched yet. Those are the next PRs in
   order: roles foundation (T-72), then one PR per change for backlog + cases,
   then architecture. Sprint 2 is still open; E05-S04 AC deliberately not edited

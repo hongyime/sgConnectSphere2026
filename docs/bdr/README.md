@@ -22,9 +22,9 @@ An event may hold several venue bookings (C-67, T-68). T-20 is retired and E06-S
 
 Tentative holds expire (C-68, T-69). T-49 is amended: every hold carries an expiry date and time, the system releases expired holds, and the Coordinator is told before and at expiry.
 
-Two roles are added (T-72). The Event Coordinator Lead replaces auto-assignment with an unassigned queue; T-14 is retired and T-15 amended (C-69, T-70). The Safety Officer gates the event between Planning and Confirmed through a new Safety Review status; this placement is interim and is the first Q&A question (C-70, T-71, O-39).
+Two roles are added (T-72). The Event Coordinator Lead replaces auto-assignment with an unassigned queue; T-14 is retired and T-15 amended (C-69, T-70). E03-S01, which delivered auto-assignment, stays Done; the queue is new stories. The Safety Officer gates the event between Planning and Confirmed through a new Safety Review status; this placement is interim and is the first Q&A question (C-70, T-71, O-39).
 
-The customer Q&A that would resolve the document's ambiguities may fall after Sprint 3 planning. T-73 records the team's process: write the stories now against recorded defaults, carry every ambiguity as O-20 to O-44 with its default and its Q&A question, tag dependent criteria "(assumes O-xx)", and pull into Sprint 3 first the stories with no High-priority open item.
+The customer Q&A that would resolve the document's ambiguities may fall after Sprint 3 planning. T-73 records the team's process: write the stories now against recorded defaults, carry every ambiguity as O-20 to O-44 with its default and its Q&A question, tag dependent criteria "(assumes O-xx)", and pull into Sprint 3 first the stories with no High-priority open item. T-74 applies the Week 7 guide's three scenarios: a Done story stays Done and new behaviour on it is a new story; an incomplete story is updated in place; a story is reopened only when an original criterion turns out unsatisfied, which no Week 7 change does. Each of C-65 to C-70 is classified as new requirement, clarification or correction in its row.
 
 Release 1 grows beyond 47 stories and 155 points. The new story count, estimates and sprint placement are set in the backlog PR that follows this one; the architecture, C4 model, user flows, database schema and ADR-003, ADR-007, ADR-009 and ADR-012 all change and are handled in the architecture PR.
 
@@ -64,7 +64,7 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 C-01 to C-70 — customer clarifications. C-01 to C-64 are taken verbatim from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, verbatim, in document order.
 
-T-01 to T-73 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-74 — team decisions, each naming the clarification it follows from or the gap it closes.
 
 O-01 to O-44 — questions still open, or closed with the answer recorded against them. O-20 to O-44 carry the default each Week 7 story is written to and the question to put to the customer.
 
