@@ -47,7 +47,7 @@ async function replaceAccessibilityNeeds(client: PoolClient, eventId: string, fe
   await linkAccessibilityNeeds(client, eventId, featureIds);
 }
 
-async function getAccessibilityFeatureIds(runner: SqlRunner, eventId: string): Promise<string[]> {
+export async function getAccessibilityFeatureIds(runner: SqlRunner, eventId: string): Promise<string[]> {
   const result = await runner.query<{ feature_id: string }>(
     `SELECT feature_id FROM event_accessibility_needs WHERE event_id = $1 ORDER BY feature_id`,
     [eventId],

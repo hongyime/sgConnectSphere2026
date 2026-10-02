@@ -57,7 +57,9 @@ function isBlank(value: unknown) {
 
 // `requireAll` is false only for a draft (Option B): fields other than
 // title/expectedAttendance/dates are skipped rather than reported missing.
-function findMissingMandatoryFields(request: CreateEventRequest, requireAll: boolean): string[] {
+// E03-S03 (SCRUM-34) reuses it with requireAll on the stored request before
+// approval (D10), so approval and submission share one definition of complete.
+export function findMissingMandatoryFields(request: CreateEventRequest, requireAll: boolean): string[] {
   const missing: string[] = [];
 
   for (const field of MANDATORY_FIELD_LABELS) {
