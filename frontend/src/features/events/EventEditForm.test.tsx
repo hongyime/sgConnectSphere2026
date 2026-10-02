@@ -83,3 +83,21 @@ test('registration date fields show existing ISO values in local input format', 
   expect(screen.getByLabelText('Closes')).toHaveValue(toLocalInput('2026-10-09T00:00:00.000Z'));
   cleanup();
 });
+
+test('locked registration dates with no values are left out, as on the Coordinator form', () => {
+  const values = { title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+    expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null };
+  const { rerender } = render(
+    <EventEditForm eventId="evt-1" values={values} editable={new Set(['title'])} onSaved={() => {}} onCancel={() => {}} />,
+  );
+  expect(screen.queryByRole('group', { name: 'Registration' })).toBeNull();
+  expect(screen.queryByLabelText('Opens')).toBeNull();
+
+  // Still shown, read-only, when the dates exist.
+  rerender(
+    <EventEditForm eventId="evt-1" values={{ ...values, registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z' }}
+      editable={new Set(['title'])} onSaved={() => {}} onCancel={() => {}} />,
+  );
+  expect(screen.getByLabelText('Opens')).toHaveAttribute('readonly');
+  cleanup();
+});

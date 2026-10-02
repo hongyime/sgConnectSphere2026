@@ -168,6 +168,14 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     onSaved(result.fields);
   }
 
+  // Registration dates that are locked and empty (the Coordinator read doesn't
+  // return them) would only show two blank read-only boxes, so leave them out.
+  const hasRegistrationDates = (initial.registrationDates ?? '').replace('|', '') !== '';
+  const visibleSections = sections
+    .map(section => ({ ...section, fields: section.fields.filter(spec =>
+      spec.field !== 'registrationDates' || editable.has(spec.field) || hasRegistrationDates) }))
+    .filter(section => section.fields.length > 0);
+
   return (
     <form className="card event-edit-form" onSubmit={submit} noValidate aria-labelledby="event-edit-heading">
       <div className="event-edit-header">
@@ -177,7 +185,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       {serverError ? (
         <div ref={alertRef} tabIndex={-1} className="event-edit-alert"><Alert tone="error">{serverError}</Alert></div>
       ) : null}
-      {sections.map(section => (
+      {visibleSections.map(section => (
         <FormSection key={section.title} title={section.title}>
           {/* Hand-built rather than FormField: a locked field adds a lock icon
               to its label and a second note to its description. */}
