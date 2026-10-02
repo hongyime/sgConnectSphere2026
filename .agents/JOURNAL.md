@@ -142,3 +142,16 @@
 - 2026-10-02: PR #175 / SCRUM-37 follow-up: #181 was already merged; pulled it and normally merged main. Added registration date hint/error ARIA regression and activity-log actor assertion. Root typecheck, 188 Vitest tests, 32 desktop/mobile E03 tests (24 scaffold skips), and 76 tooling tests passed without hook skips. T-65 records added; coverage regeneration and push follow. #175 remains for peer approval, not merged by this session. Prior verification-preparation note is completed.
 
 - 2026-10-02: PR #175 CI found CodeQL incomplete-sanitization in #181 date-presence replace call. Replaced it with a direct Boolean check of the two source date values; focused 16 form tests, root typecheck and 76 tooling tests pass. Coverage regenerated unchanged. Final CI and peer approval remain required.
+
+- 2026-10-02: Resumed the interrupted E14-S02 scope change after reading the
+  originating OpenCode session. Recorded T-66/T-67, reconciled both backlog
+  views, retired the three old booking-log cases with consecutive E06-S04
+  replacements, and regenerated exports plus the compatibility inventory.
+  Sprint 3 carryover preserves Sprint 1 history. No Administrator role, global
+  audit endpoint, Jira transition or business-logic implementation is included.
+  Prepare the scope PR for the story owner's review; validation evidence lives
+  in this change's immutable tooling session record.
+  Repository hygiene and 76 tooling tests passed; the evidence session records
+  the pre-commit HEAD and working-tree scope. Playwright collection found 64
+  declarations without executing them. PostPlan prepared and visually checked:
+  https://oe19j1p9wxfc.postplan.dev.

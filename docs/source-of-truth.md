@@ -8,12 +8,12 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 270926.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 021026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 270926.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 300926.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 021026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 021026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 270926.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 021026.xlsx` |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
 The Markdown authority for ADR/BDR was accepted in
@@ -66,6 +66,11 @@ skipped or fixme test declarations change. Reconcile catalogue changes with that
 legacy audit input before claiming the generated inventory covers a new case set.
 The 2026-09-27 E11 routing update refreshed that compatibility input from the
 regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
+The 2 October T-66/T-67 scope update regenerates the same-day `CAA 021026`
+workbook under the rule above and refreshes the compatibility input. It retains
+TC_E14S02_03/_06/_07 as retired history and adds TC_E06S04_04/_05/_06. The
+coverage generator still counts retired catalogue rows as scaffold/skip; its
+256-row total is a strict inventory, not 256 current acceptance obligations.
 
 ## Requirement changes flow downstream
 

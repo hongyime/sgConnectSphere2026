@@ -1,5 +1,12 @@
 # Group C plan — per-role functional screens
 
+> Scope correction, 2 October 2026 (T-66): Admin screens in this historical
+> mock-screen plan are prototypes, not a Release 1 role or an E14-S02 delivery
+> requirement. Event Coordinators use the existing event Activity log; testers
+> inspect denial/deactivation records in the test database. Global Administrator
+> viewing is deferred to Release 2. The roles and Admin batch below describe the
+> earlier mock design, not the production role enum.
+
 Session plan for the four Sprint 2 stories that finish de-wireframing the
 frontend. Each story turns a Batch 5 wireframe role area into a working
 React component tree with mock data. No backend fetches, no schema changes.

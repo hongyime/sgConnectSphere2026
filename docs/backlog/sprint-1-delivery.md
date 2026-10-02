@@ -54,6 +54,19 @@ deployment checks, notification cadence and E09/E06 integration remain explicit
 release work. Existing BDR T-60's scoped backend acceptance is respected; no new
 scope reduction was invented by this audit.
 
+## E14-S02 follow-up — 2 October 2026
+
+The Sprint 1 audit above is historical and its commitment, counts and observed
+state remain unchanged. T-66 resolves the activity-log reader as an Event
+Coordinator viewing an event under existing permissions, with denial and
+deactivation evidence checked in the test database. T-67 transfers booking
+approval/rejection/release logging to E06-S04 and carries the remaining
+E14-S02 / SCRUM-86 work into Sprint 3 at the original 3-point estimate.
+The earlier reader ambiguity and booking dependency caused delay; they are now
+resolved for E14-S02 by those decisions. Scenarios 1, 2, 4 and 5 still require
+implementation, verification and peer review. This is a planning update, not a
+Done transition or a rewrite of Sprint 1 delivery.
+
 ## Remaining Release 1 roadmap
 
 All rows below remain To Do. Fixture-backed screens or reusable foundations

@@ -118,8 +118,8 @@ Given a venue is already Pending or Confirmed for another event over the same pe
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-08, T-39
-- **Owner**:
+- **BDR references**: C-08, T-39, T-66, T-67
+- **Owner**: Le Xin
 
 ### User story
 
@@ -139,6 +139,10 @@ Given I reject a request When I record a reason and optionally suggest an altern
 
 Given I attempt to reject without recording a reason When I confirm Then the rejection is blocked
 
+#### Scenario 4 — Booking decision recorded
+
+Given a venue booking is approved, rejected or released When the action completes Then an entry is recorded with the actor, the action, the affected records and the time
+
 ### Checklist
 
 - Approve a pending booking request for a free venue
@@ -148,6 +152,18 @@ Given I attempt to reject without recording a reason When I confirm Then the rej
 - Suggest an alternative venue alongside a rejection
 - Confirm the Coordinator can amend the request to the suggested venue without starting a new search
 - Confirm the Coordinator is notified of either decision
+- Record each booking approval, rejection and release with actor, action, affected booking/event and time in the same transaction as the action
+- Verify all three booking-log outcomes under TC_E06S04_04, TC_E06S04_05 and TC_E06S04_06
+
+### Audit ownership (T-67)
+
+Scenario 4 transfers E14-S02's former Scenario 3 to the story that implements
+booking decisions. Release logging remains required and is verified through the
+workflow that actually releases the booking, such as event cancellation in
+E10-S04; this does not add a standalone release screen or permission. The Event
+Coordinator inspects entries on an event they may already view (T-66).
+E14-S02 completion no longer waits on these booking workflows. The original
+3-point estimate remains unchanged; this decision does not claim delivery.
 
 ## E06-S05 — Hold a venue tentatively
 
