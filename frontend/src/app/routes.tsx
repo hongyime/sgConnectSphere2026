@@ -41,7 +41,8 @@ import { DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation
 import { VenueSearch } from '../features/venue/VenueSearch';
 import { VenueCalendar } from '../features/venue/VenueCalendar';
 import { VenueForm } from '../features/venue/VenueForm';
-import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail, VenueBlockout } from '../features/venue/Venue';
+import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
+import { VenueBlockout } from '../features/venue/VenueBlockout';
 import {
   EquipmentDashboard, EquipmentCatalogue, RequestQueue, ReservationDetail, TechnicianAssignment, ConflictState,
 } from '../features/support/Support';
@@ -151,7 +152,7 @@ export const routes: AppRoute[] = [
     <ComingSoon story="E06-S04" title="Decide on a venue booking"
       summary="Venue Staff approve or reject a single pending booking request with a required reason. Approving flags any competing pending requests as conflicting." />
   ), 'coming-soon', 'E06-S04'),
-  page('/venue/blockout', <VenueBlockout />, 'mock', 'E05-S04'),
+  page('/venue/blockout', <VenueBlockout />, 'live', 'E05-S04'),
 
   // Technical Support Staff
   page('/support', <EquipmentDashboard />, 'mock'),
