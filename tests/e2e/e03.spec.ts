@@ -543,7 +543,7 @@ test.describe("E03-S03", () => {
    *   Rejection reason: "Requested date unavailable across all venues" | Decision date: 10/09/2026
    *
    * Expected result:
-   *   The reason and decision date are shown in plain language (e.g. "Rejected on 10 September 2026 - Requested date unavailable across all venues"); all fields are read-only and cannot be edited
+   *   The reason and decision date are shown in plain language (e.g. "Rejected on 10 Sept 2026 — Requested date unavailable across all venues", the date as the app writes it); all fields are read-only and cannot be edited
    */
   test("TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only", async ({ page }) => {
     // Rejected on 10 Sept 2026, 10:00 Singapore time; dates show as
