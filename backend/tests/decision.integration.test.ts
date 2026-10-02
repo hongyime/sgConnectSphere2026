@@ -229,16 +229,19 @@ test('TC_E03S03_04: a rejection without a reason is refused and the request stay
 test('TC_E03S03_05: the Organiser sees the reason and decision date of a rejected request, cannot edit it, and the edit is refused', () => withFixture(async f => {
   const eventId = await f.event('EVT-4003', f.ids.organiserA, f.ids.coordA, 'under_review');
   await decideEventRequest(f.pool, f.user(f.ids.coordA), eventId, { decision: 'reject', reason: REASON });
-  await f.pool.query(`UPDATE audit_logs SET occurred_at = '2026-09-10T02:00:00Z' WHERE event_id = $1 AND field_changed = 'status'`, [eventId]);
-  // A later status_changed_at must not move the decision date.
-  await f.pool.query(`UPDATE events SET status_changed_at = '2026-09-20T02:00:00Z' WHERE id = $1`, [eventId]);
+  // The decision's audit entry is immutable (E14-S02, migration 0010), so read
+  // its time rather than backdating it.
+  const decidedAt = (await f.pool.query<{ occurred_at: Date }>(
+    `SELECT occurred_at FROM audit_logs WHERE event_id = $1 AND field_changed = 'status'`, [eventId])).rows[0]!.occurred_at;
+  // A different status_changed_at must not move the decision date.
+  await f.pool.query(`UPDATE events SET status_changed_at = '2020-01-01T00:00:00Z' WHERE id = $1`, [eventId]);
 
   const before = await getEvent(f.query, f.user(f.ids.organiserA), 'EVT-4003');
   assert.equal(before.canEdit, true, 'getEvent alone still offers editing; the wrapper is what makes it read-only');
   const view = await withDecision(f.query, before);
   assert.equal(view.decision?.outcome, 'rejected');
   assert.equal(view.decision?.reason, REASON);
-  assert.equal(view.decision?.decidedAt.toISOString(), '2026-09-10T02:00:00.000Z');
+  assert.equal(view.decision?.decidedAt.toISOString(), decidedAt.toISOString());
   assert.equal(view.canEdit, false);
   assert.deepEqual(view.editableFields, []);
 
