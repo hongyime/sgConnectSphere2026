@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { AlertTriangle, Lock, Save } from 'lucide-react';
 import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
+import { fieldList } from './eventEditFields';
 import './eventEdit.css';
 
 export type EventEditValues = {
@@ -76,7 +77,7 @@ function toDraft(values: EventEditValues): Draft {
     accessibilityNote: values.accessibility_note ?? '',
     equipmentRequirements: values.equipment_requirements ?? '',
     layoutPreference: values.layout_preference ?? '',
-    registrationDates: `${values.registration_opens_at ?? ''}|${values.registration_closes_at ?? ''}`,
+    registrationDates: `${values.registration_opens_at ? toLocalInput(values.registration_opens_at) : ''}|${values.registration_closes_at ? toLocalInput(values.registration_closes_at) : ''}`,
   };
 }
 
@@ -190,15 +191,15 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
               };
               return (
                 <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`}>
-                  <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
-                  {spec.field === 'registrationDates' ? <div className="event-edit-date-pair">
+                  {spec.field === 'registrationDates' ? <fieldset className="event-edit-date-pair">
+                    <legend>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</legend>
                     <label htmlFor={`${id}-opens`}>Opens</label>
                     <input id={`${id}-opens`} type="datetime-local" value={(draft[spec.field] ?? '').split('|')[0]} readOnly={locked}
                       onChange={change => update(spec.field, `${change.target.value}|${(draft[spec.field] ?? '').split('|')[1] ?? ''}`)} />
                     <label htmlFor={`${id}-closes`}>Closes</label>
                     <input id={`${id}-closes`} type="datetime-local" value={(draft[spec.field] ?? '').split('|')[1] ?? ''} readOnly={locked}
                       onChange={change => update(spec.field, `${(draft[spec.field] ?? '').split('|')[0] ?? ''}|${change.target.value}`)} />
-                  </div> : spec.kind === 'textarea'
+                  </fieldset> : <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>}{spec.field === 'registrationDates' ? null : spec.kind === 'textarea'
                     ? <textarea rows={3} {...common} />
                     : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
                   {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}

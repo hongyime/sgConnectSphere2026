@@ -66,3 +66,20 @@ test('date fields warn that a change notifies people and name the time zone', ()
   }
   cleanup();
 });
+
+test('registration date fields show existing ISO values in local input format', () => {
+  render(
+    <EventEditForm
+      eventId="evt-1"
+      values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+        expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null,
+        registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z' }}
+      editable={new Set(['registrationDates'])}
+      onSaved={() => {}}
+      onCancel={() => {}}
+    />,
+  );
+  expect(screen.getByLabelText('Opens')).toHaveValue(toLocalInput('2026-09-01T00:00:00.000Z'));
+  expect(screen.getByLabelText('Closes')).toHaveValue(toLocalInput('2026-10-09T00:00:00.000Z'));
+  cleanup();
+});

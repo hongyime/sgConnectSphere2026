@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { PencilLine } from 'lucide-react';
 import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
+import { fieldList } from '../events/eventEditFields';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
@@ -120,7 +121,7 @@ export function ClientEvents() {
           lockedNote={< >This field is restricted after approval. <a href={`/change-requests/new?event=${encodeURIComponent(event.id)}`}>Request a change</a>.</>}
           intro={<p>Before approval you can update all event details. After approval, restricted fields must go through a change request.</p>}
           onCancel={() => setEditing(false)}
-          onSaved={fields => { setEditing(false); setSaved(`Saved your changes to ${fields.join(', ')}. The activity log has been updated.`); setRevision(value => value + 1); }}
+          onSaved={fields => { setEditing(false); setSaved(`Saved your changes to the ${fieldList(fields)}. The activity log has been updated.`); setRevision(value => value + 1); }}
         /> : null}
         <p>{event.description}</p><p>{event.purpose}</p><p>{new Date(event.starts_at).toLocaleString()} – {event.ends_at ? new Date(event.ends_at).toLocaleString() : 'time not set'}</p><p>Created by {event.creator_name}</p>
         <section aria-labelledby="event-information-heading"><h3 id="event-information-heading">Event information</h3><dl>

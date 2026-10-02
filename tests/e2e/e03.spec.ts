@@ -17,6 +17,9 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
       if (patch.expectedAttendance) event = { ...event, expected_attendance: patch.expectedAttendance as number };
       if (patch.description) event = { ...event, description: patch.description as string };
       if (patch.purpose) event = { ...event, purpose: patch.purpose as string };
+      const changedField = Object.keys(patch)[0];
+      const changedValue = patch[changedField];
+      event = { ...event, activityLog: [...event.activityLog, { occurred_at: '2026-09-11T00:00:00.000Z', action: 'Record updated', field_changed: changedField, old_value: null, new_value: typeof changedValue === 'string' ? changedValue : String(changedValue), actor_name: 'Organiser A', actor_email: 'organiser_a@clienta.com' }] };
       await route.fulfill({ status: 200, json: { updated: true, fields: Object.keys(patch) } });
       return;
     }
@@ -648,7 +651,7 @@ test.describe("E03-S07", () => {
     const form = page.getByRole('form', { name: 'Edit event details' });
     await form.getByLabel('Expected attendance').fill('250');
     await form.getByRole('button', { name: 'Save changes' }).click();
-    await expect(page.getByRole('status')).toContainText('expectedAttendance');
+    await expect(page.getByRole('status')).toContainText('expected attendance');
   });
 
   /**
@@ -789,6 +792,7 @@ test.describe("E03-S07", () => {
     await form.getByLabel('Purpose').fill('Updated purpose');
     await form.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByRole('status')).toContainText('purpose');
+    await expect(page.getByRole('heading', { name: 'Activity log' }).locator('..')).toContainText('Updated purpose');
   });
 
 });
