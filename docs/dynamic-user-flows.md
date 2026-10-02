@@ -292,3 +292,92 @@ sequenceDiagram
         NOT-->>AT: Updated date, time, venue or cancellation details
     end
 ```
+
+## 13. Dynamic view - Event Coordinator Lead (Week 7, C-69)
+
+```mermaid
+sequenceDiagram
+    actor LD as Event Coordinator Lead
+    participant UI as React Web Application
+    participant IAM as Access Control
+    participant EVT as Event Lifecycle
+    participant DB as PostgreSQL
+    participant NOT as Notification Dispatcher
+
+    LD->>UI: Log in
+    UI->>IAM: Validate session and Lead role
+    UI->>EVT: Open unassigned queue
+    EVT->>DB: Read events with status Submitted and no coordinator, oldest first
+    EVT-->>UI: Queue with basic event information
+
+    LD->>UI: Open a queued request and choose a Coordinator
+    UI->>EVT: List Coordinators with active-event counts
+    EVT->>DB: Count events per Coordinator in active statuses
+    LD->>UI: Assign
+    UI->>EVT: Assign Coordinator (E03-S08)
+    EVT->>DB: Set coordinator_id and assigned_by, status Under Review, append audit entry
+    EVT->>NOT: Notify assigned Coordinator and Organiser
+    Note over EVT,DB: Replaces the automatic assignment of E03-S01; same Submitted to Under Review transition
+
+    alt Lead reassigns directly (E03-S09, O-36)
+        LD->>UI: Reassign to another Coordinator
+        UI->>EVT: Reassign
+        EVT->>DB: Replace coordinator_id, set assigned_by, append audit entry
+        EVT->>NOT: Notify outgoing and incoming Coordinators and the Organiser
+    else Coordinator asked the Lead (O-37)
+        EVT->>DB: Read reassignment requests addressed to the Lead
+        LD->>UI: Reassign or decline with a note
+        EVT->>NOT: Notify the requesting Coordinator
+    end
+
+    LD->>UI: Open oversight view (E03-S10)
+    UI->>EVT: Read every active event with its Coordinator or Unassigned
+    EVT->>DB: Read events in active statuses, including Safety Review
+    EVT-->>UI: Assignments, workload per Coordinator, filters
+```
+
+## 14. Dynamic view - Safety Officer (Week 7, C-70)
+
+```mermaid
+sequenceDiagram
+    actor EC as Event Coordinator
+    actor SO as Safety Officer
+    participant UI as React Web Application
+    participant IAM as Access Control
+    participant EVT as Event Lifecycle
+    participant VEN as Venue Management
+    participant EQ as Equipment and Support
+    participant DB as PostgreSQL
+    participant NOT as Notification Dispatcher
+
+    EC->>UI: Submit event for Operational Safety Check (E08-S03)
+    UI->>EVT: Check readiness
+    EVT->>VEN: Every venue booking Confirmed or withdrawn, at least one Confirmed
+    EVT->>EQ: Equipment fully reserved, technical support assigned
+    alt Readiness incomplete
+        EVT-->>UI: Blocked, outstanding items listed by venue and item
+    else Ready
+        EVT->>DB: Status Planning to Safety Review, insert safety_checks row with submitted_at, append audit entry
+        EVT->>NOT: Notify Safety Officer and Organiser
+    end
+
+    SO->>UI: Log in
+    UI->>IAM: Validate session and Safety Officer role
+    UI->>EVT: Open safety review queue (E08-S06)
+    EVT->>DB: Read events in Safety Review with venues, capacities, layouts, restrictions, attendance, accessibility, equipment
+    EVT-->>UI: Queue, oldest first
+
+    SO->>UI: Record each of seven factors as satisfactory or not, with comments
+    alt Approve
+        SO->>UI: Approve
+        UI->>EVT: Record decision approved
+        EVT->>DB: Write safety_check_factors, decision, status Safety Review to Confirmed, append audit entry
+        EVT->>NOT: Notify Organiser and Coordinator with confirmed details
+    else Request changes or reject (reason mandatory, O-41)
+        SO->>UI: Request changes or reject with reason
+        UI->>EVT: Record decision
+        EVT->>DB: Write factors, decision and reason, status Safety Review to Planning, flag affected arrangements, append audit entry
+        EVT->>NOT: Notify Coordinator and Organiser with the items
+        Note over EVT,DB: The event is never cancelled by a safety decision; the Coordinator reworks and resubmits
+    end
+```

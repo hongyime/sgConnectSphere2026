@@ -1,6 +1,6 @@
 # ADR-006 — Transactional outbox for notification delivery
 
-- **Status:** Accepted
+- **Status:** Accepted (amended 3 October 2026, see end)
 - **Related BDR:** C-04, C-53, T-35, T-36, T-44, T-64
 
 ### Context
@@ -78,3 +78,9 @@ equipment, publication/change, cancellation, waitlist and inbox integrations to
 their owning stories. Full E11-S01 acceptance and real provider delivery remain
 open until their corresponding evidence exists. No new migration is needed for
 this hook layer; the explicit Venue Staff relationship is follow-up schema work.
+
+### Amended 3 October 2026 for the Week 7 Customer Changes
+
+Tentative holds now expire (C-68, T-69), which is the first time-driven state change in the system: nothing a user does triggers it. T-69 places the expiry job on the existing Scheduler and Outbox Relay process rather than introducing a scheduler, so the container count in the C4 model stays at two background processes. On each poll the relay also runs `UPDATE venue_bookings SET status = 'expired' WHERE status = 'tentative' AND expires_at <= now() RETURNING ...` in one transaction with the notification and audit rows for each expired hold, so the outbox guarantee (notification row and business write commit together) holds for system-generated changes exactly as it does for user-generated ones. The 24-hour reminder (O-33) is a second query in the same poll keyed on `reminder_sent_at IS NULL AND expires_at <= now() + interval '24 hours'`. Both are idempotent by construction: the status change and the `reminder_sent_at` stamp are the guards, so a re-run after a crash produces no duplicate (TC_E06S05_06 step 3).
+
+The routing matrix in E11-S01 gains rows for the Event Coordinator Lead (queue entry, reassignment requests) and the Safety Officer (event enters Safety Review, safety decision). Neither role is a matrix column because nothing else routes to them; the resolver treats them as named recipients of those changes.

@@ -1,5 +1,12 @@
 # Agent State
 
+- 2026-10-03: Week 7 architecture pass on `docs/week7-architecture` (stacked on
+  change 6): dated amendments to ADR-003/006/007/009/012, ADR README v7,
+  db_schema ERD + pending migration 0011, C4 and module docs to seven roles,
+  user-flow sections 13-14, new docs/class-diagram.md and
+  docs/api-changes-week7.md, ADR .docx regenerated (CAA 031026). Depends on
+  #194 and the #197-#202 stack. Details in
+  .agents/handoffs/20261003-docs-week7-architecture.md.
 - 2026-10-03: Week 7 Change 6 backlog + cases on
   `docs/week7-change-6-safety-officer` (stacked on change 5): E08-S03 now
   submits for Safety Review instead of setting Confirmed; E08-S04 re-review
