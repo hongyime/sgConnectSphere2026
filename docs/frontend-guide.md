@@ -58,8 +58,9 @@ export function createBlock(venueId: string, input: { from: string; to: string; 
 ```
 
 `apiCall` shows the server's `error` message when it is a sentence (the API
-writes those to be safe to show) and your fallback otherwise. A machine code
-such as `booking_conflict` arrives in `result.code`, per-field messages from
+writes those to be safe to show). When `error` is a machine code such as
+`booking_conflict`, it shows the body's `message` sentence if there is one,
+and your fallback otherwise. The code arrives in `result.code`, per-field messages from
 `{ errors: { from: [...] } }` in `result.fieldErrors` (pass them to each
 `FormField`), and the whole error body in `result.details` (for example
 `details.conflictingBookings`).
@@ -105,7 +106,12 @@ import { stubApi } from '../../testing/fakeApi';
 test('Venue Staff see an overlap refusal naming the booking', async () => {
   stubApi({
     'GET /api/venues?blocks=1': { body: { blocks: [] } },
-    'POST /api/venues': { status: 409, body: { error: 'This period overlaps a confirmed booking.' } },
+    // The real blocks API body: a code in `error`, the sentence in `message`.
+    'POST /api/venues': { status: 409, body: {
+      error: 'booking_conflict',
+      message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.',
+      conflictingBookings: [{ eventCode: 'EVT-2002', title: 'Annual Tech Summit', startsAt: '2026-11-12T01:00:00.000Z' }],
+    } },
   }, { role: 'venue_staff' });
   // render, fill in the form, submit…
   expect(await screen.findByRole('alert')).toHaveTextContent('overlaps a confirmed booking');
