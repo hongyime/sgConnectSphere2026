@@ -1,5 +1,23 @@
 # Agent State
 
+- 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
+
+- 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
+
+  - 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
+  after #175 (1780b3c): E10-S01 now includes /change-requests/new
+  (coming-soon) and E03-S07 includes the Organiser edit on /events/*.
+  Coming-soon route count is 3. SCRUM-118.
+
+  - 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
+  generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
+  Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per
+  design.md section 4) plus a second table for routes with no Release 1 story. Framed
+  as a draft for Amareet's SCRUM-118 review; Amareet's own draft is not in the repo
+  so the two must be reconciled. Verification: python scripts/check.py (PASS, 76
+  tests). Open items: reconcile against Amareet's draft; add rows if new routes land.
+
+  - 2026-10-02: Review on #182. Merged main (1780b3c) into
 - 2026-10-02: Addressed Amareet's PR #184 review locally: venue suitability is
   a shared StatusPill in Card actions; the single no-full-matches Alert remains.
   Added browser assertions against per-result alerts. Focused browser 8,
