@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **253**
-- Automated (explicit TC_ID in an active test title): **117** (46.2%)
-  - Real-database (`.integration.test` / `.db.test`): **32**
+- Automated (explicit TC_ID in an active test title): **118** (46.6%)
+  - Real-database (`.integration.test` / `.db.test`): **33**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **84**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (52.6%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (52.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
 ## Coverage by epic
@@ -28,9 +28,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 35 | 5 | 30 | 0 |
 | E10 | 15 | 0 | 15 | 0 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 7 | 0 | 7 | 0 |
+| E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **253** | **117** | **133** | **3** |
+| **Total** | **253** | **118** | **132** | **3** |
 
 ## Case-by-case status
 
@@ -337,7 +337,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_02 - Verify that a denied access attempt should be recorded with the user, target, and time |
 | `TC_E14S02_03` | E14-S02 | Verify that an approved venue booking should be recorded with the actor, action, | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_03 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_04 - Verify that an account deactivation should be recorded in the activity log |
-| `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_05 - Verify that any attempt to edit or delete an activity log entry should be refused |
+| `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ✅ active | backend/tests/auditLogImmutability.integration.test.ts: TC_E14S02_05: an activity log entry cannot be edited or deleted, even by the server connection; tests/e2e/e14.spec.ts: TC_E1 |
 | `TC_E14S02_06` | E14-S02 | Verify that a rejected venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E14S02_07` | E14-S02 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
 
@@ -356,6 +356,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
 - E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial
+
+### `backend/tests/auditLogImmutability.integration.test.ts`
+
+- deleting a draft event keeps its activity log entries and only clears the event link
+- deleting a user keeps their activity log entries and only clears the actor
 
 ### `backend/tests/clarification.test.ts`
 
