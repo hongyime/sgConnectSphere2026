@@ -1,4 +1,10 @@
 # Agent State
+- 2026-10-02: Sprint 1 execution-record backfill. Added ten reconstructed
+  session files under docs/testing/runs/ for the evidence cited in pull
+  requests 94 and 95. Counts and outcomes are copied from those pull
+  request bodies and docs/testing/login-recovery.md. Not re-run. No
+  BACKFILL outcome exists in the schema, so historic results stay PASS,
+  FAIL, or SKIP. Other pre-October pull requests are not included.
 
 - 2026-10-02: Review on #182. Merged main (1780b3c) into
   feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
