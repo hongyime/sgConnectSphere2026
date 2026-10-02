@@ -1,5 +1,10 @@
 # Agent State
 
+- 2026-10-02: Review on #182. Merged main (1780b3c) into
+  feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
+  Typeface row, per design.md section 14. Google Fonts stays; the choice
+  and the IP trade-off are in docs/decisions/0011. SCRUM-117.
+
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
   Coordinator, venue and Organiser pages moved onto the shared blocks), #179
@@ -313,3 +318,9 @@ Known env facts:
 - 2026-09-29: PR #136 refreshed against main 9630c2a. Restored the complete main continuity files before adding this entry, addressing the review finding about truncated history. No application change in this refresh; renewed final-head peer approval is required.
 - 2026-09-30: PR #137 refreshed against current main after #136 merged; main continuity files copied byte-for-byte before appending this entry and tc-coverage.md regenerated. No application change in this refresh; renewed final-head peer approval is required.
 - 2026-09-30: PR #146 refreshed against current main; main continuity files copied byte-for-byte before appending this entry. Addressed review: separate backend/frontend PRs with their own Jira tickets count as independently reviewable increments; branch-age wording aligned; stale #145 note updated. Instructor announcement quoted verbatim in docs/plans/instructor-guidance-2026-09-28.md.
+
+- 2026-10-02: PR #175 / SCRUM-37 stale coverage CI failure reproduced exactly: four E03-S07 cases changed from scaffold to active and a date-field component test was omitted. Regenerated tc-coverage.md; no application code changes. Local repository verification and immutable tooling evidence are being prepared before pushing the fix.
+
+- 2026-10-02: PR #175 / SCRUM-37 follow-up: #181 was already merged; pulled it and normally merged main. Added registration date hint/error ARIA regression and activity-log actor assertion. Root typecheck, 188 Vitest tests, 32 desktop/mobile E03 tests (24 scaffold skips), and 76 tooling tests passed without hook skips. T-65 records added; coverage regeneration and push follow. #175 remains for peer approval, not merged by this session. Prior verification-preparation note is completed.
+
+- 2026-10-02: PR #175 CI found CodeQL incomplete-sanitization in #181 date-presence replace call. Replaced it with a direct Boolean check of the two source date values; focused 16 form tests, root typecheck and 76 tooling tests pass. Coverage regenerated unchanged. Final CI and peer approval remain required.

@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **253**
-- Automated (explicit TC_ID in an active test title): **113** (44.7%)
+- Automated (explicit TC_ID in an active test title): **117** (46.2%)
   - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **75**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **137** (54.2%)
+  - Live-assertion (other active tests): **79**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (52.6%)
 - No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
 ## Coverage by epic
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 42 | 35 | 7 | 0 |
+| E03 | 42 | 39 | 3 | 0 |
 | E05 | 24 | 24 | 0 | 0 |
 | E06 | 22 | 4 | 18 | 0 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 0 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **253** | **113** | **137** | **3** |
+| **Total** | **253** | **117** | **133** | **3** |
 
 ## Case-by-case status
 
@@ -131,12 +131,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
 | `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
 | `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
-| `TC_E03S07_01` | E03-S07 | Verify that an Organiser should be able to directly edit any field while the eve | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved |
+| `TC_E03S07_01` | E03-S07 | Verify that an Organiser should be able to directly edit any field while the eve | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved |
 | `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log |
-| `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
-| `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
+| `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
+| `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
 | `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
-| `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser |
+| `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser |
 
 ### E05
 
@@ -713,6 +713,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - changed dates are sent as ISO timestamps
 - toLocalInput round-trips through the browser time zone
 - date fields warn that a change notifies people and name the time zone
+- registration date fields show existing ISO values in local input format
+- locked registration dates with no values are left out, as on the Coordinator form
+- registration date inputs describe the validation error and hint after an invalid save
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
