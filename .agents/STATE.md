@@ -25,6 +25,11 @@
   auto-expiry, reminder/notice, extension and boundary scenarios; E11-S01 gains
   a routing row; TC_E06S05_03-07. Depends on #194, #197, #199. Details in
   .agents/handoffs/20261003-docs-week7-change-4-hold-expiry.md.
+- 2026-10-03: Week 7 Change 2 backlog + cases on
+  `docs/week7-change-2-venue-unavailable` (stacked on change 1): new E05-S06
+  mark venue unavailable over bookings, E10-S05 back in Release 1, ten new
+  TC_IDs, exports regenerated. Depends on #194 and #197. Details in
+  .agents/handoffs/20261003-docs-week7-change-2-venue-unavailable.md.
 - 2026-10-03: Week 7 Change 3 backlog + cases on `docs/week7-change-3-multi-venue`
   (stacked on change 1): E06-S03 Scenario 3 inverted to allow several venue
   bookings per event with per-booking headcount, windows and a primary venue;
