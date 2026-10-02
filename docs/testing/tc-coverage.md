@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **253**
 - Automated (explicit TC_ID in an active test title): **117** (46.2%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+  - Real-database (`.integration.test` / `.db.test`): **28**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **79**
+  - Live-assertion (other active tests): **88**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (52.6%)
 - No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
@@ -105,14 +105,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_02: a complete answer resolves the question, returns the request to Under Review and notifies the Coordinator once; tests |
 | `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_03: both event detail reads list the outstanding questions with the date each was raised; tests/e2e/e03.spec.ts: TC_E03S0 |
 | `TC_E03S02_04` | E03-S02 | Verify that an Event Coordinator should be able to filter their events by clarif | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_04: a Coordinator can filter their events to Awaiting Clarification; tests/e2e/e03.spec.ts: TC_E03S02_04 - Verify that an |
-| `TC_E03S02_05` | E03-S02 | Verify that a Coordinator who is not assigned to a request should be refused whe | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_05: a Coordinator not assigned to the request is refused, nothing changes and the attempt is audited |
-| `TC_E03S02_06` | E03-S02 | Verify that clarification cannot be requested on a request that is not Under Rev | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_06: clarification cannot be requested on a request that is not Under Review |
+| `TC_E03S02_05` | E03-S02 | Verify that a Coordinator who is not assigned to a request should be refused whe | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_05: a Coordinator not assigned to the request is refused, nothing changes and the attempt is audited; frontend/src/featur |
+| `TC_E03S02_06` | E03-S02 | Verify that clarification cannot be requested on a request that is not Under Rev | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_06: clarification cannot be requested on a request that is not Under Review; frontend/src/features/coordinator/RequestCla |
 | `TC_E03S02_07` | E03-S02 | Verify that a clarification request with no question, or only a blank question,  | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_07: a request with no question, or only blank questions, is rejected; backend/tests/clarification.test.ts: TC_E03S02_07:  |
 | `TC_E03S02_08` | E03-S02 | Verify the 2000-character limit on a clarification question | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_08: a 2001-character question is rejected and a 2000-character question is accepted; backend/tests/clarification.test.ts: |
 | `TC_E03S02_09` | E03-S02 | Verify that the Organiser must answer every outstanding question before the requ | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_09: a partial answer is rejected and every question stays outstanding; backend/tests/clarification.test.ts: TC_E03S02_09: |
-| `TC_E03S02_10` | E03-S02 | Verify that only the Organiser who owns a request can answer its clarification q | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_10: another Organiser in the same organisation cannot answer, and the attempt is audited |
-| `TC_E03S02_11` | E03-S02 | Verify that answers are refused when the request is not Awaiting Clarification | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_11: answers are refused while the request is not Awaiting Clarification |
-| `TC_E03S02_12` | E03-S02 | Verify that several questions can be sent together, are all shown, and are all r | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_12: two questions are sent in one notice, both listed, and both resolved by one complete response |
+| `TC_E03S02_10` | E03-S02 | Verify that only the Organiser who owns a request can answer its clarification q | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_10: another Organiser in the same organisation cannot answer, and the attempt is audited; frontend/src/features/organiser |
+| `TC_E03S02_11` | E03-S02 | Verify that answers are refused when the request is not Awaiting Clarification | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_11: answers are refused while the request is not Awaiting Clarification; frontend/src/features/organiser/AnswerQuestions. |
+| `TC_E03S02_12` | E03-S02 | Verify that several questions can be sent together, are all shown, and are all r | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_12: two questions are sent in one notice, both listed, and both resolved by one complete response; tests/e2e/e03.spec.ts: |
 | `TC_E03S03_01` | E03-S03 | Verify that approving a request with complete required information should move i | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_01: approving a complete Under Review request makes it Approved, audits it and notifies the Organiser once; backend/tests/deci |
 | `TC_E03S03_02` | E03-S03 | Verify that approval should be blocked while required information is incomplete, | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_02: approval is blocked while Venue requirements is missing, the item is listed and nothing changes; backend/tests/decision.in |
 | `TC_E03S03_03` | E03-S03 | Verify that rejecting a request under review with a recorded reason should set i | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_03: rejecting with a reason makes the request Rejected, stores the reason and notifies the Organiser once, with the reason; te |
@@ -703,6 +703,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a signed-out Coordinator is asked to sign in
 - a failed load can be retried
 
+### `frontend/src/features/coordinator/RequestClarification.test.tsx`
+
+- the event page offers Request clarification only while the request is Under Review
+- the send button is busy while the questions are on their way
+- a late answer for the previous event never replaces the current one
+- the reply is handled under StrictMode, as in development
+
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
 - sends only the fields that changed, trimmed and typed
@@ -726,6 +733,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - API failures show a safe retryable error
 - a failed read request leaves the notification unread and shows the error
 
+### `frontend/src/features/organiser/AnswerQuestions.test.tsx`
+
+- an over-long answer is caught before sending
+- a request that is not yours or does not exist shows not found
+- the send button is busy while the answers are on their way
+- a late answer for the previous request never replaces the current one
+- the reply is handled under StrictMode, as in development
+
 ### `frontend/src/features/organiser/Organiser.test.tsx`
 
 - dashboard counts come from the live own-requests list
@@ -740,7 +755,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - detail timeline shows the real status history, newest first
 - detail accepts an event code and resolves it to the request
 - detail links to the event page for comments
-- detail flags a clarification request without linking to the unbuilt response form
+- detail flags a clarification request and offers no answer link when no questions are outstanding
 - detail treats a colleague\
 - detail treats an unknown or refused id as not found
 - detail treats a successful reply with no event as not found rather than a retry loop
@@ -911,7 +926,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request list filters between drafts and awaiting review
 - request list opens the live request detail with its status history
 - request detail shows not found for a request that is not yours
-- clarification response (mock) requires every answer before submit
 
 ### `tests/e2e/skeleton.spec.ts`
 

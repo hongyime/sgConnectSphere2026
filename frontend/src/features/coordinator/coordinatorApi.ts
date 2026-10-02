@@ -3,6 +3,7 @@
 // messages); the screens use the status only to choose the layout
 // (401 sign-in prompt, 403 refusal, anything else a retryable error).
 import { apiCall, jsonRequest } from '../../shared';
+import type { OutstandingQuestion } from '../events/clarificationApi';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
@@ -51,6 +52,8 @@ export type AssignedEventDetail = Omit<AssignedEventSummary, 'reassignment_pendi
   coordinator_name: string;
   organiser_email: string;
   pendingReassignment: Reassignment | null;
+  // E03-S02 (SCRUM-33): unanswered clarification questions.
+  outstandingQuestions?: OutstandingQuestion[];
 };
 
 export type Colleague = { id: string; full_name: string; email: string; active_events: number };
