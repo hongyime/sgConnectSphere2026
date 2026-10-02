@@ -183,6 +183,23 @@ describe('ConfirmPanel', () => {
     render(<ConfirmPanel title="Approve?" confirmLabel="Approve" error="Required information is incomplete." onConfirm={vi.fn()} onCancel={vi.fn()} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Required information is incomplete.');
   });
+
+  test('can replace the missing-reason message with the API sentence', () => {
+    const onConfirm = vi.fn();
+    render(<ConfirmPanel title="Reject this request?" confirmLabel="Reject request" reasonLabel="Reason"
+      reasonRequiredMessage="Add a reason for rejecting this request." danger onConfirm={onConfirm} onCancel={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Reason'), { target: { value: '   ' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Reject request' }));
+    expect(onConfirm).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Reason')).toHaveAccessibleDescription('Add a reason for rejecting this request.');
+  });
+
+  test('shows the busy label on the confirm button while busy', () => {
+    render(<ConfirmPanel title="Approve this request?" confirmLabel="Approve request" busyLabel="Approving…" busy
+      onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'Approving…' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+  });
 });
 
 describe('lists and feedback', () => {

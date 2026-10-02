@@ -55,11 +55,18 @@ export function FormActions({ children }: { children: ReactNode }) {
 
 // Inline "are you sure?" step for decisions: approve, reject, cancel, withdraw,
 // revert. With `reasonLabel`, a reason is required before confirming.
-export function ConfirmPanel({ title, description, confirmLabel, reasonLabel, danger = false, busy = false, error, onConfirm, onCancel }: {
+export function ConfirmPanel({
+  title, description, confirmLabel, busyLabel, reasonLabel, reasonRequiredMessage, danger = false, busy = false, error, onConfirm, onCancel,
+}: {
   title: string;
   description?: ReactNode;
   confirmLabel: string;
+  // Shown on the confirm button while busy, e.g. "Rejecting…".
+  busyLabel?: string;
   reasonLabel?: string;
+  // Replaces "<reasonLabel> is required." so the screen can use the API's own
+  // sentence for the same rule (design.md section 8.5).
+  reasonRequiredMessage?: string;
   danger?: boolean;
   busy?: boolean;
   // Server refusal to show inside the panel.
@@ -80,13 +87,13 @@ export function ConfirmPanel({ title, description, confirmLabel, reasonLabel, da
       {description ? <div className="ui-confirm-description">{description}</div> : null}
       {error ? <p role="alert" className="ui-inline-error"><AlertTriangle size={14} aria-hidden="true" /> {error}</p> : null}
       {reasonLabel ? (
-        <FormField label={reasonLabel} error={missing ? `${reasonLabel} is required.` : undefined} wide>
+        <FormField label={reasonLabel} error={missing ? reasonRequiredMessage ?? `${reasonLabel} is required.` : undefined} wide>
           {props => <textarea {...props} rows={3} value={reason} onChange={change => { setReason(change.target.value); setMissing(false); }} />}
         </FormField>
       ) : null}
       <FormActions>
         <Button onClick={onCancel} disabled={busy}>Cancel</Button>
-        <Button type="submit" variant={danger ? 'danger' : 'primary'} busy={busy}>{confirmLabel}</Button>
+        <Button type="submit" variant={danger ? 'danger' : 'primary'} busy={busy} busyLabel={busyLabel}>{confirmLabel}</Button>
       </FormActions>
     </form>
   );
