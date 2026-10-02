@@ -102,8 +102,8 @@ Brand.
 | Token | Value | Use |
 | --- | --- | --- |
 | `--teal` | `#0e7c7b` | Primary buttons, links, active nav, focus ring |
-| `--teal-hover` | `#14a3a1` | Hover on teal fills (see 11.1 about text contrast) |
-| `--teal-dark` | `#0a5958` | Pressed state; eyebrow text; text on `--teal-soft` |
+| `--teal-hover` | `#14a3a1` | Non-text hover tints only; primary button hover uses `--teal-dark` |
+| `--teal-dark` | `#0a5958` | Primary button hover and pressed state; eyebrow text; text on `--teal-soft` |
 | `--teal-soft` | `#e4f3f1` | Active navigation and selected chip background |
 
 Status hues. Each comes as a pair: a `-soft` tint for the background and the
@@ -113,8 +113,8 @@ use these pairs and nothing else.
 | Hue | Text / border | Tint | Means |
 | --- | --- | --- | --- |
 | Blue | `--blue` `#2b6cb0` | `--blue-soft` `#e7f0fb` | In progress: submitted, under review, planning; a confirmed booking on the calendar; informational alerts |
-| Green | `--green` `#1f9254` | `--green-soft` `#e7f4ed` | Done or available: approved, confirmed, completed, free |
-| Amber | `--amber` `#d9a017` for marks only; `#8a6200` for text | `--amber-soft` `#fff4d3` | Needs someone: awaiting clarification, tentative, warnings |
+| Green | `--green` `#1f9254` for marks only; `--green-ink` `#166f40` for text | `--green-soft` `#e7f4ed` | Done or available: approved, confirmed, completed, free |
+| Amber | `--amber` `#d9a017` for marks only; `--amber-ink` `#8a6200` for text | `--amber-soft` `#fff4d3` | Needs someone: awaiting clarification, tentative, warnings |
 | Red | `--red` `#c0392b` | `--red-soft` `#fbecea` | Stopped or refused: rejected, cancelled, blocked, errors, danger buttons |
 | Slate | `--slate` `#4d5a64` | `--slate-soft` `#e9eef1` | Not yet real: draft, neutral |
 | Violet | `--violet` `#6f56a6` | `--violet-soft` `#f0eafa` | Scheduled for later (`status-future`) |
@@ -123,8 +123,8 @@ use these pairs and nothing else.
 Rules.
 
 - Text on a tint uses the deep value of the same hue. Amber text is
-  `#8a6200`, not `--amber`: `--amber` on `--amber-soft` is 2.1:1 and
-  unreadable. See 11.2 for the proposed `--amber-ink` token.
+  `--amber-ink`, not `--amber`: `--amber` on `--amber-soft` is 2.1:1 and
+  unreadable. Green text is `--green-ink` for the same reason.
 - Text on `--teal-soft` is `--teal-dark` (7.1:1), not `--teal` (4.4:1).
 - Colour never carries a meaning alone. Every pill has a label; every calendar
   state has a text label beside its colour; every alert has an icon and
@@ -141,10 +141,10 @@ Measured contrast of the pairs above (WCAG 2.2 formula, rounded):
 | `--muted` on `--surface` | 6.7 | AA |
 | `--teal` on `--surface` | 5.0 | AA for text, links and the focus ring |
 | White on `--teal` | 5.0 | AA for primary button text |
-| White on `--teal-hover` | 3.1 | Fails AA for button text; raised in 11.1 |
+| White on `--teal-dark` (button hover) | 8.1 | AAA |
 | `--blue` on `--blue-soft` | 4.7 | AA |
-| `--green` on `--green-soft` | 3.5 | Fails AA for 12px pill text; raised in 11.1 |
-| `#8a6200` on `--amber-soft` | 5.0 | AA |
+| `--green-ink` on `--green-soft` | 5.5 | AA |
+| `--amber-ink` on `--amber-soft` | 5.0 | AA |
 | `--red` on `--red-soft` | 4.7 | AA |
 | `--slate` on `--slate-soft` | 6.1 | AA |
 | `--violet` on `--violet-soft` | 5.0 | AA |
@@ -214,7 +214,8 @@ Three radii, by role.
 | Pill | `999px` | Status pills, count badges, calendar badges, avatars |
 
 Older pages also use 6px on controls and 12px on sign-in cards. Those migrate
-to 8px and 10px when touched (section 12). Proposed tokens in 11.2.
+to 8px and 10px when touched (section 12). Tokens: `--radius-card`,
+`--radius-control`, `--radius-pill`.
 
 ### 3.5 Shadow and border
 
@@ -227,7 +228,7 @@ border. Nothing else has a shadow, glow or gradient.
 
 ### 3.6 Motion
 
-- Colour and border changes on hover: `120ms ease`.
+- Colour and border changes on hover: `120ms ease` (`--duration-fast`).
 - Loading: the `LoadingState` shimmer (`1.4s ease-in-out`) and `Button`
   busy spinner (`0.9s linear`), both disabled under
   `prefers-reduced-motion: reduce`.
@@ -536,12 +537,11 @@ not undo it.
 - **Respect preferences.** Shimmer and spinner stop under
   `prefers-reduced-motion: reduce`. Text may be zoomed to 200% without loss.
 - **Contrast.** Text meets 4.5:1; the pairs in 3.1 are the only ones allowed.
-  Two known failures (green pill text, hover on primary buttons) are raised
-  in 11.1 for the skeleton to fix; do not work around them locally.
 - **Target size.** Buttons are at least 40px tall; chips and icon buttons at
   least 32px with 8px between them.
 
-Missing today and proposed in 11.2: a skip link to `<main>`.
+- **Skip to content.** Every signed-in page starts with a "Skip to content"
+  link (from `AppShell`), visible on focus, that moves focus to `<main>`.
 
 ---
 
@@ -572,22 +572,13 @@ authorises a story owner to work around the skeleton locally.
 | Topic | What the skeleton does | What this document asks | Proposed resolution |
 | --- | --- | --- | --- |
 | Typeface | `Inter` leads the font stack but is not loaded by `frontend/index.html`; users see their system font | One intended family that every user actually sees | Decide: self-host Inter (variable font, `font-display: swap`; a small dependency such as `@fontsource-variable/inter` needs the team's dependency decision) or drop `Inter` from the stack and accept the system face. Recommendation: self-host; the Figma plan and the brand chose Inter |
-| Primary button hover | `.primary-action:hover` lightens to `--teal-hover`, white text at 3.1:1 | Button text at 4.5:1 in every state | Hover darkens to `--teal-dark` instead; keep `--teal-hover` for non-text uses such as the row hover tint |
-| Green pill text | `--green` `#1f9254` on `--green-soft` is 3.5:1 at 12px | 4.5:1 | Add `--green-ink` (around `#166f40`, 5.5:1 on the tint) for pill and badge text, mirroring the amber pattern |
-| Eyebrow tracking | `.eyebrow` in `styles.css` sets `letter-spacing: 0`; the eight feature copies use `0.08em` | `0.08em`, the value the team has been using everywhere | Set it on the canonical class and delete the copies |
-| Disabled controls | Four treatments: `--soft` fill, `opacity: .7`, `opacity: .6`, `opacity: .55` | One: `--soft` fill with `cursor: not-allowed`, as `.primary-action:disabled` does | Make `Button` the only disabled treatment |
 | Table header | Shared `.ui-table th` uses `--surface-strong`; feature tables use `rgba(15, 23, 42, 0.03)` | `--surface-strong` | Already correct in the skeleton; feature tables migrate (section 12) |
-| Skip link | None | A "Skip to content" link as the first focusable element, visible on focus | Add to `AppShell` |
-| Focus ring | Global 3px ring; `login.css`, `venue.css` use 2px; `eventEdit.css` removes it on two elements | 3px everywhere | Remove the overrides as pages are touched |
+| Focus ring | Global 3px ring; `login.css` uses 2px; `eventEdit.css` removes it on two programmatically focused elements (`tabIndex=-1`) | 3px everywhere | Remove the overrides as pages are touched |
 
 ### 11.2 Token additions proposed
 
 | Token | Value | Why |
 | --- | --- | --- |
-| `--amber-ink` | `#8a6200` | Already used in six places as a literal; the only readable amber text |
-| `--green-ink` | around `#166f40` | See 11.1 |
-| `--radius-card`, `--radius-control`, `--radius-pill` | `10px`, `8px`, `999px` | Six raw radii in the code today; three roles in this document |
-| `--duration-fast` | `120ms` | Hover timing is written four ways (`120ms`, `0.15s`) |
 | `--text-xl` | keep or remove | Defined, never used. Either the `h2` of a dashboard section adopts it or it goes |
 | Weight token names | rename or document | `--weight-medium` is 600 and `--weight-semibold` is 700, one step heavier than the names suggest. Renaming (`--weight-semibold` 600, `--weight-bold` 700, `--weight-heavy` 800) is cleaner; documenting is cheaper. This document describes the values, so either works |
 

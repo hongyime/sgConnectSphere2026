@@ -109,12 +109,12 @@
 .ui-facts a { color: var(--teal-dark); }
 
 /* --- Buttons --- */
-.secondary-action.ui-danger {
+.secondary-action.ui-danger:not(:disabled) {
   border-color: rgba(192, 57, 43, 0.4);
   color: var(--red);
 }
 
-.secondary-action.ui-danger:hover,
+.secondary-action.ui-danger:not(:disabled):hover,
 .secondary-action.ui-danger:focus-visible {
   border-color: var(--red);
   background: var(--red-soft);
@@ -164,7 +164,7 @@ fieldset.ui-form-section:first-of-type {
   min-height: 42px;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: #fbfbfa;
   color: var(--ink);
   font: inherit;
@@ -214,7 +214,7 @@ fieldset.ui-form-section:first-of-type {
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: var(--text-base);
   line-height: 1.5;
 }
@@ -223,9 +223,9 @@ fieldset.ui-form-section:first-of-type {
 .ui-alert svg { margin-top: 3px; }
 .ui-alert-action { align-self: center; }
 
-.ui-alert-success { border-color: rgba(31, 146, 84, 0.3); background: var(--green-soft); color: var(--green); }
+.ui-alert-success { border-color: rgba(31, 146, 84, 0.3); background: var(--green-soft); color: var(--green-ink); }
 .ui-alert-info { border-color: rgba(43, 108, 176, 0.3); background: var(--blue-soft); color: var(--blue); }
-.ui-alert-warning { border-color: rgba(217, 160, 23, 0.45); background: var(--amber-soft); color: #8a6200; }
+.ui-alert-warning { border-color: rgba(217, 160, 23, 0.45); background: var(--amber-soft); color: var(--amber-ink); }
 .ui-alert-error { border-color: rgba(192, 57, 43, 0.3); background: var(--red-soft); color: var(--red); }
 
 /* --- Loading, empty and error states --- */
@@ -250,7 +250,7 @@ fieldset.ui-form-section:first-of-type {
   place-items: center;
   width: 48px;
   height: 48px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--teal-soft);
   color: var(--teal-dark);
 }
@@ -281,7 +281,7 @@ fieldset.ui-form-section:first-of-type {
 
 .ui-skeleton span {
   height: 52px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: linear-gradient(90deg, var(--surface-strong) 25%, #f7f9f7 50%, var(--surface-strong) 75%);
   background-size: 200% 100%;
   animation: ui-shimmer 1.4s ease-in-out infinite;
@@ -301,7 +301,7 @@ fieldset.ui-form-section:first-of-type {
 .ui-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
   background: var(--surface);
 }
 
@@ -352,7 +352,7 @@ fieldset.ui-form-section:first-of-type {
   min-height: 36px;
   padding: 0 var(--space-3);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface);
   color: var(--ink);
   font: inherit;
@@ -373,7 +373,7 @@ fieldset.ui-form-section:first-of-type {
   min-width: 22px;
   height: 20px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-strong);
   color: var(--muted);
   font-size: 12px;
@@ -415,7 +415,7 @@ fieldset.ui-form-section:first-of-type {
     gap: var(--space-3) var(--space-4);
     padding: var(--space-4);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-card);
     background: var(--surface);
   }
   .ui-table td { display: grid; gap: 2px; padding: 0; border: 0; }

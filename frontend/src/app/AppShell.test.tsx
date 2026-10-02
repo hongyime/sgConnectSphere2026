@@ -1,7 +1,7 @@
 // The shared header appears exactly once on signed-in pages (from AppShell,
 // not from the page), never on public pages; /home follows the user's role;
 // placeholder routes show the standard Coming soon page.
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { App } from '../App';
@@ -36,6 +36,16 @@ test('older pages now sit inside the shared header too', async () => {
   renderAt('/venue/inventory');
   const nav = await screen.findByRole('navigation', { name: 'Main' });
   expect(nav).toHaveTextContent('Inventory');
+});
+
+test('the skip link is the first stop and moves focus to the page', async () => {
+  stubApi('event_coordinator');
+  renderAt('/coordinator');
+  await screen.findByRole('heading', { level: 1, name: 'Workload dashboard' });
+  const skip = screen.getByRole('link', { name: 'Skip to content' });
+  expect(document.querySelectorAll('a, button')[0]).toBe(skip);
+  fireEvent.click(skip);
+  expect(document.activeElement).toBe(document.querySelector('main'));
 });
 
 test('public pages have no shared header', async () => {
