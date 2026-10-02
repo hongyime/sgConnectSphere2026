@@ -52,6 +52,10 @@ import { AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading } from 
 import { ComingSoon } from './ComingSoon';
 import { HomeRedirect } from './HomeRedirect';
 import { UiKit } from './UiKit';
+import { ListTemplate } from '../templates/ListTemplate';
+import { DetailTemplate } from '../templates/DetailTemplate';
+import { FormTemplate } from '../templates/FormTemplate';
+import { DecisionTemplate } from '../templates/DecisionTemplate';
 
 export type RouteAccess = 'public' | 'signed-in';
 export type RouteStatus = 'live' | 'mock' | 'coming-soon' | 'redirect';
@@ -66,6 +70,8 @@ export type AppRoute = {
 
 const pub = (path: string, element: ReactElement, story?: string): AppRoute =>
   ({ path, element, access: 'public', status: 'live', story });
+const sample = (path: string, element: ReactElement): AppRoute =>
+  ({ path, element, access: 'signed-in', status: 'mock' });
 const page = (path: string, element: ReactElement, status: RouteStatus, story?: string): AppRoute =>
   ({ path, element, access: 'signed-in', status, story });
 
@@ -85,6 +91,12 @@ export const routes: AppRoute[] = [
   page('/permission-denied', <PermissionDenied />, 'live'),
   // Reference page for the shared building blocks (sample data, no API calls).
   page('/ui-kit', <UiKit />, 'live'),
+  // Copyable page templates running on in-memory sample data (frontend/src/templates).
+  sample('/ui-kit/templates/list', <ListTemplate />),
+  sample('/ui-kit/templates/new', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id', <DetailTemplate />),
+  sample('/ui-kit/templates/items/:id/edit', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id/decide', <DecisionTemplate />),
 
   // Event Organiser
   page('/events', <ClientEvents />, 'live', 'E01-S02'),
