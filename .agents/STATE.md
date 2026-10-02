@@ -13,6 +13,9 @@
   Local repository hygiene and 76 tooling tests passed; immutable evidence is
   in docs/testing/runs/. Playwright collection only: 64 declarations, no business
   test execution. PostPlan: https://oe19j1p9wxfc.postplan.dev.
+  Scope PR: https://github.com/hongyime/sgConnectSphere2026/pull/192.
+  Requested next action: story-owner review after final-head readiness checks;
+  do not merge or close the business story as part of this scope update.
   Jira scope/planning reconciliation follows merge. Implementation and peer
   verification remain the story owner's work; other worktrees are untouched.
 

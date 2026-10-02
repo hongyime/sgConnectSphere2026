@@ -149,9 +149,14 @@
   replacements, and regenerated exports plus the compatibility inventory.
   Sprint 3 carryover preserves Sprint 1 history. No Administrator role, global
   audit endpoint, Jira transition or business-logic implementation is included.
-  Prepare the scope PR for the story owner's review; validation evidence lives
+  Scope PR #192 is open for the story owner's review; validation evidence lives
   in this change's immutable tooling session record.
   Repository hygiene and 76 tooling tests passed; the evidence session records
   the pre-commit HEAD and working-tree scope. Playwright collection found 64
   declarations without executing them. PostPlan prepared and visually checked:
   https://oe19j1p9wxfc.postplan.dev.
+  Scope commit 4363ebf was pushed on the named branch. The inherited personal
+  identity hook required a timestamp-scoped exception for the T-65 runner field;
+  no hook or secret scan was bypassed. Automatic Jira key extraction from the
+  actual PR metadata is empty. PR #192 is unmerged; review and CI remain GitHub
+  gates, and Jira scope/planning changes wait for canonical merge.
