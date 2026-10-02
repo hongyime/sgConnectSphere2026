@@ -5,6 +5,7 @@ scope: backend/unit                # see README.md for allowed values
 environment: local                 # local | ci
 run_type: manual                   # manual | automated | regression
 test_case_version: DDMMYY        # suffix of the PROJECT TEST CASES CAA workbook in force
+database: mocked                   # mocked | real | none; see README.md
 commit: 0000000                    # 7-character SHA from: git rev-parse --short HEAD
 # pr: 000                          # optional; uncomment and fill if tied to an open PR
 ---

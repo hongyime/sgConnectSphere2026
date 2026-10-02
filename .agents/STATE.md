@@ -1,5 +1,11 @@
 # Agent State
 
+- 2026-10-03: Sprint 2 retro leftovers on `ci/sprint-2-retro-pr-evidence`
+  (base main): PR template and CONTRIBUTING ask for command/commit/outcome/
+  environment per cited run and a mocked-vs-real-database label; run records
+  gain `database:`; `vercel-deploy.yml` skips drafts and deploys on
+  ready_for_review (decision 0010 amended). Details in
+  .agents/handoffs/20261003-ci-sprint-2-retro-pr-evidence.md.
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
