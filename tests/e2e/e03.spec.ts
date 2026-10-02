@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { coordA, coordB, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
+import { coordinator, fakeClarificationBackend, organiser } from './helpers/clarificationBackend';
 
 async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend>[0], status: string) {
   let event = {
@@ -234,14 +235,25 @@ test.describe("E03-S02", () => {
    * Expected result:
    *   The status changes to "Awaiting Clarification" and organiser_a@clienta.com is notified, with the question included in the notification
    */
-  test.fixme("TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the Organiser", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Select "Request Clarification"
-    // 4. Enter the question "Please confirm the expected number of attendees"
-    // 5. Click "Send"
-    void page;
+  test("TC_E03S02_01 - Verify that recording and sending clarification questions on an Under-Review request should move it to Awaiting Clarification and notify the Organiser", async ({ page }) => {
+    // E03-S02 Scenario 1 as both users see it. The rules and the stored
+    // questions, status and notices are proven against PostgreSQL in
+    // backend/tests/clarification.integration.test.ts.
+    const backend = await fakeClarificationBackend(page);
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    await page.getByRole('link', { name: 'Request clarification' }).click();
+    await page.getByLabel('Question 1').fill('Please confirm the expected number of attendees');
+    await page.getByRole('button', { name: 'Send questions' }).click();
+
+    await expect(page.getByText('Questions sent. The request is now awaiting clarification.')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Awaiting clarification');
+    await expect(page.getByRole('region', { name: 'Outstanding questions' })).toContainText('Please confirm the expected number of attendees');
+    expect(backend.status).toBe('awaiting_clarification');
+
+    backend.signInAs(organiser);
+    await page.goto('/notifications');
+    await page.getByRole('button', { name: 'Clarification requested' }).click();
+    await expect(page.getByText(/1\. Please confirm the expected number of attendees/)).toBeVisible();
   });
 
   /**
@@ -258,13 +270,24 @@ test.describe("E03-S02", () => {
    * Expected result:
    *   The status returns to "Under Review" and coordinator_1@connectsphere.com is notified of the response
    */
-  test.fixme("TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Enter a response to the outstanding question: "Expected attendance is 200"
-    // 4. Click "Resubmit"
-    void page;
+  test("TC_E03S02_02 - Verify that when the Organiser responds and resubmits, the request should return to Under Review and notify the Coordinator", async ({ page }) => {
+    const backend = await fakeClarificationBackend(page, {
+      status: 'awaiting_clarification', questions: [{ body: 'Please confirm the expected number of attendees', raisedAt: '2026-09-08T02:00:00.000Z' }],
+    });
+    await page.goto('/organiser/requests/EVT-ANNUAL');
+    await page.getByRole('link', { name: 'Respond now' }).click();
+    await page.getByLabel(/^1\. Please confirm/).fill('Expected attendance is 200');
+    await page.getByRole('button', { name: 'Send answers' }).click();
+
+    await expect(page.getByText('Answers sent. The request is back under review.')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Under review');
+    await expect(page.getByRole('region', { name: 'Outstanding questions' })).toHaveCount(0);
+    expect(backend.status).toBe('under_review');
+
+    backend.signInAs(coordinator);
+    await page.goto('/notifications');
+    await page.getByRole('button', { name: 'Clarification answered' }).click();
+    await expect(page.getByText(/1\. Please confirm the expected number of attendees\s+Answer: Expected attendance is 200/)).toBeVisible();
   });
 
   /**
@@ -281,12 +304,21 @@ test.describe("E03-S02", () => {
    * Expected result:
    *   The outstanding question is shown together with the date it was raised (08/09/2026)
    */
-  test.fixme("TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as either organiser_a@clienta.com or coordinator_1@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Review the clarification section
-    void page;
+  test("TC_E03S02_03 - Verify that a request Awaiting Clarification should show its outstanding questions and the date they were raised", async ({ page }) => {
+    // Dates show as design.md section 8.1 writes them (D19); 08/09/2026 reads "8 Sept 2026".
+    const backend = await fakeClarificationBackend(page, {
+      status: 'awaiting_clarification', questions: [{ body: 'Please confirm the expected number of attendees', raisedAt: '2026-09-08T02:00:00.000Z' }],
+    });
+    await page.goto('/organiser/requests/EVT-ANNUAL');
+    const organiserView = page.getByRole('region', { name: 'Outstanding questions' });
+    await expect(organiserView).toContainText('Please confirm the expected number of attendees');
+    await expect(organiserView).toContainText('Asked by Coord B on 8 Sept 2026');
+
+    backend.signInAs(coordinator);
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    const coordinatorView = page.getByRole('region', { name: 'Outstanding questions' });
+    await expect(coordinatorView).toContainText('Please confirm the expected number of attendees');
+    await expect(coordinatorView).toContainText('Asked by Coord B on 8 Sept 2026');
   });
 
   /**
@@ -303,12 +335,71 @@ test.describe("E03-S02", () => {
    * Expected result:
    *   Only the 2 events with status "Awaiting Clarification" are displayed; the other 3 are excluded
    */
-  test.fixme("TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Navigate to "My Events"
-    // 3. Apply the filter "Status = Awaiting Clarification"
-    void page;
+  test("TC_E03S02_04 - Verify that an Event Coordinator should be able to filter their events by clarification status", async ({ page }) => {
+    // The queue's clarification chip reads "Awaiting organiser" (decision D20).
+    await fakeClarificationBackend(page, { withOtherEvents: true });
+    await page.goto('/coordinator/queue');
+    const chip = page.getByRole('button', { name: /Awaiting organiser/ });
+    await expect(chip).toContainText('2');
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('link', { name: 'Robotics Open Day' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Charity Run' })).toBeVisible();
+    for (const other of ['Annual Tech Summit', 'Faculty Career Mixer', 'Design Studio Recital']) {
+      await expect(page.getByRole('link', { name: other })).toHaveCount(0);
+    }
+  });
+
+  /**
+   * TC_E03S02_12
+   * AC:      E03-S02 - Scenario 1, 2 and 3 (checklist: record one or more questions)
+   * Sprint:  2.0
+   *
+   * Pre-conditions:
+   *   Event EVT-2003 has status "Under Review", is owned by organiser_c@clientb.com, and is assigned to coord_b@connectsphere.com
+   *
+   * Test data:
+   *   Questions: "Please confirm the expected number of attendees", "Do you need lab equipment?" | Answers: "Expected attendance is 40", "No lab equipment is needed"
+   *
+   * Expected result:
+   *   After step 1, the request is "Awaiting Clarification" and the Organiser has one notification that includes both questions. At step 2, both questions are listed with the date they were raised. After step 4, it is "Under Review", no question is outstanding, and the Coordinator is notified of the response
+   */
+  test("TC_E03S02_12 - Verify that several questions can be sent together, are all shown, and are all resolved by one complete response", async ({ page }) => {
+    // The fake backend's request stands in for the seeded EVT-2003; the
+    // stored threads, resolution and audit rows are proven against
+    // PostgreSQL in backend/tests/clarification.integration.test.ts.
+    const backend = await fakeClarificationBackend(page);
+    await page.goto('/coordinator/events/EVT-ANNUAL/clarify');
+    await page.getByLabel('Question 1').fill('Please confirm the expected number of attendees');
+    await page.getByRole('button', { name: 'Add another question' }).click();
+    await page.getByLabel('Question 2').fill('Do you need lab equipment?');
+    await page.getByRole('button', { name: 'Send questions' }).click();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Awaiting clarification');
+
+    backend.signInAs(organiser);
+    await page.goto('/notifications');
+    await expect(page.getByRole('button', { name: 'Clarification requested' })).toHaveCount(1);
+    await page.getByRole('button', { name: 'Clarification requested' }).click();
+    await expect(page.getByText(/1\. Please confirm the expected number of attendees\s+2\. Do you need lab equipment\?/)).toBeVisible();
+
+    await page.goto('/organiser/requests/EVT-ANNUAL');
+    const questions = page.getByRole('region', { name: 'Outstanding questions' }).locator('dd');
+    await expect(questions).toHaveCount(2);
+    await expect(questions.nth(0)).toContainText('Asked by Coord B on 8 Sept 2026');
+    await expect(questions.nth(1)).toContainText('Asked by Coord B on 8 Sept 2026');
+    await page.getByRole('link', { name: 'Respond now' }).click();
+    await page.getByLabel(/^1\. /).fill('Expected attendance is 40');
+    await page.getByLabel(/^2\. /).fill('No lab equipment is needed');
+    await page.getByRole('button', { name: 'Send answers' }).click();
+
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Under review');
+    await expect(page.getByRole('region', { name: 'Outstanding questions' })).toHaveCount(0);
+    expect(backend.questions.map(question => question.answer)).toEqual(['Expected attendance is 40', 'No lab equipment is needed']);
+
+    backend.signInAs(coordinator);
+    await page.goto('/notifications');
+    await page.getByRole('button', { name: 'Clarification answered' }).click();
+    await expect(page.getByText(/2\. Do you need lab equipment\?\s+Answer: No lab equipment is needed/)).toBeVisible();
   });
 
 });

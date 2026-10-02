@@ -8,6 +8,7 @@
 //     which adds the event code, status history and comments (snake_case).
 // Requests go through the shared apiCall (session cookie, ADR-015).
 import { apiCall, type ApiFailure, type ApiResult } from '../../shared';
+import { readQuestions, type OutstandingQuestion } from '../events/clarificationApi';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
@@ -36,6 +37,20 @@ export type RequestDetail = OwnRequest & {
   statusChangedAt: string | null;
   statusHistory: StatusHistoryEntry[];
   comments: RequestComment[];
+  // E03-S02: unanswered clarification questions (empty unless awaiting clarification).
+  outstandingQuestions: OutstandingQuestion[];
+};
+
+// E03-S02 (SCRUM-33) answer screen. `owner` is false for a colleague in the
+// same organisation: they can read the request, but only the Organiser who
+// submitted it may answer (TC_E03S02_10, decision D21).
+export type ClarificationRequest = {
+  id: string;
+  eventCode: string | null;
+  title: string;
+  status: EventStatus;
+  owner: boolean;
+  outstandingQuestions: OutstandingQuestion[];
 };
 
 const LIST_FAILED = 'Your requests could not be loaded. Please try again.';
@@ -97,6 +112,33 @@ export async function getRequestDetail(identifier: string, signal?: AbortSignal)
       statusChangedAt: event.status_changed_at ?? null,
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
       comments: Array.isArray(event.comments) ? event.comments : [],
+      outstandingQuestions: readQuestions(event.outstandingQuestions),
+    },
+  };
+}
+
+// The organisation read carries the questions; the own-requests read only
+// says whether the caller owns the request (it answers a colleague's with 404).
+export async function getClarificationRequest(identifier: string, signal?: AbortSignal): Promise<ApiResult<ClarificationRequest>> {
+  const summary = await apiCall<{ event?: Record<string, any> }>(
+    `/api/events?id=${encodeURIComponent(identifier)}`, { signal }, DETAIL_FAILED);
+  if (!summary.ok) return summary.status === 403 || summary.status === 404 ? NOT_FOUND : summary;
+  const event = summary.data.event;
+  if (!event?.id || !EVENT_STATUSES.includes(event.status)) return NOT_FOUND;
+
+  const own = await apiCall<{ event?: unknown }>(
+    `/api/events?mine=1&id=${encodeURIComponent(event.id)}`, { signal }, DETAIL_FAILED);
+  if (!own.ok && own.status !== 404) return own;
+
+  return {
+    ok: true,
+    data: {
+      id: event.id,
+      eventCode: event.event_code ?? null,
+      title: typeof event.title === 'string' ? event.title : '',
+      status: event.status,
+      owner: own.ok && Boolean(own.data.event),
+      outstandingQuestions: readQuestions(event.outstandingQuestions),
     },
   };
 }
