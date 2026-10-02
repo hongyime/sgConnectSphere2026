@@ -811,6 +811,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - returns the data on success and sends the session cookie
 - uses the server
 - keeps field errors and conflict details, and swaps a machine code for the fallback
+- shows the body
 - a network failure becomes status 0; an abort is re-thrown
 - a late response for an earlier id never replaces the current one
 - reload keeps the current data on screen while refreshing
