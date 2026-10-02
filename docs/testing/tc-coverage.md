@@ -714,6 +714,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - date fields warn that a change notifies people and name the time zone
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
+- registration date inputs describe the validation error and hint after an invalid save
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
