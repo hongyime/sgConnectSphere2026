@@ -3,7 +3,7 @@
 // blocks, create a block, shorten a block, and remove a block. Server 409
 // refusals (confirmed-booking overlap, existing-block overlap) are shown
 // verbatim with the conflicting item named; the save confirmation reports how
-// many Coordinators were notified about affected upcoming events.
+// many upcoming events had their Coordinator notified.
 //
 // Backend contract: see api/venues/index.ts (?blocks=1 for the list; POST
 // actions block / shorten_block / remove_block) and
@@ -172,8 +172,8 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
 
 function notifiedMessage(notified: number): string {
   if (notified === 0) return 'Block saved.';
-  if (notified === 1) return 'Block saved. 1 Coordinator was notified about an affected upcoming event.';
-  return `Block saved. ${notified} Coordinators were notified about affected upcoming events.`;
+  if (notified === 1) return 'Block saved. The Coordinator was notified for 1 affected upcoming event.';
+  return `Block saved. Coordinators were notified for ${notified} affected upcoming events.`;
 }
 
 function BlocksTable({ blocks, onShorten, onRemove }: {

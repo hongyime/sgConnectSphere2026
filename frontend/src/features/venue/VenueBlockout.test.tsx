@@ -3,7 +3,7 @@
 // action: 'block' / 'shorten_block' / 'remove_block' responses. The server
 // decides the business rules (overlap, lengthening, auth); these tests check
 // the screen shows the server's refusals faithfully, reads the notified
-// Coordinator count from the success body, and reloads after each change.
+// event count from the success body, and reloads after each change.
 //
 // TC_E05S04_01..04 map to the four scenarios from the backlog; the TC_id
 // appears in each test's title so the traceability matrix picks it up.
@@ -100,7 +100,7 @@ test('TC_E05S04_02 - shows the server message and names the conflicting booking 
   expect(alert).toHaveTextContent('EVT-9');
 });
 
-test('TC_E05S04_03 - the success alert names how many Coordinators were notified (Scenario 3)', async () => {
+test('TC_E05S04_03 - the success alert names the number of events with a Coordinator notification (Scenario 3)', async () => {
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
     'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [] } },
@@ -118,7 +118,7 @@ test('TC_E05S04_03 - the success alert names how many Coordinators were notified
   fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Renovation' } });
   fireEvent.click(screen.getByRole('button', { name: /Save block/ }));
 
-  expect(await screen.findByText(/2 Coordinators were notified about affected upcoming events/)).toBeInTheDocument();
+  expect(await screen.findByText(/Coordinators were notified for 2 affected upcoming events/)).toBeInTheDocument();
 });
 
 test('TC_E05S04_04 - shortening restores availability for the released dates, and lengthening is refused on the client', async () => {

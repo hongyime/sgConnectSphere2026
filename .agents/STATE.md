@@ -1,5 +1,7 @@
 # Agent State
 
+- 2026-10-02: PR #185 review follow-up: integrated main 139217e and regenerated the conflicted coverage inventory. Corrected the maintenance success message to count affected events, matching notifiedEventCount; it does not count unique Coordinators. Targeted component/browser and runtime verification is recorded in a new T-65 session, including local environment failures and their recovery. Awaiting renewed owner review; database acceptance coverage remains a separate follow-up.
+
 - 2026-10-02: Merged origin/main through f0c4264 (#175 organiser edit and
   #182 Inter) into feature/SCRUM-120-maintenance-blocks. Regenerated
   docs/testing/tc-coverage.md. /venue/blockout is still live. SCRUM-120.

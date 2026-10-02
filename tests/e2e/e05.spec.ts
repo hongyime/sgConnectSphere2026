@@ -677,7 +677,7 @@ test.describe("E05-S04", () => {
     await page.getByLabel('To').fill('2027-01-25');
     await page.getByLabel('Reason').fill('Renovation');
     await page.getByRole('button', { name: /Save block/ }).click();
-    await expect(page.getByText(/2 Coordinators were notified/)).toBeVisible();
+    await expect(page.getByText(/Coordinators were notified for 2 affected upcoming events/)).toBeVisible();
   });
 
   /**
