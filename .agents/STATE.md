@@ -1,5 +1,20 @@
 # Agent State
 
+- 2026-10-02: Week 7 Customer Changes recorded in the BDR on
+  docs/week7-customer-changes-bdr (worktree, off main 139217e). C-65 to
+  C-70 verbatim, T-66 to T-73, O-20 to O-44 with defaults and Q&A wording,
+  README version 6 with Safety Review inserted between Planning and Confirmed
+  (interim, O-39), E05-S05 and E10-S05 returned, G change log, BDR docx CAA
+  021026 regenerated and registered in source-of-truth. Docs only; no backlog
+  Markdown, test cases, ADRs or diagrams touched yet. Those are the next PRs in
+  order: roles foundation (T-72), then one PR per change for backlog + cases,
+  then architecture. Sprint 2 is still open; E05-S04 AC deliberately not edited
+  (T-67). The customer Q&A may not happen until the week of 9 October; T-73
+  says write now, amend after. Local feature/skeleton-templates-guide was
+  deleted after confirming #173 merged; the uncommitted .agents edits from
+  the Codex session on it are in git stash (stash@{0}, "agents-continuity-
+  edits-from-codex-session-2026-10-02"), not lost. Codex worktrees
+  (-backfill, -design, -e14, -pr182, -pr183, -pr191) untouched.
 - 2026-10-02: Review on #182. Merged main (1780b3c) into
   feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
   Typeface row, per design.md section 14. Google Fonts stays; the choice
