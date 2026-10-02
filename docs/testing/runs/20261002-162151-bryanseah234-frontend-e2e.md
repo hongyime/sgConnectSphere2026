@@ -6,7 +6,6 @@ environment: local
 run_type: manual
 test_case_version: 011026
 commit: f39e81e
-pr: 184
 ---
 
 `npx playwright test tests/e2e/e05.spec.ts --grep E05-S04 --project=desktop`

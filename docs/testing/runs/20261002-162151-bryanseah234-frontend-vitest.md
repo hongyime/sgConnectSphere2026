@@ -6,7 +6,6 @@ environment: local
 run_type: manual
 test_case_version: 011026
 commit: f39e81e
-pr: 184
 ---
 
 `npx vitest run --pool vmThreads --no-file-parallelism` in `frontend/` on
