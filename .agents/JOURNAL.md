@@ -160,3 +160,15 @@
   no hook or secret scan was bypassed. Automatic Jira key extraction from the
   actual PR metadata is empty. PR #192 is unmerged; review and CI remain GitHub
   gates, and Jira scope/planning changes wait for canonical merge.
+
+- 2026-10-02: PR #192 refreshed after #190 merged as 9d5ae60. Preserved its
+  immutability migration/tests and regenerated the sole coverage conflict:
+  118 active, 135 scaffold, 3 absent out of 256 catalogue rows. Local tooling
+  verification is recorded in the new main-refresh session file. No application
+  suite or migration was run by this scope refresh.
+  The #190 Jira sync run 37018654001 prematurely moved SCRUM-86 from In Progress
+  to Done despite the merged PR explicitly delivering only Scenario 5. Verified
+  the live issue was Done, then restored In Progress using its available workflow
+  transition; Jira confirmed In Progress. This is a progress correction from
+  merged evidence, not an early scope/sprint reconciliation. No reassignment,
+  estimate or sprint change. PR #192 remains unmerged for the story owner's review.

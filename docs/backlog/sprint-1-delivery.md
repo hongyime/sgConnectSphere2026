@@ -67,6 +67,19 @@ resolved for E14-S02 by those decisions. Scenarios 1, 2, 4 and 5 still require
 implementation, verification and peer review. This is a planning update, not a
 Done transition or a rewrite of Sprint 1 delivery.
 
+### Same-day progress correction after the immutability merge
+
+On 2 October 2026, [PR #190](https://github.com/hongyime/sgConnectSphere2026/pull/190)
+merged the Scenario 5 immutability slice as `9d5ae60`. Its body explicitly says
+that E14-S02 is incomplete. Nevertheless,
+[Jira sync run 37018654001](https://github.com/hongyime/sgConnectSphere2026/actions/runs/37018654001)
+reported `SCRUM-86: transitioned In Progress -> Done` at 14:16 UTC.
+The live issue was confirmed Done and restored to In Progress on the same date;
+Jira confirmed the resulting status. This corrects progress using already
+merged evidence under `docs/source-of-truth.md`. Assignee, estimate and sprint
+were not changed; the T-66/T-67 scope/planning reconciliation still waits for
+[PR #192](https://github.com/hongyime/sgConnectSphere2026/pull/192) to merge.
+
 ## Remaining Release 1 roadmap
 
 All rows below remain To Do. Fixture-backed screens or reusable foundations

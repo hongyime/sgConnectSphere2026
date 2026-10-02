@@ -1,5 +1,17 @@
 # Agent State
 
+- 2026-10-02: PR #192 refreshed after #190 merged as 9d5ae60. Preserved its
+  immutability migration/tests and regenerated the sole coverage conflict:
+  118 active, 135 scaffold, 3 absent out of 256 catalogue rows. Local tooling
+  verification is recorded in the new main-refresh session file. No application
+  suite or migration was run by this scope refresh.
+  The #190 Jira sync run 37018654001 prematurely moved SCRUM-86 from In Progress
+  to Done despite the merged PR explicitly delivering only Scenario 5. Verified
+  the live issue was Done, then restored In Progress using its available workflow
+  transition; Jira confirmed In Progress. This is a progress correction from
+  merged evidence, not an early scope/sprint reconciliation. No reassignment,
+  estimate or sprint change. PR #192 remains unmerged for the story owner's review.
+
 - 2026-10-02: E14-S02 scope decisions on `docs/e14-s02-activity-log-scope`.
   T-66 permits Coordinator reading through the existing event Activity log
   within existing event access; denial/deactivation verification uses the test
