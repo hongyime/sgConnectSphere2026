@@ -740,6 +740,11 @@ test.describe("E03-S07", () => {
     const form = page.getByRole('form', { name: 'Edit event details' });
     await expect(form.getByLabel('Starts')).toHaveAttribute('readonly', '');
     await expect(form.getByRole('link', { name: 'Request a change' }).first()).toHaveAttribute('href', /change-requests\/new/);
+    // Following the link lands on the change request page (E10-S01), not the landing page.
+    await form.getByRole('link', { name: 'Request a change' }).first().click();
+    await expect(page).toHaveURL(/\/change-requests\/new\?event=event-annual/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Request a change' })).toBeVisible();
+    await expect(page.getByText('Coming soon · E10-S01')).toBeVisible();
   });
 
   /**

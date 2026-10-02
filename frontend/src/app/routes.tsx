@@ -95,6 +95,12 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode/clarify', <ClarificationResponse />, 'mock', 'E03-S02'),
   page('/organiser/requests/:eventCode/change', <ChangeRequest />, 'mock', 'E10-S01'),
   page('/organiser/requests/:eventCode/cancel', <CancellationForm />, 'mock', 'E10-S04'),
+  // Where restricted post-approval edits (E03-S07) and the edit API's 409
+  // changeRequestUrl send the Organiser, until E10-S01 builds the form.
+  page('/change-requests/new', (
+    <ComingSoon story="E10-S01" title="Request a change"
+      summary="After approval, changes to restricted event details such as the date, attendance or requirements go through a change request that the assigned Coordinator reviews." />
+  ), 'coming-soon', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
   page('/organiser/drafts', <OrganiserDrafts />, 'live', 'E02-S02'),
   page('/organiser/drafts/:id', <OrganiserDraftEdit />, 'live', 'E02-S02'),

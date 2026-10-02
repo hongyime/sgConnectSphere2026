@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { PencilLine } from 'lucide-react';
 import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
@@ -118,7 +118,7 @@ export function ClientEvents() {
           eventId={event.id}
           values={{ title: event.title, description: event.description, purpose: event.purpose ?? null, starts_at: event.starts_at, ends_at: event.ends_at ?? event.starts_at, expected_attendance: event.expected_attendance ?? 1, venue_requirements: event.venue_requirements ?? null, accessibility_note: event.accessibility_note ?? null, equipment_requirements: event.equipment_requirements ?? null, layout_preference: event.layout_preference ?? null, registration_opens_at: event.registration_opens_at ?? null, registration_closes_at: event.registration_closes_at ?? null }}
           editable={new Set((event.editableFields ?? []) as EditableField[])}
-          lockedNote={< >This field is restricted after approval. <a href={`/change-requests/new?event=${encodeURIComponent(event.id)}`}>Request a change</a>.</>}
+          lockedNote={< >This field is restricted after approval. <Link to={`/change-requests/new?event=${encodeURIComponent(event.id)}`}>Request a change</Link>.</>}
           intro={<p>Before approval you can update all event details. After approval, restricted fields must go through a change request.</p>}
           onCancel={() => setEditing(false)}
           onSaved={fields => { setEditing(false); setSaved(`Saved your changes to the ${fieldList(fields)}. The activity log has been updated.`); setRevision(value => value + 1); }}
