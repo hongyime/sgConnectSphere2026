@@ -1,5 +1,10 @@
 # Agent State
 
+- 2026-10-03: Week 7 Change 2 backlog + cases on
+  `docs/week7-change-2-venue-unavailable` (stacked on change 1): new E05-S06
+  mark venue unavailable over bookings, E10-S05 back in Release 1, ten new
+  TC_IDs, exports regenerated. Depends on #194 and #197. Details in
+  .agents/handoffs/20261003-docs-week7-change-2-venue-unavailable.md.
 - 2026-10-03: Week 7 Change 1 backlog + cases on
   `docs/week7-change-1-setup-turnaround`: E05-S05 back in Release 1 (Sprint 3)
   with six scenarios, buffer scenarios added in place to E06-S01/S03/S04/S05/
