@@ -1,26 +1,26 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 276 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 292 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **276**
-- Automated (explicit TC_ID in an active test title): **118** (42.8%)
+- Total test cases: **292**
+- Automated (explicit TC_ID in an active test title): **122** (41.8%)
   - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **93**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (47.8%)
-- No test yet (no test file mentions the TC_ID): **26** (9.4%)
+  - Live-assertion (other active tests): **97**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (45.2%)
+- No test yet (no test file mentions the TC_ID): **38** (13.0%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
-| E01 | 32 | 21 | 11 | 0 |
+| E01 | 38 | 25 | 11 | 2 |
 | E02 | 13 | 12 | 1 | 0 |
-| E03 | 42 | 39 | 3 | 0 |
+| E03 | 52 | 39 | 3 | 10 |
 | E05 | 30 | 24 | 0 | 6 |
 | E06 | 35 | 4 | 18 | 13 |
 | E07 | 30 | 0 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **276** | **118** | **132** | **26** |
+| **Total** | **292** | **122** | **132** | **38** |
 
 ## Case-by-case status
 
@@ -72,6 +72,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E01S11_03` | E01-S11 | Verify that an Attendee's upcoming registration should be withdrawn and its plac | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_03 - Verify that an Attendee |
 | `TC_E01S11_04` | E01-S11 | Verify that an Event Coordinator with assigned events should be blocked from dea | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_04 - Verify that an Event Coordinator with assigned events should be blocked from deactivating until those events are reassigned |
 | `TC_E01S11_05` | E01-S11 | Verify that a deactivation should be recorded in the activity log with the actor | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_05 - Verify that a deactivation should be recorded in the activity log with the actor and time |
+| `TC_E01S12_01` | E01-S12 | Verify that a Coordinator's event list should contain only events assigned to th | ✅ active | tests/e2e/verify.spec.ts: TC_E01S12_01 — verify success renders confirmation and sign-in link |
+| `TC_E01S12_02` | E01-S12 | Verify that a Coordinator opening or acting on a colleague's event directly shou | ✅ active | tests/e2e/verify.spec.ts: TC_E01S12_02 — verify expired token surfaces expired copy and register link |
+| `TC_E01S12_03` | E01-S12 | Verify that a Coordinator should still see every venue's availability states wit | ✅ active | tests/e2e/verify.spec.ts: TC_E01S12_03 — verify already-verified token shows the idempotent message |
+| `TC_E01S12_04` | E01-S12 | Verify that Organiser client isolation should be unchanged by Coordinator scopin | ✅ active | tests/e2e/verify.spec.ts: TC_E01S12_04 — missing token bypasses the API and shows invalid |
+| `TC_E01S13_01` | E01-S13 | Verify that a Lead and a Safety Officer should each land on their own workspace  | ❌ none | — |
+| `TC_E01S13_02` | E01-S13 | Verify that new-role accounts should hold exactly one role and that the five exi | ❌ none | — |
 
 ### E02
 
@@ -137,6 +143,16 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
 | `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
 | `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser |
+| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | ❌ none | — |
+| `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ❌ none | — |
+| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | ❌ none | — |
+| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | ❌ none | — |
+| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | ❌ none | — |
+| `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | ❌ none | — |
+| `TC_E03S09_02` | E03-S09 | Verify that Coordinator-to-Coordinator reassignment should still require the col | ❌ none | — |
+| `TC_E03S09_03` | E03-S09 | Verify that a Coordinator should be able to ask the Lead to reassign an event an | ❌ none | — |
+| `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ❌ none | — |
+| `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ❌ none | — |
 
 ### E05
 

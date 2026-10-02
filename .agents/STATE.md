@@ -1,5 +1,11 @@
 # Agent State
 
+- 2026-10-03: Week 7 Change 5 backlog + cases on
+  `docs/week7-change-5-coordinator-lead` (stacked on change 4): E03-S01 stays
+  Done with Scenarios 1-2 marked superseded; new E03-S08/S09/S10 and
+  E01-S12/S13; E11-S01 routing rows; sixteen TC_IDs. Depends on #194, #197,
+  #199, #200. Details in
+  .agents/handoffs/20261003-docs-week7-change-5-coordinator-lead.md.
 - 2026-10-03: Week 7 Change 4 backlog + cases on `docs/week7-change-4-hold-expiry`
   (stacked on change 3): E06-S05 gains expiry default, completion rule,
   auto-expiry, reminder/notice, extension and boundary scenarios; E11-S01 gains

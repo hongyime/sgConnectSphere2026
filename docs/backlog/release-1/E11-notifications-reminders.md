@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 2
 - **Points**: 5
-- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33
+- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33, C-69, T-70
 - **Owner**:
 
 ### User story
@@ -46,6 +46,8 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | Change | Organiser | Coordinator | Venue Staff | Technical Staff | Registered | Waitlisted |
 | --- | --- | --- | --- | --- | --- | --- |
 | Internal review, clarification, approval or rejection | Yes | Yes | No | No | No | No |
+| New request enters the unassigned queue | No | No | No | No | No | No |
+| Coordinator assigned or reassigned, by the Lead or by acceptance | Yes | Incoming and outgoing | No | No | No | No |
 | New venue booking request | No | No | Responsible staff | No | No | No |
 | Venue booking confirmed, rejected or released | No | Yes | No | No | No | No |
 | Tentative hold about to expire (reminder) or expired | No | Yes | No | No | No | No |
@@ -57,6 +59,9 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | Waitlist place released | No | No | No | No | No | All eligible waitlisted |
 | Description-only edit | No general notice | No general notice | No | No | No | No |
 
+- The Event Coordinator Lead is notified when a request enters the unassigned queue
+  and when a Coordinator asks the Lead to reassign an event (E03-S08, E03-S09); the
+  Lead is not a column above because no other change routes to that role (C-69).
 - Suppress the acting user's routine self-notification; preserve the audit and UI
   acknowledgement. System-generated changes have no actor to exclude.
 - Deduplicate each logical change per user. Exclude inactive, withdrawn and
