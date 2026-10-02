@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **253**
 - Automated (explicit TC_ID in an active test title): **118** (46.6%)
-  - Real-database (`.integration.test` / `.db.test`): **33**
+  - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **84**
+  - Live-assertion (other active tests): **93**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (52.2%)
 - No test yet (no test file mentions the TC_ID): **3** (1.2%)
 
@@ -119,12 +119,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S03_04` | E03-S03 | Verify that attempting to reject a request without recording a reason should be  | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_04: a rejection without a reason is refused and the request stays Under Review; backend/tests/decision.test.ts: TC_E03S03_04:  |
 | `TC_E03S03_05` | E03-S03 | Verify that a rejected request should show its reason and decision date in plain | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_05: the Organiser sees the reason and decision date of a rejected request, cannot edit it, and the edit is refused; backend/te |
 | `TC_E03S03_06` | E03-S03 | Verify that a Coordinator who is not assigned to a request should be refused whe | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_06: a Coordinator not assigned to the request is refused for both decisions; nothing changes, the attempts are audited and hid |
-| `TC_E03S03_07` | E03-S03 | Verify that a decision cannot be made on a request that is not Under Review | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_07: a decision is refused while the request is Awaiting Clarification or already Approved |
+| `TC_E03S03_07` | E03-S03 | Verify that a decision cannot be made on a request that is not Under Review | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_07: a decision is refused while the request is Awaiting Clarification or already Approved; frontend/src/features/coordinator/D |
 | `TC_E03S03_08` | E03-S03 | Verify that an Event Organiser should not be able to approve their own request | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_08: the Organiser who submitted the request cannot approve it, and the attempt is audited; backend/tests/decision.test.ts: TC_ |
-| `TC_E03S03_09` | E03-S03 | Verify that a rejected request cannot be decided again | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_09: a rejected request cannot be decided again |
+| `TC_E03S03_09` | E03-S03 | Verify that a rejected request cannot be decided again | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_09: a rejected request cannot be decided again; frontend/src/features/coordinator/DecisionPanel.test.tsx: TC_E03S03_09 - a rej |
 | `TC_E03S03_10` | E03-S03 | Verify the 2000-character limit on a rejection reason | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_10: a 2001-character reason is refused and a 2000-character reason is stored in full; backend/tests/decision.test.ts: TC_E03S0 |
 | `TC_E03S03_11` | E03-S03 | Verify that an Event Organiser cannot edit their rejected request | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_11: the Organiser of a rejected request is refused an edit with no change-request offer; others keep their usual refusal; back |
-| `TC_E03S03_12` | E03-S03 | Verify that a request whose accessibility needs are given only as predefined fea | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_12: a request whose accessibility needs are given only as predefined features can be approved |
+| `TC_E03S03_12` | E03-S03 | Verify that a request whose accessibility needs are given only as predefined fea | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_12: a request whose accessibility needs are given only as predefined features can be approved; frontend/src/features/coordinat |
 | `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
 | `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
 | `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
@@ -708,6 +708,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a signed-out Coordinator is asked to sign in
 - a failed load can be retried
 
+### `frontend/src/features/coordinator/DecisionPanel.test.tsx`
+
+- the event page offers
+- the decide page shows what is being decided, with Request clarification, Reject and Approve in that order
+- a request with no event code shows
+- Request clarification on the decide page opens the question page
+- approving shows the outcome, keeps the page, and leaves nothing more to decide
+- the confirm button reads Approving… while the decision is being sent
+- the decision still lands under StrictMode, which mounts the page twice in development
+- opening a panel moves focus into it, and Cancel returns focus to the button that opened it
+- a late answer for the previous request never replaces the current one
+
 ### `frontend/src/features/coordinator/RequestClarification.test.tsx`
 
 - the event page offers Request clarification only while the request is Under Review
@@ -784,6 +796,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
 
+### `frontend/src/features/organiser/RejectedRequest.test.tsx`
+
+- a seeded rejection with no recorded reason says so (D30)
+- a request that is not rejected shows no rejection notice
+
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 
 - shows the Coordinator links with the current page marked
@@ -847,6 +864,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - anything else offers a retry
 - requires the reason before confirming, then passes it on
 - shows a server refusal inside the panel
+- can replace the missing-reason message with the API sentence
+- shows the busy label on the confirm button while busy
 - DataTable has a caption and labels every cell for the phone layout
 - DataTable can hide a header visually and tell apart columns that share one
 - FilterChips marks the chosen option and reports changes
@@ -897,7 +916,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - coordinator dashboard shows live workload counts inside the shared header
 - review queue filters assigned events by status
 - request detail shows the assigned Coordinator and request details
-- decision panel requires a reason when rejecting or clarifying
 - final confirmation blocks until readiness is met
 
 ### `tests/e2e/deactivation.spec.ts`
@@ -919,6 +937,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/layout-and-focus.spec.ts`
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
+- decision page /coordinator/events/EVT-C01/decide is one centred column
 
 ### `tests/e2e/organiser.spec.ts`
 

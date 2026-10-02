@@ -5,7 +5,8 @@
 //     drafts included, with the full request fields (camelCase), but no event
 //     code or status date, and lookup by uuid only.
 //   GET /api/events?id=<uuid or code>   - the organisation-wide read (SCRUM-18),
-//     which adds the event code, status history and comments (snake_case).
+//     which adds the event code, status history and comments (snake_case),
+//     and the E03-S03 (SCRUM-34) decision with its reason and date.
 // Requests go through the shared apiCall (session cookie, ADR-015).
 import { apiCall, type ApiFailure, type ApiResult } from '../../shared';
 import { readQuestions, type OutstandingQuestion } from '../events/clarificationApi';
@@ -32,6 +33,10 @@ export type OwnRequest = {
 export type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 export type RequestComment = { id: string; body: string; created_at: string; author_name: string };
 
+// E03-S03 (SCRUM-34): the Coordinator's decision. `reason` is set only for a
+// rejection, and seeded rejections can have none (D30).
+export type RequestDecision = { outcome: 'approved' | 'rejected'; reason: string | null; decidedAt: string };
+
 export type RequestDetail = OwnRequest & {
   eventCode: string | null;
   statusChangedAt: string | null;
@@ -39,6 +44,7 @@ export type RequestDetail = OwnRequest & {
   comments: RequestComment[];
   // E03-S02: unanswered clarification questions (empty unless awaiting clarification).
   outstandingQuestions: OutstandingQuestion[];
+  decision: RequestDecision | null;
 };
 
 // E03-S02 (SCRUM-33) answer screen. `owner` is false for a colleague in the
@@ -74,6 +80,16 @@ function isOwnRequest(value: unknown): value is OwnRequest {
     && typeof candidate.title === 'string'
     && typeof candidate.status === 'string'
     && EVENT_STATUSES.includes(candidate.status);
+}
+
+// Keeps the decision only if it is well formed, so a partial read never breaks the screen.
+function readDecision(value: unknown): RequestDecision | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Record<string, unknown>;
+  if (candidate.outcome !== 'approved' && candidate.outcome !== 'rejected') return null;
+  if (typeof candidate.decidedAt !== 'string') return null;
+  const reason = typeof candidate.reason === 'string' && candidate.reason.trim() ? candidate.reason : null;
+  return { outcome: candidate.outcome, reason, decidedAt: candidate.decidedAt };
 }
 
 export async function listOwnRequests(signal?: AbortSignal): Promise<ApiResult<OwnRequest[]>> {
@@ -113,6 +129,7 @@ export async function getRequestDetail(identifier: string, signal?: AbortSignal)
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
       comments: Array.isArray(event.comments) ? event.comments : [],
       outstandingQuestions: readQuestions(event.outstandingQuestions),
+      decision: readDecision(event.decision),
     },
   };
 }
