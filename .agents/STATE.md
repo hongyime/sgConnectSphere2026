@@ -1,5 +1,18 @@
 # Agent State
 
+- 2026-10-02: Merge queue, two-step. Step 1 DONE live: configure_github.py
+  --apply migrated main to ruleset main-protection (id 24377800), classic
+  protection removed, same rules (ADR 0008 finally applied). Step 2 on
+  ci/merge-queue (worktree): merge_group triggers on ci/lfs-guard/
+  application-checks, skip workflow deliberately excluded, update-pr-branches
+  demoted to workflow_dispatch, main-ruleset.json gains merge_queue rule
+  (SQUASH, ALLGREEN, 30 min, 5/5/1/5) and strict=false, decision 0012,
+  CONTRIBUTING/github-pr-automation/github-owner-setup rewritten for "Merge
+  when ready". AFTER this PR merges and required checks pass on the new main
+  commit, an admin runs python scripts/configure_github.py --apply to turn
+  the queue on. Do NOT apply before merge: queued PRs would time out. Open PRs
+  #185 #187 #192 #194 are BEHIND/DIRTY; once the queue is live they no longer
+  need updating to merge, only conflict resolution.
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.

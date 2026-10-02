@@ -25,6 +25,12 @@ name: Application Checks (skip)
 #
 # Keep this file's paths-ignore list identical to application-checks.yml's
 # paths list. If one changes, update the other in the same PR.
+#
+# This workflow deliberately has NO merge_group trigger. GitHub does not
+# evaluate paths filters on merge_group, so application-checks.yml runs the
+# real suite on every queued merge commit; if this companion also ran there,
+# two "application-checks" check runs would exist on one commit and the
+# required-status result would be ambiguous. See docs/decisions/0012-merge-queue.md.
 
 on:
   pull_request:
