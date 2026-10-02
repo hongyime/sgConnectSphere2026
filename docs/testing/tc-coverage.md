@@ -963,6 +963,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/venue-search.spec.ts`
 
 - search access denial shows safe error and no criteria form
+- venue search shows suitable results, field errors and empty states
 
 ### `tests/e2e/venue.spec.ts`
 
