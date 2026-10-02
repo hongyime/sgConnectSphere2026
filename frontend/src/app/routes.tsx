@@ -52,6 +52,10 @@ import { AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading } from 
 import { ComingSoon } from './ComingSoon';
 import { HomeRedirect } from './HomeRedirect';
 import { UiKit } from './UiKit';
+import { ListTemplate } from '../templates/ListTemplate';
+import { DetailTemplate } from '../templates/DetailTemplate';
+import { FormTemplate } from '../templates/FormTemplate';
+import { DecisionTemplate } from '../templates/DecisionTemplate';
 
 export type RouteAccess = 'public' | 'signed-in';
 export type RouteStatus = 'live' | 'mock' | 'coming-soon' | 'redirect';
@@ -66,6 +70,8 @@ export type AppRoute = {
 
 const pub = (path: string, element: ReactElement, story?: string): AppRoute =>
   ({ path, element, access: 'public', status: 'live', story });
+const sample = (path: string, element: ReactElement): AppRoute =>
+  ({ path, element, access: 'signed-in', status: 'mock' });
 const page = (path: string, element: ReactElement, status: RouteStatus, story?: string): AppRoute =>
   ({ path, element, access: 'signed-in', status, story });
 
@@ -85,6 +91,12 @@ export const routes: AppRoute[] = [
   page('/permission-denied', <PermissionDenied />, 'live'),
   // Reference page for the shared building blocks (sample data, no API calls).
   page('/ui-kit', <UiKit />, 'live'),
+  // Copyable page templates running on in-memory sample data (frontend/src/templates).
+  sample('/ui-kit/templates/list', <ListTemplate />),
+  sample('/ui-kit/templates/new', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id', <DetailTemplate />),
+  sample('/ui-kit/templates/items/:id/edit', <FormTemplate />),
+  sample('/ui-kit/templates/items/:id/decide', <DecisionTemplate />),
 
   // Event Organiser
   page('/events', <ClientEvents />, 'live', 'E01-S02'),
@@ -95,6 +107,12 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode/clarify', <ClarificationResponse />, 'mock', 'E03-S02'),
   page('/organiser/requests/:eventCode/change', <ChangeRequest />, 'mock', 'E10-S01'),
   page('/organiser/requests/:eventCode/cancel', <CancellationForm />, 'mock', 'E10-S04'),
+  // Where restricted post-approval edits (E03-S07) and the edit API's 409
+  // changeRequestUrl send the Organiser, until E10-S01 builds the form.
+  page('/change-requests/new', (
+    <ComingSoon story="E10-S01" title="Request a change"
+      summary="After approval, changes to restricted event details such as the date, attendance or requirements go through a change request that the assigned Coordinator reviews." />
+  ), 'coming-soon', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
   page('/organiser/drafts', <OrganiserDrafts />, 'live', 'E02-S02'),
   page('/organiser/drafts/:id', <OrganiserDraftEdit />, 'live', 'E02-S02'),

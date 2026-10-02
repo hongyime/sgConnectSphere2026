@@ -34,6 +34,16 @@ export function UiKit() {
         <code> import {'{ … }'} from '../../shared'</code>. Build new screens from these instead of new CSS.
       </Alert>
 
+      <Card title="Page templates">
+        <p className="ui-state-copy">Working examples to copy from <code>frontend/src/templates</code>. They run on sample data, so try them freely. See <code>docs/frontend-guide.md</code> for the steps.</p>
+        <div className="ui-actions">
+          <ButtonLink to="/ui-kit/templates/list" variant="primary">List</ButtonLink>
+          <ButtonLink to="/ui-kit/templates/items/REQ-101">Detail</ButtonLink>
+          <ButtonLink to="/ui-kit/templates/new">Form</ButtonLink>
+          <ButtonLink to="/ui-kit/templates/items/REQ-101/decide">Decision</ButtonLink>
+        </div>
+      </Card>
+
       <Card title="Page layout and buttons">
         <p className="ui-state-copy">Every page uses <code>PageLayout</code> (eyebrow, title, actions). One primary button per area.</p>
         <div className="ui-actions">
@@ -70,7 +80,7 @@ export function UiKit() {
       </Card>
 
       <Card title="Form">
-        <form onSubmit={event => event.preventDefault()} noValidate className="ui-kit-form">
+        <form onSubmit={event => event.preventDefault()} noValidate className="ui-form">
           <FormSection title="Basics">
             <FormField label="Event name" hint="As the attendees will see it." error={name ? undefined : 'Event name can’t be left empty.'} wide>
               {props => <input {...props} value={name} onChange={change => setName(change.target.value)} />}
