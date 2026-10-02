@@ -1,6 +1,12 @@
-import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { createVenue, getVenue, updateVenue, type VenueLayout } from './venueApi';
+// E05-S01 / E05-S02 add and edit venue form for Venue Staff, on the shared
+// blocks (ADR-017).
+import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import {
+  Alert, Button, ButtonLink, ErrorState, FormActions, FormField, FormSection, LoadingState, PageLayout, useLoad,
+  type ApiResult,
+} from '../../shared';
+import { createVenue, getVenue, updateVenue, type Venue, type VenueLayout } from './venueApi';
 import './venue.css';
 
 type FormValues = {
@@ -19,50 +25,58 @@ const emptyForm: FormValues = {
   facilities: [], accessibility_features: [], supported_layouts: [],
 };
 
-type LoadState = { status: 'loading' } | { status: 'error'; message: string } | { status: 'ready' };
+function toForm(venue: Venue): FormValues {
+  return {
+    name: venue.name,
+    location: venue.location,
+    max_capacity: String(venue.max_capacity),
+    opens_at: venue.opens_at,
+    closes_at: venue.closes_at,
+    facilities: venue.facilities,
+    accessibility_features: venue.accessibility_features,
+    supported_layouts: venue.supported_layouts,
+  };
+}
 
 export function VenueForm({ mode }: { mode: 'create' | 'edit' }) {
-  const navigate = useNavigate();
   const { venueId } = useParams<{ venueId: string }>();
-  const [values, setValues] = useState<FormValues>(emptyForm);
-  const [load, setLoad] = useState<LoadState>(mode === 'edit' ? { status: 'loading' } : { status: 'ready' });
+  const { result, reload } = useLoad(async (signal): Promise<ApiResult<Venue | null>> => (
+    mode === 'edit' && venueId ? getVenue(venueId, signal) : { ok: true, data: null }
+  ), [mode, venueId]);
+
+  return (
+    <PageLayout eyebrow="Venue staff" title={mode === 'create' ? 'Add venue' : 'Edit venue'} width="narrow">
+      {result.state === 'loading' ? <LoadingState label="Loading venue…" rows={4} /> : null}
+      {result.state === 'error' ? (
+        <ErrorState
+          failure={result.failure} onRetry={reload} context="this venue"
+          backTo="/venue/inventory" backLabel="Back to venue inventory"
+        />
+      ) : null}
+      {/* React Router reuses this screen between venue URLs. Keying the form
+          by venue starts it afresh, so one venue's values and messages can
+          never be saved against another. */}
+      {result.state === 'ready' ? (
+        <VenueFormBody
+          key={venueId ?? 'new'} mode={mode} venueId={venueId}
+          initial={result.data ? toForm(result.data) : emptyForm}
+        />
+      ) : null}
+    </PageLayout>
+  );
+}
+
+function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; venueId?: string; initial: FormValues }) {
+  const navigate = useNavigate();
+  const [values, setValues] = useState<FormValues>(initial);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [layoutWarning, setLayoutWarning] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (mode !== 'edit' || !venueId) return;
-    let cancelled = false;
-    // React Router reuses this form between venue URLs: hide the previous
-    // venue's values and messages until this venue has loaded, so they can
-    // never be saved against the new venue.
-    setLoad({ status: 'loading' });
-    setErrors({});
-    setFormError(null);
-    setLayoutWarning(null);
-    (async () => {
-      const result = await getVenue(venueId);
-      if (cancelled) return;
-      if (!result.ok) {
-        setLoad({ status: 'error', message: result.message });
-        return;
-      }
-      const venue = result.venue;
-      setValues({
-        name: venue.name,
-        location: venue.location,
-        max_capacity: String(venue.max_capacity),
-        opens_at: venue.opens_at,
-        closes_at: venue.closes_at,
-        facilities: venue.facilities,
-        accessibility_features: venue.accessibility_features,
-        supported_layouts: venue.supported_layouts,
-      });
-      setLoad({ status: 'ready' });
-    })();
-    return () => { cancelled = true; };
-  }, [mode, venueId]);
+  const setField = (key: 'name' | 'location' | 'max_capacity' | 'opens_at' | 'closes_at') => (value: string) => {
+    setValues((current) => ({ ...current, [key]: value }));
+  };
 
   const addToList = (key: 'facilities' | 'accessibility_features', value: string) => {
     const trimmed = value.trim();
@@ -131,7 +145,7 @@ export function VenueForm({ mode }: { mode: 'create' | 'edit' }) {
     setSaving(false);
 
     if (!result.ok) {
-      setErrors(result.errors);
+      setErrors(result.fieldErrors ?? {});
       setFormError(result.message);
       return;
     }
@@ -139,110 +153,63 @@ export function VenueForm({ mode }: { mode: 'create' | 'edit' }) {
     navigate('/venue/inventory');
   };
 
-  if (load.status === 'loading') {
-    return <main className="venue-page"><p role="status">Loading venue…</p></main>;
-  }
-
-  if (load.status === 'error') {
-    return (
-      <main className="venue-page">
-        <p role="alert" className="login-error">{load.message}</p>
-        <Link to="/venue/inventory" className="secondary-action">Back to venue inventory</Link>
-      </main>
-    );
-  }
+  const fieldError = (key: string) => errors[key]?.join(' ') || undefined;
 
   return (
-    <main className="venue-page">
-      <header className="page-heading">
-        <p className="eyebrow">Venue staff</p>
-        <h1>{mode === 'create' ? 'Add venue' : 'Edit venue'}</h1>
-      </header>
+    <form onSubmit={submit} noValidate className="venue-form card" aria-label={mode === 'create' ? 'Add venue' : 'Edit venue'}>
+      {formError ? <Alert tone="error">{formError}</Alert> : null}
 
-      <form onSubmit={submit} noValidate className="venue-form card">
-        {formError ? <div role="alert" className="login-error">{formError}</div> : null}
+      <FormSection title="Basic details">
+        <TextField label="Venue name" value={values.name} onChange={setField('name')} error={fieldError('name')} wide />
+        <TextField label="Location" value={values.location} onChange={setField('location')} error={fieldError('location')} wide />
+        <TextField label="Max capacity" type="number" value={values.max_capacity} onChange={setField('max_capacity')} error={fieldError('max_capacity')} />
+        <span aria-hidden="true" />
+        <TextField label="Opens at" type="time" value={values.opens_at} onChange={setField('opens_at')} error={fieldError('opens_at')} />
+        <TextField label="Closes at" type="time" value={values.closes_at} onChange={setField('closes_at')} error={fieldError('closes_at')} />
+      </FormSection>
 
-        <div className="form-section">
-          <h2>Basic details</h2>
-          <TextField
-            id="venue-name" label="Venue name" value={values.name}
-            onChange={(value) => setValues((current) => ({ ...current, name: value }))}
-            errors={errors.name}
-          />
-          <TextField
-            id="venue-location" label="Location" value={values.location}
-            onChange={(value) => setValues((current) => ({ ...current, location: value }))}
-            errors={errors.location}
-          />
-          <TextField
-            id="venue-capacity" label="Max capacity" type="number" value={values.max_capacity}
-            onChange={(value) => setValues((current) => ({ ...current, max_capacity: value }))}
-            errors={errors.max_capacity}
-          />
-          <TextField
-            id="venue-opens" label="Opens at" type="time" value={values.opens_at}
-            onChange={(value) => setValues((current) => ({ ...current, opens_at: value }))}
-            errors={errors.opens_at}
-          />
-          <TextField
-            id="venue-closes" label="Closes at" type="time" value={values.closes_at}
-            onChange={(value) => setValues((current) => ({ ...current, closes_at: value }))}
-            errors={errors.closes_at}
-          />
-        </div>
+      <FormSection title="Facilities and accessibility">
+        <TagListField
+          label="Facilities" items={values.facilities}
+          onAdd={(value) => addToList('facilities', value)}
+          onRemove={(value) => removeFromList('facilities', value)}
+          errors={errors.facilities}
+        />
+        <TagListField
+          label="Accessibility features" items={values.accessibility_features}
+          onAdd={(value) => addToList('accessibility_features', value)}
+          onRemove={(value) => removeFromList('accessibility_features', value)}
+          errors={errors.accessibility_features}
+        />
+      </FormSection>
 
-        <div className="form-section">
-          <h2>Facilities &amp; accessibility</h2>
-          <TagListField
-            label="Facilities" items={values.facilities}
-            onAdd={(value) => addToList('facilities', value)}
-            onRemove={(value) => removeFromList('facilities', value)}
-            errors={errors.facilities}
-          />
-          <TagListField
-            label="Accessibility features" items={values.accessibility_features}
-            onAdd={(value) => addToList('accessibility_features', value)}
-            onRemove={(value) => removeFromList('accessibility_features', value)}
-            errors={errors.accessibility_features}
-          />
-        </div>
+      <FormSection title="Supported layouts">
+        <LayoutListField
+          layouts={values.supported_layouts}
+          onAdd={addLayout}
+          onRemove={removeLayout}
+          errors={errors.supported_layouts}
+          warning={layoutWarning}
+        />
+      </FormSection>
 
-        <div className="form-section">
-          <h2>Supported layouts</h2>
-          <LayoutListField
-            layouts={values.supported_layouts}
-            onAdd={addLayout}
-            onRemove={removeLayout}
-            errors={errors.supported_layouts}
-            warning={layoutWarning}
-          />
-        </div>
-
-        <div className="form-actions">
-          <Link to="/venue/inventory" className="secondary-action">Cancel</Link>
-          <button className="primary-action" type="submit" disabled={!canSubmit || saving}>
-            {saving ? 'Saving…' : mode === 'create' ? 'Add venue' : 'Save changes'}
-          </button>
-        </div>
-      </form>
-    </main>
+      <FormActions>
+        <ButtonLink to="/venue/inventory">Cancel</ButtonLink>
+        <Button type="submit" variant="primary" busy={saving} busyLabel="Saving…" disabled={!canSubmit}>
+          {mode === 'create' ? 'Add venue' : 'Save changes'}
+        </Button>
+      </FormActions>
+    </form>
   );
 }
 
-function TextField({ id, label, value, onChange, type = 'text', errors }: {
-  id: string; label: string; value: string; onChange: (value: string) => void; type?: string; errors?: string[];
+function TextField({ label, value, onChange, type = 'text', error, wide = false }: {
+  label: string; value: string; onChange: (value: string) => void; type?: string; error?: string; wide?: boolean;
 }) {
   return (
-    <div className="field-control">
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id} type={type} value={value} onChange={(event) => onChange(event.target.value)}
-        aria-invalid={Boolean(errors?.length)} aria-describedby={`${id}-errors`}
-      />
-      <div id={`${id}-errors`} aria-live="polite">
-        {errors?.map((message) => <p key={message} className="field-error">{message}</p>)}
-      </div>
-    </div>
+    <FormField label={label} error={error} wide={wide}>
+      {(props) => <input {...props} type={type} value={value} onChange={(event) => onChange(event.target.value)} />}
+    </FormField>
   );
 }
 

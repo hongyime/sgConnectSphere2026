@@ -4,6 +4,7 @@
 // what each viewer may see: an event's details only reach Venue Staff and the
 // event's assigned Coordinator; anyone else gets an 'unavailable' entry with
 // no event attached. This client renders whatever it is given.
+import { apiCall, type ApiResult } from '../../shared';
 
 export type CalendarState = 'free' | 'tentative' | 'confirmed' | 'blocked' | 'unavailable';
 
@@ -26,39 +27,21 @@ export type VenueCalendar = {
   entries: CalendarEntry[];
 };
 
-export type GetVenueCalendarResult =
-  | { ok: true; calendar: VenueCalendar }
-  | { ok: false; message: string };
-
 // Mirrors MAX_CALENDAR_DAYS in the backend so the form can refuse an
 // oversized range before a round trip.
 export const MAX_CALENDAR_DAYS = 62;
 
-export async function getVenueCalendar(venueId: string, from: string, to: string): Promise<GetVenueCalendarResult> {
+export async function getVenueCalendar(venueId: string, from: string, to: string, signal?: AbortSignal): Promise<ApiResult<VenueCalendar>> {
   const params = new URLSearchParams({ id: venueId, calendar: '1', from, to });
-  let response: Response;
-  try {
-    response = await fetch(`/api/venues?${params.toString()}`, { credentials: 'same-origin' });
-  } catch {
-    return { ok: false, message: 'The calendar could not be loaded. Please try again.' };
-  }
-  const payload = await response.json().catch(() => null);
-
-  if (response.status === 401 || response.status === 403) {
-    return { ok: false, message: 'Sign in as an Event Coordinator or Venue Staff member to view venue calendars.' };
-  }
-  if (response.status === 404) return { ok: false, message: 'Venue not found.' };
-  if (response.status === 400) {
-    // The server's 400 messages describe the date input ("to must be on or
-    // after from.") and contain no data, so they are safe to show.
-    return { ok: false, message: typeof payload?.error === 'string' ? payload.error : 'Those dates could not be shown.' };
-  }
-  if (!response.ok) return { ok: false, message: 'The calendar could not be loaded. Please try again.' };
-
+  // The server's 400 messages describe the date input ("to must be on or
+  // after from.") and contain no data, so apiCall shows them as they are.
+  const result = await apiCall<Partial<VenueCalendar>>(
+    `/api/venues?${params.toString()}`, { signal }, 'The calendar could not be loaded. Please try again.');
+  if (!result.ok) return result;
   // Before the calendar API is deployed, the same URL returns the plain venue
   // record without entries; treat that as unavailable rather than "all free".
-  if (!payload?.venue || !Array.isArray(payload.entries)) {
-    return { ok: false, message: 'The availability calendar is not available yet.' };
+  if (!result.data.venue || !Array.isArray(result.data.entries)) {
+    return { ok: false, status: 0, message: 'The availability calendar is not available yet.' };
   }
-  return { ok: true, calendar: payload as VenueCalendar };
+  return { ok: true, data: result.data as VenueCalendar };
 }

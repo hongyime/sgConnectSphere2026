@@ -6,7 +6,8 @@
 //     code or status date, and lookup by uuid only.
 //   GET /api/events?id=<uuid or code>   - the organisation-wide read (SCRUM-18),
 //     which adds the event code, status history and comments (snake_case).
-// Every request sends the session cookie (ADR-015).
+// Requests go through the shared apiCall (session cookie, ADR-015).
+import { apiCall, type ApiFailure, type ApiResult } from '../../shared';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
@@ -37,21 +38,13 @@ export type RequestDetail = OwnRequest & {
   comments: RequestComment[];
 };
 
-export type ListOwnRequestsResult = { ok: true; requests: OwnRequest[] } | { ok: false; message: string };
-export type GetRequestDetailResult =
-  | { ok: true; request: RequestDetail }
-  | { ok: false; notFound: boolean; message: string };
-
-const SIGN_IN_MESSAGE = 'Sign in as an Event Organiser to see your requests.';
-
-async function getJson(url: string): Promise<{ status: number; body: any } | null> {
-  try {
-    const response = await fetch(url, { credentials: 'same-origin' });
-    return { status: response.status, body: await response.json().catch(() => null) };
-  } catch {
-    return null;
-  }
-}
+const LIST_FAILED = 'Your requests could not be loaded. Please try again.';
+const DETAIL_FAILED = 'This request could not be loaded. Please try again.';
+// The detail screen shows "Request not found" for a 404.
+const NOT_FOUND: ApiFailure = {
+  ok: false, status: 404,
+  message: 'No request of yours matches this link. If you are signed in with a different role, sign in as an Event Organiser.',
+};
 
 const EVENT_STATUSES: readonly string[] = [
   'draft', 'submitted', 'under_review', 'awaiting_clarification', 'rejected',
@@ -68,50 +61,38 @@ function isOwnRequest(value: unknown): value is OwnRequest {
     && EVENT_STATUSES.includes(candidate.status);
 }
 
-export async function listOwnRequests(): Promise<ListOwnRequestsResult> {
-  const result = await getJson('/api/events?mine=1');
-  if (!result) return { ok: false, message: 'Your requests could not be loaded. Please try again.' };
-  if (result.status === 401 || result.status === 403) return { ok: false, message: SIGN_IN_MESSAGE };
-  if (result.status < 200 || result.status >= 300) return { ok: false, message: 'Your requests could not be loaded. Please try again.' };
-  return { ok: true, requests: Array.isArray(result.body?.events) ? result.body.events : [] };
+export async function listOwnRequests(signal?: AbortSignal): Promise<ApiResult<OwnRequest[]>> {
+  const result = await apiCall<{ events?: unknown }>('/api/events?mine=1', { signal }, LIST_FAILED);
+  if (!result.ok) return result;
+  return { ok: true, data: Array.isArray(result.data.events) ? result.data.events as OwnRequest[] : [] };
 }
 
 // `identifier` is whatever is in the URL: a uuid from the request list, or an
 // event code from an older link. The organisation read resolves either to a
 // uuid, then the own-requests read supplies the request fields and confirms
 // the request is the caller's (a colleague's event returns 404 there).
-export async function getRequestDetail(identifier: string): Promise<GetRequestDetailResult> {
-  const failed = { ok: false as const, notFound: false, message: 'This request could not be loaded. Please try again.' };
-  const notFound = {
-    ok: false as const, notFound: true,
-    message: 'No request of yours matches this link. If you are signed in with a different role, sign in as an Event Organiser.',
-  };
-
-  const summary = await getJson(`/api/events?id=${encodeURIComponent(identifier)}`);
-  if (!summary) return failed;
-  if (summary.status === 401) return { ok: false, notFound: false, message: SIGN_IN_MESSAGE };
+export async function getRequestDetail(identifier: string, signal?: AbortSignal): Promise<ApiResult<RequestDetail>> {
+  const summary = await apiCall<{ event?: Record<string, any> }>(
+    `/api/events?id=${encodeURIComponent(identifier)}`, { signal }, DETAIL_FAILED);
   // Intentional: the organisation read answers unknown ids with the same 403 as
   // a refusal, so as not to reveal whether an event exists. A 403 here can also
   // mean the caller is not an Organiser; the not-found message says to sign in
-  // as one, and an expired session is a 401, handled above.
-  if (summary.status === 403 || summary.status === 404) return notFound;
-  if (summary.status < 200 || summary.status >= 300) return failed;
+  // as one, and an expired session is a 401, which stays a 401.
+  if (!summary.ok) return summary.status === 403 || summary.status === 404 ? NOT_FOUND : summary;
   // A success with no event cannot improve on retry; treat it as not found.
-  if (!summary.body?.event?.id) return notFound;
-  const event = summary.body.event;
+  const event = summary.data.event;
+  if (!event?.id) return NOT_FOUND;
 
-  const own = await getJson(`/api/events?mine=1&id=${encodeURIComponent(event.id)}`);
-  if (!own) return failed;
-  if (own.status === 404) return notFound;
-  if (own.status === 401 || own.status === 403) return { ok: false, notFound: false, message: SIGN_IN_MESSAGE };
-  if (own.status < 200 || own.status >= 300) return failed;
-  if (!own.body?.event) return notFound;
-  if (!isOwnRequest(own.body.event)) return failed;
+  const own = await apiCall<{ event?: unknown }>(
+    `/api/events?mine=1&id=${encodeURIComponent(event.id)}`, { signal }, DETAIL_FAILED);
+  if (!own.ok) return own.status === 404 ? NOT_FOUND : own;
+  if (!own.data.event) return NOT_FOUND;
+  if (!isOwnRequest(own.data.event)) return { ok: false, status: 0, message: DETAIL_FAILED };
 
   return {
     ok: true,
-    request: {
-      ...own.body.event,
+    data: {
+      ...own.data.event,
       eventCode: event.event_code ?? null,
       statusChangedAt: event.status_changed_at ?? null,
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
