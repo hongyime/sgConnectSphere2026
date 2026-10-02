@@ -25,6 +25,16 @@
   entries. E11 scope is documentation/regression evidence only; no Jira status
   changes or merge authorized. Fresh publication checks follow in runs/.
 
+- 2026-10-02: PR #191 review refresh: integrated main 139217e and retained all three original calendar execution records unchanged. Their backend/browser scope remains unit or mocked API, with PostgreSQL validation explicitly outstanding. New verification covers repository tooling only. Awaiting peer review; no business story completion asserted.
+
+- 2026-10-02: Sprint 2 T-65 records for E05-S03 / SCRUM-42 on
+  `test/sprint2-execution-records` (off main db8360d): whole backend unit
+  (259/259), frontend Vitest (229/229) and Playwright (206 passed, 368 fixme
+  skips) suites; all five TC_E05S03 cases pass. Database suite not run (no
+  TEST_DATABASE_URL locally). E05-S04 records were drafted separately but left
+  uncommitted on purpose: its four cases are still unproven (Playwright specs
+  are `test.fixme` until #185 merges; DB suite not run).
+
 - 2026-10-02: Review on #182. Merged main (1780b3c) into
   feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
   Typeface row, per design.md section 14. Google Fonts stays; the choice
