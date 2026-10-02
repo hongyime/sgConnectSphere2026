@@ -116,55 +116,6 @@
   font-size: 0.95rem;
 }
 
-.coordinator-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.coordinator-filters button {
-  padding: 0.4rem 0.75rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--ink);
-  font-size: 0.9rem;
-}
-
-.coordinator-filters button[aria-pressed="true"] {
-  background: var(--teal);
-  border-color: var(--teal);
-  color: #ffffff;
-}
-
-.coordinator-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.coordinator-table th,
-.coordinator-table td {
-  padding: 0.6rem 0.75rem;
-  text-align: left;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.coordinator-table th {
-  background: rgba(15, 23, 42, 0.03);
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.coordinator-table a {
-  color: var(--teal);
-  font-weight: 500;
-  text-decoration: none;
-}
-
 .coordinator-grid {
   display: grid;
   gap: 1rem;
@@ -330,125 +281,9 @@
 .status-neutral { background: rgba(71, 85, 105, 0.14);  color: #334155; }
 
 /* --- Live E03-S01 screens (CoordinatorWorkspace.tsx) ---------------------
-   Layout sits on the shared .page-heading and .card classes; these rules
-   only add what those do not cover (heading row, states, facts, actions). */
-
-.page-heading.coordinator-page-heading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: 0;
-}
-
-.coordinator-page-heading > div {
-  display: grid;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.coordinator-page-heading h1 {
-  overflow-wrap: anywhere;
-}
-
-/* Heading links sit in a row (wrapping on phones), not the stacked grid
-   the title block above uses. */
-.page-heading.coordinator-page-heading > .coordinator-actions {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.card.coordinator-state {
-  justify-items: start;
-  gap: var(--space-3);
-  box-shadow: none;
-}
-
-.card.coordinator-state-empty {
-  justify-items: center;
-  padding: var(--space-7) var(--space-5);
-  text-align: center;
-}
-
-.coordinator-state-icon {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: var(--teal-soft);
-  color: var(--teal-dark);
-}
-
-.coordinator-state-title {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-}
-
-.coordinator-state-copy {
-  max-width: 40rem;
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--text-base);
-  line-height: 1.55;
-}
-
-.card.coordinator-state-refused {
-  border-color: rgba(192, 57, 43, 0.3);
-  background: var(--red-soft);
-}
-
-.coordinator-state-refused .coordinator-state-title {
-  color: var(--red);
-}
-
-.card.coordinator-state-error {
-  border-color: rgba(217, 160, 23, 0.45);
-  background: var(--amber-soft);
-}
-
-.coordinator-skeleton {
-  display: grid;
-  gap: var(--space-2);
-  width: 100%;
-}
-
-.coordinator-skeleton span {
-  height: 52px;
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--surface-strong) 25%, #f7f9f7 50%, var(--surface-strong) 75%);
-  background-size: 200% 100%;
-  animation: coordinator-shimmer 1.4s ease-in-out infinite;
-}
-
-.coordinator-spin {
-  animation: coordinator-rotate 0.9s linear infinite;
-}
-
-@keyframes coordinator-shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
-
-@keyframes coordinator-rotate {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .coordinator-skeleton span,
-  .coordinator-spin {
-    animation: none;
-  }
-}
+   Page frame, cards, facts, states, alerts, table and chips come from the
+   shared blocks (src/shared). These rules cover only what is specific to
+   the Coordinator screens: the dashboard list, callout and request cards. */
 
 .card.coordinator-callout {
   grid-template-columns: auto 1fr auto;
@@ -494,24 +329,6 @@
   text-decoration: none;
 }
 
-.coordinator-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--surface-strong);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: var(--weight-semibold);
-}
-
-.coordinator-filters button[aria-pressed="true"] .coordinator-count {
-  background: rgba(255, 255, 255, 0.22);
-  color: #ffffff;
-}
-
 .coordinator-row {
   gap: var(--space-3);
 }
@@ -523,33 +340,6 @@
   gap: var(--space-2);
 }
 
-.coordinator-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
-
-.coordinator-table-wrap .coordinator-table {
-  min-width: 640px;
-  border: 0;
-}
-
-.coordinator-table td small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.coordinator-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.coordinator-table tbody tr:hover {
-  background: rgba(14, 124, 123, 0.04);
-}
-
 .coordinator-subtle {
   display: inline-flex;
   align-items: center;
@@ -557,124 +347,25 @@
   margin: 0;
   color: var(--muted);
   font-size: var(--text-sm);
-}
-
-.coordinator-grid .card {
-  align-content: start;
-  padding: var(--space-5);
-  box-shadow: none;
-}
-
-.coordinator-page > .card {
-  box-shadow: none;
-}
-
-.coordinator-page .card > h2 {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--text-lg);
-}
-
-.coordinator-facts {
-  display: grid;
-  grid-template-columns: minmax(9rem, max-content) 1fr;
-  gap: var(--space-3) var(--space-4);
-  margin: 0;
-  font-size: var(--text-base);
-}
-
-.coordinator-facts dt {
-  color: var(--muted);
-  font-weight: var(--weight-medium);
-}
-
-.coordinator-facts dd {
-  margin: 0;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-
-.coordinator-facts dd small {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: var(--text-sm);
-}
-
-.coordinator-facts a {
-  color: var(--teal-dark);
-}
-
-.coordinator-facts-wide {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
-  gap: var(--space-4) var(--space-5);
-}
-
-.coordinator-facts-wide > div {
-  display: grid;
-  gap: var(--space-1);
-  align-content: start;
-}
-
-.coordinator-facts-wide dd {
-  white-space: pre-line;
   line-height: 1.5;
 }
 
-.coordinator-facts dd.coordinator-none {
-  color: var(--soft);
-  font-style: italic;
+.coordinator-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
 }
 
-.coordinator-inline-status:empty {
+/* Live regions stay mounted so screen readers announce what appears in
+   them, but take no space while empty. */
+.coordinator-live:empty {
   display: none;
 }
 
-.coordinator-success,
-.coordinator-error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin: 0;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  line-height: 1.45;
-}
-
-.coordinator-success {
-  color: var(--green);
-}
-
-.coordinator-error {
-  color: var(--red);
-}
-
-.coordinator-success svg,
-.coordinator-error svg {
-  flex: 0 0 auto;
-  margin-top: 2px;
-}
-
-.coordinator-pending {
+.coordinator-anchor {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border: 1px solid rgba(217, 160, 23, 0.45);
-  border-radius: 8px;
-  background: var(--amber-soft);
-  color: #8a6200;
-}
-
-.coordinator-pending strong {
-  color: var(--ink);
-}
-
-.coordinator-pending p {
-  margin: var(--space-1) 0 0;
-  color: var(--muted);
-  font-size: var(--text-sm);
-  line-height: 1.45;
+  scroll-margin-top: var(--space-5);
 }
 
 .coordinator-reassign-form {
@@ -682,54 +373,11 @@
   gap: var(--space-3);
 }
 
-.coordinator-reassign-form select {
-  width: 100%;
-  min-height: 42px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fbfbfa;
-  color: var(--ink);
-  font: inherit;
-}
-
-.coordinator-reassign-form select[aria-invalid="true"] {
-  border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
-}
-
 .coordinator-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-2);
-}
-
-.card.coordinator-banner {
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--space-3);
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  box-shadow: none;
-  font-weight: var(--weight-medium);
-}
-
-.coordinator-banner a {
-  color: inherit;
-  font-weight: var(--weight-semibold);
-}
-
-.card.coordinator-banner-success {
-  border-color: rgba(31, 146, 84, 0.3);
-  background: var(--green-soft);
-  color: var(--green);
-}
-
-.card.coordinator-banner-error {
-  border-color: rgba(192, 57, 43, 0.3);
-  background: var(--red-soft);
-  color: var(--red);
 }
 
 .card.coordinator-request {
@@ -756,23 +404,13 @@
   font-size: var(--text-sm);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 @media (max-width: 720px) {
   .coordinator-page {
     padding: var(--space-5) var(--space-4) var(--space-6);
   }
 
   .card.coordinator-callout,
-  .card.coordinator-request,
-  .card.coordinator-banner {
+  .card.coordinator-request {
     grid-template-columns: 1fr;
   }
 
@@ -788,58 +426,5 @@
   .coordinator-actions {
     flex-direction: column-reverse;
     align-items: stretch;
-  }
-
-  /* The queue table becomes one labelled card per event. */
-  .coordinator-table-wrap {
-    overflow: visible;
-    border: 0;
-    background: transparent;
-  }
-
-  .coordinator-table-wrap .coordinator-table {
-    min-width: 0;
-    background: transparent;
-  }
-
-  .coordinator-table thead {
-    display: none;
-  }
-
-  .coordinator-table tbody {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  .coordinator-table tr {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3) var(--space-4);
-    padding: var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-  }
-
-  .coordinator-table td {
-    display: grid;
-    gap: 2px;
-    padding: 0;
-    border: 0;
-  }
-
-  .coordinator-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: var(--weight-medium);
-  }
-
-  .coordinator-table td[data-label="Event"] {
-    grid-column: 1 / -1;
-  }
-
-  .coordinator-table td[data-label="Event"]::before {
-    content: none;
   }
 }
