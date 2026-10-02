@@ -397,7 +397,7 @@ Given I am a pre-seeded Event Coordinator Lead When I sign in with valid credent
 
 #### Scenario 2 — Safety Officer lands on the safety review queue
 
-Given I am a pre-seeded Safety Officer When I sign in with valid credentials Then I am taken to the list of events awaiting Operational Safety Check (E08-S07), and the navigation shows only the Safety Officer's pages
+Given I am a pre-seeded Safety Officer When I sign in with valid credentials Then I am taken to the list of events awaiting Operational Safety Check (E08-S06), and the navigation shows only the Safety Officer's pages
 
 #### Scenario 3 — One role per account
 

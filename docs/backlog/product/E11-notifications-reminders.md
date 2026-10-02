@@ -4,7 +4,7 @@
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33, C-69, T-70
+- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33, C-69, T-70, C-70, T-71
 - **Owner**:
 
 ### User story
@@ -53,12 +53,16 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | Tentative hold about to expire (reminder) or expired | No | Yes | No | No | No | No |
 | Equipment result or operational shortfall | No | Yes | If affected | If affected | No | No |
 | Effective date/time/venue change | Yes | Yes | If affected | If affected | Yes | Yes |
-| Event confirmed or reverted from Confirmed to Planning | Yes | Yes | If affected | If affected | Yes | Yes |
+| Event submitted for its Operational Safety Check | Yes | Yes | No | No | No | No |
+| Safety check: changes requested or safety arrangement rejected | Yes | Yes | If affected | If affected | No | No |
+| Event confirmed (including by safety approval) or reverted from Confirmed to Planning | Yes | Yes | If affected | If affected | Yes | Yes |
 | Event cancelled | Yes | Yes | Affected staff before release | Affected staff before release | Yes | Yes |
 | Event completed | Yes | Yes | If affected | If affected | Yes | Yes |
 | Waitlist place released | No | No | No | No | No | All eligible waitlisted |
 | Description-only edit | No general notice | No general notice | No | No | No | No |
 
+- The Safety Officer is notified when an event enters Safety Review (E08-S03, E08-S06);
+  like the Lead, the role is not a column because nothing else routes to it (C-70).
 - The Event Coordinator Lead is notified when a request enters the unassigned queue
   and when a Coordinator asks the Lead to reassign an event (E03-S08, E03-S09); the
   Lead is not a column above because no other change routes to that role (C-69).

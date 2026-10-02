@@ -1,5 +1,12 @@
 # Agent State
 
+- 2026-10-03: Week 7 Change 6 backlog + cases on
+  `docs/week7-change-6-safety-officer` (stacked on change 5): E08-S03 now
+  submits for Safety Review instead of setting Confirmed; E08-S04 re-review
+  after revert; new E08-S06 Safety Officer check; E11 rows; nine TC_IDs. All
+  six Week 7 changes now have backlog PRs (#197-#201 + this). Depends on #194
+  and the stack. Details in
+  .agents/handoffs/20261003-docs-week7-change-6-safety-officer.md.
 - 2026-10-03: Week 7 Change 5 backlog + cases on
   `docs/week7-change-5-coordinator-lead` (stacked on change 4): E03-S01 stays
   Done with Scenarios 1-2 marked superseded; new E03-S08/S09/S10 and
