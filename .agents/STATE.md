@@ -1,5 +1,14 @@
 # Agent State
 
+- 2026-10-02: Addressed Amareet's PR #184 review locally: venue suitability is
+  a shared StatusPill in Card actions; the single no-full-matches Alert remains.
+  Added browser assertions against per-result alerts. Focused browser 8,
+  navigation component 4, build/typecheck and hygiene/tooling 76 passed.
+  Evidence: docs/testing/runs/20261002-214056-jininggg-full-regression.md.
+  Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
+  non-blocking scope advice applies to future PRs. User authorized committing and
+  pushing this follow-up for re-review; final CI and human approval remain required.
+
 - 2026-10-02: The upload rejection was an accidental click; user reauthorized
   publication. Postplan uploaded after screenshot compression, retaining both
   views: https://gnoj0c9eujtz.postplan.dev. Commit/push and draft PR preparation

@@ -17,7 +17,10 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03: combined filters and near-match fa
  await page.goto('/coordinator/events/EVT-TEST/venues');
  await expect(page.getByLabel('Expected attendance')).toHaveValue('80');await expect(page.getByLabel('Ramp')).toBeChecked();await expect(page.getByText(/Manual review note/)).toBeVisible();
  await page.getByLabel('Venue name',{exact:true}).fill('Central');await page.getByLabel('Minimum capacity (optional)',{exact:true}).fill('70');await page.getByLabel('Location',{exact:true}).fill('Central');await page.getByRole('button',{name:'Search venues',exact:true}).click();
- await expect(page.getByText('Unsuitable / near match',{exact:true})).toBeVisible();await expect(page.getByText('Capacity 50 is below the required 80 places.',{exact:true})).toBeVisible();await expect(page.getByText('Theatre (50)', {exact:true})).toBeVisible();
+ await expect(page.getByText('Near match',{exact:true})).toBeVisible();await expect(page.getByText('Capacity 50 is below the required 80 places.',{exact:true})).toBeVisible();await expect(page.getByText('Theatre (50)', {exact:true})).toBeVisible();
+ await expect(page.getByRole('region', {name:'Central Hall',exact:true}).getByRole('alert')).toHaveCount(0);
+ await expect(page.getByRole('region', {name:'Venue results'}).getByRole('alert')).toHaveCount(1);
+ await expect(page.getByRole('region', {name:'Venue results'}).getByRole('alert')).toContainText('No full matches');
  await expect(page.getByRole('main')).toHaveClass(/ui-page/);
  await expect(page.getByRole('heading', {level:1})).toHaveCount(1);
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -27,6 +30,7 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03: combined filters and near-match fa
 test('TC_E06S01_04: unavailable result is not presented as suitable',async({page})=>{
  await page.route('**/api/venues?*',route=>route.fulfill({json:new URL(route.request().url()).searchParams.has('search')?{venues:[{...venue,available:false,mismatches:['Unavailable during the requested period.']}]}:{options,defaults}}));
  await page.goto('/coordinator/venues');await page.getByRole('button',{name:'Search venues',exact:true}).click();await expect(page.getByText('Unavailable',{exact:true})).toBeVisible();
+ await expect(page.getByRole('region', {name:'Central Hall',exact:true}).getByRole('alert')).toHaveCount(0);
 });
 test('search access denial shows safe error and no criteria form',async({page})=>{
  await page.route('**/api/venues?*',route=>route.fulfill({status:403,json:{error:'Only Event Coordinators can search for suitable venues.'}}));
@@ -51,6 +55,7 @@ test('venue search shows suitable results, field errors and empty states', async
  await expect(page.getByText('No venues match this name', {exact:true})).toBeVisible();
  await page.getByRole('button', {name:'Search venues',exact:true}).click();
  await expect(page.getByText('Suitable', {exact:true})).toBeVisible();
+ await expect(page.getByRole('region', {name:'Venue results'}).getByRole('alert')).toHaveCount(0);
  await expect(page.getByText('Unmet requirements', {exact:true})).toHaveCount(0);
  await page.setViewportSize({width:320,height:800});
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

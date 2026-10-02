@@ -113,3 +113,8 @@ Publication refresh: main f0c4264 now includes font PR #182. The open-PR
 snapshot above predates that merge; only screen-inventory PR #183 remains open.
 
 Publication postplan with desktop/mobile screenshots: https://gnoj0c9eujtz.postplan.dev.
+
+PR #184 review follow-up: venue suitability now uses shared status pills in card
+headings, preserving the single no-full-matches warning. Regression assertions
+prevent per-result screen-reader alerts. [Review verification](runs/20261002-214056-jininggg-full-regression.md)
+records 8 browser checks, 4 component checks, build and repository checks.

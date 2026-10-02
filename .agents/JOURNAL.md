@@ -173,3 +173,12 @@
 - 2026-10-02: PR #175 / SCRUM-37 follow-up: #181 was already merged; pulled it and normally merged main. Added registration date hint/error ARIA regression and activity-log actor assertion. Root typecheck, 188 Vitest tests, 32 desktop/mobile E03 tests (24 scaffold skips), and 76 tooling tests passed without hook skips. T-65 records added; coverage regeneration and push follow. #175 remains for peer approval, not merged by this session. Prior verification-preparation note is completed.
 
 - 2026-10-02: PR #175 CI found CodeQL incomplete-sanitization in #181 date-presence replace call. Replaced it with a direct Boolean check of the two source date values; focused 16 form tests, root typecheck and 76 tooling tests pass. Coverage regenerated unchanged. Final CI and peer approval remain required.
+
+- 2026-10-02: Addressed Amareet's PR #184 review locally: venue suitability is
+  a shared StatusPill in Card actions; the single no-full-matches Alert remains.
+  Added browser assertions against per-result alerts. Focused browser 8,
+  navigation component 4, build/typecheck and hygiene/tooling 76 passed.
+  Evidence: docs/testing/runs/20261002-214056-jininggg-full-regression.md.
+  Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
+  non-blocking scope advice applies to future PRs. User authorized committing and
+  pushing this follow-up for re-review; final CI and human approval remain required.

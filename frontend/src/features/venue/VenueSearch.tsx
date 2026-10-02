@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import {
   Alert, Button, Card, EmptyState, ErrorState, FactList, FormActions, FormField,
-  FormSection, LoadingState, PageLayout, apiCall, useLoad,
+  FormSection, LoadingState, PageLayout, StatusPill, apiCall, useLoad,
 } from '../../shared';
 import './venue.css';
 
@@ -103,8 +103,10 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
       {venues.length === 0 ? <EmptyState title="No venues match this name">Try another venue name or clear the name filter.</EmptyState> : <>
         <p>{venues.filter(v => v.suitable).length} suitable venues; {venues.length} results.</p>
         {!venues.some(v => v.suitable) && <Alert tone="warning">No full matches. Review the unmet requirements below.</Alert>}
-        {venues.map(v => <Card key={v.id} title={v.name}>
-          <Alert tone={!v.available ? 'error' : v.suitable ? 'success' : 'warning'}>{!v.available ? 'Unavailable' : v.suitable ? 'Suitable' : 'Unsuitable / near match'}</Alert>
+        {venues.map(v => <Card key={v.id} title={v.name} actions={
+          <StatusPill status={!v.available ? 'danger' : v.suitable ? 'success' : 'warning'}
+            label={!v.available ? 'Unavailable' : v.suitable ? 'Suitable' : 'Near match'} />
+        }>
           <FactList columns={3} items={[
             ['Location', v.location], ['Maximum capacity', v.max_capacity], ['Requested layout capacity', v.effective_capacity ?? 'Not supported'],
             ['Layouts', v.layouts.map(l => `${l.label} (${l.capacity})`).join(', ') || 'None'],
