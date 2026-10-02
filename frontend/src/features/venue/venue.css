@@ -28,27 +28,14 @@
 .venue-footer { display: flex; gap: 1rem; }
 .venue-footer a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--teal); text-decoration: none; font-size: 0.95rem; }
 
-.venue-inventory-heading {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "eyebrow action" "title action";
-  align-items: end;
-  column-gap: var(--space-4);
-}
-.venue-inventory-heading .eyebrow { grid-area: eyebrow; }
-.venue-inventory-heading h1 { grid-area: title; }
-.venue-inventory-heading .primary-action { grid-area: action; }
-
-.venue-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.venue-cards article {
-  display: grid; gap: 0.3rem; align-content: start;
-  padding: var(--space-4); border: 1px solid var(--border); border-radius: 10px;
-  background: var(--surface); transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.venue-cards article:hover { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14, 124, 123, 0.11); }
-.venue-cards header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
-.venue-cards header strong { font-size: var(--text-lg); color: var(--ink); }
-.venue-cards p { margin: 0; font-size: 0.9rem; color: var(--ink); line-height: 1.5; }
-.venue-cards em { color: var(--muted); font-style: normal; font-weight: 700; }
+/* Inventory (E05-S01/S02): page frame, facts, alerts and the confirm step
+   come from the shared blocks; these rules lay out the cards. */
+.venue-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.card.venue-card { align-content: start; gap: var(--space-4); box-shadow: none; transition: border-color 0.15s ease; }
+.card.venue-card:hover { border-color: var(--teal); }
+.venue-card h2 { margin: 0; color: var(--ink); font-size: var(--text-lg); }
+.venue-blocking { margin: var(--space-2) 0 0; padding-left: 1.2rem; }
+.venue-live:empty { display: none; }
 
 .venue-select { display: inline-flex; align-items: center; gap: 0.5rem; }
 .venue-select select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
@@ -62,15 +49,9 @@
 .venue-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
 .venue-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
 
-.venue-alert-block {
-  display: grid; gap: 0.3rem; padding: 0.75rem; margin: 0.5rem 0;
-  border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-weight: 600;
-}
-.venue-alert-block ul { margin: 0.25rem 0 0; padding-left: 1.2rem; font-weight: 500; }
+.venue-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
-.venue-card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
-
-.venue-form { display: grid; gap: 1rem; max-width: 42rem; }
+.card.venue-form { display: grid; gap: var(--space-5); box-shadow: none; }
 
 .field-error { margin: 0.2rem 0 0; color: #b91c1c; font-size: 0.85rem; }
 
@@ -176,7 +157,6 @@
 .calendar-details dd { margin: 0; color: var(--ink); }
 
 @media (max-width: 560px) {
-  .venue-calendar-page { padding: 1.25rem 1rem 2rem; }
   .calendar-period h2 { order: -1; flex-basis: 100%; }
   .calendar-period .secondary-action { flex: 1 1 auto; justify-content: center; }
   .calendar-time { min-width: 0; }

@@ -214,14 +214,23 @@ test('reloads when a different venue is chosen', async () => {
 test('notes that a retired venue offers no free time', async () => {
   calendarReply = url => ({ body: calendarBody(url, [], false) });
   renderCalendar();
-  expect(await screen.findByRole('note')).toHaveTextContent('retired');
+  expect(await screen.findByText(/is retired, so none of its time is offered as Free/)).toBeInTheDocument();
 });
 
-test('shows a sign-in message on 403 and retries on request', async () => {
+test('shows the server refusal on 403', async () => {
   calendarReply = () => ({ status: 403, body: { error: 'Access denied.' } });
   renderCalendar();
   const alert = await screen.findByRole('alert');
-  expect(alert).toHaveTextContent('Sign in as an Event Coordinator or Venue Staff member');
+  expect(alert).toHaveTextContent('Access refused');
+  expect(alert).toHaveTextContent('Access denied.');
+  expect(within(alert).getByRole('link', { name: 'Back to my home page' })).toHaveAttribute('href', '/home');
+});
+
+test('shows a failed load and retries on request', async () => {
+  calendarReply = () => ({ status: 500, body: {} });
+  renderCalendar();
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('The calendar could not be loaded.');
 
   calendarReply = url => ({ body: calendarBody(url, novemberEntries) });
   fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
