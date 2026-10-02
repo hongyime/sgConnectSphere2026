@@ -7,3 +7,6 @@ docs/backlog/sprint-1-delivery.md
 # The sprint retrospective quotes GitHub handles in its audit evidence.
 # These are already public on github.com and were committed in PR #99.
 docs/plans/sprint-1-retrospective.md
+
+# T-65 requires public runner attribution for this review verification record.
+docs/testing/runs/20261002-225947-*-tooling.md

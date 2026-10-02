@@ -2,7 +2,7 @@
 
 - **Status**: draft for team review
 - **Owner**: Amareet (SCRUM-118)
-- **Generated from**: `frontend/src/app/routes.tsx` at commit 1780b3c plus `docs/backlog/release-1/`
+- **Audited against**: `frontend/src/app/routes.tsx` and its rendered components at main commit `139217e`, plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
 
 This file maps every Release 1 story (47 in total, per the backlog README's
@@ -12,12 +12,15 @@ that surface it in the running app, the status of each route (`live`, `mock`,
 (`List`, `Detail`, `Form`, `Decision`, plus `Calendar`, `Dashboard` and
 `Other` for shapes the four templates do not cover).
 
-It is generated from the code and backlog, not from Amareet's own draft
-inventory for SCRUM-118. Amareet's draft is not in the repository, so this
-view should be reconciled against it before marking the ticket done.
+This is a manual inventory of the code and backlog, reconciled with Amareet's
+SCRUM-118 draft through her review on [PR #183](https://github.com/hongyime/sgConnectSphere2026/pull/183).
+Route status describes the screen, not completion of every acceptance criterion
+of the associated story. The story owner still verifies its Definition of Done.
 
 The authoritative source for routes stays `frontend/src/app/routes.tsx` (one
-line per route, with the `status` and `story` recorded there). When a route
+entry per route, with the `status` and primary `story` recorded there). A screen
+can also serve other stories through inline controls; check its rendered
+component before concluding that an untagged story has no screen. When a route
 is added, changed or retired, update `routes.tsx` first, then this file.
 
 Related plans: `docs/plans/group-c-per-role-functional-screens.md` seeded the
@@ -36,22 +39,22 @@ in the second table below.
 | E01-S03 | Hide internal planning information from Attendees | Attendee | Sprint 1 | `/attendee/events`, `/attendee/events/*`, `/internal/*` | live | List | Hiding is enforced in the API; the Attendee event list is the surface. |
 | E01-S04 | Update my account details | system user | Sprint 1 | `/profile` | live | Form | Shared across all roles. |
 | E01-S08 | Create an account | Attendee | Sprint 1 | `/register`, `/verify` | live | Form | Two-step: register then verify by email. |
-| E01-S11 | Deactivate my account | system user | Sprint 1 | — | none | Form | No screen yet; expected to live under `/profile` as a danger action. |
+| E01-S11 | Deactivate my account | system user | Sprint 1 | `/profile` | live | Form, Decision | `ProfileForm` includes account deactivation and an explicit confirmation step; covered by `tests/e2e/deactivation.spec.ts`. |
 | E02-S01 | Submit an event request | Event Organiser | Sprint 1 | `/organiser/new-request` | live | Form | Multi-step request flow. |
 | E02-S02 | Save a draft event request | Event Organiser | Sprint 1 | `/organiser/drafts`, `/organiser/drafts/:id` | live, live | List, Form | Drafts list plus draft edit form. |
-| E02-S03 | Match accessibility requirements to venue features | Event Organiser | Sprint 1 | — | none | Other | Backend rule; expected to surface in `/organiser/new-request` and `/coordinator/venues`. |
+| E02-S03 | Match accessibility requirements to venue features | Event Organiser | Sprint 1 | `/organiser/new-request` | live | Form | `OrganiserRequestFlow` loads predefined accessibility features from the API as a checklist. Venue matching surfaces under E06-S01/S02. |
 | E03-S01 | Assign an Event Coordinator to a request | Event Organiser | Sprint 2 | `/coordinator`, `/coordinator/queue`, `/coordinator/reassignments`, `/coordinator/events/:eventCode` | live | Dashboard, List, List, Detail | Coordinator workspace covering the whole assignment flow. |
-| E03-S02 | Request clarification from the Event Organiser | Event Coordinator | Sprint 2 | `/organiser/requests/:eventCode/clarify` | mock | Form | Organiser-side response; the Coordinator-side ask surfaces inside `/coordinator/events/:eventCode`. |
+| E03-S02 | Request clarification from the Event Organiser | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode/clarify`, `/organiser/requests/:eventCode/clarify` | live | Form | `RequestClarification` sends the Coordinator's questions; `AnswerQuestions` submits the Organiser's response. Both routes are live at the audited commit. |
 | E03-S03 | Decide on an event request | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode/decide` | mock | Decision | Approve, reject with reason, or request clarification. |
 | E03-S05 | Track the status of my event | Event Organiser | Sprint 2 | `/events/*`, `/organiser`, `/organiser/requests`, `/organiser/requests/:eventCode` | live | List, Dashboard, List, Detail | Status timeline lives in the request detail. |
-| E03-S06 | Discuss an event through comments | Event Organiser | Sprint 2 | — | none | Other | Expected to surface as a comment panel on `/organiser/requests/:eventCode` and `/coordinator/events/:eventCode`; the standalone `/comments` route is a design-review mock. |
+| E03-S06 | Discuss an event through comments | Event Organiser | Sprint 2 | `/events/*` | live | Detail | `ClientEvents` shows comments and Add a comment on `/events/:id`; TC_E03S06_01..03 are live in `tests/e2e/e03.spec.ts`. The standalone `/comments` remains a design-review mock. |
 | E03-S07 | View and update event information | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode`, `/events/*` | live | Detail | Coordinator edits in the request detail (#148); the Organiser's Edit event on `/events/:id` (#175). |
 | E05-S01 | Maintain the venue catalogue | Venue Staff member | Sprint 1 | `/venue/inventory`, `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | List, Form, Form | Add, update and retire venues. |
 | E05-S02 | Match layout requirements to venue capacity | Venue Staff member | Sprint 1 | `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | Form | Layouts are managed inside the venue form (same screens as E05-S01). |
 | E05-S03 | View the venue availability calendar | Event Coordinator | Sprint 2 | `/coordinator/calendar`, `/coordinator/venues/:venueId/calendar`, `/venue/availability` | live | Calendar | Shared calendar for Coordinator and Venue Staff audiences. |
-| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | mock | List | Skeleton pilot (SCRUM-120); replaces the mock with the real screen built on the shared blocks. |
+| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | mock | Form, List | Main still renders the prototype. The live maintenance form and block list are proposed in PR #185 (SCRUM-120); update status only after that PR merges. |
 | E06-S01 | Search for suitable venues | Event Coordinator | Sprint 2 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Catalogue search with suitability filters. |
-| E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). |
+| E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). This remains a Sprint 3 story; its owner must verify all acceptance criteria before treating it as done. |
 | E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | — | none | Form | Expected to live under `/coordinator/events/:eventCode/venues` or the planning workspace. |
 | E06-S04 | Decide on a venue booking request | Venue Staff member | Sprint 3 | `/venue/bookings/:bookingId`, `/venue/bookings/:bookingId/decide` | mock, coming-soon | Detail, Decision | Pending booking detail plus the planned approve-or-reject screen. |
 | E06-S05 | Hold a venue tentatively | Event Coordinator | Sprint 3 | — | none | Decision | Expected to surface inside the planning workspace or venue search. |
@@ -77,14 +80,14 @@ in the second table below.
 | E10-S02 | Distinguish minor edits from arrangement-affecting changes | Event Coordinator | Sprint 4 | — | none | Other | Backend classification; the result surfaces inside `/coordinator/events/:eventCode`. |
 | E10-S04 | Cancel an event | Event Coordinator | Sprint 4 | `/organiser/requests/:eventCode/cancel` | mock | Decision | Organiser-triggered cancellation; the Coordinator decision is expected to surface on the Coordinator request detail. |
 | E11-S01 | Notify users about events they are involved in | user involved in an event | Sprint 2 | `/notifications` | live | List | Shared across every signed-in role. |
-| E14-S02 | Record significant actions in an activity log | ConnectSphere staff member | Sprint 1 | — | none | List | Backend rule; the standalone `/audit` route is a design-review mock and belongs to no Release 1 story. |
+| E14-S02 | Record significant actions in an activity log | ConnectSphere staff member | Sprint 1 | `/admin/audit` | mock | List | `AuditLogViewer` is a viewer prototype, not an authorised Admin role or live log reader. Recording and immutability are also part of the story. Pending PR #192 records the Coordinator reader decision and Sprint 3 carryover; reconcile this row after it merges. |
 
-## Routes with no Release 1 story
+## Routes with no primary story tag
 
-These routes are registered in `routes.tsx` but no Release 1 story claims
-them. They are prototype dashboards, administrator tooling (no Release 1
-stories planned), design-review mocks or the shared UI kit; this inventory
-lists them so a reader knows they exist and why.
+These routes have no primary `story` tag in `routes.tsx`. They are prototype
+dashboards, administrator tooling (no Release 1 Admin role), design-review
+mocks or the shared UI kit. `/admin/audit` is also mapped to E14-S02 above
+as a viewer prototype; listing a prototype does not authorise its role or API.
 
 | Route | Status | Purpose |
 | --- | --- | --- |
@@ -102,25 +105,27 @@ lists them so a reader knows they exist and why.
 | `/admin` | mock | Administrator dashboard prototype (no Release 1 story planned for Admin). |
 | `/admin/users` | mock | User management prototype. |
 | `/admin/users/:userId/role` | mock | Role assignment prototype. |
-| `/admin/audit` | mock | Audit log viewer prototype. |
+| `/admin/audit` | mock | `AuditLogViewer` prototype associated with E14-S02 above; no primary route story tag or authorised Admin reader. |
 | `/admin/reports` | mock | Reporting dashboard prototype. |
 | `/admin/digest` | mock | Digest preferences prototype. |
 | `/admin/recommendations` | mock | Recommendations prototype. |
-| `/audit` | mock | Design-review mock for the activity log (E14-S02 is backend-only). |
-| `/comments` | mock | Design-review mock for the comments panel (E03-S06 is expected to surface inline, not as a standalone page). |
+| `/audit` | mock | Generic `AuditHistory` design-review mock, distinct from the `/admin/audit` viewer prototype. |
+| `/comments` | mock | Standalone comments design-review mock; E03-S06 is implemented inline on `/events/*`. |
 | `/search` | mock | Design-review mock for a generic search surface. |
 | `/ui-states` | mock | Design-review mock showing empty, error and loading states. |
 
 ## Counts
 
 - Release 1 stories: 47.
-- Routes carrying a Release 1 story: live 23, mock 20, coming-soon 3.
-- Release 1 stories with no route (`none`): 18. These are backend rules (visibility, double-booking, capacity, auditing), inline-only surfaces (comments, change classification) and screens not yet in `routes.tsx` (deactivate account, request a booking, hold tentatively, mark equipment unavailable, revert event, complete event, record attendance, view registrations, control registration period). Some stories count as both `live` and `none` because they have one surfaced route and another planned surface; the count above is route-level, not story-level.
-- Routes with no Release 1 story: 22 (listed above).
+- Routes with a primary Release 1 story tag: live 32, mock 17, coming-soon 3, redirect 1 (53 total).
+- Release 1 stories with no current route (`none`): 11, counted from the story table. These are E06-S03/S05/S06, E07-S05, E08-S04/S05, E09-S02/S03/S06/S07 and E10-S02. A proposed future surface in the Notes column is not counted as a current route.
+- Routes with no primary story tag: 22 (listed above). Together with the 53 tagged routes, this accounts for all 75 entries in `routes.tsx` at `139217e`.
+- Route counts count each registered path once. Story rows may share a route, so route totals and story totals measure different things.
 
 ## How to update
 
 Edit `frontend/src/app/routes.tsx` first (change the `status`, add or
 remove the `story` reference, or add a new route), then update the
-matching row here. Treat `routes.tsx` as the single source of truth for
-what the app actually renders.
+matching row here. For inline features, also inspect the component rendered
+by the route. Recount the story rows and route entries separately, record
+the audited commit, and keep unmerged proposals labelled as pending.
