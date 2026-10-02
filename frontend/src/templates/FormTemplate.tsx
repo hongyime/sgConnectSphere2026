@@ -62,9 +62,14 @@ function RequestForm({ id, initial }: { id: string | null; initial: SampleReques
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  // Don't update state if the user navigated away while saving.
+  // Don't update state if the user navigated away while saving. Set on every
+  // mount: in development, StrictMode mounts, unmounts and remounts once, and
+  // a ref left false would drop every reply (found on #186).
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
 
   function update<K extends keyof SampleInput>(field: K, value: SampleInput[K]) {
     setValues(current => ({ ...current, [field]: value }));
