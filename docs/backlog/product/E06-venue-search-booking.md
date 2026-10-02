@@ -4,7 +4,7 @@
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: B-08
+- **BDR references**: B-08, C-65, T-66
 - **Owner**:
 
 ### User story
@@ -28,6 +28,10 @@ Given a venue is available but its capacity is below the event's expected attend
 #### Scenario 4 — Blocked or booked venues excluded
 
 Given a venue is blocked or already confirmed the event's period When I run the search Then it does not appear as available
+
+#### Scenario 5 — Buffered occupancy excludes a venue
+
+Given a venue's existing booking or hold, once that venue's setup and turnaround time are applied, overlaps the event's requested period When I run the search Then the venue does not appear as available even though the advertised event times do not overlap (C-65, T-66)
 
 ### Checklist
 
@@ -79,7 +83,7 @@ Given a venue is marked unsuitable When I submit a booking request for it anyway
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49
+- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66
 - **Owner**:
 
 ### User story
@@ -104,6 +108,10 @@ Given the event already has a pending booking request When I submit another for 
 
 Given a venue is already Pending or Confirmed for another event over the same period When I submit a request for it Then submission is blocked and the conflict is explained
 
+#### Scenario 5 — Request conflicts through the buffer
+
+Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround time of 45 minutes When I submit a request for 12:30 to 14:00 Then submission is blocked and the conflict names the other event's buffered window, 09:30 to 12:45 (C-65, T-66)
+
 ### Checklist
 
 - Submit a booking request for an event using its recorded requirements
@@ -111,14 +119,14 @@ Given a venue is already Pending or Confirmed for another event over the same pe
 - Confirm the venue calendar shows the period as Tentative
 - Confirm the event status moves from Approved to Planning on the first request
 - Be blocked from holding more than one pending request for the same event
-- Be blocked from requesting a venue already Pending or Confirmed for another event in that period
+- Be blocked from requesting a venue already Pending or Confirmed for another event in that period, counting that venue's setup and turnaround time (C-65)
 - View the status of each of my booking requests
 
 ## E06-S04 — Decide on a venue booking request
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-08, T-39
+- **BDR references**: C-08, T-39, C-65, T-66
 - **Owner**:
 
 ### User story
@@ -139,6 +147,10 @@ Given I reject a request When I record a reason and optionally suggest an altern
 
 Given I attempt to reject without recording a reason When I confirm Then the rejection is blocked
 
+#### Scenario 4 — Approval checks the buffered window
+
+Given approving a pending request would make its buffered occupancy window overlap another Confirmed booking's buffered window on the same venue When I approve it Then approval is blocked and the conflicting booking is identified, even if the two advertised event times do not overlap (C-65, T-66)
+
 ### Checklist
 
 - Approve a pending booking request for a free venue
@@ -153,7 +165,7 @@ Given I attempt to reject without recording a reason When I confirm Then the rej
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-37, C-60, T-49
+- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66
 - **Owner**:
 
 ### User story
@@ -178,6 +190,10 @@ Given I hold a venue tentatively When I submit a booking request for that venue 
 
 Given I hold a venue tentatively and no longer need it When I release the hold Then the period returns to Free on the calendar
 
+#### Scenario 5 — Hold occupies the buffered window
+
+Given a venue has a setup time of 30 minutes and a turnaround time of 45 minutes When I hold it tentatively for 10:00 to 12:00 Then the hold occupies 09:30 to 12:45, the calendar shows that window as Tentative, and another hold or booking request overlapping any part of it is refused (C-65, T-66)
+
 ### Checklist
 
 - Place a tentative hold on a venue that is free for the period
@@ -191,7 +207,7 @@ Given I hold a venue tentatively and no longer need it When I release the hold T
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-46, T-22
+- **BDR references**: C-46, T-22, C-65, T-66
 - **Owner**:
 
 ### User story
@@ -211,6 +227,10 @@ Given two pending requests cover the same venue and overlapping times When I app
 #### Scenario 3 — Simultaneous approval fails safely
 
 Given another Venue Staff member approves a conflicting request moments before me When my approval is processed Then it fails and I am told the venue has just been taken
+
+#### Scenario 4 — Buffered windows are what must not overlap
+
+Given two pending requests on one venue whose advertised times do not overlap but whose buffered occupancy windows do When both are approved at the same moment Then at most one approval succeeds and the other fails safely, because the database-level conflict check operates on the buffered window (C-65, T-66, ADR-003)
 
 ### Checklist
 

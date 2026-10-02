@@ -137,3 +137,50 @@ Given a block is created over an upcoming event's dates When the block is saved 
 - Remove or shorten an existing block, restoring availability for the released period
 - Confirm a blocked venue no longer appears as available during the blocked period
 - Confirm affected Event Coordinators are notified when a block affects an upcoming event
+
+## E05-S05 — Apply setup and turnaround time
+
+- **Sprint**: Sprint 3
+- **Points**: 5
+- **BDR references**: C-65, T-66, T-73, T-74, O-20, O-21, O-22 (supersedes C-18, C-38)
+- **Owner**:
+
+### User story
+
+As a Venue Staff member, I want to record the setup and turnaround time each venue requires so that every availability and conflict check accounts for the time needed to prepare the room before an event and reset it afterwards.
+
+Returned to Release 1 by the Week 7 Customer Changes (C-65). The five-point estimate is the one carried from the original backlog and is re-estimated at Sprint 3 planning (T-73). Scenario 3 lives here rather than in E05-S03 because that story is Done (T-74). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md` and are amended if the customer answers differently.
+
+### Acceptance criteria
+
+#### Scenario 1 — Buffers recorded on the venue
+
+Given I am creating or editing a venue When I enter a setup time and a turnaround time in whole minutes, either of which may be 0, and save Then both values are stored against the venue and shown on its detail, and every venue that existed before this story has both values at 0
+
+#### Scenario 2 — Occupancy window computed from the buffers
+
+Given a venue has a setup time of 30 minutes and a turnaround time of 45 minutes When a booking or tentative hold for 10:00 to 12:00 is evaluated for availability or conflicts Then the venue is treated as occupied from 09:30 to 12:45
+
+#### Scenario 3 — Calendar shows the buffered window
+
+Given a venue with non-zero buffers has a Confirmed booking or a Tentative hold When a Coordinator or Venue Staff member views the venue availability calendar Then the Confirmed or Tentative period shown covers the buffered window and the buffer portion is visually distinguishable from the advertised event time, and the Free, Tentative, Confirmed and Blocked states of E05-S03 are otherwise unchanged
+
+#### Scenario 4 — Conflicts created by a buffer change are identified, not removed
+
+Given a venue has Confirmed bookings 10:00 to 12:00 and 12:30 to 14:00 and a turnaround time of 0 When I change the turnaround time to 45 minutes and save Then the save succeeds (assumes O-21), both bookings remain Confirmed and the later one is marked Conflicting rather than released, the conflicting pair is listed to me on save, the calendar flags the conflict, and the Coordinator of each affected event is notified (assumes O-20)
+
+#### Scenario 5 — Buffers do not apply against a maintenance block
+
+Given a venue has a maintenance block ending at 12:00 and a setup time of 30 minutes When a booking request for 12:00 to 14:00 is evaluated Then the block and the booking are compared on the booking's advertised times, so the request is not in conflict with the block (assumes O-22)
+
+#### Scenario 6 — Adjacent buffered windows do not conflict
+
+Given booking A occupies a venue until 12:45 once its turnaround is applied When booking B's buffered window on the same venue starts at exactly 12:45 Then there is no conflict, and when it starts at 12:44 there is
+
+### Checklist
+
+- Record a setup time and a turnaround time in whole minutes for each venue, with 0 allowed and 0 the default for existing venues
+- See both values on the venue's detail
+- Have the calendar, venue search, booking request, booking decision, tentative hold and double-booking prevention all evaluate the buffered occupancy window instead of the advertised event times
+- See the conflicts a buffer change creates listed on save and flagged on the calendar, with the affected Coordinators notified
+- Never have a booking released automatically because a buffer changed

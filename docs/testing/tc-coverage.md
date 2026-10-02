@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 253 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 264 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **253**
-- Automated (explicit TC_ID in an active test title): **118** (46.6%)
+- Total test cases: **264**
+- Automated (explicit TC_ID in an active test title): **118** (44.7%)
   - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **93**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (52.2%)
-- No test yet (no test file mentions the TC_ID): **3** (1.2%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (50.0%)
+- No test yet (no test file mentions the TC_ID): **14** (5.3%)
 
 ## Coverage by epic
 
@@ -21,8 +21,8 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 32 | 21 | 11 | 0 |
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 42 | 39 | 3 | 0 |
-| E05 | 24 | 24 | 0 | 0 |
-| E06 | 22 | 4 | 18 | 0 |
+| E05 | 30 | 24 | 0 | 6 |
+| E06 | 27 | 4 | 18 | 5 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 15 | 0 | 15 | 0 |
 | E09 | 35 | 5 | 30 | 0 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **253** | **118** | **132** | **3** |
+| **Total** | **264** | **118** | **132** | **14** |
 
 ## Case-by-case status
 
@@ -166,6 +166,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
+| `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ❌ none | — |
+| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ❌ none | — |
+| `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ❌ none | — |
+| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ❌ none | — |
+| `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ❌ none | — |
+| `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ❌ none | — |
 
 ### E06
 
@@ -175,6 +181,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S01_02` | E06-S01 | Verify that when no venue matches every criterion, near matches should be return | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
 | `TC_E06S01_03` | E06-S01 | Verify that a venue available but with capacity below the event's expected atten | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
 | `TC_E06S01_04` | E06-S01 | Verify that a venue that is blocked or already confirmed for the requested perio | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries; tests/e2e/e06. |
+| `TC_E06S01_05` | E06-S01 | Verify that a venue whose existing booking overlaps the event only once its setu | ❌ none | — |
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_01 - Verify that viewing a venue in the context of a event with recorded requirements should show a suitability status for that event |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_02 - Verify that a venue failing one or more recorded requirements should be marked unsuitable with every failing requirement named |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_03 - Verify that a venue meeting all recorded requirements for the event should be marked suitable |
@@ -184,15 +191,19 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_04 - Verify that submitting a request for a venue already Pending or Confirmed for another event over the same period should be blocked with the co |
 | `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_05 - Verify that an Event Coordinator should be able to view the status of each of their own booking requests |
+| `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ❌ none | — |
 | `TC_E06S04_01` | E06-S04 | Verify that approving a pending request for a venue that is free for the period  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_01 - Verify that approving a pending request for a venue that is free for the period should confirm the booking, update the calendar, and notify th |
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_02 - Verify that rejecting a request with a recorded reason and a suggested alternative venue should notify the Coordinator with both, allowing the |
 | `TC_E06S04_03` | E06-S04 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_03 - Verify that attempting to reject a request without recording a reason should be blocked |
+| `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ❌ none | — |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused |
+| `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ❌ none | — |
 | `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
 | `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
 | `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |
 | `TC_E06S06_04` | E06-S06 | Verify that a booking beginning exactly when another ends is not treated as a co | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - Verify that a booking beginning exactly when another ends is not treated as a conflict |
 | `TC_E06S06_05` | E06-S06 | Verify that a booking overlapping an existing one by a single minute is blocked | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - Verify that a booking overlapping an existing one by a single minute is blocked |
+| `TC_E06S06_06` | E06-S06 | Verify that two approvals whose advertised times do not overlap but whose buffer | ❌ none | — |
 
 ### E07
 
