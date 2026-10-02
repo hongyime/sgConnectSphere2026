@@ -1,4 +1,6 @@
 # Agent State
+
+- 2026-10-02: PR #187 review refresh: integrated main 139217e without altering the ten historical execution records or their original source attribution. New verification covers repository tooling only; historical application suites are not rerun. Awaiting renewed peer review after the push.
 - 2026-10-02: Sprint 1 execution-record backfill. Added ten reconstructed
   session files under docs/testing/runs/ for the evidence cited in pull
   requests 94 and 95. Counts and outcomes are copied from those pull

@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-10-02: PR #187 review refresh: integrated main 139217e without altering the ten historical execution records or their original source attribution. New verification covers repository tooling only; historical application suites are not rerun. Awaiting renewed peer review after the push.
+
 - 2026-10-02: Review on #182. Merged main and removed the design.md
   section 11 Typeface row instead of leaving it marked resolved. Added
   docs/decisions/0011-load-inter-from-google-fonts.md and pointed section
