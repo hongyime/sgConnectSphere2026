@@ -1,6 +1,7 @@
 // The page templates work end to end on their sample data. Teams copy these
 // tests alongside the templates and swap in stubApi for their real endpoints.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 import { DecisionTemplate } from './DecisionTemplate';
@@ -12,8 +13,8 @@ import { resetSampleData } from './sampleApi';
 beforeEach(() => resetSampleData());
 afterEach(() => cleanup());
 
-function renderAt(path: string) {
-  render(
+function renderAt(path: string, strict = false) {
+  const app = (
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/ui-kit/templates/list" element={<ListTemplate />} />
@@ -22,8 +23,10 @@ function renderAt(path: string) {
         <Route path="/ui-kit/templates/items/:id/edit" element={<FormTemplate />} />
         <Route path="/ui-kit/templates/items/:id/decide" element={<DecisionTemplate />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
+  // StrictMode, as in main.tsx, mounts each component twice in development.
+  render(strict ? <StrictMode>{app}</StrictMode> : app);
 }
 
 test('List: loads, filters with counts, and shows a filter-specific empty state', async () => {
@@ -69,6 +72,14 @@ test('Form: errors appear next to fields, a server refusal is shown, and a save 
   fireEvent.click(screen.getByRole('button', { name: 'Save request' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Leadership Summit 2027' })).toBeInTheDocument();
   expect(screen.getByRole('status')).toHaveTextContent('Saved your changes.');
+});
+
+test('Form: a save still completes under StrictMode, as in npm run dev', async () => {
+  renderAt('/ui-kit/templates/items/REQ-101/edit', true);
+  const name = await screen.findByLabelText('Event name');
+  fireEvent.change(name, { target: { value: 'Leadership Summit 2027' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save request' }));
+  expect(await screen.findByRole('heading', { level: 1, name: 'Leadership Summit 2027' })).toBeInTheDocument();
 });
 
 test('Decision: rejecting requires a reason, then the outcome is confirmed', async () => {
