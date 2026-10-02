@@ -5,6 +5,7 @@
 // approval and only title/description/purpose/registration dates after it
 // (409 otherwise); only the assigned Coordinator may edit, and only once the
 // event is approved (403 otherwise). Every applied field is audited.
+import { apiCall, jsonRequest, type ApiFailure } from '../../shared';
 
 export type EditableField =
   | 'title' | 'description' | 'purpose' | 'startAt' | 'endAt' | 'expectedAttendance'
@@ -17,21 +18,12 @@ export type EventPatch = Partial<Record<Exclude<EditableField, 'expectedAttendan
 
 export type EditResult =
   | { ok: true; fields: string[] }
-  | { ok: false; status: number; message: string };
+  | ApiFailure;
 
 export async function updateEventInformation(eventId: string, patch: EventPatch): Promise<EditResult> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/events?edit=1&id=${encodeURIComponent(eventId)}`, {
-      method: 'PATCH',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(patch),
-    });
-  } catch {
-    return { ok: false, status: 0, message: 'Unable to save your changes. Check your connection and try again.' };
-  }
-  const body = await response.json().catch(() => ({})) as { error?: string; fields?: string[] };
-  if (!response.ok) return { ok: false, status: response.status, message: body.error ?? 'Unable to save your changes.' };
-  return { ok: true, fields: body.fields ?? Object.keys(patch) };
+  const result = await apiCall<{ fields?: string[] }>(
+    `/api/events?edit=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('PATCH', patch),
+    'Unable to save your changes.');
+  return result.ok ? { ok: true, fields: result.data.fields ?? Object.keys(patch) } : result;
 }
