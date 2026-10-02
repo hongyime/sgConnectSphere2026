@@ -7,7 +7,8 @@
 // how the Organiser's post-approval restrictions (Scenario 4) will render
 // once the Organiser read exposes these fields.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { AlertTriangle, Lock, Save } from 'lucide-react';
+import { Lock, Save } from 'lucide-react';
+import { Alert, Button, FormActions, FormSection } from '../../shared';
 import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
 import './eventEdit.css';
 
@@ -119,7 +120,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const [serverError, setServerError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const alertRef = useRef<HTMLParagraphElement>(null);
+  const alertRef = useRef<HTMLDivElement>(null);
 
   // Bring the form into view when it opens, and move focus to any error so
   // keyboard and screen-reader users hear why the save didn't go through.
@@ -160,42 +161,41 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
         {intro}
       </div>
       {serverError ? (
-        <p role="alert" className="event-edit-alert" ref={alertRef} tabIndex={-1}><AlertTriangle size={16} aria-hidden="true" /> {serverError}</p>
+        <div ref={alertRef} tabIndex={-1} className="event-edit-alert"><Alert tone="error">{serverError}</Alert></div>
       ) : null}
       {sections.map(section => (
-        <fieldset key={section.title} className="form-section event-edit-section">
-          <legend>{section.title}</legend>
-          <div className="form-grid">
-            {section.fields.map(spec => {
-              const locked = !editable.has(spec.field);
-              const id = `edit-${spec.field}`;
-              const error = errors[spec.field];
-              const describedBy = [error ? `${id}-error` : null, spec.hint ? `${id}-hint` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
-              const common = {
-                id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
-                onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
-              };
-              return (
-                <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`}>
-                  <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
-                  {spec.kind === 'textarea'
-                    ? <textarea rows={3} {...common} />
-                    : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
-                  {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}
-                  {locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null}
-                  {error ? <small id={`${id}-error`}>{error}</small> : null}
-                </div>
-              );
-            })}
-          </div>
-        </fieldset>
+        <FormSection key={section.title} title={section.title}>
+          {/* Hand-built rather than FormField: a locked field adds a lock icon
+              to its label and a second note to its description. */}
+          {section.fields.map(spec => {
+            const locked = !editable.has(spec.field);
+            const id = `edit-${spec.field}`;
+            const error = errors[spec.field];
+            const describedBy = [error ? `${id}-error` : null, spec.hint ? `${id}-hint` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
+            const common = {
+              id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
+              onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
+            };
+            return (
+              <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`}>
+                <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
+                {spec.kind === 'textarea'
+                  ? <textarea rows={3} {...common} />
+                  : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
+                {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}
+                {locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null}
+                {error ? <small id={`${id}-error`}>{error}</small> : null}
+              </div>
+            );
+          })}
+        </FormSection>
       ))}
-      <div className="form-actions">
-        <button type="button" className="secondary-action" onClick={onCancel} disabled={saving}>Cancel</button>
-        <button type="submit" className="primary-action" disabled={saving || !changed}>
-          <Save size={14} aria-hidden="true" /> {saving ? 'Saving…' : 'Save changes'}
-        </button>
-      </div>
+      <FormActions>
+        <Button onClick={onCancel} disabled={saving}>Cancel</Button>
+        <Button type="submit" variant="primary" icon={<Save size={14} aria-hidden="true" />} busy={saving} busyLabel="Saving…" disabled={!changed}>
+          Save changes
+        </Button>
+      </FormActions>
     </form>
   );
 }
