@@ -25,9 +25,10 @@ Operating hours remain catalogue information, not a new availability policy.
 ## Usage
 
 Open /coordinator/venues or /coordinator/events/<eventCode>/venues after login.
-Coordinator home and planning workspace link to search. Existing planning screens
-remain fixture-backed; venue search independently uses live data. No booking
-creation (E06-S03) or calendar (E05-S03) functionality is introduced.
+Coordinator navigation and event planning links lead to search. Coordinator assignment
+and event editing are now live; unfinished booking/planning actions still have
+scaffolds. Venue search uses live data. Booking creation remains E06-S03 scope;
+the separate E05-S03 calendar is now implemented.
 
 GET /api/venues?mode=suitability returns options and optional event_id defaults.
 Add search=1, start/end timestamps with timezone, attendance, optional capacity,
@@ -53,3 +54,67 @@ DATABASE_POOLER_URL/DATABASE_URL; fixtures never target public tables.
 Browser tests mock APIs and do not claim live browser-to-database coverage.
 Search is an availability snapshot, not a reservation. Booking must recheck
 constraints. Review/merge and manual verification remain separate completion steps.
+
+## Current implementation review (2026-10-02)
+
+Jira SCRUM-45 is Done. Original search implementation: merged PR #133.
+This local, uncommitted presentation increment follows the now-merged shared
+skeleton (#171, #172, #173), design language (#178), and alignment work (#179,
+#180). It does not claim a fresh peer review or deployment.
+
+- `frontend/src/features/venue/VenueSearch.tsx`: shared PageLayout, Card,
+  FormField/FormSection/FormActions, Button, FactList and feedback states;
+  apiCall/useLoad preserve cookie authentication and discard stale route loads.
+  The keyed event form and request guard prevent old search responses replacing
+  the current event. Field errors are associated with their controls.
+- `frontend/src/features/venue/venue.css`: scoped grid spacing and checkbox target
+  size only; shared components retain ownership of colours, type and controls.
+- `tests/e2e/venue-search.spec.ts`: shared fake-session helper; desktop/mobile
+  filters, mismatch display, denied access, suitable/empty/error states and
+  no horizontal overflow at 320px. These browser tests intercept the API.
+- Unchanged backend: `backend/src/modules/venueBooking/search.ts` and the
+  suitability branches in `api/venues/index.ts`. No API, ranking, range-overlap,
+  schema or environment-variable change. Local-time input conversion is retained.
+
+### Acceptance traceability
+
+| Criterion | Automated evidence | Boundary |
+| --- | --- | --- |
+| TC_E06S01_01 matching venues and combined filters | venueSearch.test.ts; venueSearch.integration.test.ts; venue-search.spec.ts | Browser API is mocked; PostgreSQL suite verifies real matching |
+| TC_E06S01_02 near matches and failing criteria | Same suites | T-63 ordering and mismatch logic unchanged |
+| TC_E06S01_03 undersized/layout-specific capacity | Same suites | Both maximum and effective capacity remain visible |
+| TC_E06S01_04 unavailable venues | Same suites | Pending/Confirmed overlaps and blocks tested in PostgreSQL |
+| Route changes cannot retain stale search results | VenueSearch.navigation.test.tsx | Both late success and late failure covered |
+
+### Limitations and follow-ups
+
+Search does not reserve a venue; E06-S03 must recheck availability. Free-text
+accessibility notes remain manual-review information. No business-session model
+exists. Font loading is already open PR #182; screen inventory is open PR #183,
+so neither is duplicated here. Visual comparisons use shared templates at 1280px
+and 393px, with a separate 320px overflow assertion.
+
+Live read-only schema review found the migration ledger through 0008; repository
+0009_keepalive_logs.sql is not recorded there. This unrelated deployment discrepancy
+was not changed. Fresh test execution evidence is linked below after verification;
+old execution session records remain immutable under T-65.
+
+## Fresh verification (2026-10-02)
+
+[Execution session](runs/20261002-161552-jininggg-full-regression.md) records the actual commands, outcomes,
+base commit and working-tree qualification. Frontend 201, selected PostgreSQL
+51, email/provider 26, Redis 2, runtime 15, venue browser 8 and real auth/inbox
+browser 10 checks passed. Backend units, typecheck/build and repository hygiene
+also passed. Provider tests do not prove deployed mailbox delivery.
+
+[Final venue browser rerun](runs/20261002-161841-jininggg-frontend-e2e.md): 8 passed after the final copy/fixture corrections.
+
+Publication refresh: main f0c4264 now includes font PR #182. The open-PR
+snapshot above predates that merge; only screen-inventory PR #183 remains open.
+
+Publication postplan with desktop/mobile screenshots: https://gnoj0c9eujtz.postplan.dev.
+
+PR #184 review follow-up: venue suitability now uses shared status pills in card
+headings, preserving the single no-full-matches warning. Regression assertions
+prevent per-result screen-reader alerts. [Review verification](runs/20261002-214056-jininggg-full-regression.md)
+records 8 browser checks, 4 component checks, build and repository checks.

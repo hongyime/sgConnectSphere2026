@@ -15,10 +15,79 @@
   the Codex session on it are in git stash (stash@{0}, "agents-continuity-
   edits-from-codex-session-2026-10-02"), not lost. Codex worktrees
   (-backfill, -design, -e14, -pr182, -pr183, -pr191) untouched.
+
+- 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
+
+- 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
+
+  - 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
+  after #175 (1780b3c): E10-S01 now includes /change-requests/new
+  (coming-soon) and E03-S07 includes the Organiser edit on /events/*.
+  Coming-soon route count is 3. SCRUM-118.
+
+  - 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
+  generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
+  Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per
+  design.md section 4) plus a second table for routes with no Release 1 story. Framed
+  as a draft for Amareet's SCRUM-118 review; Amareet's own draft is not in the repo
+  so the two must be reconciled. Verification: python scripts/check.py (PASS, 76
+  tests). Open items: reconcile against Amareet's draft; add rows if new routes land.
+
+  - 2026-10-02: Review on #182. Merged main (1780b3c) into
+- 2026-10-02: Addressed Amareet's PR #184 review locally: venue suitability is
+  a shared StatusPill in Card actions; the single no-full-matches Alert remains.
+  Added browser assertions against per-result alerts. Focused browser 8,
+  navigation component 4, build/typecheck and hygiene/tooling 76 passed.
+  Evidence: docs/testing/runs/20261002-214056-jininggg-full-regression.md.
+  Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
+  non-blocking scope advice applies to future PRs. User authorized committing and
+  pushing this follow-up for re-review; final CI and human approval remain required.
+
+- 2026-10-02: The upload rejection was an accidental click; user reauthorized
+  publication. Postplan uploaded after screenshot compression, retaining both
+  views: https://gnoj0c9eujtz.postplan.dev. Commit/push and draft PR preparation
+  follow on the verified branch. Keep E11 open and wait for remote CI/review.
+
+- 2026-10-02: Publication preparation: build, 8 venue browser checks and
+  repository checks passed on main f0c4264 plus the working changes; evidence
+  docs/testing/runs/20261002-162701-jininggg-full-regression.md. Postplan HTML validated locally,
+  but upload was declined. Open a draft; do not claim a hosted review artifact
+  or remote CI success. Commit/push/PR creation are authorized, not merge.
+
+- 2026-10-02: User authorized committing and opening the E06-S01 design PR.
+  Refreshed onto main f0c4264, preserving #182 font loading and both handoff
+  entries. E11 scope is documentation/regression evidence only; no Jira status
+  changes or merge authorized. Fresh publication checks follow in runs/.
+
+- 2026-10-02: PR #191 review refresh: integrated main 139217e and retained all three original calendar execution records unchanged. Their backend/browser scope remains unit or mocked API, with PostgreSQL validation explicitly outstanding. New verification covers repository tooling only. Awaiting peer review; no business story completion asserted.
+
+- 2026-10-02: Sprint 2 T-65 records for E05-S03 / SCRUM-42 on
+  `test/sprint2-execution-records` (off main db8360d): whole backend unit
+  (259/259), frontend Vitest (229/229) and Playwright (206 passed, 368 fixme
+  skips) suites; all five TC_E05S03 cases pass. Database suite not run (no
+  TEST_DATABASE_URL locally). E05-S04 records were drafted separately but left
+  uncommitted on purpose: its four cases are still unproven (Playwright specs
+  are `test.fixme` until #185 merges; DB suite not run).
+
 - 2026-10-02: Review on #182. Merged main (1780b3c) into
   feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
   Typeface row, per design.md section 14. Google Fonts stays; the choice
   and the IP trade-off are in docs/decisions/0011. SCRUM-117.
+
+- 2026-10-02: Current-state review and E06-S01 presentation refresh on
+  fix/SCRUM-45-venue-search-design, based on main 1780b3c. Shared skeleton
+  #173/#180 and organiser edit #175 are now merged (older open notes below
+  are historical). VenueSearch uses shared page/form/card/feedback blocks,
+  preserves all query parameters and backend matching, and passes desktop/mobile
+  plus 320px overflow checks. Existing E06/E11 implementation records refreshed.
+  Clarification #163, decisions #174 and maintenance blocks #151 already call
+  the E11 writer; no duplicate notification runtime integration was added.
+  E03-S02/S03 remain In Progress for frontend; E05-S04 Done has a To Do
+  frontend pilot SCRUM-120. Venue/staff assignments and future workflow callers
+  remain missing. Live migration ledger stops at 0008; repository 0009 is not
+  recorded (read-only inspection, no migration applied). Tests and limitations
+  are in docs/testing/runs/20261002-161552-jininggg-full-regression.md.
+  No commit, push, Jira transition, live data write or real email send.
 
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
