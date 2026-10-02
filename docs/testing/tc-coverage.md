@@ -861,6 +861,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Detail: shows the facts, and a 404 shows the server message with a way back
 - Form: client validation mirrors the server rules
 - Form: errors appear next to fields, a server refusal is shown, and a save opens the detail page
+- Form: a save still completes under StrictMode, as in npm run dev
 - Decision: rejecting requires a reason, then the outcome is confirmed
 - Decision: a request that is not under review has nothing to decide
 
