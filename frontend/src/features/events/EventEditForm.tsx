@@ -52,7 +52,7 @@ const sections: { title: string; fields: FieldSpec[] }[] = [
     { field: 'layoutPreference', label: 'Layout', kind: 'textarea' },
   ] },
   { title: 'Registration', fields: [
-    { field: 'registrationDates', label: 'Registration dates', kind: 'text', wide: true, hint: 'Enter opening and closing dates below.' },
+    { field: 'registrationDates', label: 'Registration dates', kind: 'text', wide: true, hint: 'Enter when registration opens and closes.' },
   ] },
 ];
 
@@ -203,10 +203,10 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
                 {spec.field === 'registrationDates' ? <fieldset className="event-edit-date-pair">
                   <legend>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</legend>
                   <label htmlFor={`${id}-opens`}>Opens</label>
-                  <input id={`${id}-opens`} type="datetime-local" value={(draft[spec.field] ?? '').split('|')[0]} readOnly={locked}
+                  <input id={`${id}-opens`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[0]} readOnly={locked}
                     onChange={change => update(spec.field, `${change.target.value}|${(draft[spec.field] ?? '').split('|')[1] ?? ''}`)} />
                   <label htmlFor={`${id}-closes`}>Closes</label>
-                  <input id={`${id}-closes`} type="datetime-local" value={(draft[spec.field] ?? '').split('|')[1] ?? ''} readOnly={locked}
+                  <input id={`${id}-closes`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[1] ?? ''} readOnly={locked}
                     onChange={change => update(spec.field, `${(draft[spec.field] ?? '').split('|')[0] ?? ''}|${change.target.value}`)} />
                 </fieldset> : <>
                   <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>

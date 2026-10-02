@@ -798,6 +798,7 @@ test.describe("E03-S07", () => {
     await form.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByRole('status')).toContainText('purpose');
     await expect(page.getByRole('heading', { name: 'Activity log' }).locator('..')).toContainText('Updated purpose');
+    await expect(page.getByRole('heading', { name: 'Activity log' }).locator('..')).toContainText('Organiser A');
   });
 
 });

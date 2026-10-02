@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { buildPatch, EventEditForm, toLocalInput } from './EventEditForm';
 
 const initial = {
@@ -99,5 +99,25 @@ test('locked registration dates with no values are left out, as on the Coordinat
       editable={new Set(['title'])} onSaved={() => {}} onCancel={() => {}} />,
   );
   expect(screen.getByLabelText('Opens')).toHaveAttribute('readonly');
+  cleanup();
+});
+
+
+test('registration date inputs describe the validation error and hint after an invalid save', () => {
+  render(
+    <EventEditForm eventId="evt-1"
+      values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+        expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null }}
+      editable={new Set(['registrationDates'])} onSaved={() => {}} onCancel={() => {}} />,
+  );
+  fireEvent.change(screen.getByLabelText('Opens'), { target: { value: '2026-10-09T09:00' } });
+  fireEvent.change(screen.getByLabelText('Closes'), { target: { value: '2026-10-08T09:00' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+  for (const label of ['Opens', 'Closes']) {
+    expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(label)).toHaveAccessibleDescription(
+      'Enter a valid opening and closing date, with closing after opening. Enter when registration opens and closes.',
+    );
+  }
   cleanup();
 });
