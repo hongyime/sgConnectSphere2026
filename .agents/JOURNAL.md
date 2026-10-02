@@ -1,5 +1,21 @@
 # Agent Journal
 
+- 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
+
+- 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch so #183 can merge. Conflict was only the agent notes; kept both. Verification: python scripts/check.py. SCRUM-118.
+
+  - 2026-10-02: Review on #183. Updated the screen inventory for the two
+  routes #175 added after f39e81e. Header now cites 1780b3c. Verification:
+  python scripts/check.py. SCRUM-118.
+
+  - 2026-10-02 (PR A, SCRUM-118): wrote docs/plans/screen-inventory.md mapping all 47
+  Release 1 stories to role, sprint, route(s), status and page pattern. Generated from
+  routes.tsx at f39e81e and docs/backlog/release-1/. Noted stories whose route is a
+  mock, which stories live on inline surfaces (comments, change classification) and
+  which have no route yet. Verification: python scripts/check.py (PASS). Framed as a
+  draft for Amareet's SCRUM-118 review and must be reconciled against her own draft.
+
+  - 2026-10-02: Review on #182. Merged main and removed the design.md
 - 2026-10-02: The upload rejection was an accidental click; user reauthorized
   publication. Postplan uploaded after screenshot compression, retaining both
   views: https://gnoj0c9eujtz.postplan.dev. Commit/push and draft PR preparation
