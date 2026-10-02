@@ -153,10 +153,11 @@ Measured contrast of the pairs above (WCAG 2.2 formula, rounded):
 ### 3.2 Type
 
 One family. The stack is `Inter, ui-sans-serif, system-ui, -apple-system,
-BlinkMacSystemFont, "Segoe UI", sans-serif`. Inter is the intended face but
-is not currently loaded by `frontend/index.html`, so users see their system
-font today; see 11.1. Whatever resolves, all text uses the one family, and
-`font-synthesis: none` keeps weights honest.
+BlinkMacSystemFont, "Segoe UI", sans-serif`. `frontend/index.html` loads Inter
+from Google Fonts in the weights the blocks use (400, 600, 700, 800, 900) with
+`display=swap`, so text renders in the system face for a moment and then in
+Inter. All text uses the one family, and `font-synthesis: none` keeps weights
+honest.
 
 Scale. Five sizes, used by the blocks:
 
@@ -571,7 +572,7 @@ authorises a story owner to work around the skeleton locally.
 
 | Topic | What the skeleton does | What this document asks | Proposed resolution |
 | --- | --- | --- | --- |
-| Typeface | `Inter` leads the font stack but is not loaded by `frontend/index.html`; users see their system font | One intended family that every user actually sees | Decide: self-host Inter (variable font, `font-display: swap`; a small dependency such as `@fontsource-variable/inter` needs the team's dependency decision) or drop `Inter` from the stack and accept the system face. Recommendation: self-host; the Figma plan and the brand chose Inter |
+| Typeface | Until this PR `Inter` led the font stack but nothing loaded it, so users saw their system font | One intended family that every user actually sees | Resolved here: `frontend/index.html` loads Inter 400/600/700/800/900 from Google Fonts with `display=swap`. Self-hosting can replace the link later without touching any block |
 | Primary button hover | `.primary-action:hover` lightens to `--teal-hover`, white text at 3.1:1 | Button text at 4.5:1 in every state | Hover darkens to `--teal-dark` instead; keep `--teal-hover` for non-text uses such as the row hover tint |
 | Green pill text | `--green` `#1f9254` on `--green-soft` is 3.5:1 at 12px | 4.5:1 | Add `--green-ink` (around `#166f40`, 5.5:1 on the tint) for pill and badge text, mirroring the amber pattern |
 | Eyebrow tracking | `.eyebrow` in `styles.css` sets `letter-spacing: 0`; the eight feature copies use `0.08em` | `0.08em`, the value the team has been using everywhere | Set it on the canonical class and delete the copies |
