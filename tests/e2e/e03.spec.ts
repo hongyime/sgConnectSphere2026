@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { coordA, coordB, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 import { coordinator, fakeClarificationBackend, organiser } from './helpers/clarificationBackend';
+import { fakeDecisionBackend, organiser as decisionOrganiser } from './helpers/decisionBackend';
 
 async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend>[0], status: string) {
   let event = {
@@ -420,12 +421,29 @@ test.describe("E03-S03", () => {
    * Expected result:
    *   The status becomes "Approved" and organiser_a@clienta.com is notified
    */
-  test.fixme("TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Click "Approve"
-    void page;
+  test("TC_E03S03_01 - Verify that approving a request with complete required information should move its status to Approved and notify the Organiser", async ({ page }) => {
+    // The fake backend's request stands in for "Annual Tech Summit"; the
+    // status change, audit row and notification are proven against
+    // PostgreSQL in backend/tests/decision.integration.test.ts.
+    const backend = await fakeDecisionBackend(page, { title: 'Annual Tech Summit', code: 'EVT-ANNUAL' });
+    await page.goto('/coordinator/events/EVT-ANNUAL');
+    await page.getByRole('link', { name: 'Decide on request' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Decide: Annual Tech Summit' })).toBeVisible();
+    await page.getByRole('button', { name: 'Approve…' }).click();
+    await page.getByRole('button', { name: 'Approve request' }).click();
+
+    await expect(page.getByText('Approved. Organiser A has been notified.')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Approved');
+    await expect(page.getByText("This request is approved, so there's nothing to decide.")).toBeVisible();
+    expect(backend.status).toBe('approved');
+    await page.getByRole('link', { name: 'View request' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Annual Tech Summit' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Decide on request' })).toHaveCount(0);
+
+    backend.signInAs(decisionOrganiser);
+    await page.goto('/notifications');
+    await page.getByRole('button', { name: 'Request approved' }).click();
+    await expect(page.getByText('Coord B approved EVT-ANNUAL Annual Tech Summit. The request is now Approved and moves to planning.')).toBeVisible();
   });
 
   /**
@@ -442,12 +460,17 @@ test.describe("E03-S03", () => {
    * Expected result:
    *   Approval is blocked and "Venue Requirements" is listed as a missing item; the status remains "Under Review"
    */
-  test.fixme("TC_E03S03_02 - Verify that approval should be blocked while required information is incomplete, with the missing items listed", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Click "Approve"
-    void page;
+  test("TC_E03S03_02 - Verify that approval should be blocked while required information is incomplete, with the missing items listed", async ({ page }) => {
+    const backend = await fakeDecisionBackend(page, { title: 'Annual Tech Summit', code: 'EVT-ANNUAL', missingFields: ['Venue requirements'] });
+    await page.goto('/coordinator/events/EVT-ANNUAL/decide');
+    await page.getByRole('button', { name: 'Approve…' }).click();
+    await page.getByRole('button', { name: 'Approve request' }).click();
+
+    await expect(page.getByRole('alert')).toHaveText(
+      "This request can't be approved until its required information is complete. Missing: Venue requirements.");
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Under review');
+    expect(backend.status).toBe('under_review');
+    expect(backend.decisions).toBe(0);
   });
 
   /**
@@ -464,14 +487,22 @@ test.describe("E03-S03", () => {
    * Expected result:
    *   The status becomes "Rejected", the reason is stored against the request, and organiser_a@clienta.com is notified
    */
-  test.fixme("TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Winter Gala"
-    // 3. Click "Reject"
-    // 4. Enter reason "Requested date unavailable across all venues"
-    // 5. Confirm the rejection
-    void page;
+  test("TC_E03S03_03 - Verify that rejecting a request under review with a recorded reason should set its status to Rejected and notify the Organiser", async ({ page }) => {
+    const backend = await fakeDecisionBackend(page, { title: 'Winter Gala', code: 'EVT-GALA' });
+    await page.goto('/coordinator/events/EVT-GALA/decide');
+    await page.getByRole('button', { name: 'Reject…' }).click();
+    await page.getByLabel('Reason').fill('Requested date unavailable across all venues');
+    await page.getByRole('button', { name: 'Reject request' }).click();
+
+    await expect(page.getByText('Rejected. Organiser A has been notified, with your reason.')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Rejected');
+    expect(backend.status).toBe('rejected');
+    expect(backend.reason).toBe('Requested date unavailable across all venues');
+
+    backend.signInAs(decisionOrganiser);
+    await page.goto('/notifications');
+    await page.getByRole('button', { name: 'Request rejected' }).click();
+    await expect(page.getByText(/Coord B rejected EVT-GALA Winter Gala\. The request is now Rejected and can no longer be changed\.\s+Reason: Requested date unavailable across all venues/)).toBeVisible();
   });
 
   /**
@@ -488,14 +519,16 @@ test.describe("E03-S03", () => {
    * Expected result:
    *   The rejection is blocked with a message that a reason is required; the status remains "Under Review"
    */
-  test.fixme("TC_E03S03_04 - Verify that attempting to reject a request without recording a reason should be blocked", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Winter Gala"
-    // 3. Click "Reject"
-    // 4. Leave the reason field empty
-    // 5. Click "Confirm"
-    void page;
+  test("TC_E03S03_04 - Verify that attempting to reject a request without recording a reason should be blocked", async ({ page }) => {
+    const backend = await fakeDecisionBackend(page, { title: 'Winter Gala', code: 'EVT-GALA' });
+    await page.goto('/coordinator/events/EVT-GALA/decide');
+    await page.getByRole('button', { name: 'Reject…' }).click();
+    await page.getByRole('button', { name: 'Reject request' }).click();
+
+    await expect(page.getByText('Add a reason for rejecting this request.')).toBeVisible();
+    await expect(page.getByLabel('Reason')).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Under review');
+    expect(backend.decisions).toBe(0);
   });
 
   /**
@@ -512,13 +545,21 @@ test.describe("E03-S03", () => {
    * Expected result:
    *   The reason and decision date are shown in plain language (e.g. "Rejected on 10 September 2026 - Requested date unavailable across all venues"); all fields are read-only and cannot be edited
    */
-  test.fixme("TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open the rejected request "Winter Gala"
-    // 3. Review the displayed reason and date
-    // 4. Attempt to edit any field on the request
-    void page;
+  test("TC_E03S03_05 - Verify that a rejected request should show its reason and decision date in plain language to the Organiser, and be read-only", async ({ page }) => {
+    // Rejected on 10 Sept 2026, 10:00 Singapore time; dates show as
+    // design.md section 8.1 writes them (D19), so 10/09/2026 reads "10 Sept 2026".
+    await fakeDecisionBackend(page, {
+      title: 'Winter Gala', code: 'EVT-GALA', status: 'rejected',
+      reason: 'Requested date unavailable across all venues', user: decisionOrganiser,
+    });
+    await page.goto('/organiser/requests/EVT-GALA');
+    await expect(page.getByText('Rejected on 10 Sept 2026 — Requested date unavailable across all venues')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Rejected');
+    await expect(page.getByRole('link', { name: 'Respond now' })).toHaveCount(0);
+
+    await page.goto('/events/EVT-GALA');
+    await expect(page.getByRole('heading', { name: 'Winter Gala' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit event' })).toHaveCount(0);
   });
 
 });
