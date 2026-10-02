@@ -807,6 +807,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/shared/shared.test.tsx`
 
+- shows Singapore time
+- decides
+- says when a date is missing
 - returns the data on success and sends the session cookie
 - uses the server
 - keeps field errors and conflict details, and swaps a machine code for the fallback

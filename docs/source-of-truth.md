@@ -12,6 +12,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
 | Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 270926.docx` |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 300926.docx` |
+| Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 270926.xlsx` |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
@@ -104,9 +105,14 @@ See [the Jira workflow](jira-agent-workflow.md) and
 
 ## Design and access practices
 
-Figma boards are proposals derived from these sources. Link them to stories,
-batch related screens, preserve existing boards, and pair desktop/mobile variants
-where appropriate. Keep role-specific flows identifiable.
+`design.md` at the repository root is the design-language authority for the
+frontend: tokens, building blocks, states, wording and accessibility rules.
+The shared skeleton in `frontend/src/shared/` implements it; where the two
+disagree, the difference is raised in `design.md` and resolved in review
+(ADR-017). Figma boards are proposals derived from these sources. Link them to
+stories, batch related screens, preserve existing boards, and pair
+desktop/mobile variants where appropriate. Keep role-specific flows
+identifiable.
 
 Each teammate uses their own Jira account or token. Keep real credentials,
 personal configuration, raw private API responses and machine-specific paths out

@@ -111,7 +111,7 @@ test('request list shows every own request with plain-language status and Singap
   renderAt('/organiser/requests');
   const row = (await screen.findByRole('link', { name: 'Annual Sustainability Forum' })).closest('tr')!;
   expect(row).toHaveTextContent('Green campus seminar');
-  expect(row).toHaveTextContent('8 Oct 2026, 09:00–17:00');
+  expect(row).toHaveTextContent('8 Oct 2026, 9:00 am – 5:00 pm');
   expect(row).toHaveTextContent('220');
   expect(row).toHaveTextContent('Under review');
   const all = screen.getByRole('button', { name: /^All/ });
@@ -186,7 +186,7 @@ test('detail combines the organisation read and the own-request read', async () 
 
   const summary = screen.getByRole('region', { name: 'Request summary' });
   expect(summary).toHaveTextContent('Green campus seminar');
-  expect(summary).toHaveTextContent('8 Oct 2026, 09:00–17:00');
+  expect(summary).toHaveTextContent('8 Oct 2026, 9:00 am – 5:00 pm');
   expect(summary).toHaveTextContent('220');
 
   const [orgCall, ownCall] = requestUrls();

@@ -1,5 +1,21 @@
 # Agent Journal
 
+- 2026-10-01: SCRUM-117 design.md written on `docs/SCRUM-117-design-language`
+  (off main 71e6567) and registered in docs/source-of-truth.md. It documents
+  the current look (teal pen, paper on a 32px planning grid, soft-tint status
+  pills, uppercase eyebrow), pins the styles.css tokens with measured contrast,
+  names all 16 skeleton blocks and the four templates exactly, and sets state,
+  status, writing, accessibility and responsive rules. Section 11 raises the
+  skeleton gaps per ADR-017 (Inter not loaded, button hover and green pill
+  contrast, eyebrow tracking, disabled pattern, skip link, token additions);
+  section 12 lists the drift in older feature stylesheets to clear when
+  touched. Verified against the running /ui-kit by computed styles; corrected
+  the card description to flat (the skeleton's Card has no shadow). check.py
+  passed. No frontend code touched; docs/frontend-guide.md (PR #173) and the
+  shared blocks (PR #172) are cited, not edited. Postplan
+  https://sdn67cwcq7y7.postplan.dev. PR opened for Amareet's review; reconcile
+  SCRUM-117 in Jira only after merge.
+
 - 2026-09-27: PR #134 main refresh after #143 merged as af97522. Retained
   calendar, coordinator and notification test commands and both CI database
   steps; regenerated the combined test inventory. Existing inbox/security and
