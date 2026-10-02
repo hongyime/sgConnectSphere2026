@@ -1,5 +1,11 @@
 # Agent State
 
+- 2026-10-03: Week 7 Change 3 backlog + cases on `docs/week7-change-3-multi-venue`
+  (stacked on change 1): E06-S03 Scenario 3 inverted to allow several venue
+  bookings per event with per-booking headcount, windows and a primary venue;
+  E06-S06, E08-S03, E10-S02, E09-S01 updated in place; seven new TC_IDs.
+  Depends on #194 and #197. Details in
+  .agents/handoffs/20261003-docs-week7-change-3-multi-venue.md.
 - 2026-10-03: Week 7 Change 1 backlog + cases on
   `docs/week7-change-1-setup-turnaround`: E05-S05 back in Release 1 (Sprint 3)
   with six scenarios, buffer scenarios added in place to E06-S01/S03/S04/S05/

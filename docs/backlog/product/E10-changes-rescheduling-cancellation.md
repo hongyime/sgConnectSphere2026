@@ -42,7 +42,7 @@ Given the Coordinator approves my change request When it is applied Then the eve
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-05, T-16, B-05, B-11
+- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27
 - **Owner**:
 
 ### User story
@@ -53,7 +53,7 @@ As an Event Coordinator, I want the system to tell me when a change affects arra
 
 #### Scenario 1 — Attendance beyond capacity flagged
 
-Given an event has a confirmed venue When its expected attendance is increased beyond that venue's capacity Then the venue booking is flagged for review and the Venue Staff are notified
+Given an event has one or more confirmed venue bookings When its expected attendance is increased Then each venue booking whose governing headcount (the booking's own headcount where set, otherwise the event's attendance) now exceeds that venue's capacity is flagged for review, and the others are not (C-67; assumes O-27) and the Venue Staff are notified
 
 #### Scenario 2 — Description-only edit flags nothing
 
@@ -69,7 +69,7 @@ Given a venue change reduces the event's capacity below its registration count W
 
 #### Scenario 5 — Date change flags venue and equipment
 
-Given the event's date or time changes When the change takes effect Then its venue booking and equipment reservations are flagged as requiring reconfirmation
+Given the event's date or time changes When the change takes effect Then every one of its venue bookings and its equipment reservations are flagged as requiring reconfirmation
 
 ### Checklist
 

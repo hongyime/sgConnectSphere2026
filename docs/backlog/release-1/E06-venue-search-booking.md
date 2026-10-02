@@ -83,7 +83,7 @@ Given a venue is marked unsuitable When I submit a booking request for it anyway
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66
+- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, O-27, O-29, O-30
 - **Owner**:
 
 ### User story
@@ -100,9 +100,21 @@ Given an event has recorded requirements and no pending request When I submit a 
 
 Given the event has status Approved When the first booking request for any of its events is submitted Then the event status becomes Planning
 
-#### Scenario 3 — Second request for same event blocked
+#### Scenario 3 — Several venue bookings for one event
 
-Given the event already has a pending booking request When I submit another for the same event Then submission is blocked and the existing pending request is identified
+Given the event already has a Pending or Confirmed venue booking When I submit a request for another venue, or for the same venue over a different period, for the same event Then the request is created as Pending alongside the existing bookings, each booking keeps its own status, the event lists all of them, and withdrawing or changing one booking leaves the others untouched (C-67, T-68; replaces the earlier rule that blocked a second request, T-20 retired)
+
+#### Scenario 3a — Each booking carries its own purpose and headcount
+
+Given I am requesting one of several venues for an event When I submit the request Then I may record a purpose (for example "Main programme" or "Breakout A") and an expected headcount for that booking; suitability and capacity checks for that venue use the booking's headcount when present and the event's expected attendance otherwise (assumes O-27)
+
+#### Scenario 3b — Bookings may cover different windows inside the event
+
+Given an event runs 09:00 to 18:00 When I request a breakout room for 14:00 to 16:00 Then the request is accepted; a request whose period falls outside the event's start and end is refused (assumes O-29)
+
+#### Scenario 3c — One booking is the primary venue
+
+Given an event has more than one Confirmed venue booking When I view the event Then the first booking to be Confirmed is marked primary by default and I may mark a different Confirmed booking as primary; the primary venue is the one shown to Attendees (assumes O-30)
 
 #### Scenario 4 — Venue taken by another event blocked
 
@@ -118,7 +130,7 @@ Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround
 - Confirm the request is created as Pending and Venue Staff are notified
 - Confirm the venue calendar shows the period as Tentative
 - Confirm the event status moves from Approved to Planning on the first request
-- Be blocked from holding more than one pending request for the same event
+- Hold several venue bookings, Pending or Confirmed, for one event, each with an optional purpose and headcount, and mark one as primary (C-67; assumes O-27, O-30)
 - Be blocked from requesting a venue already Pending or Confirmed for another event in that period, counting that venue's setup and turnaround time (C-65)
 - View the status of each of my booking requests
 
@@ -207,7 +219,7 @@ Given a venue has a setup time of 30 minutes and a turnaround time of 45 minutes
 
 - **Sprint**: Sprint 3
 - **Points**: 5
-- **BDR references**: C-46, T-22, C-65, T-66
+- **BDR references**: C-46, T-22, C-65, T-66, C-67, T-68
 - **Owner**:
 
 ### User story
@@ -231,6 +243,10 @@ Given another Venue Staff member approves a conflicting request moments before m
 #### Scenario 4 — Buffered windows are what must not overlap
 
 Given two pending requests on one venue whose advertised times do not overlap but whose buffered occupancy windows do When both are approved at the same moment Then at most one approval succeeds and the other fails safely, because the database-level conflict check operates on the buffered window (C-65, T-66, ADR-003)
+
+#### Scenario 5 — Conflicts are per venue, not per event
+
+Given one event has Pending requests on two different venues over the same period When both are approved Then both become Confirmed, because double-booking is detected per venue and an event may legitimately occupy several venues at once (C-67, T-68)
 
 ### Checklist
 

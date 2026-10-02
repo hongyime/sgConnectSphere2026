@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 3
 - **Points**: 5
-- **BDR references**: C-13, C-39, C-59, C-63, T-02, T-24, T-27
+- **BDR references**: C-13, C-39, C-59, C-63, T-02, T-24, T-27, C-67, T-68, O-28
 - **Owner**:
 
 ### User story
@@ -15,11 +15,11 @@ As an Event Coordinator, I want to confirm an event once the event's arrangement
 
 #### Scenario 1 — All arrangements complete, event confirmed
 
-Given the event has a confirmed venue booking and its full requested equipment reserved When I confirm the event Then the status becomes Confirmed and the Event Organiser is notified with the confirmed details
+Given every venue booking on the event is Confirmed or has been withdrawn, at least one is Confirmed, and its full requested equipment is reserved When I confirm the event Then the status becomes Confirmed and the Event Organiser is notified with the confirmed details (C-67, T-68; assumes O-28)
 
 #### Scenario 2 — Missing venue blocks confirmation
 
-Given the event has no confirmed venue When I try to confirm Then confirmation is blocked and the outstanding items are listed
+Given the event has no Confirmed venue booking, or any of its venue bookings is still Pending or Conflicting When I try to confirm Then confirmation is blocked and each outstanding booking is listed by venue (assumes O-28)
 
 #### Scenario 3 — Partial equipment blocks confirmation
 
@@ -35,12 +35,12 @@ Given the event requested technical support and no staff are assigned When I try
 
 #### Scenario 6 — Organiser sees confirmed arrangements
 
-Given an event has been confirmed When the Event Organiser views it Then the confirmed venue, date, time and arrangements are shown
+Given an event has been confirmed When the Event Organiser views it Then every confirmed venue with its purpose and period, the date, time and arrangements are shown
 
 ### Checklist
 
 - Confirm an event that has a confirmed venue and full equipment reservation
-- Be blocked from confirming while the event lacks a venue
+- Be blocked from confirming while the event has no Confirmed venue booking or any booking still Pending or Conflicting, with each one listed (assumes O-28)
 - Be blocked from confirming while an equipment reservation is partial, with the shortfall shown
 - Confirm an event whose equipment requirement was recorded as 'none required'
 - Be blocked from confirming while a requested technical support assignment is outstanding

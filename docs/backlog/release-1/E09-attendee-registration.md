@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 4
 - **Points**: 5
-- **BDR references**: C-35, T-48
+- **BDR references**: C-35, T-48, C-67, T-68, O-30
 - **Owner**:
 
 ### User story
@@ -28,6 +28,10 @@ Given a required registration field is empty When I submit Then registration is 
 #### Scenario 4 — Unconfirmed event refused
 
 Given an event is not Confirmed When I attempt to register Then registration is refused
+
+#### Scenario 5 — One venue shown for a multi-venue event
+
+Given a Confirmed event has several Confirmed venue bookings When I view it to register Then the venue shown is the one its Coordinator marked primary, and the other venues are not listed as separate places to register (C-67; assumes O-30)
 
 ### Checklist
 
