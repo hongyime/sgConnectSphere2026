@@ -170,7 +170,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
 
   // Registration dates that are locked and empty (the Coordinator read doesn't
   // return them) would only show two blank read-only boxes, so leave them out.
-  const hasRegistrationDates = (initial.registrationDates ?? '').replace('|', '') !== '';
+  const hasRegistrationDates = Boolean(values.registration_opens_at || values.registration_closes_at);
   const visibleSections = sections
     .map(section => ({ ...section, fields: section.fields.filter(spec =>
       spec.field !== 'registrationDates' || editable.has(spec.field) || hasRegistrationDates) }))
