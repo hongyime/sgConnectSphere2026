@@ -2,13 +2,12 @@
 // Dashboard, request list and request detail read the organiser's own
 // requests from the live API (GET /api/events?mine=1 and GET /api/events?id=),
 // mocked here with page.route like tests/e2e/e02.spec.ts. The clarification
-// response screen is still backed by frontend/src/features/organiser/mocks.ts
-// because its backend (E03-S02) has not been built.
+// answer screen (E03-S02) is live; TC_E03S02_01 to _04 and _12 in
+// tests/e2e/e03.spec.ts cover it with the Organiser and Coordinator together.
 //
 // These tests carry no TC_ IDs: they check the screens against mocked API
 // replies, not the stories' acceptance criteria end to end. TC_E02S02_* are
-// covered by tests/e2e/e02.spec.ts, and TC_E03S02_* stay open until E03-S02
-// ships.
+// covered by tests/e2e/e02.spec.ts, and TC_E03S02_* by tests/e2e/e03.spec.ts.
 import { test, expect, type Page } from '@playwright/test';
 
 const ownRequests = [
@@ -91,16 +90,4 @@ test('request detail shows not found for a request that is not yours', async ({ 
   await mockEventsApi(page);
   await page.goto('/organiser/requests/EVT-O01');
   await expect(page.getByRole('heading', { name: 'Request not found' })).toBeVisible();
-});
-
-test('clarification response (mock) requires every answer before submit', async ({ page }) => {
-  await page.goto('/organiser/requests/EVT-O01/clarify');
-  const submit = page.getByRole('button', { name: 'Resubmit for review' });
-  await submit.click();
-  // Empty responses do not record success.
-  await expect(page.getByRole('status')).toBeEmpty();
-  await page.getByLabel(/1\./).fill('Split is 60% faculty, 40% external.');
-  await page.getByLabel(/2\./).fill('Afternoon panel needs vegetarian only.');
-  await submit.click();
-  await expect(page.getByRole('status')).toContainText('Responses recorded');
 });

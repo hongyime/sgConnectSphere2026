@@ -217,10 +217,13 @@ test('detail links to the event page for comments', async () => {
   expect(screen.getByRole('link', { name: /Read and post comments/ })).toHaveAttribute('href', '/events/EVT-2001');
 });
 
-test('detail flags a clarification request without linking to the unbuilt response form', async () => {
+// With questions outstanding, "Respond now" links to the answer screen
+// (E03-S02, covered in AnswerQuestions.test.tsx). This read has none.
+test('detail flags a clarification request and offers no answer link when no questions are outstanding', async () => {
   renderAt('/organiser/requests/id-clarify');
   const alert = await screen.findByText(/Your coordinator has requested clarification/);
   expect(alert.closest('p')!.querySelector('a')).toBeNull();
+  expect(screen.queryByRole('link', { name: 'Respond now' })).not.toBeInTheDocument();
 });
 
 test('detail treats a colleague\'s event as not found', async () => {
