@@ -1,5 +1,9 @@
 # Agent Journal
 
+- 2026-10-02: Review on #183. Updated the screen inventory for the two
+  routes #175 added after f39e81e. Header now cites 1780b3c. Verification:
+  python scripts/check.py. SCRUM-118.
+
 - 2026-10-02 (PR A, SCRUM-118): wrote docs/plans/screen-inventory.md mapping all 47
   Release 1 stories to role, sprint, route(s), status and page pattern. Generated from
   routes.tsx at f39e81e and docs/backlog/release-1/. Noted stories whose route is a

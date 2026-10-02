@@ -1,5 +1,10 @@
 # Agent State
 
+- 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
+  after #175 (1780b3c): E10-S01 now includes /change-requests/new
+  (coming-soon) and E03-S07 includes the Organiser edit on /events/*.
+  Coming-soon route count is 3. SCRUM-118.
+
 - 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
   generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
   Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per

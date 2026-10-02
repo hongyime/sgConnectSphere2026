@@ -2,7 +2,7 @@
 
 - **Status**: draft for team review
 - **Owner**: Amareet (SCRUM-118)
-- **Generated from**: `frontend/src/app/routes.tsx` at commit f39e81e plus `docs/backlog/release-1/`
+- **Generated from**: `frontend/src/app/routes.tsx` at commit 1780b3c plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
 
 This file maps every Release 1 story (47 in total, per the backlog README's
@@ -45,7 +45,7 @@ in the second table below.
 | E03-S03 | Decide on an event request | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode/decide` | mock | Decision | Approve, reject with reason, or request clarification. |
 | E03-S05 | Track the status of my event | Event Organiser | Sprint 2 | `/events/*`, `/organiser`, `/organiser/requests`, `/organiser/requests/:eventCode` | live | List, Dashboard, List, Detail | Status timeline lives in the request detail. |
 | E03-S06 | Discuss an event through comments | Event Organiser | Sprint 2 | — | none | Other | Expected to surface as a comment panel on `/organiser/requests/:eventCode` and `/coordinator/events/:eventCode`; the standalone `/comments` route is a design-review mock. |
-| E03-S07 | View and update event information | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode` | live | Detail | Coordinator editing is folded into the request detail (shipped in #148). |
+| E03-S07 | View and update event information | Event Coordinator | Sprint 2 | `/coordinator/events/:eventCode`, `/events/*` | live | Detail | Coordinator edits in the request detail (#148); the Organiser's Edit event on `/events/:id` (#175). |
 | E05-S01 | Maintain the venue catalogue | Venue Staff member | Sprint 1 | `/venue/inventory`, `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | List, Form, Form | Add, update and retire venues. |
 | E05-S02 | Match layout requirements to venue capacity | Venue Staff member | Sprint 1 | `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | Form | Layouts are managed inside the venue form (same screens as E05-S01). |
 | E05-S03 | View the venue availability calendar | Event Coordinator | Sprint 2 | `/coordinator/calendar`, `/coordinator/venues/:venueId/calendar`, `/venue/availability` | live | Calendar | Shared calendar for Coordinator and Venue Staff audiences. |
@@ -73,7 +73,7 @@ in the second table below.
 | E09-S05 | Withdraw my registration | Attendee | Sprint 4 | `/attendee/withdraw/:eventCode` | mock | Decision | Withdrawal confirmation. |
 | E09-S06 | Record attendance | Event Coordinator | Sprint 4 | — | none | Form | Expected to live under `/coordinator/events/:eventCode` as an attendance panel. |
 | E09-S07 | View registrations for my event | Event Organiser | Sprint 4 | — | none | List | Expected to live under `/organiser/requests/:eventCode` or a dedicated roster screen. |
-| E10-S01 | Request a change after submission | Event Organiser | Sprint 4 | `/organiser/requests/:eventCode/change` | mock | Form | Change request form. |
+| E10-S01 | Request a change after submission | Event Organiser | Sprint 4 | `/change-requests/new`, `/organiser/requests/:eventCode/change` | coming-soon, mock | Form | `/change-requests/new` is where restricted edits and the edit API's 409 `changeRequestUrl` send the Organiser until E10-S01 builds the form (#175). |
 | E10-S02 | Distinguish minor edits from arrangement-affecting changes | Event Coordinator | Sprint 4 | — | none | Other | Backend classification; the result surfaces inside `/coordinator/events/:eventCode`. |
 | E10-S04 | Cancel an event | Event Coordinator | Sprint 4 | `/organiser/requests/:eventCode/cancel` | mock | Decision | Organiser-triggered cancellation; the Coordinator decision is expected to surface on the Coordinator request detail. |
 | E11-S01 | Notify users about events they are involved in | user involved in an event | Sprint 2 | `/notifications` | live | List | Shared across every signed-in role. |
@@ -114,7 +114,7 @@ lists them so a reader knows they exist and why.
 ## Counts
 
 - Release 1 stories: 47.
-- Routes carrying a Release 1 story: live 23, mock 20, coming-soon 2.
+- Routes carrying a Release 1 story: live 23, mock 20, coming-soon 3.
 - Release 1 stories with no route (`none`): 18. These are backend rules (visibility, double-booking, capacity, auditing), inline-only surfaces (comments, change classification) and screens not yet in `routes.tsx` (deactivate account, request a booking, hold tentatively, mark equipment unavailable, revert event, complete event, record attendance, view registrations, control registration period). Some stories count as both `live` and `none` because they have one surfaced route and another planned surface; the count above is route-level, not story-level.
 - Routes with no Release 1 story: 22 (listed above).
 
