@@ -100,7 +100,9 @@ test('sending without choosing a colleague is blocked with a message', async () 
   fireEvent.click(await screen.findByRole('button', { name: 'Reassign event' }));
   await screen.findByLabelText('Colleague');
   fireEvent.click(screen.getByRole('button', { name: 'Send request' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent('Choose the colleague to reassign this event to.');
+  expect(await screen.findByText('Choose the colleague to reassign this event to.')).toBeInTheDocument();
+  expect(screen.getByLabelText('Colleague')).toHaveAttribute('aria-invalid', 'true');
+  expect(screen.getByLabelText('Colleague')).toHaveAccessibleDescription('Choose the colleague to reassign this event to.');
   expect(calls.some(call => call.init?.method === 'POST')).toBe(false);
 });
 

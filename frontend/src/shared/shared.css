@@ -98,6 +98,16 @@
   font-style: italic;
 }
 
+/* A secondary line under a value, e.g. "Since 12 Nov 2026" or an email. */
+.ui-facts dd small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.ui-facts a { color: var(--teal-dark); }
+
 /* --- Buttons --- */
 .secondary-action.ui-danger {
   border-color: rgba(192, 57, 43, 0.4);
@@ -319,6 +329,14 @@ fieldset.ui-form-section:first-of-type {
 .ui-table tbody tr:last-child td { border-bottom: 0; }
 .ui-table tbody tr:hover { background: rgba(14, 124, 123, 0.04); }
 .ui-table a { color: var(--teal-dark); font-weight: var(--weight-medium); text-decoration: none; }
+
+/* A secondary line under a cell's main value, e.g. the event code. */
+.ui-table td small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 /* --- Filter chips --- */
 .ui-chips {
