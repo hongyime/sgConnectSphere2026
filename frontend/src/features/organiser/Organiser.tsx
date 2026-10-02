@@ -3,20 +3,18 @@
 // - Dashboard (/organiser) — landing after sign-in
 // - Request List (/organiser/requests) — filterable list of requests
 // - Submitted Detail (/organiser/requests/:eventCode) — read-only timeline
-// - Clarification Response (/organiser/requests/:eventCode/clarify) —
-//   answer coordinator questions and resubmit
 //
 // The Create Request Wizard already exists as OrganiserRequestFlow.tsx on
 // main; the routes below link to it at /organiser/new-request.
 //
 // Dashboard, Request List and Submitted Detail read the organiser's own
 // requests from the live API (organiserRequestsApi.ts) and are built on the
-// shared blocks in src/shared (ADR-017). Clarification Response is still
-// backed by mocks.ts fixtures and records a mock success: its backend is
-// E03-S02, which has not been built yet.
+// shared blocks in src/shared (ADR-017). Submitted Detail also shows the
+// E03-S02 (SCRUM-33) outstanding questions and links to the answer screen,
+// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify).
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ClipboardList, MessageSquareText, Send,
 } from 'lucide-react';
@@ -24,6 +22,7 @@ import {
   Alert, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FilterChips, LoadingState, PageLayout,
   StatusPill, formatDate, formatDateRange, statusLabel, useLoad, type Column, type Failure,
 } from '../../shared';
+import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
   getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type StatusHistoryEntry,
@@ -192,6 +191,8 @@ export function RequestList() {
 export function SubmittedDetail() {
   const { eventCode: identifier = '' } = useParams();
   const { result, reload } = useLoad(signal => getRequestDetail(identifier, signal), [identifier]);
+  // AnswerQuestions comes back here with { answered: true } after sending.
+  const answered = (useLocation().state as { answered?: boolean } | null)?.answered === true;
 
   if (result.state === 'error' && result.failure.status === 404) {
     return <NotFound eventCode={identifier} message={result.failure.message} />;
@@ -213,13 +214,22 @@ export function SubmittedDetail() {
       {result.state === 'error' ? <LoadError failure={result.failure} onRetry={reload} context="this request" /> : null}
       {request ? (
         <>
+          {answered ? <Alert tone="success">Answers sent. The request is back under review.</Alert> : null}
           {request.status === 'awaiting_clarification' ? (
-            <Alert tone="info">
+            <Alert
+              tone="info"
+              action={request.outstandingQuestions.length > 0 ? (
+                <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/clarify`} variant="primary">Respond now</ButtonLink>
+              ) : undefined}
+            >
               <p className="organiser-alert-copy">
-                Your coordinator has requested clarification. Check your notifications and the event&apos;s comments for their questions.
+                {request.outstandingQuestions.length > 0
+                  ? 'Your coordinator has requested clarification. Answer their questions to send the request back for review.'
+                  : "Your coordinator has requested clarification. Check your notifications and the event's comments for their questions."}
               </p>
             </Alert>
           ) : null}
+          <OutstandingQuestions questions={request.outstandingQuestions} />
           <section className="organiser-detail-grid" aria-label="Request summary">
             <Card title="Summary">
               <FactList
@@ -277,62 +287,8 @@ function Timeline({ history }: { history: StatusHistoryEntry[] }) {
   );
 }
 
-export function ClarificationResponse() {
-  const { eventCode } = useParams();
-  const event = findOrganiserEvent(eventCode ?? '');
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [submitted, setSubmitted] = useState(false);
-  if (!event) return <NotFound eventCode={eventCode} />;
-  if (event.clarificationQuestions.length === 0) {
-    return (
-      <main className="organiser-page">
-        <header className="organiser-heading">
-          <p className="eyebrow">{event.eventCode}</p>
-          <h1>No clarification pending</h1>
-        </header>
-        <p>This request has no open questions from the coordinator.</p>
-        <Link to={`/organiser/requests/${event.eventCode}`} className="primary-action">Back to request</Link>
-      </main>
-    );
-  }
-  function submit(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault();
-    if (Object.keys(answers).length < event!.clarificationQuestions.length) return;
-    if (Object.values(answers).some(value => !value.trim())) return;
-    setSubmitted(true);
-  }
-  return (
-    <main className="organiser-page">
-      <header className="organiser-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>Respond to clarification</h1>
-      </header>
-      <p><MessageSquareText size={16} aria-hidden="true" /> Answer every question below and resubmit for review.</p>
-      <form className="organiser-form" onSubmit={submit}>
-        {event.clarificationQuestions.map((question, index) => (
-          <div key={index} className="organiser-form-row">
-            <label htmlFor={`answer-${index}`}>{index + 1}. {question}</label>
-            <textarea
-              id={`answer-${index}`}
-              required
-              rows={3}
-              value={answers[index] ?? ''}
-              onChange={changeEvent => setAnswers(previous => ({ ...previous, [index]: changeEvent.target.value }))}
-            />
-          </div>
-        ))}
-        <button type="submit" className="primary-action">
-          <Send size={14} aria-hidden="true" /> Resubmit for review
-        </button>
-        <div role="status" aria-live="polite">
-          {submitted ? <><CheckCircle2 size={14} aria-hidden="true" /> Responses recorded (mock, no backend call).</> : null}
-        </div>
-      </form>
-    </main>
-  );
-}
-
-function NotFound({ eventCode, message }: { eventCode: string | undefined; message?: string }) {
+// Also used by the answer screen (AnswerQuestions.tsx).
+export function NotFound({ eventCode, message }: { eventCode: string | undefined; message?: string }) {
   return (
     <PageLayout eyebrow="Event organiser" title="Request not found">
       <EmptyState
