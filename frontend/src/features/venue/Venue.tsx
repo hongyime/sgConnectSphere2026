@@ -149,6 +149,22 @@ function VenueCard({ venue, onRetired }: { venue: Venue; onRetired: () => void }
     onRetired();
   }
 
+  // The confirm step takes the card's place rather than nesting a card in it.
+  if (confirming) {
+    return (
+      <ConfirmPanel
+        title={`Retire ${venue.name}?`}
+        description={`${venue.name} (${venue.location}) will no longer appear in venue search. Its past bookings are kept.`}
+        confirmLabel="Retire venue"
+        danger
+        busy={busy}
+        error={error ?? undefined}
+        onConfirm={retire}
+        onCancel={() => { setConfirming(false); setError(null); }}
+      />
+    );
+  }
+
   const list = (items: string[]) => items.join(', ');
   return (
     <article className="card venue-card" aria-labelledby={headingId}>
@@ -176,23 +192,10 @@ function VenueCard({ venue, onRetired }: { venue: Venue; onRetired: () => void }
           </ul>
         </Alert>
       ) : null}
-      {confirming ? (
-        <ConfirmPanel
-          title={`Retire ${venue.name}?`}
-          description="It will no longer appear in venue search. Its past bookings are kept."
-          confirmLabel="Retire venue"
-          danger
-          busy={busy}
-          error={error ?? undefined}
-          onConfirm={retire}
-          onCancel={() => { setConfirming(false); setError(null); }}
-        />
-      ) : (
-        <div className="venue-card-actions">
-          <ButtonLink to={`/venue/inventory/${venue.id}/edit`} icon={<PencilLine size={14} aria-hidden="true" />}>Edit</ButtonLink>
-          <Button variant="danger" onClick={() => { setConfirming(true); setBlocking(null); }}>Retire</Button>
-        </div>
-      )}
+      <div className="venue-card-actions">
+        <ButtonLink to={`/venue/inventory/${venue.id}/edit`} icon={<PencilLine size={14} aria-hidden="true" />}>Edit</ButtonLink>
+        <Button variant="danger" onClick={() => { setConfirming(true); setBlocking(null); }}>Retire…</Button>
+      </div>
     </article>
   );
 }

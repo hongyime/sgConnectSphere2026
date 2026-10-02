@@ -22,41 +22,13 @@ import {
 } from 'lucide-react';
 import {
   Alert, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FilterChips, LoadingState, PageLayout,
-  StatusPill, useLoad, type Column, type Failure,
+  StatusPill, formatDate, formatDateRange, statusLabel, useLoad, type Column, type Failure,
 } from '../../shared';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
   getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type StatusHistoryEntry,
 } from './organiserRequestsApi';
 import './organiser.css';
-
-// Organisers see "Clarification requested" where Coordinators see
-// "Awaiting clarification", so these screens keep their own labels.
-const statusLabel: Record<EventStatus, string> = {
-  draft:                  'Draft',
-  submitted:              'Submitted',
-  under_review:           'Under review',
-  awaiting_clarification: 'Clarification requested',
-  approved:               'Approved',
-  planning:               'Planning',
-  confirmed:              'Confirmed',
-  rejected:               'Rejected',
-  cancelled:              'Cancelled',
-  completed:              'Completed',
-};
-
-const statusTone: Record<EventStatus, string> = {
-  draft:                  'neutral',
-  submitted:              'info',
-  under_review:           'info',
-  awaiting_clarification: 'warning',
-  approved:               'success',
-  planning:               'info',
-  confirmed:              'success',
-  rejected:               'danger',
-  cancelled:              'neutral',
-  completed:              'neutral',
-};
 
 const mockStatusTone: Record<OrganiserStatus, string> = {
   Draft:                    'neutral',
@@ -74,23 +46,11 @@ const awaitingStatuses: EventStatus[] = ['submitted', 'under_review', 'awaiting_
 const approvedStatuses: EventStatus[] = ['approved', 'planning', 'confirmed'];
 const closedStatuses: EventStatus[] = ['draft', 'rejected', 'cancelled', 'completed'];
 
-function RequestStatus({ status }: { status: EventStatus }) {
-  return <StatusPill status={statusTone[status] ?? 'neutral'} label={statusLabel[status] ?? status} />;
-}
-
-// Event times are Singapore times, whatever the browser's timezone.
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Singapore' });
-const timeFormat = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Singapore' });
-
-function formatDate(value: string | null | undefined) {
-  return value ? dateFormat.format(new Date(value)) : 'Not set';
-}
-
+// When the request is planned for. Missing dates read "Not set" (a draft may
+// not have them yet).
 function formatWhen(startAt?: string, endAt?: string) {
   if (!startAt) return 'Not set';
-  const start = new Date(startAt);
-  const hours = endAt ? `${timeFormat.format(start)}–${timeFormat.format(new Date(endAt))}` : timeFormat.format(start);
-  return `${dateFormat.format(start)}, ${hours}`;
+  return endAt ? formatDateRange(startAt, endAt) : formatDate(startAt, true);
 }
 
 function requestTitle(request: OwnRequest) {
@@ -163,7 +123,7 @@ export function OrganiserDashboard() {
                 {request.expectedAttendance ? ` · ${request.expectedAttendance} attendees` : ''}
               </small>
             </div>
-            <RequestStatus status={request.status} />
+            <StatusPill status={request.status} />
           </Link>
         ))}
       </section>
@@ -185,7 +145,7 @@ const requestColumns: Column<OwnRequest>[] = [
   { header: 'Purpose', cell: request => request.purpose || '—' },
   { header: 'Requested date', cell: request => formatWhen(request.startAt, request.endAt) },
   { header: 'Attendees', cell: request => request.expectedAttendance ?? '—' },
-  { header: 'Status', cell: request => <RequestStatus status={request.status} /> },
+  { header: 'Status', cell: request => <StatusPill status={request.status} /> },
 ];
 
 export function RequestList() {
@@ -244,7 +204,7 @@ export function SubmittedDetail() {
       title={request ? requestTitle(request) : result.state === 'error' ? 'Request unavailable' : 'Loading request…'}
       actions={request ? (
         <span className="organiser-status">
-          <RequestStatus status={request.status} />
+          <StatusPill status={request.status} />
           {request.statusChangedAt ? <small>Since {formatDate(request.statusChangedAt)}</small> : null}
         </span>
       ) : undefined}
@@ -254,7 +214,7 @@ export function SubmittedDetail() {
       {request ? (
         <>
           {request.status === 'awaiting_clarification' ? (
-            <Alert tone="info" title="Clarification requested">
+            <Alert tone="info">
               <p className="organiser-alert-copy">
                 Your coordinator has requested clarification. Check your notifications and the event&apos;s comments for their questions.
               </p>
@@ -305,8 +265,8 @@ function Timeline({ history }: { history: StatusHistoryEntry[] }) {
           {history.map((entry, index) => (
             <li key={`${entry.occurred_at}-${index}`}>
               <strong>
-                {entry.old_value ? `${statusLabel[entry.old_value as EventStatus] ?? entry.old_value} → ` : ''}
-                {statusLabel[entry.new_value as EventStatus] ?? entry.new_value}
+                {entry.old_value ? `${statusLabel(entry.old_value)} → ` : ''}
+                {entry.new_value ? statusLabel(entry.new_value) : ''}
               </strong>
               <span>{formatDate(entry.occurred_at)}</span>
             </li>
