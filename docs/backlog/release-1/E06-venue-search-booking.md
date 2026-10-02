@@ -177,18 +177,20 @@ Given approving a pending request would make its buffered occupancy window overl
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66
+- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, O-31, O-32, O-33, O-34
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want to place a tentative hold on a venue so that it is not taken by another event while the arrangements are still being finalised.
+As an Event Coordinator, I want to place a tentative hold on a venue so that it is not taken by another event while the arrangements are still being finalised, and I want the hold to expire at a known time so that venues are not reserved indefinitely.
+
+The expiry scenarios come from the Week 7 Customer Changes (C-68, T-69) and reverse the earlier position that no expiry was required (C-01, C-16, C-60, T-49). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Tentative hold placed
 
-Given a venue is free for the period When I place a tentative hold Then the calendar shows the period as Tentative and the hold is recorded against my event
+Given a venue is free for the period When I place a tentative hold Then the calendar shows the period as Tentative, the hold is recorded against my event, and the hold carries an expiry date and time set to 48 hours from creation by default, which Venue Staff may change on the hold (assumes O-31)
 
 #### Scenario 2 — Slot already held or booked
 
@@ -196,7 +198,7 @@ Given a venue already has a tentative hold or a confirmed booking for the period
 
 #### Scenario 3 — Hold becomes a booking request
 
-Given I hold a venue tentatively When I submit a booking request for that venue Then the hold becomes a pending booking request for the same period
+Given I hold a venue tentatively When I submit a booking request for that venue Then the hold becomes a pending booking request for the same period and the expiry no longer applies, because submitting the request is the action that completes the hold (assumes O-32)
 
 #### Scenario 4 — Hold released
 
@@ -206,6 +208,22 @@ Given I hold a venue tentatively and no longer need it When I release the hold T
 
 Given a venue has a setup time of 30 minutes and a turnaround time of 45 minutes When I hold it tentatively for 10:00 to 12:00 Then the hold occupies 09:30 to 12:45, the calendar shows that window as Tentative, and another hold or booking request overlapping any part of it is refused (C-65, T-66)
 
+#### Scenario 6 — Hold expires and frees the venue
+
+Given my hold's expiry date and time has passed and I have not submitted a booking request for it When the expiry job next runs Then the hold's status becomes Expired, the period returns to Free on the calendar, the venue can be held or requested by any event, and an Expired hold is never counted as a Confirmed or Pending booking anywhere, including the E08-S03 confirmation gate (C-68, T-69)
+
+#### Scenario 7 — Coordinator told before and at expiry
+
+Given my hold will expire in 24 hours When that moment passes Then I receive an in-app and email reminder naming the venue, the event and the expiry time; and Given the hold expires When the expiry job runs Then I receive an in-app and email notice that it has expired and the venue is free (assumes O-33)
+
+#### Scenario 8 — Venue Staff may extend a hold
+
+Given a hold has not yet expired When Venue Staff set a later expiry date and time Then the new expiry applies, the extension is recorded in the activity log with who made it, and the reminder is rescheduled; an expired hold cannot be extended and must be placed again (assumes O-34)
+
+#### Scenario 9 — Expiry exactly at the boundary
+
+Given a hold expires at 10:00:00 When the expiry job runs at 09:59:59 Then the hold is still Tentative, and when it runs at 10:00:00 or later Then the hold is Expired
+
 ### Checklist
 
 - Place a tentative hold on a venue that is free for the period
@@ -214,6 +232,10 @@ Given a venue has a setup time of 30 minutes and a turnaround time of 45 minutes
 - Convert a tentative hold into a booking request
 - Release a tentative hold, returning the period to Free
 - Confirm only one active hold or confirmed booking exists per venue and period
+- See the expiry date and time on every hold, defaulting to 48 hours after creation (assumes O-31)
+- Confirm an expired hold frees the venue and is never treated as a booking
+- Receive a reminder before and a notice at expiry (assumes O-33)
+- Confirm Venue Staff can extend an unexpired hold and the extension is logged (assumes O-34)
 
 ## E06-S06 — Prevent double-booking of a venue
 

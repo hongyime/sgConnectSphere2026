@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 271 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 276 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **271**
-- Automated (explicit TC_ID in an active test title): **118** (43.5%)
+- Total test cases: **276**
+- Automated (explicit TC_ID in an active test title): **118** (42.8%)
   - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **93**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (48.7%)
-- No test yet (no test file mentions the TC_ID): **21** (7.7%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (47.8%)
+- No test yet (no test file mentions the TC_ID): **26** (9.4%)
 
 ## Coverage by epic
 
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 42 | 39 | 3 | 0 |
 | E05 | 30 | 24 | 0 | 6 |
-| E06 | 30 | 4 | 18 | 8 |
+| E06 | 35 | 4 | 18 | 13 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 17 | 0 | 15 | 2 |
 | E09 | 36 | 5 | 30 | 1 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **271** | **118** | **132** | **21** |
+| **Total** | **276** | **118** | **132** | **26** |
 
 ## Case-by-case status
 
@@ -200,6 +200,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ❌ none | — |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ❌ none | — |
+| `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ❌ none | — |
+| `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ❌ none | — |
+| `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ❌ none | — |
+| `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive a reminder 24 hours before a hold exp | ❌ none | — |
+| `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ❌ none | — |
 | `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
 | `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
 | `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |

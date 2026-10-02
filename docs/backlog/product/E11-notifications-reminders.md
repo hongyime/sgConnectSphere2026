@@ -4,7 +4,7 @@
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64
+- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33
 - **Owner**:
 
 ### User story
@@ -48,6 +48,7 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | Internal review, clarification, approval or rejection | Yes | Yes | No | No | No | No |
 | New venue booking request | No | No | Responsible staff | No | No | No |
 | Venue booking confirmed, rejected or released | No | Yes | No | No | No | No |
+| Tentative hold about to expire (reminder) or expired | No | Yes | No | No | No | No |
 | Equipment result or operational shortfall | No | Yes | If affected | If affected | No | No |
 | Effective date/time/venue change | Yes | Yes | If affected | If affected | Yes | Yes |
 | Event confirmed or reverted from Confirmed to Planning | Yes | Yes | If affected | If affected | Yes | Yes |
