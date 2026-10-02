@@ -4,12 +4,30 @@ import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
-  Alert, Button, ConfirmPanel, DataTable, ErrorState, FactList, FilterChips, FormField, apiCall, useLoad,
+  Alert, Button, ConfirmPanel, DataTable, ErrorState, FactList, FilterChips, FormField, apiCall, formatDate, formatDateRange, useLoad,
   type ApiResult,
 } from '.';
 import { UiKit } from '../app/UiKit';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+describe('formatDate', () => {
+  // 01:00Z is 9:00 am in Singapore, whatever timezone the test machine uses.
+  test('shows Singapore time', () => {
+    expect(formatDate('2026-10-08T01:00:00.000Z', true)).toBe('8 Oct 2026, 9:00 am');
+    expect(formatDateRange('2026-10-08T01:00:00.000Z', '2026-10-08T09:00:00.000Z')).toBe('8 Oct 2026, 9:00 am – 5:00 pm');
+  });
+
+  // 20:00Z on 7 Oct is already 8 Oct in Singapore, so this range is one day there.
+  test('decides "same day" in Singapore time', () => {
+    expect(formatDateRange('2026-10-07T20:00:00.000Z', '2026-10-08T02:00:00.000Z')).toBe('8 Oct 2026, 4:00 am – 10:00 am');
+  });
+
+  test('says when a date is missing', () => {
+    expect(formatDate(null)).toBe('Not recorded');
+    expect(formatDate('not a date')).toBe('Not recorded');
+  });
+});
 
 describe('apiCall', () => {
   function stub(reply: () => Promise<Response>) { vi.stubGlobal('fetch', vi.fn(reply)); }

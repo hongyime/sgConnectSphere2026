@@ -83,7 +83,7 @@ test('request list opens the live request detail with its status history', async
   await expect(page.getByRole('heading', { level: 1, name: 'Annual Sustainability Forum' })).toBeVisible();
   await expect(page.getByText('EVT-2001')).toBeVisible();
   await expect(page.getByText(/Your coordinator has requested clarification/)).toBeVisible();
-  await expect(page.getByText('Under review → Clarification requested')).toBeVisible();
+  await expect(page.getByText('Under review → Awaiting clarification')).toBeVisible();
   await expect(page.getByText('Green campus seminar')).toBeVisible();
 });
 
