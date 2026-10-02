@@ -1,17 +1,24 @@
 # Agent State
 
-- 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
+- 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
+
+  - 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
   after #175 (1780b3c): E10-S01 now includes /change-requests/new
   (coming-soon) and E03-S07 includes the Organiser edit on /events/*.
   Coming-soon route count is 3. SCRUM-118.
 
-- 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
+  - 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
   generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
   Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per
   design.md section 4) plus a second table for routes with no Release 1 story. Framed
   as a draft for Amareet's SCRUM-118 review; Amareet's own draft is not in the repo
   so the two must be reconciled. Verification: python scripts/check.py (PASS, 76
   tests). Open items: reconcile against Amareet's draft; add rows if new routes land.
+
+  - 2026-10-02: Review on #182. Merged main (1780b3c) into
+  feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
+  Typeface row, per design.md section 14. Google Fonts stays; the choice
+  and the IP trade-off are in docs/decisions/0011. SCRUM-117.
 
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's

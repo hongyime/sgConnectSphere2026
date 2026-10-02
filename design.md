@@ -153,10 +153,13 @@ Measured contrast of the pairs above (WCAG 2.2 formula, rounded):
 ### 3.2 Type
 
 One family. The stack is `Inter, ui-sans-serif, system-ui, -apple-system,
-BlinkMacSystemFont, "Segoe UI", sans-serif`. Inter is the intended face but
-is not currently loaded by `frontend/index.html`, so users see their system
-font today; see 11.1. Whatever resolves, all text uses the one family, and
-`font-synthesis: none` keeps weights honest.
+BlinkMacSystemFont, "Segoe UI", sans-serif`. `frontend/index.html` loads Inter
+from a Google Fonts stylesheet in the weights the blocks use (400, 600, 700,
+800, 900) with `display=swap`, so text renders in the system face for a moment
+and then in Inter. The choice, and the privacy trade-off of sending page loads
+to Google, is recorded in
+`docs/decisions/0011-load-inter-from-google-fonts.md`. All text uses the one
+family, and `font-synthesis: none` keeps weights honest.
 
 Scale. Five sizes, used by the blocks:
 
@@ -571,7 +574,6 @@ authorises a story owner to work around the skeleton locally.
 
 | Topic | What the skeleton does | What this document asks | Proposed resolution |
 | --- | --- | --- | --- |
-| Typeface | `Inter` leads the font stack but is not loaded by `frontend/index.html`; users see their system font | One intended family that every user actually sees | Decide: self-host Inter (variable font, `font-display: swap`; a small dependency such as `@fontsource-variable/inter` needs the team's dependency decision) or drop `Inter` from the stack and accept the system face. Recommendation: self-host; the Figma plan and the brand chose Inter |
 | Table header | Shared `.ui-table th` uses `--surface-strong`; feature tables use `rgba(15, 23, 42, 0.03)` | `--surface-strong` | Already correct in the skeleton; feature tables migrate (section 12) |
 | Focus ring | Global 3px ring; `login.css` uses 2px; `eventEdit.css` removes it on two programmatically focused elements (`tabIndex=-1`) | 3px everywhere | Remove the overrides as pages are touched |
 
