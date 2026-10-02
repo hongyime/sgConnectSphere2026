@@ -1,5 +1,20 @@
 # Agent Journal
 
+- 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
+  #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
+  Coordinator, venue and Organiser pages moved onto the shared blocks), #179
+  (those pages aligned with design.md: shared status labels, Singapore-time
+  formatDate/formatDateRange, inline ConfirmPanel for venue retire). SCRUM-119
+  is Done. Open: #173 templates and docs/frontend-guide.md (approved, CI green,
+  awaiting merge; merge it before #180, whose branch carries SCRUM-116 so
+  jira-sync marks SCRUM-116 Done when #180 merges);
+  #178 design.md (Bryan, SCRUM-117) merged 2026-10-02; #180 closes the
+  design.md section 11 gaps and removes the resolved rows (button hover, --green-ink/--amber-ink, eyebrow
+  tracking, one disabled style, skip link, radius tokens). Still open: loading
+  Inter needs a team dependency decision. Every PR citing test runs carries
+  T-65 records in docs/testing/runs/. Local Vitest must run with
+  --no-file-parallelism on Windows; CI is authoritative.
+
 - 2026-10-01: SCRUM-117 design.md written on `docs/SCRUM-117-design-language`
   (off main 71e6567) and registered in docs/source-of-truth.md. It documents
   the current look (teal pen, paper on a 32px planning grid, soft-tint status

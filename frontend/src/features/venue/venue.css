@@ -114,8 +114,8 @@
   display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content;
   padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap;
 }
-.badge-free        { background: var(--green-soft); color: var(--green); }
-.badge-tentative   { background: var(--amber-soft); color: #8a6200; }
+.badge-free        { background: var(--green-soft); color: var(--green-ink); }
+.badge-tentative   { background: var(--amber-soft); color: var(--amber-ink); }
 .badge-confirmed   { background: var(--blue-soft); color: var(--blue); }
 .badge-blocked     { background: var(--red-soft); color: var(--red); }
 .badge-unavailable { background: var(--surface-strong); color: var(--muted); }
@@ -147,7 +147,6 @@
   border: 0; background: none; padding: 0; cursor: pointer;
   color: var(--teal); font-weight: 700; font-size: var(--text-sm); text-align: left; text-decoration: underline;
 }
-.calendar-event-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .calendar-details {
   flex-basis: 100%; display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem;
   margin: var(--space-1) 0 0; padding: var(--space-2) var(--space-3); border-radius: 6px;

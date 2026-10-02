@@ -655,6 +655,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a signed-in page gets exactly one shared header
 - older pages now sit inside the shared header too
+- the skip link is the first stop and moves focus to the page
 - public pages have no shared header
 - /home sends a signed-in user to their role home
 - /home sends a signed-out visitor to sign in
