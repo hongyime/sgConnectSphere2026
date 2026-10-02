@@ -12,6 +12,7 @@ import {
   type Column, type Failure, type Load,
 } from '../../shared';
 import { EventEditForm } from '../events/EventEditForm';
+import { fieldList } from '../events/eventEditFields';
 import type { EditableField } from '../events/eventEditApi';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
@@ -228,16 +229,6 @@ const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>(
   'title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance',
   'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference',
 ]);
-
-function fieldList(fields: string[]) {
-  const labels: Record<string, string> = {
-    title: 'event name', description: 'description', purpose: 'purpose', startAt: 'start', endAt: 'end',
-    expectedAttendance: 'expected attendance', venueRequirements: 'venue requirements', accessibilityNote: 'accessibility needs',
-    equipmentRequirements: 'equipment', layoutPreference: 'layout', registrationDates: 'registration dates',
-  };
-  const names = fields.map(field => labels[field] ?? field);
-  return names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0] ?? 'details';
-}
 
 function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onSaved: () => void }) {
   const [editing, setEditing] = useState(false);
