@@ -1,5 +1,12 @@
 # Agent Journal
 
+- 2026-10-02 (PR A, SCRUM-118): wrote docs/plans/screen-inventory.md mapping all 47
+  Release 1 stories to role, sprint, route(s), status and page pattern. Generated from
+  routes.tsx at f39e81e and docs/backlog/release-1/. Noted stories whose route is a
+  mock, which stories live on inline surfaces (comments, change classification) and
+  which have no route yet. Verification: python scripts/check.py (PASS). Framed as a
+  draft for Amareet's SCRUM-118 review and must be reconciled against her own draft.
+
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
   Coordinator, venue and Organiser pages moved onto the shared blocks), #179

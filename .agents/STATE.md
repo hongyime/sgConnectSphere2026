@@ -1,5 +1,13 @@
 # Agent State
 
+- 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
+  generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
+  Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per
+  design.md section 4) plus a second table for routes with no Release 1 story. Framed
+  as a draft for Amareet's SCRUM-118 review; Amareet's own draft is not in the repo
+  so the two must be reconciled. Verification: python scripts/check.py (PASS, 76
+  tests). Open items: reconcile against Amareet's draft; add rows if new routes land.
+
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
   Coordinator, venue and Organiser pages moved onto the shared blocks), #179
