@@ -304,7 +304,7 @@ use them exactly. See them rendered at `/ui-kit`.
 | `FormSection` | Fieldset with legend and a two-column grid | Grouping fields under a heading | A section with one field |
 | `FormActions` | Right-aligned row, stacks on phones | The Cancel and Save row at the end of a form | Actions in the middle of a form |
 | `ConfirmPanel` | A card-shaped form with title, description, optional reason textarea, Cancel and confirm | The second step of any irreversible action | A browser `confirm()`; a modal |
-| `StatusPill` | Soft tint, deep text, fully rounded, 12px 900 uppercase | The status of a record | Counts, categories, roles, anything that is not a status |
+| `StatusPill` | Soft tint, deep text, fully rounded, 12px, weight 900, sentence case | The status of a record | Counts, categories, roles, anything that is not a status |
 | `Alert` | Tinted panel with icon, optional title, optional action | Save confirmations, server refusals, warnings about the record | Decoration; replacing an `EmptyState` |
 | `LoadingState` | Spinner, label, grey shimmer rows | While `useLoad` is loading | Spinners inside buttons (use `busy`) |
 | `EmptyState` | Centred icon, title, one sentence, optional action | A list with nothing in it | An error (use `ErrorState`) |
