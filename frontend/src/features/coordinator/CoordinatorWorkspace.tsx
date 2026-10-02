@@ -4,8 +4,8 @@
 // confirmation screens in Coordinator.tsx still use mock data until their
 // stories' backends land. Built on the shared blocks in src/shared (ADR-017).
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Clock3, Loader2, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { ArrowRight, CheckCircle2, Clock3, Loader2, MessageCircleQuestion, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FilterChips, FormActions,
   FormField, LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, isAbort, statusLabel, useLoad,
@@ -13,6 +13,7 @@ import {
 } from '../../shared';
 import { EventEditForm } from '../events/EventEditForm';
 import { fieldList } from '../events/eventEditFields';
+import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import type { EditableField } from '../events/eventEditApi';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
@@ -188,18 +189,29 @@ export function RequestDetail() {
   const { eventCode = '' } = useParams();
   const { result, reload } = useLoad(signal => getAssignedEvent(eventCode, signal), [eventCode]);
   const event = result.state === 'ready' ? result.data : null;
+  // RequestClarification comes back here with { clarificationSent: true } (E03-S02).
+  const clarificationSent = (useLocation().state as { clarificationSent?: boolean } | null)?.clarificationSent === true;
 
   return (
     <PageLayout
       eyebrow={event?.event_code ?? eventCode}
       title={event?.title ?? (result.state === 'error' ? 'Event unavailable' : 'Loading event…')}
-      actions={event ? <StatusPill status={event.status} /> : undefined}
+      actions={event ? (
+        <>
+          {event.status === 'under_review' ? (
+            <ButtonLink to={`${eventLink(event)}/clarify`} icon={<MessageCircleQuestion size={14} aria-hidden="true" />}>Request clarification</ButtonLink>
+          ) : null}
+          <StatusPill status={event.status} />
+        </>
+      ) : undefined}
     >
       {result.state === 'loading' ? <LoadingState label="Loading event…" rows={4} /> : null}
       {result.state === 'error' ? <LoadError failure={result.failure} onRetry={reload} context="this event" /> : null}
       {event ? (
         <>
+          {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>
+          <OutstandingQuestions questions={event.outstandingQuestions ?? []} />
           <section className="coordinator-detail-grid" aria-label="Event summary">
             <Card title="Summary">
               <FactList
