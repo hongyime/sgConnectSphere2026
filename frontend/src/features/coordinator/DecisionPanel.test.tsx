@@ -104,6 +104,13 @@ test('the decide page shows what is being decided, with Request clarification, R
   expect(pill()).toHaveTextContent('Under review');
 });
 
+test('a request with no event code shows "Request" as the eyebrow, not its id', async () => {
+  stubApi({ 'GET /api/events?assigned=1&id=evt-1': { body: detail({ event_code: null }) } }, { role: 'event_coordinator' });
+  renderAt('/coordinator/events/evt-1/decide');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Decide: Annual Tech Summit' })).toBeInTheDocument();
+  expect(document.querySelector('.ui-page-heading .eyebrow')).toHaveTextContent(/^Request$/);
+});
+
 test('Request clarification on the decide page opens the question page', async () => {
   stubApi({ [READ]: { body: detail() } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-ANNUAL/decide');

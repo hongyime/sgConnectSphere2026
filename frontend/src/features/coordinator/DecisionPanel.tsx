@@ -35,7 +35,9 @@ export function DecisionPanel() {
 
   return (
     <PageLayout
-      eyebrow={event?.event_code ?? eventCode}
+      // A request submitted through New request has no event code yet; its
+      // id is not a name to show (design.md section 8.1).
+      eyebrow={event?.event_code ?? 'Request'}
       title={event ? `Decide: ${event.title}` : 'Decide on a request'}
       actions={event ? <StatusPill status={event.status} /> : undefined}
       width="narrow"
