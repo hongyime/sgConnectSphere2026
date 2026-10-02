@@ -3,7 +3,9 @@ import { useParams } from 'react-router-dom';
 import {
   CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Clock, Lock, Wrench, type LucideIcon,
 } from 'lucide-react';
-import { Alert, Button, EmptyState, ErrorState, LoadingState, PageLayout, useLoad, type ApiResult } from '../../shared';
+import {
+  Alert, Button, Card, EmptyState, ErrorState, FormField, LoadingState, PageLayout, useLoad, type ApiResult,
+} from '../../shared';
 import { listVenues, type Venue } from './venueApi';
 import { getVenueCalendar, MAX_CALENDAR_DAYS, type CalendarState, type VenueCalendar as CalendarData } from './venueCalendarApi';
 import {
@@ -125,17 +127,18 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
     <PageLayout eyebrow={audience === 'venue' ? 'Venue staff' : 'Event coordinator'} title="Availability calendar">
       <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time.</p>
 
-      <section className="calendar-controls card" aria-label="Calendar controls">
+      <Card label="Calendar controls">
         {options.result.state === 'error' && !selectedId ? (
           <Alert tone="error">{options.result.failure.message}</Alert>
         ) : (
-          <label className="venue-select">
-            <span>Venue</span>
-            <select value={selectedId} disabled={optionsLoading} onChange={event => setSelectedId(event.target.value)}>
-              {optionsLoading ? <option value="">Loading venues…</option> : null}
-              {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
-            </select>
-          </label>
+          <FormField label="Venue">
+            {props => (
+              <select {...props} value={selectedId} disabled={optionsLoading} onChange={event => setSelectedId(event.target.value)}>
+                {optionsLoading ? <option value="">Loading venues…</option> : null}
+                {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
+              </select>
+            )}
+          </FormField>
         )}
 
         <div className="calendar-period">
@@ -147,18 +150,16 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
         </div>
 
         <form className="calendar-range" aria-label="Custom date range" onSubmit={handleRangeSubmit} noValidate>
-          <label>
-            <span>From</span>
-            <input type="date" value={customFrom} onChange={event => setCustomFrom(event.target.value)} />
-          </label>
-          <label>
-            <span>To</span>
-            <input type="date" value={customTo} onChange={event => setCustomTo(event.target.value)} />
-          </label>
+          {rangeError ? <Alert tone="error">{rangeError}</Alert> : null}
+          <FormField label="From">
+            {props => <input {...props} type="date" value={customFrom} onChange={event => setCustomFrom(event.target.value)} />}
+          </FormField>
+          <FormField label="To">
+            {props => <input {...props} type="date" value={customTo} onChange={event => setCustomTo(event.target.value)} />}
+          </FormField>
           <Button type="submit">Show range</Button>
-          {rangeError ? <p role="alert" className="field-error">{rangeError}</p> : null}
         </form>
-      </section>
+      </Card>
 
       <ul className="calendar-legend" aria-label="Legend">
         {legendOrder.map(state => (<li key={state}><StateBadge state={state} /></li>))}
