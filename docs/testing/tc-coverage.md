@@ -731,7 +731,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request list filters by status group
 - drafts link to the draft editor and other requests to the detail page
 - request list says so when there are no requests
-- request list shows a sign-in message on 401 and retries
+- request list asks the Organiser to sign in again on 401
+- request list shows the failure and retries
 - detail combines the organisation read and the own-request read
 - detail timeline shows the real status history, newest first
 - detail accepts an event code and resolves it to the request
@@ -787,7 +788,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - opens the venue named in a coordinator calendar link
 - reloads when a different venue is chosen
 - notes that a retired venue offers no free time
-- shows a sign-in message on 403 and retries on request
+- shows the server refusal on 403
+- shows a failed load and retries on request
 - does not present a plain venue record as an empty calendar
 - two blocks clipped to the same start get separate rows and keys
 

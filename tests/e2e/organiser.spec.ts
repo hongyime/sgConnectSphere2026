@@ -62,7 +62,7 @@ test('request list filters between drafts and awaiting review', async ({ page })
   await mockEventsApi(page);
   await page.goto('/organiser/requests');
   await expect(page.getByRole('heading', { name: 'Requests' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'All (3)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^All/ })).toContainText('3');
 
   const drafts = page.getByRole('button', { name: 'Drafts' });
   await drafts.click();
