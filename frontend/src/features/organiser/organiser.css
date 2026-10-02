@@ -29,66 +29,47 @@
 .organiser-footer a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--teal); text-decoration: none; font-size: 0.95rem; }
 .organiser-footer .primary-action { color: #ffffff; }
 
-.organiser-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.organiser-filters button {
-  padding: 0.4rem 0.75rem; border: 1px solid var(--border); background: transparent;
-  border-radius: 6px; cursor: pointer; color: var(--ink); font-size: 0.9rem;
-}
-.organiser-filters button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #ffffff; }
-
 .organiser-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); background: var(--surface); }
 .organiser-table th, .organiser-table td { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
 .organiser-table th { background: rgba(15, 23, 42, 0.03); font-weight: 600; color: var(--ink); }
 .organiser-table a { color: var(--teal); text-decoration: none; font-weight: 500; }
-
-.organiser-detail-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.organiser-detail-grid article { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-.organiser-detail-grid h2 { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--ink); }
-.organiser-detail-grid dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.75rem; margin: 0; font-size: 0.9rem; }
-.organiser-detail-grid dt { color: var(--muted); }
-
-.organiser-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
-.organiser-timeline li { padding: 0.5rem 0.75rem; border-left: 3px solid var(--teal); background: rgba(15, 118, 110, 0.05); font-size: 0.9rem; }
-.organiser-timeline p { margin: 0.15rem 0 0; color: var(--ink); }
-.organiser-timeline span { color: var(--muted); }
-
-.organiser-alert {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.75rem 1rem; border-radius: 8px;
-  background: rgba(217, 119, 6, 0.10); color: #92400e;
-  border: 1px solid rgba(217, 119, 6, 0.35);
-}
-.organiser-alert a { color: #92400e; text-decoration: underline; font-weight: 600; }
 
 .organiser-form { display: grid; gap: 0.75rem; max-width: 40rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .organiser-form-row { display: grid; gap: 0.35rem; }
 .organiser-form label { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
 .organiser-form textarea { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
 
-/* Live request screens: optional summary rows sit inside the dl grid, and the
-   request table scrolls within its own box on narrow screens instead of
-   widening the page. */
-.organiser-dl-row { display: contents; }
-.organiser-detail-grid dd { margin: 0; }
-.organiser-table-wrap { overflow-x: auto; }
-.organiser-heading small { color: var(--muted); font-size: 0.85rem; }
-.organiser-comments { display: grid; gap: 0.25rem; }
-.organiser-comments h2 { display: flex; align-items: center; gap: 0.4rem; margin: 0; font-size: 1.05rem; color: var(--ink); }
-.organiser-comments p { margin: 0; }
-.organiser-comments a { color: var(--teal); font-weight: 600; }
-
-/* On phones each request becomes a stacked card with inline labels, so the
-   status stays visible instead of scrolling out of view. */
-@media (max-width: 640px) {
-  .organiser-table-stack, .organiser-table-stack tbody, .organiser-table-stack tr, .organiser-table-stack td { display: block; }
-  .organiser-table-stack { border: 0; background: transparent; }
-  .organiser-table-stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .organiser-table-stack tr { margin-bottom: 0.75rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
-  .organiser-table-stack td { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.5rem; }
-  .organiser-table-stack td:last-child { border-bottom: 0; }
-  .organiser-table-stack td[data-label]::before { content: attr(data-label); color: var(--muted); font-weight: 600; }
-  .organiser-table-stack td[colspan] { display: block; }
+/* Live request screens (dashboard, list, detail). Page frame, cards, facts,
+   states, table and chips come from the shared blocks (src/shared). */
+.organiser-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.organiser-section-heading h2 { margin: 0; font-size: var(--text-lg); }
+.organiser-section-heading a {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  color: var(--teal-dark); font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none;
 }
+.organiser-row { gap: var(--space-3); }
+.organiser-note { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+.organiser-status { display: inline-grid; justify-items: end; gap: var(--space-1); }
+.organiser-status small { color: var(--muted); font-size: var(--text-sm); }
+.organiser-alert-copy { margin: 0; }
+.organiser-detail-grid {
+  display: grid; gap: var(--space-4); align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+.organiser-card-copy { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--muted); }
+.organiser-card-copy a { color: var(--teal-dark); font-weight: var(--weight-semibold); }
+.organiser-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
+.organiser-timeline li {
+  display: grid; gap: 2px; padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--teal); border-radius: 0 6px 6px 0; background: var(--teal-soft);
+}
+.organiser-timeline span { color: var(--muted); font-size: var(--text-sm); }
+
+@media (max-width: 720px) {
+  .organiser-row { flex-direction: column; align-items: flex-start; }
+  .organiser-status { justify-items: start; }
+}
+
 /* ChangeRequest + CancellationForm additions */
 .organiser-change-layout {
   display: grid;

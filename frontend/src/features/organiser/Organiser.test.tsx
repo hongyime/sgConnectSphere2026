@@ -103,7 +103,7 @@ test('dashboard next actions list open requests by date, without drafts or close
   renderAt('/organiser');
   const list = screen.getByRole('region', { name: 'Next actions' });
   await within(list).findByText('Faculty Career Mixer');
-  const titles = within(list).getAllByRole('link').map(link => link.querySelector('strong')?.textContent);
+  const titles = within(list).getAllByRole('link').flatMap(link => link.querySelector('strong')?.textContent ?? []);
   expect(titles).toEqual(['Faculty Career Mixer', 'Annual Sustainability Forum', 'Robotics Open Day']);
 });
 
@@ -111,26 +111,28 @@ test('request list shows every own request with plain-language status and Singap
   renderAt('/organiser/requests');
   const row = (await screen.findByRole('link', { name: 'Annual Sustainability Forum' })).closest('tr')!;
   expect(row).toHaveTextContent('Green campus seminar');
-  expect(row).toHaveTextContent('8 Oct 2026, 09:00–17:00');
+  expect(row).toHaveTextContent('8 Oct 2026, 9:00 am – 5:00 pm');
   expect(row).toHaveTextContent('220');
   expect(row).toHaveTextContent('Under review');
-  expect(screen.getByRole('button', { name: 'All (5)' })).toHaveAttribute('aria-pressed', 'true');
+  const all = screen.getByRole('button', { name: /^All/ });
+  expect(all).toHaveAttribute('aria-pressed', 'true');
+  expect(all).toHaveTextContent('5');
 });
 
 test('request list filters by status group', async () => {
   renderAt('/organiser/requests');
   await screen.findByRole('link', { name: 'Faculty Career Mixer' });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Drafts' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Drafts/ }));
   expect(screen.getAllByRole('row')).toHaveLength(2);
   expect(screen.getByRole('link', { name: 'Design Studio Recital' })).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Awaiting review' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Awaiting review/ }));
   expect(screen.getByRole('link', { name: 'Annual Sustainability Forum' })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Robotics Open Day' })).toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'Faculty Career Mixer' })).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Approved' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Approved/ }));
   expect(screen.getByRole('link', { name: 'Faculty Career Mixer' })).toBeInTheDocument();
   expect(screen.getAllByRole('row')).toHaveLength(2);
 });
@@ -144,7 +146,7 @@ test('drafts link to the draft editor and other requests to the detail page', as
 test('request list says so when there are no requests', async () => {
   reply = url => (url.searchParams.get('mine') ? { body: { events: [] } } : defaultReply(url));
   renderAt('/organiser/requests');
-  expect(await screen.findByText('You have no requests yet.')).toBeInTheDocument();
+  expect(await screen.findByText('You have no requests yet')).toBeInTheDocument();
 });
 
 // The API caps the response at 100; these screens must not imply that the
@@ -157,11 +159,19 @@ test.each(['/organiser', '/organiser/requests'])('labels the limited request win
   expect(await screen.findByRole('note')).toHaveTextContent('100 most recently updated requests');
 });
 
-test('request list shows a sign-in message on 401 and retries', async () => {
+test('request list asks the Organiser to sign in again on 401', async () => {
   reply = () => ({ status: 401, body: { error: 'unauthenticated' } });
   renderAt('/organiser/requests');
   const alert = await screen.findByRole('alert');
-  expect(alert).toHaveTextContent('Sign in as an Event Organiser');
+  expect(alert).toHaveTextContent('Sign in to continue');
+  expect(within(alert).getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/login');
+});
+
+test('request list shows the failure and retries', async () => {
+  reply = () => ({ status: 500, body: {} });
+  renderAt('/organiser/requests');
+  const alert = await screen.findByRole('alert');
+  expect(alert).toHaveTextContent('Your requests could not be loaded.');
 
   reply = defaultReply;
   fireEvent.click(within(alert).getByRole('button', { name: 'Try again' }));
@@ -176,7 +186,7 @@ test('detail combines the organisation read and the own-request read', async () 
 
   const summary = screen.getByRole('region', { name: 'Request summary' });
   expect(summary).toHaveTextContent('Green campus seminar');
-  expect(summary).toHaveTextContent('8 Oct 2026, 09:00–17:00');
+  expect(summary).toHaveTextContent('8 Oct 2026, 9:00 am – 5:00 pm');
   expect(summary).toHaveTextContent('220');
 
   const [orgCall, ownCall] = requestUrls();
