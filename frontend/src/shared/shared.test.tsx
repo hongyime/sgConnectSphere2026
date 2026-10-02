@@ -59,6 +59,19 @@ describe('apiCall', () => {
     expect(!result.ok && result.details?.conflictingBookings).toEqual([clash]);
   });
 
+  test("shows the body's message sentence when error is a machine code", async () => {
+    // The venue blocks API's shape: a code in `error`, the sentence in `message`.
+    stub(async () => response(409, {
+      error: 'booking_conflict',
+      message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.',
+      conflictingBookings: [],
+    }));
+    expect(await apiCall('/x', undefined, 'Unable to save the block.')).toMatchObject({
+      ok: false, status: 409, code: 'booking_conflict',
+      message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.',
+    });
+  });
+
   test('a network failure becomes status 0; an abort is re-thrown', async () => {
     stub(async () => { throw new TypeError('Failed to fetch'); });
     expect(await apiCall('/x', undefined, 'Unable to load.')).toMatchObject({ ok: false, status: 0 });
