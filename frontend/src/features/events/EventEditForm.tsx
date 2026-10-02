@@ -10,6 +10,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { Lock, Save } from 'lucide-react';
 import { Alert, Button, FormActions, FormSection } from '../../shared';
 import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
+import { fieldList } from './eventEditFields';
 import './eventEdit.css';
 
 export type EventEditValues = {
@@ -23,6 +24,8 @@ export type EventEditValues = {
   accessibility_note: string | null;
   equipment_requirements: string | null;
   layout_preference: string | null;
+  registration_opens_at?: string | null;
+  registration_closes_at?: string | null;
 };
 
 type FieldSpec = { field: EditableField; label: string; kind: 'text' | 'textarea' | 'datetime' | 'number'; wide?: boolean; hint?: string };
@@ -48,9 +51,12 @@ const sections: { title: string; fields: FieldSpec[] }[] = [
     { field: 'equipmentRequirements', label: 'Equipment', kind: 'textarea' },
     { field: 'layoutPreference', label: 'Layout', kind: 'textarea' },
   ] },
+  { title: 'Registration', fields: [
+    { field: 'registrationDates', label: 'Registration dates', kind: 'text', wide: true, hint: 'Enter when registration opens and closes.' },
+  ] },
 ];
 
-type Draft = Record<EditableField, string>;
+type Draft = Omit<Record<EditableField, string>, 'registrationDates'> & { registrationDates?: string };
 
 // <input type="datetime-local"> works in local time without a zone.
 export function toLocalInput(iso: string) {
@@ -72,6 +78,7 @@ function toDraft(values: EventEditValues): Draft {
     accessibilityNote: values.accessibility_note ?? '',
     equipmentRequirements: values.equipment_requirements ?? '',
     layoutPreference: values.layout_preference ?? '',
+    registrationDates: `${values.registration_opens_at ? toLocalInput(values.registration_opens_at) : ''}|${values.registration_closes_at ? toLocalInput(values.registration_closes_at) : ''}`,
   };
 }
 
@@ -81,8 +88,8 @@ export function buildPatch(initial: Draft, draft: Draft): { patch: EventPatch; e
   const patch: EventPatch = {};
   const errors: Partial<Record<EditableField, string>> = {};
   for (const field of Object.keys(draft) as EditableField[]) {
-    const value = draft[field].trim();
-    if (value === initial[field].trim()) continue;
+    const value = (draft[field] ?? '').trim();
+    if (value === (initial[field] ?? '').trim()) continue;
     if (field === 'expectedAttendance') {
       const number = Number(value);
       if (!/^[1-9]\d*$/.test(value)) errors[field] = 'Enter a whole number greater than 0.';
@@ -91,6 +98,13 @@ export function buildPatch(initial: Draft, draft: Draft): { patch: EventPatch; e
       const date = new Date(value);
       if (!value || Number.isNaN(date.getTime())) errors[field] = 'Enter a valid date and time.';
       else patch[field] = date.toISOString();
+    } else if (field === 'registrationDates') {
+      const [opensAt, closesAt] = value.split('|');
+      if (!opensAt || !closesAt || Number.isNaN(Date.parse(opensAt)) || Number.isNaN(Date.parse(closesAt)) || new Date(closesAt) <= new Date(opensAt)) {
+        errors[field] = 'Enter a valid opening and closing date, with closing after opening.';
+      } else {
+        patch.registrationDates = { opensAt: new Date(opensAt).toISOString(), closesAt: new Date(closesAt).toISOString() };
+      }
     } else if (!value) {
       errors[field] = `${labelOf[field]} can't be left empty.`;
     } else {
@@ -129,7 +143,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     headingRef.current?.focus({ preventScroll: true });
   }, []);
   useEffect(() => { if (serverError) alertRef.current?.focus(); }, [serverError]);
-  const changed = (Object.keys(draft) as EditableField[]).some(field => draft[field].trim() !== initial[field].trim());
+  const changed = (Object.keys(draft) as EditableField[]).some(field => (draft[field] ?? '').trim() !== (initial[field] ?? '').trim());
 
   function update(field: EditableField, value: string) {
     setDraft(current => ({ ...current, [field]: value }));
@@ -154,6 +168,14 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     onSaved(result.fields);
   }
 
+  // Registration dates that are locked and empty (the Coordinator read doesn't
+  // return them) would only show two blank read-only boxes, so leave them out.
+  const hasRegistrationDates = Boolean(values.registration_opens_at || values.registration_closes_at);
+  const visibleSections = sections
+    .map(section => ({ ...section, fields: section.fields.filter(spec =>
+      spec.field !== 'registrationDates' || editable.has(spec.field) || hasRegistrationDates) }))
+    .filter(section => section.fields.length > 0);
+
   return (
     <form className="card event-edit-form" onSubmit={submit} noValidate aria-labelledby="event-edit-heading">
       <div className="event-edit-header">
@@ -163,7 +185,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       {serverError ? (
         <div ref={alertRef} tabIndex={-1} className="event-edit-alert"><Alert tone="error">{serverError}</Alert></div>
       ) : null}
-      {sections.map(section => (
+      {visibleSections.map(section => (
         <FormSection key={section.title} title={section.title}>
           {/* Hand-built rather than FormField: a locked field adds a lock icon
               to its label and a second note to its description. */}
@@ -178,10 +200,20 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
             };
             return (
               <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`}>
-                <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
-                {spec.kind === 'textarea'
-                  ? <textarea rows={3} {...common} />
-                  : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
+                {spec.field === 'registrationDates' ? <fieldset className="event-edit-date-pair">
+                  <legend>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</legend>
+                  <label htmlFor={`${id}-opens`}>Opens</label>
+                  <input id={`${id}-opens`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[0]} readOnly={locked}
+                    onChange={change => update(spec.field, `${change.target.value}|${(draft[spec.field] ?? '').split('|')[1] ?? ''}`)} />
+                  <label htmlFor={`${id}-closes`}>Closes</label>
+                  <input id={`${id}-closes`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[1] ?? ''} readOnly={locked}
+                    onChange={change => update(spec.field, `${(draft[spec.field] ?? '').split('|')[0] ?? ''}|${change.target.value}`)} />
+                </fieldset> : <>
+                  <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
+                  {spec.kind === 'textarea'
+                    ? <textarea rows={3} {...common} />
+                    : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
+                </>}
                 {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}
                 {locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null}
                 {error ? <small id={`${id}-error`}>{error}</small> : null}

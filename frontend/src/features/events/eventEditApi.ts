@@ -9,9 +9,12 @@ import { apiCall, jsonRequest, type ApiFailure } from '../../shared';
 
 export type EditableField =
   | 'title' | 'description' | 'purpose' | 'startAt' | 'endAt' | 'expectedAttendance'
-  | 'venueRequirements' | 'accessibilityNote' | 'equipmentRequirements' | 'layoutPreference';
+  | 'venueRequirements' | 'accessibilityNote' | 'equipmentRequirements' | 'layoutPreference' | 'registrationDates';
 
-export type EventPatch = Partial<Record<Exclude<EditableField, 'expectedAttendance'>, string> & { expectedAttendance: number }>;
+export type EventPatch = Partial<Record<Exclude<EditableField, 'expectedAttendance' | 'registrationDates'>, string> & {
+  expectedAttendance: number;
+  registrationDates: { opensAt: string; closesAt: string };
+}>;
 
 export type EditResult =
   | { ok: true; fields: string[] }
