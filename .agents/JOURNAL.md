@@ -1,10 +1,41 @@
 # Agent Journal
 
+- 2026-10-02: The upload rejection was an accidental click; user reauthorized
+  publication. Postplan uploaded after screenshot compression, retaining both
+  views: https://gnoj0c9eujtz.postplan.dev. Commit/push and draft PR preparation
+  follow on the verified branch. Keep E11 open and wait for remote CI/review.
+
+- 2026-10-02: Publication preparation: build, 8 venue browser checks and
+  repository checks passed on main f0c4264 plus the working changes; evidence
+  docs/testing/runs/20261002-162701-jininggg-full-regression.md. Postplan HTML validated locally,
+  but upload was declined. Open a draft; do not claim a hosted review artifact
+  or remote CI success. Commit/push/PR creation are authorized, not merge.
+
+- 2026-10-02: User authorized committing and opening the E06-S01 design PR.
+  Refreshed onto main f0c4264, preserving #182 font loading and both handoff
+  entries. E11 scope is documentation/regression evidence only; no Jira status
+  changes or merge authorized. Fresh publication checks follow in runs/.
+
 - 2026-10-02: Review on #182. Merged main and removed the design.md
   section 11 Typeface row instead of leaving it marked resolved. Added
   docs/decisions/0011-load-inter-from-google-fonts.md and pointed section
   3.2 at it. Google Fonts kept, per the recorded choice. Verification:
   python scripts/check.py.
+
+- 2026-10-02: Current-state review and E06-S01 presentation refresh on
+  fix/SCRUM-45-venue-search-design, based on main 1780b3c. Shared skeleton
+  #173/#180 and organiser edit #175 are now merged (older open notes below
+  are historical). VenueSearch uses shared page/form/card/feedback blocks,
+  preserves all query parameters and backend matching, and passes desktop/mobile
+  plus 320px overflow checks. Existing E06/E11 implementation records refreshed.
+  Clarification #163, decisions #174 and maintenance blocks #151 already call
+  the E11 writer; no duplicate notification runtime integration was added.
+  E03-S02/S03 remain In Progress for frontend; E05-S04 Done has a To Do
+  frontend pilot SCRUM-120. Venue/staff assignments and future workflow callers
+  remain missing. Live migration ledger stops at 0008; repository 0009 is not
+  recorded (read-only inspection, no migration applied). Tests and limitations
+  are in docs/testing/runs/20261002-161552-jininggg-full-regression.md.
+  No commit, push, Jira transition, live data write or real email send.
 
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's
