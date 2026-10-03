@@ -2,11 +2,13 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 6  ·  30 September 2026
+Version 7  ·  3 October 2026
 
 Seventeen Markdown decisions: fifteen Accepted and two Retired. Each records the forces that applied, what was chosen, what was rejected and why, and the consequences including the ones that hurt.
 
-Version 6 adds ADR-017, recording that each story's owner builds its frontend as well as its backend, on a shared frontend skeleton and design language, following instructor feedback at the end of Sprint 2.
+Version 7 amends ADR-003, ADR-006, ADR-007, ADR-009 and ADR-012 for the Week 7 Customer Changes (BDR C-65 to C-70, T-66 to T-74). No decision is reversed: the exclusion constraint moves to a buffered occupancy range and covers tentative holds, the outbox relay gains the hold-expiry job, the single-page application and the one-role rule stretch from five roles to seven, and the audit log gains the safety-check actions. Each amendment is a dated section at the end of its record so the original reasoning stays legible. The matching schema, C4, module and flow changes are in `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, and the new `docs/class-diagram.md` and `docs/api-changes-week7.md`.
+
+Version 6 added ADR-017, recording that each story's owner builds its frontend as well as its backend, on a shared frontend skeleton and design language, following instructor feedback at the end of Sprint 2.
 
 Version 5 added ADR-016, confirming a 30-minute login lockout after five consecutive failures, automatic expiry, and password reset as an alternative recovery path.
 
@@ -22,7 +24,7 @@ References to requirements use the Week 1 Customer Briefing (§), the Week 4 cor
 - [ADR-004 — Sessions as a first-class entity — RETIRED](./ADR-004-sessions-as-a-first-class-entity-retired.md)
 - [ADR-005 — Denormalise event_id, guarded by a composite foreign key — RETIRED](./ADR-005-denormalise-event-id-guarded-by-a-composite-foreign-key-retired.md)
 - [ADR-006 — Transactional outbox for notification delivery](./ADR-006-transactional-outbox-for-notification-delivery.md)
-- [ADR-007 — One single-page application for all five roles](./ADR-007-one-single-page-application-for-all-five-roles.md)
+- [ADR-007 — One single-page application for all roles (five, now seven)](./ADR-007-one-single-page-application-for-all-five-roles.md)
 - [ADR-008 — Client organisation as the tenancy boundary](./ADR-008-client-organisation-as-the-tenancy-boundary.md)
 - [ADR-009 — A single audit log with a polymorphic target](./ADR-009-a-single-audit-log-with-a-polymorphic-target.md)
 - [ADR-010 — Separate equipment request from equipment reservation](./ADR-010-separate-equipment-request-from-equipment-reservation.md)

@@ -2,13 +2,31 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 5  ·  14 September 2026
+Version 6  ·  2 October 2026
 
 ## Purpose
 
 This document holds every decision behind the backlog and the evidence for it. The backlogs themselves live in CONNECTSPHERE BACKLOGS CAA 140926.xlsx and contain story data only; each story there carries a Backlog Decision Reference pointing back to the entries here.
 
 It exists to answer one question for any story or acceptance criterion: why is this here, and who decided it. Entries are separated into what the customer told us and what the team chose, because those carry different weight. Where the team chose, the entry says so plainly rather than presenting an assumption as a requirement.
+
+## What changed in version 6
+
+The customer issued the Week 7 Customer Changes document: six changes, all mandatory for Release 1, with the statement that no further changes are anticipated. They are recorded verbatim as C-65 to C-70. Four of the six reverse something the customer said in Week 2 or Week 4, so the earlier rows (C-01, C-16, C-18, C-38, C-41, C-55, C-56, C-60) now say which Week 7 entry supersedes them rather than being edited.
+
+Setup and turnaround time returns (C-65, T-66). E05-S05 is back in Release 1; buffers are per-venue attributes and every availability and conflict check uses the buffered occupancy window. Bookings that conflict under the new rule are flagged, never released.
+
+A venue may be made unavailable over confirmed bookings (C-66, T-67). E05-S04's refusal of such a block is withdrawn, but as a new E05 story rather than an edit to E05-S04, which is in the Sprint 2 sprint backlog. E10-S05 returns to Release 1.
+
+An event may hold several venue bookings (C-67, T-68). T-20 is retired and E06-S03 Scenario 3 inverted. Each booking is checked independently; the one-hold-per-venue-slot rule from C-60 is unaffected.
+
+Tentative holds expire (C-68, T-69). T-49 is amended: every hold carries an expiry date and time, the system releases expired holds, and the Coordinator is told before and at expiry.
+
+Two roles are added (T-72). The Event Coordinator Lead replaces auto-assignment with an unassigned queue; T-14 is retired and T-15 amended (C-69, T-70). E03-S01, which delivered auto-assignment, stays Done; the queue is new stories. The Safety Officer gates the event between Planning and Confirmed through a new Safety Review status; this placement is interim and is the first Q&A question (C-70, T-71, O-39).
+
+The customer Q&A that would resolve the document's ambiguities may fall after Sprint 3 planning. T-73 records the team's process: write the stories now against recorded defaults, carry every ambiguity as O-20 to O-44 with its default and its Q&A question, tag dependent criteria "(assumes O-xx)", and pull into Sprint 3 first the stories with no High-priority open item. T-74 applies the Week 7 guide's three scenarios: a Done story stays Done and new behaviour on it is a new story; an incomplete story is updated in place; a story is reopened only when an original criterion turns out unsatisfied, which no Week 7 change does. Each of C-65 to C-70 is classified as new requirement, clarification or correction in its row.
+
+Release 1 grows beyond 47 stories and 155 points. The new story count, estimates and sprint placement are set in the backlog PR that follows this one; the architecture, C4 model, user flows, database schema and ADR-003, ADR-007, ADR-009 and ADR-012 all change and are handled in the architecture PR.
 
 ## What changed in version 5
 
@@ -44,11 +62,11 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 ## How to read the reference codes
 
-C-01 to C-64 — customer clarifications, taken verbatim from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file.
+C-01 to C-70 — customer clarifications. C-01 to C-64 are taken verbatim from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, verbatim, in document order.
 
-T-01 to T-50 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-74 — team decisions, each naming the clarification it follows from or the gap it closes.
 
-O-01 to O-19 — questions still open, or closed with the answer recorded against them.
+O-01 to O-44 — questions still open, or closed with the answer recorded against them. O-20 to O-44 carry the default each Week 7 story is written to and the question to put to the customer.
 
 B-01 to B-11 — boundary rulings from the story overlap audit and the test-case audit.
 
@@ -56,7 +74,7 @@ B-01 to B-11 — boundary rulings from the story overlap audit and the test-case
 
 Every acceptance criterion uses these names and no others.
 
-Draft → Submitted → Under Review → Approved → Planning → Confirmed → Completed
+Draft → Submitted → Under Review → Approved → Planning → Safety Review → Confirmed → Completed
 
 Under Review ↔ Awaiting Clarification (E03-S02, returns to Under Review when the Organiser responds)
 
@@ -66,9 +84,13 @@ Planning or Confirmed → Cancelled (E10-S04, terminal and read-only)
 
 Confirmed → Planning (E08-S04, manual reversion only, never automatic — confirmed again by C-61)
 
-Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review. E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. E08-S03 sets Confirmed. E08-S05 sets Completed. E10-S04 sets Cancelled.
+Planning → Safety Review (the Coordinator submits for review once every venue and technical arrangement is confirmed; added in version 6 by T-71 for C-70)
 
-This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14.
+Safety Review → Confirmed (Safety Officer approves) or Safety Review → Planning (Safety Officer rejects or requests changes, with a mandatory reason; never cancels). Interim placement pending O-39.
+
+Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review (from version 6 the Event Coordinator Lead assigns from the unassigned queue, T-70). E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. The new Safety Review stories in E08 set Safety Review and, on approval, Confirmed; E08-S03's confirmation checks become the precondition for submitting to review. E08-S05 sets Completed. E10-S04 sets Cancelled.
+
+This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14. Safety Review is the team's interim name for the stage C-70 places before "preparation"; O-39 asks the customer to confirm the placement.
 
 
 ## Section files

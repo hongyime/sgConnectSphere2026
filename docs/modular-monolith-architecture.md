@@ -15,6 +15,8 @@ flowchart TB
         VS[Venue Staff]
         TS[Technical Support Staff]
         AT[Attendee]
+        LD[Event Coordinator Lead]
+        SO[Safety Officer]
     end
 
     ACCESS[ConnectSphere Access]
@@ -24,6 +26,8 @@ flowchart TB
     VS --> ACCESS
     TS --> ACCESS
     AT --> ACCESS
+    LD --> ACCESS
+    SO --> ACCESS
 
     subgraph ENTRY["2. Shared application entry"]
         direction TB
@@ -106,7 +110,7 @@ flowchart TB
 
 | Layer | Component | Main responsibility |
 |---|---|---|
-| User access | React Web Application | Provides a shared interface for all five user roles. |
+| User access | React Web Application | Provides a shared interface for all seven user roles. |
 | Application entry | API Controllers | Receives REST/JSON requests and routes them into the application. |
 | Security | Identity and Access Control | Authenticates users and retrieves their role and organisation context. |
 | Security | Role and Action Router | Allows users to access only the actions permitted for their role. |
@@ -130,6 +134,8 @@ flowchart TB
 | Venue Staff | Identity and Access Control, Venue and Booking, Event Lifecycle, Notification Dispatcher |
 | Technical Support Staff | Identity and Access Control, Equipment and Support, Event Lifecycle, Notification Dispatcher |
 | Attendee | Identity and Access Control, Attendee Registration, Event Lifecycle, Notification Dispatcher |
+| Event Coordinator Lead | Identity and Access Control, Event Lifecycle (unassigned queue, assignment, reassignment, oversight), Notification Dispatcher |
+| Safety Officer | Identity and Access Control, Event Lifecycle (Operational Safety Check), Venue and Booking and Equipment and Support (read-only, for the factors), Notification Dispatcher |
 
 ## Architectural interpretation
 
