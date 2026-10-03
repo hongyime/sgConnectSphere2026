@@ -10,7 +10,10 @@ deploy status.
 Vercel builds automatically on:
 
 - Every push to `main` (production deployment).
-- Every push to any branch that has an open PR (preview deployment).
+- Every push to a branch with an open, non-draft PR (preview deployment).
+  Drafts do not deploy; the first preview is built when the PR is marked
+  ready for review. Documentation, tooling and `.agents/` changes never
+  deploy (decision 0010).
 
 The result surfaces in GitHub as a `Vercel` status check on the commit
 and a bot comment on the PR with a preview URL. A red `Vercel` status

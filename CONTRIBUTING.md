@@ -106,7 +106,9 @@ A product backlog item is considered done only when all of these conditions are 
 
 - Acceptance criteria stated in the user story are satisfied.
 - Automated tests pass, including unit, integration, or end-to-end coverage where
-  relevant to the change.
+  relevant to the change. Acceptance criteria that involve persistence or
+  interactions between features are evidenced by real-database or end-to-end
+  runs, labelled as such in the PR; mocked tests alone do not satisfy them.
 - Manual verification passes where the story needs human UI or workflow checking.
 - Code has been peer-reviewed by at least one other developer.
 - Peer review was requested only after the PR was review-ready: no merge
