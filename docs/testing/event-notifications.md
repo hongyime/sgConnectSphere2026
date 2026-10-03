@@ -42,8 +42,8 @@ booking, equipment, cancellation or waitlist business screens exist.
 
 The older routing table in `docs/plans/sprint-2-sequencing.md` routes booking
 outcomes to Organiser and Coordinator; newer T-64 routes them only to Coordinator.
-Jira SCRUM-75 has not yet incorporated all of T-64's clarified routing. Follow the
-approved canonical matrix as instructed. Older product material mentioning sessions
+Jira SCRUM-75 now incorporates T-64 and correctly remains In Progress. Follow the
+approved canonical matrix. The earlier Jira-sync gap is resolved. Older product material mentioning sessions
 is obsolete for this implementation; current schema and hooks are event-based.
 No fallback from `venue_bookings.decided_by` to Venue Staff assignment is allowed.
 No new business-rule assumptions, migrations or production configuration changes.
@@ -82,7 +82,7 @@ also exercises a real status-repository notification (TC_E11S01_01).
 
 ## PR #143 review revision
 
-This local revision integrates main's PR #141 coordinator assignment, audit and
+Historical 2026-09-27 review revision (subsequently merged as PR #143) integrates PR #141 coordinator assignment, audit and
 outbox fixes, including its existing migration 0008 unchanged. No new migration.
 Resolved conflicts preserve both continuity histories and both test commands;
 the plan drops obsolete pending tasks for assignment and inbox integration, and
@@ -106,9 +106,9 @@ Follow-up: retire or align the legacy Organiser notification read path in
 all-role recipient-history contract. Eventless filtering and the result cap now
 agree; broader authorization changes and pagination are outside this security fix.
 
-Changes remain local until the user authorizes pushing. CI success on f379d6d
-is historical evidence only; do not tick the final-head checks item before new
-remote CI passes. The hosted postplan documents this distinction.
+The revision was subsequently published and merged in PR #143. The following
+run results and postplan describe that historical revision, not the current
+working tree. Fresh results belong in a new T-65 execution record.
 
 ### Review-revision checks (2026-09-27)
 
@@ -132,5 +132,73 @@ Only the disposable local database was migrated; no live schema or email changed
 
 Postplan for this local review revision: https://0lympnguubta.postplan.dev (linked on PR #143).
 `python scripts/check.py` passed with 45 tooling tests; the postplan HTML checker
-and desktop/mobile visual inspection passed. Remote checklist now identifies
-the unpublished revision and leaves final-head checks unchecked.
+and desktop/mobile visual inspection passed. That postplan describes the then-unpublished revision; PR #143 is now merged.
+
+## Current dependency review (2026-10-02)
+
+Reviewed Jira, GitHub main 1780b3c, current source and live Supabase metadata.
+E11-S01 / SCRUM-75 remains In Progress. No E11 runtime changes are needed in this
+increment: the newly available producers already integrate the shared writer.
+
+| Story | Needed notification behaviour | Jira | Implementation / PR | Integrate now? | Remaining blocker |
+| --- | --- | --- | --- | --- | --- |
+| E03-S02 / SCRUM-33 | Clarification questions and responses | In Progress | #163 merged; clarification.ts uses applyEventStatusChange/writeEventNotification | Already integrated | Frontend SCRUM-125/126 belongs to E03 |
+| E03-S03 / SCRUM-34 | Approval/rejection with safe decision content | In Progress | #174 merged; decision.ts uses the same transactional writer | Already integrated | Frontend SCRUM-132/133 belongs to E03 |
+| E06-S03 / SCRUM-47 | Pending booking request to responsible staff | To Do | Hook only, no operational request caller | No | Request transaction and venue assignments |
+| E06-S04 / SCRUM-48 | Booking decision to Coordinator | To Do | Hook only, no operational decision caller | No | Decision transaction |
+| E07-S04/S05 / SCRUM-54/55 | Equipment result and shortfall | To Do | Typed hook exists, operational callers absent | No | Reservation/unavailability workflow |
+| E07-S06/S07 / SCRUM-56/57 | Assigned Technical Staff | To Do | Tables and event-based recipient query exist | Selector already implemented | Support-request/assignment management |
+| E08-S03/S04/S05 / SCRUM-60/61/62 | Confirm, revert, complete | To Do | Generic status hooks exist | No new caller | Readiness, timing and publication workflow |
+| E09-S01 / SCRUM-63 | Registered membership | To Do | Table/selector exist, service scaffold | Selector already implemented | Real registration action |
+| E09-S04/S05 / SCRUM-66/67 | Waitlist membership and released-place invitations | To Do | Selector/place_released hook exist | No new caller | Joining, claiming and withdrawal transactions |
+| E10-S01/S02 / SCRUM-70/71 | Approved effective arrangement changes | To Do | Existing permitted direct edits notify; full change workflow absent | Direct edits already integrated | Change approval, classification and publication |
+| E10-S03 / SCRUM-72 | Reschedule | To Do | Arrangement hook exists | No new caller | Reconfirmation/rescheduling transaction |
+| E10-S04 / SCRUM-73 | Cancellation before recipient links release | To Do | Before/after hook contract tested | No new caller | Atomic cancellation/release workflow |
+| E10-S05 / SCRUM-74 | Lost/replacement venue | To Do | #151 maintenance-block Coordinator alert already merged | Partial producer already integrated | Full at-risk/replacement workflow |
+| Explicit venue-to-staff assignment | Responsible staff at old/new venues | No dedicated ticket found | Still absent from live schema | No | E05/E06 owners must supply relationship and trusted resolver |
+
+E03-S01 is now Done: #141 backend and #147 frontend are merged. E05-S03 is
+Done: #134/#136 merged. E05-S04 is marked Done although its frontend pilot
+SCRUM-120 is To Do; #151 supplies a usable backend, not full frontend evidence.
+No E06-S01/E11-S01 work is duplicated by the only currently open PRs: #182
+(shared Inter font loading) and #183 (screen inventory).
+
+### Existing producer and test evidence
+
+- `eventLifecycle/clarification.ts`: questions/answers, status, audit and one
+  recipient notification/email job commit together; actor excluded.
+  `clarification.integration.test.ts` covers notification content and rollback.
+- `eventLifecycle/decision.ts`: approval/rejection uses the shared status path;
+  the targeted Organiser notice shares the audit ID so the generic notice does
+  not duplicate it. `decision.integration.test.ts` covers notices and rollback.
+- `venueBooking/blocks.ts`: merged maintenance-block flow uses
+  writeEventNotification for affected Coordinators; it does not implement the
+  complete E10-S05 replacement workflow. Covered by venueBlocks.integration.test.ts.
+- Existing submission/reassignment, direct-edit, inbox, eventless-token isolation
+  and delivery-failure suites remain applicable. Do not recreate these producers.
+
+### Current work boundary
+
+Unblocked work is record reconciliation and regression verification of the merged
+producers. No additional E11 business caller is missing and unblocked. Venue Staff
+assignment and the table's unfinished flows remain owning-story work. Deployment
+owner verification of relay/worker scheduling and real mailbox receipt is still
+missing; local intercepted provider tests are not that evidence.
+
+Live schema remains event-based: notifications has event_id and no session_id;
+event_registrations and tech_staff_assignments support existing selectors. The
+live migration ledger stops at 0008 although repository 0009_keepalive_logs.sql
+exists; no live migration or configuration changes were made here.
+
+## Fresh verification (2026-10-02)
+
+[Execution session](runs/20261002-161552-jininggg-full-regression.md) records the actual commands, outcomes,
+base commit and working-tree qualification. Frontend 201, selected PostgreSQL
+51, email/provider 26, Redis 2, runtime 15, venue browser 8 and real auth/inbox
+browser 10 checks passed. Backend units, typecheck/build and repository hygiene
+also passed. Provider tests do not prove deployed mailbox delivery.
+
+[Final venue browser rerun](runs/20261002-161841-jininggg-frontend-e2e.md): 8 passed after the final copy/fixture corrections.
+
+Publication refresh: main f0c4264 now includes font PR #182. The open-PR
+snapshot above predates that merge; only screen-inventory PR #183 remains open.

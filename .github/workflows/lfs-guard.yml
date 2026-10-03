@@ -5,13 +5,16 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: lfs-guard-${{ github.event.pull_request.number || github.ref }}
+  group: lfs-guard-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:

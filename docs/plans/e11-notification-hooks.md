@@ -153,3 +153,18 @@ cancellation after withdrawal). Retiring or unifying that endpoint requires an
 explicit historical/tenant-access decision and is a follow-up, not a silent change
 to either permission model. Pagination beyond the consistent 100-result cap is
 also deferred. PR #141's assignment integration is preserved from current main.
+
+## Current integration update (2026-10-02)
+
+The earlier merge-coordination table is historical. #141, #142 and #143 are
+merged, as are Coordinator frontend #147, clarification backend #163, decision
+backend #174 and maintenance-block backend #151. Clarification and decisions
+already call the shared transactional writer with the audit/change ID; they do
+not need a second E11 integration. Maintenance blocks already produce targeted
+Coordinator notices. Their frontend/full-story boundaries remain separate.
+
+Jira SCRUM-75 includes T-64 and remains In Progress. See the current dependency
+table in [implementation evidence](../testing/event-notifications.md#current-dependency-review-2026-10-02)
+for owning stories, Jira statuses and remaining callers. The absent explicit
+venue-to-staff relationship and deployed delivery evidence remain unresolved.
+No notification runtime change is made by the E06 presentation/record refresh.
