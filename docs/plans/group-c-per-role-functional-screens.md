@@ -1,6 +1,6 @@
 # Group C plan — per-role functional screens
 
-> Scope correction, 2 October 2026 (T-66): Admin screens in this historical
+> Scope correction, 2 October 2026 (T-75): Admin screens in this historical
 > mock-screen plan are prototypes, not a Release 1 role or an E14-S02 delivery
 > requirement. Event Coordinators use the existing event Activity log; testers
 > inspect denial/deactivation records in the test database. Global Administrator

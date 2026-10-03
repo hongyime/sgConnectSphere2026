@@ -57,9 +57,9 @@ scope reduction was invented by this audit.
 ## E14-S02 follow-up — 2 October 2026
 
 The Sprint 1 audit above is historical and its commitment, counts and observed
-state remain unchanged. T-66 resolves the activity-log reader as an Event
+state remain unchanged. T-75 resolves the activity-log reader as an Event
 Coordinator viewing an event under existing permissions, with denial and
-deactivation evidence checked in the test database. T-67 transfers booking
+deactivation evidence checked in the test database. T-76 transfers booking
 approval/rejection/release logging to E06-S04 and carries the remaining
 E14-S02 / SCRUM-86 work into Sprint 3 at the original 3-point estimate.
 The earlier reader ambiguity and booking dependency caused delay; they are now
@@ -77,7 +77,7 @@ reported `SCRUM-86: transitioned In Progress -> Done` at 14:16 UTC.
 The live issue was confirmed Done and restored to In Progress on the same date;
 Jira confirmed the resulting status. This corrects progress using already
 merged evidence under `docs/source-of-truth.md`. Assignee, estimate and sprint
-were not changed; the T-66/T-67 scope/planning reconciliation still waits for
+were not changed; the T-75/T-76 scope/planning reconciliation still waits for
 [PR #192](https://github.com/hongyime/sgConnectSphere2026/pull/192) to merge.
 
 ## Remaining Release 1 roadmap

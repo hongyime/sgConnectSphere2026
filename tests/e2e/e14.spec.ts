@@ -1,12 +1,12 @@
 import { test } from '@playwright/test';
 
-// E14: four pending specifications and three retired IDs (T-66/T-67).
+// E14: four pending specifications and three retired IDs (T-75/T-76).
 // Source: docs/testing/cases/E14.md. No case is enabled by this scope decision.
 
 test.describe("E14-S02", () => {
 
   /**
-   * AC: E14-S02 - Scenario 1 (Status change recorded; T-66, T-67)
+   * AC: E14-S02 - Scenario 1 (Status change recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * Request "Annual Tech Summit" has status "Under Review"; coordinator_1@connectsphere.com is an Event Coordinator permitted to view and approve it
@@ -24,7 +24,7 @@ test.describe("E14-S02", () => {
   });
 
   /**
-   * AC: E14-S02 - Scenario 2 (Access denial recorded; T-66, T-67)
+   * AC: E14-S02 - Scenario 2 (Access denial recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * organiser_a@clienta.com is linked to Client A; event EVT-B01 belongs to Client B; the tester has read access to a controlled test database
@@ -42,7 +42,7 @@ test.describe("E14-S02", () => {
   });
 
   /**
-   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 4 by T-67; see TC_E06S04_04)
+   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 5 by T-76; see TC_E06S04_05)
    * Sprint: 1
    * Pre-conditions:
    * A booking request for Venue Z is pending
@@ -51,14 +51,14 @@ test.describe("E14-S02", () => {
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Approved"), the affected booking/event, and a timestamp
    */
-  test.skip("TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 4 by T-67] Verify that an approved venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
-    // 1. Do not execute this retired case; use TC_E06S04_04 under E06-S04 Scenario 4.
+  test.skip("TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that an approved venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+    // 1. Do not execute this retired case; use TC_E06S04_05 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
     void page;
   });
 
   /**
-   * AC: E14-S02 - Scenario 4 (Deactivation recorded; T-66, T-67)
+   * AC: E14-S02 - Scenario 4 (Deactivation recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * organiser_a@clienta.com is signed in; the tester has read access to a controlled test database
@@ -75,7 +75,7 @@ test.describe("E14-S02", () => {
   });
 
   /**
-   * AC: E14-S02 - Scenario 5 (Log entries immutable; T-66, T-67)
+   * AC: E14-S02 - Scenario 5 (Log entries immutable; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * A log entry exists: Event = Annual Tech Summit, Action = "Status changed to Approved", Actor = coordinator_1@connectsphere.com (created in TC_E14S02_01 or an equivalent independent fixture in a disposable test database)
@@ -94,7 +94,7 @@ test.describe("E14-S02", () => {
   });
 
   /**
-   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 4 by T-67; see TC_E06S04_05)
+   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 5 by T-76; see TC_E06S04_06)
    * Sprint: 1
    * Pre-conditions:
    * A booking request for Venue Z is pending
@@ -103,14 +103,14 @@ test.describe("E14-S02", () => {
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Rejected"), the affected booking/event, and a timestamp
    */
-  test.skip("TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 4 by T-67] Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
-    // 1. Do not execute this retired case; use TC_E06S04_05 under E06-S04 Scenario 4.
+  test.skip("TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+    // 1. Do not execute this retired case; use TC_E06S04_06 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
     void page;
   });
 
   /**
-   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 4 by T-67; see TC_E06S04_06)
+   * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 5 by T-76; see TC_E06S04_07)
    * Sprint: 1
    * Pre-conditions:
    * Venue Z has a confirmed booking for event "Annual Tech Summit"
@@ -119,8 +119,8 @@ test.describe("E14-S02", () => {
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Released"), the affected booking/event, and a timestamp
    */
-  test.skip("TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 4 by T-67] Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
-    // 1. Do not execute this retired case; use TC_E06S04_06 under E06-S04 Scenario 4.
+  test.skip("TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+    // 1. Do not execute this retired case; use TC_E06S04_07 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
     void page;
   });

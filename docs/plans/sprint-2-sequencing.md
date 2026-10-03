@@ -18,7 +18,7 @@ parallel. Each wave's dependencies are satisfied by the previous wave.
 | E01-S04 SCRUM-19 | 1 | — | Amend backlog AC per T-61; rename TC_E01S04_01; mark Done |
 | E02-S01 SCRUM-26 | 5 | — | Write `eventLifecycle.integration.test.ts` (SCRUM-110); close SCRUM-109 local-dev side |
 | E02-S02 SCRUM-27 | 3 | — | Retrospective code review by any teammate (not Bryan, not Aaron) |
-| E14-S02 SCRUM-86 | 3 | Le Xin | Carried to Sprint 3 on 2 October (T-66/T-67). Verify Coordinator reading on the existing event Activity log, denial/deactivation database entries and immutability under TC_E14S02_01/02/04/05. Booking logging now belongs to E06-S04. |
+| E14-S02 SCRUM-86 | 3 | Le Xin | Carried to Sprint 3 on 2 October (T-75/T-76). Verify Coordinator reading on the existing event Activity log, denial/deactivation database entries and immutability under TC_E14S02_01/02/04/05. Booking logging now belongs to E06-S04. |
 
 The table preserves the original Sprint 2 carryover commitment. The 2 October
 scope decision schedules the remaining E14-S02 work in Sprint 3 without changing

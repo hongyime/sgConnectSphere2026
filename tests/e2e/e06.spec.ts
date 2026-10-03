@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E06 - 25 cases. Source: docs/testing/cases/E06.md; T-67 transfers three booking-log specifications.
+// E06 - 25 cases. Source: docs/testing/cases/E06.md; T-76 transfers three booking-log specifications.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E06-S01", () => {
@@ -371,7 +371,7 @@ test.describe("E06-S04", () => {
   });
 
   /**
-   * AC: E06-S04 - Scenario 4 (Booking decision recorded; T-66, T-67)
+   * AC: E06-S04 - Scenario 5 (Booking decision recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * A booking request for Venue Z is pending
@@ -380,9 +380,9 @@ test.describe("E06-S04", () => {
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Approved"), the affected booking/event, and a timestamp
    *
-   * Transferred from TC_E14S02_03 by T-67 on 2 October 2026.
+   * Transferred from TC_E14S02_03 by T-76 on 2 October 2026.
    */
-  test.fixme("TC_E06S04_04 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+  test.fixme("TC_E06S04_05 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. As Venue Staff, approve the booking request
     // 2. Sign in as the Event Coordinator permitted to view the affected event
     // 3. Open the event Activity log
@@ -391,7 +391,7 @@ test.describe("E06-S04", () => {
   });
 
   /**
-   * AC: E06-S04 - Scenario 4 (Booking decision recorded; T-66, T-67)
+   * AC: E06-S04 - Scenario 5 (Booking decision recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * A booking request for Venue Z is pending
@@ -400,9 +400,9 @@ test.describe("E06-S04", () => {
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Rejected"), the affected booking/event, and a timestamp
    *
-   * Transferred from TC_E14S02_06 by T-67 on 2 October 2026.
+   * Transferred from TC_E14S02_06 by T-76 on 2 October 2026.
    */
-  test.fixme("TC_E06S04_05 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+  test.fixme("TC_E06S04_06 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. As Venue Staff, reject the booking request with reason "Venue unavailable for maintenance"
     // 2. Sign in as the Event Coordinator permitted to view the affected event
     // 3. Open the event Activity log
@@ -411,7 +411,7 @@ test.describe("E06-S04", () => {
   });
 
   /**
-   * AC: E06-S04 - Scenario 4 (Booking decision recorded; T-66, T-67)
+   * AC: E06-S04 - Scenario 5 (Booking decision recorded; T-75, T-76)
    * Sprint: 3
    * Pre-conditions:
    * Venue Z has a confirmed booking for event "Annual Tech Summit"; the Coordinator is authorised to cancel that event and the E10-S04 cancellation/release workflow is available
@@ -419,11 +419,11 @@ test.describe("E06-S04", () => {
    * Venue: Venue Z | Action: Release Booking | Event: Annual Tech Summit
    * Expected result:
    * An entry is recorded with the actor, action ("Booking Released"), the affected booking/event, and a timestamp
-   * Transferred from TC_E14S02_07 by T-67 on 2 October 2026.
+   * Transferred from TC_E14S02_07 by T-76 on 2 October 2026.
    *
    * ## E06-S05
    */
-  test.fixme("TC_E06S04_06 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
+  test.fixme("TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. As the authorised Coordinator, cancel the event through E10-S04 so its confirmed Venue Z booking is released
     // 2. Sign in as the Event Coordinator permitted to view the affected event
     // 3. Open the event Activity log

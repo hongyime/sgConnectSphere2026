@@ -146,7 +146,7 @@
 - 2026-10-02: PR #175 CI found CodeQL incomplete-sanitization in #181 date-presence replace call. Replaced it with a direct Boolean check of the two source date values; focused 16 form tests, root typecheck and 76 tooling tests pass. Coverage regenerated unchanged. Final CI and peer approval remain required.
 
 - 2026-10-02: Resumed the interrupted E14-S02 scope change after reading the
-  originating OpenCode session. Recorded T-66/T-67, reconciled both backlog
+  originating OpenCode session. Recorded T-75/T-76, reconciled both backlog
   views, retired the three old booking-log cases with consecutive E06-S04
   replacements, and regenerated exports plus the compatibility inventory.
   Sprint 3 carryover preserves Sprint 1 history. No Administrator role, global

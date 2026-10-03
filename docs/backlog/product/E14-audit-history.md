@@ -29,7 +29,7 @@ _No checklist recorded._
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: T-04, T-66, T-67
+- **BDR references**: T-04, T-75, T-76
 - **Owner**: Le Xin
 
 ### User story
@@ -46,7 +46,7 @@ Given an event status changes When the change completes Then an entry is recorde
 
 Given a user is denied access to an event or screen When the refusal occurs Then an entry is recorded with the user, the target and the time
 
-#### Scenario 3 — Transferred to E06-S04 Scenario 4 (T-67)
+#### Scenario 3 — Transferred to E06-S04 Scenario 5 (T-76)
 
 Booking approval, rejection and release logging is accepted under E06-S04. This historical scenario number is retained for traceability and is not an E14-S02 completion criterion.
 
@@ -69,7 +69,7 @@ Given an activity log entry exists When any user attempts to edit or delete it T
 
 ### Planning and reader scope
 
-T-66 and T-67 were approved on 2 October 2026. The original Sprint 1
+T-75 and T-76 were approved on 2 October 2026. The original Sprint 1
 commitment was 3 points; the unfinished story carries through Sprint 2 into
 Sprint 3 without rewriting that commitment or changing its estimate. The
 remaining acceptance criteria are Scenarios 1, 2, 4 and 5. Their implementation,

@@ -66,9 +66,9 @@ skipped or fixme test declarations change. Reconcile catalogue changes with that
 legacy audit input before claiming the generated inventory covers a new case set.
 The 2026-09-27 E11 routing update refreshed that compatibility input from the
 regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
-The 2 October T-66/T-67 scope update regenerates the same-day `CAA 021026`
+The 2 October T-75/T-76 scope update regenerates the same-day `CAA 021026`
 workbook under the rule above and refreshes the compatibility input. It retains
-TC_E14S02_03/_06/_07 as retired history and adds TC_E06S04_04/_05/_06. The
+TC_E14S02_03/_06/_07 as retired history and adds TC_E06S04_05/_05/_06. The
 coverage generator still counts retired catalogue rows as scaffold/skip; its
 256-row total is a strict inventory, not 256 current acceptance obligations.
 

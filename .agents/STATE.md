@@ -13,10 +13,10 @@
   estimate or sprint change. PR #192 remains unmerged for the story owner's review.
 
 - 2026-10-02: E14-S02 scope decisions on `docs/e14-s02-activity-log-scope`.
-  T-66 permits Coordinator reading through the existing event Activity log
+  T-75 permits Coordinator reading through the existing event Activity log
   within existing event access; denial/deactivation verification uses the test
-  database. Administrator viewing is Release 2. T-67 moves booking approval,
-  rejection and release logging to E06-S04 Scenario 4 and carries the remaining
+  database. Administrator viewing is Release 2. T-76 moves booking approval,
+  rejection and release logging to E06-S04 Scenario 5 and carries the remaining
   E14-S02 criteria (1/2/4/5) into Sprint 3. Original commitments and estimates
   remain unchanged. Old booking TC IDs are retired with E06 replacements;
   backlog/test/ADR/BDR exports and the compatibility inventory are regenerated.

@@ -102,14 +102,14 @@ are unchanged; missing workflow and inbox acceptance remains open.
 
 ## 2 October 2026: Activity-log reader, booking ownership and Sprint 3 carryover
 
-Product-owner approval is recorded in T-66 and T-67. Event Coordinators use the
+Product-owner approval is recorded in T-75 and T-76. Event Coordinators use the
 existing event Activity log within existing event permissions; testers check
 denial and deactivation rows in a controlled test database. No Administrator
 role or global audit viewer is added to Release 1.
 
 Booking approval, rejection and release logging moves from E14-S02 Scenario 3
-to E06-S04 Scenario 4. TC_E14S02_03/_06/_07 remain as retired references to
-TC_E06S04_04/_05/_06. Remaining E14-S02 Scenarios 1, 2, 4 and 5 carry into
+to E06-S04 Scenario 5. TC_E14S02_03/_06/_07 remain as retired references to
+TC_E06S04_05/_05/_06. Remaining E14-S02 Scenarios 1, 2, 4 and 5 carry into
 Sprint 3; their completion is independent of E06-S04. Original commitments and
 estimates remain historical evidence. Both backlog views, acceptance cases,
 active scaffold files, ADR-009 and derived exports are reconciled in this change.
