@@ -1,10 +1,7 @@
 # Agent Journal
 
-- 2026-10-03: E05-S03/S04 test cases name data the seed does not have
-  (Grand Ballroom, Riverside Hall, coordinator_1, venue_staff_1). Following
-  them on the real stack needs a seeded equivalent per name, recorded in
-  Remarks. Adding coordinator_1 to the seed would change auto-assignment
-  (fewest active events), so raise seed changes with the team first.
+- 2026-10-03: E05 test cases name data not in the seed; use seeded
+  equivalents and list them in the record's Remarks.
 
 - 2026-10-03: Review and merge of PR #193 (SCRUM-34 decide screens) on
   Bryan's behalf from an isolated detached checkout: head 3dc0107 checked
