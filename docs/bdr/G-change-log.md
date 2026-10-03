@@ -120,7 +120,7 @@ Added a Safety Review status between Planning and Confirmed (C-70, T-71) as the 
 
 Extended the role model to seven roles (T-72). Both new roles are pre-seeded under C-57; ADR-012 holds.
 
-Applied the Week 7 "Managing Changes" guide (T-74). Each change is classified in its section A row (five new requirements, one correction plus new requirement). Done stories touched by a change (E03-S01, E05-S01, E05-S03, E01-S01, E01-S02) stay Done and the new behaviour becomes new stories; To Do stories are updated in place; E05-S04, in the Sprint 2 sprint backlog, is left alone and corrected by a new story. Estimation rule recorded in T-73: new stories estimated at planning, changed To Do stories re-estimated only if materially different, Done stories never, in-flight stories for remaining work.
+Applied the Week 7 "Managing Changes" guide (T-74). Each change is classified in its section A row (five new requirements, one correction plus new requirement). Done stories touched by a change (E03-S01, E05-S01, E05-S03, E06-S01, E03-S05, E01-S01, E01-S02, E01-S11) stay Done and the new behaviour becomes new stories; To Do stories are updated in place; E05-S04, in the Sprint 2 sprint backlog, is left alone and corrected by a new story. Estimation rule recorded in T-73: new stories estimated at planning, changed To Do stories re-estimated only if materially different, Done stories never, in-flight stories for remaining work.
 
 Process
 
