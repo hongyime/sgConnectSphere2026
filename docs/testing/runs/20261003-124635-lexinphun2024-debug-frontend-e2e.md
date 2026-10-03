@@ -5,6 +5,7 @@ scope: frontend/e2e
 environment: local
 run_type: manual
 test_case_version: "021026"
+database: real                     # mocked | real | none
 commit: c6c9aab
 ---
 
