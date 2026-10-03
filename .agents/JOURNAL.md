@@ -1,5 +1,17 @@
 # Agent Journal
 
+- 2026-10-03: Review and merge of PR #193 (SCRUM-34 decide screens) on
+  Bryan's behalf from an isolated detached checkout: head 3dc0107 checked
+  against E03-S03 and its backend contract, no blocking findings; focused
+  component run 52/52 after restoring the worktree's frontend dependency
+  link; approval pullrequestreview-5394108313 cites the run; squash-merged as
+  c6c9aab at 00:16 +08:00. The execution record
+  (the 00:14:04 frontend-vitest file under docs/testing/runs/) was left
+  uncommitted in that checkout and is salvaged in #204; the checkout was then
+  removed during the 3 October worktree clean-up along with the merged
+  #182/#183/#191 checkouts and the clean, pushed #185/#187/#192/#194/#195/#196
+  ones.
+
 - 2026-10-03: Collapsed the Week 7 stack (#197-#203) into one PR after
   working out that `dismiss_stale_reviews_on_push` plus squash merges plus the
   shared `.agents/STATE.md` prepend meant every merge invalidated the next
