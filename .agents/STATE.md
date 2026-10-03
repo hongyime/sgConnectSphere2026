@@ -30,6 +30,12 @@
   do not merge or close the business story as part of this scope update.
   Jira scope/planning reconciliation follows merge. Implementation and peer
   verification remain the story owner's work; other worktrees are untouched.
+- 2026-10-03: Merge queue live. `configure_github.py --apply` run on main
+  `1956509` after #194/#195/#196/#204/#205 merged (04:19-04:21Z, Aaron's
+  approvals); read-back shows `merge_queue` SQUASH/ALLGREEN/30 min on ruleset
+  24377800. Decision 0012 Status updated on `docs/merge-queue-live`, the first
+  PR through the queue. Remaining open PRs #185/#187/#192 (Codex) are DIRTY
+  against the new main and need conflict resolution, not a branch update.
 - 2026-10-03: Week 7 backlog, cases and architecture consolidated on
   `docs/week7-changes` (one PR, base main) superseding the stacked #197-#203:
   the live ruleset dismisses approvals on every push and squash-merging a
