@@ -1,24 +1,5 @@
 # Agent Journal
 
-- 2026-10-02: Week 7 Customer Changes PDF (six mandatory Release 1 changes:
-  venue setup/turnaround buffers, venue unavailable after booking, several
-  venues per event, expiring tentative holds, Event Coordinator Lead role with
-  unassigned queue, Safety Officer gate). Checked each against the lecture
-  process (Wk2 user stories/AC/INVEST, Wk3 refinement any time but sprint scope
-  fixed, review returns not-Done to backlog) and the repo's downstream-flow
-  rule (source-of-truth: BDR and backlog Markdown first, Jira last). Four
-  changes reverse earlier customer answers (C-01/C-16/C-60 no hold expiry,
-  C-18/C-38 no turnaround, C-41/C-55 auto-assign, C-56 reassignment actor);
-  earlier rows annotated rather than edited. Change 6's "preparation" has no
-  status today; team placed a Safety Review status before Confirmed and made
-  that the first Q&A question. Change 2 conflicts with E05-S04 Scenario 2
-  (refuses blocks over confirmed bookings), which is mid-sprint, so the delta
-  becomes a new E05 story. Change 3 retires T-20. Fixed five pre-existing
-  blank lines splitting the section B table. Verification:
-  python scripts/check.py in the worktree; docx regenerated with
-  .venv-tools\Scripts\python.exe scripts/export_adr_bdr_docx.py (ADR copy
-  discarded as unchanged).
-
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch so #183 can merge. Conflict was only the agent notes; kept both. Verification: python scripts/check.py. SCRUM-118.

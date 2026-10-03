@@ -1,21 +1,5 @@
 # Agent State
 
-- 2026-10-02: Week 7 Customer Changes recorded in the BDR on
-  docs/week7-customer-changes-bdr (worktree, off main 139217e). C-65 to
-  C-70 verbatim, T-66 to T-73, O-20 to O-44 with defaults and Q&A wording,
-  README version 6 with Safety Review inserted between Planning and Confirmed
-  (interim, O-39), E05-S05 and E10-S05 returned, G change log, BDR docx CAA
-  031026 regenerated and registered in source-of-truth (first export was 021026; the post-midnight rerun superseded it before merge). Docs only; no backlog
-  Markdown, test cases, ADRs or diagrams touched yet. Those are the next PRs in
-  order: roles foundation (T-72), then one PR per change for backlog + cases,
-  then architecture. Sprint 2 is still open; E05-S04 AC deliberately not edited
-  (T-67). The customer Q&A may not happen until the week of 9 October; T-73
-  says write now, amend after. Local feature/skeleton-templates-guide was
-  deleted after confirming #173 merged; the uncommitted .agents edits from
-  the Codex session on it are in git stash (stash@{0}, "agents-continuity-
-  edits-from-codex-session-2026-10-02"), not lost. Codex worktrees
-  (-backfill, -design, -e14, -pr182, -pr183, -pr191) untouched.
-
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
