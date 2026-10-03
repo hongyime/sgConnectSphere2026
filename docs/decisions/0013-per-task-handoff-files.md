@@ -2,6 +2,11 @@
 
 ## Status
 
+Points 2 and 3 of the Decision below are superseded by
+[decision 0014](0014-pull-requests-do-not-edit-state-or-journal.md) on
+3 October 2026: pull requests no longer edit `STATE.md` or `JOURNAL.md` at all.
+Points 1 and 4 stand.
+
 Accepted. Landed with the PR that adds `.agents/handoffs/README.md` and the
 AGENTS.md rule. No tooling change.
 
