@@ -6,15 +6,29 @@ frontend and backend code exists.
 
 Before changing files, read `README.md`, `CONTRIBUTING.md`, `docs/repository-setup.md`,
 and `.agents/STATE.md` enough to understand the current workflow and any
-in-flight work from a previous session. `.agents/STATE.md` and
-`.agents/JOURNAL.md` hold cross-session, cross-harness continuity state --
-every AI coding agent working in this repo (Claude Code, Codex, Cursor,
-OpenCode, or otherwise) reads them at the start of a task and updates them
-after any significant piece of work, so the next session -- yours or a
-teammate's, on any machine -- can resume with zero ambiguity. Do not write
-secrets, tokens, connection strings, or personal data into either file --
-reference secrets by env-var name only. Never write
-secrets, personal data, or machine-specific paths into any other committed file.
+in-flight work from a previous session, then the handoff file for the branch
+you are on, if one exists. `.agents/STATE.md` and `.agents/JOURNAL.md` hold
+cross-session, cross-harness continuity state -- every AI coding agent working
+in this repo (Claude Code, Codex, Cursor, OpenCode, or otherwise) reads them at
+the start of a task, so the next session -- yours or a teammate's, on any
+machine -- can resume with zero ambiguity.
+
+How to write to them (decision 0013, after Sprint 2 produced conflicts on these
+two files in three of four open PRs):
+
+- **Detailed notes go in a per-task file**, `.agents/handoffs/YYYYMMDD-<branch-slug>.md`,
+  created in your first commit and rewritten as often as you like. See
+  `.agents/handoffs/README.md` for what to put in it.
+- **`STATE.md` and `JOURNAL.md` are append-only summaries.** Add one entry of
+  roughly five to ten lines, newest first, in the **final commit before you
+  request review**, and in no other commit on the branch. Never rewrite or
+  delete an existing entry; the repository owner consolidates at sprint close.
+- **Resolve a conflict in either file as the union**: your entry on top, then
+  everything from `main`, nothing dropped.
+
+Do not write secrets, tokens, connection strings, or personal data into any of
+these files -- reference secrets by env-var name only. Never write secrets,
+personal data, or machine-specific paths into any other committed file.
 For product, backlog, design, testing, or Jira work, also read
 `docs/source-of-truth.md` before editing derivative Markdown, Figma notes, Jira
 issues, or scaffold files.
