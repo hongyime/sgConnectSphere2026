@@ -1,5 +1,7 @@
 # Agent State
 
+- 2026-10-03: E05-S03 / SCRUM-42 real-data click-through recorded in docs/testing/runs/20261003-124635-lexinphun2024-debug-frontend-e2e.md (5/5 PASS, Docker postgres:17 seeded, commit c6c9aab). Test cases deliberately NOT edited at the user's request; seed substitutions (Grand Ballroom->Orchid Hall, coordinator_1->coord_a, Blocked read on Maple Room) are noted in Remarks. Open, for team decision in Sprint 3: align E05-S03/S04 cases with the seed or extend the seed (a new coordinator_1 would change auto-assignment). E05-S04 real-data run waits for PR #185 (/venue/blockout is still a mock on main). E05-S04 cases say Sprint 3, story says Sprint 2.
+
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.

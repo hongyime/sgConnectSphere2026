@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-10-03: Ran the E05-S03 click-through for lexinphun2024-debug against the local real stack (frontend 5173, API 3001 with ADDITIONAL_ALLOWED_ORIGINS for 127.0.0.1:5173, Docker postgres:17 on 5433). All five cases passed with seed substitutions noted. A draft that edited the E05-S03 cases and added an Orchid Hall seed block was reverted at the user's request. Verification: python scripts/check.py.
+
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch so #183 can merge. Conflict was only the agent notes; kept both. Verification: python scripts/check.py. SCRUM-118.
