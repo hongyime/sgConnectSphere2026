@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 311 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 314 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **311**
-- Automated (explicit TC_ID in an active test title): **122** (39.2%)
+- Total test cases: **314**
+- Automated (explicit TC_ID in an active test title): **122** (38.9%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **101**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (42.4%)
-- No test yet (no test file mentions the TC_ID): **57** (18.3%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **135** (43.0%)
+- No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
 
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
-| E06 | 34 | 4 | 18 | 12 |
+| E06 | 37 | 4 | 21 | 12 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **311** | **122** | **132** | **57** |
+| **Total** | **314** | **122** | **135** | **57** |
 
 ## Case-by-case status
 
@@ -220,6 +220,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_02 - Verify that rejecting a request with a recorded reason and a suggested alternative venue should notify the Coordinator with both, allowing the |
 | `TC_E06S04_03` | E06-S04 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_03 - Verify that attempting to reject a request without recording a reason should be blocked |
 | `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ❌ none | — |
+| `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_05 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_06 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ❌ none | — |
 | `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ❌ none | — |
@@ -393,11 +396,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E14S02_01` | E14-S02 | Verify that an event status change should be recorded with the actor, action, af | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_01 - Verify that an event status change should be recorded with the actor, action, affected event, and time |
 | `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_02 - Verify that a denied access attempt should be recorded with the user, target, and time |
-| `TC_E14S02_03` | E14-S02 | Verify that an approved venue booking should be recorded with the actor, action, | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_03 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E14S02_03` | E14-S02 | [RETIRED — moved to TC_E06S04_05 by T-76] Verify that an approved venue booking  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that an approved venue booking should be recorded with the actor, action, affected reco |
 | `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_04 - Verify that an account deactivation should be recorded in the activity log |
 | `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ✅ active | backend/tests/auditLogImmutability.integration.test.ts: TC_E14S02_05: an activity log entry cannot be edited or deleted, even by the server connection; tests/e2e/e14.spec.ts: TC_E1 |
-| `TC_E14S02_06` | E14-S02 | Verify that a rejected venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time |
-| `TC_E14S02_07` | E14-S02 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
+| `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
 
 ### EXX
 

@@ -1,15 +1,22 @@
 # ADR-009 — A single audit log with a polymorphic target
 
 - **Status:** Accepted
-- **Related BDR:** T-04, C-70, T-71
+- **Related BDR:** T-04, C-70, T-71, T-75, T-76
 
 ### Context
 
-E14-S02 records event status changes, denied access attempts, venue booking decisions and account deactivations. §8f requires ConnectSphere to determine what was changed, who changed it and when. Only the first of those four is always tied to an event.
+E14-S02 records event status changes, denied access attempts and account deactivations. E06-S04 owns venue booking approval, rejection and release logging after T-76 (2 October 2026). §8f requires ConnectSphere to determine what was changed, who changed it and when. Only the first of those four is always tied to an event.
 
 ### Decision
 
 One append-only AUDIT_LOGS table with entity_type, entity_id, and a nullable event_id carried denormalised for convenience.
+
+T-75 allows Event Coordinators to read the Activity log on events they are
+already permitted to view, through the existing event page. It adds no global
+audit permission or Administrator role. Denial and account-deactivation entries
+are inspected in a controlled test database for acceptance verification.
+Administrator viewing is deferred to Release 2. T-76 changes story ownership,
+not the shared append-only storage or the immutability requirement.
 
 ### Alternatives considered
 

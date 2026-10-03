@@ -141,3 +141,19 @@ O-08, O-11, O-12, O-13, O-18 and O-19 remain open from earlier versions. O-20 to
 Downstream documents affected
 
 Backlog Markdown (release-1 and product views), acceptance test cases, the canonical status model's consumers (E03-S05, E08-S03, E08-S04, E08-S05, E01-S11), ADR-003 (buffered exclusion range), ADR-006 (hold expiry on the worker), ADR-007 and ADR-012 (seven roles), ADR-009 (safety-check audit actions), docs/db_schema.md and a new migration (user_role values, venue buffers, booking expiry, safety review), docs/c4-diagrams.md, docs/modular-monolith-architecture.md and docs/dynamic-user-flows.md (two new actors and sequences), the E11-S01 routing matrix, and the Figma role boards. Each is handled in its own follow-up PR; this version records the decisions they implement.
+
+## 2 October 2026: Activity-log reader, booking ownership and Sprint 3 carryover
+
+Product-owner approval is recorded in T-75 and T-76. Event Coordinators use the
+existing event Activity log within existing event permissions; testers check
+denial and deactivation rows in a controlled test database. No Administrator
+role or global audit viewer is added to Release 1.
+
+Booking approval, rejection and release logging moves from E14-S02 Scenario 3
+to E06-S04 Scenario 5. TC_E14S02_03/_06/_07 remain as retired references to
+TC_E06S04_05/_06/_07. Remaining E14-S02 Scenarios 1, 2, 4 and 5 carry into
+Sprint 3; their completion is independent of E06-S04. Original commitments and
+estimates remain historical evidence. Both backlog views, acceptance cases,
+active scaffold files, ADR-009 and derived exports are reconciled in this change.
+Jira reconciliation follows the merged backlog; the scope PR must not close
+SCRUM-86 automatically.

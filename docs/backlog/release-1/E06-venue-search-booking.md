@@ -134,8 +134,8 @@ Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-08, T-39, C-65, T-66
-- **Owner**:
+- **BDR references**: C-08, T-39, C-65, T-66, T-75, T-76
+- **Owner**: Le Xin
 
 ### User story
 
@@ -159,6 +159,10 @@ Given I attempt to reject without recording a reason When I confirm Then the rej
 
 Given approving a pending request would make its buffered occupancy window overlap another Confirmed booking's buffered window on the same venue When I approve it Then approval is blocked and the conflicting booking is identified, even if the two advertised event times do not overlap (C-65, T-66)
 
+#### Scenario 5 — Booking decision recorded
+
+Given a venue booking is approved, rejected or released When the action completes Then an entry is recorded with the actor, the action, the affected records and the time
+
 ### Checklist
 
 - Approve a pending booking request for a free venue
@@ -168,6 +172,18 @@ Given approving a pending request would make its buffered occupancy window overl
 - Suggest an alternative venue alongside a rejection
 - Confirm the Coordinator can amend the request to the suggested venue without starting a new search
 - Confirm the Coordinator is notified of either decision
+- Record each booking approval, rejection and release with actor, action, affected booking/event and time in the same transaction as the action
+- Verify all three booking-log outcomes under TC_E06S04_05, TC_E06S04_06 and TC_E06S04_07
+
+### Audit ownership (T-76)
+
+Scenario 5 transfers E14-S02's former Scenario 3 to the story that implements
+booking decisions. Release logging remains required and is verified through the
+workflow that actually releases the booking, such as event cancellation in
+E10-S04; this does not add a standalone release screen or permission. The Event
+Coordinator inspects entries on an event they may already view (T-75).
+E14-S02 completion no longer waits on these booking workflows. The original
+3-point estimate remains unchanged; this decision does not claim delivery.
 
 ## E06-S05 — Hold a venue tentatively
 
