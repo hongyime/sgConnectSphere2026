@@ -5,26 +5,29 @@ yet, so repository tooling and documentation are the source of truth until real
 frontend and backend code exists.
 
 Before changing files, read `README.md`, `CONTRIBUTING.md`, `docs/repository-setup.md`,
-and `.agents/STATE.md` enough to understand the current workflow and any
-in-flight work from a previous session, then the handoff file for the branch
-you are on, if one exists. `.agents/STATE.md` and `.agents/JOURNAL.md` hold
-cross-session, cross-harness continuity state -- every AI coding agent working
-in this repo (Claude Code, Codex, Cursor, OpenCode, or otherwise) reads them at
-the start of a task, so the next session -- yours or a teammate's, on any
-machine -- can resume with zero ambiguity.
+and `.agents/STATE.md` enough to understand the current workflow, then run
+`python scripts/agent_handoffs.py` to see the in-flight and recent tasks, and
+read the handoff file for the branch you are on, if one exists. Continuity
+state is cross-session and cross-harness -- every AI coding agent working in
+this repo (Claude Code, Codex, Cursor, OpenCode, or otherwise) reads it at the
+start of a task, so the next session -- yours or a teammate's, on any machine
+-- can resume with zero ambiguity.
 
-How to write to them (decision 0013, after Sprint 2 produced conflicts on these
-two files in three of four open PRs):
+How to write it (decisions 0013 and 0014):
 
-- **Detailed notes go in a per-task file**, `.agents/handoffs/YYYYMMDD-<branch-slug>.md`,
-  created in your first commit and rewritten as often as you like. See
-  `.agents/handoffs/README.md` for what to put in it.
-- **`STATE.md` and `JOURNAL.md` are append-only summaries.** Add one entry of
-  roughly five to ten lines, newest first, in the **final commit before you
-  request review**, and in no other commit on the branch. Never rewrite or
-  delete an existing entry; the repository owner consolidates at sprint close.
-- **Resolve a conflict in either file as the union**: your entry on top, then
-  everything from `main`, nothing dropped.
+- **All of your notes go in a per-task file**, `.agents/handoffs/YYYYMMDD-<branch-slug>.md`,
+  created in your first commit and rewritten as often as you like. Its first
+  paragraph is the goal; `scripts/agent_handoffs.py` lists it. See
+  `.agents/handoffs/README.md` for the rest.
+- **Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md` in a pull request.**
+  CI (`pr-conventions`) fails a PR that touches either file. Every branch used
+  to prepend an entry, so any two open PRs conflicted on every merge and the
+  resolving push dismissed the approval. The repository owner consolidates the
+  merged handoff files into those two files in a `chore(agents): ...` PR at
+  sprint close, or sooner when `STATE.md` has gone stale.
+- If you are resolving an older branch that still carries an entry, revert the
+  two files to `main` (`git checkout origin/main -- .agents/STATE.md .agents/JOURNAL.md`)
+  and move the entry's content into the handoff file.
 
 Do not write secrets, tokens, connection strings, or personal data into any of
 these files -- reference secrets by env-var name only. Never write secrets,

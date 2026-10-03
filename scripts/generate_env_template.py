@@ -97,6 +97,9 @@ PLATFORM_ALLOWLIST: dict[str, str] = {
     "GITHUB_EVENT_PATH": "Injected by GitHub Actions into workflow runs.",
     # ``owner/repo`` slug set by GitHub Actions.
     "GITHUB_REPOSITORY": "Injected by GitHub Actions into workflow runs.",
+    # Newline-separated list of files a pull request changes, written to
+    # GITHUB_ENV by the pr-conventions job for scripts/check_metadata.py.
+    "PR_CHANGED_FILES": "Set by the pr-conventions workflow step; never developer config.",
     # Injected by Vercel for OIDC-authenticated deployments; never a
     # developer secret.
     "VERCEL_OIDC_TOKEN": "Injected by Vercel at deploy time; never developer config.",

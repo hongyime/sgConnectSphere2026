@@ -69,10 +69,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Validate PR title and source branch
+      - name: List files the PR changes
+        # The checkout is the PR's merge commit; its first parent is the base
+        # tip, so this is exactly what the PR would add to main. Needs
+        # fetch-depth 2 (set on the checkout step above).
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'PR_CHANGED_FILES<<EOF'
+            git diff --name-only HEAD^1 HEAD
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+      - name: Validate PR title, source branch, body and protected files
         if: github.event_name == 'pull_request'
         run: python scripts/check_metadata.py pr
       - name: Explain non-PR run

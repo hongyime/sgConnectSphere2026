@@ -45,6 +45,17 @@ class MetadataTests(unittest.TestCase):
         ):
             self.assertFalse(metadata.check_branch(branch))
 
+    def test_protected_continuity_files_need_consolidation_title(self):
+        files = [".agents/STATE.md", "docs/x.md"]
+        ok, offending = metadata.check_changed_files(files, "docs(backlog): anything")
+        self.assertFalse(ok)
+        self.assertEqual(offending, [".agents/STATE.md"])
+        ok, offending = metadata.check_changed_files(files, "chore(agents): consolidate Sprint 2 state")
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+        ok, _ = metadata.check_changed_files([".agents/handoffs/20261003-docs-x.md", ".agents/handoffs/README.md"], "docs: x")
+        self.assertTrue(ok)
+
     def test_dependabot_exception_requires_bot_identity(self):
         self.assertFalse(metadata.check_branch("dependabot/pip/tooling/update"))
         self.assertTrue(metadata.check_branch("dependabot/pip/tooling/update", automated=True))
