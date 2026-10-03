@@ -30,6 +30,16 @@ on:
       - "playwright.auth.config.ts"
       - "vercel.json"
       - ".github/workflows/application-checks.yml"
+  # Merge queue. GitHub does not support `paths:` on merge_group, so every
+  # queued PR runs the full suite against its merge commit, including docs-only
+  # PRs. The repository is public, so Actions minutes are free; the cost is
+  # queue latency. The companion skip workflow must NOT listen on merge_group:
+  # two same-named checks on one commit would make the required status
+  # ambiguous. See docs/decisions/0012-merge-queue.md.
+  merge_group:
+    types: [checks_requested]
+    branches:
+      - main
 
 permissions:
   contents: read

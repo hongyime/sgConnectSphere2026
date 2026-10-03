@@ -35,10 +35,24 @@ Reviewable payloads:
 - [Repository merge settings](../.github/settings/repository.json): squash-only
   merges, PR title/body as squash message, delete merged branches, allow updating
   feature branches, and enable issues.
-- [Main ruleset](../.github/settings/main-ruleset.json): require an up-to-date
-  PR, the repository checks, one approval, stale-approval dismissal, resolved
-  conversations, and linear history; disallow force pushes/deletion; no bypass
-  actors (rules apply to everyone including admins).
+- [Main ruleset](../.github/settings/main-ruleset.json): require the repository
+  checks, one approval, stale-approval dismissal, resolved conversations, linear
+  history and a merge queue (squash, all-green grouping, 30-minute check
+  timeout, groups of up to five); disallow force pushes/deletion; no bypass
+  actors (rules apply to everyone including admins). Branches need not be up
+  to date with `main`; the queue tests each PR against the latest `main`.
+
+### Order of operations when the ruleset payload changes CI behaviour
+
+A rule that depends on workflow changes (the merge queue did; a new required
+check does) must be applied **after** the workflow change is on `main`, never
+in the same step. The queue's required checks only run on a merge commit if
+the workflow file on that commit carries the `merge_group` trigger, so
+applying the rule first would strand every queued PR until the timeout.
+Merge the workflow PR, wait for the required checks on the new `main` commit,
+then run `--apply`. The script's own pre-check (all required checks green on
+the current `main`) enforces the second half of that order; the first half is
+yours. See [decision 0012](decisions/0012-merge-queue.md).
 
 The historical classic-protection payload is preserved at
 `.github/settings/main-protection.json` for reference but is no longer used by
@@ -65,8 +79,10 @@ Change its title to an invalid title and verify `pr-conventions` fails, then
 correct it and verify it reruns successfully. Make a check fail and confirm merge
 is blocked. Confirm an otherwise green PR still needs another person's approval.
 After approval, push another change and verify the prior approval is dismissed.
-This is a manual acceptance exercise; the bootstrap does not claim it was
-completed remotely.
+Press **Merge when ready** on an approved PR and confirm a `merge_group` run of
+`CI`, `LFS Guard` and `Application Checks` appears in Actions and the PR merges
+when they pass. This is a manual acceptance exercise; the bootstrap does not
+claim it was completed remotely.
 
 ## Reviews and dependency updates
 

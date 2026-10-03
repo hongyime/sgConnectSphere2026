@@ -39,7 +39,8 @@ import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
   Reassignments as CoordinatorReassignments,
 } from '../features/coordinator/CoordinatorWorkspace';
-import { DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
+import { PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
+import { DecisionPanel } from '../features/coordinator/DecisionPanel';
 import { VenueSearch } from '../features/venue/VenueSearch';
 import { VenueCalendar } from '../features/venue/VenueCalendar';
 import { VenueForm } from '../features/venue/VenueForm';
@@ -141,7 +142,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode', <CoordinatorRequestDetail />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode/clarify', <RequestClarification />, 'live', 'E03-S02'),
-  page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'mock', 'E03-S03'),
+  page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'live', 'E03-S03'),
   page('/coordinator/events/:eventCode/plan', <PlanningWorkspace />, 'mock', 'E07-S02'),
   page('/coordinator/events/:eventCode/readiness', <ReadinessChecklist />, 'mock', 'E08-S03'),
   page('/coordinator/events/:eventCode/confirm', <FinalConfirmation />, 'mock', 'E08-S03'),

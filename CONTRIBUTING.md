@@ -70,22 +70,29 @@ the team deliberately updates the PR title convention.
 2. Implement and run `python scripts/check.py` plus relevant application checks
    once those exist. Add regression tests for meaningful bug fixes.
 3. Open a draft PR into `main`, using the template. CI runs on drafts too.
-4. Resolve failing checks, update the branch with `main`, clear merge conflicts,
-   and inspect the diff. Do not request review while the PR is conflicted,
-   behind `main`, or failing required checks.
+4. Resolve failing checks and clear merge conflicts, then inspect the diff. Do
+   not request review while the PR is conflicted or failing required checks.
+   The PR does not need to be up to date with `main`: the merge queue tests it
+   against the latest `main` when it is queued.
 5. Mark ready for review only after GitHub shows no merge conflicts and the
    latest commit has green required checks, or checks are queued from that latest
    commit.
 6. Have another teammate review the behaviour and test evidence. Answer significant
    findings or fix them. No AI review service is used.
-7. Enable squash auto-merge after the PR is review-ready. GitHub will merge after
-   CI and one valid human approval, then delete the feature branch.
+7. Once approved with conversations resolved, press **Merge when ready**. That
+   adds the PR to the merge queue, which builds it on top of the latest `main`
+   and any PRs ahead of it, re-runs the required checks on that merge commit,
+   squash-merges on green and deletes the branch. If the queue removes the PR
+   (a check failed against the combined changes, or it conflicts with a PR
+   ahead of it), the timeline says why; fix and queue again. See
+   [decision 0012](docs/decisions/0012-merge-queue.md).
 
-Review approvals are intentionally requested late. Branch protection dismisses
-or invalidates approvals after new commits, so asking for review before conflict
-resolution or branch updates makes teammates review the same PR twice.
+Branch protection still dismisses approvals after new commits, so finish your
+own changes before asking for review. You no longer have to merge `main` in
+first; that was the step that forced repeat approvals in Sprint 2.
 
-Required checks are `repository-checks`, `pr-conventions`, and `lfs-guard`.
+Required checks are `repository-checks`, `pr-conventions`, `lfs-guard` and
+`application-checks`. They run on the PR and again on its queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
@@ -99,7 +106,9 @@ A product backlog item is considered done only when all of these conditions are 
 
 - Acceptance criteria stated in the user story are satisfied.
 - Automated tests pass, including unit, integration, or end-to-end coverage where
-  relevant to the change.
+  relevant to the change. Acceptance criteria that involve persistence or
+  interactions between features are evidenced by real-database or end-to-end
+  runs, labelled as such in the PR; mocked tests alone do not satisfy them.
 - Manual verification passes where the story needs human UI or workflow checking.
 - Code has been peer-reviewed by at least one other developer.
 - Peer review was requested only after the PR was review-ready: no merge

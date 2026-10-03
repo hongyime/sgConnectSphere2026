@@ -56,7 +56,7 @@ class RulesetMigrationTests(unittest.TestCase):
 
     def test_failed_readback_preserves_classic_protection(self):
         # Each weakening must stop before DELETE, even when POST returned 201.
-        for field in ("approval", "last_push", "stale_reviews", "strict", "checks", "source", "bypass", "target", "enforcement"):
+        for field in ("approval", "last_push", "stale_reviews", "strict", "queue_strategy", "queue_missing", "checks", "source", "bypass", "target", "enforcement"):
             with self.subTest(field=field):
                 observed = copy.deepcopy(self.expected)
                 rules = {r["type"]: r for r in observed["rules"]}
@@ -69,7 +69,15 @@ class RulesetMigrationTests(unittest.TestCase):
                 elif field == "stale_reviews":
                     pr["dismiss_stale_reviews_on_push"] = False
                 elif field == "strict":
-                    checks["strict_required_status_checks_policy"] = False
+                    # Flip whichever value the payload carries so the subtest keeps
+                    # proving that a differing read-back is caught, regardless of
+                    # the policy the team currently chooses (decision 0012 set it
+                    # to false because the merge queue tests against latest main).
+                    checks["strict_required_status_checks_policy"] = not checks["strict_required_status_checks_policy"]
+                elif field == "queue_strategy":
+                    rules["merge_queue"]["parameters"]["grouping_strategy"] = "HEADGREEN"
+                elif field == "queue_missing":
+                    observed["rules"] = [r for r in observed["rules"] if r["type"] != "merge_queue"]
                 elif field == "checks":
                     checks["required_status_checks"].pop()
                 elif field == "source":

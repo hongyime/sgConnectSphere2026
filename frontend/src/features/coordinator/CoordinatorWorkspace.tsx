@@ -1,11 +1,11 @@
 // Live E03-S01 (SCRUM-32) Coordinator screens: workload dashboard, review
 // queue, assigned-event detail with reassignment, and the reassignment inbox.
-// Data comes from coordinatorApi.ts. The decision, planning, readiness and
-// confirmation screens in Coordinator.tsx still use mock data until their
-// stories' backends land. Built on the shared blocks in src/shared (ADR-017).
+// Data comes from coordinatorApi.ts. The decision page is DecisionPanel.tsx
+// (E03-S03); the planning, readiness and confirmation screens in
+// Coordinator.tsx still use mock data until their stories' backends land. Built on the shared blocks in src/shared (ADR-017).
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Clock3, Loader2, MessageCircleQuestion, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock3, Gavel, Loader2, MessageCircleQuestion, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FilterChips, FormActions,
   FormField, LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, isAbort, statusLabel, useLoad,
@@ -199,7 +199,11 @@ export function RequestDetail() {
       actions={event ? (
         <>
           {event.status === 'under_review' ? (
-            <ButtonLink to={`${eventLink(event)}/clarify`} icon={<MessageCircleQuestion size={14} aria-hidden="true" />}>Request clarification</ButtonLink>
+            <>
+              <ButtonLink to={`${eventLink(event)}/clarify`} icon={<MessageCircleQuestion size={14} aria-hidden="true" />}>Request clarification</ButtonLink>
+              {/* E03-S03 (SCRUM-34): navigation, so no ellipsis (D26). */}
+              <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
+            </>
           ) : null}
           <StatusPill status={event.status} />
         </>

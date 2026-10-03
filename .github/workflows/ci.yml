@@ -6,13 +6,19 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, edited, ready_for_review]
+  # Merge queue: GitHub builds a temporary merge commit for each queued PR and
+  # requires the same named checks on it. Without this trigger the checks never
+  # report and the queue entry times out. See docs/decisions/0012-merge-queue.md.
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -71,4 +77,6 @@ jobs:
         run: python scripts/check_metadata.py pr
       - name: Explain non-PR run
         if: github.event_name != 'pull_request'
-        run: echo 'PR metadata is not applicable to this event.'
+        run: |
+          echo 'PR metadata is not applicable to this event.'
+          echo 'On merge_group the title and branch were already validated on the pull request itself; this job reports success so the required check is present on the merge commit.'

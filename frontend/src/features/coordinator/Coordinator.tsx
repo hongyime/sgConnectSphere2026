@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   AlertTriangle, CalendarClock, CheckCircle2, ClipboardCheck, ClipboardList, Send,
@@ -19,49 +19,6 @@ function CoordinatorNav({ eventCode }: { eventCode?: string }) {
         </>
       ) : null}
     </nav>
-  );
-}
-
-export function DecisionPanel() {
-  const { eventCode } = useParams();
-  const event = findCoordinatorEvent(eventCode ?? '');
-  const [choice, setChoice] = useState<'approve' | 'reject' | 'clarify' | ''>('');
-  const [reason, setReason] = useState('');
-  const [submitted, setSubmitted] = useState<null | string>(null);
-  if (!event) return <PermissionOrNotFound eventCode={eventCode} />;
-  function submit(submitEvent: FormEvent<HTMLFormElement>) {
-    submitEvent.preventDefault();
-    if (!choice) return;
-    if (choice !== 'approve' && !reason.trim()) return;
-    setSubmitted(`${choice} recorded (mock, no backend call).`);
-  }
-  return (
-    <main className="coordinator-page">
-      <header className="coordinator-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>Decision</h1>
-      </header>
-      <CoordinatorNav eventCode={event.eventCode} />
-      <form onSubmit={submit} className="coordinator-form" aria-labelledby="decision-heading">
-        <h2 id="decision-heading">Choose an outcome</h2>
-        {(['approve', 'clarify', 'reject'] as const).map(option => (
-          <label key={option} className="coordinator-radio">
-            <input type="radio" name="decision" value={option} checked={choice === option} onChange={() => setChoice(option)} />
-            <span>{option === 'approve' ? 'Approve' : option === 'clarify' ? 'Request clarification' : 'Reject'}</span>
-          </label>
-        ))}
-        {choice && choice !== 'approve' ? (
-          <>
-            <label htmlFor="reason">Reason (required)</label>
-            <textarea id="reason" value={reason} onChange={changeEvent => setReason(changeEvent.target.value)} required rows={4} />
-          </>
-        ) : null}
-        <button type="submit" className="primary-action" disabled={!choice || (choice !== 'approve' && !reason.trim())}>
-          <Send size={14} aria-hidden="true" /> Record decision
-        </button>
-        <div role="status" aria-live="polite">{submitted}</div>
-      </form>
-    </main>
   );
 }
 

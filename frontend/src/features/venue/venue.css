@@ -190,3 +190,8 @@
 
 .venue-field-error { font-size: 0.82rem; color: var(--red); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: clip; }
+
+/* E06-S01: only content layout; shared blocks own controls and visual tokens. */
+.venue-search-form, .venue-search-results { display: grid; gap: var(--space-5); }
+.venue-search-form .field-checkbox { min-height: 40px; }
+.venue-search-results { min-width: 0; overflow-wrap: anywhere; }

@@ -11,7 +11,8 @@
 // requests from the live API (organiserRequestsApi.ts) and are built on the
 // shared blocks in src/shared (ADR-017). Submitted Detail also shows the
 // E03-S02 (SCRUM-33) outstanding questions and links to the answer screen,
-// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify).
+// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify), and the
+// E03-S03 (SCRUM-34) rejection with its date and reason.
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -25,7 +26,7 @@ import {
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
-  getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type StatusHistoryEntry,
+  getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type RequestDetail, type StatusHistoryEntry,
 } from './organiserRequestsApi';
 import './organiser.css';
 
@@ -229,6 +230,7 @@ export function SubmittedDetail() {
               </p>
             </Alert>
           ) : null}
+          {request.status === 'rejected' ? <RejectedNotice request={request} /> : null}
           <OutstandingQuestions questions={request.outstandingQuestions} />
           <section className="organiser-detail-grid" aria-label="Request summary">
             <Card title="Summary">
@@ -259,6 +261,22 @@ export function SubmittedDetail() {
         </>
       ) : null}
     </PageLayout>
+  );
+}
+
+// E03-S03 (SCRUM-34) Scenario 5, TC_E03S03_05: the decision in plain language.
+// A fact about the record, so an info alert (D34); the red pill carries the
+// status. Rejected is final (T-41), so the page offers nothing to edit. Only
+// seeded rejections can lack a reason (D30).
+function RejectedNotice({ request }: { request: RequestDetail }) {
+  const decidedAt = formatDate(request.decision?.decidedAt ?? request.statusChangedAt);
+  const reason = request.decision?.reason;
+  return (
+    <Alert tone="info">
+      <p className="organiser-alert-copy">
+        {reason ? `Rejected on ${decidedAt} — ${reason}` : `Rejected on ${decidedAt}. No reason was recorded.`}
+      </p>
+    </Alert>
   );
 }
 

@@ -1,12 +1,13 @@
 name: Update PR branches
 
+# Since the merge queue (docs/decisions/0012-merge-queue.md) the queue itself
+# tests each PR against the latest main, so branches no longer need to be kept
+# up to date to merge and the scheduled and push triggers were removed. Every
+# automatic update pushed to a PR branch re-ran CI and produced a Vercel
+# preview deployment (decision 0010). Run this manually when a specific PR
+# needs main merged in, for example to resolve a reported conflict.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-  schedule:
-    - cron: "17 * * * *"
 
 permissions:
   contents: write
