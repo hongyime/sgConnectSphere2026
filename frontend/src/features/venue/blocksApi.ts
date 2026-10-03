@@ -44,9 +44,9 @@ export async function listBlocks(venueId: string, signal?: AbortSignal): Promise
 export async function createBlock(venueId: string, input: BlockInput): Promise<ApiResult<CreateBlockResult>> {
   const result = await apiCall<CreateBlockResult>(
     '/api/venues', jsonRequest('POST', { action: 'block', id: venueId, ...input }),
-    'Please correct the highlighted fields.');
+    'Correct the highlighted fields.');
   if (!result.ok) {
-    if (result.status === 0) return { ...result, message: 'Service unavailable. Please try again.' };
+    if (result.status === 0) return { ...result, message: 'The service is unavailable. Try again.' };
     return result;
   }
   return { ok: true, data: result.data };

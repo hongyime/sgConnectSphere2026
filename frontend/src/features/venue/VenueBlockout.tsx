@@ -78,11 +78,22 @@ type EditingState =
   | { kind: 'shorten'; block: VenueBlock }
   | { kind: 'remove'; block: VenueBlock };
 
+// Blocks are whole Singapore days stored as YYYY-MM-DD; show them the way
+// design.md section 8.1 wants every date shown ("5 Jan 2027").
+function blockDay(day: string): string {
+  return formatDate(`${day}T00:00:00+08:00`);
+}
+
+function blockRange(block: Pick<VenueBlock, 'from' | 'to'>): string {
+  return block.from === block.to ? blockDay(block.from) : `${blockDay(block.from)} to ${blockDay(block.to)}`;
+}
+
 function VenueBlocksPanel({ venueId }: { venueId: string }) {
   const { result, reload } = useLoad(signal => listBlocks(venueId, signal), [venueId]);
   const [flash, setFlash] = useState<Flash>(null);
   const [conflict, setConflict] = useState<ConflictAlert>(null);
   const [editing, setEditing] = useState<EditingState>({ kind: 'none' });
+  const [removing, setRemoving] = useState(false);
 
   function afterChange(message: string) {
     setFlash({ tone: 'success', message });
@@ -110,9 +121,7 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
             <ul className="venue-blocking">
               {conflict.overlaps.map(block => (
                 <li key={block.id}>
-                  {block.from === block.to
-                    ? `${block.from}: ${block.reason}`
-                    : `${block.from} to ${block.to}: ${block.reason}`}
+                  {blockRange(block)}: {block.reason}
                 </li>
               ))}
             </ul>
@@ -144,13 +153,18 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
 
       {editing.kind === 'remove' ? (
         <ConfirmPanel
-          title={`Remove the ${editing.block.from === editing.block.to ? editing.block.from : `${editing.block.from} to ${editing.block.to}`} block?`}
+          title={`Remove the ${blockRange(editing.block)} block?`}
           description={`${editing.block.reason}. Removing restores availability for the released dates.`}
           confirmLabel="Remove block"
+          busyLabel="Removing."
+          busy={removing}
           danger
           onCancel={() => setEditing({ kind: 'none' })}
           onConfirm={async () => {
+            if (removing) return;
+            setRemoving(true);
             const outcome = await removeBlock(venueId, editing.block.id);
+            setRemoving(false);
             if (outcome.ok) {
               afterChange('Block removed. The released dates are available again.');
             } else {
@@ -180,8 +194,8 @@ function BlocksTable({ blocks, onShorten, onRemove }: {
   blocks: VenueBlock[]; onShorten: (block: VenueBlock) => void; onRemove: (block: VenueBlock) => void;
 }) {
   const columns: Column<VenueBlock>[] = [
-    { header: 'From', cell: block => block.from },
-    { header: 'To', cell: block => block.to },
+    { header: 'From', cell: block => blockDay(block.from) },
+    { header: 'To', cell: block => blockDay(block.to) },
     { header: 'Reason', cell: block => block.reason, primary: true },
     {
       header: 'Actions', key: 'shorten', hideHeader: true,
@@ -316,7 +330,7 @@ function ShortenCard({ venueId, block, onCancel, onSaved }: {
   }
 
   return (
-    <Card title={`Shorten the ${block.from === block.to ? block.from : `${block.from} to ${block.to}`} block`}>
+    <Card title={`Shorten the ${blockRange(block)} block`}>
       <form onSubmit={submit} aria-describedby={hintId} noValidate>
         <p id={hintId} className="field-hint">
           Keep the start date; set a new end date on or after the start and before the current end to release the trailing days.

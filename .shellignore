@@ -18,3 +18,6 @@ docs/testing/runs/20261002-225947-*-tooling.md
 docs/testing/runs/20261002-230319-*-tooling.md
 # T-65 requires public runner attribution for the #193 review verification record.
 docs/testing/runs/20261003-001404-*-frontend-vitest.md
+# T-65 requires public runner attribution for the #185 review follow-up records.
+docs/testing/runs/20261003-145910-*-frontend-vitest.md
+docs/testing/runs/20261003-150610-*-frontend-e2e.md

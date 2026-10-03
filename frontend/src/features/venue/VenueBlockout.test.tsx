@@ -60,8 +60,9 @@ test('TC_E05S04_01 - lists current and upcoming blocks for the picked venue, the
   // Existing block appears in the list once the first venue loads.
   expect(await screen.findByText('Annual fire safety inspection')).toBeInTheDocument();
   const row = screen.getByText('Annual fire safety inspection').closest('tr') as HTMLElement;
-  expect(within(row).getByText('2027-01-05')).toBeInTheDocument();
-  expect(within(row).getByText('2027-01-10')).toBeInTheDocument();
+  // Dates show the design.md way, not as the stored YYYY-MM-DD.
+  expect(within(row).getByText('5 Jan 2027')).toBeInTheDocument();
+  expect(within(row).getByText('10 Jan 2027')).toBeInTheDocument();
 
   fireEvent.change(screen.getByLabelText('From'), { target: { value: '2027-02-01' } });
   fireEvent.change(screen.getByLabelText('To'), { target: { value: '2027-02-03' } });
