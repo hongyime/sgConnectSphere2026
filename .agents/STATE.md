@@ -1,35 +1,8 @@
 # Agent State
 
-- 2026-10-02: PR #192 refreshed after #190 merged as 9d5ae60. Preserved its
-  immutability migration/tests and regenerated the sole coverage conflict:
-  118 active, 135 scaffold, 3 absent out of 256 catalogue rows. Local tooling
-  verification is recorded in the new main-refresh session file. No application
-  suite or migration was run by this scope refresh.
-  The #190 Jira sync run 37018654001 prematurely moved SCRUM-86 from In Progress
-  to Done despite the merged PR explicitly delivering only Scenario 5. Verified
-  the live issue was Done, then restored In Progress using its available workflow
-  transition; Jira confirmed In Progress. This is a progress correction from
-  merged evidence, not an early scope/sprint reconciliation. No reassignment,
-  estimate or sprint change. PR #192 remains unmerged for the story owner's review.
-
-- 2026-10-02: E14-S02 scope decisions on `docs/e14-s02-activity-log-scope`.
-  T-75 permits Coordinator reading through the existing event Activity log
-  within existing event access; denial/deactivation verification uses the test
-  database. Administrator viewing is Release 2. T-76 moves booking approval,
-  rejection and release logging to E06-S04 Scenario 5 and carries the remaining
-  E14-S02 criteria (1/2/4/5) into Sprint 3. Original commitments and estimates
-  remain unchanged. Old booking TC IDs are retired with E06 replacements;
-  backlog/test/ADR/BDR exports and the compatibility inventory are regenerated.
-  This is a scope PR, not delivery evidence. Keep SCRUM-86 out of its branch,
-  title and closing clauses so jira-sync cannot mark the unfinished story Done.
-  Local repository hygiene and 76 tooling tests passed; immutable evidence is
-  in docs/testing/runs/. Playwright collection only: 64 declarations, no business
-  test execution. PostPlan: https://oe19j1p9wxfc.postplan.dev.
-  Scope PR: https://github.com/hongyime/sgConnectSphere2026/pull/192.
-  Requested next action: story-owner review after final-head readiness checks;
-  do not merge or close the business story as part of this scope update.
-  Jira scope/planning reconciliation follows merge. Implementation and peer
-  verification remain the story owner's work; other worktrees are untouched.
+- 2026-10-03: E05-S03 (SCRUM-42) seeded-database run, 5/5 PASS:
+  `docs/testing/runs/20261003-124635-lexinphun2024-debug-frontend-e2e.md`.
+  E05-S04 waits for PR #185.
 - 2026-10-03: Merge queue live. `configure_github.py --apply` run on main
   `1956509` after #194/#195/#196/#204/#205 merged (04:19-04:21Z, Aaron's
   approvals); read-back shows `merge_queue` SQUASH/ALLGREEN/30 min on ruleset
