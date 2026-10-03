@@ -1,12 +1,8 @@
 # Agent State
 
-- 2026-10-02: PR #187 review refresh: integrated main 139217e without altering the ten historical execution records or their original source attribution. New verification covers repository tooling only; historical application suites are not rerun. Awaiting renewed peer review after the push.
-- 2026-10-02: Sprint 1 execution-record backfill. Added ten reconstructed
-  session files under docs/testing/runs/ for the evidence cited in pull
-  requests 94 and 95. Counts and outcomes are copied from those pull
-  request bodies and docs/testing/login-recovery.md. Not re-run. No
-  BACKFILL outcome exists in the schema, so historic results stay PASS,
-  FAIL, or SKIP. Other pre-October pull requests are not included.
+- 2026-10-03: E05-S03 (SCRUM-42) seeded-database run, 5/5 PASS:
+  `docs/testing/runs/20261003-124635-lexinphun2024-debug-frontend-e2e.md`.
+  E05-S04 waits for PR #185.
 - 2026-10-03: Merge queue live. `configure_github.py --apply` run on main
   `1956509` after #194/#195/#196/#204/#205 merged (04:19-04:21Z, Aaron's
   approvals); read-back shows `merge_queue` SQUASH/ALLGREEN/30 min on ruleset
