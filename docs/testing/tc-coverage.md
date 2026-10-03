@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **311**
 - Automated (explicit TC_ID in an active test title): **122** (39.2%)
-  - Real-database (`.integration.test` / `.db.test`): **24**
+  - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **97**
+  - Live-assertion (other active tests): **101**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (42.4%)
 - No test yet (no test file mentions the TC_ID): **57** (18.3%)
 
@@ -867,6 +867,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - signs out through the session endpoint and returns to the login page
 - keeps the user on the page and explains when sign out fails
 - offers sign in when there is no session
+
+### `frontend/src/features/venue/VenueBlockout.test.tsx`
+
+- removing a block goes through ConfirmPanel and reloads the list on success
+- loading state renders while blocks are in flight
+- client validation refuses an empty form before any POST is sent
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
