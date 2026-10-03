@@ -1,12 +1,5 @@
 # Agent State
 
-- 2026-10-02: Per-task handoff files (decision 0013) on
-  docs/per-task-handoff-files: .agents/handoffs/README.md, AGENTS.md now
-  says detailed notes go in .agents/handoffs/YYYYMMDD-<branch-slug>.md,
-  STATE/JOURNAL get one short entry in the final pre-review commit only, and
-  conflicts in them are resolved as the union. Companion to the merge queue
-  (#195, decision 0012); together they answer the retro feedback on repeated
-  branch updates and shared-file conflicts.
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
