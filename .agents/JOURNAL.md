@@ -1,21 +1,8 @@
 # Agent Journal
 
-- 2026-10-02: PR #185 review follow-up: integrated main 139217e and regenerated the conflicted coverage inventory. Corrected the maintenance success message to count affected events, matching notifiedEventCount; it does not count unique Coordinators. Targeted component/browser and runtime verification is recorded in a new T-65 session, including local environment failures and their recovery. Awaiting renewed owner review; database acceptance coverage remains a separate follow-up.
+- 2026-10-03: E05 test cases name data not in the seed; use seeded
+  equivalents and list them in the record's Remarks.
 
-- 2026-10-02: Merged origin/main (f0c4264, #175 and #182) into
-  feature/SCRUM-120-maintenance-blocks. Conflict was only the generated
-  coverage table; regenerated docs/testing/tc-coverage.md. The blockout
-  route stayed live. SCRUM-120.
-
-- 2026-10-02 (PR B, SCRUM-120, E05-S04): maintenance blocks screen for Venue
-  Staff on the shared skeleton. Added blocksApi.ts and VenueBlockout.tsx; flipped
-  /venue/blockout from mock to live; added the Maintenance blocks link to the
-  venue_staff nav; removed the mock VenueBlockout from Venue.tsx. Vitest 7/7,
-  full frontend suite 204/205 (one unrelated pre-existing timeout), Playwright
-  4/4 on desktop for TC_E05S04_01..04 (flipped from test.fixme). tc-coverage
-  regenerated. T-65 records written for both runs. Postplan with 1280 and 393 px
-  screenshots (no horizontal overflow). Built on behalf of Le Xin as the
-  skeleton pilot with Bryan's authorisation; Le Xin remains the Jira assignee.
 - 2026-10-03: Review and merge of PR #193 (SCRUM-34 decide screens) on
   Bryan's behalf from an isolated detached checkout: head 3dc0107 checked
   against E03-S03 and its backend contract, no blocking findings; focused
