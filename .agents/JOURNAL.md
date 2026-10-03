@@ -1,19 +1,5 @@
 # Agent Journal
 
-- 2026-10-02: Sprint 2 retro feedback asked for a merge queue. Checked: repo is
-  public (queue available on free plan), Bryan has admin, no ruleset existed,
-  classic protection had strict up-to-date on. Applied the ADR 0008 ruleset
-  migration first because merge_queue is ruleset-only. Read GitHub docs:
-  required-check workflows MUST trigger on merge_group or the queue times out;
-  the queue replaces the up-to-date rule; paths filters are ignored on
-  merge_group, so application-checks runs its full suite on every queued PR and
-  the companion skip workflow must not also run there (two same-named checks on
-  one commit). Chose ALLGREEN over HEADGREEN (no flaky required check exists),
-  30-minute timeout against an 8-12 minute suite, groups of five. Demoted the
-  hourly branch updater because each auto-update dismissed approvals, re-ran CI
-  and consumed a Vercel Hobby deployment (decision 0010). Verification in the
-  worktree: python scripts/check.py; JSON and YAML parsed with the tooling
-  venv; on: keys confirmed per workflow.
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch so #183 can merge. Conflict was only the agent notes; kept both. Verification: python scripts/check.py. SCRUM-118.
