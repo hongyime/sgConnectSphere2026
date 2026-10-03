@@ -16,6 +16,17 @@ Follows the ruleset migration in decision 0008, which was applied live on
 2 October 2026 (ruleset id 24377800) as the prerequisite: merge queue is a
 ruleset-only feature.
 
+Step 2 was applied on 3 October 2026 by the repository admin with `main` at
+`1956509` (#205 merged) and all four required checks green on that commit.
+Read-back of `GET /repos/.../rules/branches/main` shows `merge_queue` with
+`SQUASH`, `ALLGREEN`, 30-minute timeout, min 1 / max 5 / build 5 / wait 5, and
+`strict_required_status_checks_policy: false`. The strict flag had already been
+set to `false` on the live ruleset earlier the same day, ahead of this PR
+merging, to stop the five open PRs invalidating each other's approvals; the
+JSON in #195 already carried the same value, so nothing diverged. Five PRs
+(#194, #195, #196, #204, #205) merged in the five minutes before the apply
+through plain auto-merge; this PR is the first to go through the queue.
+
 ## Context
 
 Sprint 2 ran with four to seven pull requests open at once, all targeting
