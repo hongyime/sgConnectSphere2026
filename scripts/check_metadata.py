@@ -23,6 +23,14 @@ REQUIRED_BODY_SECTIONS = (
     "## Follow-ups",
 )
 
+# Files no ordinary pull request may touch (decision 0014). Every branch used
+# to prepend an entry to these two, so any two open PRs conflicted on every
+# merge and approvals were dismissed by the resolving push. Per-task notes live
+# in .agents/handoffs/; the repository owner consolidates these two files in a
+# PR whose title starts with CONSOLIDATION_PREFIX.
+PROTECTED_FILES = (".agents/STATE.md", ".agents/JOURNAL.md")
+CONSOLIDATION_PREFIX = "chore(agents):"
+
 
 def check_title(title: str) -> bool:
     return bool(TITLE.fullmatch(title)) and len(title) <= 100 and title == title.strip()
@@ -32,6 +40,15 @@ def check_branch(branch: str, *, automated: bool = False) -> bool:
     if automated and branch.startswith("dependabot/"):
         return True
     return bool(BRANCH.fullmatch(branch))
+
+
+def check_changed_files(files: list[str], title: str) -> tuple[bool, list[str]]:
+    """Return (ok, offending). A PR may touch PROTECTED_FILES only when its title
+    marks it as the owner's consolidation PR (decision 0014)."""
+    if title.startswith(CONSOLIDATION_PREFIX):
+        return True, []
+    offending = [f for f in files if f in PROTECTED_FILES]
+    return not offending, offending
 
 
 def check_body(body: str, *, automated: bool = False) -> tuple[bool, list[str]]:
@@ -113,6 +130,16 @@ def main() -> int:
             print(f"  {header}")
         print("See .github/pull_request_template.md for the required layout.")
         valid = False
+    # Newline-separated list supplied by the workflow (git diff --name-only).
+    changed = os.environ.get("PR_CHANGED_FILES")
+    if changed is not None:
+        ok, offending = check_changed_files(changed.split(), pr["title"])
+        if not ok:
+            print("PR edits continuity files that only the owner's consolidation PR may touch (decision 0014):")
+            for path in offending:
+                print(f"  {path}")
+            print("Put the notes in .agents/handoffs/<YYYYMMDD>-<branch-slug>.md instead and revert these files to main.")
+            valid = False
     return 0 if valid else 1
 
 

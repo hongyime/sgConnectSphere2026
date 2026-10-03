@@ -590,15 +590,28 @@ test.describe("E05-S04", () => {
    * Expected result:
    *   "Riverside Hall" no longer appears as available for any date within 05/01/2027-10/01/2027
    */
-  test.fixme("TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Open venue "Riverside Hall"
-    // 3. Click "Block Venue"
-    // 4. Enter period 05/01/2027-10/01/2027 and reason "Annual fire safety inspection"
-    // 5. Save
-    // 6. Search for venues available on 07/01/2027 as an Event Coordinator
-    void page;
+  test("TC_E05S04_01 - Verify that blocking a venue for a period with no bookings should make it unavailable for those dates", async ({ page }) => {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'venue_staff');
+    const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
+    const createdBlock = { id: 'blk-1', venueId: 'v-1', from: '2027-01-05', to: '2027-01-10', reason: 'Annual fire safety inspection', startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-10T16:00:00.000Z' };
+    let created = false;
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('q') !== null, route => route.fulfill({ json: { venues } }));
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => {
+      return route.fulfill({ json: { blocks: created ? [createdBlock] : [] } });
+    });
+    await page.route(url => url.pathname === '/api/venues', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      created = true;
+      return route.fulfill({ status: 201, json: { block: createdBlock, notifiedEventCount: 0 } });
+    });
+    await page.goto('/venue/blockout');
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
+    await page.getByLabel('From').fill('2027-01-05');
+    await page.getByLabel('To').fill('2027-01-10');
+    await page.getByLabel('Reason').fill('Annual fire safety inspection');
+    await page.getByRole('button', { name: /Save block/ }).click();
+    await expect(page.getByText(/Block saved/)).toBeVisible();
   });
 
   /**
@@ -615,14 +628,23 @@ test.describe("E05-S04", () => {
    * Expected result:
    *   A warning is shown identifying the conflicting "Charity Run" booking; the block is not saved until the conflict is resolved
    */
-  test.fixme("TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Open venue "Riverside Hall"
-    // 3. Click "Block Venue"
-    // 4. Enter period 14/01/2027-16/01/2027 and reason "Flooring replacement"
-    // 5. Attempt to save
-    void page;
+  test("TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect", async ({ page }) => {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'venue_staff');
+    const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('q') !== null, route => route.fulfill({ json: { venues } }));
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => route.fulfill({ json: { blocks: [] } }));
+    await page.route(url => url.pathname === '/api/venues', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return route.fulfill({ status: 409, json: { error: 'booking_conflict', message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.', conflictingBookings: [{ eventCode: 'EVT-9', title: 'Charity Run', startsAt: '2027-01-15T01:00:00.000Z', endsAt: '2027-01-15T05:00:00.000Z' }] } });
+    });
+    await page.goto('/venue/blockout');
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
+    await page.getByLabel('From').fill('2027-01-14');
+    await page.getByLabel('To').fill('2027-01-16');
+    await page.getByLabel('Reason').fill('Flooring replacement');
+    await page.getByRole('button', { name: /Save block/ }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Charity Run' })).toBeVisible();
   });
 
   /**
@@ -639,14 +661,23 @@ test.describe("E05-S04", () => {
    * Expected result:
    *   coordinator_1@connectsphere.com receives a notification that the new block affects their upcoming event's planning window
    */
-  test.fixme("TC_E05S04_03 - Verify that creating a block over an upcoming event's dates should notify the affected Coordinators", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Open venue "Riverside Hall"
-    // 3. Block the period 20/01/2027-25/01/2027 with reason "Renovation"
-    // 4. Save
-    // 5. Check coordinator_1@connectsphere.com's notifications
-    void page;
+  test("TC_E05S04_03 - Verify that creating a block over an upcoming event's dates should notify the affected Coordinators", async ({ page }) => {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'venue_staff');
+    const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('q') !== null, route => route.fulfill({ json: { venues } }));
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => route.fulfill({ json: { blocks: [] } }));
+    await page.route(url => url.pathname === '/api/venues', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      return route.fulfill({ status: 201, json: { block: { id: 'blk-x', venueId: 'v-1', from: '2027-01-20', to: '2027-01-25', reason: 'Renovation', startsAt: '2027-01-19T16:00:00.000Z', endsAt: '2027-01-25T16:00:00.000Z' }, notifiedEventCount: 2 } });
+    });
+    await page.goto('/venue/blockout');
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
+    await page.getByLabel('From').fill('2027-01-20');
+    await page.getByLabel('To').fill('2027-01-25');
+    await page.getByLabel('Reason').fill('Renovation');
+    await page.getByRole('button', { name: /Save block/ }).click();
+    await expect(page.getByText(/Coordinators were notified for 2 affected upcoming events/)).toBeVisible();
   });
 
   /**
@@ -663,15 +694,27 @@ test.describe("E05-S04", () => {
    * Expected result:
    *   "Riverside Hall" now appears as available from 08/01/2027 onward, while remaining blocked for 05/01/2027-07/01/2027
    */
-  test.fixme("TC_E05S04_04 - Verify that removing or shortening an existing block should restore the venue's availability for the released period", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Open venue "Riverside Hall"
-    // 3. Select the existing block
-    // 4. Shorten it to end on 07/01/2027 instead of 10/01/2027
-    // 5. Save
-    // 6. Search for venues available on 08/01/2027
-    void page;
+  test("TC_E05S04_04 - Verify that removing or shortening an existing block should restore the venue's availability for the released period", async ({ page }) => {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'venue_staff');
+    const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
+    const block = { id: 'blk-1', venueId: 'v-1', from: '2027-01-05', to: '2027-01-10', reason: 'Annual fire safety inspection', startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-10T16:00:00.000Z' };
+    let shortened = false;
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('q') !== null, route => route.fulfill({ json: { venues } }));
+    await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => {
+      return route.fulfill({ json: { blocks: shortened ? [{ ...block, to: '2027-01-07' }] : [block] } });
+    });
+    await page.route(url => url.pathname === '/api/venues', async route => {
+      if (route.request().method() !== 'POST') return route.fallback();
+      shortened = true;
+      return route.fulfill({ status: 200, json: { block: { ...block, to: '2027-01-07' } } });
+    });
+    await page.goto('/venue/blockout');
+    await expect(page.getByText('Annual fire safety inspection')).toBeVisible();
+    await page.getByRole('button', { name: /Shorten/ }).click();
+    await page.getByLabel('New end date').fill('2027-01-07');
+    await page.getByRole('button', { name: /Save shortened block/ }).click();
+    await expect(page.getByText(/Block shortened/)).toBeVisible();
   });
 
 });

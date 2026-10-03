@@ -1,10 +1,13 @@
 # Per-task handoff files
 
-One file per task or pull request. This is where the detailed, in-progress
-notes live: what was tried, what is half-done, which commands were run, which
-reviewer asked for what. `.agents/STATE.md` and `.agents/JOURNAL.md` get one
-short entry per merged piece of work and nothing else; see
-[decision 0013](../../docs/decisions/0013-per-task-handoff-files.md).
+One file per task or pull request. This is where all the notes live: the goal,
+what was tried, what is half-done, which commands were run, which reviewer
+asked for what. Pull requests do not edit `.agents/STATE.md` or
+`.agents/JOURNAL.md`; the repository owner consolidates merged handoffs into
+them. See [decision 0013](../../docs/decisions/0013-per-task-handoff-files.md)
+and [decision 0014](../../docs/decisions/0014-pull-requests-do-not-edit-state-or-journal.md).
+`python scripts/agent_handoffs.py` lists these files newest first with their
+goal line.
 
 ## Filename
 
@@ -23,7 +26,8 @@ than one branch, one file per branch.
 Plain Markdown, no required schema. A useful file answers, for someone picking
 the task up cold:
 
-- **Goal** and the PR or Jira key it serves.
+- **Goal** and the PR or Jira key it serves, as the first paragraph under the
+  title (the listing script prints it).
 - **Done so far**, with commit SHAs where that helps.
 - **Not done / next step**, as the first thing to do on resume.
 - **Decisions taken without team sign-off** that the reviewer should check.
@@ -39,17 +43,20 @@ it, as with every committed file.
 
 1. Create it in the first commit of the branch.
 2. Update it as the work moves; every commit may touch it.
-3. In the **final commit before requesting review**, add one short entry
-   (roughly five to ten lines) to `.agents/STATE.md` and, if there is
-   something a future reader should learn from, to `.agents/JOURNAL.md`.
-   That is the only commit on the branch that touches those two files.
+3. Do not touch `.agents/STATE.md` or `.agents/JOURNAL.md`; `pr-conventions`
+   fails the PR if you do. Anything a future reader should learn from goes in
+   this file under a **Learnings** heading, where the owner's consolidation
+   picks it up for `JOURNAL.md`.
 4. After the PR merges the handoff file stays in the repository as history.
    Do not delete it; do not edit it again.
 
-## Resolving a conflict in STATE.md or JOURNAL.md
+## Consolidation (repository owner)
 
-Keep both sides. Every entry is an independent dated bullet, so the right
-resolution is always the union: your entry on top, then everything from
-`main`. Never drop a line from `main`. Verify with
-`git show origin/main:.agents/STATE.md | diff - .agents/STATE.md` showing
-only additions.
+At sprint close, or when `STATE.md` no longer describes the current state,
+the owner opens one `chore(agents): consolidate ...` PR that rewrites
+`STATE.md` from the merged handoffs (what is current, what is in flight, what
+is parked) and appends the Learnings to `JOURNAL.md`. That title prefix is
+what lets the PR touch the two files. One person, one PR at a time, so there
+is nothing to conflict with; if two such PRs ever overlap, `.gitattributes`
+marks both files `merge=union` for the local merge (GitHub does not honour
+it).
