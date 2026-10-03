@@ -19,6 +19,8 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 | **Event Coordinator** | Internal User | Internal staff member who owns planning for an event and acts as the main point of contact. |
 | **Venue Staff** | Internal User | Internal staff responsible for the venue catalogue, availability and booking decisions. |
 | **Technical Support Staff** | Internal User | Internal staff responsible for equipment availability, reservations and support-staff assignment. |
+| **Event Coordinator Lead** | Internal User | Internal staff member who works the unassigned queue, assigns and reassigns Event Coordinators, and oversees every assignment and active event. Added by the Week 7 Customer Changes (C-69, T-72). |
+| **Safety Officer** | Internal User | Internal staff member who conducts the Operational Safety Check between completed arrangements and confirmation, approving, rejecting or requesting changes. Added by the Week 7 Customer Changes (C-70, T-72). |
 
 ---
 
@@ -26,21 +28,21 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 
 | System | Description |
 |---|---|
-| **Email Provider** | Third-party SMTP service used to deliver notification email to all five roles. SMS is **not** in release 1 (see BDR T-35). |
+| **Email Provider** | Third-party SMTP service used to deliver notification email to all seven roles. SMS is **not** in release 1 (see BDR T-35). |
 
 ---
 
 ## Level 1 — System Context
 
-ConnectSphere sits between the five user roles and the external Email Provider.
+ConnectSphere sits between the seven user roles and the external Email Provider.
 
-- Each of the five actors interacts with ConnectSphere exclusively through the **Web Application**:
+- Each of the seven actors interacts with ConnectSphere exclusively through the **Web Application**:
   - **Event Organiser** — creates, submits and tracks event requests, and raises change requests.
   - **Event Coordinator** — reviews, approves, plans, confirms and manages changes.
   - **Venue Staff** — maintains the venue catalogue and decides booking requests.
   - **Technical Support Staff** — maintains equipment, reserves items and assigns support staff.
   - **Attendee** — registers for events, joins the waiting list and withdraws.
-- The **Email Provider** delivers notification email out to all five roles.
+- The **Email Provider** delivers notification email out to all seven roles.
 
 *(Diagram: "SystemContext" — Level 1, auto-layout top-to-bottom, includes all elements.)*
 
@@ -50,11 +52,11 @@ ConnectSphere sits between the five user roles and the external Email Provider.
 
 | Container | Technology | Description |
 |---|---|---|
-| **Web Application** | React, Tailwind CSS | Responsive single-page application serving all five roles on desktop and mobile. |
+| **Web Application** | React, Tailwind CSS | Responsive single-page application serving all seven roles on desktop and mobile. |
 | **Application Server** | Python (framework TBC) | Modular monolith exposing a REST API: authentication/authorisation, event lifecycle, venue booking, equipment, registration and change management. |
 | **Database** | PostgreSQL 16 with `btree_gist` | Stores events, venues, bookings, equipment, reservations, registrations, notification outbox and audit log. |
 | **Job Queue** | Redis | Holds notification jobs, published only after the originating transaction has committed. |
-| **Scheduler and Outbox Relay** | Background process | Polls committed notification deliveries and publishes them; also runs periodic domain evaluations (e.g. auto-completing an event once its end time has passed). |
+| **Scheduler and Outbox Relay** | Background process | Polls committed notification deliveries and publishes them; also runs periodic domain evaluations: auto-completing an event once its end time has passed and, from Week 7, expiring tentative holds and sending expiry reminders (ADR-006 amendment, T-69). |
 | **Notification Worker** | Background process | Consumes queued jobs, calls the Email Provider, and records the delivery outcome. |
 
 ### Container relationships
@@ -83,8 +85,8 @@ ConnectSphere sits between the five user roles and the external Email Provider.
 |---|---|---|
 | **API Router** | REST controllers | Routes requests and validates payloads. |
 | **Access Control** | Application service | Authentication, lockout, password reset, role and client-organisation scoping. |
-| **Event Lifecycle** | Application service | Request, review, clarification, approval, status transitions, confirmation gate, reversion and completion. |
-| **Venue Management** | Application service | Catalogue, layouts, availability, blocks, search, suitability and booking decisions. |
+| **Event Lifecycle** | Application service | Request, review, clarification, approval, status transitions, the unassigned queue and Lead assignment (E03-S08 to E03-S10), submission for and recording of the Operational Safety Check (E08-S03, E08-S06), confirmation, reversion and completion. |
+| **Venue Management** | Application service | Catalogue including per-venue setup and turnaround buffers, layouts, availability on the buffered occupancy window, unavailability with reason categories over existing bookings, search, suitability per booking headcount, several bookings per event, tentative holds with expiry, and booking decisions. |
 | **Equipment and Support** | Application service | Catalogue, availability, requests, reservations and technical staff assignment. |
 | **Registration** | Application service | Registration window, venue-capacity enforcement, manual VIP addition, waiting list, withdrawal and attendance. |
 | **Change Management** | Application service | Change requests, arrangement impact detection and cancellation. |
@@ -139,7 +141,7 @@ ConnectSphere sits between the five user roles and the external Email Provider.
 
 | View | Level | Scope |
 |---|---|---|
-| **SystemContext** | 1 | ConnectSphere, its five user roles, and the one external system it depends on. |
+| **SystemContext** | 1 | ConnectSphere, its seven user roles, and the one external system it depends on. |
 | **Containers** | 2 | One deployable application server, one database, and two background processes. Notification jobs are published only after commit (ADR-006). |
 | **Components** | 3 | Domain and cross-cutting components inside the modular monolith. Boundaries are in code, not across the network (ADR-001). |
 

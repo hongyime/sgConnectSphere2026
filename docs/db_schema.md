@@ -42,6 +42,9 @@ erDiagram
     EVENTS ||--o{ EVENT_THREADS : "discussed_in"
     USERS ||--o{ EVENT_THREADS : "authors"
     EVENTS ||--o{ COORDINATOR_REASSIGNMENTS : "handed_over_by"
+    EVENTS ||--o{ SAFETY_CHECKS : "reviewed_by"
+    USERS ||--o{ SAFETY_CHECKS : "decides"
+    SAFETY_CHECKS ||--|{ SAFETY_CHECK_FACTORS : "assesses"
     USERS ||--o{ COORDINATOR_REASSIGNMENTS : "requests_or_receives"
     EVENTS ||--o{ CHANGE_REQUESTS : "amended_by"
     USERS ||--o{ CHANGE_REQUESTS : "raises"
@@ -66,7 +69,7 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar full_name
-        user_role role "one role per account in release 1"
+        user_role role "one role per account in release 1; seven values from Week 7: + event_coordinator_lead, safety_officer"
         varchar contact_number
         boolean is_active "false once deactivated"
         timestamptz deactivated_at
@@ -87,13 +90,14 @@ erDiagram
     EVENTS {
         uuid id PK
         uuid organiser_id FK
-        uuid coordinator_id FK "null until auto-assigned on submission (E03-S01)"
-        timestamptz coordinator_assigned_at "when the current Coordinator took over; T-14 tie-break"
+        uuid coordinator_id FK "null while in the unassigned queue; set by the Lead (E03-S08) or by accepted reassignment"
+        timestamptz coordinator_assigned_at "when the current Coordinator took over"
+        uuid assigned_by FK "the Lead who assigned or reassigned; null for accepted peer reassignments"
         uuid client_org_id FK
         varchar title
         text description
         text purpose
-        event_status status "10 canonical statuses"
+        event_status status "11 canonical statuses; Week 7 adds safety_review between planning and confirmed"
         text decision_reason "rejection, cancellation or reversion"
         timestamptz status_changed_at
         boolean registration_enabled
@@ -117,6 +121,8 @@ erDiagram
         varchar name
         varchar location
         int max_capacity
+        smallint setup_minutes "Week 7 C-65; default 0"
+        smallint turnaround_minutes "Week 7 C-65; default 0"
         time opens_at
         time closes_at
         boolean is_active "false once retired"
@@ -171,8 +177,14 @@ erDiagram
         uuid id PK
         uuid venue_id FK
         uuid event_id FK
-        tstzrange booking_range
-        booking_status status "pending, confirmed, rejected, released, conflicting"
+        tstzrange booking_range "advertised start and end"
+        tstzrange occupancy_range "application-maintained: booking_range widened by the venue's setup and turnaround at write time; the EXCLUDE constraint keys on this (ADR-003)"
+        booking_status status "pending, tentative, confirmed, rejected, released, conflicting, expired"
+        text purpose "Week 7 C-67; e.g. Main programme, Breakout A"
+        int headcount "Week 7 C-67; governs suitability for this venue, falls back to EVENTS.expected_attendance (O-27)"
+        boolean is_primary "Week 7 C-67; the venue shown to Attendees (O-30)"
+        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31)"
+        timestamptz reminder_sent_at "Week 7 C-68; expiry reminder guard (O-33)"
         boolean requires_reconfirmation
         text decision_reason
         uuid suggested_venue_id FK "alternative offered on rejection"
@@ -185,7 +197,8 @@ erDiagram
         uuid id PK
         uuid venue_id FK
         tstzrange block_range
-        varchar reason
+        unavailability_reason reason_category "Week 7 C-66: maintenance, equipment_failure, renovation, safety_concern, other"
+        varchar reason "free-text note"
         uuid created_by FK
         timestamptz created_at
     }
@@ -288,6 +301,7 @@ erDiagram
         uuid from_coordinator_id FK "the assigned Coordinator who asked"
         uuid to_coordinator_id FK "the named colleague; must accept before ownership moves"
         reassignment_status status "pending, accepted, declined; at most one pending per event"
+        boolean addressed_to_lead "Week 7 C-69 (O-37): true when the Coordinator asks the Lead rather than a named colleague; to_coordinator_id null until the Lead decides"
         timestamptz requested_at
         timestamptz decided_at "null while pending"
     }
@@ -338,4 +352,38 @@ erDiagram
         text new_value
         timestamptz occurred_at
     }
+
+    SAFETY_CHECKS {
+        uuid id PK
+        uuid event_id FK
+        uuid safety_officer_id FK
+        safety_decision decision "approved, changes_requested, rejected (Week 7 C-70, E08-S06)"
+        text reason "mandatory for changes_requested and rejected"
+        timestamptz submitted_at "when the Coordinator submitted for review (E08-S03)"
+        timestamptz decided_at
+    }
+
+    SAFETY_CHECK_FACTORS {
+        uuid id PK
+        uuid safety_check_id FK
+        safety_factor factor "attendance_vs_capacity, capacity_and_layout, emergency_access, accessibility, equipment_placement, crowd_movement, venue_restrictions (O-42)"
+        boolean satisfactory
+        text comment
+    }
 ```
+
+### Pending migration for the Week 7 Customer Changes
+
+Not yet written as SQL; recorded here so the ERD above and the next migration agree. One migration, `0011_week7_customer_changes.sql`, in this order:
+
+1. `ALTER TYPE user_role ADD VALUE 'event_coordinator_lead'; ALTER TYPE user_role ADD VALUE 'safety_officer';` (T-72)
+2. `ALTER TYPE event_status ADD VALUE 'safety_review' BEFORE 'confirmed';` (T-71) and `ALTER TYPE booking_status ADD VALUE 'tentative' ...; ADD VALUE 'expired';` (T-69; `tentative` was previously modelled as `pending` with no hold distinction)
+3. `CREATE TYPE unavailability_reason AS ENUM (...)`, `CREATE TYPE safety_decision AS ENUM (...)`, `CREATE TYPE safety_factor AS ENUM (...)`
+4. `ALTER TABLE venues ADD COLUMN setup_minutes smallint NOT NULL DEFAULT 0, ADD COLUMN turnaround_minutes smallint NOT NULL DEFAULT 0;` (T-66)
+5. `ALTER TABLE venue_bookings ADD COLUMN occupancy_range tstzrange, purpose text, headcount int, is_primary boolean NOT NULL DEFAULT false, expires_at timestamptz, reminder_sent_at timestamptz;` backfill `occupancy_range = booking_range` for existing rows (buffers were 0), then `DROP CONSTRAINT venue_bookings_no_active_overlap` and recreate it on `occupancy_range` with `status IN ('pending', 'tentative', 'confirmed')` (ADR-003 amendment). `occupancy_range` is maintained by the application at write time, not a Postgres generated column, because it depends on another table's values.
+6. `ALTER TABLE venue_blocks ADD COLUMN reason_category unavailability_reason NOT NULL DEFAULT 'maintenance';` (T-67)
+7. `ALTER TABLE events ADD COLUMN assigned_by uuid REFERENCES users(id) ON DELETE SET NULL;` (`coordinator_id` is already nullable since 0001, T-70); `ALTER TABLE coordinator_reassignments ADD COLUMN addressed_to_lead boolean NOT NULL DEFAULT false, ALTER COLUMN to_coordinator_id DROP NOT NULL;`
+8. `CREATE TABLE safety_checks (...)`, `CREATE TABLE safety_check_factors (...)` with RLS mirroring `audit_logs` (read by Safety Officers, Leads and the event's Coordinator and Organiser; written only through the application role).
+9. Seed one `event_coordinator_lead` and one `safety_officer` account in the seed script (C-57).
+
+The migration is written by the first Week 7 story to need it (E05-S05 is the likely first) and must land before any Week 7 story's frontend, following the migration-before-UI order the team used for 0008.

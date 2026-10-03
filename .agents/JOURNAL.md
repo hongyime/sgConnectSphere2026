@@ -1,5 +1,60 @@
 # Agent Journal
 
+- 2026-10-03: Review and merge of PR #193 (SCRUM-34 decide screens) on
+  Bryan's behalf from an isolated detached checkout: head 3dc0107 checked
+  against E03-S03 and its backend contract, no blocking findings; focused
+  component run 52/52 after restoring the worktree's frontend dependency
+  link; approval pullrequestreview-5394108313 cites the run; squash-merged as
+  c6c9aab at 00:16 +08:00. The execution record
+  (the 00:14:04 frontend-vitest file under docs/testing/runs/) was left
+  uncommitted in that checkout and is salvaged in #204; the checkout was then
+  removed during the 3 October worktree clean-up along with the merged
+  #182/#183/#191 checkouts and the clean, pushed #185/#187/#192/#194/#195/#196
+  ones.
+
+- 2026-10-03: Collapsed the Week 7 stack (#197-#203) into one PR after
+  working out that `dismiss_stale_reviews_on_push` plus squash merges plus the
+  shared `.agents/STATE.md` prepend meant every merge invalidated the next
+  approval. Kept the per-change postplans as the review aids. Set the live
+  ruleset's strict up-to-date policy to false (the team had already decided it
+  in #195) because it was the other half of the re-approval loop. Verification:
+  python scripts/check.py; exports and tc-coverage regenerated; pairwise
+  merge-tree checks between the five open PRs.
+
+- 2026-10-02: Week 7 Customer Changes PDF (six mandatory Release 1 changes:
+  venue setup/turnaround buffers, venue unavailable after booking, several
+  venues per event, expiring tentative holds, Event Coordinator Lead role with
+  unassigned queue, Safety Officer gate). Checked each against the lecture
+  process (Wk2 user stories/AC/INVEST, Wk3 refinement any time but sprint scope
+  fixed, review returns not-Done to backlog) and the repo's downstream-flow
+  rule (source-of-truth: BDR and backlog Markdown first, Jira last). Four
+  changes reverse earlier customer answers (C-01/C-16/C-60 no hold expiry,
+  C-18/C-38 no turnaround, C-41/C-55 auto-assign, C-56 reassignment actor);
+  earlier rows annotated rather than edited. Change 6's "preparation" has no
+  status today; team placed a Safety Review status before Confirmed and made
+  that the first Q&A question. Change 2 conflicts with E05-S04 Scenario 2
+  (refuses blocks over confirmed bookings), which is mid-sprint, so the delta
+  becomes a new E05 story. Change 3 retires T-20. Fixed five pre-existing
+  blank lines splitting the section B table. Verification:
+  python scripts/check.py in the worktree; docx regenerated with
+  .venv-tools\Scripts\python.exe scripts/export_adr_bdr_docx.py (ADR copy
+  discarded as unchanged).
+
+- 2026-10-02: Sprint 2 retro feedback asked for a merge queue. Checked: repo is
+  public (queue available on free plan), Bryan has admin, no ruleset existed,
+  classic protection had strict up-to-date on. Applied the ADR 0008 ruleset
+  migration first because merge_queue is ruleset-only. Read GitHub docs:
+  required-check workflows MUST trigger on merge_group or the queue times out;
+  the queue replaces the up-to-date rule; paths filters are ignored on
+  merge_group, so application-checks runs its full suite on every queued PR and
+  the companion skip workflow must not also run there (two same-named checks on
+  one commit). Chose ALLGREEN over HEADGREEN (no flaky required check exists),
+  30-minute timeout against an 8-12 minute suite, groups of five. Demoted the
+  hourly branch updater because each auto-update dismissed approvals, re-ran CI
+  and consumed a Vercel Hobby deployment (decision 0010). Verification in the
+  worktree: python scripts/check.py; JSON and YAML parsed with the tooling
+  venv; on: keys confirmed per workflow.
+
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
 
 - 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch so #183 can merge. Conflict was only the agent notes; kept both. Verification: python scripts/check.py. SCRUM-118.
