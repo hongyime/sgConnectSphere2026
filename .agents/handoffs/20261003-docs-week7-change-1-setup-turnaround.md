@@ -5,8 +5,9 @@ turnaround time), per T-66, T-73, T-74 in PR #194. No Jira key yet; the Story
 is created after this merges (docs/jira-ticket-classification.md).
 
 Done: E05-S05 returned to Release 1 (Sprint 3, carried 5 pts) with six
-scenarios in both backlog views; E06-S01/S03/S04/S05/S06 each gain one buffer
-scenario in place (all To Do); TC_E05S05_01-06, TC_E06S01_05, TC_E06S03_06,
+scenarios in both backlog views, plus Scenario 7 (buffered search) added at
+review because E06-S01 is Done (SCRUM-45, T-74); E06-S03/S04/S05/S06 each gain
+one buffer scenario in place (all To Do); TC_E05S05_01-07, TC_E06S03_06,
 TC_E06S04_04, TC_E06S05_02, TC_E06S06_06; exports regenerated (backlog 48 R1
 stories, cases 264), legacy workbook copied, tc-coverage regenerated,
 source-of-truth rows updated.

@@ -91,8 +91,9 @@
   .agents/handoffs/20261003-docs-week7-change-3-multi-venue.md.
 - 2026-10-03: Week 7 Change 1 backlog + cases on
   `docs/week7-change-1-setup-turnaround`: E05-S05 back in Release 1 (Sprint 3)
-  with six scenarios, buffer scenarios added in place to E06-S01/S03/S04/S05/
-  S06, eleven new TC_IDs, exports CAA 031026 regenerated (48 R1 stories, 264
+  with seven scenarios (the seventh, buffered search, moved from Done E06-S01
+  at review), buffer scenarios added in place to E06-S03/S04/S05/S06, eleven
+  new TC_IDs, exports CAA 031026 regenerated (48 R1 stories, 264
   cases), legacy workbook + tc-coverage refreshed. Depends on #194. Details in
   .agents/handoffs/20261003-docs-week7-change-1-setup-turnaround.md.
 - 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.

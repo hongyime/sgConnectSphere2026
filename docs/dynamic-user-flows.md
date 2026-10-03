@@ -381,3 +381,46 @@ sequenceDiagram
         Note over EVT,DB: The event is never cancelled by a safety decision; the Coordinator reworks and resubmits
     end
 ```
+
+## 15. Dynamic view - Tentative hold expiry (Week 7, C-68)
+
+```mermaid
+sequenceDiagram
+    actor EC as Event Coordinator
+    actor VS as Venue Staff
+    participant UI as React Web Application
+    participant VEN as Venue Management
+    participant DB as PostgreSQL
+    participant REL as Scheduler and Outbox Relay
+    participant NOT as Notification Dispatcher
+
+    EC->>UI: Place tentative hold on a free venue (E06-S05)
+    UI->>VEN: Hold
+    VEN->>DB: Insert booking status Tentative, expires_at = now + 48h (O-31), occupancy_range buffered
+    Note over VEN,DB: Exclusion constraint covers Tentative, so an overlapping hold or request is refused
+
+    opt Venue Staff extend the hold (Scenario 8)
+        VS->>UI: Set a later expiry
+        UI->>VEN: Extend
+        VEN->>DB: Update expires_at, append audit entry hold_extended
+    end
+
+    loop Each relay poll (ADR-006 amendment, T-69)
+        REL->>DB: UPDATE holds SET reminder_sent_at = now WHERE reminder_sent_at IS NULL AND expires_at <= now + 24h RETURNING
+        REL->>NOT: Reminder to the Coordinator for each returned hold (Scenario 7)
+        REL->>DB: UPDATE holds SET status = Expired WHERE status = Tentative AND expires_at <= now RETURNING
+        REL->>DB: Append audit entry hold_expired per row, in the same transaction
+        REL->>NOT: Expiry notice to the Coordinator (Scenario 6)
+        Note over REL,DB: Status and reminder_sent_at are the idempotency guards; a crashed poll re-run sends nothing twice
+    end
+
+    alt Coordinator converts in time (Scenario 3)
+        EC->>UI: Submit booking request for the held venue
+        UI->>VEN: Convert hold
+        VEN->>DB: Status Tentative to Pending, expires_at cleared
+    else Hold expired
+        EC->>UI: Open the event
+        UI->>VEN: Read bookings
+        VEN-->>UI: Hold shown as Expired; venue period is Free on the calendar
+    end
+```

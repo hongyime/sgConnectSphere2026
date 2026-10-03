@@ -149,7 +149,7 @@ Given a block is created over an upcoming event's dates When the block is saved 
 
 As a Venue Staff member, I want to record the setup and turnaround time each venue requires so that every availability and conflict check accounts for the time needed to prepare the room before an event and reset it afterwards.
 
-Returned to Release 1 by the Week 7 Customer Changes (C-65). The five-point estimate is the one carried from the original backlog and is re-estimated at Sprint 3 planning (T-73). Scenario 3 lives here rather than in E05-S03 because that story is Done (T-74). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md` and are amended if the customer answers differently.
+Returned to Release 1 by the Week 7 Customer Changes (C-65). The five-point estimate is the one carried from the original backlog and is re-estimated at Sprint 3 planning (T-73). Scenario 3 lives here rather than in E05-S03, and Scenario 7 here rather than in E06-S01, because both of those stories are Done (T-74). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md` and are amended if the customer answers differently.
 
 ### Acceptance criteria
 
@@ -176,6 +176,10 @@ Given a venue has a maintenance block ending at 12:00 and a setup time of 30 min
 #### Scenario 6 — Adjacent buffered windows do not conflict
 
 Given booking A occupies a venue until 12:45 once its turnaround is applied When booking B's buffered window on the same venue starts at exactly 12:45 Then there is no conflict, and when it starts at 12:44 there is
+
+#### Scenario 7 — Buffered occupancy excludes a venue from search
+
+Given a venue's existing booking or hold, once that venue's setup and turnaround time are applied, overlaps an event's requested period When a Coordinator runs the venue search for that event Then the venue does not appear as available even though the advertised event times do not overlap; E06-S01 is Done and is not edited, this is its buffered-search requirement placed here under T-74
 
 ### Checklist
 

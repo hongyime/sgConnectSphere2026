@@ -98,7 +98,7 @@ classDiagram
     HoldExpiryJob ..> VenueBooking : expires and reminds
     VenueBooking "0..1" --> "0..1" Venue : suggestedVenue on rejection
 
-    note for Venue "Table VENUES. occupancyWindow() widens a range by setupMinutes before and turnaroundMinutes after; every availability, search and conflict check uses it (C-65, E05-S05, E06-S01). recordUnavailability() marks overlapping Pending or Confirmed bookings Conflicting instead of refusing (C-66, E05-S06)."
+    note for Venue "Table VENUES. occupancyWindow() widens a range by setupMinutes before and turnaroundMinutes after; every availability, search and conflict check uses it (C-65, E05-S05 Scenarios 2 and 7). recordUnavailability() marks overlapping Pending or Confirmed bookings Conflicting instead of refusing (C-66, E05-S06)."
     note for VenueBooking "Table VENUE_BOOKINGS. occupancyRange is filled on write and is what the EXCLUDE constraint keys on (ADR-003 amended). Several bookings per Event are allowed; purpose, headcount and isPrimary are per booking (C-67). tentative holds carry expiresAt and are expired by HoldExpiryJob (C-68)."
     note for HoldExpiryJob "Runs inside the Scheduler and Outbox Relay poll (ADR-006 amended, T-69). Both operations are idempotent: status and reminderSentAt are the guards."
 ```

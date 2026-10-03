@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 2
 - **Points**: 5
-- **BDR references**: B-08, C-65, T-66
+- **BDR references**: B-08
 - **Owner**:
 
 ### User story
@@ -28,10 +28,6 @@ Given a venue is available but its capacity is below the event's expected attend
 #### Scenario 4 — Blocked or booked venues excluded
 
 Given a venue is blocked or already confirmed the event's period When I run the search Then it does not appear as available
-
-#### Scenario 5 — Buffered occupancy excludes a venue
-
-Given a venue's existing booking or hold, once that venue's setup and turnaround time are applied, overlaps the event's requested period When I run the search Then the venue does not appear as available even though the advertised event times do not overlap (C-65, T-66)
 
 ### Checklist
 

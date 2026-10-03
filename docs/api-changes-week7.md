@@ -24,7 +24,7 @@ ADR-009).
 | `POST /api/venues` `action: create` / `update` | Venue Staff | Body accepts `setup_minutes` and `turnaround_minutes` (0 to 480, integers); both default to 0. A change to either re-evaluates existing Pending and Confirmed bookings on that venue and returns `conflicts: [{booking_id, event_title, occupancy_range}]` for any newly overlapping pair, which the server has already marked Conflicting. | E05-S05 | TC_E05S05_01, _03, _06 |
 | `GET /api/venues?id=<id>` | all internal | Response gains `setup_minutes`, `turnaround_minutes`. | E05-S05 | TC_E05S05_01 |
 | `GET /api/venues?availability=1&id=<id>&from=&to=` | Venue Staff, Coordinator | Calendar rows return both `booking_range` and `occupancy_range`; the UI shades the buffer differently (E05-S05 Scenario 3). | E05-S05, E06-S04 | TC_E05S05_02, TC_E06S04_04 |
-| `GET /api/venues?search=1&...` | Coordinator | Suitability and free-slot checks use the occupancy window; a venue whose buffer overlaps the requested period is excluded. | E06-S01, E06-S03 | TC_E06S01_05, TC_E06S03_06, TC_E05S05_04, _05 |
+| `GET /api/venues?search=1&...` | Coordinator | Suitability and free-slot checks use the occupancy window; a venue whose buffer overlaps the requested period is excluded. | E05-S05 (E06-S01 is Done, T-74), E06-S03 | TC_E05S05_07, TC_E06S03_06, TC_E05S05_04, _05 |
 
 ### Change 2 — venue unavailability over existing bookings (C-66, E05-S06, E10-S05)
 
