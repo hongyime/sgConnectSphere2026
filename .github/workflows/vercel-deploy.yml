@@ -22,10 +22,15 @@ name: Vercel Deploy
 # paths is ever served by the deployment. This job is NOT a required status
 # check, so a skipped run does not block a merge and no companion skip
 # workflow is needed (contrast docs/decisions/0007).
+#
+# Draft pull requests do not deploy. The first preview is built when the PR
+# is marked ready for review (the ready_for_review event) and on every push
+# after that while it stays out of draft. Sprint 2 retrospective action, see
+# the 3 October 2026 amendment in docs/decisions/0010.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - 'docs/**'
       - '.agents/**'
@@ -57,6 +62,7 @@ concurrency:
 jobs:
   vercel-deploy:
     name: vercel-deploy
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

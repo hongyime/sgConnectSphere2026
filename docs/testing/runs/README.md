@@ -58,6 +58,7 @@ scope: backend/db                  # fixed enum; see below
 environment: local                 # local | ci
 run_type: manual                   # manual | automated | regression
 test_case_version: 270926          # DDMMYY suffix of the test-case workbook in force
+database: real                     # mocked | real | none
 commit: 839592e                    # 7-character SHA of HEAD when the run happened
 pr: 161                            # optional; omit if not tied to a PR
 ---
@@ -90,6 +91,17 @@ exporter can group and filter records reliably.
 `manual` for tests driven interactively. `automated` for tests triggered by a
 script or CI pipeline without human intervention. `regression` for a deliberate
 full re-run of a suite to confirm no regressions after a merge or release.
+
+### `database` values
+
+`mocked` when the suite ran against stubbed repositories, fixtures or an
+intercepted API with no PostgreSQL instance behind it. `real` when it ran
+against a PostgreSQL database (local, Supabase or CI service container).
+`none` for suites that touch no persistence at all, such as pure frontend
+component tests. The label is what a reviewer uses to judge whether an
+acceptance criterion about persistence or a cross-feature interaction has real
+evidence behind it (Sprint 2 retrospective action). Records written before
+3 October 2026 omit the field.
 
 ### `test_case_version`
 
@@ -244,7 +256,7 @@ directory, parse the frontmatter and results table, and write an "Execution
 Records" sheet to the course deliverable workbook. The column order for that
 sheet is frozen by this schema:
 
-`date`, `runner`, `scope`, `environment`, `run_type`, `test_case_version`,
+`date`, `runner`, `scope`, `environment`, `run_type`, `test_case_version`, `database`,
 `commit`, `pr`, `TC_ID`, `Test Name`, `Outcome`, `Remarks`
 
 Do not reorder these columns or rename the frontmatter fields without also

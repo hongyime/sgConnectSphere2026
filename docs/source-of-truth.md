@@ -8,12 +8,13 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 021026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 031026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 021026.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 021026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 031026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 031026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 021026.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 031026.xlsx` |
+| Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
 The Markdown authority for ADR/BDR was accepted in
@@ -66,11 +67,12 @@ skipped or fixme test declarations change. Reconcile catalogue changes with that
 legacy audit input before claiming the generated inventory covers a new case set.
 The 2026-09-27 E11 routing update refreshed that compatibility input from the
 regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
-The 2 October T-75/T-76 scope update regenerates the same-day `CAA 021026`
-workbook under the rule above and refreshes the compatibility input. It retains
-TC_E14S02_03/_06/_07 as retired history and adds TC_E06S04_05/_05/_06. The
-coverage generator still counts retired catalogue rows as scaffold/skip; its
-256-row total is a strict inventory, not 256 current acceptance obligations.
+The activity-log scope update (T-75/T-76, approved 2 October, merged after the
+Week 7 PRs) is folded into the `CAA 031026` workbooks under the rule above and
+refreshes the compatibility input. It retains TC_E14S02_03/_06/_07 as retired
+history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
+retired catalogue rows as scaffold/skip; its row total is a strict inventory,
+not a count of current acceptance obligations.
 
 ## Requirement changes flow downstream
 

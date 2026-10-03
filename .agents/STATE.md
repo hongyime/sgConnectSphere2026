@@ -30,6 +30,144 @@
   do not merge or close the business story as part of this scope update.
   Jira scope/planning reconciliation follows merge. Implementation and peer
   verification remain the story owner's work; other worktrees are untouched.
+- 2026-10-03: Week 7 backlog, cases and architecture consolidated on
+  `docs/week7-changes` (one PR, base main) superseding the stacked #197-#203:
+  the live ruleset dismisses approvals on every push and squash-merging a
+  stack forces a rebase push after each merge, so seven serial re-approvals
+  became one. Same commits plus #198 cherry-picked; exports regenerated (56 R1
+  stories, 78 product, 311 cases). The STATE/JOURNAL entries for #194, #195,
+  #196 and #204 were moved here so those four PRs share no files with each
+  other or with this one and can be approved in any order. Live ruleset
+  change the same day: `strict_required_status_checks_policy` set to false
+  (already decided in #195 / decision 0012) so a merge no longer forces an
+  "update branch" push on every other open PR.
+- 2026-10-03: Sprint 2 retro leftovers on `ci/sprint-2-retro-pr-evidence`
+  (base main): PR template and CONTRIBUTING ask for command/commit/outcome/
+  environment per cited run and a mocked-vs-real-database label; run records
+  gain `database:`; `vercel-deploy.yml` skips drafts and deploys on
+  ready_for_review (decision 0010 amended). Details in
+  .agents/handoffs/20261003-ci-sprint-2-retro-pr-evidence.md.
+- 2026-10-02: Week 7 Customer Changes recorded in the BDR on
+  docs/week7-customer-changes-bdr (worktree, off main 139217e). C-65 to
+  C-70 verbatim, T-66 to T-73, O-20 to O-44 with defaults and Q&A wording,
+  README version 6 with Safety Review inserted between Planning and Confirmed
+  (interim, O-39), E05-S05 and E10-S05 returned, G change log, BDR docx CAA
+  031026 regenerated and registered in source-of-truth (first export was 021026; the post-midnight rerun superseded it before merge). Docs only; no backlog
+  Markdown, test cases, ADRs or diagrams touched yet. Those are the next PRs in
+  order: roles foundation (T-72), then one PR per change for backlog + cases,
+  then architecture. Sprint 2 is still open; E05-S04 AC deliberately not edited
+  (T-67). The customer Q&A may not happen until the week of 9 October; T-73
+  says write now, amend after. Local feature/skeleton-templates-guide was
+  deleted after confirming #173 merged; the uncommitted .agents edits from
+  the Codex session on it are in git stash (stash@{0}, "agents-continuity-
+  edits-from-codex-session-2026-10-02"); that stash was later dropped on
+  Bryan's instruction. Codex worktrees
+  (-backfill, -design, -e14, -pr182, -pr183, -pr191) untouched.
+- 2026-10-02: Merge queue, two-step. Step 1 DONE live: configure_github.py
+  --apply migrated main to ruleset main-protection (id 24377800), classic
+  protection removed, same rules (ADR 0008 finally applied). Step 2 on
+  ci/merge-queue (worktree): merge_group triggers on ci/lfs-guard/
+  application-checks, skip workflow deliberately excluded, update-pr-branches
+  demoted to workflow_dispatch, main-ruleset.json gains merge_queue rule
+  (SQUASH, ALLGREEN, 30 min, 5/5/1/5) and strict=false, decision 0012,
+  CONTRIBUTING/github-pr-automation/github-owner-setup rewritten for "Merge
+  when ready". AFTER this PR merges and required checks pass on the new main
+  commit, an admin runs python scripts/configure_github.py --apply to turn
+  the queue on. Do NOT apply before merge: queued PRs would time out. Open PRs
+  #185 #187 #192 #194 are BEHIND/DIRTY; once the queue is live they no longer
+  need updating to merge, only conflict resolution.
+- 2026-10-02: Per-task handoff files (decision 0013) on
+  docs/per-task-handoff-files: .agents/handoffs/README.md, AGENTS.md now
+  says detailed notes go in .agents/handoffs/YYYYMMDD-<branch-slug>.md,
+  STATE/JOURNAL get one short entry in the final pre-review commit only, and
+  conflicts in them are resolved as the union. Companion to the merge queue
+  (#195, decision 0012); together they answer the retro feedback on repeated
+  branch updates and shared-file conflicts.
+- 2026-10-03: Week 7 architecture pass on `docs/week7-architecture` (stacked on
+  change 6): dated amendments to ADR-003/006/007/009/012, ADR README v7,
+  db_schema ERD + pending migration 0011, C4 and module docs to seven roles,
+  user-flow sections 13-14, new docs/class-diagram.md and
+  docs/api-changes-week7.md, ADR .docx regenerated (CAA 031026). Depends on
+  #194 and the #197-#202 stack. Details in
+  .agents/handoffs/20261003-docs-week7-architecture.md.
+- 2026-10-03: Week 7 Change 6 backlog + cases on
+  `docs/week7-change-6-safety-officer` (stacked on change 5): E08-S03 now
+  submits for Safety Review instead of setting Confirmed; E08-S04 re-review
+  after revert; new E08-S06 Safety Officer check; E11 rows; nine TC_IDs. All
+  six Week 7 changes now have backlog PRs (#197-#201 + this). Depends on #194
+  and the stack. Details in
+  .agents/handoffs/20261003-docs-week7-change-6-safety-officer.md.
+- 2026-10-03: Week 7 Change 5 backlog + cases on
+  `docs/week7-change-5-coordinator-lead` (stacked on change 4): E03-S01 stays
+  Done with Scenarios 1-2 marked superseded; new E03-S08/S09/S10 and
+  E01-S12/S13; E11-S01 routing rows; sixteen TC_IDs. Depends on #194, #197,
+  #199, #200. Details in
+  .agents/handoffs/20261003-docs-week7-change-5-coordinator-lead.md.
+- 2026-10-03: Week 7 Change 4 backlog + cases on `docs/week7-change-4-hold-expiry`
+  (stacked on change 3): E06-S05 gains expiry default, completion rule,
+  auto-expiry, reminder/notice, extension and boundary scenarios; E11-S01 gains
+  a routing row; TC_E06S05_03-07. Depends on #194, #197, #199. Details in
+  .agents/handoffs/20261003-docs-week7-change-4-hold-expiry.md.
+- 2026-10-03: Week 7 Change 2 backlog + cases on
+  `docs/week7-change-2-venue-unavailable` (stacked on change 1): new E05-S06
+  mark venue unavailable over bookings, E10-S05 back in Release 1, ten new
+  TC_IDs, exports regenerated. Depends on #194 and #197. Details in
+  .agents/handoffs/20261003-docs-week7-change-2-venue-unavailable.md.
+- 2026-10-03: Week 7 Change 3 backlog + cases on `docs/week7-change-3-multi-venue`
+  (stacked on change 1): E06-S03 Scenario 3 inverted to allow several venue
+  bookings per event with per-booking headcount, windows and a primary venue;
+  E06-S06, E08-S03, E10-S02, E09-S01 updated in place; seven new TC_IDs.
+  Depends on #194 and #197. Details in
+  .agents/handoffs/20261003-docs-week7-change-3-multi-venue.md.
+- 2026-10-03: Week 7 Change 1 backlog + cases on
+  `docs/week7-change-1-setup-turnaround`: E05-S05 back in Release 1 (Sprint 3)
+  with seven scenarios (the seventh, buffered search, moved from Done E06-S01
+  at review), buffer scenarios added in place to E06-S03/S04/S05/S06, eleven
+  new TC_IDs, exports CAA 031026 regenerated (48 R1 stories, 264
+  cases), legacy workbook + tc-coverage refreshed. Depends on #194. Details in
+  .agents/handoffs/20261003-docs-week7-change-1-setup-turnaround.md.
+- 2026-10-02: PR #183 review follow-up: refreshed from main 139217e; corrected live deactivation, accessibility selection, comments and clarification routes. Recounted 47 stories and 75 routes, with 11 stories having no current route. E14 viewer remains a prototype; PR #192 reader/sprint decisions are explicitly pending merge. Pending peer re-review; no story completion asserted.
+
+- 2026-10-02: Merged origin/main (f0c4264, #182) into the screen inventory branch. Kept both notes.
+
+  - 2026-10-02: Review on #183. Refreshed docs/plans/screen-inventory.md
+  after #175 (1780b3c): E10-S01 now includes /change-requests/new
+  (coming-soon) and E03-S07 includes the Organiser edit on /events/*.
+  Coming-soon route count is 3. SCRUM-118.
+
+  - 2026-10-02 (PR A, SCRUM-118): screen inventory added at docs/plans/screen-inventory.md,
+  generated from frontend/src/app/routes.tsx at f39e81e plus docs/backlog/release-1/.
+  Covers all 47 Release 1 stories (role, sprint, routes, status, page pattern per
+  design.md section 4) plus a second table for routes with no Release 1 story. Framed
+  as a draft for Amareet's SCRUM-118 review; Amareet's own draft is not in the repo
+  so the two must be reconciled. Verification: python scripts/check.py (PASS, 76
+  tests). Open items: reconcile against Amareet's draft; add rows if new routes land.
+
+  - 2026-10-02: Review on #182. Merged main (1780b3c) into
+- 2026-10-02: Addressed Amareet's PR #184 review locally: venue suitability is
+  a shared StatusPill in Card actions; the single no-full-matches Alert remains.
+  Added browser assertions against per-result alerts. Focused browser 8,
+  navigation component 4, build/typecheck and hygiene/tooling 76 passed.
+  Evidence: docs/testing/runs/20261002-214056-jininggg-full-regression.md.
+  Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
+  non-blocking scope advice applies to future PRs. User authorized committing and
+  pushing this follow-up for re-review; final CI and human approval remain required.
+
+- 2026-10-02: The upload rejection was an accidental click; user reauthorized
+  publication. Postplan uploaded after screenshot compression, retaining both
+  views: https://gnoj0c9eujtz.postplan.dev. Commit/push and draft PR preparation
+  follow on the verified branch. Keep E11 open and wait for remote CI/review.
+
+- 2026-10-02: Publication preparation: build, 8 venue browser checks and
+  repository checks passed on main f0c4264 plus the working changes; evidence
+  docs/testing/runs/20261002-162701-jininggg-full-regression.md. Postplan HTML validated locally,
+  but upload was declined. Open a draft; do not claim a hosted review artifact
+  or remote CI success. Commit/push/PR creation are authorized, not merge.
+
+- 2026-10-02: User authorized committing and opening the E06-S01 design PR.
+  Refreshed onto main f0c4264, preserving #182 font loading and both handoff
+  entries. E11 scope is documentation/regression evidence only; no Jira status
+  changes or merge authorized. Fresh publication checks follow in runs/.
 
 - 2026-10-02: PR #191 review refresh: integrated main 139217e and retained all three original calendar execution records unchanged. Their backend/browser scope remains unit or mocked API, with PostgreSQL validation explicitly outstanding. New verification covers repository tooling only. Awaiting peer review; no business story completion asserted.
 
@@ -45,6 +183,21 @@
   feature/SCRUM-117-load-inter. Kept #180's section 11 and removed the
   Typeface row, per design.md section 14. Google Fonts stays; the choice
   and the IP trade-off are in docs/decisions/0011. SCRUM-117.
+
+- 2026-10-02: Current-state review and E06-S01 presentation refresh on
+  fix/SCRUM-45-venue-search-design, based on main 1780b3c. Shared skeleton
+  #173/#180 and organiser edit #175 are now merged (older open notes below
+  are historical). VenueSearch uses shared page/form/card/feedback blocks,
+  preserves all query parameters and backend matching, and passes desktop/mobile
+  plus 320px overflow checks. Existing E06/E11 implementation records refreshed.
+  Clarification #163, decisions #174 and maintenance blocks #151 already call
+  the E11 writer; no duplicate notification runtime integration was added.
+  E03-S02/S03 remain In Progress for frontend; E05-S04 Done has a To Do
+  frontend pilot SCRUM-120. Venue/staff assignments and future workflow callers
+  remain missing. Live migration ledger stops at 0008; repository 0009 is not
+  recorded (read-only inspection, no migration applied). Tests and limitations
+  are in docs/testing/runs/20261002-161552-jininggg-full-regression.md.
+  No commit, push, Jira transition, live data write or real email send.
 
 - 2026-10-02: Frontend skeleton (SCRUM-116) and SCRUM-119 status. Merged:
   #171 route table and shell, #172 shared blocks, #176 and #177 (Amareet's

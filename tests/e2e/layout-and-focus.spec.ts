@@ -46,9 +46,38 @@ test('keyboard focus outline is visible against the page (WCAG 3:1)', async ({ p
 
 const singleFormPages = [
   '/attendee/register/EVT-A01', '/attendee/withdraw/EVT-A01', '/attendee/feedback/EVT-A01',
-  '/coordinator/events/EVT-C01/decide',
   '/venue/inventory/new', '/venue/inventory/V-01/edit', '/admin/users/U-01/role',
 ];
+
+// The decide page (E03-S03) is live and shows cards, not a form, until a
+// decision is chosen; it keeps the same narrow, centred column.
+test('decision page /coordinator/events/EVT-C01/decide is one centred column', async ({ page }) => {
+  await page.route('**/api/**', route => {
+    const url = new URL(route.request().url());
+    if (url.pathname === '/api/events' && url.searchParams.get('assigned') === '1') {
+      return route.fulfill({ json: { event: {
+        id: 'evt-c01', event_code: 'EVT-C01', title: 'Charity Run', status: 'under_review', status_changed_at: '2026-09-07T01:00:00.000Z',
+        starts_at: '2026-10-10T01:00:00.000Z', ends_at: '2026-10-10T04:00:00.000Z', expected_attendance: 200,
+        coordinator_assigned_at: '2026-09-07T01:00:00.000Z', organiser_name: 'Organiser A', organiser_email: 'organiser_a@clienta.com',
+        coordinator_id: 'c-a', coordinator_name: 'Coord A', pendingReassignment: null, outstandingQuestions: [],
+      } } });
+    }
+    return route.fulfill({ json: { events: [], notifications: [] } });
+  });
+  await page.goto('/coordinator/events/EVT-C01/decide');
+  const card = page.locator('main .card').first();
+  await expect(card).toBeVisible();
+  const { viewport, cardBox, headingLeft } = await page.evaluate(() => {
+    const box = document.querySelector('main .card')!.getBoundingClientRect();
+    return {
+      viewport: document.documentElement.clientWidth,
+      cardBox: { left: box.left, right: box.right },
+      headingLeft: document.querySelector('main h1')!.getBoundingClientRect().left,
+    };
+  });
+  expect(Math.abs(cardBox.left - (viewport - cardBox.right))).toBeLessThanOrEqual(2);
+  expect(Math.abs(headingLeft - cardBox.left)).toBeLessThanOrEqual(2);
+});
 
 for (const path of singleFormPages) {
   test(`single-form page ${path} is one centred column`, async ({ page }) => {

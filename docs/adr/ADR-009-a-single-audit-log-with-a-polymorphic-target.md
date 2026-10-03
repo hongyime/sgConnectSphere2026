@@ -1,7 +1,7 @@
 # ADR-009 — A single audit log with a polymorphic target
 
 - **Status:** Accepted
-- **Related BDR:** T-04, T-75, T-76
+- **Related BDR:** T-04, C-70, T-71, T-75, T-76
 
 ### Context
 
@@ -32,3 +32,7 @@ not the shared append-only storage or the immutability requirement.
 
 - No foreign key on entity_id, so referential integrity there is by convention. An orphaned entry is possible if a row is ever hard-deleted, which is one reason ADR-012's deactivate-don't-delete approach matters.
 - Mixed payloads mean field_changed, old_value and new_value are null for action types that do not change a field.
+
+### Amended 3 October 2026 for the Week 7 Customer Changes
+
+The Operational Safety Check (C-70, T-71, E08-S06) adds decisions that must be auditable with their reasoning: `safety_check_submitted`, `safety_check_approved`, `safety_check_changes_requested` and `safety_check_rejected`. They are ordinary `AUDIT_LOGS` rows with `entity_type = 'event'`; the seven-factor checklist is not forced into the mixed `field_changed` / `old_value` / `new_value` columns but lives in a new `SAFETY_CHECKS` table that the audit row references by `entity_id` of the decision, keeping this table narrow and the checklist queryable. The same pattern covers the other Week 7 additions without new columns: `hold_expired`, `hold_extended`, `venue_unavailability_recorded`, `booking_marked_conflicting`, `lead_assigned`, `lead_reassigned`. Decision 0011-era immutability (migration 0010) applies to all of them unchanged.

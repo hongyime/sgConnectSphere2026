@@ -119,13 +119,23 @@ requests.
 - If `vercel-deploy` is ever promoted to a required check, a companion skip
   workflow must be added in the same pull request, mirroring the
   `paths-ignore` list.
+- Amended 3 October 2026 (Sprint 2 retrospective): draft pull requests no
+  longer deploy. The job carries
+  `if: github.event_name == 'push' || github.event.pull_request.draft == false`
+  and the trigger adds the `ready_for_review` event, so the first preview is
+  built when the author marks the PR ready and on each push after that.
+  Review-ready is already the point at which CONTRIBUTING asks for review,
+  so nothing a reviewer needs is lost; the pushes made while iterating in
+  draft stop consuming the daily allowance.
 
 ## Reversibility
 
 Remove the `git` key from `vercel.json` to restore Vercel's git-integration
 deployments; remove the two `paths-ignore` blocks from `vercel-deploy.yml` to
-restore deployments on documentation commits. Both are single-file edits with
-no data migration and no effect on existing deployments or domains.
+restore deployments on documentation commits; remove the job-level `if` and
+the `ready_for_review` event type to restore deployments on drafts. All are
+single-file edits with no data migration and no effect on existing
+deployments or domains.
 
 ## References
 

@@ -95,6 +95,40 @@ export async function respondToReassignment(reassignmentId: string, decision: 'a
   return result.ok ? { ok: true as const, data: result.data.reassignment } : result;
 }
 
+// E03-S03 (SCRUM-34): the assigned Coordinator approves or rejects an Under
+// Review request. The rules live in backend/src/modules/eventLifecycle/decision.ts;
+// the screen mirrors only the reason checks, with the server's own sentences.
+//   POST /api/events?decide=1&id=<id>  { decision: 'approve' } | { decision: 'reject', reason }
+// A blocked approval is a 409 whose body lists `missingFields` (readable labels).
+export const MAX_DECISION_REASON = 2000;
+
+export const decisionMessages = {
+  reasonRequired: 'Add a reason for rejecting this request.',
+  reasonTooLong: `The reason must be ${MAX_DECISION_REASON} characters or fewer.`,
+};
+
+export type Decision = { decision: 'approve' } | { decision: 'reject'; reason: string };
+export type DecisionResult = {
+  eventId: string;
+  eventCode: string | null;
+  status: EventStatus;
+  statusChangedAt: string;
+  decisionReason: string | null;
+};
+
+export function decideRequest(eventId: string, decision: Decision) {
+  return apiCall<{ decision: DecisionResult }>(
+    `/api/events?decide=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', decision),
+    'Unable to record your decision.');
+}
+
+// The items a blocked approval lists, kept only if they are strings.
+export function readMissingFields(details: Record<string, unknown> | undefined): string[] {
+  const value = details?.missingFields;
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+}
+
 export function eventRef(event: { event_code: string | null; id: string }) {
   return event.event_code ?? event.id;
 }

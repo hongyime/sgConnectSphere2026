@@ -100,6 +100,48 @@ dependency and incremental integration scope. ADR-006 now specifies business
 write/audit/in-app/outbox atomicity and retry identity. Original sprint estimates
 are unchanged; missing workflow and inbox acceptance remains open.
 
+## Version 5 to version 6: Week 7 Customer Changes
+
+Version 6 records the Week 7 Customer Changes document (2 October 2026) as C-65 to C-70, verbatim and in document order. All six changes are mandatory for Release 1 and the customer anticipates no further changes.
+
+Scope changes from the customer document
+
+Returned E05-S05 to Release 1 (C-65, T-66). Setup and turnaround time are per-venue attributes and every availability and conflict check uses the buffered occupancy window. Reverses C-18 and C-38. Bookings that conflict under the new rule are flagged, never released.
+
+Withdrew E05-S04's refusal of a block over a confirmed booking (C-66, T-67), delivered as a new E05 story because E05-S04 is in the Sprint 2 sprint backlog and sprint scope is fixed. Overlapping bookings become Conflicting; the event is never cancelled or moved automatically. Returned E10-S05 to Release 1.
+
+Retired T-20 and inverted E06-S03 Scenario 3 (C-67, T-68). An event may hold several venue bookings, pending or confirmed, each checked independently. E08-S03's confirmation precondition becomes plural.
+
+Amended T-49 (C-68, T-69). Every tentative hold carries an expiry; the system releases expired holds; the Coordinator is told before and at expiry. Reverses the no-expiry position in C-01, C-16 and C-60.
+
+Retired T-14 and amended T-15 (C-69, T-70). New requests enter an unassigned queue worked by the new Event Coordinator Lead; Coordinators manage only their own events; the Lead may reassign.
+
+Added a Safety Review status between Planning and Confirmed (C-70, T-71) as the interim placement of the Operational Safety Check. The Safety Officer approves, rejects or requests changes; the latter two return the event to Planning.
+
+Extended the role model to seven roles (T-72). Both new roles are pre-seeded under C-57; ADR-012 holds.
+
+Applied the Week 7 "Managing Changes" guide (T-74). Each change is classified in its section A row (five new requirements, one correction plus new requirement). Done stories touched by a change (E03-S01, E05-S01, E05-S03, E06-S01, E03-S05, E01-S01, E01-S02, E01-S11) stay Done and the new behaviour becomes new stories; To Do stories are updated in place; E05-S04, in the Sprint 2 sprint backlog, is left alone and corrected by a new story. Estimation rule recorded in T-73: new stories estimated at planning, changed To Do stories re-estimated only if materially different, Done stories never, in-flight stories for remaining work.
+
+Process
+
+T-73: the customer Q&A may fall after Sprint 3 planning, so every Week 7 story is written now against recorded defaults. O-20 to O-44 hold one row per ambiguity with the default and the exact Q&A question; dependent criteria are tagged "(assumes O-xx)"; Sprint 3 pulls first the stories with no High-priority open item. Twelve items are High, five Medium, eight Low.
+
+Superseded rows
+
+C-01, C-16, C-18, C-38, C-41, C-55, C-56 and C-60 gained a trailing note naming the Week 7 entry that supersedes them, in part or in full. Their original text is unchanged.
+
+Housekeeping
+
+Removed five stray blank lines inside the section B table (between T-57 and T-62, and before T-64) that split it into unrelated fragments when rendered. No row text changed.
+
+Still outstanding after version 6
+
+O-08, O-11, O-12, O-13, O-18 and O-19 remain open from earlier versions. O-20 to O-44 are open pending the customer Q&A.
+
+Downstream documents affected
+
+Backlog Markdown (release-1 and product views), acceptance test cases, the canonical status model's consumers (E03-S05, E08-S03, E08-S04, E08-S05, E01-S11), ADR-003 (buffered exclusion range), ADR-006 (hold expiry on the worker), ADR-007 and ADR-012 (seven roles), ADR-009 (safety-check audit actions), docs/db_schema.md and a new migration (user_role values, venue buffers, booking expiry, safety review), docs/c4-diagrams.md, docs/modular-monolith-architecture.md and docs/dynamic-user-flows.md (two new actors and sequences), the E11-S01 routing matrix, and the Figma role boards. Each is handled in its own follow-up PR; this version records the decisions they implement.
+
 ## 2 October 2026: Activity-log reader, booking ownership and Sprint 3 carryover
 
 Product-owner approval is recorded in T-75 and T-76. Event Coordinators use the
@@ -109,7 +151,7 @@ role or global audit viewer is added to Release 1.
 
 Booking approval, rejection and release logging moves from E14-S02 Scenario 3
 to E06-S04 Scenario 5. TC_E14S02_03/_06/_07 remain as retired references to
-TC_E06S04_05/_05/_06. Remaining E14-S02 Scenarios 1, 2, 4 and 5 carry into
+TC_E06S04_05/_06/_07. Remaining E14-S02 Scenarios 1, 2, 4 and 5 carry into
 Sprint 3; their completion is independent of E06-S04. Original commitments and
 estimates remain historical evidence. Both backlog views, acceptance cases,
 active scaffold files, ADR-009 and derived exports are reconciled in this change.
