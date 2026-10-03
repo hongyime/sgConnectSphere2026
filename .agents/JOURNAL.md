@@ -1,5 +1,8 @@
 # Agent Journal
 
+- 2026-10-03: E05 test cases name data not in the seed; use seeded
+  equivalents and list them in the record's Remarks.
+
 - 2026-10-03: Review and merge of PR #193 (SCRUM-34 decide screens) on
   Bryan's behalf from an isolated detached checkout: head 3dc0107 checked
   against E03-S03 and its backend contract, no blocking findings; focused
