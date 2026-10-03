@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 301 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 311 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **301**
-- Automated (explicit TC_ID in an active test title): **122** (40.5%)
+- Total test cases: **311**
+- Automated (explicit TC_ID in an active test title): **122** (39.2%)
   - Real-database (`.integration.test` / `.db.test`): **24**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **97**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (43.9%)
-- No test yet (no test file mentions the TC_ID): **47** (15.6%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (42.4%)
+- No test yet (no test file mentions the TC_ID): **57** (18.3%)
 
 ## Coverage by epic
 
@@ -21,16 +21,16 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 25 | 11 | 2 |
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 52 | 39 | 3 | 10 |
-| E05 | 30 | 24 | 0 | 6 |
+| E05 | 36 | 24 | 0 | 12 |
 | E06 | 35 | 4 | 18 | 13 |
 | E07 | 30 | 0 | 30 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
-| E10 | 16 | 0 | 15 | 1 |
+| E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **301** | **122** | **132** | **47** |
+| **Total** | **311** | **122** | **132** | **57** |
 
 ## Case-by-case status
 
@@ -188,6 +188,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ❌ none | — |
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ❌ none | — |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ❌ none | — |
+| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ❌ none | — |
+| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ❌ none | — |
+| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ❌ none | — |
+| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be refused | ❌ none | — |
+| `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ❌ none | — |
+| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ❌ none | — |
 
 ### E06
 
@@ -356,6 +362,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_03 - Verify that cancelling a event should notify all of its registered and waitlisted Attendees |
 | `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_04 - Verify that a cancelled event should be read-only and show its cancellation reason and date to any viewer |
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_05 - Verify that an Event Organiser attempting to cancel directly should have the action recorded as a cancellation request for the Coordinator to  |
+| `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ❌ none | — |
+| `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ❌ none | — |
+| `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ❌ none | — |
+| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ❌ none | — |
 
 ### E11
 

@@ -1,5 +1,58 @@
 # Agent State
 
+- 2026-10-03: Week 7 backlog, cases and architecture consolidated on
+  `docs/week7-changes` (one PR, base main) superseding the stacked #197-#203:
+  the live ruleset dismisses approvals on every push and squash-merging a
+  stack forces a rebase push after each merge, so seven serial re-approvals
+  became one. Same commits plus #198 cherry-picked; exports regenerated (56 R1
+  stories, 78 product, 311 cases). The STATE/JOURNAL entries for #194, #195,
+  #196 and #204 were moved here so those four PRs share no files with each
+  other or with this one and can be approved in any order. Live ruleset
+  change the same day: `strict_required_status_checks_policy` set to false
+  (already decided in #195 / decision 0012) so a merge no longer forces an
+  "update branch" push on every other open PR.
+- 2026-10-03: Sprint 2 retro leftovers on `ci/sprint-2-retro-pr-evidence`
+  (base main): PR template and CONTRIBUTING ask for command/commit/outcome/
+  environment per cited run and a mocked-vs-real-database label; run records
+  gain `database:`; `vercel-deploy.yml` skips drafts and deploys on
+  ready_for_review (decision 0010 amended). Details in
+  .agents/handoffs/20261003-ci-sprint-2-retro-pr-evidence.md.
+- 2026-10-02: Week 7 Customer Changes recorded in the BDR on
+  docs/week7-customer-changes-bdr (worktree, off main 139217e). C-65 to
+  C-70 verbatim, T-66 to T-73, O-20 to O-44 with defaults and Q&A wording,
+  README version 6 with Safety Review inserted between Planning and Confirmed
+  (interim, O-39), E05-S05 and E10-S05 returned, G change log, BDR docx CAA
+  031026 regenerated and registered in source-of-truth (first export was 021026; the post-midnight rerun superseded it before merge). Docs only; no backlog
+  Markdown, test cases, ADRs or diagrams touched yet. Those are the next PRs in
+  order: roles foundation (T-72), then one PR per change for backlog + cases,
+  then architecture. Sprint 2 is still open; E05-S04 AC deliberately not edited
+  (T-67). The customer Q&A may not happen until the week of 9 October; T-73
+  says write now, amend after. Local feature/skeleton-templates-guide was
+  deleted after confirming #173 merged; the uncommitted .agents edits from
+  the Codex session on it are in git stash (stash@{0}, "agents-continuity-
+  edits-from-codex-session-2026-10-02"); that stash was later dropped on
+  Bryan's instruction. Codex worktrees
+  (-backfill, -design, -e14, -pr182, -pr183, -pr191) untouched.
+- 2026-10-02: Merge queue, two-step. Step 1 DONE live: configure_github.py
+  --apply migrated main to ruleset main-protection (id 24377800), classic
+  protection removed, same rules (ADR 0008 finally applied). Step 2 on
+  ci/merge-queue (worktree): merge_group triggers on ci/lfs-guard/
+  application-checks, skip workflow deliberately excluded, update-pr-branches
+  demoted to workflow_dispatch, main-ruleset.json gains merge_queue rule
+  (SQUASH, ALLGREEN, 30 min, 5/5/1/5) and strict=false, decision 0012,
+  CONTRIBUTING/github-pr-automation/github-owner-setup rewritten for "Merge
+  when ready". AFTER this PR merges and required checks pass on the new main
+  commit, an admin runs python scripts/configure_github.py --apply to turn
+  the queue on. Do NOT apply before merge: queued PRs would time out. Open PRs
+  #185 #187 #192 #194 are BEHIND/DIRTY; once the queue is live they no longer
+  need updating to merge, only conflict resolution.
+- 2026-10-02: Per-task handoff files (decision 0013) on
+  docs/per-task-handoff-files: .agents/handoffs/README.md, AGENTS.md now
+  says detailed notes go in .agents/handoffs/YYYYMMDD-<branch-slug>.md,
+  STATE/JOURNAL get one short entry in the final pre-review commit only, and
+  conflicts in them are resolved as the union. Companion to the merge queue
+  (#195, decision 0012); together they answer the retro feedback on repeated
+  branch updates and shared-file conflicts.
 - 2026-10-03: Week 7 architecture pass on `docs/week7-architecture` (stacked on
   change 6): dated amendments to ADR-003/006/007/009/012, ADR README v7,
   db_schema ERD + pending migration 0011, C4 and module docs to seven roles,
