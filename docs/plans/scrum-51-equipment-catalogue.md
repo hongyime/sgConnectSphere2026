@@ -98,3 +98,30 @@ Do not claim Jira Done before the repository Definition of Done is satisfied.
 - [x] Application CI passes on implementation commit `38b4f5f`; recorded CI session.
 - [ ] Teammate approves the frontend and backend behaviour.
 - [ ] Reviewed PR merges into main and Jira is reconciled against full evidence.
+
+## Manual validation from the user's point of view — 6 October 2026
+
+Review record: [20261006-012313-xiangyingg-frontend-e2e.md](../testing/runs/20261006-012313-xiangyingg-frontend-e2e.md).
+Observations below come from the user's local browser screenshots and reports.
+They establish what was visible, not an unobserved save/refresh sequence. The
+local runtime commit was not captured. Automated results are separate evidence.
+
+| Check | Before / setup | User action | Expected after-action view | Observed manual result |
+| --- | --- | --- | --- | --- |
+| New equipment (TC_E07S01_01) | Technical Support account; planned new Test Microphone with Audio, Test item, 10 units, Main Storage, Working | Add equipment and save all fields | New item appears in catalogue and details with the entered values; remains after refresh | Screenshots show Test Microphone in catalogue and details, with Audio, Test item, Main Storage and Working. Quantity is already 0. Original creation values, save sequence and refresh persistence were not captured. |
+| Edit quantity (TC_E07S01_04) | Existing Test Microphone; original quantity not captured | User reports reducing stock | Catalogue and detail quantity reflect the saved total; Working remains if operational status was not edited | Quantity 0 and Working are visible in both screenshots. Refresh persistence and changes to other attributes remain manually unconfirmed. |
+| History clarity | Before fix, detail view has an empty Event / Period / Quantity / Status header row | Open an item with no reservations after updating to 8557f2d | Reservation history heading and No reservations yet; no misleading empty table | Before view confirmed by user screenshot. After view verified by agent desktop/mobile screenshots and eight intercepted-API tests; user confirmation after refresh pending. |
+| Stock warning (TC_E07S01_02) | Test item must have an active future reservation, e.g. 6 units; initial stock 10 | Reduce total stock to 4 and save | Save result lists the affected event; history shows Needs review; assigned event Coordinator sees Equipment reservation needs review in Notifications | Not manually confirmed. The new item's empty history does not establish a reservation. Separate real PostgreSQL and authenticated browser tests passed. |
+| Retirement protection (TC_E07S01_03) | Item has an active future/ongoing reservation | Retire and confirm | Retirement is refused; equipment and reservation remain visible | Not manually confirmed; covered by automated real-database/browser evidence. |
+| Retirement and history (TC_E07S01_03) | Item has no active future/ongoing reservations; retain its detail URL before retirement | Retire and confirm, then reopen the detail URL | Item disappears from active catalogue; detail shows Retired and retains any historical reservation rows | Not manually confirmed; covered by automated real-database/browser evidence. |
+| Field validation | Open new/edit form | Submit an empty required field or negative quantity | Save is blocked and relevant field validation is shown | Not manually confirmed; covered by automated validation tests. |
+
+Quantity is total stock, not units remaining for a selected period. Working
+is physical operational status, not stock sufficiency. Reservation flags require
+existing active reservations. Reservation creation through the full application
+workflow belongs to E07-S04; record preparation is needed to manually exercise
+E07-S01's reservation interactions before that workflow is available.
+
+Do not mark the pending manual rows as passed until the user performs the stated
+steps and supplies the observed result. Add a new immutable execution session for
+that later run rather than rewriting the existing session record.

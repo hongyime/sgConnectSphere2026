@@ -66,3 +66,10 @@ User requested a visible history heading and empty message in PR #214. Added
 Reservation history and shared EmptyState (No reservations yet), retaining the
 table for populated history. Typecheck and 8 desktop/mobile browser cases passed;
 screenshots inspected and execution session recorded. Final follow-up CI pending.
+
+## Manual documentation follow-up
+
+Added user-perspective before/action/expected/observed table and immutable manual
+screenshot review record for E07-S01. Screenshots establish the item at quantity
+0 and empty history; full creation/persistence, shortage/notification and retirement
+manual cases remain unconfirmed. Automated acceptance evidence stays separate.
