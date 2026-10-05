@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E01 - 32 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E01 - 38 cases. Source: docs/testing/cases/E01.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 // E01-S01 is active in tests/auth-e2e/loginRecovery.spec.ts.
@@ -554,6 +554,44 @@ test.describe("E01-S11", () => {
     // 1. Deactivate the account
     // 2. Log in as a System Administrator
     // 3. Open the Activity Log and search for organiser_a@clienta.com
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E01.md.
+
+test.describe("E01-S12 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E01S12_01 — Verify that a Coordinator's event list should contain only events assigned to them and exclude the unassigned queue", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_01).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_02 — Verify that a Coordinator opening or acting on a colleague's event directly should be refused with nothing revealed and the attempt logged", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_02).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_03 — Verify that a Coordinator should still see every venue's availability states with other events' details withheld", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_03).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_04 — Verify that Organiser client isolation should be unchanged by Coordinator scoping", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_04).
+    void page;
+  });
+
+});
+
+test.describe("E01-S13 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E01S13_01 — Verify that a Lead and a Safety Officer should each land on their own workspace with only their role's navigation", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S13_01).
+    void page;
+  });
+
+  test.fixme("TC_E01S13_02 — Verify that new-role accounts should hold exactly one role and that the five existing roles should still land where they did", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S13_02).
     void page;
   });
 

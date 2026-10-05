@@ -29,7 +29,7 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
   });
 }
 
-// E03 - 27 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E03 - 37 cases. Source: docs/testing/cases/E03.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E03-S01", () => {
@@ -931,6 +931,67 @@ test.describe("E03-S07", () => {
     await expect(page.getByRole('status')).toContainText('purpose');
     await expect(page.getByRole('heading', { name: 'Activity log' }).locator('..')).toContainText('Updated purpose');
     await expect(page.getByRole('heading', { name: 'Activity log' }).locator('..')).toContainText('Organiser A');
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E03.md.
+
+test.describe("E03-S08 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E03S08_01 — Verify that a newly submitted request should enter the unassigned queue with no Coordinator and status Submitted, and the Lead should be notified", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S08_01).
+    void page;
+  });
+
+  test.fixme("TC_E03S08_02 — Verify that the unassigned queue should show each request's basic information oldest first and be visible to Leads only", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S08_02).
+    void page;
+  });
+
+  test.fixme("TC_E03S08_03 — Verify that the Lead assigning a Coordinator should move the request to Under Review, notify the Coordinator and Organiser, remove it from the queue and log the action", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S08_03).
+    void page;
+  });
+
+  test.fixme("TC_E03S08_04 — Verify that a Coordinator attempting to assign a queued request should be refused and the attempt logged", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S08_04).
+    void page;
+  });
+
+  test.fixme("TC_E03S08_05 — Verify that the Organiser's status history should show Submitted then Under Review after a queue assignment, as it did under automatic assignment", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S08_05).
+    void page;
+  });
+
+});
+
+test.describe("E03-S09 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E03S09_01 — Verify that a Lead reassignment should take effect immediately with both Coordinators and the Organiser notified and the change logged", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S09_01).
+    void page;
+  });
+
+  test.fixme("TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague's acceptance", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S09_02).
+    void page;
+  });
+
+  test.fixme("TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot reassign at all", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S09_03).
+    void page;
+  });
+
+});
+
+test.describe("E03-S10 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with workload counts", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S10_01).
+    void page;
+  });
+
+  test.fixme("TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged", async ({ page }) => {
+    // Implement from docs/testing/cases/E03.md (TC_E03S10_02).
+    void page;
   });
 
 });
