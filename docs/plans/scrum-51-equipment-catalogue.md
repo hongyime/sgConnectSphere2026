@@ -43,7 +43,8 @@ cannot establish concurrency guarantees for an unimplemented reservation writer.
   inline ConfirmPanel for retirement.
 - `/support/catalogue/new` and `/support/catalogue/:equipmentId/edit`:
   separate narrow form routes with FormSection, FormField and busy save feedback.
-- `/support/catalogue/:equipmentId`: details and retained reservation history.
+- `/support/catalogue/:equipmentId`: details and retained reservation history,
+  with a visible heading and shared "No reservations yet" empty state.
 - The Technical Support header includes the catalogue link. Coordinator reads
   have no catalogue mutation controls; server permissions apply to direct calls.
 

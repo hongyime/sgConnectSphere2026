@@ -30,7 +30,7 @@ test('TC_E07S01_03 retirement removes item and detail retains historical reserva
     return route.fulfill({json:{equipment:new URL(route.request().url()).searchParams.has('id')?{...item,reservations:[{id:'old',eventCode:'EVT-PAST',quantity:2,startsAt:'2026-01-01T01:00:00Z',endsAt:'2026-01-01T03:00:00Z',status:'released',requiresReconfirmation:false}]}:item.is_active?[item]:[]}});
   });
   await page.goto('/support/catalogue');await page.getByRole('button',{name:'Retire Wireless Microphone…'}).click();await page.getByRole('button',{name:'Confirm retirement'}).click();await expect(page.getByText('No equipment yet')).toBeVisible();
-  await page.goto('/support/catalogue/eq-1');await expect(page.getByText('EVT-PAST',{exact:true})).toBeVisible();await expect(page.getByText('Retired',{exact:true})).toBeVisible();
+  await page.goto('/support/catalogue/eq-1');await expect(page.getByRole('heading',{name:'Reservation history'})).toBeVisible();await expect(page.getByText('No reservations yet')).toHaveCount(0);await expect(page.getByText('EVT-PAST',{exact:true})).toBeVisible();await expect(page.getByText('Retired',{exact:true})).toBeVisible();
 });
 test('TC_E07S01_04 update equipment location persists after reopening, with responsive shared layout',async({page},info)=>{
   let item={...initial};await signInAs(page,'technical_support_staff');
@@ -41,6 +41,8 @@ test('TC_E07S01_04 update equipment location persists after reopening, with resp
   await page.goto('/support/catalogue');await page.getByRole('link',{name:'Edit Wireless Microphone'}).click();await page.getByLabel('Location',{exact:true}).fill('Annex Storage');
   await page.screenshot({path:`artifacts/equipment-form-${info.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:'Save equipment'}).click();await page.getByRole('link',{name:'Wireless Microphone',exact:true}).click();await expect(page.getByText('Annex Storage',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'Reservation history'})).toBeVisible();await expect(page.getByText('No reservations yet',{exact:true})).toBeVisible();
+  await page.screenshot({path:`artifacts/equipment-empty-history-${info.project.name}.png`,fullPage:true});
   await expect(page.locator('h1')).toHaveCount(1);await expect(page.locator('main')).toHaveClass(/ui-page/);
   await page.goto('/support/catalogue');await page.screenshot({path:`artifacts/equipment-catalogue-${info.project.name}.png`,fullPage:true});
   await page.setViewportSize({width:320,height:800});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);

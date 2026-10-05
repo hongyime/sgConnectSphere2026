@@ -28,7 +28,7 @@ PR #214 is published with its checklist and hosted PostPlan:
 https://github.com/hongyime/sgConnectSphere2026/pull/214
 https://bid2thk1w76p.postplan.dev
 Application CI passed on implementation commit 38b4f5f and is recorded.
-Final documentation-only head checks must finish before marking ready.
+PR #214 is ready for review. SCRUM-51 was moved to In Review with evidence.
 Peer review and merge remain required; no deployment or Jira Done transition.
 
 ## Implementation choices for review
@@ -59,3 +59,10 @@ Initial CI exposed the old SCRUM-98 catalogue smoke test expecting static fixtur
 rows. It now supplies a session and catalogue API response, with exact accessible
 row-link assertions. Catalogue plus support regressions passed 20 desktop/mobile
 cases; final-head CI still needs to finish.
+
+## Reservation history clarity follow-up
+
+User requested a visible history heading and empty message in PR #214. Added
+Reservation history and shared EmptyState (No reservations yet), retaining the
+table for populated history. Typecheck and 8 desktop/mobile browser cases passed;
+screenshots inspected and execution session recorded. Final follow-up CI pending.

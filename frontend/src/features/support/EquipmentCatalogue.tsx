@@ -116,12 +116,16 @@ export function EquipmentDetail() {
         <FactList columns={2} items={[
           ['Type',result.data.category],['Description',result.data.description],['Quantity',result.data.total_quantity],['Location',result.data.home_location],
         ]} />
-        <DataTable caption="Reservation history" rows={result.data.reservations ?? []} rowKey={r=>r.id} columns={[
+        <section aria-label="Reservation history">
+          <h3>Reservation history</h3>
+          {!result.data.reservations?.length ? <EmptyState title="No reservations yet">This equipment has no reservation history.</EmptyState>
+            : <DataTable caption="Reservation history" rows={result.data.reservations} rowKey={r=>r.id} columns={[
           {header:'Event',primary:true,cell:r=>r.eventCode ?? r.title},
           {header:'Period',cell:r=>formatDateRange(r.startsAt,r.endsAt)},
           {header:'Quantity',cell:r=>r.quantity},
           {header:'Status',cell:r=>r.requiresReconfirmation?'Needs review':r.status},
-        ]} />
+        ]} />}
+        </section>
         {result.data.is_active && session.status==='signed-in' && session.user.role==='technical_support_staff' && <ButtonLink to={`/support/catalogue/${equipmentId}/edit`}>Edit equipment</ButtonLink>}
       </Card>}
     <ButtonLink to="/support/catalogue">Back to catalogue</ButtonLink>
