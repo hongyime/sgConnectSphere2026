@@ -1,3 +1,4 @@
+import { equipmentRequestHandler } from './requestHandler.js';
 import type { Pool } from 'pg';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import type { Query } from '../eventVisibility/service.js';
@@ -12,6 +13,7 @@ export function createEquipmentHandler(deps: {
   query: Query; pool: () => Pool; allowedOrigin: typeof isAllowedOrigin;
 }) {
   return async function equipmentHandler(request: VercelRequest, response: VercelResponse) {
+    if (new URL(request.url ?? '/', 'http://localhost').searchParams.get('mode') === 'requests') { await equipmentRequestHandler(request, response); return; }
     if (!['GET', 'POST'].includes(request.method ?? '')) {
       response.setHeader('Allow', 'GET, POST'); sendJson(response, 405, { error: 'method_not_allowed' }); return;
     }
