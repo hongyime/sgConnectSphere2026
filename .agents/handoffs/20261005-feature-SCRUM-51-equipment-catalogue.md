@@ -24,7 +24,10 @@ Jira SCRUM-51 and the shared frontend skeleton/design.md.
 
 Repository hygiene, 77 tooling tests and final diff checks passed. User requested
 implementation and subsequently authorized commit, push and PR publication.
-Publish the PR with its checklist and hosted PostPlan, then verify remote CI.
+PR #214 is published with its checklist and hosted PostPlan:
+https://github.com/hongyime/sgConnectSphere2026/pull/214
+https://bid2thk1w76p.postplan.dev
+Verify final remote CI before marking ready for review.
 Peer review and merge remain required; no deployment or Jira Done transition.
 
 ## Implementation choices for review
@@ -46,5 +49,5 @@ STATE.md/JOURNAL.md. Stock warnings must compare simultaneous demand, not the
 sum of reservations across separate event periods. A real API/browser run was
 added to avoid treating intercepted browser tests as persistence evidence.
 
-The remote branch was pre-created by the team before implementation; integrate
-its placeholder handoff commit normally before pushing, without force push.
+The remote branch was pre-created by the team before implementation; its
+placeholder handoff commit was integrated normally without force push.
