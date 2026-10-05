@@ -1,3 +1,4 @@
+import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
 // To add a page: add one entry here. `access: 'signed-in'` pages render inside
@@ -47,7 +48,7 @@ import { VenueForm } from '../features/venue/VenueForm';
 import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
 import { VenueBlockout } from '../features/venue/VenueBlockout';
 import {
-  EquipmentDashboard, EquipmentCatalogue, RequestQueue, ReservationDetail, TechnicianAssignment, ConflictState,
+  EquipmentDashboard, RequestQueue, ReservationDetail, TechnicianAssignment, ConflictState,
 } from '../features/support/Support';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer, ReportingDashboard, DigestPreferences, Recommendations,
@@ -166,7 +167,10 @@ export const routes: AppRoute[] = [
 
   // Technical Support Staff
   page('/support', <EquipmentDashboard />, 'mock'),
-  page('/support/catalogue', <EquipmentCatalogue />, 'mock', 'E07-S01'),
+  page('/support/catalogue', <EquipmentCatalogue />, 'live', 'E07-S01'),
+  page('/support/catalogue/new', <EquipmentFormPage />, 'live', 'E07-S01'),
+  page('/support/catalogue/:equipmentId/edit', <EquipmentFormPage />, 'live', 'E07-S01'),
+  page('/support/catalogue/:equipmentId', <EquipmentDetail />, 'live', 'E07-S01'),
   page('/support/queue', <RequestQueue />, 'mock', 'E07-S04'),
   page('/support/requests/:requestId', <ReservationDetail />, 'mock', 'E07-S04'),
   page('/support/technicians', <TechnicianAssignment />, 'mock', 'E07-S07'),

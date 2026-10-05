@@ -13,6 +13,7 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/equipment", "destination": "/api/venues?task=equipment" },
     {
       "source": "/api/notifications",
       "destination": "/api/notifications/send?task=inbox"
