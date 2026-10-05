@@ -61,12 +61,14 @@ SCRUM-152; E03-S08 — SCRUM-153; E03-S09 — SCRUM-154; E03-S10 — SCRUM-155;
 E01-S12 — SCRUM-156; E01-S13 — SCRUM-157; E08-S06 — SCRUM-158. The issue
 descriptions include the user story, workflow notes, acceptance criteria,
 checklist, source path and BDR references. Read-back confirmed To Do status,
-the correct Epic parent and labels, and no assignee.
+the correct Epic parent and labels, and no assignee. Jira applied its default
+Medium priority to each issue even though no priority was sent; the source
+does not set a priority, so this still needs team triage.
 
 The release backlog marks all seven for Sprint 3, while their product points
 are blank and T-73 defers estimation to planning. Sprint assignment was left
-unset pending clarification of how T-73 gates the Sprint 3 selection; priority
-and assignee were also left unset because the source does not supply them.
+unset pending clarification of how T-73 gates the Sprint 3 selection. Points
+and assignees remain unset.
 
 ## Decisions without team sign-off
 

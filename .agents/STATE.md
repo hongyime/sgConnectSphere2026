@@ -38,10 +38,12 @@ foundations from Sprint 2.
   it), carried in from Sprint 2.
 
 Week 7 story tracking (checked 2026-10-06): E05-S05 (SCRUM-44) and E10-S05
-(SCRUM-74) have Jira issues (To Do, assigned to Bryan) but are not in Sprint
-36. E05-S06, E03-S08/S09/S10, E01-S12/S13 and E08-S06 remain in backlog
-Markdown without Jira issues. Reconcile the tickets and sprint assignment per
-`docs/jira-ticket-classification.md`.
+(SCRUM-74) are To Do and outside Sprint 36. The seven new Jira Stories are
+SCRUM-152 (E05-S06), SCRUM-153/154/155 (E03-S08/S09/S10), SCRUM-156/157
+(E01-S12/S13) and SCRUM-158 (E08-S06); all are To Do under their matching
+Epics and outside Sprint 36. Jira defaulted their priority to Medium; team
+triage remains open. The release backlog marks them Sprint 3, but sprint
+placement remains pending T-73 planning; points and assignees are unset.
 
 ## Live infrastructure
 
@@ -112,10 +114,9 @@ forward.
 
 ## Open follow-ups and small debts
 
-- **Backlog -> Jira:** create Sprint 3 stories for E05-S05, E05-S06, E10-S05,
-  E03-S08, E03-S09, E03-S10, E01-S12, E01-S13, E08-S06. The backlog Markdown
-  and TC_IDs are in; Jira keys are not yet assigned. Follow
-  `docs/jira-ticket-classification.md`.
+- **Backlog -> Jira:** Week 7 stories now have Jira issues, including
+  SCRUM-152 through SCRUM-158. Resolve Sprint 3 placement under T-73, estimate
+  the new stories at planning, and triage the Jira default Medium priorities.
 - **Playwright scaffolds:** the 50+ new TC_IDs from the Week 7 backlog PRs
   still need `test.fixme` scaffolds; owners add these alongside the story
   implementation. `tc-coverage.md` is current as of 2026-10-03.
