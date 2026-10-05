@@ -1,16 +1,17 @@
 # feature/SCRUM-112-vercel-preview-cleanup
 
-Goal: SCRUM-112 preview deploy cleanup workflow. Nightly GitHub Actions workflow
-that deletes Vercel preview deployments older than 30 days, using the existing
-`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repo secrets. SCRUM-112 is
-assigned to Bryan, In Sprint 3 (id 36), parent SCRUM-127, low-priority
-housekeeping.
+Goal: SCRUM-112 preview deploy cleanup workflow. GitHub Actions workflow that
+runs every 3 days and deletes Vercel preview deployments older than 30 days,
+using the existing `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repo
+secrets. SCRUM-112 is assigned to Bryan, In Sprint 3 (id 36), parent
+SCRUM-127, low-priority housekeeping.
 
 ## Done
 
 - `.github/workflows/vercel-preview-cleanup.yml`:
-  - `schedule: cron: "0 17 * * *"` (01:00 Asia/Singapore, after the Jira
-    sweep at 00:00) plus `workflow_dispatch` with a `dry_run` input.
+  - `schedule: cron: "0 17 */3 * *"` (every 3 days at 01:00 Asia/Singapore,
+    after the Jira sweep at 00:00) plus `workflow_dispatch` with a `dry_run`
+    input.
   - Guards: skips the job entirely when any of the three secrets is unset
     (same shape as `jira-hygiene-sweep.yml`).
   - Pages `GET https://api.vercel.com/v6/deployments?projectId=...&teamId=...&target=preview&limit=100&until=<cutoff_ms>`,
@@ -36,8 +37,11 @@ housekeeping.
   shape is unchanged for the fields we use.
 - Age window: hard-coded 30 days via `AGE_DAYS: "30"` env (matches the ticket
   wording). Easy to raise/lower by editing the env.
-- Cron at 17:00 UTC (01:00 SGT) to avoid the Jira sweep's 16:00 UTC and the
-  Supabase keepalive's 08:00 UTC windows.
+- Cron every 3 days at 17:00 UTC (01:00 SGT) to avoid the Jira sweep's 16:00
+  UTC and the Supabase keepalive's 08:00 UTC windows. Stale previews are a
+  slow accumulation, not a daily firehose, so once every three days is enough
+  to keep the Hobby-plan preview quota clear without burning Actions minutes
+  on nights with nothing to delete.
 - `READY`/`ERROR`/`CANCELED` previews are candidates; `BUILDING`/`QUEUED`
   are left alone to avoid racing active deploys. `production` deployments
   are never considered (the filter already excludes them, but the state

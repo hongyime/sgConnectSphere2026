@@ -31,7 +31,7 @@ name: Vercel Preview Cleanup
 
 on:
   schedule:
-    - cron: "0 17 * * *" # 01:00 Asia/Singapore, after the Jira sweep at 00:00
+    - cron: "0 17 */3 * *" # Every 3 days at 01:00 Asia/Singapore, after the Jira sweep at 00:00
   workflow_dispatch:
     inputs:
       dry_run:
