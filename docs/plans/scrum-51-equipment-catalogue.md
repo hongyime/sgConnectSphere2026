@@ -76,7 +76,8 @@ synthetic users. No application database migration or live email was performed.
 
 Implementation is on `feature/SCRUM-51-equipment-catalogue`.
 The user authorized commit, push and PR creation after local verification.
-Peer review, final remote CI and merge remain outstanding.
+Application CI passed on implementation commit `38b4f5f` (recorded in the
+CI execution session). Peer review and merge remain outstanding.
 Do not claim Jira Done before the repository Definition of Done is satisfied.
 
 
@@ -93,6 +94,6 @@ Do not claim Jira Done before the repository Definition of Done is satisfied.
 - [x] Use the frontend skeleton and separate list/detail/form routes.
 - [x] Verify real PostgreSQL persistence and desktop/mobile API/browser journeys.
 - [x] Record test runs and regenerate the test coverage inventory.
-- [ ] Final-head remote CI passes.
+- [x] Application CI passes on implementation commit `38b4f5f`; recorded CI session.
 - [ ] Teammate approves the frontend and backend behaviour.
 - [ ] Reviewed PR merges into main and Jira is reconciled against full evidence.

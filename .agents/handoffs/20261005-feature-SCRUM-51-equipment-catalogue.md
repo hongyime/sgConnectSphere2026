@@ -27,7 +27,8 @@ implementation and subsequently authorized commit, push and PR publication.
 PR #214 is published with its checklist and hosted PostPlan:
 https://github.com/hongyime/sgConnectSphere2026/pull/214
 https://bid2thk1w76p.postplan.dev
-Verify final remote CI before marking ready for review.
+Application CI passed on implementation commit 38b4f5f and is recorded.
+Final documentation-only head checks must finish before marking ready.
 Peer review and merge remain required; no deployment or Jira Done transition.
 
 ## Implementation choices for review
