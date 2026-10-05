@@ -906,6 +906,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Technical Support has read-only event requirements
 - request form associates server quantity errors and retains entered values
 - late event response cannot overwrite the next equipment request form
+- equipment request load failure offers retry and then the empty state
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 

@@ -8,7 +8,7 @@ Event-scoped requests, above-stock warning, independent event data, protected am
 
 ## Next step
 
-Open the main-target PR and obtain teammate review; merge catalogue dependency #214 first. Do not mark Jira Done before reviewed merge. No production delivery or live email verification claimed.
+PR #216 is open: https://github.com/hongyime/sgConnectSphere2026/pull/216. SCRUM-52 is In Review; Amareet and Aaron are requested reviewers. Obtain teammate review; merge catalogue dependency #214 first. Do not mark Jira Done before reviewed merge. No production delivery or live email verification claimed.
 
 ## Reviewer decision
 
@@ -17,3 +17,5 @@ Request notices go to active Technical Support accounts as shared department int
 ## Learnings
 
 Requests are distinct from reservations and period availability. Keep reservation history protected and use real-database acceptance evidence. Do not update STATE.md or JOURNAL.md in this PR.
+
+CI initially found one missing retry-test title in generated tc-coverage.md; regenerated the inventory. No application change was needed. Hosted visual review: https://8kx96ceo2oc3.postplan.dev/v/1.
