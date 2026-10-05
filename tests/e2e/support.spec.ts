@@ -1,11 +1,12 @@
 // Playwright tests for /support/* routes (SCRUM-98). Six screens for the
 // Technical Support Staff role: equipment dashboard, catalogue, request
 // queue, reservation detail, technician assignment, and conflict state.
-// Backed by frontend/src/features/support/mocks.ts fixtures. The
+// Catalogue uses an intercepted API; other screens use support mock fixtures. The
 // reservation-detail test exercises the shortfall-recording flow required
 // by E07-S04 Scenario 2, and the conflict state screen surfaces the same
 // data via a different lens for triage-first workflows.
 import { test, expect } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 test('equipment dashboard shows open requests and shortfalls', async ({ page }) => {
   await page.goto('/support');
@@ -15,10 +16,15 @@ test('equipment dashboard shows open requests and shortfalls', async ({ page }) 
 });
 
 test('equipment catalogue lists inventory rows', async ({ page }) => {
+  await signInAs(page, 'technical_support_staff');
+  await page.route('**/api/equipment**', route => route.fulfill({json: {equipment: [
+    {id: 'eq-1', name: 'Wireless microphone', category: 'Audio', description: 'Handheld', total_quantity: 10, home_location: 'Main Storage', operational_status: 'available', is_active: true},
+    {id: 'eq-2', name: 'Portable PA system', category: 'Audio', description: 'Portable', total_quantity: 2, home_location: 'Main Storage', operational_status: 'available', is_active: true},
+  ]}}));
   await page.goto('/support/catalogue');
   await expect(page.getByRole('heading', { name: 'Equipment catalogue' })).toBeVisible();
-  await expect(page.getByText('Wireless microphone')).toBeVisible();
-  await expect(page.getByText('Portable PA system')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Wireless microphone', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Portable PA system', exact: true })).toBeVisible();
 });
 
 test('request queue filters by state', async ({ page }) => {

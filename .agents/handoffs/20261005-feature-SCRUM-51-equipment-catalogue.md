@@ -51,3 +51,10 @@ added to avoid treating intercepted browser tests as persistence evidence.
 
 The remote branch was pre-created by the team before implementation; its
 placeholder handoff commit was integrated normally without force push.
+
+## CI follow-up
+
+Initial CI exposed the old SCRUM-98 catalogue smoke test expecting static fixture
+rows. It now supplies a session and catalogue API response, with exact accessible
+row-link assertions. Catalogue plus support regressions passed 20 desktop/mobile
+cases; final-head CI still needs to finish.
