@@ -1,21 +1,23 @@
 # Agent State
 
-Current state at **Sprint 2 close (2026-10-03) / Sprint 3 open (2026-10-04)**.
-Detailed history lives in `.agents/handoffs/` (`python scripts/agent_handoffs.py`
-lists it). `JOURNAL.md` is the untrimmed per-task Learnings archive. This file
-is the owner's curated summary and is only edited through a
-`chore(agents): consolidate ...` PR (decision 0014).
+Current state refreshed on **2026-10-06**, following Sprint 2 close
+(2026-10-03) / Sprint 3 open (2026-10-04). Detailed history lives in
+`.agents/handoffs/` (`python scripts/agent_handoffs.py` lists it).
+`JOURNAL.md` is the per-task Learnings archive. This file is the owner’s
+curated summary and is only edited through a `chore(agents): consolidate ...`
+PR (decision 0014).
 
 ## Where things stand
 
-**Sprint 2 is closed.** Nine PRs merged on 3 October (#194, #195, #196, #204,
-#205, #206, #207, #208 and the Week 7 batch rolled into #205) landed the
-Week 7 Customer Changes (C-65 to C-70), the merge queue, per-task handoff
-files, the STATE/JOURNAL PR exclusion, Sprint 2 retro CI changes, and the
-Sprint 2 execution-record evidence. The nine open PRs that had been dirty on
-`main` all closed (#182-#192 series shipped frontend skeleton and story
-screens; #190 shipped the E14-S02 immutability migration; #192 landed the
-E14-S02 scope carryover). `main` is at `b770d7f`.
+**Sprint 2 is closed.** Eight PRs merged on 3 October (#194, #195, #196,
+#204, #205, #206, #207 and #208), landing the Week 7 Customer Changes
+(C-65 to C-70), the merge queue, per-task handoff files, the STATE/JOURNAL PR
+exclusion, Sprint 2 retro CI changes and Sprint 2 execution-record evidence.
+The #182–#192 review tranche is now closed. #185 and #187 merged after #208
+on 3 October; #185 shipped the frontend skeleton pilot and #187 backfilled
+Sprint 1 execution records. #190 shipped the E14-S02 immutability migration,
+and #192 recorded the remaining E14-S02 scope. The latest `main` at this
+refresh is `1c1be82` (2026-10-06).
 
 **Sprint 3 is active** (Jira sprint 36, 2026-10-04 to 2026-10-17). Goal set
 2026-10-05: deliver end-to-end event execution -- venue booking (E06),
@@ -23,20 +25,23 @@ equipment and technical support (E07), and event confirmation (E08) -- while
 completing the carried-over notifications (E11) and activity log (E14)
 foundations from Sprint 2.
 
-**Sprint 3 ticket distribution (as of 2026-10-05):**
+**Sprint 3 Jira assignment and status (checked 2026-10-06):**
 
-- In Progress: SCRUM-75 (E11-S01, Ji Ning), SCRUM-86 (E14-S02, Le Xin) --
+- In Progress: SCRUM-75 (E11-S01, Ji Ning) and SCRUM-86 (E14-S02, Le Xin),
   both carried over from Sprint 2 (T-67, T-76).
-- To Do (Bryan): the E06 stack SCRUM-46/47/48/49/50, the E07 stack
-  SCRUM-51/52/53/54/55/56/57, E08-S03 SCRUM-60, plus SCRUM-112 preview-deploy
-  cleanup.
-- Done: SCRUM-116/117/119 (frontend skeleton, design.md, Amareet's pages onto
-  it) carried in from Sprint 2.
+- In Review: SCRUM-51 and SCRUM-52 (E07-S01/S02, Xiang Ying).
+- To Do: Ji Ning owns SCRUM-46/47 (E06-S02/S03); Le Xin owns SCRUM-48/50
+  (E06-S04/S06); Amareet owns SCRUM-49/56/57 (E06-S05, E07-S06/S07);
+  Xiang Ying owns SCRUM-53 (E07-S03); Aaron owns SCRUM-54/55/60
+  (E07-S04/S05, E08-S03); Bryan owns SCRUM-112 (preview-deploy cleanup).
+- Done: SCRUM-116/117/119 (frontend skeleton, design.md, Amareet’s pages onto
+  it), carried in from Sprint 2.
 
-New Week 7 stories (E05-S05/S06, E10-S05, E03-S08/S09/S10, E01-S12/S13,
-E08-S06) exist in the backlog Markdown but still need Jira stories created and
-pointed at Sprint 3; the backlog PRs merged with "No Jira key yet" per the
-classification rule.
+Week 7 story tracking (checked 2026-10-06): E05-S05 (SCRUM-44) and E10-S05
+(SCRUM-74) have Jira issues (To Do, assigned to Bryan) but are not in Sprint
+36. E05-S06, E03-S08/S09/S10, E01-S12/S13 and E08-S06 remain in backlog
+Markdown without Jira issues. Reconcile the tickets and sprint assignment per
+`docs/jira-ticket-classification.md`.
 
 ## Live infrastructure
 
@@ -44,9 +49,9 @@ classification rule.
   `main-protection` id 24377800). SQUASH, ALLGREEN, 30 minute timeout,
   `strict_required_status_checks_policy` off. Required checks:
   `repository-checks`, `pr-conventions`, `lfs-guard`, `application-checks`,
-  plus one review on the latest commit (`require_last_push_approval: true`,
-  `enforce_admins: true`). `merge_group` triggers are wired on the four
-  required workflows; `update-pr-branches` is `workflow_dispatch` only.
+  plus one approval and an approval after the latest push
+  (`require_last_push_approval: true`). `merge_group` triggers are wired on
+  the four required workflows; `update-pr-branches` is `workflow_dispatch` only.
 - **Per-task handoff files** are the detailed working record (decision 0013).
   PRs may not edit `.agents/STATE.md` or `.agents/JOURNAL.md` (decision 0014,
   enforced by `pr-conventions` via `check_changed_files` in
@@ -66,16 +71,17 @@ classification rule.
 
 ## Role split (Week 6 onward, ADR-017)
 
-Each story's owner (Jira assignee) builds that story's frontend as well as its
-backend, on the shared frontend skeleton. This replaced the 2026-09-26 split
-in which Amareet was frontend-only. Amareet remains Scrum Master and owns the
-skeleton (SCRUM-116, Done) and the frontend guide; Bryan owns `design.md`
-(SCRUM-117, Done); story owners build on the skeleton going forward.
+Each story’s Jira owner builds that story’s frontend as well as its backend,
+on the shared frontend skeleton. Amareet builds her Sprint 3 stories
+(SCRUM-49, SCRUM-56 and SCRUM-57) full-stack while serving as Scrum Master
+and owning the skeleton (SCRUM-116, Done) and frontend guide. Bryan owns
+`design.md` (SCRUM-117, Done); story owners build on the skeleton going
+forward.
 
 ## Known env facts
 
 - Local integration tests use a disposable Docker `postgres:17` container
-  (`POSTGRES_PASSWORD=synthetic-local-password`, db
+  (`POSTGRES_PASSWORD`, db
   `connectsphere_notification_test`, port 5432) -- never the live Supabase
   project. CI spins up an equivalent service container per run. Tests that
   need `TEST_DATABASE_URL` are skipped locally when it is unset; CI runs them.

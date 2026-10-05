@@ -35,6 +35,24 @@ PR type: owner consolidation. Title starts `chore(agents): consolidate ...` so
     backlog/test workbooks, branch protection.
 - `.agents/JOURNAL.md` deliberately untouched (per the task brief).
 
+## Review follow-up (2026-10-06)
+
+The review on #211 found inaccurate Sprint 3 assignment and role wording, plus
+stale merge-count, `main` SHA and ruleset details. Refreshed this branch from
+`main` at `1c1be82` (PR #210) and verified Sprint 36 with Jira JQL
+`project = SCRUM AND sprint = 36 ORDER BY assignee`. The live snapshot now
+shows SCRUM-51 and SCRUM-52 In Review, SCRUM-75 and SCRUM-86 In Progress,
+SCRUM-116/117/119 Done, and the To Do assignments in `.agents/STATE.md`.
+Amareet’s own SCRUM-49/56/57 full-stack assignments are explicit. A second
+Jira query found SCRUM-44 (E05-S05) and SCRUM-74 (E10-S05) exist but are not in
+Sprint 36; the other Week 7 stories listed in `.agents/STATE.md` have no Jira
+issue yet. Updated the follow-up wording to keep those states distinct.
+
+Also corrected the 3 October merge count to eight PRs, noted #185 and #187
+merged after #208, removed `enforce_admins` (a classic branch-protection
+setting, not a ruleset field), and replaced the synthetic local database
+password literal with the `POSTGRES_PASSWORD` variable name.
+
 ## Decisions without team sign-off
 
 - Chose to leave `JOURNAL.md` untouched this round because the pre-decision-
@@ -58,24 +76,33 @@ PR type: owner consolidation. Title starts `chore(agents): consolidate ...` so
 
 - Backfill `Learnings` headings into the nine pre-0013 handoff files and
   then append them to `JOURNAL.md` in a follow-up `chore(agents):` PR.
-- Create Jira stories for the new Week 7 backlog entries (E05-S05, E05-S06,
-  E10-S05, E03-S08/S09/S10, E01-S12/S13, E08-S06).
+- Reconcile new Week 7 stories in Jira: E05-S05 (SCRUM-44) and E10-S05
+  (SCRUM-74) exist but are outside Sprint 36; create issues for E05-S06,
+  E03-S08/S09/S10, E01-S12/S13 and E08-S06, per the ticket-classification
+  rule.
 
 ## Commands
 
 - `python scripts/check.py` -- run before committing.
-- `python3 scripts/agent_handoffs.py` -- confirmed the fifteen Sprint 2
-  handoff files on `main` plus this one.
+- `python scripts/agent_handoffs.py` -- confirmed 14 Sprint 2 handoff files
+  on `main` plus this PR handoff (15 total).
 
 ## Verification
 
-- Repo state verified: `git rev-parse --short origin/main` = `b770d7f`;
-  branch `chore/agents-consolidate-sprint-2-close` off `main`.
+- Repo state refreshed from the latest `main`; `git rev-parse --short
+  origin/main` = `1c1be82`, merged into this branch without conflicts.
 - Merge queue checked by inspecting ruleset parameters in decision 0012 (no
   live admin API call made here; the previous consolidation handoff
   (`20261003-docs-merge-queue-live.md`) recorded the live read-back).
-- Sprint 36 scope read via Jira `/rest/api/3/search/jql` to confirm the goal
-  text and ticket distribution the file quotes.
+- Sprint 36 ticket ownership and status read back from Jira using
+  `project = SCRUM AND sprint = 36 ORDER BY assignee`; 19 issues returned.
+- The Week 7 story JQL found SCRUM-44 and SCRUM-74; the other listed changes
+  have no Jira issue yet.
+- `python scripts/setup.py` installed clone-local repository tooling after
+  the first `python scripts/check.py` attempt reported that tooling was
+  missing. The subsequent check passed all 77 tooling tests and repository
+  hygiene checks; recorded in a session file under `docs/testing/runs/`.
 
-Nothing in this PR touches application code, migrations, backlog or test
-cases. STATE.md only.
+This PR changes repository state and handoff documentation plus a tooling
+execution record. It does not touch application code, migrations, backlog
+Markdown or acceptance test cases.
