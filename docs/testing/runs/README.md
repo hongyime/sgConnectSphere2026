@@ -126,6 +126,19 @@ order:
 `TC_E01S01_01`. `Test Name` is the short description from the workbook or the
 test title in code. `Outcome` must be one of the four values below.
 
+For a manual run (`run_type: manual`), write the **actual result** in
+`Remarks` on every row, including rows that pass: what you saw on screen, the
+status it changed to, who was notified, or the exact message shown. "PASS"
+alone records the verdict but not the evidence. The course test-case template
+(IS212 Week 4, slide 22) keeps "Actual Result" separate from "Pass/Fail";
+`Remarks` carries it here so the column order the exporter relies on stays
+unchanged. Automated runs may leave `Remarks` blank, because the command and
+its output are the evidence.
+
+```markdown
+| TC_E03S02_01 | Coordinator sends two questions | PASS | Status changed to Awaiting clarification; organiser_c got one notice listing both questions |
+```
+
 ### `Outcome` values
 
 | Value | Meaning |
@@ -217,6 +230,8 @@ After a test run that is used as evidence, create exactly one session record fil
   the point of abort and note "run aborted" plus the reason in `Remarks` for any
   test that did not complete.
 - Use `MULTIPLE` for any suite where the runner does not emit per-test TC_IDs.
+- For a manual run, fill `Remarks` on every row with the actual result
+  observed, including passing rows (see "Results table").
 - Do not edit existing session files.
 
 ## Relationship to the per-story implementation logs
