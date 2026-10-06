@@ -20,7 +20,10 @@ are in docs/plans/scrum-53-equipment-availability.md. Screenshots visually check
 
 ## Next step
 
-Finish repository checks, commit, push and open a reviewable PR with a postplan.
+Implementation commit fec891b is locally verified. The Product Owner pre-created
+remote branch at b57537f has been merged without conflict; only its setup handoff
+was added. This original handoff is now the canonical per-branch record.
+Finish push and open a reviewable PR with the verified postplan.
 Manual human checklist, final-head CI, skeleton review and reviewed merge remain
 required before Jira Done. E07-S04/E07-S05 own writers and are not closed by this reader.
 
@@ -31,3 +34,10 @@ intersecting a long period. Location and venue buffers never affect equipment.
 Mobile shared table includes column labels in cell names: use column positions
 for numeric browser assertions. A dedicated disposable PostgreSQL container
 supports actual full-stack validation without resetting the application database.
+
+## Branch origin
+
+Product Owner @bryanseah234 pre-created this branch on 5 October at b57537f.
+The implementation began from current main ccb32b6; both histories are preserved.
+The pre-creation record described To Do status; manual acceptance, final-head
+checks and reviewed merge still govern completion.
