@@ -8,12 +8,12 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 - Found four active email-verification tests in `tests/e2e/verify.spec.ts` carrying the new E01-S12 identifiers even though those IDs now describe Event Coordinator scope. Preserve those tests and remove the incorrect TC_ID labels so the new coordinator cases can be scaffolded honestly.
 - Added test.fixme declarations for the Week 7 case IDs in their matching Epic spec files and updated their case-count/source headers.
 - Regenerated the coverage inventory; all 58 Week 7 IDs now report as scaffolds. The full catalogue reports 118 active tests, 193 scaffolds and 3 older cases with no test reference.
+- Ran the coverage audit and repository check successfully, then committed and pushed the focused branch as `490f880` (`test(e2e): scaffold Week 7 acceptance cases`). The branch is based on current `origin/main` (`1c1be82`).
 
 ## Not done / next
 
-- Regenerate `docs/testing/tc-coverage.md` and verify every Week 7 case is listed as a scaffold.
-- Run the required repository check before committing. Do not report scaffold placeholders as application behavior tests.
-- Prepare the focused PR with the full template and source references after the diff and generated inventory are reviewed.
+- Prepare the required PostPlan and open a draft PR with the complete template, citing PR #205 and the canonical test sources.
+- Await CI and human review. Do not report scaffold placeholders as application behavior tests.
 
 ## Decisions without team sign-off
 
@@ -23,5 +23,5 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 ## Verification
 
 - `python scripts/tc_coverage_audit.py` — passed; all 58 Week 7 IDs are scaffolded in `docs/testing/tc-coverage.md`.
-- `python scripts/check.py` — passed with 77 repository-tooling tests and repository hygiene checks; the session run record captures the result.
+- `python scripts/check.py` — passed with 77 repository-tooling tests and repository hygiene checks; session run records capture the observed runs.
 - The browser scaffold suite has not been run; these placeholders make no behavior assertions.
