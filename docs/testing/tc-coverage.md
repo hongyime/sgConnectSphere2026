@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **126** (40.1%)
+- Automated (explicit TC_ID in an active test title): **129** (41.1%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **105**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **131** (41.7%)
+  - Live-assertion (other active tests): **108**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **128** (40.8%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 4 | 26 | 0 |
+| E07 | 30 | 7 | 23 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **126** | **131** | **57** |
+| **Total** | **314** | **129** | **128** | **57** |
 
 ## Case-by-case status
 
@@ -263,9 +263,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_01 - Verify that marking an item with no reservations in the period unavailable, with a reason and a period, should exclude it from availability ch |
 | `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_02 - Verify that marking an item unavailable while it is reserved for an upcoming event should flag the affected event and notify its Coordinator |
 | `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_03 - Verify that returning an item to service should restore it to availability checks |
-| `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_01 - Verify that submitting a technical support request describing the support needed and the times should notify Technical Support Staff and recor |
-| `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_02 - Verify that submitting a technical support request before the venue is confirmed should be accepted and reviewed alongside venue identificatio |
-| `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_03 - Verify that marking a event as needing no technical support should create no request and not block confirmation on staff assignment |
+| `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
+| `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
+| `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S07_01` | E07-S07 | Verify that a colleague with no conflicting assignment during the event's requir | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_01 - Verify that a colleague with no conflicting assignment during the event |
 | `TC_E07S07_02` | E07-S07 | Verify that the assignment should be reflected on the assigned staff member's sc | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_02 - Verify that the assignment should be reflected on the assigned staff member |
 | `TC_E07S07_03` | E07-S07 | Verify that assigning a colleague who has an overlapping assignment should be bl | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_03 - Verify that assigning a colleague who has an overlapping assignment should be blocked, with the conflicting event identified |
@@ -637,6 +637,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - resets counter and lock on a mid-window correct password
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
+
+### `backend/tests/supportRequests.test.ts`
+
+- validation accepts a trimmed description and an ISO range
+- validation boundaries: description length, missing and reversed times, non-object bodies
+- reads refuse signed-out users and roles other than Coordinator and Technical Support, and audit the refusal
+- reads refuse an empty or oversized event identifier before querying events
+- a Coordinator cannot read another Coordinator\
+- reads separate requests from the
+- requests are refused outside approved or planning and are not written
+- an invalid request returns field errors without opening a transaction; wrong roles are refused first
+- a refused request on someone else\
+- a database failure is not mistaken for a refusal and is not audited
+- an event with a live support request cannot be marked as needing none
+- handler: unsupported methods, cross-origin writes and unknown actions are refused
+- handler: GET reads by event, POST dispatches request and none
 
 ### `backend/tests/venueAccessibility.integration.test.ts`
 
