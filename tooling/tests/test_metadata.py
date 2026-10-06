@@ -235,6 +235,108 @@ class MetadataTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(missing, [])
 
+    def test_staged_files_cli_allows_merge_with_protected_file_from_main(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(
+                ["git", "-c", "init.defaultBranch=main", "init"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "switch", "-c", "main"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("# Initial\n", encoding="utf-8")
+            (repo / "app.txt").write_text("v1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Initial commit"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-work"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            (repo / "feature.txt").write_text("work\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Add feature"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(["git", "switch", "main"], cwd=repo, check=True, capture_output=True)
+            protected.write_text("# Consolidated by owner\n", encoding="utf-8")
+            (repo / "app.txt").write_text("v2 from main\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "chore(agents): consolidate STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "switch", "feature/SCRUM-42-work"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            (repo / "app.txt").write_text("v3 from feature\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Work on feature branch"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "merge", "main"],
+                cwd=repo,
+                capture_output=True,
+            )
+            (repo / "app.txt").write_text("resolved\n", encoding="utf-8")
+            subprocess.run(["git", "add", "app.txt"], cwd=repo, check=True, capture_output=True)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+
+            protected.write_text("# Branch edited this\n", encoding="utf-8")
+            subprocess.run(["git", "add", ".agents/STATE.md"], cwd=repo, check=True, capture_output=True)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1, msg=result.stdout + result.stderr)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
     def test_pr_event_body_gate(self):
         good_body = (
             "## What and why\n\nX.\n\n## Verification\n\nY.\n\n"

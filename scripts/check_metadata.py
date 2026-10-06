@@ -63,7 +63,12 @@ def check_local_changed_files(files: list[str], branch: str) -> tuple[bool, list
 
 
 def check_staged_files() -> int:
-    """Block staged edits to protected continuity files on ordinary branches."""
+    """Block staged edits to protected continuity files on ordinary branches.
+
+    During a merge (MERGE_HEAD exists), allow protected files that are being
+    brought in from the merge source unchanged (staged content matches MERGE_HEAD).
+    Only block when the branch itself edited the protected files.
+    """
     try:
         staged = subprocess.check_output(
             ["git", "diff", "--cached", "--no-renames", "--name-only", "-z"]
@@ -85,6 +90,52 @@ def check_staged_files() -> int:
         ).strip()
     except subprocess.CalledProcessError:
         print("Protected continuity files cannot be committed from a detached HEAD.")
+        return 1
+
+    # Check if we're in a merge. If so, filter out protected files that are
+    # just being brought in from the merge source (no edit by current branch).
+    try:
+        subprocess.check_call(
+            ["git", "rev-parse", "--verify", "-q", "MERGE_HEAD"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        merge_in_progress = True
+    except subprocess.CalledProcessError:
+        merge_in_progress = False
+
+    if merge_in_progress:
+        # During a merge, git diff --cached compares index with HEAD, so
+        # MERGE_HEAD changes show as staged. Only flag files that differ
+        # from MERGE_HEAD (meaning the branch edited them).
+        actually_offending = []
+        for path in files:
+            if path not in PROTECTED_FILES:
+                continue
+            # If staged content differs from MERGE_HEAD, the branch edited it.
+            try:
+                staged_sha = subprocess.check_output(
+                    ["git", "rev-parse", f":{path}"],
+                    stderr=subprocess.DEVNULL,
+                ).strip()
+                merge_sha = subprocess.check_output(
+                    ["git", "rev-parse", f"MERGE_HEAD:{path}"],
+                    stderr=subprocess.DEVNULL,
+                ).strip()
+                if staged_sha != merge_sha:
+                    actually_offending.append(path)
+            except subprocess.CalledProcessError:
+                # If we can't compare, be conservative and flag it
+                actually_offending.append(path)
+
+        if not actually_offending:
+            return 0
+
+        print("Only the owner-consolidation branch may stage these continuity files:")
+        for path in actually_offending:
+            print(f"  {path}")
+        print(f"Use a branch beginning `{LOCAL_CONSOLIDATION_BRANCH_PREFIX}` for local consolidation work.")
+        print(f"CI still checks the pull request title for `{CONSOLIDATION_PREFIX}`.")
         return 1
 
     ok, offending = check_local_changed_files(files, branch)
