@@ -8,14 +8,15 @@ Update the deployment guide to describe the current Actions-only Vercel deployme
 - Confirmed `vercel-deploy` is not a required merge check; `application-checks` is a separate application verification workflow.
 - Rewrote `docs/deploying-and-debugging.md` to match the current Actions-only deployment flow, path filters, draft behavior, preview comments, and separate application checks.
 - Removed outdated claims about private deploy logs and the retired `Vercel` status check.
-
+- After setup installed clone-local tooling, `python scripts/check.py` passed on `1c1be82` with 77 tooling tests and repository hygiene. A T-65 execution record is included under `docs/testing/runs/`.
 - Reviewed and committed the guide, handoff, and T-65 record as one focused change.
+- Opened draft PR #220; initial required checks passed on head `2abb504`.
+- Added a CI-scoped T-65 record for the passing repository-checks run on that head.
 
 ## Not done / next step
 
-- After setup installed clone-local tooling, `python scripts/check.py` passed on `1c1be82` with 77 tooling tests and repository hygiene. A T-65 execution record is included under `docs/testing/runs/`.
-- Push the branch and open a draft PR.
-- Mark the PR ready for review after required checks pass.
+- Verify checks on the latest PR head; update the PR verification checklist and mark the PR ready when required checks pass.
+- Await teammate review and approval before any merge.
 
 ## Source
 
