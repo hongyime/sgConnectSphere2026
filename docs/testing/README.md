@@ -3,6 +3,9 @@
 E01-S01 has a [live login and recovery suite](login-recovery.md), including
 isolated PostgreSQL, API/provider tests, and desktop/mobile browser workflows.
 
+Running a test case by hand? The cases use placeholder accounts; see
+[test accounts](test-accounts.md) for the seeded account to sign in as.
+
 This folder holds testing plans and imported scaffolds that are useful for
 planning. The active runnable Playwright scaffold now lives in `tests/e2e/`,
 with this folder keeping the source reference copy.
