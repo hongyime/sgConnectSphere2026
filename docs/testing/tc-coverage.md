@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **122** (38.9%)
+- Automated (explicit TC_ID in an active test title): **126** (40.1%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **101**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **135** (43.0%)
+  - Live-assertion (other active tests): **105**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **131** (41.7%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 0 | 30 | 0 |
+| E07 | 30 | 4 | 26 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **122** | **135** | **57** |
+| **Total** | **314** | **126** | **131** | **57** |
 
 ## Case-by-case status
 
@@ -242,10 +242,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E07S01_01` | E07-S01 | Verify that saving a new equipment item with its full details should make it ava | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S01_01 - Verify that saving a new equipment item with its full details should make it available for reservation |
-| `TC_E07S01_02` | E07-S01 | Verify that reducing an item's quantity below the amount already reserved for up | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S01_02 - Verify that reducing an item |
-| `TC_E07S01_03` | E07-S01 | Verify that retiring an item with no future reservations should remove it from a | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S01_03 - Verify that retiring an item with no future reservations should remove it from availability checks while retaining its past reservations |
-| `TC_E07S01_04` | E07-S01 | Verify that updating an existing equipment item's attributes should save the cha | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S01_04 - Verify that updating an existing equipment item |
+| `TC_E07S01_01` | E07-S01 | Verify that saving a new equipment item with its full details should make it ava | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
+| `TC_E07S01_02` | E07-S01 | Verify that reducing an item's quantity below the amount already reserved for up | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
+| `TC_E07S01_03` | E07-S01 | Verify that retiring an item with no future reservations should remove it from a | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
+| `TC_E07S01_04` | E07-S01 | Verify that updating an existing equipment item's attributes should save the cha | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
 | `TC_E07S02_01` | E07-S02 | Verify that adding equipment items with quantities to a event of an approved eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_01 - Verify that adding equipment items with quantities to a event of an approved event should save the request and notify Technical Support Staff |
 | `TC_E07S02_02` | E07-S02 | Verify that requesting more of an item than ConnectSphere owns in total should w | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_02 - Verify that requesting more of an item than ConnectSphere owns in total should warn that the request cannot be met from existing stock |
 | `TC_E07S02_03` | E07-S02 | Verify that recording equipment for one event should leave a different event's e | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_03 - Verify that recording equipment for one event should leave a different event |
@@ -483,6 +483,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - buildNotificationEmailHtml trims one trailing sentence-punctuation character out of the link
 - buildNotificationEmailHtml does not linkify a URL injected via message content differently than any other text -- it is still escaped first
 - buildNotificationEmailHtml output carries ConnectSphere branding and is a complete HTML document
+
+### `backend/tests/equipmentCatalogue.test.ts`
+
+- equipment input rejects invalid quantities and forged retirement
+- catalogue denies unauthenticated, wrong-role, inactive and locked writes before querying equipment
+- catalogue rejects invalid identifiers before database casts
+
+### `backend/tests/equipmentHandler.test.ts`
+
+- equipment handler checks origin before writes and rejects unsupported methods
+- equipment handler returns validation failures without creating a transaction
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -870,6 +881,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - signs out through the session endpoint and returns to the login page
 - keeps the user on the page and explains when sign out fails
 - offers sign in when there is no session
+
+### `frontend/src/features/support/EquipmentCatalogue.test.tsx`
+
+- saving new equipment persists all fields and reloads the catalogue
+- quantity reduction displays affected reservations and notification acknowledgement
+- retirement conflict preserves item and names blocking reservations
+- Coordinator catalogue has no mutation actions
+- server validation retains the form and associates field error
+- equipment load failure offers retry and empty catalogue offers add
+- late equipment response does not overwrite the next edit route
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 

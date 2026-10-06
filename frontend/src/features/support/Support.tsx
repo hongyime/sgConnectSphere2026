@@ -48,29 +48,6 @@ export function EquipmentDashboard() {
   );
 }
 
-export function EquipmentCatalogue() {
-  return (
-    <main className="support-page">
-      <header className="support-heading">
-        <p className="eyebrow">Technical support</p>
-        <h1>Equipment catalogue</h1>
-      </header>
-      <section className="support-cards" aria-label="Equipment inventory">
-        {equipmentTypes.map(equipment => (
-          <article key={equipment.id}>
-            <header>
-              <strong>{equipment.name}</strong>
-              <span className={`status-pill status-${equipment.status === 'Available' ? 'success' : 'warning'}`}>{equipment.status}</span>
-            </header>
-            <p>Operational: {equipment.operationalUnits} / {equipment.totalUnits}</p>
-            <p><em>Location:</em> {equipment.location}</p>
-          </article>
-        ))}
-      </section>
-    </main>
-  );
-}
-
 export function RequestQueue() {
   const [state, setState] = useState<'all' | ReservationState>('all');
   const filtered = useMemo(
