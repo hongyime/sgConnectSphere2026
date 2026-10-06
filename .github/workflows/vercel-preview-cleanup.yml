@@ -19,9 +19,11 @@ name: Vercel Preview Cleanup
 #   DELETE https://api.vercel.com/v13/deployments/{uid}?teamId=...
 #
 # Production deployments (`target=production`) are never deleted; we only
-# page through `target=preview`. This workflow does not check whether a
-# preview belongs to an open PR, so any matching preview older than 30 days
-# in an eligible state can be deleted.
+# page through `target=preview`. Any preview deployment older than 30 days
+# in an eligible state (READY, ERROR, or CANCELED) can be deleted.
+#
+# Known limitation: This workflow does not skip preview deployments that
+# belong to open PRs; all matching previews older than 30 days are deleted.
 #
 # A failure only marks this scheduled run red; it does not change the
 # repository. Set workflow_dispatch inputs.dry_run to true to preview
@@ -116,8 +118,8 @@ jobs:
             fi
 
             # Extract (uid, created, url, state) tuples for this page.
-            # READY, ERROR, and CANCELED previews are eligible; keep
-            # BUILDING/QUEUED deployments alone.
+            # READY, ERROR, and CANCELED previews older than AGE_DAYS are
+            # eligible; BUILDING/QUEUED deployments are left alone.
             if ! rows_output=$(jq -r \
               --argjson cutoff "$cutoff_ms" \
               '.deployments[]
