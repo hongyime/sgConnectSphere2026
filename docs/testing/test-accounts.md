@@ -37,11 +37,12 @@ translation.
 | Test case says | Used in | Why there is no match |
 | --- | --- | --- |
 | `tech_support_3@connectsphere.com` | E07 (replacement technician with a conflicting assignment) | The seed has only two Technical Support Staff accounts |
-| `lead_1@connectsphere.com` | E01, E03, E08 ("Event Coordinator Lead") | No such role exists in the system (`user_role` has five roles) |
-| `safety_1@connectsphere.com` | E01, E08 | No such role exists in the system |
+| `lead_1@connectsphere.com` | E01, E03, E08 (Event Coordinator Lead) | Required by Week 7 Customer Changes item 5 (C-69) and planned as `event_coordinator_lead` (T-72), but not built yet: `user_role` still has five roles and the seed has no Lead account |
+| `safety_1@connectsphere.com` | E01, E08 (Safety Officer) | Required by Week 7 Customer Changes item 6 (C-70) and planned as `safety_officer` (T-72), but not built yet: no role or seed account |
 
-For these, the story owner either adds the account to the seed in their
-story's PR, or rewrites the step, and records which in that PR.
+For these, the story owner adds the account to the seed in their story's
+PR (for the Lead and Safety Officer, the PR that adds the role), or rewrites
+the step, and records which in that PR.
 
 ## Events
 
