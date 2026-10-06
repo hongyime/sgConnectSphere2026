@@ -16,6 +16,8 @@ export type VenueInput = {
   facilities: string[];
   accessibility_features: string[];
   supported_layouts: VenueLayoutInput[];
+  setup_time_minutes?: number;
+  turnaround_time_minutes?: number;
 };
 export type VenueErrors = Record<string, string[]>;
 
@@ -149,10 +151,22 @@ export function validateVenueInput(body: unknown):
     }
   }
 
+  const setupTimeMinutes = data.setup_time_minutes;
+  if (setupTimeMinutes !== undefined && (typeof setupTimeMinutes !== 'number' || !Number.isInteger(setupTimeMinutes) || setupTimeMinutes < 0)) {
+    errors.setup_time_minutes = ['Setup time must be a whole number of minutes 0 or greater.'];
+  }
+
+  const turnaroundTimeMinutes = data.turnaround_time_minutes;
+  if (turnaroundTimeMinutes !== undefined && (typeof turnaroundTimeMinutes !== 'number' || !Number.isInteger(turnaroundTimeMinutes) || turnaroundTimeMinutes < 0)) {
+    errors.turnaround_time_minutes = ['Turnaround time must be a whole number of minutes 0 or greater.'];
+  }
+
   if (Object.keys(errors).length) return { errors };
   return { input: {
     name, location, max_capacity: maxCapacity as number, opens_at: opensAt, closes_at: closesAt,
     facilities, accessibility_features: accessibilityFeatures, supported_layouts: layouts,
+    ...(setupTimeMinutes !== undefined ? { setup_time_minutes: setupTimeMinutes as number } : {}),
+    ...(turnaroundTimeMinutes !== undefined ? { turnaround_time_minutes: turnaroundTimeMinutes as number } : {}),
   } };
 }
 
@@ -341,6 +355,90 @@ async function flagAffectedBookings(client: PoolClient, venueId: string, newCapa
   }
 }
 
+async function detectAndMarkBufferConflicts(
+  client: PoolClient,
+  venueId: string,
+  setupTimeMinutes: number,
+  turnaroundTimeMinutes: number,
+): Promise<Array<{ eventCode: string | null; title: string; startsAt: string; endsAt: string }>> {
+  const conflicts = await client.query<{
+    booking_id: string;
+    event_id: string;
+    event_code: string | null;
+    title: string;
+    starts_at: Date;
+    ends_at: Date;
+    coordinator_id: string | null;
+  }>(
+    `SELECT
+      vb.id AS booking_id,
+      e.id AS event_id,
+      e.event_code,
+      e.title,
+      lower(vb.booking_range) AS starts_at,
+      upper(vb.booking_range) AS ends_at,
+      e.coordinator_id
+    FROM venue_bookings vb1
+    JOIN venue_bookings vb2 ON vb2.venue_id = vb1.venue_id
+      AND vb2.id != vb1.id
+      AND vb2.status IN ('confirmed', 'pending')
+    JOIN events e ON e.id = vb1.event_id
+    WHERE vb1.venue_id = $1
+      AND vb1.status IN ('confirmed', 'pending')
+      AND tstzrange(
+        lower(vb1.booking_range) - ($2 || ' minutes')::interval,
+        upper(vb1.booking_range) + ($3 || ' minutes')::interval,
+        '[)'
+      ) && tstzrange(
+        lower(vb2.booking_range) - ($2 || ' minutes')::interval,
+        upper(vb2.booking_range) + ($3 || ' minutes')::interval,
+        '[)'
+      )
+      AND lower(vb1.booking_range) < lower(vb2.booking_range)
+    ORDER BY lower(vb2.booking_range)`,
+    [venueId, setupTimeMinutes, turnaroundTimeMinutes],
+  );
+
+  const laterBookingIds = conflicts.rows.map(row => row.booking_id);
+  const coordinatorNotifications: Map<string, { eventId: string; title: string }[]> = new Map();
+
+  for (const row of conflicts.rows) {
+    if (!coordinatorNotifications.has(row.coordinator_id ?? '')) {
+      coordinatorNotifications.set(row.coordinator_id ?? '', []);
+    }
+    coordinatorNotifications.get(row.coordinator_id ?? '')!.push({
+      eventId: row.event_id,
+      title: row.title,
+    });
+  }
+
+  if (laterBookingIds.length > 0) {
+    await client.query(
+      `UPDATE venue_bookings SET status = 'conflicting' WHERE id = ANY($1::uuid[])`,
+      [laterBookingIds],
+    );
+
+    for (const [coordinatorId, events] of coordinatorNotifications) {
+      if (!coordinatorId) continue;
+      for (const event of events) {
+        const message = `The venue's buffer times have changed, creating a scheduling conflict for "${event.title}". The booking has been marked as conflicting and requires review.`;
+        const notification = await client.query<{ id: string }>(
+          `INSERT INTO notifications (user_id, event_id, title, message) VALUES ($1, $2, $3, $4) RETURNING id`,
+          [coordinatorId, event.eventId, 'Booking conflict detected', message],
+        );
+        await insertNotificationDelivery(client, notification.rows[0]!.id);
+      }
+    }
+  }
+
+  return conflicts.rows.map(row => ({
+    eventCode: row.event_code,
+    title: row.title,
+    startsAt: row.starts_at.toISOString(),
+    endsAt: row.ends_at.toISOString(),
+  }));
+}
+
 export async function updateVenue(database: Pool, user: AuthenticatedUser | undefined, id: string, body: unknown) {
   await requireVenueStaff(poolQuery(database), user);
   return inTransaction(database, async client => {
@@ -353,9 +451,39 @@ export async function updateVenue(database: Pool, user: AuthenticatedUser | unde
     const validated = validateVenueInput(merged);
     if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
     const { input } = validated;
+
+    const currentBuffers = await client.query<{ setup_time_minutes: number; turnaround_time_minutes: number }>(
+      `SELECT setup_time_minutes, turnaround_time_minutes FROM venues WHERE id = $1`,
+      [id],
+    );
+    const previousSetup = currentBuffers.rows[0]?.setup_time_minutes ?? 0;
+    const previousTurnaround = currentBuffers.rows[0]?.turnaround_time_minutes ?? 0;
+
     try {
-      await client.query(`UPDATE venues SET name = $2, location = $3, max_capacity = $4, opens_at = $5, closes_at = $6
-        WHERE id = $1`, [id, input.name, input.location, input.max_capacity, input.opens_at, input.closes_at]);
+      if (input.setup_time_minutes !== undefined || input.turnaround_time_minutes !== undefined) {
+        await client.query(
+          `UPDATE venues SET name = $2, location = $3, max_capacity = $4, opens_at = $5, closes_at = $6,
+            setup_time_minutes = COALESCE($7, setup_time_minutes),
+            turnaround_time_minutes = COALESCE($8, turnaround_time_minutes)
+          WHERE id = $1`,
+          [
+            id,
+            input.name,
+            input.location,
+            input.max_capacity,
+            input.opens_at,
+            input.closes_at,
+            input.setup_time_minutes,
+            input.turnaround_time_minutes,
+          ],
+        );
+      } else {
+        await client.query(
+          `UPDATE venues SET name = $2, location = $3, max_capacity = $4, opens_at = $5, closes_at = $6
+          WHERE id = $1`,
+          [id, input.name, input.location, input.max_capacity, input.opens_at, input.closes_at],
+        );
+      }
     } catch (error) {
       if (isUniqueViolation(error)) {
         return { status: 409, body: { error: 'name_in_use', errors: { name: ['A venue with this name already exists.'] } } };
@@ -366,11 +494,20 @@ export async function updateVenue(database: Pool, user: AuthenticatedUser | unde
     if (input.max_capacity < current.max_capacity) {
       await flagAffectedBookings(client, id, input.max_capacity);
     }
+
+    const newSetup = input.setup_time_minutes ?? previousSetup;
+    const newTurnaround = input.turnaround_time_minutes ?? previousTurnaround;
+    let bufferConflicts: Array<{ eventCode: string | null; title: string; startsAt: string; endsAt: string }> = [];
+
+    if (newSetup !== previousSetup || newTurnaround !== previousTurnaround) {
+      bufferConflicts = await detectAndMarkBufferConflicts(client, id, newSetup, newTurnaround);
+    }
+
     const venue = await attachDetails(clientQuery, {
       id, name: input.name, location: input.location, max_capacity: input.max_capacity,
       opens_at: input.opens_at, closes_at: input.closes_at, is_active: current.is_active,
     });
-    return { status: 200, body: { venue } };
+    return { status: 200, body: { venue, bufferConflicts } };
   });
 }
 

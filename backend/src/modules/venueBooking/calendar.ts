@@ -57,7 +57,7 @@ export function parseCalendarRange(from: unknown, to: unknown): { start: number;
 }
 
 type BookingRow = {
-  status: 'pending' | 'confirmed';
+  status: 'pending' | 'confirmed' | 'conflicting';
   starts_at: Date; ends_at: Date;
   event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
 };
@@ -125,18 +125,24 @@ export async function getVenueCalendar(
   // open-ended or infinite range (e.g. a block with no known end), whose
   // NULL or infinite bound would otherwise become 1970 or an invalid date.
   // GREATEST/LEAST ignore NULLs, so an unbounded side takes the window edge.
-  //
-  // Only pending and confirmed bookings hold the venue (the same statuses the
-  // venue_bookings_no_active_overlap constraint covers). Rejected, released
-  // and conflicting requests leave the period Free.
-  const bookings = await query<BookingRow>(`
+
+  const bookings = await query<BookingRow & {
+    buffered_start: Date;
+    buffered_end: Date;
+  }>(`
     SELECT vb.status,
       greatest(lower(vb.booking_range), $2::timestamptz) AS starts_at,
       least(upper(vb.booking_range), $3::timestamptz) AS ends_at,
+      greatest(lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval, $2::timestamptz) AS buffered_start,
+      least(upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval, $3::timestamptz) AS buffered_end,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-    WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed')
-      AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz)
+    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
+    WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed', 'conflicting')
+      AND tstzrange(
+        lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
+        upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
+        '[)'
+      ) && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
     SELECT reason,
@@ -147,7 +153,7 @@ export async function getVenueCalendar(
     ORDER BY lower(block_range)`, window);
 
   const occupied: Array<[number, number]> = [
-    ...bookings.rows.map(row => [new Date(row.starts_at).getTime(), new Date(row.ends_at).getTime()] as [number, number]),
+    ...bookings.rows.map(row => [new Date(row.buffered_start).getTime(), new Date(row.buffered_end).getTime()] as [number, number]),
     ...blocks.rows.map(row => [new Date(row.starts_at).getTime(), new Date(row.ends_at).getTime()] as [number, number]),
   ];
   const entries: CalendarEntry[] = [

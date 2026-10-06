@@ -136,8 +136,15 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
     // refused and every conflicting booking is named.
     const conflicts = await client.query<{ event_code: string | null; title: string; starts_at: Date; ends_at: Date }>(`
       SELECT e.event_code, e.title, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
-      FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-      WHERE vb.venue_id = $1 AND vb.status = 'confirmed' AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+      FROM venue_bookings vb
+        JOIN events e ON e.id = vb.event_id
+        JOIN venues v ON v.id = vb.venue_id
+      WHERE vb.venue_id = $1 AND vb.status IN ('confirmed', 'conflicting')
+        AND tstzrange(
+          lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
+          upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
+          '[)'
+        ) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(vb.booking_range)`, [venue.id, start, end]);
     if (conflicts.rows.length) {
       return { status: 409, body: {
@@ -187,8 +194,15 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
 async function notifyAffectedCoordinators(client: PoolClient, venueName: string, block: VenueBlock, occurredAt: Date) {
   const affected = await client.query<{ event_id: string; title: string; coordinator_id: string }>(`
     SELECT DISTINCT e.id AS event_id, e.title, e.coordinator_id
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-    WHERE vb.venue_id = $1 AND vb.status = 'pending' AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+    FROM venue_bookings vb
+      JOIN events e ON e.id = vb.event_id
+      JOIN venues v ON v.id = vb.venue_id
+    WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'conflicting')
+      AND tstzrange(
+        lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
+        upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
+        '[)'
+      ) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       AND upper(vb.booking_range) > now()
       AND e.coordinator_id IS NOT NULL AND upper(e.event_range) > now()
       AND e.status NOT IN ('cancelled', 'completed', 'rejected')`,
