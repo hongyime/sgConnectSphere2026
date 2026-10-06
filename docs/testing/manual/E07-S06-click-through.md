@@ -73,9 +73,12 @@ pass or fail. On a fail, copy the exact words you saw.
    **"Marked as needing no technical support. Nobody has been notified."**
    and the line **"This event needs no technical support. Nothing is waiting
    to be staffed."** The **No technical support required** button is gone.
-4. Press F5 to reload. The card still reads "This event needs no technical
-   support. Nothing is waiting to be staffed." **Request technical support**
-   is still offered, because a later request would replace the declaration.
+4. Press F5 to reload. The green message from step 3 is gone (it shows once)
+   and the **No technical support required** button stays hidden, because the
+   event is already marked. The card still reads "This event needs no
+   technical support. Nothing is waiting to be staffed." **Request technical
+   support** is still offered, because a later request would replace the
+   declaration.
 
 ## B. Request support before the venue is confirmed (TC_E07S06_02, TC_E07S06_01)
 
@@ -97,8 +100,8 @@ EVT-3003's venue booking is still pending, so its venue is not confirmed.
    Enter. Paste into **What support is needed** and click **Send request**.
    Expect **"The description must be 2000 characters or fewer."** under the
    box.
-9. **Reversed times:** replace the description with "1 AV technician for the
-   full event". Set **Support ends** to the same time as **Support starts**
+9. **Reversed times:** replace the description with this text, typed exactly
+   (no quotes): `1 AV technician for the full event`. Set **Support ends** to the same time as **Support starts**
    (25/10/2026 06:00 pm) and click **Send request**. Expect **"Support must
    end after it starts."** under Support ends.
 10. Set **Support ends** back to 25/10/2026 10:00 pm and click **Send
