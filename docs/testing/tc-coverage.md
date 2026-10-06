@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **129** (41.1%)
-  - Real-database (`.integration.test` / `.db.test`): **20**
+- Automated (explicit TC_ID in an active test title): **135** (43.0%)
+  - Real-database (`.integration.test` / `.db.test`): **23**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **108**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **128** (40.8%)
+  - Live-assertion (other active tests): **111**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **122** (38.9%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 7 | 23 | 0 |
+| E07 | 30 | 13 | 17 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **129** | **128** | **57** |
+| **Total** | **314** | **135** | **122** | **57** |
 
 ## Case-by-case status
 
@@ -266,12 +266,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
-| `TC_E07S07_01` | E07-S07 | Verify that a colleague with no conflicting assignment during the event's requir | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_01 - Verify that a colleague with no conflicting assignment during the event |
-| `TC_E07S07_02` | E07-S07 | Verify that the assignment should be reflected on the assigned staff member's sc | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_02 - Verify that the assignment should be reflected on the assigned staff member |
-| `TC_E07S07_03` | E07-S07 | Verify that assigning a colleague who has an overlapping assignment should be bl | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_03 - Verify that assigning a colleague who has an overlapping assignment should be blocked, with the conflicting event identified |
-| `TC_E07S07_04` | E07-S07 | Verify that removing an existing assignment from a staff member's schedule shoul | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_04 - Verify that removing an existing assignment from a staff member |
-| `TC_E07S07_05` | E07-S07 | Verify that assigning a replacement colleague after removing an assignment shoul | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_05 - Verify that assigning a replacement colleague after removing an assignment should be subject to the same conflict check used for new assignmen |
-| `TC_E07S07_06` | E07-S07 | Verify that the assigned staff member should receive a notification when they ar | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_06 - Verify that the assigned staff member should receive a notification when they are assigned to, or removed from, an event |
+| `TC_E07S07_01` | E07-S07 | Verify that a colleague with no conflicting assignment during the event's requir | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; backend |
+| `TC_E07S07_02` | E07-S07 | Verify that the assignment should be reflected on the assigned staff member's sc | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; tests/e |
+| `TC_E07S07_03` | E07-S07 | Verify that assigning a colleague who has an overlapping assignment should be bl | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; backend |
+| `TC_E07S07_04` | E07-S07 | Verify that removing an existing assignment from a staff member's schedule shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; backend |
+| `TC_E07S07_05` | E07-S07 | Verify that assigning a replacement colleague after removing an assignment shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; tests/e |
+| `TC_E07S07_06` | E07-S07 | Verify that the assigned staff member should receive a notification when they ar | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; tests/e |
 
 ### E08
 
@@ -637,6 +637,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - resets counter and lock on a mid-window correct password
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
+
+### `backend/tests/staffAssignments.test.ts`
+
+- every operation refuses signed-out users and roles other than Technical Support, and audits the refusal
+- the queue lists only staffable events, open requests first
+- a request lists every active colleague, marks who is on it, and names clashes for the rest
+- a request on an event that is no longer staffable is shown but cannot be assigned
+- request and assignment ids are checked before any lookup; a missing request is a 404
+- the schedule shows only the signed-in technician\
+- a clashing event whose title already starts with its code, or has no code, is named once
+- assignments are refused for cancelled requests, unstaffable events, unknown or inactive colleagues, and repeats
+- when two people assign the same colleague at once, the database refusal is reported as the same clash
+- the database refusal still gives a sentence when the winner has already been removed or the colleague is unknown
+- any other database failure is not mistaken for a clash
+- removing one of several keeps the request staffed; removing twice is refused
+- handler: methods, origin and actions
+- handler: GET routes to the queue, one request or the schedule; POST to assign or remove
 
 ### `backend/tests/supportRequests.test.ts`
 
