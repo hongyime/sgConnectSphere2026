@@ -815,6 +815,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a late answer for the previous event never replaces the current one
 - the reply is handled under StrictMode, as in development
 
+### `frontend/src/features/coordinator/TechnicalSupport.test.tsx`
+
+- a blank, too long or reversed request is caught before sending, with the server\
+- validation boundaries: exactly 2000 characters is accepted, missing times are named
+- server field errors land on their fields, and a refusal is shown as sent
+- after confirmation the card is read-only, and the form page explains why instead of showing a form
+- a failed load can be retried, and a refused
+- an unexpected reply is shown as a failed load instead of breaking the event page
+- the card is not shown before approval, so no support request is loaded
+- moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
+- the notified sentence handles none, one and several
+
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
 - sends only the fields that changed, trimmed and typed
