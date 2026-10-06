@@ -10,12 +10,13 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 - Regenerated the coverage inventory; all 58 Week 7 IDs now report as scaffolds. The full catalogue reports 118 active tests, 193 scaffolds and 3 older cases with no test reference.
 - Ran the coverage audit and repository check successfully, then pushed the implementation as `490f880` (`test(e2e): scaffold Week 7 acceptance cases`). The branch is based on `main` at `1c1be82`.
 - Opened draft PR #217 and published its required PostPlan review at `https://kvwc99kdmfsx.postplan.dev`.
-- The configured application checks and required repository checks passed on implementation commit `6ebef66`; T-65 records capture both runs. A documentation-only follow-up will trigger any applicable checks again.
+- The implementation passed application and repository checks on `6ebef66`; T-65 records capture those test runs. Current branch head `79cb7df` is based on `main` at `1c1be82`, and all current PR checks pass.
+- PR #217 is ready for review. Its PostPlan is `https://kvwc99kdmfsx.postplan.dev`; Vercel also passed after the PR became ready.
 
 ## Not done / next
 
-- Finish the self-review, then move PR #217 from draft to ready for human review when the latest required checks are green.
-- Merge only after human approval. Do not report scaffold placeholders as application behavior tests.
+- Await human review and approval, resolve any requested changes, and merge only through the protected PR workflow.
+- Do not report scaffold placeholders as application behavior tests.
 
 ## Decisions without team sign-off
 
@@ -27,5 +28,5 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 - `python scripts/tc_coverage_audit.py` — passed; all 58 Week 7 IDs are scaffolded in `docs/testing/tc-coverage.md`.
 - `python scripts/check.py` — passed with 77 repository-tooling tests and repository hygiene checks; session run records capture the observed runs.
 - CI `application-checks` — passed on `6ebef66`; all configured steps succeeded, including the Playwright scaffold command. The new `test.fixme` declarations remain skipped placeholders and do not prove behavior. A T-65 session record captures the run.
-- PR #217 required checks passed on implementation commit `6ebef66`; Vercel deploy was skipped by the workflow. The latest documentation-only commit requires its applicable check statuses to settle before review.
+- PR #217 required checks passed on implementation commit `6ebef66`; all latest check statuses also pass on `79cb7df`.
 - The browser scaffold suite was not run locally.
