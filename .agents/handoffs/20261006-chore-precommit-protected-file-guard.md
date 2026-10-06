@@ -25,8 +25,9 @@ as the authoritative guard.
 
 ## Not done / next
 
-- Commit and push the focused change, then confirm repository checks and
-  `pr-conventions` on the PR.
+- Draft PR #218 is open. Required checks are pending; once they pass and GitHub
+  reports no conflicts, update the PR checklist and mark it ready for teammate
+  review. Do not merge without review approval.
 - No changes to `.agents/STATE.md` or `.agents/JOURNAL.md`.
 
 ## Verification
