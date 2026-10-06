@@ -1,3 +1,4 @@
+import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
@@ -48,7 +49,7 @@ import { VenueForm } from '../features/venue/VenueForm';
 import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
 import { VenueBlockout } from '../features/venue/VenueBlockout';
 import {
-  EquipmentDashboard, RequestQueue, ReservationDetail, TechnicianAssignment, ConflictState,
+  EquipmentDashboard, RequestQueue, ReservationDetail, ConflictState,
 } from '../features/support/Support';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer, ReportingDashboard, DigestPreferences, Recommendations,
@@ -173,7 +174,9 @@ export const routes: AppRoute[] = [
   page('/support/catalogue/:equipmentId', <EquipmentDetail />, 'live', 'E07-S01'),
   page('/support/queue', <RequestQueue />, 'mock', 'E07-S04'),
   page('/support/requests/:requestId', <ReservationDetail />, 'mock', 'E07-S04'),
-  page('/support/technicians', <TechnicianAssignment />, 'mock', 'E07-S07'),
+  page('/support/technicians', <StaffingQueue />, 'live', 'E07-S07'),
+  page('/support/technicians/:requestId', <StaffingRequestPage />, 'live', 'E07-S07'),
+  page('/support/schedule', <MySchedule />, 'live', 'E07-S07'),
   page('/support/conflicts', <ConflictState />, 'mock', 'E07-S03'),
 
   // Administrator (no Release 1 stories)

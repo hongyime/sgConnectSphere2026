@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **314**
 - Automated (explicit TC_ID in an active test title): **135** (43.0%)
-  - Real-database (`.integration.test` / `.db.test`): **23**
+  - Real-database (`.integration.test` / `.db.test`): **22**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **111**
+  - Live-assertion (other active tests): **112**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **122** (38.9%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
@@ -925,6 +925,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - equipment load failure offers retry and empty catalogue offers add
 - late equipment response does not overwrite the next edit route
 
+### `frontend/src/features/support/TechnicianStaffing.test.tsx`
+
+- the queue shows requests needing a technician first, with filters for staffed and all
+- an empty queue and an empty filter each explain themselves; a failed load can be retried
+- a removal the server refuses keeps the panel open with its sentence
+- an event that can no longer be staffed explains why, and a request with everyone on it says so
+- a request that cannot be loaded shows the refusal with a way back
+- a malformed reply is a failed load, not a crash
+- an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
+- event names avoid repeating a code the title already starts with
+
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
 - removing a block goes through ConfirmPanel and reloads the list on success
@@ -1078,7 +1089,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - equipment catalogue lists inventory rows
 - request queue filters by state
 - reservation detail records a shortfall
-- technician assignment lists available technicians
+- technician staffing lists support requests needing a technician
 - conflict state lists shortfall requests
 
 ### `tests/e2e/venue-search.spec.ts`
