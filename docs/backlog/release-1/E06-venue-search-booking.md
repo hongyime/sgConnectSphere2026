@@ -188,7 +188,7 @@ E14-S02 completion no longer waits on these booking workflows. The original
 ## E06-S05 — Hold a venue tentatively
 
 - **Sprint**: Sprint 3
-- **Points**: 3
+- **Points**: 5
 - **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, O-31, O-32, O-33, O-34
 - **Owner**:
 

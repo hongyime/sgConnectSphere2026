@@ -4,6 +4,7 @@
 - **Owner**: Amareet (SCRUM-118)
 - **Audited against**: `frontend/src/app/routes.tsx` and its rendered components at main commit `139217e`, plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
+- **Focused refresh**: E05-S04 route status checked against main commit `1c1be82` after PR #185 merged on 2026-10-03; other rows were not re-audited.
 
 This file maps every Release 1 story (47 in total, per the backlog README's
 20 September audit) to the role that owns it, the current route or routes
@@ -52,7 +53,7 @@ in the second table below.
 | E05-S01 | Maintain the venue catalogue | Venue Staff member | Sprint 1 | `/venue/inventory`, `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | List, Form, Form | Add, update and retire venues. |
 | E05-S02 | Match layout requirements to venue capacity | Venue Staff member | Sprint 1 | `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | Form | Layouts are managed inside the venue form (same screens as E05-S01). |
 | E05-S03 | View the venue availability calendar | Event Coordinator | Sprint 2 | `/coordinator/calendar`, `/coordinator/venues/:venueId/calendar`, `/venue/availability` | live | Calendar | Shared calendar for Coordinator and Venue Staff audiences. |
-| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | mock | Form, List | Main still renders the prototype. The live maintenance form and block list are proposed in PR #185 (SCRUM-120); update status only after that PR merges. |
+| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | live | Form, List | The live `VenueBlockout` form and block list are in merged PR #185 (SCRUM-120; merge `9584c77`). Route status does not imply the story Definition of Done is met. |
 | E06-S01 | Search for suitable venues | Event Coordinator | Sprint 2 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Catalogue search with suitability filters. |
 | E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). This remains a Sprint 3 story; its owner must verify all acceptance criteria before treating it as done. |
 | E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | — | none | Form | Expected to live under `/coordinator/events/:eventCode/venues` or the planning workspace. |
