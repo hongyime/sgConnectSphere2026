@@ -32,7 +32,7 @@ as the authoritative guard.
 ## Verification
 
 - `python scripts/check.py` passed repository hygiene and all 80 tooling tests
-  on HEAD `1c1be82`; the T-65 run record is in `docs/testing/runs/`.
+  on HEAD `7424b70`; the T-65 run record is in `docs/testing/runs/`.
 - The `protected-continuity-files` hook passed its repository pre-commit run.
   The CLI regression stages `.agents/STATE.md` in an ordinary temporary branch
   and confirms the command rejects it, including when the file is renamed;
