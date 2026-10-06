@@ -1,19 +1,21 @@
 # feature/SCRUM-112-vercel-preview-cleanup
 
 Goal: SCRUM-112 preview deploy cleanup workflow. GitHub Actions workflow that
-runs every 3 days and deletes Vercel preview deployments older than 30 days,
-using the existing `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repo
-secrets. SCRUM-112 is assigned to Bryan, In Sprint 3 (id 36), parent
-SCRUM-127, low-priority housekeeping.
+periodically deletes Vercel preview deployments older than 30 days, using the
+existing `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` repo secrets.
+SCRUM-112 is in Sprint 3 (id 36), parent SCRUM-127, low-priority
+housekeeping.
 
 ## Done
 
 - `.github/workflows/vercel-preview-cleanup.yml`:
-  - `schedule: cron: "0 17 */3 * *"` (every 3 days at 01:00 Asia/Singapore,
-    after the Jira sweep at 00:00) plus `workflow_dispatch` with a `dry_run`
-    input.
-  - Guards: skips the job entirely when any of the three secrets is unset
-    (same shape as `jira-hygiene-sweep.yml`).
+  - `schedule: cron: "0 17 */3 * *"` (17:00 UTC / 01:00 Asia/Singapore)
+    plus `workflow_dispatch` with a `dry_run` input. The day-of-month field
+    resets monthly, so intervals vary, including one day from the 31st to the
+    next month's 1st.
+  - A secret guard writes a step output; the deletion step is skipped when
+    any of the three secrets is unset (same guard pattern as
+    `jira-hygiene-sweep.yml`).
   - Pages `GET https://api.vercel.com/v6/deployments?projectId=...&teamId=...&target=preview&limit=100&until=<cutoff_ms>`,
     walks `pagination.next` to keep going.
   - Cutoff = `now - 30 days` in ms; only `preview` deployments in `READY`,
@@ -37,22 +39,17 @@ SCRUM-127, low-priority housekeeping.
   shape is unchanged for the fields we use.
 - Age window: hard-coded 30 days via `AGE_DAYS: "30"` env (matches the ticket
   wording). Easy to raise/lower by editing the env.
-- Cron every 3 days at 17:00 UTC (01:00 SGT) to avoid the Jira sweep's 16:00
-  UTC and the Supabase keepalive's 08:00 UTC windows. Stale previews are a
-  slow accumulation, not a daily firehose, so once every three days is enough
-  to keep the Hobby-plan preview quota clear without burning Actions minutes
-  on nights with nothing to delete.
+- Cron runs at 17:00 UTC (01:00 SGT), apart from the Jira sweep and Supabase
+  keepalive schedules. GitHub's day-of-month `*/3` resets monthly, so calendar
+  intervals vary and can be one day from the 31st to the next month's 1st.
+  Stale previews accumulate slowly, so periodic cleanup is sufficient.
 - `READY`/`ERROR`/`CANCELED` previews are candidates; `BUILDING`/`QUEUED`
   are left alone to avoid racing active deploys. `production` deployments
   are never considered (the filter already excludes them, but the state
   guard is defence in depth).
-- No "keep the preview for an open PR" guard: Vercel's current retention
-  model keeps the latest preview per branch active even if its deployment
-  record is deleted via the API, and the merge-queue timeout (30 min) plus
-  typical PR age mean an open PR older than 30 days is already a bug worth
-  flagging. If this bites in practice, add a `gh pr list --state open --json
-  headRefName` loop that skips deployments whose `meta.githubCommitRef`
-  matches an open PR.
+- No open-PR preview guard is implemented. Any preview matching the age and
+  state filters can be deleted even when its PR remains open; the workflow
+  comments now state this limitation directly.
 
 ## Not done / next
 
@@ -62,6 +59,21 @@ SCRUM-127, low-priority housekeeping.
   with a pytest shim as `jira_hygiene_sweep.py` does.
 - No decision record (process housekeeping, not an architecture change);
   SCRUM-112 Jira issue + this handoff are the trail.
+
+## Review follow-up (2026-10-06)
+
+- The secret guard now gates the delete step through a step output.
+- Each deployment-list request checks curl transport status and requires HTTP
+  200; the response must contain a deployments array and valid pagination.next
+  metadata before parsing rows.
+- Comments now describe READY/ERROR/CANCELED eligibility, the absence of an
+  open-PR guard, workflow_dispatch dry-run behavior, and cron month-boundary
+  cadence accurately.
+- `python scripts/check.py` passed all 77 repository tooling tests on
+  `3d15ed7`; the T-65 execution record is under `docs/testing/runs/`.
+- Workflow YAML parsing and Bash syntax checks passed after normalizing the
+  local checkout's line endings. `git diff --check` will be rerun before commit.
+- No live Vercel API request or deletion was performed.
 
 ## Commands
 

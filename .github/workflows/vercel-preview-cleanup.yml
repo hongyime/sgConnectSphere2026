@@ -19,19 +19,17 @@ name: Vercel Preview Cleanup
 #   DELETE https://api.vercel.com/v13/deployments/{uid}?teamId=...
 #
 # Production deployments (`target=production`) are never deleted; we only
-# page through `target=preview`. We also skip deployments whose `url`
-# matches the currently-aliased preview for any open PR, because an open PR
-# older than 30 days should keep its preview even if it predates the
-# cutoff. In practice the merge-queue timeout (30 min) and dependabot
-# cadence make this unlikely, but it is cheap to guard.
+# page through `target=preview`. This workflow does not check whether a
+# preview belongs to an open PR, so any matching preview older than 30 days
+# in an eligible state can be deleted.
 #
 # A failure only marks this scheduled run red; it does not change the
-# repository. Dry-run locally by setting workflow_dispatch inputs.dry_run
-# to true, or by reading the summary without the --execute flag.
+# repository. Set workflow_dispatch inputs.dry_run to true to preview
+# deletions; scheduled runs execute them.
 
 on:
   schedule:
-    - cron: "0 17 */3 * *" # Every 3 days at 01:00 Asia/Singapore, after the Jira sweep at 00:00
+    - cron: "0 17 */3 * *" # Day-of-month stepping resets monthly; runs can be one day apart (31st to 1st).
   workflow_dispatch:
     inputs:
       dry_run:
@@ -64,13 +62,19 @@ jobs:
       AGE_DAYS: "30"
     steps:
       - name: Guard required secrets
+        id: guard
+        shell: bash
         run: |
           if [ -z "${VERCEL_TOKEN:-}" ] || [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
             echo "::warning::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID not fully configured; skipping."
-            exit 0
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Delete preview deployments older than ${{ env.AGE_DAYS }} days
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
         run: |
           set -euo pipefail
 
@@ -84,25 +88,47 @@ jobs:
           total_candidates=0
           total_deleted=0
           total_failed=0
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
 
           while [ -n "$list_url" ]; do
             page=$((page + 1))
             echo "Page $page: $list_url"
 
-            body=$(curl -sS --max-time 30 \
+            if ! http=$(curl -sS -o "$response_file" -w "%{http_code}" --max-time 30 \
               -H "Authorization: Bearer $VERCEL_TOKEN" \
               -H "Accept: application/json" \
-              "$list_url")
+              "$list_url"); then
+              echo "::error::GET deployments failed on page $page (curl transport error)."
+              exit 1
+            fi
+            if [ "$http" != "200" ]; then
+              echo "::error::GET deployments failed on page $page with HTTP $http."
+              exit 1
+            fi
+            if ! jq -e 'if (.deployments | type) != "array" then false
+              elif (.pagination | type) != "object" then false
+              elif (.pagination | has("next") | not) then false
+              else (.pagination.next == null or (.pagination.next | type == "number"))
+              end' "$response_file" >/dev/null; then
+              echo "::error::GET deployments returned an invalid response on page $page; expected a deployments array and pagination.next timestamp."
+              exit 1
+            fi
 
             # Extract (uid, created, url, state) tuples for this page.
-            # Only READY previews are considered; keep BUILDING/QUEUED alone.
-            mapfile -t rows < <(echo "$body" | jq -r \
+            # READY, ERROR, and CANCELED previews are eligible; keep
+            # BUILDING/QUEUED deployments alone.
+            if ! rows_output=$(jq -r \
               --argjson cutoff "$cutoff_ms" \
               '.deployments[]
                 | select(.target == "preview")
                 | select(.state == "READY" or .state == "ERROR" or .state == "CANCELED")
                 | select(.created < $cutoff)
-                | [.uid, .created, (.url // "-"), .state] | @tsv')
+                | [.uid, .created, (.url // "-"), .state] | @tsv' "$response_file"); then
+              echo "::error::Could not parse deployments on page $page."
+              exit 1
+            fi
+            mapfile -t rows <<< "$rows_output"
 
             for row in "${rows[@]}"; do
               [ -z "$row" ] && continue
@@ -135,7 +161,7 @@ jobs:
 
             # Vercel paginates with pagination.next = created timestamp; feed
             # it back as `until` to walk older deployments.
-            next=$(echo "$body" | jq -r '.pagination.next // empty')
+            next=$(jq -r '.pagination.next // empty' "$response_file")
             if [ -z "$next" ] || [ "$next" = "null" ]; then
               list_url=""
             else
