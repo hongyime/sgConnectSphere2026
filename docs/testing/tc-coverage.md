@@ -1058,7 +1058,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request queue filters by state
 - reservation detail records a shortfall
 - technician assignment lists available technicians
-- conflict state lists shortfall requests
+- legacy conflict route opens live equipment availability
 
 ### `tests/e2e/venue-search.spec.ts`
 

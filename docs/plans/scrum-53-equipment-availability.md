@@ -1,5 +1,8 @@
 # SCRUM-53 / E07-S03 — Check equipment availability
 
+Draft PR: [#229](https://github.com/hongyime/sgConnectSphere2026/pull/229).
+Review page: [implementation and screenshots](https://gnxd10tqiilh.postplan.dev/v/1).
+
 ## Goal and authoritative scope
 
 Technical Support Staff can check how many units of each active equipment item
@@ -147,3 +150,15 @@ catalogue quantities may differ; use a prepared disposable fixture for exact
 - [20261007-003409-xiangyingg-full-regression.md](../testing/runs/20261007-003409-xiangyingg-full-regression.md)
 - [20261007-003425-xiangyingg-frontend-e2e.md](../testing/runs/20261007-003425-xiangyingg-frontend-e2e.md)
 - [20261007-003426-xiangyingg-frontend-e2e.md](../testing/runs/20261007-003426-xiangyingg-frontend-e2e.md)
+
+## CI route-regression follow-up
+
+Initial CI on 884dc52 passed backend, frontend, PostgreSQL and authenticated
+browser steps but failed the full scaffold on two old desktop/mobile assertions
+expecting the mock Conflict state screen. The legacy route now correctly opens
+live equipment availability. Updated tests/e2e/support.spec.ts to check that live
+form and regenerated coverage. Full local scaffold then passed: 238 passed,
+342 deliberate skips. This does not turn the skipped stories into delivered work.
+
+- [Initial CI failure record](../testing/runs/20261007-004922-xiangyingg-frontend-e2e.md)
+- [Full local scaffold regression](../testing/runs/20261007-013825-xiangyingg-full-regression.md)

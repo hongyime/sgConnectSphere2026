@@ -23,7 +23,10 @@ are in docs/plans/scrum-53-equipment-availability.md. Screenshots visually check
 Implementation commit fec891b is locally verified. The Product Owner pre-created
 remote branch at b57537f has been merged without conflict; only its setup handoff
 was added. This original handoff is now the canonical per-branch record.
-Finish push and open a reviewable PR with the verified postplan.
+Draft PR #229 is open: https://github.com/hongyime/sgConnectSphere2026/pull/229.
+Implementation fec891b and integration 884dc52 are pushed. Review page with
+synthetic screenshots: https://gnxd10tqiilh.postplan.dev/v/1.
+Next: run the documented human checklist, check final-head CI and obtain review.
 Manual human checklist, final-head CI, skeleton review and reviewed merge remain
 required before Jira Done. E07-S04/E07-S05 own writers and are not closed by this reader.
 
@@ -41,3 +44,11 @@ Product Owner @bryanseah234 pre-created this branch on 5 October at b57537f.
 The implementation began from current main ccb32b6; both histories are preserved.
 The pre-creation record described To Do status; manual acceptance, final-head
 checks and reviewed merge still govern completion.
+
+## CI follow-up
+
+PR #229 initial application CI failed only because tests/e2e/support.spec.ts
+still expected mock Conflict state at the route now serving live availability.
+Updated that compatibility regression and regenerated inventory. Full local
+scaffold passes: 238 passed, 342 deliberate skips. New final-head CI must pass;
+manual results are still pending. No E07-S02 code was imported.
