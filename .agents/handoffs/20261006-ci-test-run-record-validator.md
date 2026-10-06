@@ -9,12 +9,12 @@ Add a repository check for the T-65 test-run record frontmatter and result-table
 - Confirmed two historical filenames have timestamp seconds that differ from their frontmatter date. The checker will validate filename shape and its date/runner/scope fields without requiring an exact timestamp match.
 - Confirmed `database` was introduced by PR #204, merged at `2026-10-03T04:19:39Z` (`2026-10-03T12:19:39+08:00`), so earlier records may omit it.
 - Added `scripts/check_test_run_records.py`, integrated it into `scripts/check.py`, and documented the database compatibility cutoff and checker behavior.
-- The post-commit `python scripts/check.py` run on `ef417c5` passed: 73 records validated and 77 repository tooling tests passed. A T-65 evidence record is included in `docs/testing/runs/`.
-- Added focused tooling tests for the historical cutoff, duplicate and unknown fields, and invalid outcomes. The required pre-commit check passed with 82 tooling tests on the current working tree; a post-commit run still needs its own T-65 record.
+- The post-commit `python scripts/check.py` run on `ef417c5` passed: 73 records validated and 77 repository tooling tests passed; a later run on `74a2780` passed with 74 records and 82 tooling tests. Both T-65 evidence records are in `docs/testing/runs/`.
+- Added focused tooling tests for the historical cutoff, duplicate and unknown fields, and invalid outcomes. The required pre-commit check passed with 82 tooling tests on the working tree, and the post-commit check is recorded separately.
 
 ## Not done / next step
 
-Run a fresh pre-commit check and commit the focused tests plus this handoff update. Then run a post-commit check, add a new T-65 session record without editing the existing one, update PR #221 to cite the latest local evidence, and wait for CI before marking it ready for teammate review.
+Commit the latest T-65 run record and handoff update after a fresh pre-commit check. Update PR #221 to cite the latest local evidence, wait for CI, then mark it ready for teammate review. Do not merge without teammate approval.
 
 ## Decisions for review
 
