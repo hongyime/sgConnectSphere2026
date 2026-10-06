@@ -25,9 +25,10 @@ as the authoritative guard.
 
 ## Not done / next
 
-- Draft PR #218 is open. Required checks are pending; once they pass and GitHub
-  reports no conflicts, update the PR checklist and mark it ready for teammate
-  review. Do not merge without review approval.
+- PR #218 is ready for teammate review. Required checks passed on head
+  `6bd7181`, and GitHub reported the branch mergeable. After this handoff update
+  is pushed, confirm checks on the new head, then await review feedback and use
+  the protected merge queue after approval.
 - No changes to `.agents/STATE.md` or `.agents/JOURNAL.md`.
 
 ## Verification
