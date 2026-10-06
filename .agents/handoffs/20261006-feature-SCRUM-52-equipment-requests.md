@@ -8,7 +8,7 @@ Event-scoped requests, above-stock warning, independent event data, protected am
 
 ## Next step
 
-PR #216 is open: https://github.com/hongyime/sgConnectSphere2026/pull/216. SCRUM-52 is In Review; Amareet and Aaron are requested reviewers. Obtain teammate review; merge catalogue dependency #214 first. Do not mark Jira Done before reviewed merge. No production delivery or live email verification claimed.
+PR #216 is open: https://github.com/hongyime/sgConnectSphere2026/pull/216. SCRUM-52 is In Review; Amareet and Aaron are requested reviewers. Dependency #214 merged on 6 October with required checks green. A teammate approved the implementation at 157995d; renewed approval may be needed after the documentation push. Do not mark Jira Done before reviewed merge. No production delivery or live email verification claimed.
 
 ## Reviewer decision
 
@@ -19,3 +19,16 @@ Request notices go to active Technical Support accounts as shared department int
 Requests are distinct from reservations and period availability. Keep reservation history protected and use real-database acceptance evidence. Do not update STATE.md or JOURNAL.md in this PR.
 
 CI initially found one missing retry-test title in generated tc-coverage.md; regenerated the inventory. No application change was needed. Hosted visual review: https://8kx96ceo2oc3.postplan.dev/v/1.
+
+## Manual validation documentation — 6 October 2026
+
+The user manually exercised E07-S02 and confirmed remaining checks and active
+Technical Support intake recipients. See docs/plans/scrum-52-manual-validation.md
+and its linked immutable manual session record. Screenshot observations are
+separated from user-reported outcomes; the stale save-banner/empty-list
+screenshot remains explicitly unresolved. No live email delivery claimed.
+
+The focused authenticated browser rerun failed in setup because TEST_DATABASE_URL
+was unset; its separate execution record preserves that failure. Local frontend
+and backend were started with the ignored environment configuration for user
+testing. No application code changed in this documentation task.
