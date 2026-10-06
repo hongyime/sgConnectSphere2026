@@ -49,3 +49,14 @@ Repository checks, push, final-head CI and renewed review complete this refresh.
 
 Current main validates test-record filename scopes. Normalized six unmerged
 legacy filenames and plan links without changing their contents or dates.
+
+## Reviewer follow-up — 7 October 2026
+
+Formatted the four dense implementation files; removal errors clear busy state
+in finally and support retry, covered by a component regression. Save/remove
+perform role authorization once before validation and pass the actor to mutate.
+The old filename seconds were not actual finish times: preserved all six
+original contents under docs/testing/history/scrum-52-initial-runs and removed
+those names from canonical runs. Fresh records capture command completion time.
+Backend unit, 279 frontend tests and 16 intercepted browser tests pass; typecheck
+passes and coverage was regenerated. Fresh database coverage remains for CI.

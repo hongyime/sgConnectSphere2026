@@ -153,15 +153,40 @@ passed. Live email delivery and production deployment are not claimed.
 
 ## Observed verification records
 
-- [backend/unit: 267 passed](../testing/runs/20261006-021921-xiangyingg-backend-unit.md)
-- [backend/db: 2 passed; TC_E07S01_01–04 and TC_E07S02_01–04](../testing/runs/20261006-021922-xiangyingg-backend-db.md)
-- [frontend/vitest: 278 passed](../testing/runs/20261006-021923-xiangyingg-frontend-vitest.md)
-- [frontend/e2e: 16 passed desktop/mobile](../testing/runs/20261006-021924-xiangyingg-frontend-e2e.md)
-- [frontend/e2e: 2 passed desktop/mobile, all four E07-S02 cases](../testing/runs/20261006-021925-xiangyingg-frontend-e2e.md)
-- [full-regression: 240 passed; 340 deliberately skipped scaffold cases](../testing/runs/20261006-021926-xiangyingg-full-regression.md)
+- [backend/unit: 267 passed](../testing/history/scrum-52-initial-runs/backend-unit.md)
+- [backend/db: 2 passed; TC_E07S01_01–04 and TC_E07S02_01–04](../testing/history/scrum-52-initial-runs/backend-db.md)
+- [frontend/vitest: 278 passed](../testing/history/scrum-52-initial-runs/frontend-vitest.md)
+- [frontend/e2e: 16 passed desktop/mobile](../testing/history/scrum-52-initial-runs/frontend-e2e-mocked.md)
+- [frontend/e2e: 2 passed desktop/mobile, all four E07-S02 cases](../testing/history/scrum-52-initial-runs/frontend-e2e-real.md)
+- [full-regression: 240 passed; 340 deliberately skipped scaffold cases](../testing/history/scrum-52-initial-runs/full-regression.md)
 
 `npm run typecheck` and `npm run build` also passed on the same working tree.
 
-Historical execution record filenames were normalized during the main refresh.
-Filename seconds distinguish the six records; original frontmatter timestamps
-and record contents remain unchanged.
+The six initial run summaries are preserved byte-for-byte under
+`docs/testing/history/scrum-52-initial-runs/`. Their common timestamp records
+aggregate output inspection, not recoverable individual run finish times. They
+are historical supporting evidence, not canonical T-65 session records. The
+previous disambiguating filename seconds have been removed; fresh execution
+records use actual command completion times.
+
+## Reviewer follow-ups — 7 October 2026
+
+- Formatted requests.ts, requestHandler.ts, EquipmentRequests.tsx and
+  equipmentRequestApi.ts with pinned Prettier 3.6.2; no dependency added.
+- Removal uses try/catch/finally so unexpected rejection reports an error and
+  clears busy state. A component regression verifies the request remains visible
+  and the user can retry successfully.
+- Save authorizes once before validation and passes the authorized actor into
+  the private transaction helper. Remove follows the same authorization pattern.
+  This removes a redundant role check (the successful role check itself did not
+  perform a database query); event ownership and locking remain inside the transaction.
+- Historical summaries are preserved unchanged under testing/history. Fresh
+  backend, frontend and browser records capture actual command finish times.
+- Fresh real-database and authenticated browser verification remain for CI;
+  there is no disposable PostgreSQL service available locally.
+
+Fresh execution records:
+
+- [Backend unit regression](../testing/runs/20261007-000845-xiangyingg-backend-unit.md)
+- [279 frontend tests including unexpected removal failure/retry](../testing/runs/20261007-000841-xiangyingg-frontend-vitest.md)
+- [16 desktop/mobile intercepted browser tests](../testing/runs/20261007-000845-xiangyingg-frontend-e2e.md)

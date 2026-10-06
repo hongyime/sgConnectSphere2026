@@ -907,6 +907,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request form associates server quantity errors and retains entered values
 - late event response cannot overwrite the next equipment request form
 - equipment request load failure offers retry and then the empty state
+- unexpected removal error releases the confirm button and allows retry
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
