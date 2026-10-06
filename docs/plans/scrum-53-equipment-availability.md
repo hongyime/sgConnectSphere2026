@@ -162,3 +162,15 @@ form and regenerated coverage. Full local scaffold then passed: 238 passed,
 
 - [Initial CI failure record](../testing/runs/20261007-004922-xiangyingg-frontend-e2e.md)
 - [Full local scaffold regression](../testing/runs/20261007-013825-xiangyingg-full-regression.md)
+
+## Latest main integration
+
+Merged main 3f8de45 (PR #222, E07-S06 backend) after it landed during this task.
+Resolved backend/package.json by retaining both availability and support-request
+unit/database commands; regenerated the combined coverage inventory. No other
+conflict occurred. Typecheck and the combined 289 backend tests pass. Re-ran the
+real authenticated availability journey after main's API routing additions:
+2 desktop/mobile tests pass against isolated PostgreSQL.
+
+- [Combined backend regression](../testing/runs/20261007-014057-xiangyingg-backend-unit.md)
+- [Post-merge real browser acceptance](../testing/runs/20261007-014058-xiangyingg-frontend-e2e.md)

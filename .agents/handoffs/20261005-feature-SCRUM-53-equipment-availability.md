@@ -52,3 +52,10 @@ still expected mock Conflict state at the route now serving live availability.
 Updated that compatibility regression and regenerated inventory. Full local
 scaffold passes: 238 passed, 342 deliberate skips. New final-head CI must pass;
 manual results are still pending. No E07-S02 code was imported.
+
+## Latest main integration
+
+Main 3f8de45 / #222 landed during implementation. Merged normally, resolved the
+sole package.json conflict retaining both test sets, regenerated coverage.
+289 combined backend tests and post-merge real authenticated desktop/mobile
+availability acceptance pass; typecheck passes. Finish final merge push and CI.
