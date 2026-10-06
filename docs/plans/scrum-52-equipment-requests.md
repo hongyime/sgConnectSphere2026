@@ -153,11 +153,15 @@ passed. Live email delivery and production deployment are not claimed.
 
 ## Observed verification records
 
-- [backend/unit: 267 passed](../testing/runs/20261006-021920-xiangyingg-backend-unit-1.md)
-- [backend/db: 2 passed; TC_E07S01_01–04 and TC_E07S02_01–04](../testing/runs/20261006-021920-xiangyingg-backend-db-2.md)
-- [frontend/vitest: 278 passed](../testing/runs/20261006-021920-xiangyingg-frontend-vitest-3.md)
-- [frontend/e2e: 16 passed desktop/mobile](../testing/runs/20261006-021920-xiangyingg-frontend-e2e-4.md)
-- [frontend/e2e: 2 passed desktop/mobile, all four E07-S02 cases](../testing/runs/20261006-021920-xiangyingg-frontend-e2e-5.md)
-- [full-regression: 240 passed; 340 deliberately skipped scaffold cases](../testing/runs/20261006-021920-xiangyingg-full-regression-6.md)
+- [backend/unit: 267 passed](../testing/runs/20261006-021921-xiangyingg-backend-unit.md)
+- [backend/db: 2 passed; TC_E07S01_01–04 and TC_E07S02_01–04](../testing/runs/20261006-021922-xiangyingg-backend-db.md)
+- [frontend/vitest: 278 passed](../testing/runs/20261006-021923-xiangyingg-frontend-vitest.md)
+- [frontend/e2e: 16 passed desktop/mobile](../testing/runs/20261006-021924-xiangyingg-frontend-e2e.md)
+- [frontend/e2e: 2 passed desktop/mobile, all four E07-S02 cases](../testing/runs/20261006-021925-xiangyingg-frontend-e2e.md)
+- [full-regression: 240 passed; 340 deliberately skipped scaffold cases](../testing/runs/20261006-021926-xiangyingg-full-regression.md)
 
 `npm run typecheck` and `npm run build` also passed on the same working tree.
+
+Historical execution record filenames were normalized during the main refresh.
+Filename seconds distinguish the six records; original frontmatter timestamps
+and record contents remain unchanged.

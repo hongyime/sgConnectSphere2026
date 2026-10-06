@@ -32,3 +32,20 @@ The focused authenticated browser rerun failed in setup because TEST_DATABASE_UR
 was unset; its separate execution record preserves that failure. Local frontend
 and backend were started with the ignored environment configuration for user
 testing. No application code changed in this documentation task.
+
+## Main conflict resolution — 2026-10-07
+
+Merged origin/main ccb32b6 into SCRUM-52 without rewriting branch history.
+Resolved six files: backend/package.json retains request and catalogue test
+commands; equipmentSupport/handler.ts retains request-mode dispatch and main's
+catalogue handler; roles.ts and routes.tsx retain both request and catalogue
+navigation; e07.spec.ts retains live request coverage instead of duplicate fixme
+scaffolds; tc-coverage.md regenerated from the combined test tree.
+
+Typecheck/build, backend unit suite, 278 frontend tests and 16 intercepted
+browser tests pass. Fresh real-database tests unavailable locally because no
+disposable PostgreSQL service is running. See the new full-regression record.
+Repository checks, push, final-head CI and renewed review complete this refresh.
+
+Current main validates test-record filename scopes. Normalized six unmerged
+legacy filenames and plan links without changing their contents or dates.

@@ -1,153 +1,71 @@
-# Deploying and debugging without Vercel access
+# Deploying and debugging without Vercel dashboard access
 
-Only one teammate has Vercel dashboard access (paid-tier seats cost
-per user, and the free tier limits collaborators). This document is
-how everyone else can still see, reproduce, and debug a red Vercel
-deploy status.
+GitHub Actions is the only deployment path. The `.github/workflows/vercel-deploy.yml`
+workflow uses the Vercel CLI to build and deploy from Actions; `vercel.json`
+disables Vercel's own Git deployment integration (decision 0010). Anyone with
+repository access can inspect the build and deploy logs in the Actions run.
+Vercel dashboard access is needed only for account-level settings or credentials.
 
-## What Vercel does after every push and PR
+## When deployments run
 
-Vercel builds automatically on:
+The **Vercel Deploy** workflow runs:
 
-- Every push to `main` (production deployment).
-- Every push to a branch with an open, non-draft PR (preview deployment).
-  Drafts do not deploy; the first preview is built when the PR is marked
-  ready for review. Documentation, tooling and `.agents/` changes never
-  deploy (decision 0010).
+- On pushes to `main` that include deployable files. These create production
+  deployments.
+- On opened, reopened, synchronized, or review-ready pull requests that include
+  deployable files. These create preview deployments. Draft PRs do not deploy;
+  the first preview runs when the PR is marked ready for review.
 
-The result surfaces in GitHub as a `Vercel` status check on the commit
-and a bot comment on the PR with a preview URL. A red `Vercel` status
-means the build or the deploy failed; a green status means the preview
-URL is live.
+Changes limited to `docs/**`, `.agents/**`, `scripts/**`, `tooling/**`, or
+Markdown files are filtered out. A PR that also changes deployable files still
+runs the workflow.
 
-Vercel logs are private to the Vercel dashboard. The build command
-itself (`npm run build --workspace frontend`) is the same one the local
-repo and GitHub Actions run, but Vercel adds its own environment (env
-vars from the dashboard, function output validation, edge config).
+A successful PR deployment posts or updates a **Vercel preview** comment with
+the URL. The Actions run summary also contains the URL. For a failed or missing
+deployment, check the run for the PR's current commit under **Checks**, or open
+**Actions / Vercel Deploy** and select the matching run for that commit. The job
+is named `vercel-deploy`. This check is not required for merging, so a failure
+does not itself block the PR.
 
-## How teammates without Vercel access can debug
+## Debug a failed deployment
 
-### Step 1: check the mirror workflow
+1. Open the matching **Vercel Deploy** run and inspect the first failed step.
+   The `Pull Vercel environment`, `Build with Vercel`, and `Deploy prebuilt
+   artifact to Vercel` logs include the error output. Use the commit SHA shown
+   in the run to confirm it matches the PR head.
+2. Check **application-checks** separately. It runs the application typecheck,
+   database and unit suites, build, runtime checks, and browser checks when
+   application files change. If that check fails, follow its failing step. If
+   it passes while `vercel-deploy` fails, use the Vercel CLI log to diagnose a
+   deployment configuration, environment, function, or upload problem.
+3. For an application failure, reproduce the command from the failed
+   `application-checks` step locally. Start with:
 
-`application-checks.yml` runs on every pull request and on every push to
-`main`. It runs `npm ci`, `npm run typecheck`, `npm run build`, then all
-runtime and Playwright test suites, in the same order and with the same
-Node version Vercel uses (Node 22).
+   ```pwsh
+   npm ci
+   npm run typecheck
+   npm run build
+   ```
 
-If the mirror workflow is **red**, the failure is reproducible outside
-Vercel. Read the GitHub Actions log to find the failing command and
-error text. This is where the fix belongs.
+   These commands reproduce the typecheck and build locally, but not the full
+   application suite, Vercel's environment, or deployment. The `vercel-deploy` run is
+   the evidence for Vercel-specific build and upload failures.
 
-If the mirror workflow is **green** but `Vercel` is **red**, the failure
-is Vercel-specific:
+If the log points to missing credentials or a Vercel project setting, ask a
+maintainer with the required access to inspect it. Do not paste credential
+values into an issue, pull request, or log.
 
-- **Missing or wrong environment variable in the Vercel project.**
-- More than 12 serverless functions (Hobby-plan limit; a rewrite in
-  `vercel.json` collapses functions).
-- **Silent route collision between `api/foo.ts` and `api/foo/index.ts`**
-  (both build, one silently wins; caught by
-  `scripts/check_api_routes.py` per ADR-014 and BDR T-56).
-- Output directory or framework preset mis-configured.
-- Deploy-time function validation error.
+## Repository-specific checks
 
-### Step 2: paste the Vercel error into the PR or commit
+- `scripts/check_api_routes.py` enforces the one-file-per-URL rule and the
+  11-file headroom limit (ADR-014 and BDR T-56). It catches duplicate Vercel
+  routes that may otherwise build but serve the wrong handler.
+- The required `application-checks` result and the non-required
+  `vercel-deploy` result have different purposes. A successful repository
+  check is not an application build or deployment result.
+- If every changed path is filtered above, no deployment is created.
+  Preview URLs from an earlier commit may therefore be stale for that PR.
 
-When only Bryan can see the Vercel log, the fastest fix is for him to
-copy the failing block from the Vercel dashboard and paste it into a
-top-level comment on the PR (or the failing commit). Use a fenced code
-block so the teammate reading it can grep for the message.
-
-Template for the comment:
-
-```md
-**Vercel deploy log &mdash; run [ID from URL]**
-
-```text
-[paste the failing lines here, redacted for secrets]
-```
-
-Reproduces locally with: `[npm command that triggered it]`
-```
-
-### Step 3: reproduce locally
-
-Anyone can reproduce the same Vercel build locally without a Vercel
-account:
-
-```pwsh
-# From repo root
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
-npm ci
-npm run build
-```
-
-If this succeeds and Vercel still fails, the difference is environment.
-The `vercel.json` rewrites and cron config live in the repo and can be
-inspected without Vercel access; env vars must be requested from Bryan.
-
-### Step 4: install the Vercel CLI as read-only
-
-Any teammate can install the Vercel CLI globally and run:
-
-```pwsh
-npm install -g vercel
-vercel build
-```
-
-The CLI reproduces Vercel's build environment locally without needing
-dashboard access. It still requires a Vercel account (free) to log in,
-but does not consume a paid seat on Bryan's team. The resulting
-`.vercel/output/` directory is exactly what Vercel would upload.
-
-## Free-tier constraints that surface as deploy failures
-
-- **12-function cap on the Hobby plan.** Every file under `api/`
-  becomes one serverless function. `vercel.json` collapses multi-verb
-  routes via `rewrites` so several logical endpoints share one function.
-  Adding a new file under `api/` risks pushing us past the cap. See
-  ADR-014 for the one-file-per-URL rule and BDR T-56 for the 11-file
-  soft limit enforced by `scripts/check_api_routes.py`.
-- **Silent route collision.** Vercel builds both `api/foo.ts` and
-  `api/foo/index.ts` and maps them to the same URL `/api/foo`; one
-  wins the route and the other is a dead lambda that still counts
-  against the 12-function cap. This is how the E01-S03 (SCRUM-18) organiser
-  browse-events endpoint silently broke after PR #56 shipped. Enforced
-  against by the same pre-commit hook. Postplan documenting the
-  discovery: <https://4ovp804r75sa.postplan.dev>.
-- **100MB compiled output for edge and serverless functions.** Not hit
-  yet, but `package-lock.json` size is worth watching.
-- **1 concurrent build.** Rapid push bursts queue rather than fail;
-  distinguish "queued" from "failed" by checking the run status.
-- **1 hour build timeout.** Not hit; typical build is under 60 seconds.
-
-## When to escalate to Vercel-account changes
-
-- Persistent red status on `main` after a green mirror workflow means
-  Vercel needs configuration work only Bryan can do.
-- Missing preview URLs on PRs mean the GitHub-Vercel integration
-  disconnected; reconnect from the Vercel dashboard.
-- Deploy protection blocking teammates from viewing preview URLs is a
-  Vercel project setting; disable "Deploy Protection" for public
-  preview readability if the project has no secrets in the frontend
-  bundle.
-
-## What this project has already done
-
-- Consolidated `/api/auth/verify` into `/api/auth/session?task=verify`
-  via `vercel.json` rewrite in PR #71, freeing a function slot.
-- Kept `/api/cron/*` as a single file that dispatches on a task query
-  parameter.
-- All env vars for Supabase and Brevo are set on the Vercel project;
-  the values live only there and in `.env` on Bryan's machine. The
-  repo carries a placeholder-only `.env.template`.
-
-## What Sprint 2 should add
-
-- Enable Vercel's "Public Deploy Logs" per-project setting when it
-  becomes available on Hobby. Today it is Pro-only, so this remains an
-  aspiration.
-- Consider moving to the GitHub-native Actions deploy pattern using
-  `vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN` in a
-  workflow. That surfaces the full Vercel deploy log inside Actions,
-  which every teammate can read. Requires a `VERCEL_TOKEN` secret and
-  a decision on who owns rotation.
+See [decision 0010](decisions/0010-single-vercel-deploy-path.md) and the
+[deployment workflow](../.github/workflows/vercel-deploy.yml) for the
+source-of-truth configuration.
