@@ -14,8 +14,8 @@ Goal: correct the E05-S04 `/venue/blockout` status in SCRUM-118's screen invento
 
 ## Not done / next
 
-- Run repository checks, commit, push, and open a PR for SCRUM-118 review.
-- Other screen inventory rows were not re-audited.
+- PR #219 is ready for SCRUM-118 owner review. After this handoff update is pushed, recheck required checks on the new head; keep the correction limited to E05-S04.
+- Other screen inventory rows were not re-audited; the inventory remains a draft.
 
 ## Verification
 
