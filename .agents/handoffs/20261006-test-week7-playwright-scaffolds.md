@@ -8,12 +8,14 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 - Found four active email-verification tests in `tests/e2e/verify.spec.ts` carrying the new E01-S12 identifiers even though those IDs now describe Event Coordinator scope. Preserve those tests and remove the incorrect TC_ID labels so the new coordinator cases can be scaffolded honestly.
 - Added test.fixme declarations for the Week 7 case IDs in their matching Epic spec files and updated their case-count/source headers.
 - Regenerated the coverage inventory; all 58 Week 7 IDs now report as scaffolds. The full catalogue reports 118 active tests, 193 scaffolds and 3 older cases with no test reference.
-- Ran the coverage audit and repository check successfully, then committed and pushed the focused branch as `490f880` (`test(e2e): scaffold Week 7 acceptance cases`). The branch is based on current `origin/main` (`1c1be82`).
+- Ran the coverage audit and repository check successfully, then pushed the implementation as `490f880` (`test(e2e): scaffold Week 7 acceptance cases`). The branch is based on `main` at `1c1be82`.
+- Opened draft PR #217 and published its required PostPlan review at `https://kvwc99kdmfsx.postplan.dev`.
+- The configured application checks and required repository checks passed on implementation commit `6ebef66`; the CI application run is recorded under T-65. A documentation-only follow-up will trigger any applicable checks again.
 
 ## Not done / next
 
-- Prepare the required PostPlan and open a draft PR with the complete template, citing PR #205 and the canonical test sources.
-- Await CI and human review. Do not report scaffold placeholders as application behavior tests.
+- Finish the self-review, then move PR #217 from draft to ready for human review when the latest required checks are green.
+- Merge only after human approval. Do not report scaffold placeholders as application behavior tests.
 
 ## Decisions without team sign-off
 
@@ -24,4 +26,6 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 
 - `python scripts/tc_coverage_audit.py` — passed; all 58 Week 7 IDs are scaffolded in `docs/testing/tc-coverage.md`.
 - `python scripts/check.py` — passed with 77 repository-tooling tests and repository hygiene checks; session run records capture the observed runs.
-- The browser scaffold suite has not been run; these placeholders make no behavior assertions.
+- CI `application-checks` — passed on `6ebef66`; all configured steps succeeded, including the Playwright scaffold command. The new `test.fixme` declarations remain skipped placeholders and do not prove behavior. A T-65 session record captures the run.
+- PR #217 required checks passed on implementation commit `6ebef66`; Vercel deploy was skipped by the workflow. The latest documentation-only commit requires its applicable check statuses to settle before review.
+- The browser scaffold suite was not run locally.
