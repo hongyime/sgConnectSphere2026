@@ -10,7 +10,7 @@ Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance test
 - Regenerated the coverage inventory; all 58 Week 7 IDs now report as scaffolds. The full catalogue reports 118 active tests, 193 scaffolds and 3 older cases with no test reference.
 - Ran the coverage audit and repository check successfully, then pushed the implementation as `490f880` (`test(e2e): scaffold Week 7 acceptance cases`). The branch is based on `main` at `1c1be82`.
 - Opened draft PR #217 and published its required PostPlan review at `https://kvwc99kdmfsx.postplan.dev`.
-- The configured application checks and required repository checks passed on implementation commit `6ebef66`; the CI application run is recorded under T-65. A documentation-only follow-up will trigger any applicable checks again.
+- The configured application checks and required repository checks passed on implementation commit `6ebef66`; T-65 records capture both runs. A documentation-only follow-up will trigger any applicable checks again.
 
 ## Not done / next
 
