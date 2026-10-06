@@ -14,7 +14,7 @@ Add a repository check for the T-65 test-run record frontmatter and result-table
 
 ## Not done / next step
 
-Commit the latest T-65 run record and handoff update after a fresh pre-commit check. Update PR #221 to cite the latest local evidence, wait for CI, then mark it ready for teammate review. Do not merge without teammate approval.
+Await teammate review on PR #221. Do not merge without teammate approval.
 
 ## Decisions for review
 
