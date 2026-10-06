@@ -64,3 +64,10 @@ repos:
         pass_filenames: false
         always_run: true
         files: ^api/
+      - id: protected-continuity-files
+        name: Protected continuity files require a consolidation branch
+        entry: python scripts/check_metadata.py staged-files
+        language: system
+        stages: [pre-commit]
+        pass_filenames: false
+        always_run: true
