@@ -56,6 +56,105 @@ class MetadataTests(unittest.TestCase):
         ok, _ = metadata.check_changed_files([".agents/handoffs/20261003-docs-x.md", ".agents/handoffs/README.md"], "docs: x")
         self.assertTrue(ok)
 
+    def test_local_protected_file_check_uses_consolidation_branch_prefix(self):
+        files = [".agents/STATE.md", ".agents/JOURNAL.md", "docs/x.md"]
+        ok, offending = metadata.check_local_changed_files(
+            files, "feature/SCRUM-42-user-profile"
+        )
+        self.assertFalse(ok)
+        self.assertEqual(offending, [".agents/STATE.md", ".agents/JOURNAL.md"])
+
+        ok, offending = metadata.check_local_changed_files(
+            files, "chore/agents-consolidate-sprint-3-close"
+        )
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+
+        ok, offending = metadata.check_local_changed_files(
+            ["docs/x.md"], "feature/SCRUM-42-user-profile"
+        )
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+
+    def test_staged_files_cli_blocks_protected_files_on_ordinary_branch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-user-profile"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("state\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", ".agents/STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
+    def test_staged_files_cli_blocks_renaming_protected_file_on_ordinary_branch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-user-profile"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("state\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", ".agents/STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Test",
+                    "-c",
+                    "user.email=test@example.com",
+                    "commit",
+                    "-m",
+                    "fixture",
+                ],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "mv", ".agents/STATE.md", "state-copy.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
     def test_dependabot_exception_requires_bot_identity(self):
         self.assertFalse(metadata.check_branch("dependabot/pip/tooling/update"))
         self.assertTrue(metadata.check_branch("dependabot/pip/tooling/update", automated=True))

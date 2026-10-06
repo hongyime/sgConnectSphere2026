@@ -30,6 +30,7 @@ REQUIRED_BODY_SECTIONS = (
 # PR whose title starts with CONSOLIDATION_PREFIX.
 PROTECTED_FILES = (".agents/STATE.md", ".agents/JOURNAL.md")
 CONSOLIDATION_PREFIX = "chore(agents):"
+LOCAL_CONSOLIDATION_BRANCH_PREFIX = "chore/agents-consolidate-"
 
 
 def check_title(title: str) -> bool:
@@ -49,6 +50,53 @@ def check_changed_files(files: list[str], title: str) -> tuple[bool, list[str]]:
         return True, []
     offending = [f for f in files if f in PROTECTED_FILES]
     return not offending, offending
+
+
+def check_local_changed_files(files: list[str], branch: str) -> tuple[bool, list[str]]:
+    """Use the consolidation branch prefix as a local proxy for the PR title.
+
+    CI remains authoritative because only GitHub knows the actual PR title.
+    """
+    if branch.startswith(LOCAL_CONSOLIDATION_BRANCH_PREFIX):
+        return True, []
+    return check_changed_files(files, "")
+
+
+def check_staged_files() -> int:
+    """Block staged edits to protected continuity files on ordinary branches."""
+    try:
+        staged = subprocess.check_output(
+            ["git", "diff", "--cached", "--no-renames", "--name-only", "-z"]
+        )
+    except subprocess.CalledProcessError:
+        print("Could not read staged paths for the protected-file check.")
+        return 1
+
+    files = [os.fsdecode(path) for path in staged.split(b"\0") if path]
+    if not any(path in PROTECTED_FILES for path in files):
+        return 0
+
+    try:
+        branch = subprocess.check_output(
+            ["git", "symbolic-ref", "--short", "HEAD"],
+            text=True,
+            encoding="utf-8",
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except subprocess.CalledProcessError:
+        print("Protected continuity files cannot be committed from a detached HEAD.")
+        return 1
+
+    ok, offending = check_local_changed_files(files, branch)
+    if ok:
+        return 0
+
+    print("Only the owner-consolidation branch may stage these continuity files:")
+    for path in offending:
+        print(f"  {path}")
+    print(f"Use a branch beginning `{LOCAL_CONSOLIDATION_BRANCH_PREFIX}` for local consolidation work.")
+    print(f"CI still checks the pull request title for `{CONSOLIDATION_PREFIX}`.")
+    return 1
 
 
 def check_body(body: str, *, automated: bool = False) -> tuple[bool, list[str]]:
@@ -79,7 +127,7 @@ def check_body(body: str, *, automated: bool = False) -> tuple[bool, list[str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=["commit-msg", "branch", "pr"])
+    parser.add_argument("mode", choices=["commit-msg", "branch", "pr", "staged-files"])
     parser.add_argument("value", nargs="?")
     args = parser.parse_args()
 
@@ -108,6 +156,9 @@ def main() -> int:
             return 0
         print("Use feature/SCRUM-123-description, fix/57-description, or chore/setup-ci.")
         return 1
+
+    if args.mode == "staged-files":
+        return check_staged_files()
 
     event_path = args.value or os.environ.get("GITHUB_EVENT_PATH")
     if not event_path:
