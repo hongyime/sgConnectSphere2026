@@ -1,3 +1,4 @@
+import { checkEquipmentAvailability } from './availability.js';
 import type { Pool } from 'pg';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import type { Query } from '../eventVisibility/service.js';
@@ -17,6 +18,11 @@ export function createEquipmentHandler(deps: {
     }
     await respondWithResult(response, async () => {
       const user = await deps.authenticate(request);
+      const params = new URL(request.url ?? '/', 'http://localhost').searchParams;
+      if (params.get('mode') === 'availability') {
+        if (request.method !== 'GET') throw new AccessError(405, 'Equipment availability is read-only.');
+        return { status: 200, body: await checkEquipmentAvailability(deps.query, user, params) };
+      }
       if (request.method === 'GET') {
         const id = new URL(request.url ?? '/', 'http://localhost').searchParams.get('id');
         return { status: 200, body: id ? { equipment: await getEquipment(deps.query, user, id) } : { equipment: await listEquipment(deps.query, user) } };
