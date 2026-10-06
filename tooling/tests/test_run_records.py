@@ -83,6 +83,29 @@ class RunRecordValidationTests(unittest.TestCase):
         errors = self._validate(row="| TC_E01S01_01 | Example case | MAYBE | |")
         self.assertTrue(any("Outcome must be" in error for error in errors))
 
+    def test_mismatched_filename_scope_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            content = (
+                "---\n"
+                "date: 2026-10-06T10:00:00+08:00\n"
+                "runner: testuser\n"
+                "scope: frontend/e2e\n"
+                "environment: local\n"
+                "run_type: automated\n"
+                "test_case_version: '011026'\n"
+                "database: none\n"
+                "commit: 123abcd\n"
+                "---\n\n"
+                "| TC_ID | Test Name | Outcome | Remarks |\n"
+                "| --- | --- | --- | --- |\n"
+                "| TC_E01S01_01 | Example | PASS | |\n"
+            )
+            path = root / "20261006-100000-testuser-wrong-scope.md"
+            path.write_text(content, encoding="utf-8")
+            errors = checker._validate_record(path)
+        self.assertTrue(any("filename runner and scope must match" in error for error in errors))
+
 
 if __name__ == "__main__":
     unittest.main()

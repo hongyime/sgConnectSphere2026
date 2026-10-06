@@ -19,6 +19,14 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNS_DIR = ROOT / "docs" / "testing" / "runs"
 DATABASE_FIELD_CUTOFF = datetime.fromisoformat("2026-10-03T12:19:39+08:00")
 
+# Legacy filenames from PR #214 that violate the convention but are immutably merged (T-65).
+# These used "ci-regression" in the filename when the scope values were "frontend/e2e"
+# and "full-regression". The validator's filename convention requires <runner>-<scope>.
+LEGACY_FILENAME_EXCEPTIONS = {
+    "20261006-003121-xiangyingg-ci-regression.md",
+    "20261006-003923-xiangyingg-ci-regression.md",
+}
+
 REQUIRED_FIELDS = {
     "date",
     "runner",
@@ -233,7 +241,8 @@ def _validate_record(path: Path) -> list[str]:
         if isinstance(data.get("runner"), str) and isinstance(data.get("scope"), str):
             expected_tail = f"{data['runner']}-{data['scope'].replace('/', '-')}"
             if filename.group("tail") != expected_tail:
-                errors.append("filename runner and scope must match the frontmatter")
+                if path.name not in LEGACY_FILENAME_EXCEPTIONS:
+                    errors.append("filename runner and scope must match the frontmatter")
 
     errors.extend(_validate_table(text[match.end() :], text[: match.end()].count("\n")))
     return errors
