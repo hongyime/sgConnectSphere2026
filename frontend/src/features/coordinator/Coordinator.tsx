@@ -35,7 +35,7 @@ export function PlanningWorkspace() {
       <CoordinatorNav eventCode={event.eventCode} />
       <section className="coordinator-grid" aria-label="Planning status">
         <PlanningRow icon={CalendarClock} label="Venue" state={event.planning.venue} link={`/coordinator/events/${event.eventCode}/venues`} />
-        <PlanningRow icon={ClipboardList} label="Equipment" state={event.planning.equipment} link="/support" />
+        <PlanningRow icon={ClipboardList} label="Equipment" state={event.planning.equipment} link={`/coordinator/events/${event.eventCode}/equipment`} />
         <PlanningRow icon={ClipboardCheck} label="Technical support" state={event.planning.technicalSupport} link="/support" />
       </section>
     </main>
