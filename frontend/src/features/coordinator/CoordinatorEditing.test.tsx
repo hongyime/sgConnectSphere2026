@@ -27,6 +27,8 @@ function stub(options: { event?: Record<string, unknown>; patchReply?: { status:
     let reply: { status: number; body: unknown };
     if (url.pathname === '/api/auth/session') reply = { status: 401, body: {} };
     else if (url.pathname === '/api/notifications') reply = { status: 200, body: { notifications: [] } };
+    // The Technical support card (E07-S06) on approved events.
+    else if (url.searchParams.get('task') === 'support') reply = { status: 200, body: { event: {}, requests: [], noSupportRequired: false, canEdit: true } };
     else if (init?.method === 'PATCH') {
       const body = JSON.parse(String(init.body)) as Record<string, unknown>;
       patches.push({ url, body });

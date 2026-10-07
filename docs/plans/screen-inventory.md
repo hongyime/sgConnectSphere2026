@@ -4,6 +4,8 @@
 - **Owner**: Amareet (SCRUM-118)
 - **Audited against**: `frontend/src/app/routes.tsx` and its rendered components at main commit `139217e`, plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
+- **E07-S03 branch refresh**: 2026-10-07, SCRUM-53 equipment availability routes; other rows were not re-audited.
+- **Focused refresh**: E05-S04 route status checked against main commit `1c1be82` after PR #185 merged on 2026-10-03; other rows were not re-audited.
 
 This file maps every Release 1 story (47 in total, per the backlog README's
 20 September audit) to the role that owns it, the current route or routes
@@ -52,7 +54,7 @@ in the second table below.
 | E05-S01 | Maintain the venue catalogue | Venue Staff member | Sprint 1 | `/venue/inventory`, `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | List, Form, Form | Add, update and retire venues. |
 | E05-S02 | Match layout requirements to venue capacity | Venue Staff member | Sprint 1 | `/venue/inventory/new`, `/venue/inventory/:venueId/edit` | live | Form | Layouts are managed inside the venue form (same screens as E05-S01). |
 | E05-S03 | View the venue availability calendar | Event Coordinator | Sprint 2 | `/coordinator/calendar`, `/coordinator/venues/:venueId/calendar`, `/venue/availability` | live | Calendar | Shared calendar for Coordinator and Venue Staff audiences. |
-| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | mock | Form, List | Main still renders the prototype. The live maintenance form and block list are proposed in PR #185 (SCRUM-120); update status only after that PR merges. |
+| E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | live | Form, List | The live `VenueBlockout` form and block list are in merged PR #185 (SCRUM-120; merge `9584c77`). Route status does not imply the story Definition of Done is met. |
 | E06-S01 | Search for suitable venues | Event Coordinator | Sprint 2 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Catalogue search with suitability filters. |
 | E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). This remains a Sprint 3 story; its owner must verify all acceptance criteria before treating it as done. |
 | E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | — | none | Form | Expected to live under `/coordinator/events/:eventCode/venues` or the planning workspace. |
@@ -61,7 +63,7 @@ in the second table below.
 | E06-S06 | Prevent double-booking of a venue | Venue Staff member | Sprint 3 | — | none | Other | Backend rule; conflicts surface in `/venue/bookings/:bookingId` and the Coordinator venue calendar. |
 | E07-S01 | Maintain the equipment catalogue | Technical Support Staff member | Sprint 3 | `/support/catalogue` | mock | List | Add, update and retire equipment. |
 | E07-S02 | Request equipment for an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/plan` | mock | Other | Planning workspace covers equipment, venue and support in one view. |
-| E07-S03 | Check equipment availability | Technical Support Staff member | Sprint 3 | `/support/conflicts` | mock | Other | Conflict state surfaces availability clashes. |
+| E07-S03 | Check equipment availability | Technical Support Staff member | Sprint 3 | `/support/availability`, `/support/conflicts` | live | List, Form | Read-only period check shows total, simultaneous commitments and minimum free quantity; location is informational. |
 | E07-S04 | Reserve equipment for an event | Technical Support Staff member | Sprint 3 | `/support/queue`, `/support/requests/:requestId` | mock | List, Detail | Request queue plus reservation detail. |
 | E07-S05 | Mark equipment as unavailable | Technical Support Staff member | Sprint 3 | — | none | Form | Expected to surface inside `/support/catalogue` as an item action. |
 | E07-S06 | Request technical support for an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/plan` | mock | Other | Part of the planning workspace (same screen as E07-S02). |
