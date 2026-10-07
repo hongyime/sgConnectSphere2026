@@ -414,66 +414,16 @@ Progress (most recent first):
   the team's agents actually pick this up regardless of harness. **Found
   while doing this: a live Claude Code session on machine PRAWN-T14 is
   already auto-appending timestamped "Auto State" blocks to this exact
-  file on its own Stop hook** (see the `<!-- MOLT_AUTO_START -->` block
-  below) -- some MOLT automation already exists on at least Bryan's own
-  machine. Left its uncommitted edits alone throughout all of the above
-  by stashing/restoring around branch switches rather than touching or
-  discarding them.
-
-- Merged **PR #116**: fixed two real, root-caused pre-existing bugs --
-  `EVT-A02` defaulted to `status='draft'` in
-  `eventVisibility.integration.test.ts`'s fixture, tripping the (correct)
-  draft-privacy filter and hiding a colleague's event it shouldn't have;
-  and `attendeeVisibility.integration.test.ts`'s audit lookup had no
-  `entity_type` filter so it could grab a stale row from an earlier,
-  unrelated denial in the same test. Both were test-fixture/query bugs,
-  not application bugs. Aaron independently re-verified both root causes
-  before approving.
-
-Open and waiting (nothing more to do until one of these moves):
-
-1. **PR #120** (`.agents/STATE.md` + `JOURNAL.md`, this file) -- awaiting
-   Aaron's first review.
-2. **PR #115** (SCRUM-110 + the 6th `CREATE EXTENSION` race-fix site) --
-   awaiting Aaron's re-review after two rounds of fixes.
-3. **PR #121** (the checklist-bullet carry-over) -- awaiting Jining's
-   review.
-4. **SCRUM-107 / SCRUM-108** -- re-examined the tickets' own descriptions
-   (not just branch names) and found an earlier Sep-20 reconciliation pass
-   already documented PR #68/#62 shipping their work, with the same
-   "no human review" caveat that SCRUM-93/103 had when Bryan approved
-   closing those. Built an evidence postplan
-   (https://3wupccg0rklj.postplan.dev) with direct quotes side-by-side;
-   final call is still Bryan's, do not close until he says so.
-5. Once #115 merges, a small DRY follow-up remains open: swap
-   `eventLifecycle.integration.test.ts`'s local
-   `createExtensionIfNotExists` copy for an import from
-   `backend/tests/helpers/ensureTestExtensions.ts` (already on `main` via
-   #119) -- cosmetic only, not a correctness fix, low priority.
-
-Known env facts:
-
-- Local integration tests need a disposable Docker `postgres:17` container
-  (`POSTGRES_PASSWORD=synthetic-local-password`, db
-  `connectsphere_notification_test`, port 5432) -- never the live Supabase
-  project. CI spins up an equivalent fresh service container per run.
-- `registration.db.test.ts` needs `public` schema pre-migrated via
-  `npx tsx src/database/cli.ts migrate` (with `DATABASE_URL` set to the local
-  container) before it passes -- pre-existing, unrelated to any fix above.
-- Branch protection requires `repository-checks`, `pr-conventions`,
-  `lfs-guard`, `application-checks` + a review approval on the latest commit
-  (`require_last_push_approval: true`, `enforce_admins: true`) -- no bypass.
-
-<!-- MOLT_AUTO_START -->
+  file on its own Stop hook** (see the `<!-- MOLT_AUTO_START -->
 ## Auto State
 
-- Updated: 2026-09-23 07:16:29 +08:00
+- Updated: 2026-10-06 11:11:21 +08:00
 - Machine: PRAWN-T14
-- Harness: claude
-- Event: stop
-- Branch: docs/agents-state-journal
-- HEAD: f5e174b
-- Dirty files: 1
+- Harness: codex
+- Event: session-start
+- Branch: docs/agents-state-not-in-prs
+- HEAD: eaa2fd0
+- Dirty files: 0
 - Resume hint: Read .agents/STATE.md, then the latest file in .agents/handoffs/ if present.
 <!-- MOLT_AUTO_END -->
 

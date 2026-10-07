@@ -255,3 +255,12 @@
   Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
   non-blocking scope advice applies to future PRs. User authorized committing and
   pushing this follow-up for re-review; final CI and human approval remain required.
+- 2026-10-03 18:30:12 +08:00 [PRAWN-T14/claude/stop] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 06:41:05 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 07:19:08 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 07:58:16 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 08:50:16 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 09:27:00 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 09:55:07 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 10:27:50 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
+- 2026-10-06 11:11:21 +08:00 [PRAWN-T14/codex/session-start] branch=docs/agents-state-not-in-prs head=eaa2fd0 dirty=0
