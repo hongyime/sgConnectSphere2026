@@ -21,6 +21,12 @@ Owner: Amareet.
   check is still stopped by the table's exclusion constraint, which is the
   designed backstop.
 
+## CI
+
+- `application-checks.yml` now runs `supportRequests.integration.test.ts`
+  (E07-S06) and `staffAssignments.integration.test.ts` (E07-S07) against the
+  CI PostgreSQL service, next to the equipment tests added by #216.
+
 ## Decisions for the reviewer (not yet confirmed by the team)
 
 1. **Who assigns:** any active Technical Support Staff member, including
