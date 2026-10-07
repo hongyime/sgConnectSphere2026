@@ -1,3 +1,5 @@
+import { equipmentHandler } from '../../backend/src/modules/equipmentSupport/handler.js';
+import { supportHandler } from '../../backend/src/modules/equipmentSupport/supportHandler.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
@@ -17,6 +19,12 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'equipment') {
+    await equipmentHandler(request, response); return;
+  }
+  if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'support') {
+    await supportHandler(request, response); return;
+  }
   if (request.method === 'GET') {
     const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
     if (searchParams.get('mode') === 'suitability') {
