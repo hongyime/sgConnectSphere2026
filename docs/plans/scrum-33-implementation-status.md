@@ -157,7 +157,8 @@ opened. The PR is re-run in full if the code changes after that.
 **Before the demo:** a **read-only check of production** (Supabase) that
 everything this story relies on is there: the `awaiting_clarification`
 status, the clarification thread types, and all repository migrations applied.
-It runs inside `BEGIN READ ONLY` … `ROLLBACK` and writes nothing.
+It runs inside `BEGIN READ ONLY` … `ROLLBACK` and writes nothing. Run on
+8 October 2026; the result is the last row of the Run log.
 
 ## Click-through script
 
@@ -391,6 +392,7 @@ fix gets its own row.
 | 2026-10-02 17:04 | `d0472d4` | 4 | — | `npm run typecheck` and `npm run build` (root) | local | both passed | — | Claude (for Aaron) |
 | 2026-10-02 17:04 | `d0472d4` | F3 | _01–_12 | click-through script in Chromium: login page, coord_b, organiser_c, coord_a, organiser_a, organiser_b; database checked after each step | local, freshly reset and seeded `connectsphere_dev_stack`, Docker `postgres:17` (17.11), API on 3001, `npm run dev` | 31/31 passed. Session record `20261002-170420-Bl0oper-frontend-e2e.md` | As in "What the user sees", word for word. Notice: "Coordinator B needs more information about EVT-2003 EVT-2003 Client B Isolation Event before the review can continue. The request is now Awaiting Clarification. Questions: 1. … 2. …". coord_a: "Access refused" / "Access denied. This event is not assigned to you." 393px: no sideways scrolling on five screens. Keyboard: Tab order and a 3px focus ring | Claude (for Aaron) |
 | 2026-10-02 ≈17:50 | `d0472d4` | F4 | _01–_12 | The click-through script (27 steps), clicked by hand in a browser: normal and private windows, as coord_b, organiser_c, coord_a and organiser_a | local, freshly seeded `connectsphere_dev_stack`, Docker `postgres:17`, API on 3001, `npm run dev` | All 27 steps passed. Session record `20261002-175000-Bl0oper-frontend-e2e.md` | Aaron: "I have done the whole click through and everything passes, it works". The database afterwards matched a full run: EVT-2003 Awaiting Clarification with 4 questions (1 seeded, 2 from step 7, 1 from step 19) and 3 answers (1 seeded, 2 from step 15) | Aaron |
+| 2026-10-08 02:15 | `1ad3820` | Before the demo | — | Read-only production check, three queries approved by Aaron before they ran: the status and thread-type values; the `event_threads.parent_id`, `event_threads.resolved_at` and `events.coordinator_assigned_at` columns; the recorded migrations (`_connectsphere_migrations`). Run with `node --env-file=.env` inside `BEGIN READ ONLY` … `ROLLBACK` | production (Supabase, transaction pooler); `transaction_read_only` reported `on`; rolled back, nothing written | **What this story needs: all present.** **"All repository migrations applied": not met**, 0009 and 0010 unrecorded (see What was seen) | `under_review`, `awaiting_clarification`, `clarification_request` and `clarification_response` exist, and so do the three columns. Recorded migrations: 0001 to 0008. 0009 is not recorded; its table was created by hand, as already known. 0010 (activity log entries can't be changed, #190) is not recorded either, so production may not have that protection; this story doesn't depend on it. Each value was listed twice, most likely because the same database also holds a separate `test` schema (not checked further). Only object and file names were returned | Claude (for Aaron) |
 
 ## Completion boundary
 
