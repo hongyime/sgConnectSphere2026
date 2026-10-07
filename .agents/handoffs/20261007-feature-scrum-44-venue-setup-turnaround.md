@@ -38,15 +38,24 @@ Example: A booking from 10:00-12:00 with 30min setup and 45min turnaround occupi
 
 ### 2026-10-07 Session Start
 
-- Created branch `feat/SCRUM-44-e05-s05-setup-turnaround`
+- The current task branch is `feature/SCRUM-44-venue-setup-turnaround`.
 - Read venue table schema from migration 0001
 - Identified venues table structure
 - Launched explore agent to find availability/conflict checking logic
 - Created handoff file
 
+### 2026-10-07 Continuation: shared occupancy SQL
+
+- This pass is limited to the requested migration renumbering and extraction of
+  the buffered booking range into the PostgreSQL `occupied_window()` function.
+- `origin/main` currently ends its numbered migrations at 0010. This branch's
+  venue buffer migration is being renamed from 0014 to 0011.
+- The SQL callers to update are `search.ts`, `calendar.ts`, `blocks.ts`, and
+  `catalogue.ts` under `backend/src/modules/venueBooking/`.
+- The user requested a commit and push to this branch, with no pull request.
+
 ## Next Steps
 
-- Collect explore agent findings
-- Create database migration file
-- Update seed data
-- Identify all conflict checking code paths
+- Finish the migration and four caller updates, run `python scripts/check.py`,
+  then commit and push the scoped changes. Preserve the session-start edits to
+  `.agents/STATE.md` and `.agents/JOURNAL.md`; do not stage them.

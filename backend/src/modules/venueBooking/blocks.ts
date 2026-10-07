@@ -140,11 +140,7 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
         JOIN events e ON e.id = vb.event_id
         JOIN venues v ON v.id = vb.venue_id
       WHERE vb.venue_id = $1 AND vb.status IN ('confirmed', 'conflicting')
-        AND tstzrange(
-          lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
-          upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
-          '[)'
-        ) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+        AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(vb.booking_range)`, [venue.id, start, end]);
     if (conflicts.rows.length) {
       return { status: 409, body: {
@@ -198,11 +194,7 @@ async function notifyAffectedCoordinators(client: PoolClient, venueName: string,
       JOIN events e ON e.id = vb.event_id
       JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'conflicting')
-      AND tstzrange(
-        lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
-        upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
-        '[)'
-      ) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       AND upper(vb.booking_range) > now()
       AND e.coordinator_id IS NOT NULL AND upper(e.event_range) > now()
       AND e.status NOT IN ('cancelled', 'completed', 'rejected')`,

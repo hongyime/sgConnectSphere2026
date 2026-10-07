@@ -385,15 +385,7 @@ async function detectAndMarkBufferConflicts(
     JOIN events e ON e.id = vb1.event_id
     WHERE vb1.venue_id = $1
       AND vb1.status IN ('confirmed', 'pending')
-      AND tstzrange(
-        lower(vb1.booking_range) - ($2 || ' minutes')::interval,
-        upper(vb1.booking_range) + ($3 || ' minutes')::interval,
-        '[)'
-      ) && tstzrange(
-        lower(vb2.booking_range) - ($2 || ' minutes')::interval,
-        upper(vb2.booking_range) + ($3 || ' minutes')::interval,
-        '[)'
-      )
+      AND occupied_window(vb1.booking_range, $2, $3) && occupied_window(vb2.booking_range, $2, $3)
       AND lower(vb1.booking_range) < lower(vb2.booking_range)
     ORDER BY lower(vb2.booking_range)`,
     [venueId, setupTimeMinutes, turnaroundTimeMinutes],

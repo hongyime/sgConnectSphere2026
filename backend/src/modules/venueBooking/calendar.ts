@@ -133,16 +133,12 @@ export async function getVenueCalendar(
     SELECT vb.status,
       greatest(lower(vb.booking_range), $2::timestamptz) AS starts_at,
       least(upper(vb.booking_range), $3::timestamptz) AS ends_at,
-      greatest(lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval, $2::timestamptz) AS buffered_start,
-      least(upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval, $3::timestamptz) AS buffered_end,
+      greatest(lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $2::timestamptz) AS buffered_start,
+      least(upper(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $3::timestamptz) AS buffered_end,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed', 'conflicting')
-      AND tstzrange(
-        lower(vb.booking_range) - (v.setup_time_minutes || ' minutes')::interval,
-        upper(vb.booking_range) + (v.turnaround_time_minutes || ' minutes')::interval,
-        '[)'
-      ) && tstzrange($2::timestamptz, $3::timestamptz)
+      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
     SELECT reason,
