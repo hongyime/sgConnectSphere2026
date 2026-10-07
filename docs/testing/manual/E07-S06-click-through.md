@@ -8,10 +8,11 @@ hand in a real browser before the Sprint 3 Review. Then record the run in
 table" in `docs/testing/runs/README.md`).
 
 Every message below in **bold** or in quotes was checked against the built
-screens on `bfebe7f` (PR #225), on a freshly seeded database. Accounts follow
-`docs/testing/test-accounts.md`: the test cases' `coordinator_1` is
-`coord_a`, `coordinator_2` is `coord_b`, `tech_support_1` is `tech_a`, and
-`tech_support_2` is `tech_b`.
+screens on `bfebe7f` (PR #225), on a freshly seeded database. The steps use
+the seeded accounts directly (`coord_a`, `coord_b`, `tech_a`, `tech_b`).
+Older copies of the test cases name them `coordinator_1`, `coordinator_2`,
+`tech_support_1` and `tech_support_2`; PR #230 renames the cases to the
+seeded names.
 
 ## Set up first (about 5 minutes)
 
