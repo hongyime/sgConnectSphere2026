@@ -100,8 +100,9 @@ against a PostgreSQL database (local, Supabase or CI service container).
 `none` for suites that touch no persistence at all, such as pure frontend
 component tests. The label is what a reviewer uses to judge whether an
 acceptance criterion about persistence or a cross-feature interaction has real
-evidence behind it (Sprint 2 retrospective action). Records written before
-3 October 2026 omit the field.
+evidence behind it (Sprint 2 retrospective action). Records dated before
+`2026-10-03T12:19:39+08:00` may omit the field; PR #204 added it at that time.
+Records dated at or after that timestamp must include it.
 
 ### `test_case_version`
 
@@ -208,6 +209,11 @@ is needed.
 7. Save the file. Run `python scripts/check.py`. Commit the record in the same
    PR as the code it covers, or as a standalone commit if it is a standalone
    verification run.
+
+`python scripts/check.py` validates every session record's YAML frontmatter,
+filename fields, and results table. Historical TC_ID values are preserved as
+written; the checker validates that each row has an ID and a documented
+outcome without requiring the ID to match the current catalogue.
 
 ## Agent instruction block
 

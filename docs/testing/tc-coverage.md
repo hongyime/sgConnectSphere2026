@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **126** (40.1%)
+- Automated (explicit TC_ID in an active test title): **133** (42.4%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **105**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **131** (41.7%)
+  - Live-assertion (other active tests): **112**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **124** (39.5%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 4 | 26 | 0 |
+| E07 | 30 | 11 | 19 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **126** | **131** | **57** |
+| **Total** | **314** | **133** | **124** | **57** |
 
 ## Case-by-case status
 
@@ -246,10 +246,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S01_02` | E07-S01 | Verify that reducing an item's quantity below the amount already reserved for up | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
 | `TC_E07S01_03` | E07-S01 | Verify that retiring an item with no future reservations should remove it from a | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
 | `TC_E07S01_04` | E07-S01 | Verify that updating an existing equipment item's attributes should save the cha | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
-| `TC_E07S02_01` | E07-S02 | Verify that adding equipment items with quantities to a event of an approved eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_01 - Verify that adding equipment items with quantities to a event of an approved event should save the request and notify Technical Support Staff |
-| `TC_E07S02_02` | E07-S02 | Verify that requesting more of an item than ConnectSphere owns in total should w | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_02 - Verify that requesting more of an item than ConnectSphere owns in total should warn that the request cannot be met from existing stock |
-| `TC_E07S02_03` | E07-S02 | Verify that recording equipment for one event should leave a different event's e | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_03 - Verify that recording equipment for one event should leave a different event |
-| `TC_E07S02_04` | E07-S02 | Verify that amending or removing an equipment request before it is reserved shou | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_04 - Verify that amending or removing an equipment request before it is reserved should update or clear the request accordingly |
+| `TC_E07S02_01` | E07-S02 | Verify that adding equipment items with quantities to a event of an approved eve | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_02` | E07-S02 | Verify that requesting more of an item than ConnectSphere owns in total should w | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_03` | E07-S02 | Verify that recording equipment for one event should leave a different event's e | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_04` | E07-S02 | Verify that amending or removing an equipment request before it is reserved shou | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
 | `TC_E07S03_01` | E07-S03 | Verify that checking availability for a period with other reservations should ex | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_01 - Verify that checking availability for a period with other reservations should exclude those reservations and any damaged or under-maintenance  |
 | `TC_E07S03_02` | E07-S03 | Verify that an item free for the requested date and time but located at another  | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_02 - Verify that an item free for the requested date and time but located at another venue should still be shown as available, with no transport al |
 | `TC_E07S03_03` | E07-S03 | Verify that two events requiring the same item at non-overlapping times on the s | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_03 - Verify that two events requiring the same item at non-overlapping times on the same day should both show it as free |
@@ -263,9 +263,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_01 - Verify that marking an item with no reservations in the period unavailable, with a reason and a period, should exclude it from availability ch |
 | `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_02 - Verify that marking an item unavailable while it is reserved for an upcoming event should flag the affected event and notify its Coordinator |
 | `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_03 - Verify that returning an item to service should restore it to availability checks |
-| `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_01 - Verify that submitting a technical support request describing the support needed and the times should notify Technical Support Staff and recor |
-| `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_02 - Verify that submitting a technical support request before the venue is confirmed should be accepted and reviewed alongside venue identificatio |
-| `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S06_03 - Verify that marking a event as needing no technical support should create no request and not block confirmation on staff assignment |
+| `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
+| `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
+| `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S07_01` | E07-S07 | Verify that a colleague with no conflicting assignment during the event's requir | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_01 - Verify that a colleague with no conflicting assignment during the event |
 | `TC_E07S07_02` | E07-S07 | Verify that the assignment should be reflected on the assigned staff member's sc | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_02 - Verify that the assignment should be reflected on the assigned staff member |
 | `TC_E07S07_03` | E07-S07 | Verify that assigning a colleague who has an overlapping assignment should be bl | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S07_03 - Verify that assigning a colleague who has an overlapping assignment should be blocked, with the conflicting event identified |
@@ -495,6 +495,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - equipment handler checks origin before writes and rejects unsupported methods
 - equipment handler returns validation failures without creating a transaction
 
+### `backend/tests/equipmentRequests.test.ts`
+
+- equipment request input rejects zero, fractions, duplicate shapes and forged ids
+- request readers and writers deny wrong roles and inactive accounts before reading event data
+- request handler enforces method, origin and valid action without opening a transaction
+- request boundary validation refuses malformed bodies and identifiers without a transaction
+- handler reads list/detail and rejects malformed save/remove actions
+
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
 - SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
@@ -637,6 +645,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - resets counter and lock on a mid-window correct password
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
+
+### `backend/tests/supportRequests.test.ts`
+
+- validation accepts a trimmed description and an ISO range
+- validation boundaries: description length, missing and reversed times, non-object bodies
+- reads refuse signed-out users and roles other than Coordinator and Technical Support, and audit the refusal
+- reads refuse an empty or oversized event identifier before querying events
+- a Coordinator cannot read another Coordinator\
+- reads separate requests from the
+- requests are refused outside approved or planning and are not written
+- an invalid request returns field errors without opening a transaction; wrong roles are refused first
+- a refused request on someone else\
+- a database failure is not mistaken for a refusal and is not audited
+- an event with a live support request cannot be marked as needing none
+- handler: unsupported methods, cross-origin writes and unknown actions are refused
+- handler: GET reads by event, POST dispatches request and none
 
 ### `backend/tests/venueAccessibility.integration.test.ts`
 
@@ -891,6 +915,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - server validation retains the form and associates field error
 - equipment load failure offers retry and empty catalogue offers add
 - late equipment response does not overwrite the next edit route
+
+### `frontend/src/features/support/EquipmentRequests.test.tsx`
+
+- request form saves event-scoped quantity and displays total-stock warning without losing requirement
+- request removal requires confirmation and reports failure while retaining the row
+- reserved and read-only requests expose no editing form
+- Technical Support has read-only event requirements
+- request form associates server quantity errors and retains entered values
+- late event response cannot overwrite the next equipment request form
+- equipment request load failure offers retry and then the empty state
+- unexpected removal error releases the confirm button and allows retry
+- event selector retries failed loading
+- retired item remains visible in edit form and empty catalogue prevents saving
+- canceling removal preserves the requirement without a mutation
+- form load failure retries and save failure without field errors retains input
+- a save completing after leaving the form does not navigate back
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
