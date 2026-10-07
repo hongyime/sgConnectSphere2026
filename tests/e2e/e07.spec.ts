@@ -7,73 +7,7 @@ import { test } from '@playwright/test';
 
 // E07-S02 live acceptance cases are in equipmentRequests.spec.ts.
 
-test.describe("E07-S03", () => {
-
-  /**
-   * TC_E07S03_01
-   * AC:      E07-S03 - Scenario 1 (Reserved and faulty stock excluded)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   "Wireless Microphone" has total stock 10; 3 units are reserved for another event on 15/11/2026, 09:00-12:00; 2 units are marked damaged
-   *
-   * Test data:
-   *   Total stock: 10 | Reserved: 3 | Damaged: 2
-   *
-   * Expected result:
-   *   The free quantity shown is 5 (10 minus 3 reserved minus 2 damaged)
-   */
-  test.fixme("TC_E07S03_01 - Verify that checking availability for a period with other reservations should exclude those reservations and any damaged or under-maintenance items from the free quantity", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as tech_support_1@connectsphere.com
-    // 2. Check availability for "Wireless Microphone" on 15/11/2026, 09:00-12:00
-    void page;
-  });
-
-  /**
-   * TC_E07S03_02
-   * AC:      E07-S03 - Scenario 2 (Location does not affect availability)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   "Projector" is free for 15/11/2026, 09:00-12:00, but is currently located at "Grand Ballroom" rather than the requested venue
-   *
-   * Test data:
-   *   Item location: Grand Ballroom | Requested venue: Riverside Hall
-   *
-   * Expected result:
-   *   "Projector" is shown as available with its full free quantity; no transport time or allowance is added to the availability check
-   */
-  test.fixme("TC_E07S03_02 - Verify that an item free for the requested date and time but located at another venue should still be shown as available, with no transport allowance applied", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as tech_support_1@connectsphere.com
-    // 2. Check availability for "Projector" on 15/11/2026, 09:00-12:00 for a event at "Riverside Hall"
-    void page;
-  });
-
-  /**
-   * TC_E07S03_03
-   * AC:      E07-S03 - Scenario 3 (Non-overlapping events share an item)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   "Tech Conference 2026" the event (09:00-12:00) and the event (14:00-17:00) both require "Wireless Microphone", with no other reservations that day
-   *
-   * Test data:
-   *   the event: 09:00-12:00 | the event: 14:00-17:00 (same day, non-overlapping)
-   *
-   * Expected result:
-   *   "Wireless Microphone" shows its full free quantity for both the event's and the event's time windows
-   */
-  test.fixme("TC_E07S03_03 - Verify that two events requiring the same item at non-overlapping times on the same day should both show it as free", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as tech_support_1@connectsphere.com
-    // 2. Check availability for "Wireless Microphone" during the event's time (09:00-12:00)
-    // 3. Check availability for "Wireless Microphone" during the event's time (14:00-17:00)
-    void page;
-  });
-
-});
+// E07-S03 live availability cases are in equipmentAvailability.spec.ts.
 
 test.describe("E07-S04", () => {
 
