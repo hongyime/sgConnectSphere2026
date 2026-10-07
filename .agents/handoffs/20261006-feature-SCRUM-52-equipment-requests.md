@@ -60,3 +60,27 @@ original contents under docs/testing/history/scrum-52-initial-runs and removed
 those names from canonical runs. Fresh records capture command completion time.
 Backend unit, 279 frontend tests and 16 intercepted browser tests pass; typecheck
 passes and coverage was regenerated. Fresh database coverage remains for CI.
+
+## Approval follow-up — 7 October 2026
+
+Merged main 3f8de45 / #222; retained equipmentRequests and supportRequests in
+both unit and database scripts; regenerated coverage. Added practical UI state,
+validation and handler tests, plus real handler dispatch/no-op/null-note/title
+fallback assertions. No application behavior changed.
+
+Backend unit-only aggregate coverage is 56.96% statements / 91.13% branches;
+handler alone is 100%. Unit + isolated PostgreSQL reaches 100% statements,
+branches, functions and lines. Frontend request files: 98.19% statements,
+98.48% branches, 100% functions/lines; API wrapper 100%. Explicit DoD gap reasons
+are in docs/plans/scrum-52-coverage-review.md: SQL transaction correctness relies
+on real database tests; only private defensive duplicate-submit/removal early
+returns remain uncovered in UI units. Do not claim integration is unit coverage.
+
+288 backend tests, 294 frontend tests and real authenticated desktop/mobile
+acceptance pass. Immutable actual-completion records are linked in that review.
+Next: finish repository checks and push; final-head CI and renewed human review
+of code/test cases are required before approval. No Jira Done transition made.
+
+Coverage approval review: https://ctrexqa0ht6u.postplan.dev/v/1.
+Repository checks passed (87 tooling tests). Coverage gap reasons and new tests
+are ready for human review; final-head CI remains required after the push.

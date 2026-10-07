@@ -8,6 +8,7 @@ import {
 } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, Link } from 'react-router-dom';
 import {
+  EquipmentRequestEvents,
   EquipmentRequests,
   EquipmentRequestFormPage,
 } from './EquipmentRequests';
@@ -306,4 +307,315 @@ test('unexpected removal error releases the confirm button and allows retry', as
   fireEvent.click(screen.getByRole('button', { name: 'Confirm removal' }));
   await screen.findByText('Equipment request removed.');
   expect(remove).toHaveBeenCalledTimes(2);
+});
+
+test.each(['event_coordinator', 'technical_support_staff'])(
+  'event selector lists requirements with role-specific links for %s',
+  async (role) => {
+    stubApi(
+      {
+        'GET /api/equipment?mode=requests': {
+          body: {
+            events: [
+              { ...event, requestCount: 2 },
+              {
+                ...event,
+                id: 'event-b',
+                eventCode: null,
+                title: 'No code event',
+              },
+            ],
+          },
+        },
+      },
+      { role },
+    );
+    render(
+      <MemoryRouter>
+        <EquipmentRequestEvents />
+      </MemoryRouter>,
+    );
+    const link = await screen.findByRole('link', { name: 'EVT-A' });
+    const prefix =
+      role === 'technical_support_staff' ? '/support' : '/coordinator';
+    await waitFor(() =>
+      expect(link).toHaveAttribute('href', `${prefix}/events/EVT-A/equipment`),
+    );
+    expect(screen.getByRole('link', { name: 'No code event' })).toHaveAttribute(
+      'href',
+      `${prefix}/events/event-b/equipment`,
+    );
+    expect(screen.getByRole('table')).toHaveTextContent('2');
+  },
+);
+
+test.each(['event_coordinator', 'technical_support_staff'])(
+  'empty event selector explains next steps for %s',
+  async (role) => {
+    stubApi(
+      { 'GET /api/equipment?mode=requests': { body: { events: [] } } },
+      { role },
+    );
+    render(
+      <MemoryRouter>
+        <EquipmentRequestEvents />
+      </MemoryRouter>,
+    );
+    await screen.findByText('No events to show');
+    await screen.findByText(
+      role === 'technical_support_staff'
+        ? 'Events with equipment requests will appear here.'
+        : 'Your approved events will appear here when they are ready for planning.',
+    );
+  },
+);
+
+test('event selector retries failed loading', async () => {
+  let failed = true;
+  stubApi(
+    {
+      'GET /api/equipment?mode=requests': () =>
+        failed
+          ? {
+              status: 503,
+              body: { error: 'Service unavailable. Please try again.' },
+            }
+          : { body: { events: [event] } },
+    },
+    { role: 'event_coordinator' },
+  );
+  render(
+    <MemoryRouter>
+      <EquipmentRequestEvents />
+    </MemoryRouter>,
+  );
+  await screen.findByText('Service unavailable. Please try again.');
+  failed = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await screen.findByRole('link', { name: 'EVT-A' });
+});
+
+test.each([false, true])(
+  'missing request and unauthorized edit are refused (canEdit=%s)',
+  async (canEdit) => {
+    stubApi(
+      {
+        [`GET ${endpoint}`]: {
+          body: { event, equipment, requests: [], canEdit },
+        },
+      },
+      { role: 'event_coordinator' },
+    );
+    show('/coordinator/events/EVT-A/equipment/req1/edit');
+    await screen.findByText(
+      canEdit
+        ? 'Equipment request not found for this event.'
+        : 'Only the assigned Coordinator can change requests while this event is approved or planning.',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Save equipment request' }),
+    ).not.toBeInTheDocument();
+  },
+);
+
+test('retired item remains visible in edit form and empty catalogue prevents saving', async () => {
+  stubApi(
+    {
+      [`GET ${endpoint}`]: {
+        body: {
+          event,
+          equipment: [],
+          requests: [{ ...row, isActive: false }],
+          canEdit: true,
+        },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/req1/edit');
+  await screen.findByRole('option', { name: 'Microphone (retired)' });
+  expect(
+    screen.getByRole('button', { name: 'Save equipment request' }),
+  ).toBeDisabled();
+  expect(
+    screen.getByText(/No active equipment is available/),
+  ).toBeInTheDocument();
+});
+
+test.each([false, true])(
+  'maintenance and reserved rows preserve visible history without mutation controls (active=%s)',
+  async (isActive) => {
+    stubApi(
+      {
+        [`GET ${endpoint}`]: {
+          body: {
+            event,
+            equipment,
+            requests: [
+              {
+                ...row,
+                operationalStatus: 'maintenance',
+                reserved: true,
+                isActive,
+                notes: '',
+              },
+            ],
+            canEdit: true,
+          },
+        },
+      },
+      { role: 'event_coordinator' },
+    );
+    show();
+    await screen.findByText('Reserved requests are protected');
+    expect(
+      screen.queryByRole('link', { name: 'Edit Microphone' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Remove Microphone…' }),
+    ).not.toBeInTheDocument();
+  },
+);
+
+test('canceling removal preserves the requirement without a mutation', async () => {
+  const calls = stubApi(
+    {
+      [`GET ${endpoint}`]: {
+        body: { event, equipment, requests: [row], canEdit: true },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  show();
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Remove Microphone…' }),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(
+    screen.queryByRole('button', { name: 'Confirm removal' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole('link', { name: 'Edit Microphone' }),
+  ).toBeInTheDocument();
+  expect(calls.some((call) => call.method === 'POST')).toBe(false);
+});
+
+test.each([true, false])(
+  'edit acknowledgement distinguishes save from no-op (changed=%s)',
+  async (changed) => {
+    const calls = stubApi(
+      {
+        [`GET ${endpoint}`]: {
+          body: {
+            event,
+            equipment: [{ ...equipment[0], operational_status: 'maintenance' }],
+            requests: [row],
+            canEdit: true,
+          },
+        },
+        [`POST ${endpoint}`]: {
+          body: { requestId: row.id, changed, notified: 0, warning: null },
+        },
+      },
+      { role: 'event_coordinator' },
+    );
+    show('/coordinator/events/EVT-A/equipment/req1/edit');
+    const notes = await screen.findByLabelText('Technical notes');
+    expect(
+      screen.getByText(/This item is under maintenance/),
+    ).toBeInTheDocument();
+    fireEvent.change(notes, { target: { value: 'Updated note' } });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Save equipment request' }),
+    );
+    await screen.findByText(
+      changed ? 'Equipment request saved.' : 'No changes to save.',
+    );
+    if (changed)
+      expect(
+        screen.getByText(/No active Technical Support Staff accounts/),
+      ).toBeInTheDocument();
+    expect(calls.find((call) => call.method === 'POST')?.body).toMatchObject({
+      id: row.id,
+      notes: 'Updated note',
+    });
+  },
+);
+
+test('form load failure retries and save failure without field errors retains input', async () => {
+  let fail = true;
+  stubApi(
+    {
+      [`GET ${endpoint}`]: () =>
+        fail
+          ? {
+              status: 503,
+              body: { error: 'Service unavailable. Please try again.' },
+            }
+          : { body: { event, equipment, requests: [], canEdit: true } },
+      [`POST ${endpoint}`]: {
+        status: 503,
+        body: { error: 'The request could not be saved.' },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/new');
+  await screen.findByText('Service unavailable. Please try again.');
+  fail = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  fireEvent.change(await screen.findByLabelText('Equipment item'), {
+    target: { value: 'eq1' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Save equipment request' }),
+  );
+  await screen.findByText('The request could not be saved.');
+  expect(screen.getByLabelText('Equipment item')).toHaveValue('eq1');
+  expect(
+    screen.getByRole('button', { name: 'Save equipment request' }),
+  ).toBeEnabled();
+});
+
+test('a save completing after leaving the form does not navigate back', async () => {
+  const pending =
+    deferred<Awaited<ReturnType<typeof requestApi.saveRequest>>>();
+  stubApi(
+    {
+      [`GET ${endpoint}`]: {
+        body: { event, equipment, requests: [], canEdit: true },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  vi.spyOn(requestApi, 'saveRequest').mockReturnValue(pending.promise);
+  render(
+    <MemoryRouter initialEntries={['/coordinator/events/EVT-A/equipment/new']}>
+      <Link to="/other">Leave form</Link>
+      <Routes>
+        <Route
+          path="/coordinator/events/:eventCode/equipment/new"
+          element={<EquipmentRequestFormPage />}
+        />
+        <Route path="/other" element={<h1>Other page</h1>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  fireEvent.change(await screen.findByLabelText('Equipment item'), {
+    target: { value: 'eq1' },
+  });
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Save equipment request' }),
+  );
+  expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+  fireEvent.click(screen.getByRole('link', { name: 'Leave form' }));
+  pending.resolve({
+    ok: true,
+    data: { requestId: row.id, changed: true, notified: 1, warning: null },
+  });
+  await waitFor(() =>
+    expect(
+      screen.getByRole('heading', { name: 'Other page' }),
+    ).toBeInTheDocument(),
+  );
 });

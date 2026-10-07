@@ -190,3 +190,9 @@ Fresh execution records:
 - [Backend unit regression](../testing/runs/20261007-000845-xiangyingg-backend-unit.md)
 - [279 frontend tests including unexpected removal failure/retry](../testing/runs/20261007-000841-xiangyingg-frontend-vitest.md)
 - [16 desktop/mobile intercepted browser tests](../testing/runs/20261007-000845-xiangyingg-frontend-e2e.md)
+
+## DoD coverage follow-up
+
+See [coverage review and explicit gap justification](scrum-52-coverage-review.md)
+for latest-main integration, measured unit versus PostgreSQL coverage and added
+boundary/error tests. Human review of the added test cases remains required.
