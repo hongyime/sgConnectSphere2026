@@ -1,3 +1,5 @@
+import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
+import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
 import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
@@ -49,7 +51,7 @@ import { VenueForm } from '../features/venue/VenueForm';
 import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
 import { VenueBlockout } from '../features/venue/VenueBlockout';
 import {
-  EquipmentDashboard, RequestQueue, ReservationDetail, TechnicianAssignment, ConflictState,
+  EquipmentDashboard, RequestQueue, ReservationDetail, TechnicianAssignment,
 } from '../features/support/Support';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer, ReportingDashboard, DigestPreferences, Recommendations,
@@ -89,6 +91,13 @@ export const routes: AppRoute[] = [
   pub('/reset-password', <PasswordRecovery key="reset" reset />, 'E01-S01'),
   pub('/register', <RegisterForm />, 'E01-S08'),
   pub('/verify', <VerifyPage />, 'E01-S08'),
+
+  page('/coordinator/equipment-requests', <EquipmentRequestEvents />, 'live', 'E07-S02'),
+  page('/support/equipment-requests', <EquipmentRequestEvents />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment', <EquipmentRequests />, 'live', 'E07-S02'),
+  page('/support/events/:eventCode/equipment', <EquipmentRequests />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment/new', <EquipmentRequestFormPage />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment/:requestId/edit', <EquipmentRequestFormPage />, 'live', 'E07-S02'),
 
   // Every role
   page('/home', <HomeRedirect />, 'redirect', 'E01-S01'),
@@ -176,7 +185,8 @@ export const routes: AppRoute[] = [
   page('/support/queue', <RequestQueue />, 'mock', 'E07-S04'),
   page('/support/requests/:requestId', <ReservationDetail />, 'mock', 'E07-S04'),
   page('/support/technicians', <TechnicianAssignment />, 'mock', 'E07-S07'),
-  page('/support/conflicts', <ConflictState />, 'mock', 'E07-S03'),
+  page('/support/conflicts', <EquipmentAvailability />, 'live', 'E07-S03'),
+  page('/support/availability', <EquipmentAvailability />, 'live', 'E07-S03'),
 
   // Administrator (no Release 1 stories)
   page('/admin', <AdminHome />, 'mock'),

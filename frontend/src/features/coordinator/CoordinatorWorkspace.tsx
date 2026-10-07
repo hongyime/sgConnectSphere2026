@@ -206,6 +206,7 @@ export function RequestDetail() {
               <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
             </>
           ) : null}
+          {['approved','planning','confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}

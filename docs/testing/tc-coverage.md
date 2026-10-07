@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **129** (41.1%)
+- Automated (explicit TC_ID in an active test title): **136** (43.3%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **108**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **128** (40.8%)
+  - Live-assertion (other active tests): **115**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **121** (38.5%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 7 | 23 | 0 |
+| E07 | 30 | 14 | 16 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **129** | **128** | **57** |
+| **Total** | **314** | **136** | **121** | **57** |
 
 ## Case-by-case status
 
@@ -246,13 +246,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S01_02` | E07-S01 | Verify that reducing an item's quantity below the amount already reserved for up | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
 | `TC_E07S01_03` | E07-S01 | Verify that retiring an item with no future reservations should remove it from a | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
 | `TC_E07S01_04` | E07-S01 | Verify that updating an existing equipment item's attributes should save the cha | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S01_01 TC_E07S01_02 TC_E07S01_03 TC_E07S01_04 equipment catalogue against PostgreSQL; tests/auth-e2e/equipmentCatalogue. |
-| `TC_E07S02_01` | E07-S02 | Verify that adding equipment items with quantities to a event of an approved eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_01 - Verify that adding equipment items with quantities to a event of an approved event should save the request and notify Technical Support Staff |
-| `TC_E07S02_02` | E07-S02 | Verify that requesting more of an item than ConnectSphere owns in total should w | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_02 - Verify that requesting more of an item than ConnectSphere owns in total should warn that the request cannot be met from existing stock |
-| `TC_E07S02_03` | E07-S02 | Verify that recording equipment for one event should leave a different event's e | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_03 - Verify that recording equipment for one event should leave a different event |
-| `TC_E07S02_04` | E07-S02 | Verify that amending or removing an equipment request before it is reserved shou | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S02_04 - Verify that amending or removing an equipment request before it is reserved should update or clear the request accordingly |
-| `TC_E07S03_01` | E07-S03 | Verify that checking availability for a period with other reservations should ex | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_01 - Verify that checking availability for a period with other reservations should exclude those reservations and any damaged or under-maintenance  |
-| `TC_E07S03_02` | E07-S03 | Verify that an item free for the requested date and time but located at another  | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_02 - Verify that an item free for the requested date and time but located at another venue should still be shown as available, with no transport al |
-| `TC_E07S03_03` | E07-S03 | Verify that two events requiring the same item at non-overlapping times on the s | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S03_03 - Verify that two events requiring the same item at non-overlapping times on the same day should both show it as free |
+| `TC_E07S02_01` | E07-S02 | Verify that adding equipment items with quantities to a event of an approved eve | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_02` | E07-S02 | Verify that requesting more of an item than ConnectSphere owns in total should w | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_03` | E07-S02 | Verify that recording equipment for one event should leave a different event's e | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S02_04` | E07-S02 | Verify that amending or removing an equipment request before it is reserved shou | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real event equipment request persistence, notifications and guards; tests/a |
+| `TC_E07S03_01` | E07-S03 | Verify that checking availability for a period with other reservations should ex | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
+| `TC_E07S03_02` | E07-S03 | Verify that an item free for the requested date and time but located at another  | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
+| `TC_E07S03_03` | E07-S03 | Verify that two events requiring the same item at non-overlapping times on the s | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
 | `TC_E07S04_01` | E07-S04 | Verify that reserving the requested quantity when sufficient equipment is free s | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_01 - Verify that reserving the requested quantity when sufficient equipment is free should record the reservation and notify the Event Coordinator |
 | `TC_E07S04_02` | E07-S04 | Verify that recording a partial reservation when only part of the requested quan | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_02 - Verify that recording a partial reservation when only part of the requested quantity is free should notify the Coordinator of the shortfall |
 | `TC_E07S04_03` | E07-S04 | Verify that once an item becomes fully committed, a subsequent availability chec | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_03 - Verify that once an item becomes fully committed, a subsequent availability check for that period should show no free quantity |
@@ -484,6 +484,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - buildNotificationEmailHtml does not linkify a URL injected via message content differently than any other text -- it is still escaped first
 - buildNotificationEmailHtml output carries ConnectSphere branding and is a complete HTML document
 
+### `backend/tests/equipmentAvailability.test.ts`
+
+- period validation rejects missing offsets, invalid ranges and malformed ids
+- availability denies wrong, inactive and locked roles before period validation or equipment reads
+- handler exposes availability as authenticated read-only API
+- equipment-not-found availability API returns 404 for a valid absent item id
+
 ### `backend/tests/equipmentCatalogue.test.ts`
 
 - equipment input rejects invalid quantities and forged retirement
@@ -494,6 +501,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - equipment handler checks origin before writes and rejects unsupported methods
 - equipment handler returns validation failures without creating a transaction
+
+### `backend/tests/equipmentRequests.test.ts`
+
+- equipment request input rejects zero, fractions, duplicate shapes and forged ids
+- request readers and writers deny wrong roles and inactive accounts before reading event data
+- request handler enforces method, origin and valid action without opening a transaction
+- request boundary validation refuses malformed bodies and identifiers without a transaction
+- handler reads list/detail and rejects malformed save/remove actions
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -910,6 +925,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - keeps the user on the page and explains when sign out fails
 - offers sign in when there is no session
 
+### `frontend/src/features/support/EquipmentAvailability.test.tsx`
+
+- invalid time range is associated with End and does not call availability
+- availability offers retry after service failure and shows the empty state
+- checking the same period again refreshes its quantities
+- maintenance item displays zero free and a missing location is explicitly labelled
+
 ### `frontend/src/features/support/EquipmentCatalogue.test.tsx`
 
 - saving new equipment persists all fields and reloads the catalogue
@@ -919,6 +941,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - server validation retains the form and associates field error
 - equipment load failure offers retry and empty catalogue offers add
 - late equipment response does not overwrite the next edit route
+
+### `frontend/src/features/support/EquipmentRequests.test.tsx`
+
+- request form saves event-scoped quantity and displays total-stock warning without losing requirement
+- request removal requires confirmation and reports failure while retaining the row
+- reserved and read-only requests expose no editing form
+- Technical Support has read-only event requirements
+- request form associates server quantity errors and retains entered values
+- late event response cannot overwrite the next equipment request form
+- equipment request load failure offers retry and then the empty state
+- unexpected removal error releases the confirm button and allows retry
+- event selector retries failed loading
+- retired item remains visible in edit form and empty catalogue prevents saving
+- canceling removal preserves the requirement without a mutation
+- form load failure retries and save failure without field errors retains input
+- a save completing after leaving the form does not navigate back
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
@@ -1074,7 +1112,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request queue filters by state
 - reservation detail records a shortfall
 - technician assignment lists available technicians
-- conflict state lists shortfall requests
+- legacy conflict route opens live equipment availability
 
 ### `tests/e2e/venue-search.spec.ts`
 
