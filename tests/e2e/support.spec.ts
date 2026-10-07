@@ -1,10 +1,10 @@
 // Playwright tests for /support/* routes (SCRUM-98). Six screens for the
 // Technical Support Staff role: equipment dashboard, catalogue, request
-// queue, reservation detail, technician assignment, and conflict state.
-// Catalogue uses an intercepted API; other screens use support mock fixtures. The
+// queue, reservation detail, technician assignment, and availability.
+// Catalogue uses an intercepted API; availability is live. Remaining screens use
+// support mock fixtures. The
 // reservation-detail test exercises the shortfall-recording flow required
-// by E07-S04 Scenario 2, and the conflict state screen surfaces the same
-// data via a different lens for triage-first workflows.
+// by E07-S04 Scenario 2. Availability calculations have dedicated E07-S03 tests.
 import { test, expect } from '@playwright/test';
 import { signInAs } from './helpers/fakeSession';
 
@@ -48,8 +48,10 @@ test('technician assignment lists available technicians', async ({ page }) => {
   await expect(page.getByText('Priya Menon')).toBeVisible();
 });
 
-test('conflict state lists shortfall requests', async ({ page }) => {
+test('legacy conflict route opens live equipment availability', async ({ page }) => {
+  await signInAs(page, 'technical_support_staff');
   await page.goto('/support/conflicts');
-  await expect(page.getByRole('heading', { name: 'Conflict state' })).toBeVisible();
-  await expect(page.getByText(/Design Studio Recital/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Equipment availability', exact: true })).toBeVisible();
+  await expect(page.getByLabel('Start', { exact: true })).toBeVisible();
+  await expect(page.getByText('Choose a period')).toBeVisible();
 });

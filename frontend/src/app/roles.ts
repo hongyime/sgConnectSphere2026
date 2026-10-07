@@ -63,6 +63,7 @@ export const roleNavigation: Record<Role, NavItem[]> = {
     { to: '/venue', label: 'Dashboard', end: true },
   ],
   technical_support_staff: [
+    { to: '/support/availability', label: 'Equipment availability' },
     { to: '/support/equipment-requests', label: 'Equipment requests' },
     { to: '/support/catalogue', label: 'Equipment catalogue' },
     { to: '/support', label: 'Dashboard', end: true },
