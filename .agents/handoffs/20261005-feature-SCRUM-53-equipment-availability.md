@@ -59,3 +59,14 @@ Main 3f8de45 / #222 landed during implementation. Merged normally, resolved the
 sole package.json conflict retaining both test sets, regenerated coverage.
 289 combined backend tests and post-merge real authenticated desktop/mobile
 availability acceptance pass; typecheck passes. Finish final merge push and CI.
+
+## Review follow-up — 7 October
+
+Merged main b41938d including #216, resolved all six conflicts preserving both
+request and availability workflows, regenerated coverage. Added missing-item
+API 404 test and frontend standing-maintenance/missing-location test. Focused
+availability backend and frontend statement/branch coverage measures 100%.
+Manual checklist remains pending; automated tests are not manual PASS records.
+The first real-browser rerun failed in setup because the disposable database
+was stopped; preserve its failed execution record and rerun after restarting it.
+Next: final repository checks, commit/push, final-head CI and human manual review.

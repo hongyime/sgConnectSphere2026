@@ -1,4 +1,5 @@
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
+import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
 import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
@@ -89,6 +90,13 @@ export const routes: AppRoute[] = [
   pub('/reset-password', <PasswordRecovery key="reset" reset />, 'E01-S01'),
   pub('/register', <RegisterForm />, 'E01-S08'),
   pub('/verify', <VerifyPage />, 'E01-S08'),
+
+  page('/coordinator/equipment-requests', <EquipmentRequestEvents />, 'live', 'E07-S02'),
+  page('/support/equipment-requests', <EquipmentRequestEvents />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment', <EquipmentRequests />, 'live', 'E07-S02'),
+  page('/support/events/:eventCode/equipment', <EquipmentRequests />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment/new', <EquipmentRequestFormPage />, 'live', 'E07-S02'),
+  page('/coordinator/events/:eventCode/equipment/:requestId/edit', <EquipmentRequestFormPage />, 'live', 'E07-S02'),
 
   // Every role
   page('/home', <HomeRedirect />, 'redirect', 'E01-S01'),

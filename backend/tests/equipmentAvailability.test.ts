@@ -157,3 +157,39 @@ test('handler exposes availability as authenticated read-only API', async () => 
   );
   assert.equal(status, 405);
 });
+
+test('equipment-not-found availability API returns 404 for a valid absent item id', async () => {
+  let status = 0;
+  let body: unknown;
+  const response = {
+    setHeader() {},
+    status(code: number) {
+      status = code;
+      return {
+        json(value: unknown) {
+          body = value;
+        },
+      };
+    },
+  } as unknown as VercelResponse;
+  const handler = createEquipmentHandler({
+    authenticate: async () => staff,
+    query: async () => ({ rows: [] }),
+    pool: () => {
+      throw new Error('Read-only');
+    },
+    allowedOrigin: () => true,
+  });
+  const params = new URLSearchParams({
+    mode: 'availability',
+    start,
+    end,
+    id: randomUUID(),
+  });
+  await handler(
+    { method: 'GET', url: `/api/equipment?${params}`, headers: {} },
+    response,
+  );
+  assert.equal(status, 404);
+  assert.deepEqual(body, { error: 'Active equipment not found.' });
+});

@@ -153,3 +153,32 @@ test('checking the same period again refreshes its quantities', async () => {
   await screen.findByText('4');
   expect(calls).toBe(2);
 });
+
+test('maintenance item displays zero free and a missing location is explicitly labelled', async () => {
+  stubApi(
+    {
+      [endpoint]: {
+        body: {
+          period,
+          equipment: [
+            {
+              ...item,
+              operationalStatus: 'maintenance',
+              operationallyUnavailable: true,
+              location: null,
+              freeQuantity: 0,
+            },
+          ],
+        },
+      },
+    },
+    { role: 'technical_support_staff' },
+  );
+  show();
+  check();
+  const table = await screen.findByRole('table');
+  expect(table).toHaveTextContent('Under maintenance');
+  expect(table).toHaveTextContent('Not specified');
+  const cells = screen.getAllByRole('cell');
+  expect(cells[4]).toHaveTextContent('0');
+});

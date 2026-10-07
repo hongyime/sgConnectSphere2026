@@ -174,3 +174,32 @@ real authenticated availability journey after main's API routing additions:
 
 - [Combined backend regression](../testing/runs/20261007-014057-xiangyingg-backend-unit.md)
 - [Post-merge real browser acceptance](../testing/runs/20261007-014058-xiangyingg-frontend-e2e.md)
+
+## Review coverage and conflict follow-up — 7 October 2026
+
+Merged main b41938d, including E07-S02 #216. Resolved six conflicts retaining
+request and availability handler dispatch/imports, both navigation entries and
+routes, all test lists and PostgreSQL CI steps, with one shared frontend-test
+step. Regenerated tc-coverage.md from the merged test tree.
+
+Added a handler-level API assertion that a valid absent equipment identifier
+returns 404 / Active equipment not found. Added a frontend maintenance fixture
+showing free quantity zero and Not specified for a missing location.
+Focused c8 availability.ts coverage: 152/152 statements and 31/31 branches (100%).
+Focused Vitest availability page/API coverage: 35/35 statements and 23/23 branches
+(100%). Those figures apply to the availability files, not the whole repository.
+
+The human manual validation table above remains Pending. Automated database and
+browser runs are not human manual evidence; record an actual user walkthrough
+before Jira Done or the Sprint Review. New tests still need human review.
+
+Review follow-up execution records:
+
+- [API unit coverage / 404 test](../testing/runs/20261007-133808-xiangyingg-backend-unit.md)
+- [Frontend maintenance and missing-location coverage](../testing/runs/20261007-133740-xiangyingg-frontend-vitest.md)
+- [301 frontend regression tests](../testing/runs/20261007-133833-xiangyingg-full-regression.md)
+- [Real desktop/mobile acceptance after restoring the database](../testing/runs/20261007-134103-xiangyingg-frontend-e2e.md)
+
+The initial real browser attempt is preserved separately as a setup failure, not
+an application failure or manual validation result. Human manual checklist remains
+pending; do not mark SCRUM-53 Done from the automated coverage results alone.

@@ -1,0 +1,38 @@
+// Real sessions/API/PostgreSQL acceptance for SCRUM-52 / E07-S02.
+import {test,expect} from '@playwright/test';
+import {spawn,type ChildProcess} from 'node:child_process';
+import {once} from 'node:events';
+import {randomUUID} from 'node:crypto';
+import {loginDatabase} from '../../backend/tests/helpers/loginDatabase.js';
+import {hashPassword} from '../../backend/src/modules/accessControl/password.js';
+const appUrl='http://127.0.0.1:5176';
+const password='SyntheticRequests12!'; // pragma: allowlist secret - synthetic credential
+let database:Awaited<ReturnType<typeof loginDatabase>>;let server:ChildProcess;
+test.beforeAll(async()=>{
+  database=await loginDatabase();server=spawn(process.execPath,['--import','tsx','backend/src/dev.ts'],{env:{...process.env,DATABASE_URL:database.connectionString,DATABASE_POOLER_URL:database.connectionString,APP_URL:appUrl,PORT:'3006',NODE_ENV:'test'},stdio:['ignore','pipe','pipe']});
+  await Promise.race([once(server.stdout!,'data'),once(server,'exit').then(()=>{throw new Error('API exited');}),new Promise((_,reject)=>{const timer=setTimeout(()=>reject(new Error('API startup timeout')),15000);timer.unref();})]);
+});
+test.afterAll(async()=>{if(server&&server.exitCode===null){const exit=once(server,'exit');server.kill();await exit;}await database?.close();});
+test('TC_E07S02_01 TC_E07S02_02 TC_E07S02_03 TC_E07S02_04 real login request, warning, independent events, amend/remove and staff notification',async({page})=>{
+  const q=database.pool.query.bind(database.pool);const coord=randomUUID(),tech=randomUUID(),other=randomUUID(),organiser=randomUUID(),org=randomUUID(),a=randomUUID(),b=randomUUID(),microphone=randomUUID(),projector=randomUUID();const hash=await hashPassword(password);
+  await q("INSERT INTO client_organisations(id,name) VALUES($1,'Request browser test')",[org]);
+  for(const [id,role] of [[coord,'event_coordinator'],[tech,'technical_support_staff'],[other,'event_coordinator'],[organiser,'event_organiser']])await q(`INSERT INTO users(id,email,password_hash,full_name,role,client_org_id) VALUES($1,$2,$3,'Synthetic request user',$4,$5)`,[id,`${id}@example.test`,hash,role,org]);
+  const range=`[${new Date(Date.now()+86400000).toISOString()},${new Date(Date.now()+90000000).toISOString()})`;
+  for(const [id,code,title] of [[a,'EVT-REQ-A','Tech Conference'],[b,'EVT-REQ-B','Charity Run']])await q(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,event_range,expected_attendance,status) VALUES($1,$2,$3,$4,$5,$6,$7::tstzrange,10,'planning')`,[id,code,organiser,coord,org,title,range]);
+  for(const [id,name,stock] of [[microphone,'Wireless Microphone',10],[projector,'Projector',2]])await q(`INSERT INTO equipment(id,name,category,description,total_quantity,home_location,operational_status) VALUES($1,$2,'Audio','Synthetic',$3,'Test Storage','available')`,[id,name,stock]);
+  async function login(id:string){await page.goto('/login');await page.getByLabel('Email',{exact:true}).fill(`${id}@example.test`);await page.getByLabel('Password',{exact:true}).fill(password);await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page).not.toHaveURL(/\/login$/);}
+  async function logout(){await page.request.delete('/api/auth/session',{headers:{origin:appUrl}});}
+  async function add(item:string,quantity:string){await page.getByRole('link',{name:'Add equipment request'}).click();await page.getByLabel('Equipment item').selectOption(item);await page.getByLabel('Quantity requested').fill(quantity);await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page.getByText(/Technical Support Staff notified/)).toBeVisible();}
+  await login(coord);await page.getByRole('link',{name:'Equipment requests',exact:true}).first().click();await page.getByRole('link',{name:'EVT-REQ-A',exact:true}).click();await add(microphone,'2');await add(projector,'1');
+  expect((await q('SELECT * FROM equipment_requests WHERE event_id=$1',[a])).rowCount).toBe(2);expect((await q('SELECT * FROM notifications WHERE user_id=$1 AND event_id=$2',[tech,a])).rowCount).toBe(2);expect((await q('SELECT * FROM notification_deliveries')).rowCount).toBe(2);
+  await page.getByRole('link',{name:'Edit Wireless Microphone'}).click();await page.getByLabel('Quantity requested').fill('15');await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page.getByText(/15 units requested, but total stock is 10/)).toBeVisible();await page.reload();await expect(page.getByText('Exceeds total stock',{exact:true})).toBeVisible();
+  await page.goto('/coordinator/events/EVT-REQ-B/equipment');await expect(page.getByText('No equipment requested yet')).toBeVisible();await add(microphone,'1');expect((await q('SELECT quantity_requested FROM equipment_requests WHERE event_id=$1 AND equipment_id=$2',[a,microphone])).rows[0].quantity_requested).toBe(15);
+  await page.goto('/coordinator/events/EVT-REQ-A/equipment');await page.getByRole('link',{name:'Edit Wireless Microphone'}).click();await page.getByLabel('Quantity requested').fill('3');await page.getByLabel('Technical notes').fill('Handheld required');await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page).toHaveURL(/\/equipment$/);await page.reload();await expect(page.getByText('Handheld required',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Remove Wireless Microphone…'}).click();await page.getByRole('button',{name:'Confirm removal'}).click();await expect(page.getByText('Equipment request removed.')).toBeVisible();expect((await q('SELECT * FROM equipment_requests WHERE event_id=$1 AND equipment_id=$2',[a,microphone])).rowCount).toBe(0);expect((await q('SELECT * FROM equipment_requests WHERE event_id=$1',[b])).rowCount).toBe(1);
+  const request=(await q('SELECT id FROM equipment_requests WHERE event_id=$1',[a])).rows[0];await q('INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range,reserved_by) VALUES($1,$2,$3,1,$4::tstzrange,$5)',[request.id,a,projector,range,tech]);await page.reload();await expect(page.getByText('Reserved requests are protected')).toBeVisible();await expect(page.getByRole('link',{name:'Edit Projector'})).toHaveCount(0);
+  const blocked=await page.request.post('/api/equipment?mode=requests&event=EVT-REQ-A',{headers:{origin:appUrl},data:{action:'removeRequest',id:request.id}});expect(blocked.status()).toBe(409);
+  const csrf=await page.request.post('/api/equipment?mode=requests&event=EVT-REQ-B',{headers:{origin:'https://attacker.example.test'},data:{action:'saveRequest',equipmentId:projector,quantity:1}});expect(csrf.status()).toBe(403);
+  await logout();await login(tech);await page.goto('/notifications');await expect(page.getByRole('button',{name:'Equipment request updated',exact:true}).first()).toBeVisible();await page.getByRole('button',{name:'Equipment request updated',exact:true}).first().click();await expect(page.getByText(/EVT-REQ-A:.*removed/)).toBeVisible();await page.getByRole('link',{name:'Equipment requests',exact:true}).first().click();await page.getByRole('link',{name:'EVT-REQ-A',exact:true}).click();await expect(page.getByText('Projector',{exact:true})).toBeVisible();await expect(page.getByRole('link',{name:'Add equipment request'})).toHaveCount(0);
+  const denied=await page.request.post('/api/equipment?mode=requests&event=EVT-REQ-A',{headers:{origin:appUrl},data:{action:'removeRequest',id:request.id}});expect(denied.status()).toBe(403);
+  await logout();await login(other);const wrong=await page.request.get('/api/equipment?mode=requests&event=EVT-REQ-A');expect(wrong.status()).toBe(403);
+});

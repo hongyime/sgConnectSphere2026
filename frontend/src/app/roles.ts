@@ -50,6 +50,7 @@ export const roleNavigation: Record<Role, NavItem[]> = {
   ],
   event_coordinator: [
     { to: '/coordinator', label: 'Dashboard', end: true },
+    { to: '/coordinator/equipment-requests', label: 'Equipment requests' },
     { to: '/coordinator/queue', label: 'Review queue' },
     { to: '/coordinator/reassignments', label: 'Reassignments' },
     { to: '/coordinator/venues', label: 'Venue search', end: true },
@@ -63,6 +64,7 @@ export const roleNavigation: Record<Role, NavItem[]> = {
   ],
   technical_support_staff: [
     { to: '/support/availability', label: 'Equipment availability' },
+    { to: '/support/equipment-requests', label: 'Equipment requests' },
     { to: '/support/catalogue', label: 'Equipment catalogue' },
     { to: '/support', label: 'Dashboard', end: true },
     { to: '/support/queue', label: 'Request queue' },
