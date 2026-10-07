@@ -26,7 +26,9 @@ was added. This original handoff is now the canonical per-branch record.
 Draft PR #229 is open: https://github.com/hongyime/sgConnectSphere2026/pull/229.
 Implementation fec891b and integration 884dc52 are pushed. Review page with
 synthetic screenshots: https://gnxd10tqiilh.postplan.dev/v/1.
-Next: run the documented human checklist, check final-head CI and obtain review.
+Human manual checklist completed on 7 October and documented in the plan and
+new immutable run_type: manual record. Next: check final-head CI and obtain
+renewed approval on the evidence push.
 Manual human checklist, final-head CI, skeleton review and reviewed merge remain
 required before Jira Done. E07-S04/E07-S05 own writers and are not closed by this reader.
 
@@ -70,3 +72,15 @@ Manual checklist remains pending; automated tests are not manual PASS records.
 The first real-browser rerun failed in setup because the disposable database
 was stopped; preserve its failed execution record and rerun after restarting it.
 Next: final repository checks, commit/push, final-head CI and human manual review.
+
+## Human manual completion — 7 October
+
+User manually completed all ten checklist rows and confirmed actual results.
+Microphone initial 10/3/2 gives 5 free; release gives 8; same-period recheck after
+fixture reservation becomes 4 gives 4 free. Projector location, maintenance zero,
+non-overlapping periods, invalid range, Coordinator API refusal and phone layout
+all confirmed. Screenshots and user-reported evidence are distinguished; exact
+mobile dimensions/click times were not captured. Manual results now supersede
+historical Pending notes. Record is linked in the updated plan. Fixture writes
+were controlled by the agent in an isolated schema, not E07-S04 writer UI.
+Next: evidence push, final CI, Amareet's final-head approval and reviewed merge.

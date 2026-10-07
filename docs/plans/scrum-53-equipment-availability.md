@@ -115,7 +115,7 @@ and actual command completion times. The database is a dedicated disposable
 local PostgreSQL 17 container; no shared application database was reset or seeded.
 CI runs the new PostgreSQL and authenticated browser suites after installing Chromium.
 
-## Repeatable manual checklist — pending human execution
+## Manual validation checklist — completed 7 October 2026
 
 Use active Technical Support credentials and a test environment. The seeded
 catalogue quantities may differ; use a prepared disposable fixture for exact
@@ -123,20 +123,28 @@ catalogue quantities may differ; use a prepared disposable fixture for exact
 
 | Setup / before | Action | Expected result | Manual result |
 | --- | --- | --- | --- |
-| Signed in as Technical Support | Open Equipment availability | Start/End fields and Choose a period state | Pending |
-| Microphone total 10, 3 reserved and 2 damaged 15 Nov 2026 09:00–12:00 Singapore | Enter the period and Check availability | Total 10, reserved 3, withdrawn 2, free 5 | Pending |
-| Projector working at Grand Ballroom; no commitments | Check same period | Full free quantity; location shown; no transport adjustment | Pending |
-| Microphone commitments finish at noon | Check 12:00–14:00 and 14:00–17:00 | Full free quantity in both periods | Pending |
-| Catalogue item standing Under maintenance | Check any period | Free 0 | Pending |
-| Reservation released or dated withdrawal ends | Check/refresh after release or end | Capacity becomes available again | Pending |
-| Start later than End | Submit | End field error; no new availability query | Pending |
-| Coordinator or other role | Request the availability API directly | Access refused; stock not disclosed | Pending |
-| Same period; another staff member changes commitments | Check availability again | Updated quantity, not stale previous results | Pending |
-| Phone viewport | Repeat a check and scroll results | Readable fields and equipment cards; no page overflow | Pending |
+| Signed in as Technical Support | Open Equipment availability | Start/End fields and Choose a period state | PASS — Support user opened the live page with Start/End fields and Check availability. |
+| Microphone total 10, 3 reserved and 2 damaged 15 Nov 2026 09:00–12:00 Singapore | Enter the period and Check availability | Total 10, reserved 3, withdrawn 2, free 5 | PASS — 15 Nov 2026 09:00–12:00 Singapore: Manual Microphone total 10, reserved 3, damaged 2, free 5; user screenshot and confirmation. |
+| Projector working at Grand Ballroom; no commitments | Check same period | Full free quantity; location shown; no transport adjustment | PASS — Manual Projector at Grand Ballroom showed total/free 10 with no commitments or transport deduction; user confirmed and screenshot showed the location. |
+| Microphone commitments finish at noon | Check 12:00–14:00 and 14:00–17:00 | Full free quantity in both periods | PASS — User confirmed microphone free 10 for 12:00–14:00 and 14:00–17:00 on 15 Nov 2026. |
+| Catalogue item standing Under maintenance | Check any period | Free 0 | PASS — Maintenance Speaker total 4, free 0, Under maintenance, location Not specified; screenshot and user confirmation. |
+| Reservation released or dated withdrawal ends | Check/refresh after release or end | Capacity becomes available again | PASS — Agent released only the isolated fixture reservation; user refreshed morning period and confirmed reserved 0, damaged 2, free 8; later screenshot confirms values. E07-S04 release UI was not tested. |
+| Start later than End | Submit | End field error; no new availability query | PASS — User confirmed End must be after start for Start noon / End 09:00. Network request suppression was not manually inspected. |
+| Coordinator or other role | Request the availability API directly | Access refused; stock not disclosed | PASS — After successful Coordinator login, user opened the direct availability API URL and confirmed Access denied. Only Technical Support Staff can check equipment availability.; no quantities returned. |
+| Same period; another staff member changes commitments | Check availability again | Updated quantity, not stale previous results | PASS — Agent changed the isolated reservation to 4; user clicked Check availability without changing morning period and explicitly confirmed reserved 4, damaged 2, free 4. |
+| Phone viewport | Repeat a check and scroll results | Readable fields and equipment cards; no page overflow | PASS — User confirmed phone-viewport instructions passed: usable fields/buttons/results and no whole-page horizontal overflow. No mobile screenshot or exact dimensions supplied. |
+
+
+Human tester: `xiangyingg`. All ten checks were manually performed and confirmed
+in this session. Screenshot-backed observations and user reports are distinguished
+in the immutable [manual session record](../testing/runs/20261007-144449-xiangyingg-frontend-e2e.md).
+Individual action times and exact mobile dimensions were not captured. The agent
+controlled reservation changes only in isolated fixtures, not through another
+staff member or the E07-S04 UI.
 
 ## Remaining delivery steps
 
-- Run human manual checklist and record actual results separately.
+- Human manual checklist completed; actual results recorded in 20261007-144449-xiangyingg-frontend-e2e.md.
 - Obtain skeleton/design review (Amareet) and backend peer review.
 - Require final-head CI green and reviewed merge before Jira Done.
 - E07-S04/E07-S05 must independently deliver their write workflows; fixture-backed
@@ -203,3 +211,12 @@ Review follow-up execution records:
 The initial real browser attempt is preserved separately as a setup failure, not
 an application failure or manual validation result. Human manual checklist remains
 pending; do not mark SCRUM-53 Done from the automated coverage results alone.
+
+## Manual evidence update — 2026-10-07
+
+The completed ten-row checklist and linked manual record supersede earlier
+historical Pending statements in this plan. Validation used application HEAD
+ede1540. The user confirmed all checks, including the final same-period refresh
+and phone layout. No automated test has been relabelled as manual evidence.
+Final-head CI and renewed human approval remain required before reviewed merge
+and Jira Done.
