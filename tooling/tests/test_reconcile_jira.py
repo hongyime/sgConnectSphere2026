@@ -123,6 +123,108 @@ class ExtractKeysTests(unittest.TestCase):
         self.assertEqual(module.extract_keys(pr, "SCRUM"), [])
 
 
+class ScopeAwareBodyScanTests(unittest.TestCase):
+    """Regression tests for the scope-aware body scanner added after PR #97
+    falsely transitioned SCRUM-42 because an example ``Closes SCRUM-42`` in
+    the PR body was treated as a real closing clause."""
+
+    def test_closes_inside_code_fence_is_ignored(self):
+        """Reproduces the PR #97 false positive: a Closes clause inside a
+        triple-backtick code fence should not be treated as a real closing."""
+        pr = _pr(
+            head_ref="feature/jira-status-sync",
+            title="feat(ci): reconcile Jira status on PR merge",
+            body=(
+                "## What and why\n"
+                "Ships scripts/reconcile_jira.py.\n\n"
+                "## Usage example\n\n"
+                "```\n"
+                "# Example: this would close the venue calendar story\n"
+                "python scripts/reconcile_jira.py --pr 42  # Closes SCRUM-42\n"
+                "```\n\n"
+                "No issue affected."
+            ),
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), [])
+
+    def test_closes_inside_blockquote_is_ignored(self):
+        pr = _pr(
+            head_ref="docs/retro",
+            title="docs: sprint 1 retrospective",
+            body=(
+                "## What and why\n"
+                "> From the original PR body: Closes SCRUM-42.\n"
+                "This is a documentation-only change."
+            ),
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), [])
+
+    def test_closes_inside_html_comment_is_ignored(self):
+        pr = _pr(
+            head_ref="fix/foo",
+            title="fix: foo",
+            body=(
+                "## What and why\n"
+                "<!-- Closes SCRUM-42 -- do not auto-close -->\n"
+                "Unrelated fix."
+            ),
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), [])
+
+    def test_closes_on_example_line_is_ignored(self):
+        pr = _pr(
+            head_ref="docs/guide",
+            title="docs: jira reconciliation guide",
+            body=(
+                "## How to use\n"
+                "For example, running `--pr 42` with Closes SCRUM-42 in the body.\n"
+                "This is a guide, not a real close."
+            ),
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), [])
+
+    def test_closes_outside_fenced_context_still_matches(self):
+        """A legitimate Closes clause in plain prose must still work."""
+        pr = _pr(
+            head_ref="feature/activity-log",
+            title="feat: record status changes",
+            body=(
+                "## What and why\n"
+                "Implements audit logging.\n\n"
+                "```\n"
+                "# this example should be ignored\n"
+                "Closes SCRUM-99\n"
+                "```\n\n"
+                "Closes SCRUM-86."
+            ),
+        )
+        # SCRUM-86 from the prose line; SCRUM-99 inside fence is ignored.
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), ["SCRUM-86"])
+
+    def test_multiline_html_comment_is_stripped(self):
+        pr = _pr(
+            head_ref="fix/bar",
+            title="fix: bar",
+            body=(
+                "## What\n"
+                "<!--\n"
+                "Closes SCRUM-50\n"
+                "-->\n"
+                "Closes SCRUM-51."
+            ),
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), ["SCRUM-51"])
+
+    def test_misleading_branch_key_still_extracted(self):
+        """PR #78 had SCRUM-42 in the branch name for unrelated route work.
+        Branch keys are always trusted — the scope filter only applies to body."""
+        pr = _pr(
+            head_ref="fix/SCRUM-42-events-routing-collision",
+            title="fix: resolve events route collision",
+            body="Fixes the routing collision from PR #56.",
+        )
+        self.assertEqual(module.extract_keys(pr, "SCRUM"), ["SCRUM-42"])
+
 class ReconcileControlFlowTests(unittest.TestCase):
     def test_unmerged_pr_is_skipped(self):
         stream = io.StringIO()

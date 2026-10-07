@@ -22,8 +22,12 @@
   --blue-soft: #e7f0fb;
   --green: #1f9254;
   --green-soft: #e7f4ed;
+  /* Text on a green or amber tint: the base hues are too light for text
+     (design.md 3.1 and 11.2). */
+  --green-ink: #166f40;
   --amber: #d9a017;
   --amber-soft: #fff4d3;
+  --amber-ink: #8a6200;
   --red: #c0392b;
   --red-soft: #fbecea;
   --violet: #6f56a6;
@@ -49,6 +53,11 @@
   --weight-medium: 600;
   --weight-semibold: 700;
   --weight-strong: 800;
+  /* design.md 3.4 and 3.6 */
+  --radius-card: 10px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+  --duration-fast: 120ms;
 }
 
 * {
@@ -207,7 +216,7 @@ button {
   color: var(--teal-dark);
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -446,12 +455,12 @@ button {
 
 .status-success {
   background: var(--green-soft);
-  color: var(--green);
+  color: var(--green-ink);
 }
 
 .status-warning {
   background: var(--amber-soft);
-  color: #8a6200;
+  color: var(--amber-ink);
 }
 
 .status-info {
@@ -494,14 +503,14 @@ button {
 
 .status-awaiting-clarification {
   background: var(--amber-soft);
-  color: #8a6200;
+  color: var(--amber-ink);
 }
 
 .status-approved,
 .status-confirmed,
 .status-completed {
   background: var(--green-soft);
-  color: var(--green);
+  color: var(--green-ink);
 }
 
 .status-rejected,
@@ -618,7 +627,8 @@ button {
 }
 
 .primary-action:not(:disabled):hover {
-  background: var(--teal-hover);
+  /* Darker, not lighter: white text stays at 8:1 (design.md 11.1). */
+  background: var(--teal-dark);
 }
 
 .primary-action:not(:disabled):active {
@@ -640,10 +650,42 @@ button {
   text-decoration: none;
 }
 
-.secondary-action:hover,
+.secondary-action:not(:disabled):hover,
 .secondary-action:focus-visible {
   border-color: var(--teal);
   color: var(--teal-dark);
+}
+
+/* One disabled look for every button (design.md 11.1). */
+.secondary-action:disabled {
+  cursor: not-allowed;
+  border-color: var(--soft);
+  background: var(--soft);
+  color: #ffffff;
+}
+
+/* Hidden until focused: the first stop for keyboard users (design.md 9). */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--teal-dark);
+  color: #ffffff;
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* The skip link focuses <main> itself; it is not a control, so no ring. */
+main[tabindex="-1"]:focus {
+  outline: none;
 }
 
 .metric-row {
@@ -1050,7 +1092,7 @@ button {
 
 .review-copy {
   margin: 0;
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 800;
 }
 
@@ -1073,7 +1115,7 @@ button {
 }
 
 .timeline-done {
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 800;
 }
 
@@ -1124,9 +1166,25 @@ button {
   font-weight: var(--weight-semibold);
 }
 
+/* Solid teal keeps the focus outline at 3:1 or better against every surface
+   in the app (4.4-5.0:1 on light pages, cards and tinted panels, 3.5:1 on
+   the dark phone frame), as WCAG 2.2 requires for focus indicators. */
 :focus-visible {
-  outline: 3px solid rgba(14, 124, 123, 0.32);
+  outline: 3px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* Single-form pages read as one centred column, as on /profile: the heading,
+   intro, form and any buttons below it share the form's width instead of the
+   form sitting against the left edge of a wide page. Keyed on the form's
+   class so no page component needs a layout class of its own. */
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page):has(> form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form)) {
+  max-width: 44rem;
+}
+
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page)
+  > form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form) {
+  max-width: none;
 }
 
 @media (max-width: 1500px) {

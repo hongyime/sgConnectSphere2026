@@ -1,4 +1,4 @@
-import { runtimeConfig, requireEnv } from '../../backend/src/config.js';
+import { isAllowedOrigin } from '../../backend/src/config.js';
 import { currentUser, query, databasePool } from '../../backend/src/modules/eventVisibility/runtime.js';
 import { AccessError, type Query } from '../../backend/src/modules/eventVisibility/service.js';
 import { loadProfile, updateProfile, ProfileValidationError, type ProfileRepository } from '../../backend/src/modules/accessControl/profile.js';
@@ -11,7 +11,7 @@ import { sendJson } from '../../backend/src/http.js';
 export function createProfileHandler(
   repository: ProfileRepository,
   authenticate: (request: VercelRequest) => Promise<AuthenticatedUser>,
-  appUrl: () => string,
+  isOriginAllowed: (origin: string | string[] | undefined) => boolean,
   auditQuery: Query = query,
   deactivate: (user: AuthenticatedUser, body: unknown) => Promise<Record<string, unknown>> = (user, body) => deactivateAccount(databasePool(), user, body),
 ) {
@@ -24,7 +24,7 @@ export function createProfileHandler(
         throw new AccessError(405, 'Method not allowed.');
       }
       const user = await authenticate(request);
-      if (request.method !== 'GET' && request.headers.origin !== appUrl()) throw new AccessError(403, 'Access denied.');
+      if (request.method !== 'GET' && !isOriginAllowed(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       if (request.method === 'DELETE') {
         const result = await deactivate(user, request.body);
         const flags = `Path=/; HttpOnly; SameSite=Strict${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
@@ -46,4 +46,4 @@ export function createProfileHandler(
   };
 }
 
-export default createProfileHandler(createProfileRepository(query), currentUser, () => requireEnv(runtimeConfig.appUrl, 'APP_URL'));
+export default createProfileHandler(createProfileRepository(query), currentUser, isAllowedOrigin);

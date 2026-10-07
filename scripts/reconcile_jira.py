@@ -56,6 +56,49 @@ BODY_CLOSE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Strips lines that should not be scanned for closing keywords:
+#   - triple-backtick code fences (``` ... ```)
+#   - blockquoted lines (> ...)
+#   - HTML comments (<!-- ... -->)
+#   - lines containing "example" or "e.g." (heuristic for documentation)
+_CODE_FENCE_RE = re.compile(r"^\s*```")
+_HTML_COMMENT_START = re.compile(r"<!--")
+_HTML_COMMENT_END = re.compile(r"-->")
+_EXAMPLE_RE = re.compile(r"\bexample\b|\be\.g\.", re.IGNORECASE)
+
+
+def _strip_non_prose(body: str) -> str:
+    """Return *body* with code fences, blockquotes, HTML comments, and
+    example lines removed so that ``BODY_CLOSE_RE`` only matches closing
+    keywords written as intentional prose by the PR author."""
+    lines: list[str] = []
+    in_fence = False
+    in_comment = False
+    for line in body.splitlines():
+        # Toggle code-fence state on ``` boundaries.
+        if _CODE_FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        # Strip HTML comment blocks (may span multiple lines).
+        if in_comment:
+            if _HTML_COMMENT_END.search(line):
+                in_comment = False
+            continue
+        if _HTML_COMMENT_START.search(line):
+            if not _HTML_COMMENT_END.search(line):  # multi-line comment
+                in_comment = True
+            continue
+        # Drop blockquoted lines.
+        if line.lstrip().startswith(">"):
+            continue
+        # Drop lines that look like examples/documentation.
+        if _EXAMPLE_RE.search(line):
+            continue
+        lines.append(line)
+    return "\n".join(lines)
+
 # Statuses that should not be transitioned. Any status not in this set is
 # treated as "needs to move to Done" when the referenced PR merged. Kept
 # permissive so a workflow rename doesn't silently break the check.
@@ -127,6 +170,11 @@ def extract_keys(pr: PullRequest, project_key: str) -> list[str]:
     """Return SCRUM keys mentioned in the branch, title, or as an explicit
     ``Closes SCRUM-42`` / ``Fixes SCRUM-42`` clause in the body. Bare body
     mentions ("follow-up to SCRUM-42") are ignored to avoid false positives.
+
+    Body scanning is scope-aware: closing keywords inside code fences,
+    blockquotes, HTML comments, and example lines are ignored.  This prevents
+    the false positive observed in PR #97, where an example ``Closes SCRUM-42``
+    inside documentation text triggered a real Jira transition.
     """
     keys: list[str] = []
 
@@ -137,7 +185,8 @@ def extract_keys(pr: PullRequest, project_key: str) -> list[str]:
     for haystack in (pr.head_ref or "", pr.title or ""):
         for match in KEY_RE.finditer(haystack):
             _add(match.group(1))
-    for match in BODY_CLOSE_RE.finditer(pr.body or ""):
+    cleaned_body = _strip_non_prose(pr.body or "")
+    for match in BODY_CLOSE_RE.finditer(cleaned_body):
         _add(match.group(1).upper())
     return keys
 

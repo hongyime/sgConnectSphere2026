@@ -1,8 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, Building2, CalendarClock, CheckCircle2, Search } from 'lucide-react';
+import { AlertTriangle, Building2, CalendarClock, CheckCircle2, PencilLine, Plus, Search } from 'lucide-react';
+import {
+  Alert, Button, ButtonLink, ConfirmPanel, EmptyState, ErrorState, FactList, LoadingState, PageLayout, formatDate, useLoad,
+} from '../../shared';
 import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
-import { listVenues, retireVenue, type BlockingBooking, type Venue } from './venueApi';
+import { listVenues, retireVenue, VENUE_LIST_LIMIT, type BlockingBooking, type Venue } from './venueApi';
+import { VenueCalendar } from './VenueCalendar';
 import './venue.css';
 
 const statusTone: Record<BookingStatus, string> = {
@@ -48,177 +52,158 @@ export function VenueDashboard() {
   );
 }
 
-type VenueListState =
-  | { status: 'loading' }
-  | { status: 'loaded'; venues: Venue[] }
-  | { status: 'error'; message: string };
-
+// E05-S01 / E05-S02 venue catalogue for Venue Staff, on the shared blocks
+// (ADR-017). Search runs on submit; retiring asks for confirmation inline and
+// lists any future bookings that stop it (Scenario 4).
 export function VenueInventory() {
-  const [state, setState] = useState<VenueListState>({ status: 'loading' });
-  const [retiringId, setRetiringId] = useState<string | null>(null);
-  const [blockedRetire, setBlockedRetire] = useState<Record<string, BlockingBooking[]>>({});
   // Search input the user is typing; only takes effect on submit. Kept
-  // separate from the term actually sent to the API so retire/reload can
-  // re-run the last submitted search without racing an in-progress edit.
+  // separate from the term actually sent to the API so a reload after a
+  // retire re-runs the last submitted search, not an in-progress edit.
   const [searchInput, setSearchInput] = useState('');
   const [appliedSearch, setAppliedSearch] = useState('');
-
-  const load = useCallback(async (search: string) => {
-    setState({ status: 'loading' });
-    const result = await listVenues(search);
-    setState(result.ok ? { status: 'loaded', venues: result.venues } : { status: 'error', message: result.message });
-  }, []);
-
-  useEffect(() => {
-    load(appliedSearch);
-  }, [load, appliedSearch]);
+  const [retired, setRetired] = useState<string | null>(null);
+  const { result, reload } = useLoad(signal => listVenues(appliedSearch, signal), [appliedSearch]);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setRetired(null);
     setAppliedSearch(searchInput.trim());
   };
 
-  const handleRetire = async (venue: Venue) => {
-    if (!window.confirm(`Retire "${venue.name}"? It will no longer be searchable.`)) return;
-    setRetiringId(venue.id);
-    const result = await retireVenue(venue.id);
-    setRetiringId(null);
-
-    if (!result.ok) {
-      window.alert(result.message);
-      return;
-    }
-    if (!result.retired) {
-      setBlockedRetire((current) => ({ ...current, [venue.id]: result.blockingBookings }));
-      return;
-    }
-    setBlockedRetire((current) => {
-      const { [venue.id]: _dropped, ...rest } = current;
-      return rest;
-    });
-    await load(appliedSearch);
-  };
-
   return (
-    <main className="venue-page">
-      <header className="page-heading venue-inventory-heading">
-        <p className="eyebrow">Venue staff</p>
-        <h1>Venue inventory</h1>
-        <Link to="/venue/inventory/new" className="primary-action">Add venue</Link>
-      </header>
-
+    <PageLayout
+      eyebrow="Venue staff"
+      title="Venue inventory"
+      actions={<ButtonLink to="/venue/inventory/new" variant="primary" icon={<Plus size={14} aria-hidden="true" />}>Add venue</ButtonLink>}
+    >
       <form className="venue-search card" role="search" onSubmit={handleSearchSubmit}>
         <label htmlFor="venue-search-input">Search venues</label>
         <input
           id="venue-search-input" type="search" value={searchInput}
           placeholder="Search by venue name" onChange={(event) => setSearchInput(event.target.value)}
         />
-        <button type="submit" className="secondary-action"><Search size={14} aria-hidden="true" /> Search</button>
+        <Button type="submit" icon={<Search size={14} aria-hidden="true" />}>Search</Button>
       </form>
 
-      {state.status === 'loading' ? <p role="status">Loading venues…</p> : null}
-      {state.status === 'error' ? (
-        <div role="alert" className="login-error">
-          {state.message}{' '}
-          <button type="button" className="secondary-action" onClick={() => load(appliedSearch)}>Try again</button>
-        </div>
-      ) : null}
+      <div aria-live="polite" className="venue-live">
+        {retired ? <Alert tone="success">{retired}</Alert> : null}
+      </div>
 
-      {state.status === 'loaded' ? (
-        state.venues.length === 0 ? (
-          <p>{appliedSearch ? `No venues match "${appliedSearch}".` : 'No venues yet. Add one to get started.'}</p>
+      {result.state === 'loading' ? <LoadingState label="Loading venues…" rows={3} /> : null}
+      {result.state === 'error' ? <ErrorState failure={result.failure} onRetry={reload} context="the venue catalogue" /> : null}
+      {result.state === 'ready' ? (
+        result.data.length === 0 ? (
+          appliedSearch ? (
+            <EmptyState title={`No venues match “${appliedSearch}”`}>Check the spelling, or search for part of the name.</EmptyState>
+          ) : (
+            <EmptyState
+              title="No venues yet"
+              icon={<Building2 size={22} />}
+              action={<ButtonLink to="/venue/inventory/new" variant="primary">Add venue</ButtonLink>}
+            >
+              Add your first venue so Coordinators can find and book it.
+            </EmptyState>
+          )
         ) : (
           <>
-            {state.venues.length === 100 ? (
-              <p className="venue-search-hint">Showing the first 100 matching venues — refine your search to find others.</p>
+            {result.data.length === VENUE_LIST_LIMIT ? (
+              <p className="venue-search-hint">Showing the first {VENUE_LIST_LIMIT} matching venues. Refine your search to find others.</p>
             ) : null}
             <section className="venue-cards" aria-label="Venue catalogue">
-            {state.venues.map((venue) => (
-              <article key={venue.id}>
-                <header>
-                  <strong>{venue.name}</strong>
-                </header>
-                <p>{venue.location} · {venue.opens_at}–{venue.closes_at}</p>
-                <p>
-                  Capacity: {venue.max_capacity} · Layouts:{' '}
-                  {venue.supported_layouts.map((layout) => `${layout.label} (${layout.capacity})`).join(', ')}
-                </p>
-                <p><em>Facilities:</em> {venue.facilities.join(', ')}</p>
-                <p><em>Accessibility:</em> {venue.accessibility_features.join(', ')}</p>
-                {blockedRetire[venue.id] ? (
-                  <div role="alert" className="venue-alert-block">
-                    <AlertTriangle size={16} aria-hidden="true" /> Cannot retire — future bookings exist:
-                    <ul>
-                      {blockedRetire[venue.id].map((booking) => (
-                        <li key={`${booking.eventCode}-${booking.startsAt}`}>
-                          {booking.title} ({booking.eventCode ?? 'no code'}) — {new Date(booking.startsAt).toLocaleString()}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-                <div className="venue-card-actions">
-                  <Link to={`/venue/inventory/${venue.id}/edit`} className="secondary-action">Edit</Link>
-                  <button
-                    type="button" className="secondary-action" disabled={retiringId === venue.id}
-                    onClick={() => handleRetire(venue)}
-                  >
-                    {retiringId === venue.id ? 'Retiring…' : 'Retire'}
-                  </button>
-                </div>
-              </article>
-            ))}
+              {result.data.map((venue) => (
+                <VenueCard
+                  key={venue.id}
+                  venue={venue}
+                  onRetired={() => {
+                    setRetired(`Retired ${venue.name}. It no longer appears in venue search.`);
+                    reload();
+                  }}
+                />
+              ))}
             </section>
           </>
         )
       ) : null}
-    </main>
+    </PageLayout>
   );
 }
 
-export function AvailabilityCalendar() {
-  const [selectedVenue, setSelectedVenue] = useState(venues[0].id);
-  const cellsForVenue = useMemo(
-    () => bookings.filter(booking => booking.venueId === selectedVenue),
-    [selectedVenue],
-  );
-  const conflicts = cellsForVenue.filter(booking => booking.status === 'Blocked').length;
+function VenueCard({ venue, onRetired }: { venue: Venue; onRetired: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blocking, setBlocking] = useState<BlockingBooking[] | null>(null);
+  const headingId = useId();
+
+  async function retire() {
+    setBusy(true);
+    setError(null);
+    const result = await retireVenue(venue.id);
+    setBusy(false);
+    if (!result.ok) { setError(result.message); return; }
+    if (!result.data.retired) {
+      setBlocking(result.data.blockingBookings);
+      setConfirming(false);
+      return;
+    }
+    onRetired();
+  }
+
+  // The confirm step takes the card's place rather than nesting a card in it.
+  if (confirming) {
+    return (
+      <ConfirmPanel
+        title={`Retire ${venue.name}?`}
+        description={`${venue.name} (${venue.location}) will no longer appear in venue search. Its past bookings are kept.`}
+        confirmLabel="Retire venue"
+        danger
+        busy={busy}
+        error={error ?? undefined}
+        onConfirm={retire}
+        onCancel={() => { setConfirming(false); setError(null); }}
+      />
+    );
+  }
+
+  const list = (items: string[]) => items.join(', ');
   return (
-    <main className="venue-page">
-      <header className="venue-heading">
-        <p className="eyebrow">Venue staff</p>
-        <h1>Availability calendar</h1>
-      </header>
-      <label className="venue-select">
-        <span>Venue</span>
-        <select value={selectedVenue} onChange={event => setSelectedVenue(event.target.value)}>
-          {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
-        </select>
-      </label>
-      {conflicts > 0 ? (
-        <p className="venue-alert"><AlertTriangle size={16} aria-hidden="true" /> {conflicts} conflict(s) on this venue.</p>
-      ) : (
-        <p className="venue-ok"><CheckCircle2 size={16} aria-hidden="true" /> No conflicts on this venue.</p>
-      )}
-      <table className="venue-table">
-        <thead><tr><th>Booking</th><th>Event</th><th>Date</th><th>Window</th><th>Status</th></tr></thead>
-        <tbody>
-          {cellsForVenue.map(booking => (
-            <tr key={booking.id}>
-              <td><Link to={`/venue/bookings/${booking.id}`}>{booking.id}</Link></td>
-              <td>{booking.eventTitle}</td>
-              <td>{booking.date}</td>
-              <td>{booking.window}</td>
-              <td><span className={`status-pill status-${statusTone[booking.status]}`}>{booking.status}</span></td>
-            </tr>
-          ))}
-          {cellsForVenue.length === 0 ? (
-            <tr><td colSpan={5}>No bookings held for this venue in the current window.</td></tr>
-          ) : null}
-        </tbody>
-      </table>
-    </main>
+    <article className="card venue-card" aria-labelledby={headingId}>
+      <h2 id={headingId}>{venue.name}</h2>
+      <FactList
+        columns={2}
+        items={[
+          ['Location', venue.location],
+          ['Opening hours', `${venue.opens_at}–${venue.closes_at}`],
+          ['Max capacity', venue.max_capacity.toLocaleString('en-SG')],
+          ['Layouts', list(venue.supported_layouts.map((layout) => `${layout.label} (${layout.capacity})`))],
+          ['Facilities', list(venue.facilities)],
+          ['Accessibility', list(venue.accessibility_features)],
+        ]}
+      />
+      {blocking ? (
+        <Alert tone="warning" title="Can't retire this venue yet">
+          These future bookings still use it. Move or cancel them first:
+          <ul className="venue-blocking">
+            {blocking.map((booking) => (
+              <li key={`${booking.eventCode}-${booking.startsAt}`}>
+                {booking.title} ({booking.eventCode ?? 'no code'}), {formatDate(booking.startsAt, true)}
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      ) : null}
+      <div className="venue-card-actions">
+        <ButtonLink to={`/venue/inventory/${venue.id}/edit`} icon={<PencilLine size={14} aria-hidden="true" />}>Edit</ButtonLink>
+        <Button variant="danger" onClick={() => { setConfirming(true); setBlocking(null); }}>Retire…</Button>
+      </div>
+    </article>
   );
+}
+
+// E05-S03: the live calendar replaced the fixture table that used to live
+// here. The export name is kept so the /venue/availability route is unchanged.
+export function AvailabilityCalendar() {
+  return <VenueCalendar audience="venue" />;
 }
 
 export function PendingBookingDetail() {

@@ -54,6 +54,24 @@ deployment checks, notification cadence and E09/E06 integration remain explicit
 release work. Existing BDR T-60's scoped backend acceptance is respected; no new
 scope reduction was invented by this audit.
 
+## E14-S02 follow-up — 2 October 2026 (updated 7 October)
+
+The Sprint 1 audit above is historical; its commitment, counts and observed
+state remain unchanged. T-75 resolves the activity-log reader as an Event
+Coordinator viewing an event under existing permissions, with denial and
+deactivation evidence checked in the test database. T-76 transfers booking
+approval/rejection/release logging to E06-S04 and carries the remaining
+E14-S02 / SCRUM-86 work into Sprint 3 at the original 3-point estimate.
+
+PR #190 merged the Scenario 5 immutability slice on 2 October as `9d5ae60`.
+Its body states E14-S02 remains incomplete. Jira sync run 37018654001
+incorrectly transitioned SCRUM-86 from In Progress to Done; the live issue was
+restored to In Progress the same day. PR #192 merged on 3 October and records
+the remaining Sprint 3 scope: E14-S02 scenarios 1, 2 and 4 remain, while booking
+approval/rejection/release logging is owned by E06-S04 Scenario 5. This update
+records later progress without rewriting Sprint 1 delivery or its original
+estimates.
+
 ## Remaining Release 1 roadmap
 
 All rows below remain To Do. Fixture-backed screens or reusable foundations

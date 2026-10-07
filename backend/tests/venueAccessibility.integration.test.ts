@@ -14,6 +14,7 @@ import { createVenue, searchVenues } from '../src/modules/venueBooking/catalogue
 import { listAccessibilityFeatures, matchVenuesByAccessibility } from '../src/modules/venueBooking/matchAccessibility';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 type VenueBody = { id: string; accessibility_features: string[] };
 
@@ -31,8 +32,7 @@ test('E02-S03 Scenario 3: venue search excludes venues missing a recorded predef
   const org = randomUUID(), organiserId = randomUUID();
   let pool: Pool | undefined;
   try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
     await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));

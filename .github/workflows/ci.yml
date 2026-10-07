@@ -6,13 +6,19 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, edited, ready_for_review]
+  # Merge queue: GitHub builds a temporary merge commit for each queued PR and
+  # requires the same named checks on it. Without this trigger the checks never
+  # report and the queue entry times out. See docs/decisions/0012-merge-queue.md.
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || github.event.merge_group.head_ref || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,6 +46,15 @@ jobs:
             echo "::error::docs/testing/tc-coverage.md is stale. Re-run scripts/tc_coverage_audit.py and commit the result." >&2
             exit 1
           fi
+      - name: ADR-015 — no Supabase Auth SDK in application code
+        run: |
+          if grep -rE "from ['\"]@supabase/supabase-js['\"]|require\(['\"]@supabase/supabase-js['\"]\)" \
+            backend/src/ api/ frontend/src/ --include='*.ts' --include='*.tsx' --include='*.js' 2>/dev/null; then
+            echo "::error::ADR-015 violation: @supabase/supabase-js import found in application code. See docs/adr/ADR-015-cookie-sessions-not-supabase-auth.md" >&2
+            exit 1
+          fi
+      - name: docs/source-of-truth.md file references exist
+        run: python scripts/check_docs_freshness.py
       - name: Report scope
         if: always()
         run: |
@@ -54,12 +69,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 2
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Validate PR title and source branch
+      - name: List files the PR changes
+        # The checkout is the PR's merge commit; its first parent is the base
+        # tip, so this is exactly what the PR would add to main. Needs
+        # fetch-depth 2 (set on the checkout step above).
+        if: github.event_name == 'pull_request'
+        run: |
+          {
+            echo 'PR_CHANGED_FILES<<EOF'
+            git diff --name-only HEAD^1 HEAD
+            echo 'EOF'
+          } >> "$GITHUB_ENV"
+      - name: Validate PR title, source branch, body and protected files
         if: github.event_name == 'pull_request'
         run: python scripts/check_metadata.py pr
       - name: Explain non-PR run
         if: github.event_name != 'pull_request'
-        run: echo 'PR metadata is not applicable to this event.'
+        run: |
+          echo 'PR metadata is not applicable to this event.'
+          echo 'On merge_group the title and branch were already validated on the pull request itself; this job reports success so the required check is present on the merge commit.'

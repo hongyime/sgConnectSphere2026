@@ -28,30 +28,14 @@
 .venue-footer { display: flex; gap: 1rem; }
 .venue-footer a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--teal); text-decoration: none; font-size: 0.95rem; }
 
-.venue-inventory-heading {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "eyebrow action" "title action";
-  align-items: end;
-  column-gap: var(--space-4);
-}
-.venue-inventory-heading .eyebrow { grid-area: eyebrow; }
-.venue-inventory-heading h1 { grid-area: title; }
-.venue-inventory-heading .primary-action { grid-area: action; }
-
-.venue-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-.venue-cards article {
-  display: grid; gap: 0.3rem; align-content: start;
-  padding: var(--space-4); border: 1px solid var(--border); border-radius: 10px;
-  background: var(--surface); transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.venue-cards article:hover { border-color: var(--teal); box-shadow: 0 0 0 3px rgba(14, 124, 123, 0.11); }
-.venue-cards header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
-.venue-cards header strong { font-size: var(--text-lg); color: var(--ink); }
-.venue-cards p { margin: 0; font-size: 0.9rem; color: var(--ink); line-height: 1.5; }
-.venue-cards em { color: var(--muted); font-style: normal; font-weight: 700; }
-
-.venue-select { display: inline-flex; align-items: center; gap: 0.5rem; }
-.venue-select select { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.95rem; }
+/* Inventory (E05-S01/S02): page frame, facts, alerts and the confirm step
+   come from the shared blocks; these rules lay out the cards. */
+.venue-cards { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.card.venue-card { align-content: start; gap: var(--space-4); box-shadow: none; transition: border-color 0.15s ease; }
+.card.venue-card:hover { border-color: var(--teal); }
+.venue-card h2 { margin: 0; color: var(--ink); font-size: var(--text-lg); }
+.venue-blocking { margin: var(--space-2) 0 0; padding-left: 1.2rem; }
+.venue-live:empty { display: none; }
 
 .venue-search.card { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-4); }
 .venue-search label { flex: 0 0 auto; font-weight: var(--weight-medium); font-size: var(--text-base); color: var(--muted); }
@@ -62,17 +46,11 @@
 .venue-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
 .venue-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
 
-.venue-alert-block {
-  display: grid; gap: 0.3rem; padding: 0.75rem; margin: 0.5rem 0;
-  border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-weight: 600;
-}
-.venue-alert-block ul { margin: 0.25rem 0 0; padding-left: 1.2rem; font-weight: 500; }
+.venue-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
-.venue-card-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.card.venue-form { display: grid; gap: var(--space-5); box-shadow: none; }
 
-.venue-form { display: grid; gap: 1rem; max-width: 42rem; }
-
-.field-error { margin: 0.2rem 0 0; color: #b91c1c; font-size: 0.85rem; }
+.field-error { margin: 0.2rem 0 0; color: var(--red); font-size: var(--text-sm); }
 
 .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.4rem; }
 .tag-chip {
@@ -105,9 +83,115 @@
 .venue-table a { color: var(--teal); text-decoration: none; font-weight: 500; }
 
 .venue-detail-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.venue-detail-grid article { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.venue-detail-grid article { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
 .venue-detail-grid h2 { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--ink); }
 .venue-detail-grid dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.75rem; margin: 0; font-size: 0.9rem; }
 .venue-detail-grid dt { color: var(--muted); }
 
 .venue-decision-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+/* E05-S03 availability calendar. Each state pairs a colour with an icon and a
+   text label; blocks also get a hatched fill so a maintenance block never
+   reads as a booking. */
+.calendar-intro { margin: 0; color: var(--muted); font-size: var(--text-base); }
+
+.calendar-period { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.calendar-period h2 { margin: 0; font-size: var(--text-lg); color: var(--ink); text-align: center; flex: 1 1 10rem; }
+.calendar-period .secondary-action { display: inline-flex; align-items: center; gap: 0.25rem; }
+
+.calendar-range { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); }
+.calendar-range .ui-alert { flex-basis: 100%; }
+
+.calendar-legend { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+
+.calendar-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem; width: fit-content;
+  padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; white-space: nowrap;
+}
+.badge-free        { background: var(--green-soft); color: var(--green-ink); }
+.badge-tentative   { background: var(--amber-soft); color: var(--amber-ink); }
+.badge-confirmed   { background: var(--blue-soft); color: var(--blue); }
+.badge-blocked     { background: var(--red-soft); color: var(--red); }
+.badge-unavailable { background: var(--surface-strong); color: var(--muted); }
+
+.calendar-days { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+.calendar-day { padding: var(--space-3) var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.calendar-day h3 { margin: 0 0 var(--space-2); font-size: var(--text-base); color: var(--ink); }
+.calendar-day > ul { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.calendar-empty { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+
+.calendar-entry {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3);
+  padding: var(--space-2) var(--space-3); border-left: 4px solid var(--border); border-radius: var(--radius-control);
+  background: var(--surface-strong);
+}
+.entry-free        { border-left-color: var(--green); background: var(--surface); }
+.entry-tentative   { border-left-color: var(--amber); border-left-style: dashed; }
+.entry-confirmed   { border-left-color: var(--blue); }
+.entry-unavailable { border-left-color: var(--muted); }
+.entry-blocked {
+  border-left-color: var(--red);
+  background: repeating-linear-gradient(135deg, var(--red-soft) 0 8px, var(--surface) 8px 16px);
+}
+.calendar-time { min-width: 6.5rem; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink); font-size: var(--text-sm); }
+.calendar-text { color: var(--ink); font-size: var(--text-sm); }
+.calendar-reason { font-weight: 700; }
+
+.calendar-event-toggle {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--teal); font-weight: 700; font-size: var(--text-sm); text-align: left; text-decoration: underline;
+}
+.calendar-details {
+  flex-basis: 100%; display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem;
+  margin: var(--space-1) 0 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-control);
+  background: var(--surface); font-size: var(--text-sm);
+}
+.calendar-details dt { color: var(--muted); }
+.calendar-details dd { margin: 0; color: var(--ink); }
+
+@media (max-width: 560px) {
+  .calendar-period h2 { order: -1; flex-basis: 100%; }
+  .calendar-period .secondary-action { flex: 1 1 auto; justify-content: center; }
+  .calendar-time { min-width: 0; }
+}
+/* VenueBlockout additions */
+.venue-blockout-form {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.venue-blockout-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 0.75rem;
+  align-items: start;
+}
+@media (max-width: 720px) {
+  .venue-blockout-dates { grid-template-columns: 1fr 1fr; }
+  .venue-form-field-wide { grid-column: span 2; }
+}
+
+.venue-form-field { display: grid; gap: 0.35rem; }
+.venue-form-field label { font-size: 0.9rem; font-weight: 600; color: var(--muted); }
+.venue-form-field input[type="date"],
+.venue-form-field input[type="text"] {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: #fbfbfa;
+  color: var(--ink);
+}
+
+.venue-field-error { font-size: 0.82rem; color: var(--red); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: clip; }
+
+/* E06-S01: only content layout; shared blocks own controls and visual tokens. */
+.venue-search-form, .venue-search-results { display: grid; gap: var(--space-5); }
+.venue-search-form .field-checkbox { min-height: 40px; }
+.venue-search-results { min-width: 0; overflow-wrap: anywhere; }

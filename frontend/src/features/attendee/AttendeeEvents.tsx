@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 type PublishedEvent = { id: string; name: string; starts_at: string; ends_at: string; venue_name: string; venue_location: string };
 export function AttendeeEvents() {
@@ -8,8 +9,11 @@ export function AttendeeEvents() {
   const [signedOut, setSignedOut] = useState(false);
   const [revision, setRevision] = useState(0);
   const active = useRef<AbortController | null>(null);
-  const internal = window.location.pathname.startsWith('/internal/');
-  const raw = internal ? window.location.pathname.slice('/internal/planning/'.length) : window.location.pathname.slice('/attendee/events/'.length);
+  // Read the router's location, not window.location, so moving between event
+  // URLs re-renders this screen and loads the new event.
+  const { pathname } = useLocation();
+  const internal = pathname.startsWith('/internal/');
+  const raw = internal ? pathname.slice('/internal/planning/'.length) : pathname.slice('/attendee/events/'.length);
   let identifier = raw;
   try { identifier = decodeURIComponent(raw); } catch { /* Invalid IDs are refused by the server. */ }
   useEffect(() => {
@@ -38,17 +42,9 @@ export function AttendeeEvents() {
     finally { setBusy(false); }
   }
   return <main className="client-events">
-    <header><a href="/attendee/events">ConnectSphere · My registered events</a><h1>{internal ? 'Internal planning' : 'My registered events'}</h1>
+    {/* Brand link and Sign out come from the shared header (app/AppShell). */}
+    <header><h1>{internal ? 'Internal planning' : 'My registered events'}</h1>
       <p>Published event details for your registrations.</p>
-      {!signedOut && <button disabled={busy} onClick={async () => {
-        active.current?.abort(); setEvents([]); setBusy(true);
-        try {
-          const response = await fetch('/api/auth/session', { method: 'DELETE' });
-          if (!response.ok) throw new Error();
-          setSignedOut(true); setError('');
-        } catch { setError('Unable to sign out. Please try again.'); }
-        finally { setBusy(false); }
-      }}>Sign out</button>}
     </header>
     {busy && <p role="status">Loading…</p>}
     {error && <p role="alert">{error}</p>}

@@ -21,6 +21,7 @@ import {
 } from '../src/modules/venueBooking/catalogue';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 type VenueBody = {
   id: string; max_capacity: number; is_active: boolean; facilities: string[];
@@ -43,8 +44,7 @@ test(
   const org = randomUUID(), organiser = randomUUID(), coordinatorId = randomUUID();
   let pool: Pool | undefined;
   try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.

@@ -29,38 +29,207 @@
 .organiser-footer a { display: inline-flex; align-items: center; gap: 0.3rem; color: var(--teal); text-decoration: none; font-size: 0.95rem; }
 .organiser-footer .primary-action { color: #ffffff; }
 
-.organiser-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.organiser-filters button {
-  padding: 0.4rem 0.75rem; border: 1px solid var(--border); background: transparent;
-  border-radius: 6px; cursor: pointer; color: var(--ink); font-size: 0.9rem;
-}
-.organiser-filters button[aria-pressed="true"] { background: var(--teal); border-color: var(--teal); color: #ffffff; }
-
 .organiser-table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); background: var(--surface); }
 .organiser-table th, .organiser-table td { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
 .organiser-table th { background: rgba(15, 23, 42, 0.03); font-weight: 600; color: var(--ink); }
 .organiser-table a { color: var(--teal); text-decoration: none; font-weight: 500; }
 
-.organiser-detail-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.organiser-detail-grid article { padding: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
-.organiser-detail-grid h2 { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--ink); }
-.organiser-detail-grid dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.75rem; margin: 0; font-size: 0.9rem; }
-.organiser-detail-grid dt { color: var(--muted); }
-
-.organiser-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
-.organiser-timeline li { padding: 0.5rem 0.75rem; border-left: 3px solid var(--teal); background: rgba(15, 118, 110, 0.05); font-size: 0.9rem; }
-.organiser-timeline p { margin: 0.15rem 0 0; color: var(--ink); }
-.organiser-timeline span { color: var(--muted); }
-
-.organiser-alert {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.75rem 1rem; border-radius: 8px;
-  background: rgba(217, 119, 6, 0.10); color: #92400e;
-  border: 1px solid rgba(217, 119, 6, 0.35);
-}
-.organiser-alert a { color: #92400e; text-decoration: underline; font-weight: 600; }
-
 .organiser-form { display: grid; gap: 0.75rem; max-width: 40rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
 .organiser-form-row { display: grid; gap: 0.35rem; }
 .organiser-form label { font-weight: 600; font-size: 0.9rem; color: var(--ink); }
 .organiser-form textarea { padding: 0.5rem 0.6rem; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.95rem; resize: vertical; }
+
+/* Live request screens (dashboard, list, detail). Page frame, cards, facts,
+   states, table and chips come from the shared blocks (src/shared). */
+.organiser-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.organiser-section-heading h2 { margin: 0; font-size: var(--text-lg); }
+.organiser-section-heading a {
+  display: inline-flex; align-items: center; gap: var(--space-1);
+  color: var(--teal-dark); font-size: var(--text-sm); font-weight: var(--weight-medium); text-decoration: none;
+}
+.organiser-row { gap: var(--space-3); }
+.organiser-note { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+.organiser-status { display: inline-grid; justify-items: end; gap: var(--space-1); }
+.organiser-status small { color: var(--muted); font-size: var(--text-sm); }
+.organiser-alert-copy { margin: 0; }
+.organiser-detail-grid {
+  display: grid; gap: var(--space-4); align-items: start;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+.organiser-card-copy { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; color: var(--muted); }
+.organiser-card-copy a { color: var(--teal-dark); font-weight: var(--weight-semibold); }
+.organiser-timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-2); }
+.organiser-timeline li {
+  display: grid; gap: 2px; padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--teal); border-radius: 0 6px 6px 0; background: var(--teal-soft);
+}
+.organiser-timeline span { color: var(--muted); font-size: var(--text-sm); }
+
+@media (max-width: 720px) {
+  .organiser-row { flex-direction: column; align-items: flex-start; }
+  .organiser-status { justify-items: start; }
+}
+
+/* ChangeRequest + CancellationForm additions */
+.organiser-change-layout {
+  display: grid;
+  grid-template-columns: 1fr 22rem;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .organiser-change-layout { grid-template-columns: 1fr; }
+}
+
+.organiser-change-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.organiser-form-section {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.75rem;
+}
+.organiser-form-section h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.organiser-date-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+@media (max-width: 540px) {
+  .organiser-date-row { grid-template-columns: 1fr; }
+}
+
+/* The change and cancel forms' textareas had no rule and fell back to the
+   browser's monospace font and default border. */
+.organiser-form-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.organiser-form-row input[type="date"] {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 0.95rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.organiser-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.organiser-field-error {
+  font-size: 0.82rem;
+  color: var(--red);
+}
+.organiser-field-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.organiser-review-rail {
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  position: sticky;
+  top: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.organiser-review-rail h2 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+.organiser-review-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+  margin: 0;
+}
+.organiser-review-dl dt { color: var(--muted); }
+.organiser-review-dl dd { margin: 0; font-weight: 500; }
+
+.organiser-change-success {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--green-soft);
+  color: var(--green);
+}
+.organiser-change-success p { margin: 0; font-size: 0.95rem; color: var(--ink); }
+
+/* CancellationForm */
+.organiser-danger-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 10px;
+  background: var(--red-soft);
+  color: var(--red);
+}
+.organiser-danger-banner p { margin: 0; font-size: 0.92rem; color: var(--ink); flex: 1; }
+
+.organiser-cancel-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.organiser-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.organiser-cancelled-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: 10px;
+  background: var(--red-soft);
+  color: var(--red);
+}
+.organiser-cancelled-banner p { margin: 0; font-size: 0.95rem; color: var(--ink); }

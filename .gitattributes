@@ -9,3 +9,9 @@
 *.pdf binary
 *.woff binary
 *.woff2 binary
+
+# Continuity logs are dated bullets; when two branches both add entries, keep
+# both instead of writing conflict markers. GitHub ignores this attribute, so
+# it only helps local merges of the owner's consolidation PR (decision 0014).
+.agents/STATE.md merge=union
+.agents/JOURNAL.md merge=union

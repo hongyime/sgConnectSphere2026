@@ -108,12 +108,12 @@ Given I am signed in as an Attendee When I attempt to open an internal planning 
 
 - **Sprint**:
 - **Points**: 1
-- **BDR references**: T-08
+- **BDR references**: T-08, T-61
 - **Owner**:
 
 ### User story
 
-As a system user, I want to update my name, organisation and contact details so that ConnectSphere reaches me at the correct address.
+As a system user, I want to update my name, email and contact number so that ConnectSphere reaches me at the correct address.
 
 ### Acceptance criteria
 
@@ -135,11 +135,16 @@ Given I change my email address When the change is saved Then future notificatio
 
 ### Checklist
 
-- Update name, organisation and contact details and see them persist
+- Update name, email and contact number and see them persist
 - Be blocked from saving a malformed email address, with the field identified
 - Be blocked from taking an email address already in use
 - Receive subsequent notifications at the updated address
 - Not be able to change my own role from this screen
+- See my organisation displayed read-only, with a hint to contact my Coordinator for organisation changes (T-61)
+
+Organisation is read-only in Release 1 (T-61, confirmed 20 September 2026).
+Display the current organisation and guidance to contact the Coordinator. Profile
+editing must not rename or create organisations or change organisation membership.
 
 ## E01-S05 — Set my notification preferences
 
@@ -327,3 +332,84 @@ Given I am an Event Coordinator with events assigned to me When I attempt to dea
 - Have upcoming registrations released on deactivation (Attendees)
 - Be blocked from deactivating while I still hold assigned events (Coordinators)
 - Have the deactivation recorded in the activity log with actor and time
+
+## E01-S12 — Manage only the events assigned to me as an Event Coordinator
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-69, C-40, T-70, T-73, T-74, O-38
+- **Owner**:
+
+### User story
+
+As an Event Coordinator, I want my event list and event actions to cover only the events assigned to me so that I manage my own work and cannot act on a colleague's event by mistake.
+
+New story from the Week 7 Customer Changes (C-69). E01-S02 (Organiser isolation) is Done and stays Done; this story extends the same discipline to a second role rather than editing it (T-74). Venue availability (C-40, E05-S03) is unaffected: Coordinators still see every venue's calendar states, with other events' details withheld as E05-S03 Scenario 2 already requires. Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+
+### Acceptance criteria
+
+#### Scenario 1 — Own assigned events only
+
+Given events are assigned to me and to other Coordinators When I open my event list Then only the events assigned to me are shown
+
+#### Scenario 2 — Direct access to a colleague's event refused
+
+Given an event is assigned to another Coordinator When I navigate directly to its identifier or attempt any action on it Then access is refused, nothing about the event is revealed, and the attempt is recorded in the activity log
+
+#### Scenario 3 — Unassigned requests not visible to Coordinators
+
+Given requests are in the unassigned queue When I open my event list Then they are not shown, because the queue belongs to the Lead (assumes O-38)
+
+#### Scenario 4 — Venue calendars still visible
+
+Given other Coordinators' events hold venue bookings When I open a venue availability calendar Then the Free, Tentative, Confirmed and Blocked states are shown for every period while the other events' details are withheld, exactly as in E05-S03 Scenario 2
+
+#### Scenario 5 — Organiser isolation unchanged
+
+Given an Event Organiser for Client A is signed in When they open their event list Then E01-S02 Scenarios 1 to 3 hold unchanged
+
+### Checklist
+
+- See only the events assigned to me in my event list
+- Be refused, with the attempt logged, when opening or acting on another Coordinator's event
+- Not see the unassigned queue
+- Still see every venue's availability states with other events' details withheld
+- Confirm the Organiser's client isolation (E01-S02) is unchanged
+
+## E01-S13 — Sign in as an Event Coordinator Lead or Safety Officer
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-69, C-70, C-57, T-72, T-73, T-74, O-44
+- **Owner**:
+
+### User story
+
+As an Event Coordinator Lead or a Safety Officer, I want to sign in and land on the workspace for my role so that I can start on the queue of work that belongs to me.
+
+New story from the Week 7 Customer Changes (C-69, C-70) adding the sixth and seventh roles (T-72). E01-S01 (log in) is Done and stays Done; the two new roles' landing pages are this story rather than an edit to it (T-74). Accounts are pre-seeded like every other internal role (C-57). Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+
+### Acceptance criteria
+
+#### Scenario 1 — Lead lands on the unassigned queue
+
+Given I am a pre-seeded Event Coordinator Lead When I sign in with valid credentials Then I am taken to the unassigned queue (E03-S08) with the oversight view (E03-S10) one step away, and the navigation shows only the Lead's pages
+
+#### Scenario 2 — Safety Officer lands on the safety review queue
+
+Given I am a pre-seeded Safety Officer When I sign in with valid credentials Then I am taken to the list of events awaiting Operational Safety Check (E08-S06), and the navigation shows only the Safety Officer's pages
+
+#### Scenario 3 — One role per account
+
+Given a Lead or Safety Officer account exists When its role is inspected Then it holds exactly that one role and no Coordinator permissions, consistent with ADR-012 (assumes O-44)
+
+#### Scenario 4 — Existing roles' sign-in unchanged
+
+Given an Organiser, Coordinator, Venue Staff member, Technical Support Staff member and Attendee each sign in When they land Then each reaches the same dashboard as before this story, so E01-S01 Scenario 1 holds for all five existing roles
+
+### Checklist
+
+- Sign in as a Lead and land on the unassigned queue with the Lead's navigation
+- Sign in as a Safety Officer and land on the safety review queue with the Safety Officer's navigation
+- Confirm each new-role account holds exactly one role
+- Confirm the five existing roles still land where they did

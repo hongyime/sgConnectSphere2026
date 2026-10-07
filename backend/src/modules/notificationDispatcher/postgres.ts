@@ -5,9 +5,7 @@ import { inTransaction } from '../../database/pool.js';
 import { batchLimit, isDeliveryId } from './durable.js';
 import type { DurableDeliveryStore, SendClaim, SendLease } from './durable.js';
 
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-})[character]!);
+import { buildNotificationEmailHtml } from './emailTemplate.js';
 
 // Call with the SAME PoolClient that writes the business change. A rollback
 // then removes both the business change and its notification delivery.
@@ -34,7 +32,7 @@ export async function prepareCommittedDelivery(client: PoolClient, id: string) {
   const row = rows[0];
   if (!row) throw new Error('delivery_not_found');
   if (row.recipient_email === null && row.delivery_status === 'queued') {
-    const html = `<p>${escapeHtml(row.message).replace(/\r?\n/g, '<br>')}</p>`;
+    const html = buildNotificationEmailHtml(row.title, row.message);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email) || /[\r\n]/.test(row.title)) {
       throw new Error('invalid_retained_notification');
     }

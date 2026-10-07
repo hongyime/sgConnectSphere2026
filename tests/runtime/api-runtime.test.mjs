@@ -69,7 +69,7 @@ test('compiled health handler loads under Node and reports configuration without
   assert.equal(response.body.ok, true);
   assert.equal(response.body.app, 'sgconnectsphere');
   assert.deepEqual(response.body.readiness, {
-    app: true, supabase: false, upstashRedis: false, brevo: false, cronSecret: false, database: false,
+    app: true, upstashRedis: false, brevo: false, cronSecret: false, database: false,
   });
 });
 

@@ -8,11 +8,13 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 051026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 170926.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 170926.docx` |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 160926.xlsx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 031026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 031026.docx` |
+| Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 031026.xlsx` |
+| Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
 
 The Markdown authority for ADR/BDR was accepted in
@@ -63,6 +65,14 @@ The legacy `docs/testing/PROJECT TEST CASES.xlsx` remains the current input of
 Markdown authority. Regenerate `docs/testing/tc-coverage.md` whenever active,
 skipped or fixme test declarations change. Reconcile catalogue changes with that
 legacy audit input before claiming the generated inventory covers a new case set.
+The 2026-09-27 E11 routing update refreshed that compatibility input from the
+regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
+The activity-log scope update (T-75/T-76, approved 2 October, merged after the
+Week 7 PRs) is folded into the `CAA 031026` workbooks under the rule above and
+refreshes the compatibility input. It retains TC_E14S02_03/_06/_07 as retired
+history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
+retired catalogue rows as scaffold/skip; its row total is a strict inventory,
+not a count of current acceptance obligations.
 
 ## Requirement changes flow downstream
 
@@ -102,9 +112,14 @@ See [the Jira workflow](jira-agent-workflow.md) and
 
 ## Design and access practices
 
-Figma boards are proposals derived from these sources. Link them to stories,
-batch related screens, preserve existing boards, and pair desktop/mobile variants
-where appropriate. Keep role-specific flows identifiable.
+`design.md` at the repository root is the design-language authority for the
+frontend: tokens, building blocks, states, wording and accessibility rules.
+The shared skeleton in `frontend/src/shared/` implements it; where the two
+disagree, the difference is raised in `design.md` and resolved in review
+(ADR-017). Figma boards are proposals derived from these sources. Link them to
+stories, batch related screens, preserve existing boards, and pair
+desktop/mobile variants where appropriate. Keep role-specific flows
+identifiable.
 
 Each teammate uses their own Jira account or token. Keep real credentials,
 personal configuration, raw private API responses and machine-specific paths out

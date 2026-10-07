@@ -12,17 +12,40 @@ name: Vercel Deploy
 #   VERCEL_ORG_ID      Vercel team id (theprawnvercel)
 #   VERCEL_PROJECT_ID  Vercel project id (sgconnectsphere)
 #
-# Runs twice per event on purpose during the trial period: Vercel's own
-# git integration continues to deploy in parallel so we can compare outputs.
-# Once this workflow proves reliable, disable the git integration in the
-# Vercel dashboard so Actions becomes the single deploy path.
+# Actions is now the single deploy path. Vercel's own git integration is
+# switched off via "git": { "deploymentEnabled": false } in vercel.json, so
+# each push produces exactly one deployment instead of two. See
+# docs/decisions/0010-single-vercel-deploy-path.md and SCRUM-111.
+#
+# paths-ignore keeps documentation, repository tooling and agent-state commits
+# from consuming the Hobby-plan deployment allowance. Nothing under those
+# paths is ever served by the deployment. This job is NOT a required status
+# check, so a skipped run does not block a merge and no companion skip
+# workflow is needed (contrast docs/decisions/0007).
+#
+# Draft pull requests do not deploy. The first preview is built when the PR
+# is marked ready for review (the ready_for_review event) and on every push
+# after that while it stays out of draft. Sprint 2 retrospective action, see
+# the 3 October 2026 amendment in docs/decisions/0010.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - 'scripts/**'
+      - 'tooling/**'
+      - '**/*.md'
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
+      - '.agents/**'
+      - 'scripts/**'
+      - 'tooling/**'
+      - '**/*.md'
 
 permissions:
   # Only need to read the repo; the workflow authenticates to Vercel
@@ -39,6 +62,7 @@ concurrency:
 jobs:
   vercel-deploy:
     name: vercel-deploy
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -53,7 +77,7 @@ jobs:
 
       - name: Setup Node
         # Node 22 matches Vercel's default runtime for this project.
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -104,7 +128,7 @@ jobs:
       - name: Comment preview URL on the PR
         # Only fires for PR events, and only when the deploy step succeeded.
         if: github.event_name == 'pull_request' && steps.deploy.outputs.url != ''
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |

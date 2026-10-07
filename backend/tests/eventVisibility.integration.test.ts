@@ -7,6 +7,7 @@ import { Client } from 'pg';
 import { getEvent, listEvents, listNotifications, permittedDelivery, type Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 test('E01-S02: organisation isolation, colleagues, search, audit and notification delivery', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
@@ -20,8 +21,7 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
   let closeRuntime: (() => Promise<void>) | undefined;
   try {
     await db.query(`CREATE SCHEMA ${schema}`);
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.
     await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));
@@ -33,15 +33,29 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
       VALUES ($1, $2, 'organiser@example.test', 'unused', 'Organiser A', 'event_organiser'),
       ($3, $2, 'colleague@example.test', 'unused', 'Colleague A', 'event_organiser')`, [organiser, a, colleague]);
     await db.query(`INSERT INTO room_layouts (id, code, label) VALUES ($1, 'test-layout', 'Test layout')`, [a]);
-    await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id)
-      VALUES ($1, 'EVT-A02', $2, $3, 'Colleague conference', '[2027-01-01,2027-01-02)', 10, $3),
-      ($4, 'EVT-B01', $2, $5, 'Confidential conference', '[2027-01-01,2027-01-02)', 10, $3)`, [eventA, colleague, a, eventB, b]);
+    await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id, status)
+      VALUES ($1, 'EVT-A02', $2, $3, 'Colleague conference', '[2027-01-01,2027-01-02)', 10, $3, 'submitted'),
+      ($4, 'EVT-B01', $2, $5, 'Confidential conference', '[2027-01-01,2027-01-02)', 10, $3, 'submitted')`, [eventA, colleague, a, eventB, b]);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
       VALUES ($1, $2, 'organiser-b@example.test', 'unused', 'Organiser B', 'event_organiser')`, [organiserB, b]);
     await db.query('UPDATE events SET organiser_id = $1 WHERE id = $2', [organiserB, eventB]);
     await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, event_range, expected_attendance, layout_id)
       VALUES ($1, 'EVT-A01', $2, $3, 'Own workshop', '[2027-01-01,2027-01-02)', 10, $3)`, [ownEvent, organiser, a]);
     const query: Query = (sql, values) => db.query(sql, values);
+    // Production audit writers use human-readable actions, with the stable
+    // field_changed discriminator identifying status history (PR #141).
+    await db.query(`INSERT INTO audit_logs
+      (entity_type, entity_id, event_id, action, field_changed, old_value, new_value, occurred_at)
+      VALUES
+      ('event', $1, $1, 'Status changed to submitted', 'status', 'draft', 'submitted', '2026-01-01T00:00:00Z'),
+      ('event', $1, $1, 'Status changed to under_review', 'status', 'submitted', 'under_review', '2026-01-02T00:00:00Z'),
+      ('event', $1, $1, 'Coordinator assigned', 'coordinator_id', NULL, $3, '2026-01-02T00:00:00Z'),
+      ('event', $2, $2, 'Status changed to confirmed', 'status', 'planning', 'confirmed', '2026-01-03T00:00:00Z')`,
+      [eventA, eventB, organiser]);
+    const history = (await getEvent(query, user, 'EVT-A02')).statusHistory;
+    assert.deepEqual(history.map(row => [row.old_value, row.new_value]), [
+      ['draft', 'submitted'], ['submitted', 'under_review'],
+    ], 'status history includes real audit actions, in order, and excludes other events/fields');
     assert.deepEqual((await listEvents(query, user)).map(e => e.event_code).sort(), ['EVT-A01', 'EVT-A02']);
     assert.equal((await getEvent(query, user, 'EVT-A02')).creator_name, 'Colleague A');
     assert.deepEqual(await listEvents(query, user, 'Confidential'), []);
@@ -50,7 +64,7 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
     const before = (await db.query('SELECT clock_timestamp() AS time')).rows[0].time;
     await assert.rejects(getEvent(query, user, 'EVT-B01'), { status: 403 });
     await assert.rejects(getEvent(query, user, eventB), { status: 403 });
-    const audits = (await db.query('SELECT * FROM audit_logs ORDER BY occurred_at')).rows;
+    const audits = (await db.query('SELECT * FROM audit_logs WHERE occurred_at >= $1 ORDER BY occurred_at', [before])).rows;
     assert.equal(audits.length, 2);
     for (const audit of audits) {
       assert.equal(audit.actor_id, organiser); assert.equal(audit.event_id, eventB);

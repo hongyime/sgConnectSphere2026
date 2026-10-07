@@ -1,6 +1,6 @@
-// Typed fetch helpers for the venue catalogue API (E05-S01, E05-S02).
-// Every request sends the session cookie (credentials: 'same-origin');
-// there is no separate auth token, matching ADR-015.
+// Typed fetch helpers for the venue catalogue API (E05-S01, E05-S02), on the
+// shared apiCall (session cookie, ADR-015; safe error messages).
+import { apiCall, jsonRequest, type ApiResult } from '../../shared';
 
 export type VenueLayout = { label: string; capacity: number };
 
@@ -27,78 +27,32 @@ export type VenueInput = {
   supported_layouts: VenueLayout[];
 };
 
-export type VenueFieldErrors = Record<string, string[]>;
+// The 100-row cap on GET /api/venues: the inventory says when it is reached.
+export const VENUE_LIST_LIMIT = 100;
 
-export type ListVenuesResult =
-  | { ok: true; venues: Venue[] }
-  | { ok: false; message: string };
-
-export async function listVenues(search = ''): Promise<ListVenuesResult> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/venues?q=${encodeURIComponent(search)}`, { credentials: 'same-origin' });
-  } catch {
-    return { ok: false, message: 'Venues could not be loaded.' };
-  }
-  if (response.status === 401 || response.status === 403) {
-    return { ok: false, message: 'Sign in as venue staff to manage the catalogue.' };
-  }
-  if (!response.ok) {
-    return { ok: false, message: 'Venues could not be loaded.' };
-  }
-  const body = await response.json().catch(() => null);
-  return { ok: true, venues: Array.isArray(body?.venues) ? body.venues : [] };
+export async function listVenues(search = '', signal?: AbortSignal): Promise<ApiResult<Venue[]>> {
+  const result = await apiCall<{ venues?: unknown }>(
+    `/api/venues?q=${encodeURIComponent(search)}`, { signal }, 'Venues could not be loaded.');
+  if (!result.ok) return result;
+  return { ok: true, data: Array.isArray(result.data.venues) ? result.data.venues as Venue[] : [] };
 }
 
-export type GetVenueResult =
-  | { ok: true; venue: Venue }
-  | { ok: false; message: string };
-
-export async function getVenue(id: string): Promise<GetVenueResult> {
-  let response: Response;
-  try {
-    response = await fetch(`/api/venues?id=${encodeURIComponent(id)}`, { credentials: 'same-origin' });
-  } catch {
-    return { ok: false, message: 'The venue could not be loaded.' };
-  }
-  if (response.status === 401 || response.status === 403) {
-    return { ok: false, message: 'Sign in as venue staff to manage the catalogue.' };
-  }
-  if (!response.ok) {
-    return { ok: false, message: response.status === 404 ? 'Venue not found.' : 'The venue could not be loaded.' };
-  }
-  const body = await response.json().catch(() => null);
-  if (!body?.venue) return { ok: false, message: 'Venue not found.' };
-  return { ok: true, venue: body.venue };
+export async function getVenue(id: string, signal?: AbortSignal): Promise<ApiResult<Venue>> {
+  const result = await apiCall<{ venue?: Venue }>(
+    `/api/venues?id=${encodeURIComponent(id)}`, { signal }, 'The venue could not be loaded.');
+  if (!result.ok) return result;
+  return result.data.venue ? { ok: true, data: result.data.venue } : { ok: false, status: 404, message: 'Venue not found.' };
 }
 
-export type SaveVenueResult =
-  | { ok: true; venue: Venue }
-  | { ok: false; errors: VenueFieldErrors; message: string };
-
-async function submitVenue(body: Record<string, unknown>): Promise<SaveVenueResult> {
-  let response: Response;
-  try {
-    response = await fetch('/api/venues', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    return { ok: false, errors: {}, message: 'Service unavailable. Please try again.' };
+// A refused save keeps the server's per-field messages in `fieldErrors`.
+async function submitVenue(body: Record<string, unknown>): Promise<ApiResult<Venue>> {
+  const result = await apiCall<{ venue: Venue }>('/api/venues', jsonRequest('POST', body), 'Please correct the highlighted fields.');
+  if (!result.ok) {
+    if (result.code === 'name_in_use') return { ...result, message: 'A venue with this name already exists.' };
+    if (result.status === 0) return { ...result, message: 'Service unavailable. Please try again.' };
+    return result;
   }
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      return { ok: false, errors: {}, message: 'Sign in as venue staff to manage the catalogue.' };
-    }
-    if (payload?.error === 'name_in_use') {
-      return { ok: false, errors: payload.errors ?? {}, message: 'A venue with this name already exists.' };
-    }
-    return { ok: false, errors: payload?.errors ?? {}, message: 'Please correct the highlighted fields.' };
-  }
-  return { ok: true, venue: payload.venue };
+  return { ok: true, data: result.data.venue };
 }
 
 export function createVenue(input: VenueInput) {
@@ -111,34 +65,16 @@ export function updateVenue(id: string, input: VenueInput) {
 
 export type BlockingBooking = { eventCode: string | null; title: string; startsAt: string };
 
-export type RetireVenueResult =
-  | { ok: true; retired: true }
-  | { ok: true; retired: false; blockingBookings: BlockingBooking[] }
-  | { ok: false; message: string };
+export type RetireOutcome = { retired: true } | { retired: false; blockingBookings: BlockingBooking[] };
 
-export async function retireVenue(id: string): Promise<RetireVenueResult> {
-  let response: Response;
-  try {
-    response = await fetch('/api/venues', {
-      method: 'POST',
-      credentials: 'same-origin',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'retire', id }),
-    });
-  } catch {
-    return { ok: false, message: 'Service unavailable. Please try again.' };
+// E05-S01 Scenario 4: a venue with future bookings is not retired, and the
+// 409 lists the bookings in the way.
+export async function retireVenue(id: string): Promise<ApiResult<RetireOutcome>> {
+  const result = await apiCall<{ retired: true }>('/api/venues', jsonRequest('POST', { action: 'retire', id }), 'The venue could not be retired.');
+  if (result.ok) return { ok: true, data: { retired: true } };
+  if (result.status === 409 && result.code === 'future_bookings_exist') {
+    const blocking = result.details?.blockingBookings;
+    return { ok: true, data: { retired: false, blockingBookings: Array.isArray(blocking) ? blocking as BlockingBooking[] : [] } };
   }
-  const payload = await response.json().catch(() => null);
-  if (response.status === 409 && payload?.error === 'future_bookings_exist') {
-    return { ok: true, retired: false, blockingBookings: Array.isArray(payload.blockingBookings) ? payload.blockingBookings : [] };
-  }
-  if (!response.ok) {
-    return {
-      ok: false,
-      message: response.status === 401 || response.status === 403
-        ? 'Sign in as venue staff to manage the catalogue.'
-        : 'The venue could not be retired.',
-    };
-  }
-  return { ok: true, retired: true };
+  return result;
 }

@@ -8,6 +8,7 @@ import { attendeeEvents, publishEvent } from '../src/modules/attendeeVisibility/
 import { permittedDelivery } from '../src/modules/eventVisibility/service';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 
 test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation and audited planning denial', async () => {
@@ -19,8 +20,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
   const savedEnv = { ...process.env };
   let closeRuntime: (() => Promise<void>) | undefined;
   try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`); await db.query(`SET search_path TO ${schema}, public`);
     for (const migration of ['0001_connectsphere_schema.sql', '0002_event_visibility.sql', '0003_auth_sessions.sql', '0004_attendee_visibility.sql']) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
@@ -95,7 +95,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
     const before=(await db.query('SELECT clock_timestamp() AS time')).rows[0].time;
     const denied=await call(planning,{method:'GET',url:`/api/internal/planning?id=${event}`,headers:{cookie}});
     assert.equal(denied.status,403); assert.deepEqual(Object.keys(denied.body),['error']);
-    const audit=(await db.query("SELECT * FROM audit_logs WHERE actor_id=$1 AND event_id=$2 AND action='Access Denied'",[attendee,event])).rows[0];
+    const audit=(await db.query("SELECT * FROM audit_logs WHERE actor_id=$1 AND event_id=$2 AND action='Access Denied' AND entity_type='internal_planning' ORDER BY occurred_at DESC LIMIT 1",[attendee,event])).rows[0];
     assert.ok(audit); assert.ok(audit.occurred_at>=before);
     assert.equal((await call(api,{method:'GET',headers:{cookie:'cs_access=forged'}})).status,401);
     assert.equal((await call(session,{method:'DELETE',headers:{cookie,origin:'https://evil.example.test'}})).status,403);

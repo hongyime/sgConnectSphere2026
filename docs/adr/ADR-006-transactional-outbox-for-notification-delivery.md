@@ -1,7 +1,7 @@
 # ADR-006 — Transactional outbox for notification delivery
 
-- **Status:** Accepted
-- **Related BDR:** C-04, C-53, T-35, T-36, T-44
+- **Status:** Accepted (amended 3 October 2026, see end)
+- **Related BDR:** C-04, C-53, T-35, T-36, T-44, T-64
 
 ### Context
 
@@ -36,3 +36,51 @@ The application never writes to Redis directly. Only committed rows are ever pub
 - NOTIFICATION_DELIVERIES needs an index on delivery_status so the relay's poll stays cheap as the table grows.
 
 The outbox was adopted from the team's own architecture document during the architecture merge, and this record was not updated at the time. That gap is the reason ADR-006 and the C4 container diagram disagreed: the diagram showed six containers including an Outbox Relay while this record still described the two-step enqueue. Corrected in version 4.
+
+### Accepted extension: recipient selection and business hooks (2026-09-27)
+
+The repository owner approved BDR T-64 and the exact role/change matrix in
+[E11-S01](../backlog/release-1/E11-notifications-reminders.md). This extends the
+accepted outbox decision without adding a queue, provider or deployment secret.
+
+The business transaction locks and validates the affected event, captures its
+recipient links, writes the business change and audit, then creates each in-app
+notification and prepared email outbox row on the **same PoolClient**. Any failure
+before commit rolls all these writes back. Provider delivery remains asynchronous
+and cannot undo committed business data. Do not enqueue directly to Redis or send
+email from a business transaction.
+
+Selection includes the assigned Coordinator and waitlisted Attendees for public
+arrangement changes. Internal review/booking/equipment decisions follow the matrix
+and do not disclose planning content to attendees. The actor is excluded; system
+changes have no actor. Inactive, withdrawn and unrelated users are excluded.
+Attendee messages use published names and fixed public descriptions. Cancellation
+uses the pre-release recipient snapshot; a venue move includes old and new staff.
+
+Hooks take a stable logical change ID. A deterministic notification UUID derived
+from event, change and recipient lets the existing primary key arbitrate concurrent
+retries. Only the transaction that inserts a notification creates its email row.
+Status hooks use the committed audit identity. Real unchanged writes create no
+notification. Retry the whole business transaction after a database failure;
+do not swallow a notification exception and commit a partial write.
+
+Venue management must provide an explicit venue-to-staff assignment relationship
+and a trusted server-side resolver. The current schema has no such relationship;
+`decided_by` remains a decision actor. Until integration, hooks return unresolved
+venue IDs and emit a dependency warning while notifying the known recipients.
+This is incomplete Venue Staff coverage, not an all-staff fallback. The resolver
+validates active Venue Staff roles; browser-supplied recipient lists are never
+accepted as authoritative assignments.
+
+The reusable layer and existing event submission/status/edit transactions ship
+now. The [task ledger](../plans/e11-notification-hooks.md) assigns missing booking,
+equipment, publication/change, cancellation, waitlist and inbox integrations to
+their owning stories. Full E11-S01 acceptance and real provider delivery remain
+open until their corresponding evidence exists. No new migration is needed for
+this hook layer; the explicit Venue Staff relationship is follow-up schema work.
+
+### Amended 3 October 2026 for the Week 7 Customer Changes
+
+Tentative holds now expire (C-68, T-69), which is the first time-driven state change in the system: nothing a user does triggers it. T-69 places the expiry job on the existing Scheduler and Outbox Relay process rather than introducing a scheduler, so the container count in the C4 model stays at two background processes. On each poll the relay also runs `UPDATE venue_bookings SET status = 'expired' WHERE status = 'tentative' AND expires_at <= now() RETURNING ...` in one transaction with the notification and audit rows for each expired hold, so the outbox guarantee (notification row and business write commit together) holds for system-generated changes exactly as it does for user-generated ones. The 24-hour reminder (O-33) is a second query in the same poll keyed on `reminder_sent_at IS NULL AND expires_at <= now() + interval '24 hours'`. Both are idempotent by construction: the status change and the `reminder_sent_at` stamp are the guards, so a re-run after a crash produces no duplicate (TC_E06S05_06 step 3).
+
+The routing matrix in E11-S01 gains rows for the Event Coordinator Lead (queue entry, reassignment requests) and the Safety Officer (event enters Safety Review, safety decision). Neither role is a matrix column because nothing else routes to them; the resolver treats them as named recipients of those changes.

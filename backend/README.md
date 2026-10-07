@@ -121,6 +121,15 @@ live provider credentials, actual email delivery or complete browser journeys.
 
 Do not commit real provider tokens or service-role keys.
 
+## Database tests without a local PostgreSQL
+
+`backend/tests/deactivation.integration.test.ts` runs against the `test` schema
+in the shared Supabase project, inside a transaction that is always rolled back,
+so it needs no local database at all. Do not point any other database suite at
+Supabase. Several suites in `npm run test:db` have no loopback guard and will
+commit. Which ones, and how to keep `test` current, are in
+[Supabase test schema](../docs/testing/supabase-test-schema.md).
+
 ## Access and Identity
 
 The organiser and attendee event APIs use PostgreSQL-backed sessions. See

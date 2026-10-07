@@ -1,0 +1,47 @@
+/* E03-S07 edit form. Sections, alert and actions come from the shared
+   blocks (src/shared); these rules only add the header and locked-field look. */
+
+.card.event-edit-form {
+  gap: var(--space-5);
+  box-shadow: none;
+}
+
+.event-edit-header {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.event-edit-header h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-lg);
+}
+
+.event-edit-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.event-edit-locked > label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.event-edit-locked input,
+.event-edit-locked textarea {
+  border-style: dashed;
+  background: var(--surface-strong);
+  color: var(--muted);
+}
+
+.event-edit-header h2:focus,
+.event-edit-alert:focus {
+  outline: none;
+}
+
+.event-edit-form .field-control textarea {
+  min-height: 88px;
+}

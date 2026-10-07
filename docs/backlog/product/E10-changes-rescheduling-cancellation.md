@@ -42,7 +42,7 @@ Given the Coordinator approves my change request When it is applied Then the eve
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-05, T-16, B-05, B-11
+- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27
 - **Owner**:
 
 ### User story
@@ -53,7 +53,7 @@ As an Event Coordinator, I want the system to tell me when a change affects arra
 
 #### Scenario 1 — Attendance beyond capacity flagged
 
-Given an event has a confirmed venue When its expected attendance is increased beyond that venue's capacity Then the venue booking is flagged for review and the Venue Staff are notified
+Given an event has one or more confirmed venue bookings When its expected attendance is increased Then each venue booking whose governing headcount (the booking's own headcount where set, otherwise the event's attendance) now exceeds that venue's capacity is flagged for review, and the others are not (C-67; assumes O-27) and the Venue Staff are notified
 
 #### Scenario 2 — Description-only edit flags nothing
 
@@ -69,7 +69,7 @@ Given a venue change reduces the event's capacity below its registration count W
 
 #### Scenario 5 — Date change flags venue and equipment
 
-Given the event's date or time changes When the change takes effect Then its venue booking and equipment reservations are flagged as requiring reconfirmation
+Given the event's date or time changes When the change takes effect Then every one of its venue bookings and its equipment reservations are flagged as requiring reconfirmation
 
 ### Checklist
 
@@ -147,23 +147,37 @@ Given an Event Organiser attempts to cancel directly When they submit Then the a
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: -
+- **BDR references**: C-66, C-61, T-28, T-67, T-73, T-74, O-24, O-25
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want to be alerted when a venue becomes unavailable for one of my confirmed events so that I can arrange an alternative before Attendees are affected.
+As an Event Coordinator, I want to be alerted when a venue becomes unavailable for one of my events and to find and request a replacement from the event itself, so that I can arrange an alternative before Attendees are affected while the original event information is preserved.
+
+Returned to Release 1 by the Week 7 Customer Changes (C-66, T-67). The three-point estimate is carried from the original backlog and re-estimated at Sprint 3 planning (T-73). The alert itself is raised by E05-S06; this story is what the Coordinator does with it. Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Blocked venue flags the event
+#### Scenario 1 — Lost venue flags the event
 
-Given my event has a confirmed venue When Venue Staff block that venue over the event's period Then I am notified and the event is flagged as at risk
+Given my event has a Pending or Confirmed venue booking When Venue Staff mark that venue unavailable over the booking's period (E05-S06) Then I am notified, the booking shows as Conflicting on the event, and the event is flagged as needing alternative arrangements while its status and every other arrangement stay as they were (assumes O-24)
 
-#### Scenario 2 — At-risk event offers a new search
+#### Scenario 2 — Flagged event offers a replacement search
 
-Given my event is flagged as at risk When I open it Then the reason and the affected arrangement are shown and I can begin a new venue search from that screen
+Given my event is flagged When I open it Then the reason category, the period and the affected booking are shown, the original venue, dates and requirements are preserved, and I can start a venue search (E06-S01) for the same event from that screen
+
+#### Scenario 3 — Replacement requested without losing the original
+
+Given I have found a replacement venue When I submit a booking request for it (E06-S03) Then the request is created for the same event alongside the Conflicting booking, and I may cancel the Conflicting booking explicitly once the replacement is Confirmed; nothing is cancelled for me
+
+#### Scenario 4 — Organiser and Attendees told on the actual change
+
+Given I confirm a replacement venue When the venue of a Confirmed event changes Then the Organiser and registered Attendees are notified of the new venue through the existing venue-change routing (E11-S01), and not earlier (assumes O-25)
 
 ### Checklist
 
-_No checklist recorded._
+- Be notified when a venue I have booked is marked unavailable over my booking
+- See the reason, period and affected booking on the event, with the original event information intact
+- Start a venue search for the same event from the flagged event
+- Request a replacement venue while the Conflicting booking remains on the event until I cancel it
+- Confirm the Organiser and registered Attendees are told of the venue change only when it actually happens

@@ -25,6 +25,9 @@ test('TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and rel
   await page.reload();
   await expect(page.getByLabel('Full name')).toHaveValue('Alexandra');
   await expect(page.getByLabel('Contact number')).toHaveValue('9876 5432');
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('new@example.test');
+  await expect(page.getByText('Organisation: Client A')).toBeVisible();
+  await expect(page.getByText(/contact your Coordinator/)).toBeVisible();
 });
 
 test('TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected', async ({ page }) => {
@@ -45,6 +48,14 @@ test('TC_E01S01_01 — unauthenticated user signs in through existing session en
   let signedIn = false;
   await page.route('**/api/account/profile', route => route.fulfill(signedIn ? { json: { profile: initial } } : { status: 401, json: { error: 'Sign in to continue.' } }));
   await page.route('**/api/auth/session', async route => {
+    // The shared header (AppShell, #171) asks who is signed in with a GET on
+    // every page; answer it from the current state. Signing in must still POST.
+    if (route.request().method() === 'GET') {
+      await route.fulfill(signedIn
+        ? { json: { user: { id: 'u-1', email: 'alex@example.test', role: 'event_organiser', clientOrgId: 'c-1' } } }
+        : { status: 401, json: { error: 'Sign in to continue.' } });
+      return;
+    }
     expect(route.request().method()).toBe('POST'); signedIn = true;
     await route.fulfill({ json: { signedIn: true } });
   });

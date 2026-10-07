@@ -1,32 +1,8 @@
-import { AttendeeEvents } from './features/attendee/AttendeeEvents';
-import { EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback } from './features/attendee/AttendeeRegistration';
 import { useMemo, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
-import { LandingPage } from './features/landing/LandingPage';
-import { LoginPage } from './features/accessControl/LoginPage';
-import { PasswordRecovery } from './features/accessControl/PasswordRecovery';
-import { VerifyPage } from './features/accessControl/VerifyPage';
-import { PermissionDenied } from './features/access/PermissionDenied';
-import { RegisterForm } from './features/accessControl/RegisterForm';
-import { ProfileForm } from './features/accessControl/ProfileForm';
-import {
-  OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail, ClarificationResponse,
-} from './features/organiser/Organiser';
-import {
-  CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
-  DecisionPanel, PlanningWorkspace, ReadinessChecklist, FinalConfirmation,
-} from './features/coordinator/Coordinator';
-import {
-  VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail,
-} from './features/venue/Venue';
-import { VenueForm } from './features/venue/VenueForm';
-import {
-  EquipmentDashboard, EquipmentCatalogue, RequestQueue, ReservationDetail,
-  TechnicianAssignment, ConflictState,
-} from './features/support/Support';
-import {
-  AdminHome, UserManagement, RoleAssignment, AuditLogViewer,
-} from './features/admin/Admin';
+import { routes } from './app/routes';
+import { AppShell } from './app/AppShell';
+import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
 import {
   AlertTriangle,
   Bell,
@@ -55,9 +31,6 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ClientEvents } from './features/organiser/ClientEvents';
-import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
-import { OrganiserDrafts, OrganiserDraftEdit } from './features/organiser/OrganiserDrafts';
 
 type Tone = 'success' | 'warning' | 'info' | 'danger' | 'future' | 'neutral';
 
@@ -393,7 +366,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'venue-blockout',
         title: 'Venue Blockout',
-        story: 'Future',
+        story: 'E05-S04',
         tone: 'future',
         state: 'Later',
         mobile: 'Maintenance period form and conflict preview.',
@@ -546,7 +519,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'post-event-feedback',
         title: 'Post-event Feedback',
-        story: 'Future',
+        story: 'E09-S06',
         tone: 'future',
         state: 'Later',
         mobile: 'Rating and short comment after event completion.',
@@ -633,7 +606,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'user-management',
         title: 'User Management',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Search users and view role assignments.',
@@ -645,7 +618,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'role-assignment',
         title: 'Role Assignment',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Assign staff roles with approval trace.',
@@ -810,7 +783,7 @@ function PrototypeApp() {
             <a href="/register">Create Account</a>
             <IconButton icon={Search} label="Search screens" />
             <IconButton icon={SlidersHorizontal} label="Filter screens" />
-            <IconButton icon={Bell} label="Open notifications" />
+            <a href="/notifications" className="icon-button" aria-label="Open notifications"><Bell size={18} aria-hidden="true" /></a>
           </div>
         </header>
 
@@ -1012,59 +985,22 @@ function MobileFrame({ role, screen }: { role: RoleArea; screen: Screen }) {
 }
 
 function App() {
+  // Routes come from app/routes.tsx, the single route table. Signed-in pages
+  // share AppShell (header and navigation); public pages render alone.
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/forgot-password" element={<PasswordRecovery key="request" />} />
-      <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
-      <Route path="/register" element={<RegisterForm />} />
-      <Route path="/profile" element={<ProfileForm />} />
-      <Route path="/events" element={<ClientEvents />} />
-      <Route path="/events/*" element={<ClientEvents />} />
-      <Route path="/attendee/events" element={<AttendeeEvents />} />
-      {/* Without this route, event detail links and denied deep links fall through to the landing page. */}
-      <Route path="/attendee/events/*" element={<AttendeeEvents />} />
-      <Route path="/attendee/discover" element={<EventDiscovery />} />
-      <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
-      <Route path="/attendee/register/:eventCode" element={<RegisterForEvent />} />
-      <Route path="/attendee/withdraw/:eventCode" element={<WithdrawFromEvent />} />
-      <Route path="/attendee/feedback/:eventCode" element={<EventFeedback />} />
-      <Route path="/internal/*" element={<AttendeeEvents />} />
-      <Route path="/organiser" element={<OrganiserDashboard />} />
-      <Route path="/organiser/requests" element={<OrganiserRequestList />} />
-      <Route path="/organiser/requests/:eventCode" element={<SubmittedDetail />} />
-      <Route path="/organiser/requests/:eventCode/clarify" element={<ClarificationResponse />} />
-      <Route path="/organiser/new-request" element={<OrganiserRequestFlow />} />
-      <Route path="/organiser/drafts" element={<OrganiserDrafts />} />
-      <Route path="/organiser/drafts/:id" element={<OrganiserDraftEdit />} />
-      <Route path="/verify" element={<VerifyPage />} />
-      <Route path="/permission-denied" element={<PermissionDenied />} />
-      <Route path="/coordinator" element={<CoordinatorHome />} />
-      <Route path="/coordinator/queue" element={<CoordinatorReviewQueue />} />
-      <Route path="/coordinator/events/:eventCode" element={<CoordinatorRequestDetail />} />
-      <Route path="/coordinator/events/:eventCode/decide" element={<DecisionPanel />} />
-      <Route path="/coordinator/events/:eventCode/plan" element={<PlanningWorkspace />} />
-      <Route path="/coordinator/events/:eventCode/readiness" element={<ReadinessChecklist />} />
-      <Route path="/coordinator/events/:eventCode/confirm" element={<FinalConfirmation />} />
-      <Route path="/venue" element={<VenueDashboard />} />
-      <Route path="/venue/inventory" element={<VenueInventory />} />
-      <Route path="/venue/inventory/new" element={<VenueForm mode="create" />} />
-      <Route path="/venue/inventory/:venueId/edit" element={<VenueForm mode="edit" />} />
-      <Route path="/venue/availability" element={<AvailabilityCalendar />} />
-      <Route path="/venue/bookings/:bookingId" element={<PendingBookingDetail />} />
-      <Route path="/support" element={<EquipmentDashboard />} />
-      <Route path="/support/catalogue" element={<EquipmentCatalogue />} />
-      <Route path="/support/queue" element={<RequestQueue />} />
-      <Route path="/support/requests/:requestId" element={<ReservationDetail />} />
-      <Route path="/support/technicians" element={<TechnicianAssignment />} />
-      <Route path="/support/conflicts" element={<ConflictState />} />
-      <Route path="/admin" element={<AdminHome />} />
-      <Route path="/admin/users" element={<UserManagement />} />
-      <Route path="/admin/users/:userId/role" element={<RoleAssignment />} />
-      <Route path="/admin/audit" element={<AuditLogViewer />} />
+      {routes.filter(route => route.access === 'public').map(route => (
+        <Route key={route.path} path={route.path} element={route.element} />
+      ))}
+      <Route element={<AppShell />}>
+        {routes.filter(route => route.access === 'signed-in').map(route => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+      </Route>
+      {/* The design prototype has its own full-page layout. */}
       <Route path="/prototype" element={<PrototypeApp />} />
-      <Route path="*" element={<LandingPage />} />
+      {/* Unknown addresses show the landing page. */}
+      <Route path="*" element={routes.find(route => route.path === '/')?.element} />
     </Routes>
   );
 }

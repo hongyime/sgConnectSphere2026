@@ -1,3 +1,4 @@
+import notifications from '../../api/notifications/send.js';
 import { createServer } from 'node:http';
 import register from '../../api/auth/register.js';
 import session from '../../api/auth/session.js';
@@ -8,6 +9,7 @@ import internalPlanning from '../../api/internal/planning.js';
 import venues from '../../api/venues/index.js';
 
 const routes: Record<string, Record<string, typeof register>> = {
+  '/api/notifications': { GET: notifications, POST: notifications },
   '/api/auth/register': { POST: register },
   '/api/auth/session': { GET: session, POST: session, DELETE: session },
   '/api/auth/verify': { POST: session },
@@ -17,6 +19,7 @@ const routes: Record<string, Record<string, typeof register>> = {
   '/api/events': { GET: events, POST: events, PATCH: events, DELETE: events },
   '/api/attendee/events': { GET: attendeeEvents },
   '/api/internal/planning': { GET: internalPlanning },
+  '/api/equipment': { GET: venues, POST: venues },
   '/api/venues': { GET: venues, POST: venues },
 };
 
@@ -24,6 +27,8 @@ const routes: Record<string, Record<string, typeof register>> = {
 // so both auth flows keep shipping as one function on Vercel's Hobby plan.
 function rewrittenUrl(pathname: string, originalUrl: string): string {
   const tasks: Record<string, string> = {
+    '/api/equipment': 'equipment',
+    '/api/notifications': 'inbox',
     '/api/auth/verify': 'verify', '/api/auth/request-reset': 'request-reset', '/api/auth/reset-password': 'reset-password', // pragma: allowlist secret - route names
   };
   if (!tasks[pathname]) return originalUrl;
