@@ -16,9 +16,15 @@ seeded names.
 
 ## Set up first (about 5 minutes)
 
-You need Docker Desktop running and three Git Bash terminals at the repo root.
-Use a **local, disposable** database, never the shared one. The run changes
-EVT-3001 and EVT-3003, so every run starts from a fresh seed.
+**Prerequisites:** Node.js 22 or newer (the version CI uses), Docker Desktop
+running, and the dependencies installed once with `npm install` at the repo
+root, which covers both `frontend/` and `backend/`. You need three Git Bash
+terminals at the repo root. Use a **local, disposable** database, never the
+shared one. The run changes EVT-3001 and EVT-3003, so every run starts from a
+fresh seed.
+
+Each terminal keeps its own environment variables, so `LOCAL_DB` is set in
+**both** terminals 1 and 2 below. Set it to the same value in each.
 
 1. **Database (terminal 1).** Start a local PostgreSQL container once, with
    any password you like; it only listens on your own machine:
@@ -39,11 +45,17 @@ EVT-3001 and EVT-3003, so every run starts from a fresh seed.
 
    The last lines read `seeded … notifications`.
 
-2. **API (terminal 2):**
+2. **API (terminal 2).** Set `LOCAL_DB` again here, because terminal 1's
+   variable isn't visible in this terminal:
 
    ```bash
+   export LOCAL_DB="postgres://postgres:<local password>@127.0.0.1:55433/connectsphere_dev_stack"
    cd backend && DATABASE_URL="$LOCAL_DB" ADDITIONAL_ALLOWED_ORIGINS="http://127.0.0.1:5173" npx tsx src/dev.ts
    ```
+
+   If sign-in later fails and this terminal shows `DATABASE_URL is not
+   configured`, `LOCAL_DB` wasn't set here: stop the API, set it, and start
+   the API again.
 
    Wait for `Local API ready`. Without `ADDITIONAL_ALLOWED_ORIGINS`, sign-in
    is refused by the origin check.
