@@ -1,8 +1,8 @@
 // Playwright tests for /support/* routes (SCRUM-98). Six screens for the
 // Technical Support Staff role: equipment dashboard, catalogue, request
-// queue, reservation detail, technician assignment, and availability.
-// Catalogue uses an intercepted API; availability is live. Remaining screens use
-// support mock fixtures. The
+// queue, reservation detail, technician staffing (live, E07-S07), and availability.
+// Catalogue uses an intercepted API; technician staffing and availability are live.
+// Remaining screens use support mock fixtures. The
 // reservation-detail test exercises the shortfall-recording flow required
 // by E07-S04 Scenario 2. Availability calculations have dedicated E07-S03 tests.
 import { test, expect } from '@playwright/test';
@@ -42,10 +42,18 @@ test('reservation detail records a shortfall', async ({ page }) => {
   await expect(page.getByRole('status')).toContainText('Shortfall');
 });
 
-test('technician assignment lists available technicians', async ({ page }) => {
+// E07-S07 (SCRUM-150): the live staffing queue replaced the mock screen.
+test('technician staffing lists support requests needing a technician', async ({ page }) => {
+  await signInAs(page, 'technical_support_staff');
+  await page.route(/\/api\/venues\?task=staffing/, route => route.fulfill({ json: { requests: [{
+    id: '11111111-1111-4111-8111-111111111111', eventId: 'evt-1', eventCode: 'EVT-TC', eventTitle: 'Tech Conference 2026',
+    eventStatus: 'planning', description: '1 AV technician', startsAt: '2026-11-12T01:00:00.000Z',
+    endsAt: '2026-11-12T04:00:00.000Z', status: 'open', assignees: [],
+  }] } }));
   await page.goto('/support/technicians');
-  await expect(page.getByRole('heading', { name: 'Technician assignment' })).toBeVisible();
-  await expect(page.getByText('Priya Menon')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Technician staffing' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'EVT-TC Tech Conference 2026' })).toBeVisible();
+  await expect(page.getByText('Needs a technician').first()).toBeVisible();
 });
 
 test('legacy conflict route opens live equipment availability', async ({ page }) => {
