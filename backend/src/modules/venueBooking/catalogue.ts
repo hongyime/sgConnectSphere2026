@@ -210,11 +210,13 @@ async function replaceLookupLinks(client: PoolClient, venueId: string, input: Ve
 }
 
 const venueProjection = `v.id, v.name, v.location, v.max_capacity,
-  to_char(v.opens_at, 'HH24:MI') AS opens_at, to_char(v.closes_at, 'HH24:MI') AS closes_at, v.is_active`;
+  to_char(v.opens_at, 'HH24:MI') AS opens_at, to_char(v.closes_at, 'HH24:MI') AS closes_at, v.is_active,
+  v.setup_time_minutes, v.turnaround_time_minutes`;
 
 export type VenueRecord = {
   id: string; name: string; location: string; max_capacity: number;
   opens_at: string; closes_at: string; is_active: boolean;
+  setup_time_minutes: number; turnaround_time_minutes: number;
 };
 
 async function attachDetails(query: Query, venue: VenueRecord) {
@@ -310,14 +312,17 @@ export async function createVenue(database: Pool, user: AuthenticatedUser | unde
     return await inTransaction(database, async client => {
       const clientQuery: Query = (sql, values) => client.query(sql, values);
       const venueResult = await client.query<{ id: string }>(`
-        INSERT INTO venues (name, location, max_capacity, opens_at, closes_at)
-        VALUES ($1, $2, $3, $4, $5) RETURNING id
-      `, [input.name, input.location, input.max_capacity, input.opens_at, input.closes_at]);
+        INSERT INTO venues (name, location, max_capacity, opens_at, closes_at, setup_time_minutes, turnaround_time_minutes)
+        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+      `, [input.name, input.location, input.max_capacity, input.opens_at, input.closes_at,
+        input.setup_time_minutes ?? 0, input.turnaround_time_minutes ?? 0]);
       const venueId = venueResult.rows[0]!.id;
       await linkLookups(client, venueId, input);
       const venue = await attachDetails(clientQuery, {
         id: venueId, name: input.name, location: input.location, max_capacity: input.max_capacity,
         opens_at: input.opens_at, closes_at: input.closes_at, is_active: true,
+        setup_time_minutes: input.setup_time_minutes ?? 0,
+        turnaround_time_minutes: input.turnaround_time_minutes ?? 0,
       });
       return { status: 201, body: { venue } };
     });
@@ -361,6 +366,10 @@ async function detectAndMarkBufferConflicts(
   setupTimeMinutes: number,
   turnaroundTimeMinutes: number,
 ): Promise<Array<{ eventCode: string | null; title: string; startsAt: string; endsAt: string }>> {
+  // Flags the LATER booking of each newly-conflicting pair (vb2, which starts
+  // after vb1): the identifier, event and notification below must all refer
+  // to that same booking. DISTINCT collapses a booking paired against several
+  // earlier bookings so it is marked and notified exactly once.
   const conflicts = await client.query<{
     booking_id: string;
     event_id: string;
@@ -370,24 +379,24 @@ async function detectAndMarkBufferConflicts(
     ends_at: Date;
     coordinator_id: string | null;
   }>(
-    `SELECT
-      vb.id AS booking_id,
+    `SELECT DISTINCT
+      vb2.id AS booking_id,
       e.id AS event_id,
       e.event_code,
       e.title,
-      lower(vb.booking_range) AS starts_at,
-      upper(vb.booking_range) AS ends_at,
+      lower(vb2.booking_range) AS starts_at,
+      upper(vb2.booking_range) AS ends_at,
       e.coordinator_id
     FROM venue_bookings vb1
     JOIN venue_bookings vb2 ON vb2.venue_id = vb1.venue_id
       AND vb2.id != vb1.id
       AND vb2.status IN ('confirmed', 'pending')
-    JOIN events e ON e.id = vb1.event_id
+    JOIN events e ON e.id = vb2.event_id
     WHERE vb1.venue_id = $1
       AND vb1.status IN ('confirmed', 'pending')
       AND occupied_window(vb1.booking_range, $2, $3) && occupied_window(vb2.booking_range, $2, $3)
       AND lower(vb1.booking_range) < lower(vb2.booking_range)
-    ORDER BY lower(vb2.booking_range)`,
+    ORDER BY starts_at`,
     [venueId, setupTimeMinutes, turnaroundTimeMinutes],
   );
 
@@ -498,6 +507,7 @@ export async function updateVenue(database: Pool, user: AuthenticatedUser | unde
     const venue = await attachDetails(clientQuery, {
       id, name: input.name, location: input.location, max_capacity: input.max_capacity,
       opens_at: input.opens_at, closes_at: input.closes_at, is_active: current.is_active,
+      setup_time_minutes: newSetup, turnaround_time_minutes: newTurnaround,
     });
     return { status: 200, body: { venue, bufferConflicts } };
   });
