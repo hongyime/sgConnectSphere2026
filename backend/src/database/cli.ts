@@ -150,6 +150,20 @@ const users: SeedUser[] = [
     contactNumber: '+65 9400 0002',
   },
   {
+    key: 'coordLead',
+    email: 'coord_lead@connectsphere.com',
+    role: 'event_coordinator_lead',
+    fullName: 'Coordinator Lead',
+    contactNumber: '+65 9200 0003',
+  },
+  {
+    key: 'safetyOfficer',
+    email: 'safety_officer@connectsphere.com',
+    role: 'safety_officer',
+    fullName: 'Safety Officer',
+    contactNumber: '+65 9200 0004',
+  },
+  {
     key: 'attendeeA',
     email: 'attendee_a@example.com',
     role: 'attendee',

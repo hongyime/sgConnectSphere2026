@@ -1,6 +1,8 @@
 export const USER_ROLES = [
   'event_organiser',
   'event_coordinator',
+  'event_coordinator_lead',
+  'safety_officer',
   'venue_staff',
   'technical_support_staff',
   'attendee',
