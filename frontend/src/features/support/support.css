@@ -60,3 +60,67 @@
 .support-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .support-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
 .support-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
+
+/* E07-S07 technician staffing (TechnicianStaffing.tsx). */
+.support-subtle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.support-live:empty {
+  display: none;
+}
+
+.staffing-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.staffing-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.staffing-list li > div {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.staffing-list small {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.staffing-list .staffing-busy {
+  color: var(--ink);
+}
+
+.staffing-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+@media (max-width: 720px) {
+  .staffing-list li {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .staffing-actions {
+    justify-content: flex-start;
+  }
+}
