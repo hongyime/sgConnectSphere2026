@@ -20,6 +20,7 @@ import {
   listReassignments, requestReassignment, respondToReassignment,
   type AssignedEventDetail, type AssignedEventSummary, type Colleague, type Reassignment,
 } from './coordinatorApi';
+import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
 import './coordinator.css';
 
 // A refused read sends the Coordinator back to their dashboard.
@@ -232,6 +233,8 @@ export function RequestDetail() {
             <ReassignPanel key={event.id} event={event} onChanged={reload} />
           </section>
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
+          {/* E07-S06 (SCRUM-146): request technical support, or mark the event as needing none. */}
+          {SUPPORT_VISIBLE.includes(event.status) ? <TechnicalSupportCard key={`support-${event.id}`} eventCode={eventRef(event)} /> : null}
         </>
       ) : null}
     </PageLayout>
