@@ -1,21 +1,33 @@
 # Testing References
 
+E01-S01 has a [live login and recovery suite](login-recovery.md), including
+isolated PostgreSQL, API/provider tests, and desktop/mobile browser workflows.
+
 This folder holds testing plans and imported scaffolds that are useful for
 planning. The active runnable Playwright scaffold now lives in `tests/e2e/`,
 with this folder keeping the source reference copy.
 
 Do not implement story assertions in the reference copy under
-`frontend-verification-scaffold-v5/`. Update `docs/testing/PROJECT TEST
-CASES.xlsx` first, then regenerate/promote the matching `test.fixme()` stubs in
-`tests/e2e/` so the runnable scaffold remains traceable to the workbook.
+`frontend-verification-scaffold-v5/`. Update canonical `docs/testing/cases/`
+first, then update/promote the matching runnable tests. Regenerate dated XLSX
+exports with `scripts/export_testcases_xlsx.py`. The coverage auditor still reads
+the legacy undated workbook; catalogue changes must reconcile that input too.
 
-Current scaffold snapshot:
+Original scaffold snapshot (historical, not current execution results):
 
 - 11 Playwright spec files.
 - 227 `test.fixme()` case stubs from `PROJECT TEST CASES.xlsx`.
 - 454 skipped Playwright cases when run across desktop and mobile projects.
 - `github-workflow.example.yml` is an example only, not an active GitHub Actions
   workflow.
+
+At the Sprint 1 cutoff, `tc-coverage.md` inventories 230 IDs: 55 referenced by
+active test titles, 172 scaffold-only, and 3 without a test reference. This is
+23.9% title-linked automation, not an acceptance pass rate. Mocked E03/E09
+screens and conditional database tests can contribute IDs without completing
+their business stories. Deactivation and activity-log tests also contain real
+assertions without TC_ID titles. See the
+[delivery ledger](../backlog/sprint-1-delivery.md) for execution evidence and gaps.
 
 ## Traceability Standard
 
@@ -33,3 +45,20 @@ criterion has at least one test as stories are completed. The generated
 `test.fixme()` cases already include story IDs, acceptance criteria, test data,
 expected results, and steps; when a team member implements one, they should keep
 that traceability data instead of replacing it with an unlabelled test.
+
+## Execution records
+
+`docs/testing/runs/` holds one Markdown file per test run session. Record a run
+when it is used as evidence: cited in a pull request, offered as proof that a
+story meets its Definition of Done, or shown in a demo. Exploratory runs during
+development need no record, and CI runs are already covered by their Actions
+logs unless someone cites one. See
+[`docs/testing/runs/README.md`](runs/README.md) for the schema, filename
+convention, scope enum, and agent instructions. Use
+[`docs/testing/runs/TEMPLATE.md`](runs/TEMPLATE.md) as the copy-paste
+starting point.
+
+A future `scripts/export_test_runs_xlsx.py` will export all session records
+to an "Execution Records" sheet in the course deliverable workbook, following
+the same pattern as `scripts/export_testcases_xlsx.py` for the test-case
+catalogue.

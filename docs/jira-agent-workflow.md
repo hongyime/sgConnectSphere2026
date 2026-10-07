@@ -31,18 +31,22 @@ Use one of these methods, depending on what a teammate's agent supports:
 | Jira CSV import | Direct API access is unavailable | Generate a CSV from the source workbook and import through Jira UI. Useful as a safe first load. |
 | GitHub for Jira / automation rules | The team wants PRs to update progress | Use branch names, commit bodies, and PR descriptions containing Jira issue keys. |
 
-This session did not expose a Jira connector, so direct Jira issue creation was
-not available here. The workflow is still written so another teammate's agent can
-connect safely.
+REST access was used for the 20 September 2026 Sprint 1 reconciliation. Its
+results and evidence are recorded in [the delivery ledger](backlog/sprint-1-delivery.md).
 
 ## Backlog import source
 
 Use these primary files:
 
-- `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx`
-- `docs/BACKLOG DECISION REVIEW CAA 140926.docx`
-- `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`
-- `docs/testing/PROJECT TEST CASES.xlsx`
+- `docs/backlog/` (canonical Markdown, per-epic files under `release-1/` and `product/`)
+- `docs/CONNECTSPHERE BACKLOGS CAA 160926.xlsx` (generated export)
+- `docs/bdr/` (canonical decisions and clarifications)
+- `docs/adr/` (canonical architecture decisions)
+- `docs/testing/cases/` (canonical acceptance cases)
+- `docs/backlog/sprint-1-delivery.md` (audited delivery/contributor evidence)
+
+Dated XLSX and DOCX files are generated/historical views. See
+`docs/source-of-truth.md` for the legacy workbook used by the coverage tool.
 
 Suggested Jira mapping:
 
@@ -114,6 +118,23 @@ repository events:
 Do not auto-close or auto-transition issues to Done solely because a PR merged if
 the issue still lacks test evidence, design review, migration notes, or source
 document updates required by the definition of done.
+
+The Sprint 1 audit found a concrete false positive: PR #97's explanatory
+closing-clause examples caused SCRUM-42 (venue calendar) to be closed by the
+sync script. PR #78's similarly mislabelled branch is also not calendar work.
+Review the issue's actual story and accepted scope before applying a transition.
+An explicit body saying "partial" is not evidence that the whole story is Done.
+The current automation still needs this guard; see the delivery ledger's actions.
+
+The free Jira plan cannot run an automation rule that fills an empty Team or
+an empty assignee. `.github/workflows/jira-hygiene-sweep.yml` does that
+instead, every day at 00:00 Asia/Singapore, and on demand. It sets Team to
+IS212 when Team is empty, and sets an empty assignee to the reporter.
+Subtasks inherit Team from their parent, so the sweep does not write Team on
+a subtask. A Team that is already set is left alone. Run
+`python scripts/jira_hygiene_sweep.py` to preview, and add `--yes` to write.
+The scheduled run uses `--yes`. The first apply assigns every currently
+unassigned issue to its reporter.
 
 ## Agent operating checklist
 

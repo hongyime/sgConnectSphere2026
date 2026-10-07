@@ -1,13 +1,32 @@
+// SCRUM-40/SCRUM-41: integration tests for the venue catalogue module
+// against a real, disposable PostgreSQL schema (E05-S01 "Maintain the venue
+// catalogue", E05-S02 "Match layout requirements to venue capacity").
+//
+// Each numbered Scenario exercises one of the two stories' Given/When/Then
+// acceptance criteria end to end against real migrations, real rows and real
+// transactions, proving what venueCatalogue.test.ts's stubs cannot:
+// capacity-drop notification delivery, booking-conflict blocking, and the
+// layout duplicate/last-layout/search-boundary rules.
+//
+// Requires TEST_DATABASE_URL; run via `npm run test:db --workspace backend`.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client, Pool } from 'pg';
-import { createVenue, getVenue, retireVenue, searchVenues, updateVenue } from '../src/modules/venueBooking/catalogue';
+import {
+  addVenueLayout, createVenue, getVenue, removeVenueLayout, retireVenue,
+  searchVenues, updateVenue, updateVenueLayout,
+} from '../src/modules/venueBooking/catalogue';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
-type VenueBody = { id: string; max_capacity: number; is_active: boolean; facilities: string[] };
+type VenueBody = {
+  id: string; max_capacity: number; is_active: boolean; facilities: string[];
+  supported_layouts: Array<{ label: string; capacity: number }>;
+};
 
 function expectVenue(result: { status: number; body: unknown }): VenueBody {
   const body = result.body as Record<string, unknown>;
@@ -15,7 +34,9 @@ function expectVenue(result: { status: number; body: unknown }): VenueBody {
   return body.venue as VenueBody;
 }
 
-test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', async () => {
+test(
+  'E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S02_02 TC_E05S02_03 TC_E05S02_04 TC_E05S02_05 TC_E05S02_06 TC_E05S02_07 TC_E05S02_08: venue catalogue and layout scenarios against real PostgreSQL',
+  async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await db.connect();
@@ -23,8 +44,7 @@ test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', as
   const org = randomUUID(), organiser = randomUUID(), coordinatorId = randomUUID();
   let pool: Pool | undefined;
   try {
-    await db.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');
-    await db.query('CREATE EXTENSION IF NOT EXISTS btree_gist WITH SCHEMA public');
+    await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.
@@ -38,9 +58,20 @@ test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', as
       ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser'),
       ($3, $2, 'coordinator@example.test', 'unused', 'Coordinator', 'event_coordinator')`, [organiser, org, coordinatorId]);
 
-    const scopedUrl = new URL(process.env.TEST_DATABASE_URL!);
-    scopedUrl.searchParams.set('options', `-csearch_path=${schema},public`);
-    pool = new Pool({ connectionString: scopedUrl.toString() });
+    pool = new Pool({ connectionString: process.env.TEST_DATABASE_URL });
+    // Every new physical connection the pool opens must be told to use the
+    // disposable schema by running an actual SET command, not by passing
+    // `options=-c search_path=...` on the connection string: poolers like
+    // Supabase's silently drop that startup option, which previously let
+    // writes land in the real public schema instead of the disposable one
+    // (confirmed against a live Supabase project). This SET is not awaited
+    // (pg's Pool does not wait for 'connect' listeners before reusing the
+    // client), but that's safe here: client.query() writes its bytes to the
+    // socket synchronously when called, and this listener and whatever
+    // query the pool goes on to run both execute in the same tick with no
+    // `await` between them, so the SET's bytes always reach Postgres first
+    // and are processed in that order on this one connection.
+    pool.on('connect', client => { void client.query(`SET search_path TO ${schema}, public`); });
     // A Pool, not the single setup Client, because attachDetails() fires its
     // facility/accessibility/layout lookups concurrently via Promise.all.
     const query: Query = (sql, values) => pool!.query(sql, values);
@@ -71,6 +102,67 @@ test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', as
     const found = await searchVenues(query, coordinatorUser, 'Grand Ballroom');
     assert.equal(found.length, 1);
     assert.equal(found[0].id, grandBallroom.id);
+
+    // Regression: two supported_layouts entries that normalize to the same
+    // code (case/spacing-insensitive, matching the store's own slugify)
+    // must be rejected as a validation error, not misreported as the venue
+    // name being taken (createVenue) or crash unhandled (updateVenue) —
+    // both previously happened because the primary-key violation only
+    // surfaced once linkLookups() tried to insert both. Confirmed this bug
+    // live against Supabase before this fix landed.
+    const duplicateOnCreate = await createVenue(pool, staffUser, {
+      name: 'Duplicate Layout Test Venue', location: 'Somewhere', max_capacity: 300,
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Wifi'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Theatre', capacity: 200 }, { label: 'theatre', capacity: 250 }],
+    });
+    assert.equal(duplicateOnCreate.status, 400);
+    const duplicateOnCreateBody = duplicateOnCreate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateOnCreateBody.error, 'validation_failed');
+    assert.ok(duplicateOnCreateBody.errors.supported_layouts);
+    const noVenueCreated = await db.query(`SELECT id FROM venues WHERE name = 'Duplicate Layout Test Venue'`);
+    assert.equal(noVenueCreated.rows.length, 0, 'the rejected create must not have written a venue row');
+
+    const duplicateOnUpdate = await updateVenue(pool, staffUser, grandBallroom.id, {
+      supported_layouts: [{ label: 'Banquet', capacity: 100 }, { label: 'BANQUET', capacity: 120 }],
+    });
+    assert.equal(duplicateOnUpdate.status, 400);
+    const duplicateOnUpdateBody = duplicateOnUpdate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateOnUpdateBody.error, 'validation_failed');
+    assert.ok(duplicateOnUpdateBody.errors.supported_layouts);
+    const unchangedAfterRejectedUpdate = await getVenue(query, staffUser, grandBallroom.id);
+    assert.deepEqual(
+      [...unchangedAfterRejectedUpdate.supported_layouts].sort((a, b) => a.label.localeCompare(b.label)),
+      [{ label: 'Banquet', capacity: 200 }, { label: 'Theatre', capacity: 280 }],
+    );
+
+    // Same bug class, found in a follow-up audit: the duplicate-code check
+    // above was only ever added for supported_layouts, not generalised to
+    // facilities/accessibility_features, which have the identical
+    // venue_facilities/venue_accessibility_features primary-key collision
+    // shape. Confirmed live against Supabase before this fix landed.
+    const duplicateFacilityOnCreate = await createVenue(pool, staffUser, {
+      name: 'Duplicate Facility Test Venue', location: 'Somewhere', max_capacity: 300,
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Stage', 'STAGE'], accessibility_features: ['Ramp'],
+      supported_layouts: [{ label: 'Theatre', capacity: 200 }],
+    });
+    assert.equal(duplicateFacilityOnCreate.status, 400);
+    const duplicateFacilityBody = duplicateFacilityOnCreate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateFacilityBody.error, 'validation_failed');
+    assert.ok(duplicateFacilityBody.errors.facilities);
+    const noDuplicateFacilityVenueCreated = await db.query(`SELECT id FROM venues WHERE name = 'Duplicate Facility Test Venue'`);
+    assert.equal(noDuplicateFacilityVenueCreated.rows.length, 0);
+
+    const duplicateFeatureOnUpdate = await updateVenue(pool, staffUser, grandBallroom.id, {
+      accessibility_features: ['Wheelchair Access', 'wheelchair access'],
+    });
+    assert.equal(duplicateFeatureOnUpdate.status, 400);
+    const duplicateFeatureBody = duplicateFeatureOnUpdate.body as { error: string; errors: Record<string, string[]> };
+    assert.equal(duplicateFeatureBody.error, 'validation_failed');
+    assert.ok(duplicateFeatureBody.errors.accessibility_features);
+    const unchangedAfterRejectedFeatureUpdate = await getVenue(query, staffUser, grandBallroom.id);
+    assert.deepEqual([...unchangedAfterRejectedFeatureUpdate.accessibility_features], ['Wheelchair Access']);
 
     // Scenario 2: reducing capacity below a confirmed booking's expected attendance
     // flags that booking and notifies the assigned coordinator.
@@ -144,6 +236,116 @@ test('E05-S01: venue catalogue create/update/retire against real PostgreSQL', as
     assert.deepEqual(blockedBody.blockingBookings.map(booking => booking.eventCode), ['EVT-FUTURE']);
     const stillListed = await getVenue(query, staffUser, expoCenter.id);
     assert.equal(stillListed.is_active, true);
+
+    // Scenario 5: adding a new layout stores it against the venue without
+    // disturbing its existing layouts (TC_E05S02_01).
+    const layoutCapacity = (venue: VenueBody, label: string) =>
+      venue.supported_layouts.find(layout => layout.label === label)?.capacity;
+    const addedLayout = await addVenueLayout(pool, staffUser, grandBallroom.id, { label: 'Boardroom', capacity: 60 });
+    assert.equal(addedLayout.status, 201);
+    const withBoardroom = expectVenue(addedLayout);
+    assert.equal(layoutCapacity(withBoardroom, 'Boardroom'), 60);
+    assert.equal(layoutCapacity(withBoardroom, 'Theatre'), 280);
+    assert.equal(layoutCapacity(withBoardroom, 'Banquet'), 200);
+
+    // Venue Staff can view every layout supported by a venue with its
+    // maximum capacity (TC_E05S02_04).
+    const viewedLayouts = await getVenue(query, staffUser, grandBallroom.id) as unknown as VenueBody;
+    assert.deepEqual(
+      [...viewedLayouts.supported_layouts].sort((a, b) => a.label.localeCompare(b.label)),
+      [{ label: 'Banquet', capacity: 200 }, { label: 'Boardroom', capacity: 60 }, { label: 'Theatre', capacity: 280 }],
+    );
+
+    // Scenario 6: adding a layout that already exists (case-insensitive,
+    // via the same normalized code the venue was created with) warns
+    // instead of creating a duplicate row or overwriting its capacity
+    // (TC_E05S02_03).
+    const duplicateLayout = await addVenueLayout(pool, staffUser, grandBallroom.id, { label: 'theatre', capacity: 999 });
+    assert.equal(duplicateLayout.status, 200);
+    const duplicateBody = duplicateLayout.body as { warning: string };
+    assert.equal(duplicateBody.warning, 'layout_already_exists');
+    const theatreRowCount = (await db.query(`
+      SELECT count(*)::int AS count FROM venue_supported_layouts vl
+      JOIN room_layouts r ON r.id = vl.layout_id
+      WHERE vl.venue_id = $1 AND lower(r.label) = 'theatre'
+    `, [grandBallroom.id])).rows[0].count;
+    assert.equal(theatreRowCount, 1);
+    const unchangedVenue = await getVenue(query, staffUser, grandBallroom.id) as unknown as VenueBody;
+    assert.equal(layoutCapacity(unchangedVenue, 'Theatre'), 280);
+
+    // Scenario 7: editing a layout's capacity saves the new value, leaving
+    // its other layouts untouched (TC_E05S02_05).
+    const editedLayout = await updateVenueLayout(pool, staffUser, grandBallroom.id, 'Boardroom', { capacity: 55 });
+    assert.equal(editedLayout.status, 200);
+    const reopenedAfterEdit = await getVenue(query, staffUser, grandBallroom.id) as unknown as VenueBody;
+    assert.equal(layoutCapacity(reopenedAfterEdit, 'Boardroom'), 55);
+    assert.equal(layoutCapacity(reopenedAfterEdit, 'Theatre'), 280);
+    await assert.rejects(updateVenueLayout(pool, staffUser, grandBallroom.id, 'Nonexistent Layout', { capacity: 10 }), { status: 404 });
+
+    // Scenario 8: removing a layout drops it from the venue's list while its
+    // other layouts remain (TC_E05S02_06).
+    const removedLayout = await removeVenueLayout(pool, staffUser, grandBallroom.id, 'Boardroom');
+    assert.equal(removedLayout.status, 200);
+    const reopenedAfterRemove = await getVenue(query, staffUser, grandBallroom.id) as unknown as VenueBody;
+    assert.equal(layoutCapacity(reopenedAfterRemove, 'Boardroom'), undefined);
+    assert.equal(layoutCapacity(reopenedAfterRemove, 'Theatre'), 280);
+    assert.equal(layoutCapacity(reopenedAfterRemove, 'Banquet'), 200);
+    await assert.rejects(removeVenueLayout(pool, staffUser, grandBallroom.id, 'Boardroom'), { status: 404 });
+
+    // A venue must always keep at least one supported layout, the same
+    // invariant validateVenueInput enforces on create/full-update — removing
+    // a venue's last remaining layout is blocked rather than leaving it with
+    // zero, even though the removal endpoint bypasses that validator.
+    const removedBanquet = await removeVenueLayout(pool, staffUser, grandBallroom.id, 'Banquet');
+    assert.equal(removedBanquet.status, 200);
+    const lastLayoutBlocked = await removeVenueLayout(pool, staffUser, grandBallroom.id, 'Theatre');
+    assert.equal(lastLayoutBlocked.status, 409);
+    const lastLayoutBody = lastLayoutBlocked.body as { error: string };
+    assert.equal(lastLayoutBody.error, 'last_layout');
+    const stillHasTheatre = await getVenue(query, staffUser, grandBallroom.id) as unknown as VenueBody;
+    assert.equal(layoutCapacity(stillHasTheatre, 'Theatre'), 280);
+
+    // Scenario 9: a Coordinator's search for a layout + attendance excludes
+    // venues whose matching layout capacity falls short. Grand Ballroom's
+    // Theatre seats 280, Expo Center's seats 400.
+    const exactFit = await searchVenues(query, coordinatorUser, '', 'Theatre', 280);
+    assert.deepEqual(exactFit.map(venue => venue.id).sort(), [expoCenter.id, grandBallroom.id].sort());
+
+    // One seat over Grand Ballroom's Theatre capacity excludes it, but not
+    // Expo Center (TC_E05S02_08, the just-below boundary).
+    const oneOverGrandBallroom = await searchVenues(query, coordinatorUser, '', 'Theatre', 281);
+    assert.deepEqual(oneOverGrandBallroom.map(venue => venue.id), [expoCenter.id]);
+
+    // TC_E05S02_02: a clearly undersized Theatre requirement excludes Grand
+    // Ballroom, keeping only the venue that can actually seat it.
+    const undersized = await searchVenues(query, coordinatorUser, '', 'Theatre', 300);
+    assert.deepEqual(undersized.map(venue => venue.id), [expoCenter.id]);
+
+    // Venues with no Theatre layout at all (Boundary Hall only has Boardroom)
+    // never match a Theatre search, regardless of attendance.
+    const noTheatreLayout = await searchVenues(query, coordinatorUser, '', 'Theatre', 1);
+    assert.ok(!noTheatreLayout.some(venue => venue.id === boundaryVenue.id));
+
+    // Scenario 10 (regression): a suitable venue must still be found even
+    // when the name search matches more than 100 active venues. An earlier
+    // version of searchVenues fetched only the first 100 name-sorted rows
+    // via SQL and filtered THAT page for suitability in JavaScript, so a
+    // suitable venue ranked past the 100th name match was silently dropped
+    // by the LIMIT before its capacity was ever checked. Inserted directly
+    // (not via createVenue) so this proves the actual SQL join, not a JS
+    // simulation of it.
+    const theatreLayoutId = (await db.query(`SELECT id FROM room_layouts WHERE code = 'theatre'`)).rows[0].id;
+    const overflowTotal = 101;
+    for (let i = 1; i <= overflowTotal; i++) {
+      const venueId = randomUUID();
+      await db.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at)
+        VALUES ($1, $2, 'Test wing', 500, '08:00', '22:00')`, [venueId, `Overflow Venue ${String(i).padStart(3, '0')}`]);
+      // Only the alphabetically-last (101st) venue can actually seat 200.
+      await db.query(`INSERT INTO venue_supported_layouts (venue_id, layout_id, capacity) VALUES ($1, $2, $3)`,
+        [venueId, theatreLayoutId, i === overflowTotal ? 300 : 50]);
+    }
+    const overflowMatches = await searchVenues(query, coordinatorUser, 'Overflow Venue', 'Theatre', 200);
+    assert.deepEqual(overflowMatches.map(venue => venue.name), ['Overflow Venue 101']);
   } finally {
     if (pool) await pool.end();
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);

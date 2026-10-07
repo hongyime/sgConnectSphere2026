@@ -1,0 +1,5 @@
+/* Only the /ui-kit reference page; real screens use the shared blocks alone. */
+.ui-kit-heading {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-lg);
+}

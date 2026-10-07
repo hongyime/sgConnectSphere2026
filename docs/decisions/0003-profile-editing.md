@@ -5,15 +5,18 @@ contact_number only. Each is required. Email is trimmed and lowercased, validate
 and protected by the existing unique indexes. Keeping one's own email is allowed.
 Role, identity, organisation and security/admin fields are rejected, not persisted.
 
-## Organisation clarification / backlog blocker
+## Organisation scope resolved by T-61
 
-The primary test workbook TC_E01S04_01 describes changing Client A Pte Ltd to
-Client A Holdings. However, CLIENT_ORGANISATIONS is shared and USERS.client_org_id
-controls event access. No permission model distinguishes renaming a shared record,
-switching membership, or a separate authorised organisation-management workflow.
-The explicit E01-S04 clarification therefore makes organisation read-only. Display
-the existing relationship; do not rename, switch or create organisations. The original
-organisation-editing acceptance criterion remains blocked pending that decision.
+[T-61](../bdr/B-team-decisions.md), confirmed by Bryan on 20 September 2026,
+excludes organisation editing from Release 1. This resolves the earlier blocker;
+it does not grant permission to rename a shared CLIENT_ORGANISATIONS record or
+switch USERS.client_org_id, which controls event access.
+
+Display the existing organisation read-only with guidance to contact the
+Coordinator. Do not rename, switch or create organisations through this screen.
+A future organisation-management story requires a separate permission model.
+The backlog and TC_E01S04_01 now reflect this accepted scope. The live test is in
+`tests/e2e/profile.spec.ts`; the superseded organisation-editing scaffold is retired.
 
 ## Authentication and notification behaviour
 
@@ -23,9 +26,8 @@ the session. PUT also checks Origin against APP_URL, as the session endpoint doe
 Inactive and locked accounts cannot read or update their profile. Responses project
 only profile fields and contain no password hashes or security/admin state.
 
-The separate Supabase bearer-token adapter is not used by this cookie-based feature.
-That adapter currently maps users by email; changing local email does not update a
-Supabase identity. Reconciliation with that separate integration is outside E01-S04.
+Cookie sessions are the authentication strategy under ADR-015; profile editing
+does not introduce a separate identity provider or authentication mechanism.
 
 New notification deliveries join notifications.user_id to USERS.email when preparing
 the delivery. They use the new address after a successful update. Already prepared
@@ -45,7 +47,7 @@ now routes profile and existing session requests through the same API server.
   requires an explicit disposable TEST_DATABASE_URL. Exercises real migrations,
   sessions, persistence, uniqueness and future notification recipient preparation.
 - npm run test:e2e -- tests/e2e/profile.spec.ts: desktop/mobile UI tests with mocked APIs;
-  start the frontend first. These do not claim database or real email delivery coverage.
+  Playwright starts the frontend. These do not claim database or real email delivery coverage.
 - npm run typecheck and python scripts/check.py: type and repository hygiene checks.
 
 No new authentication system, organisation table, or profile email copy is introduced.

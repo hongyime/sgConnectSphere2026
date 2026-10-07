@@ -45,6 +45,116 @@ class MetadataTests(unittest.TestCase):
         ):
             self.assertFalse(metadata.check_branch(branch))
 
+    def test_protected_continuity_files_need_consolidation_title(self):
+        files = [".agents/STATE.md", "docs/x.md"]
+        ok, offending = metadata.check_changed_files(files, "docs(backlog): anything")
+        self.assertFalse(ok)
+        self.assertEqual(offending, [".agents/STATE.md"])
+        ok, offending = metadata.check_changed_files(files, "chore(agents): consolidate Sprint 2 state")
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+        ok, _ = metadata.check_changed_files([".agents/handoffs/20261003-docs-x.md", ".agents/handoffs/README.md"], "docs: x")
+        self.assertTrue(ok)
+
+    def test_local_protected_file_check_uses_consolidation_branch_prefix(self):
+        files = [".agents/STATE.md", ".agents/JOURNAL.md", "docs/x.md"]
+        ok, offending = metadata.check_local_changed_files(
+            files, "feature/SCRUM-42-user-profile"
+        )
+        self.assertFalse(ok)
+        self.assertEqual(offending, [".agents/STATE.md", ".agents/JOURNAL.md"])
+
+        ok, offending = metadata.check_local_changed_files(
+            files, "chore/agents-consolidate-sprint-3-close"
+        )
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+
+        ok, offending = metadata.check_local_changed_files(
+            ["docs/x.md"], "feature/SCRUM-42-user-profile"
+        )
+        self.assertTrue(ok)
+        self.assertEqual(offending, [])
+
+    def test_staged_files_cli_blocks_protected_files_on_ordinary_branch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-user-profile"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("state\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", ".agents/STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
+    def test_staged_files_cli_blocks_renaming_protected_file_on_ordinary_branch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-user-profile"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("state\n", encoding="utf-8")
+            subprocess.run(
+                ["git", "add", ".agents/STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "user.name=Test",
+                    "-c",
+                    "user.email=test@example.com",
+                    "commit",
+                    "-m",
+                    "fixture",
+                ],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "mv", ".agents/STATE.md", "state-copy.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
     def test_dependabot_exception_requires_bot_identity(self):
         self.assertFalse(metadata.check_branch("dependabot/pip/tooling/update"))
         self.assertTrue(metadata.check_branch("dependabot/pip/tooling/update", automated=True))
@@ -77,6 +187,183 @@ class MetadataTests(unittest.TestCase):
                 [sys.executable, str(SCRIPT), "commit-msg", str(message)], capture_output=True
             )
             self.assertEqual(result.returncode, 1)
+
+    def test_body_accepts_complete_template(self):
+        body = (
+            "## What and why\n\nBackground.\n\n"
+            "## Verification\n\nRan tests.\n\n"
+            "## Checklist\n\n- [x] Something\n\n"
+            "## Follow-ups\n\nNone."
+        )
+        ok, missing = metadata.check_body(body)
+        self.assertTrue(ok, msg=f"missing={missing}")
+
+    def test_body_rejects_stub_and_lists_missing_sections(self):
+        stub = "e01-s11 deactivate my account\n\nE09 dependency: ..."
+        ok, missing = metadata.check_body(stub)
+        self.assertFalse(ok)
+        self.assertEqual(
+            missing,
+            [
+                "## What and why",
+                "## Verification",
+                "## Checklist",
+                "## Follow-ups",
+            ],
+        )
+
+    def test_body_rejects_empty(self):
+        ok, missing = metadata.check_body("")
+        self.assertFalse(ok)
+        self.assertEqual(len(missing), 4)
+
+    def test_body_rejects_partial_template(self):
+        body = "## What and why\n\nSome context.\n\n## Verification\n\nRan tests."
+        ok, missing = metadata.check_body(body)
+        self.assertFalse(ok)
+        self.assertEqual(missing, ["## Checklist", "## Follow-ups"])
+
+    def test_body_ignores_headers_that_are_only_substrings(self):
+        # "### What and why" is a subsection, not a top-level header.
+        body = "### What and why\n\nsub."
+        ok, missing = metadata.check_body(body)
+        self.assertFalse(ok)
+        self.assertIn("## What and why", missing)
+
+    def test_body_bot_exemption(self):
+        ok, missing = metadata.check_body("", automated=True)
+        self.assertTrue(ok)
+        self.assertEqual(missing, [])
+
+    def test_staged_files_cli_allows_merge_with_protected_file_from_main(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            subprocess.run(
+                ["git", "-c", "init.defaultBranch=main", "init"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "switch", "-c", "main"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            protected = repo / ".agents" / "STATE.md"
+            protected.parent.mkdir()
+            protected.write_text("# Initial\n", encoding="utf-8")
+            (repo / "app.txt").write_text("v1\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Initial commit"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "switch", "-c", "feature/SCRUM-42-work"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            (repo / "feature.txt").write_text("work\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Add feature"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(["git", "switch", "main"], cwd=repo, check=True, capture_output=True)
+            protected.write_text("# Consolidated by owner\n", encoding="utf-8")
+            (repo / "app.txt").write_text("v2 from main\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "chore(agents): consolidate STATE.md"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "switch", "feature/SCRUM-42-work"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+            (repo / "app.txt").write_text("v3 from feature\n", encoding="utf-8")
+            subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com",
+                 "commit", "-m", "Work on feature branch"],
+                cwd=repo,
+                check=True,
+                capture_output=True,
+            )
+
+            subprocess.run(
+                ["git", "merge", "main"],
+                cwd=repo,
+                capture_output=True,
+            )
+            (repo / "app.txt").write_text("resolved\n", encoding="utf-8")
+            subprocess.run(["git", "add", "app.txt"], cwd=repo, check=True, capture_output=True)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+
+            protected.write_text("# Branch edited this\n", encoding="utf-8")
+            subprocess.run(["git", "add", ".agents/STATE.md"], cwd=repo, check=True, capture_output=True)
+
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "staged-files"],
+                cwd=repo,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.returncode, 1, msg=result.stdout + result.stderr)
+            self.assertIn(".agents/STATE.md", result.stdout)
+
+    def test_pr_event_body_gate(self):
+        good_body = (
+            "## What and why\n\nX.\n\n## Verification\n\nY.\n\n"
+            "## Checklist\n\n- [x] a\n\n## Follow-ups\n\nnone."
+        )
+        base_event = {"pull_request": {
+            "title": "feat(backend): a real change",
+            "head": {"ref": "feature/SCRUM-99-a-real-change"},
+            "user": {"login": "student", "type": "User"},
+            "body": good_body,
+        }}
+        with tempfile.TemporaryDirectory() as temporary:
+            event_file = Path(temporary) / "event.json"
+            event_file.write_text(json.dumps(base_event), encoding="utf-8")
+            good = subprocess.run(
+                [sys.executable, str(SCRIPT), "pr", str(event_file)], capture_output=True
+            )
+            self.assertEqual(good.returncode, 0, msg=good.stdout + good.stderr)
+
+            stub_event = json.loads(json.dumps(base_event))
+            stub_event["pull_request"]["body"] = "one-liner"
+            event_file.write_text(json.dumps(stub_event), encoding="utf-8")
+            bad = subprocess.run(
+                [sys.executable, str(SCRIPT), "pr", str(event_file)], capture_output=True
+            )
+            self.assertEqual(bad.returncode, 1)
+            self.assertIn(b"repository template", bad.stdout)
 
 
 if __name__ == "__main__":

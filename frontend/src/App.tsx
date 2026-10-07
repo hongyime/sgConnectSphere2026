@@ -1,5 +1,8 @@
-import { AttendeeEvents } from './features/attendee/AttendeeEvents';
 import { useMemo, useState } from 'react';
+import { Route, Routes } from 'react-router-dom';
+import { routes } from './app/routes';
+import { AppShell } from './app/AppShell';
+import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
 import {
   AlertTriangle,
   Bell,
@@ -28,8 +31,6 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { ClientEvents } from './features/organiser/ClientEvents';
-import { OrganiserRequestFlow } from './features/organiser/OrganiserRequestFlow';
 
 type Tone = 'success' | 'warning' | 'info' | 'danger' | 'future' | 'neutral';
 
@@ -365,7 +366,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'venue-blockout',
         title: 'Venue Blockout',
-        story: 'Future',
+        story: 'E05-S04',
         tone: 'future',
         state: 'Later',
         mobile: 'Maintenance period form and conflict preview.',
@@ -518,7 +519,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'post-event-feedback',
         title: 'Post-event Feedback',
-        story: 'Future',
+        story: 'E09-S06',
         tone: 'future',
         state: 'Later',
         mobile: 'Rating and short comment after event completion.',
@@ -605,7 +606,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'user-management',
         title: 'User Management',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Search users and view role assignments.',
@@ -617,7 +618,7 @@ const roleAreas: RoleArea[] = [
       {
         id: 'role-assignment',
         title: 'Role Assignment',
-        story: 'Future',
+        story: 'E01-S10',
         tone: 'future',
         state: 'Later',
         mobile: 'Assign staff roles with approval trace.',
@@ -697,12 +698,6 @@ function IconButton({ icon: Icon, label }: { icon: LucideIcon; label: string }) 
       <Icon size={18} aria-hidden="true" />
     </button>
   );
-}
-
-function App() {
-  if (window.location.pathname.startsWith('/attendee/events') || window.location.pathname.startsWith('/internal/')) return <AttendeeEvents />;
-  if (window.location.pathname === '/events' || window.location.pathname.startsWith('/events/')) return <ClientEvents />;
-  return <PrototypeApp />;
 }
 
 function PrototypeApp() {
@@ -788,12 +783,12 @@ function PrototypeApp() {
             <a href="/register">Create Account</a>
             <IconButton icon={Search} label="Search screens" />
             <IconButton icon={SlidersHorizontal} label="Filter screens" />
-            <IconButton icon={Bell} label="Open notifications" />
+            <a href="/notifications" className="icon-button" aria-label="Open notifications"><Bell size={18} aria-hidden="true" /></a>
           </div>
         </header>
 
         {viewMode === 'organiser-flow' ? (
-          <OrganiserRequestFlow getAccessToken={async () => null} />
+          <OrganiserRequestFlow prototype />
         ) : null}
 
         <section className={`role-hero accent-${activeRole.accent}`}>
@@ -986,6 +981,27 @@ function MobileFrame({ role, screen }: { role: RoleArea; screen: Screen }) {
         </footer>
       </div>
     </article>
+  );
+}
+
+function App() {
+  // Routes come from app/routes.tsx, the single route table. Signed-in pages
+  // share AppShell (header and navigation); public pages render alone.
+  return (
+    <Routes>
+      {routes.filter(route => route.access === 'public').map(route => (
+        <Route key={route.path} path={route.path} element={route.element} />
+      ))}
+      <Route element={<AppShell />}>
+        {routes.filter(route => route.access === 'signed-in').map(route => (
+          <Route key={route.path} path={route.path} element={route.element} />
+        ))}
+      </Route>
+      {/* The design prototype has its own full-page layout. */}
+      <Route path="/prototype" element={<PrototypeApp />} />
+      {/* Unknown addresses show the landing page. */}
+      <Route path="*" element={routes.find(route => route.path === '/')?.element} />
+    </Routes>
   );
 }
 

@@ -24,7 +24,14 @@ not a successful skipped check. Application checks will be added with the stack.
 
 ## Branches and commits
 
-Create one short-lived branch per logical change, off an up-to-date `main`:
+Create one short-lived branch per user story (or one focused maintenance task),
+off an up-to-date `main`. Aim for branches that last roughly 1-3 days, including
+review. Do not keep a personal, sprint-long or combined frontend+backend
+integration branch. If a story is too large, split it into independently
+reviewable increments and keep the parent story open until all acceptance
+criteria are validated. Separate backend and frontend PRs for one story, each
+with its own Jira ticket (for example SCRUM-32 as #141 backend plus #147
+frontend), count as independently reviewable increments:
 
 ```text
 git switch main
@@ -63,22 +70,29 @@ the team deliberately updates the PR title convention.
 2. Implement and run `python scripts/check.py` plus relevant application checks
    once those exist. Add regression tests for meaningful bug fixes.
 3. Open a draft PR into `main`, using the template. CI runs on drafts too.
-4. Resolve failing checks, update the branch with `main`, clear merge conflicts,
-   and inspect the diff. Do not request review while the PR is conflicted,
-   behind `main`, or failing required checks.
+4. Resolve failing checks and clear merge conflicts, then inspect the diff. Do
+   not request review while the PR is conflicted or failing required checks.
+   The PR does not need to be up to date with `main`: the merge queue tests it
+   against the latest `main` when it is queued.
 5. Mark ready for review only after GitHub shows no merge conflicts and the
    latest commit has green required checks, or checks are queued from that latest
    commit.
 6. Have another teammate review the behaviour and test evidence. Answer significant
    findings or fix them. No AI review service is used.
-7. Enable squash auto-merge after the PR is review-ready. GitHub will merge after
-   CI and one valid human approval, then delete the feature branch.
+7. Once approved with conversations resolved, press **Merge when ready**. That
+   adds the PR to the merge queue, which builds it on top of the latest `main`
+   and any PRs ahead of it, re-runs the required checks on that merge commit,
+   squash-merges on green and deletes the branch. If the queue removes the PR
+   (a check failed against the combined changes, or it conflicts with a PR
+   ahead of it), the timeline says why; fix and queue again. See
+   [decision 0012](docs/decisions/0012-merge-queue.md).
 
-Review approvals are intentionally requested late. Branch protection dismisses
-or invalidates approvals after new commits, so asking for review before conflict
-resolution or branch updates makes teammates review the same PR twice.
+Branch protection still dismisses approvals after new commits, so finish your
+own changes before asking for review. You no longer have to merge `main` in
+first; that was the step that forced repeat approvals in Sprint 2.
 
-Required checks are `repository-checks`, `pr-conventions`, and `lfs-guard`.
+Required checks are `repository-checks`, `pr-conventions`, `lfs-guard` and
+`application-checks`. They run on the PR and again on its queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
@@ -92,27 +106,75 @@ A product backlog item is considered done only when all of these conditions are 
 
 - Acceptance criteria stated in the user story are satisfied.
 - Automated tests pass, including unit, integration, or end-to-end coverage where
-  relevant to the change.
-- Manual verification passes where the story needs human UI or workflow checking.
-- Code has been peer-reviewed by at least one other developer.
+  relevant to the change. Acceptance criteria that involve persistence or
+  interactions between features are evidenced by real-database or end-to-end
+  runs, labelled as such in the PR; mocked tests alone do not satisfy them.
+- Unit tests cover the new and changed code at 100%, including boundary and
+  error cases, or the PR states why a gap cannot be covered.
+- Integration and manual end-to-end tests are run before the Sprint Review
+  using the test case template in `docs/testing/cases/`, and each run is logged
+  in `docs/testing/runs/` with the tester, date and outcome (T-65).
+- Code and its test cases have been reviewed by at least one other developer,
+  who checks that the code works and that the tests are correct and valid, not
+  faked. AI-generated code and tests are inspected by a human before review.
 - Peer review was requested only after the PR was review-ready: no merge
   conflicts, up to date with `main`, and required checks passing or queued for
   the latest commit.
-- Security, accessibility, and UI criteria are satisfied where applicable.
-- Documentation and architecture are updated where the change affects setup,
-  interfaces, decisions, backlog interpretation, or team workflow.
-- The item is deployable and integrated into the increment through the reviewed
-  pull-request process.
+- Documentation, architecture views and project logs are updated where the
+  change affects setup, interfaces, decisions, backlog interpretation, or team
+  workflow.
+- The item is merged into `main` through the reviewed pull-request process.
 
 An item that does not meet all Definition of Done conditions is not counted as
-complete. Return it to the product backlog or keep it open in review until the
-missing condition is resolved.
+complete and returns to the Product Backlog.
+
+A story marked Done stays Done. If a Done story later needs a fix or a change,
+create a new user story for it and record what went wrong and how the team
+prevents it (instructor guidance of 6 October 2026).
+
+Non-functional criteria (security, accessibility, performance, UI) and public
+deployment are not part of this Definition of Done; `design.md` remains a team
+standard for screens. See `docs/plans/instructor-guidance-2026-10-06.md` for
+the instructor guidance behind these conditions.
+
+## AI-assisted work and sprint discipline
+
+Generate and change code in small user-story increments. Use sprint time to
+review behaviour, test acceptance criteria and audit test quality, including
+code generated earlier. Use targeted fixes and update affected diagrams and
+API/design documents when the implementation changes.
+
+Generated code, placeholders, passing CI or a merged PR alone do not make a
+story ready or done. Team audit and acceptance validation are required. A PR
+may be technically ready for review under the checklist above while its parent
+story remains incomplete; label partial scope explicitly.
+
+Keep sprint lengths consistent. Do not routinely shorten, extend or reschedule
+a sprint. A proposed change before or after a sprint must explain what changed
+in the team's process and how metrics remain interpretable. During a sprint,
+change duration only for an exceptional circumstance and record the reason.
+If validated work finishes early through AI assistance, the team may close the
+sprint early and adapt subsequent planning; record the actual duration and do
+not compare raw velocity directly with a different-length sprint.
+
+Preserve original commitments, estimates and actual Jira timestamps. Discuss
+early mistakes and corrective actions in class reviews and retrospectives;
+do not rewrite history or count generated scope as delivered work.
+
+See [the instructor-guidance review](docs/plans/instructor-guidance-2026-09-28.md)
+for the current repository implications.
 
 ## Shared practices
 
 - Review and stage intended files; keep credentials, `.env`, dependency folders,
   build outputs, and local databases out of Git. Commit placeholder `.env.template`
   files when configuration is known, plus dependency lockfiles and migrations.
+- Every PR gets a **postplan**: a small standalone HTML review uploaded to
+  `postplan.dev` and linked as a top-level PR comment. See
+  [creating a postplan](docs/contributing/creating-a-postplan.md) for the full
+  workflow. Reviewers can skim the shape of a change and its evidence without
+  opening the diff, which matters most when a teammate is reviewing outside
+  their usual scope.
 - Keep frontend and backend configuration separate. Anything bundled into the
   frontend is public; private credentials belong on the server.
 - Keep real secrets out of Git. Document safe placeholder names in `.env.template`

@@ -10,8 +10,36 @@ on:
       - "package.json"
       - "package-lock.json"
       - "playwright.config.ts"
+      - "playwright.auth.config.ts"
       - "vercel.json"
       - ".github/workflows/application-checks.yml"
+  # Also run on pushes to main so post-merge build failures are visible
+  # in the Actions log. Teammates without Vercel dashboard access read
+  # this run to debug a red Vercel status.
+  push:
+    branches:
+      - main
+    paths:
+      - "api/**"
+      - "backend/**"
+      - "frontend/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
+      - "playwright.auth.config.ts"
+      - "vercel.json"
+      - ".github/workflows/application-checks.yml"
+  # Merge queue. GitHub does not support `paths:` on merge_group, so every
+  # queued PR runs the full suite against its merge commit, including docs-only
+  # PRs. The repository is public, so Actions minutes are free; the cost is
+  # queue latency. The companion skip workflow must NOT listen on merge_group:
+  # two same-named checks on one commit would make the required status
+  # ambiguous. See docs/decisions/0012-merge-queue.md.
+  merge_group:
+    types: [checks_requested]
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -47,7 +75,7 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
@@ -57,6 +85,75 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Backend unit tests including registration and login
+        run: npm test --workspace backend
+
+      - name: Frontend component tests
+        run: npm test --workspace frontend
+
+      - name: E07-S03 equipment availability PostgreSQL acceptance
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test backend/tests/equipmentAvailability.integration.test.ts
+
+      - name: Login and recovery PostgreSQL acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npm run test:auth:db --workspace backend
+
+      - name: E11-S01 transactional notification recipient acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npm run test:event-notifications:db --workspace backend
+
+      - name: SCRUM-110 migration 0005 PostgreSQL roundtrip
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/eventLifecycle.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-42 venue availability calendar PostgreSQL acceptance test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/venueCalendar.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-32 coordinator assignment PostgreSQL acceptance test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/coordinatorAssignment.integration.test.ts tests/coordinatorNotifications.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-43 venue block PostgreSQL acceptance test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/venueBlocks.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-33 clarification PostgreSQL acceptance test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/clarification.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-34 decision PostgreSQL acceptance test
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/decision.integration.test.ts
+        working-directory: backend
+
+      - name: Equipment catalogue and event request PostgreSQL acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/equipmentCatalogue.integration.test.ts tests/equipmentRequests.integration.test.ts
+        working-directory: backend
+
+      - name: Technical support request and technician staffing PostgreSQL acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/supportRequests.integration.test.ts tests/staffAssignments.integration.test.ts
+        working-directory: backend
 
       - name: Build
         run: npm run build
@@ -76,6 +173,11 @@ jobs:
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
+
+      - name: Login and recovery desktop and mobile browser tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npm run test:e2e:auth
 
       - name: Playwright scaffold
         run: npm run test:e2e:scaffold

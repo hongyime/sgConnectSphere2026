@@ -2,6 +2,10 @@
 
 React + Vite browser application scaffold for the ConnectSphere operations UI.
 
+**Building a screen for your story?** Read [the frontend guide](../docs/frontend-guide.md)
+and open `/ui-kit` in the running app: it shows every shared building block and
+links to four page templates you can copy (ADR-017).
+
 ## Commands
 
 Run from the repository root:

@@ -1,81 +1,127 @@
 # Source of truth and derivative documentation
 
-This guide tells human contributors and AI agents how to treat ConnectSphere
-product documents, Markdown summaries, Figma boards, Jira issues, and future code.
+GitHub Markdown is authoritative for ConnectSphere's backlog, architecture
+decisions, backlog decisions, and acceptance test cases. Jira, spreadsheets,
+Word exports, Figma notes, and PostPlans follow those sources.
+
+## Current authoritative sources
+
+| Domain | Authority | Export / history |
+| --- | --- | --- |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 051026.xlsx` |
+| Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 031026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 031026.docx` |
+| Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 031026.xlsx` |
+| Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
+| Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
+
+The Markdown authority for ADR/BDR was accepted in
+[repository decision 0005](decisions/0005-adr-bdr-markdown-authority.md).
+Earlier wording naming Word files as primary is superseded by that decision.
+`ADR-015` now means **cookie sessions**, not the historical copy-forward rule.
+
+The product directory contains the full imported product view, including stories
+also selected for Release 1. It is not an additional set of release stories.
+For a selected story, use `release-1/` for its release requirements and planning
+metadata; reconcile its product view when those requirements change. Count each
+story ID once. At the 20 September 2026 audit there are 71 distinct product
+stories, of which 47 are in Release 1.
 
 ## Authority order
 
-1. Primary product sources:
-   - `docs/CONNECTSPHERE BACKLOGS CAA 140926.xlsx`
-   - `docs/BACKLOG DECISION REVIEW CAA 140926.docx`
-   - `docs/ARCHITECTURE DECISION RECORDS CAA 140926.docx`
-   - `docs/testing/PROJECT TEST CASES.xlsx`
-2. Recorded repository decisions:
-   - `docs/decisions/`
-   - architecture Markdown under `docs/`
-3. Derivative planning views:
-   - Markdown summaries and implementation plans
-   - Figma proposal boards
-   - Jira issues created from the primary sources
-4. Implementation artifacts:
-   - frontend, backend, migrations, tests, and CI created after the relevant
-     decisions are recorded
+1. Canonical Markdown requirements and accepted decisions above.
+2. Merged code, tests, PR review records and recorded verification establish
+   delivery against those requirements. A merged PR alone does not satisfy the
+   [Definition of Done](../CONTRIBUTING.md#definition-of-done).
+3. Jira, generated exports, planning summaries, Figma and PostPlans are views of
+   that evidence. A Jira Done flag does not override missing acceptance criteria.
 
-The Word and Excel files are not temporary attachments. Do not delete them, do
-not replace them with Markdown-only summaries, and do not treat generated
-Markdown as higher authority when the source documents disagree.
+Keep scope, implementation progress and verification distinct. Fixture-backed UI
+can complete an explicitly scoped prototype task while its business story remains
+open. A strict TC_ID inventory is not a test execution report or a proof that every
+acceptance criterion is satisfied.
 
-## When source documents change
+## Generated exports and historical snapshots
 
-When a teammate updates a Word or Excel source file, the next agent touching the
-related area should do a small reconciliation pass:
+Generate exports from Markdown:
 
-1. Identify which source file changed and what section, sheet, or story changed.
-2. Update the matching Markdown interpretation only if the source change affects
-   team decisions, backlog scope, acceptance criteria, testing, design, or
-   implementation work.
-3. Note contradictions instead of silently resolving them. If the source and
-   Markdown disagree, the pull request should say which file was treated as
-   primary.
-4. Keep generated exports or summaries scoped. Do not commit private notes,
-   personal paths, local tokens, or tool caches.
+```text
+python scripts/export_backlog_xlsx.py
+python scripts/export_testcases_xlsx.py
+python scripts/export_adr_bdr_docx.py
+```
 
-## Mapping sources to repo docs
+Use the repository tooling environment when the system Python lacks the pinned
+document libraries. Do not hand-edit exported workbooks or Word files. Retain
+older dated copies as history. A new export uses today's `CAA DDMMYY` suffix;
+same-day regeneration replaces that day's export. Update the table above in the
+same PR when publishing a new dated export. A newer export date does not make a
+binary file higher authority than its Markdown source.
 
-| Source | Update these derivatives when relevant |
-| --- | --- |
-| Product backlog workbook | Jira backlog, `docs/design/figma-wireframe-refinement-plan.md`, testing plans, implementation tickets |
-| Backlog decision review Word doc | user roles, feature scope, future backlog labels, definition of done, release boundaries |
-| Architecture decision records Word doc | `docs/decisions/`, `docs/architecture.md`, `docs/modular-monolith-architecture.md`, `docs/db_schema.md` |
-| Test cases workbook | testing README, scaffold reference tests, Jira acceptance evidence |
+The legacy `docs/testing/PROJECT TEST CASES.xlsx` remains the current input of
+`scripts/tc_coverage_audit.py`. This is a tooling dependency, not a reversal of
+Markdown authority. Regenerate `docs/testing/tc-coverage.md` whenever active,
+skipped or fixme test declarations change. Reconcile catalogue changes with that
+legacy audit input before claiming the generated inventory covers a new case set.
+The 2026-09-27 E11 routing update refreshed that compatibility input from the
+regenerated dated workbook so TC_E11S01_10 through TC_E11S01_16 are included.
+The activity-log scope update (T-75/T-76, approved 2 October, merged after the
+Week 7 PRs) is folded into the `CAA 031026` workbooks under the rule above and
+refreshes the compatibility input. It retains TC_E14S02_03/_06/_07 as retired
+history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
+retired catalogue rows as scaffold/skip; its row total is a strict inventory,
+not a count of current acceptance obligations.
 
-Markdown is useful because reviewers, CI, and agents can diff it. It is still a
-derivative view unless it records an accepted team decision in `docs/decisions/`.
+## Requirement changes flow downstream
 
-## Design and Figma rules
+1. Amend canonical backlog Markdown and record scope decisions in `docs/bdr/`.
+2. Update affected architecture, C4 diagrams, user flows and Figma notes.
+3. Update canonical acceptance cases and relevant runnable tests.
+4. Regenerate affected exports and coverage inventory with their generators.
+5. After the backlog change merges, reconcile Jira descriptions, estimates,
+   priorities and sprint assignments. Record changed issue keys in a follow-up
+   PR, or explicitly record that no Jira changes were needed.
 
-Figma boards are design proposals derived from the source documents. They should
-link back to backlog stories or Jira issues once those exist.
+Do not introduce a scope change simultaneously in Jira and an unmerged backlog
+PR. Progress corrections based on **already merged** requirements, decisions,
+reviews and code can be applied during an evidence audit; record the reason,
+before/after state and actual correction date.
 
-Use controlled Figma passes:
+## Jira and contribution evidence
 
-- batch related screens together instead of repeatedly fetching or writing one
-  frame at a time;
-- preserve existing boards unless a team decision says to replace them;
-- keep desktop and mobile variants paired when the workflow is user-facing;
-- separate role-specific boards so Organiser, Coordinator, Venue Staff,
-  Technical Support, and Attendee flows can be reviewed independently.
+- Preserve original sprint commitments and estimates when reporting delivery.
+  Historical re-estimates and later additions must be labelled; do not present
+  their sum as comparable sprint velocity or individual productivity.
+- Attribute implementation using commits and PR descriptions as well as the
+  opener. A teammate may open or integrate someone else's PR. Assignee is the
+  accountable owner, not a complete contributor list.
+- Duplicates and superseded items retain their history but are excluded from
+  delivered-scope counts, even if the workflow represents closure as Done.
+- Reopen partial scope or missing review/verification rather than silently
+  weakening acceptance criteria. Add source links and a concise explanation.
+- Use the actual Agile API sprint timestamps. A sprint whose end date has passed
+  may still be active until the team completes it in Jira. Do not backdate a
+  present-day correction to make a historical burndown look better.
+- Do not infer completion from an issue key in an example, an unrelated branch
+  name, or a body saying that only partial scope was delivered.
 
-## Jira and progress rules
+See [the Jira workflow](jira-agent-workflow.md) and
+[Sprint 1's reconciliation record](backlog/sprint-1-delivery.md).
 
-Jira should be populated from the primary source documents, then kept in sync
-with repository evidence:
+## Design and access practices
 
-- backlog fields come from the Excel backlog and Word decision review;
-- definition of done comes from the decision review and testing plan;
-- progress evidence comes from linked branches, commits, pull requests, and
-  review/test notes;
-- team members use their own Jira accounts or tokens. Never share or commit
-  Jira credentials.
+`design.md` at the repository root is the design-language authority for the
+frontend: tokens, building blocks, states, wording and accessibility rules.
+The shared skeleton in `frontend/src/shared/` implements it; where the two
+disagree, the difference is raised in `design.md` and resolved in review
+(ADR-017). Figma boards are proposals derived from these sources. Link them to
+stories, batch related screens, preserve existing boards, and pair
+desktop/mobile variants where appropriate. Keep role-specific flows
+identifiable.
 
-See `docs/jira-agent-workflow.md` for the concrete agent workflow.
+Each teammate uses their own Jira account or token. Keep real credentials,
+personal configuration, raw private API responses and machine-specific paths out
+of committed files and public PostPlans. Preserve historical source documents;
+flag contradictions with a source reference rather than silently deleting them.

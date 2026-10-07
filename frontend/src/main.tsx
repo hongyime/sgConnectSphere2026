@@ -1,12 +1,13 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ProfileForm } from './features/accessControl/ProfileForm';
+import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
-import { RegisterForm } from './features/accessControl/RegisterForm';
 import './styles.css';
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>
-    {window.location.pathname === '/register' ? <RegisterForm /> : window.location.pathname === '/profile' ? <ProfileForm /> : <App />}
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
   </StrictMode>,
 );

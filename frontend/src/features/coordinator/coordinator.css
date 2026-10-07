@@ -1,0 +1,472 @@
+.coordinator-page {
+  max-width: 68rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  display: grid;
+  gap: 1.5rem;
+}
+
+.coordinator-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.coordinator-heading h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: var(--ink);
+}
+
+.coordinator-heading .eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.coordinator-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.coordinator-tabs a {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.coordinator-tabs a:hover,
+.coordinator-tabs a:focus-visible {
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--teal);
+}
+
+.coordinator-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.coordinator-metrics article {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.coordinator-metrics span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.coordinator-metrics strong {
+  font-size: 1.75rem;
+  color: var(--ink);
+}
+
+.coordinator-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.coordinator-list h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.coordinator-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+  transition: border-color 120ms ease;
+}
+
+.coordinator-row:hover,
+.coordinator-row:focus-visible {
+  border-color: var(--teal);
+}
+
+.coordinator-row small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.1rem;
+}
+
+.coordinator-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--teal);
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.coordinator-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.coordinator-grid article {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.coordinator-grid h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+
+.coordinator-grid dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.coordinator-grid dt {
+  color: var(--muted);
+}
+
+.coordinator-audit {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.coordinator-audit li {
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--teal);
+  background: rgba(15, 118, 110, 0.05);
+  font-size: 0.9rem;
+}
+
+.coordinator-audit p {
+  margin: 0.15rem 0 0;
+  color: var(--ink);
+}
+
+.coordinator-form {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 32rem;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.coordinator-radio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.coordinator-form textarea {
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+/* Falls through to the shared .primary-action in styles.css. Only the
+   disabled state needs to stay here: Coordinator.tsx applies this class to
+   a <Link>, which has no native :disabled state for the global stylesheet
+   to hook into. pointer-events: none also prevents :hover from ever
+   registering on it, so no extra hover override is needed here. */
+.primary-action-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.coordinator-plan-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.coordinator-plan-row strong {
+  display: block;
+  color: var(--ink);
+}
+
+.coordinator-plan-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.coordinator-plan-ready {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.coordinator-plan-pending {
+  border-color: rgba(217, 119, 6, 0.35);
+  background: rgba(217, 119, 6, 0.06);
+}
+
+.coordinator-plan-link {
+  color: var(--teal);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.coordinator-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #047857;
+  font-weight: 600;
+}
+
+.coordinator-blocked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.coordinator-blockers {
+  padding-left: 1.5rem;
+  margin: 0.35rem 0;
+  color: var(--ink);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.status-info    { background: rgba(37, 99, 235, 0.12);  color: #1d4ed8; }
+.status-success { background: rgba(5, 150, 105, 0.14);  color: #047857; }
+.status-warning { background: rgba(217, 119, 6, 0.14);  color: #b45309; }
+.status-danger  { background: rgba(220, 38, 38, 0.14);  color: #b91c1c; }
+.status-neutral { background: rgba(71, 85, 105, 0.14);  color: #334155; }
+
+/* --- Live E03-S01 screens (CoordinatorWorkspace.tsx) ---------------------
+   Page frame, cards, facts, states, alerts, table and chips come from the
+   shared blocks (src/shared). These rules cover only what is specific to
+   the Coordinator screens: the dashboard list, callout and request cards. */
+
+.card.coordinator-callout {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  border-color: rgba(14, 124, 123, 0.3);
+  background: var(--teal-soft);
+  box-shadow: none;
+  color: var(--teal-dark);
+}
+
+.coordinator-callout strong {
+  color: var(--ink);
+}
+
+.coordinator-callout p {
+  margin: var(--space-1) 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.coordinator-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.coordinator-section-heading h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-lg);
+}
+
+.coordinator-section-heading a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--teal-dark);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+}
+
+.coordinator-row {
+  gap: var(--space-3);
+}
+
+.coordinator-row-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.coordinator-subtle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.coordinator-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Live regions stay mounted so screen readers announce what appears in
+   them, but take no space while empty. */
+.coordinator-live:empty {
+  display: none;
+}
+
+.coordinator-anchor {
+  display: grid;
+  scroll-margin-top: var(--space-5);
+}
+
+.coordinator-reassign-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.coordinator-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.card.coordinator-request {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  box-shadow: none;
+}
+
+.coordinator-request strong {
+  color: var(--ink);
+}
+
+.coordinator-request small {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.coordinator-request p {
+  margin: var(--space-2) 0 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 720px) {
+  .coordinator-page {
+    padding: var(--space-5) var(--space-4) var(--space-6);
+  }
+
+  .card.coordinator-callout,
+  .card.coordinator-request {
+    grid-template-columns: 1fr;
+  }
+
+  .coordinator-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .coordinator-row-meta {
+    justify-content: flex-start;
+  }
+
+  .coordinator-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+/* E07-S06 technical support card and form (TechnicalSupport.tsx). */
+.support-requests {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.support-request {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.support-request-description {
+  margin: 0 0 var(--space-1);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.support-request small {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.support-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .support-request {
+    flex-direction: column;
+  }
+}

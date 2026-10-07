@@ -1,11 +1,19 @@
-import { runtimeConfig } from '../../backend/src/config.js';
+import { createInboxHandler } from '../../backend/src/modules/eventNotifications/inbox.js';
+import { currentUser, query } from '../../backend/src/modules/eventVisibility/runtime.js';
+import { runtimeConfig, isAllowedOrigin } from '../../backend/src/config.js';
 import { hasInternalSecret, requireMethod, sendJson } from '../../backend/src/http.js';
 import { inTransaction, notificationDatabase } from '../../backend/src/database/pool.js';
 import { isDeliveryId } from '../../backend/src/modules/notificationDispatcher/durable.js';
 import { prepareCommittedDelivery } from '../../backend/src/modules/notificationDispatcher/postgres.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
+const inbox = createInboxHandler(query, currentUser, isAllowedOrigin);
+
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (new URL(request.url ?? '/', 'http://localhost').searchParams.get('task') === 'inbox') {
+    await inbox(request, response);
+    return;
+  }
   if (!requireMethod(request, response, 'POST')) {
     return;
   }

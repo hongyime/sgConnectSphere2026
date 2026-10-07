@@ -1,0 +1,22 @@
+.permission-denied-page {
+  min-height: calc(100vh - 4rem);
+  display: grid;
+  place-items: center;
+  padding: 3rem 1.5rem;
+}
+
+.permission-denied-card {
+  max-width: 30rem;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  display: grid;
+  gap: 1rem;
+  justify-items: start;
+  color: var(--ink);
+}
+
+.permission-denied-card h1 { margin: 0; font-size: 1.65rem; }
+.permission-denied-card p { margin: 0; color: var(--muted); }
+.permission-denied-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }

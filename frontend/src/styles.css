@@ -13,16 +13,21 @@
   --ink: #0f0f0f;
   --muted: #5c5c5c;
   --soft: #9b9b9b;
-  --border: #e1e4df;
+  --border: #e5e5e5;
   --teal: #0e7c7b;
+  --teal-hover: #14a3a1;
   --teal-dark: #0a5958;
   --teal-soft: #e4f3f1;
   --blue: #2b6cb0;
   --blue-soft: #e7f0fb;
   --green: #1f9254;
   --green-soft: #e7f4ed;
+  /* Text on a green or amber tint: the base hues are too light for text
+     (design.md 3.1 and 11.2). */
+  --green-ink: #166f40;
   --amber: #d9a017;
   --amber-soft: #fff4d3;
+  --amber-ink: #8a6200;
   --red: #c0392b;
   --red-soft: #fbecea;
   --violet: #6f56a6;
@@ -32,6 +37,27 @@
   --slate: #4d5a64;
   --slate-soft: #e9eef1;
   --shadow: 0 18px 60px rgba(37, 42, 40, 0.11);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --text-sm: 0.85rem;
+  --text-base: 0.95rem;
+  --text-lg: 1.1rem;
+  --text-xl: 1.4rem;
+  --text-2xl: 1.75rem;
+  --weight-normal: 400;
+  --weight-medium: 600;
+  --weight-semibold: 700;
+  --weight-strong: 800;
+  /* design.md 3.4 and 3.6 */
+  --radius-card: 10px;
+  --radius-control: 8px;
+  --radius-pill: 999px;
+  --duration-fast: 120ms;
 }
 
 * {
@@ -41,7 +67,8 @@
 html,
 body,
 #root {
-  overflow-x: hidden;
+  /* clip, not hidden: hidden forces overflow-y to auto too, which breaks position: sticky in descendants. */
+  overflow-x: clip;
 }
 
 body {
@@ -189,7 +216,7 @@ button {
   color: var(--teal-dark);
   font-size: 12px;
   font-weight: 900;
-  letter-spacing: 0;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -428,12 +455,12 @@ button {
 
 .status-success {
   background: var(--green-soft);
-  color: var(--green);
+  color: var(--green-ink);
 }
 
 .status-warning {
   background: var(--amber-soft);
-  color: #8a6200;
+  color: var(--amber-ink);
 }
 
 .status-info {
@@ -454,6 +481,42 @@ button {
 .status-neutral {
   background: var(--slate-soft);
   color: var(--slate);
+}
+
+/* Status chip states used across E-series stories (draft, submitted, under
+   review, awaiting clarification, approved, planning, confirmed, rejected,
+   cancelled, completed), mapped onto the tone classes above per the labels
+   already in docs/design/figma-wireframe-refinement-plan.md ("Success/
+   confirmed/approved", "Warning/pending/at-risk", "Danger/blocked/rejected",
+   "Info/under review"). One color definition per tone; these are aliases. */
+.status-draft {
+  background: var(--slate-soft);
+  color: var(--slate);
+}
+
+.status-submitted,
+.status-under-review,
+.status-planning {
+  background: var(--blue-soft);
+  color: var(--blue);
+}
+
+.status-awaiting-clarification {
+  background: var(--amber-soft);
+  color: var(--amber-ink);
+}
+
+.status-approved,
+.status-confirmed,
+.status-completed {
+  background: var(--green-soft);
+  color: var(--green-ink);
+}
+
+.status-rejected,
+.status-cancelled {
+  background: var(--red-soft);
+  color: var(--red);
 }
 
 .design-stage {
@@ -555,6 +618,7 @@ button {
   background: var(--teal);
   color: #ffffff;
   font-weight: 800;
+  text-decoration: none;
 }
 
 .primary-action:disabled {
@@ -563,6 +627,11 @@ button {
 }
 
 .primary-action:not(:disabled):hover {
+  /* Darker, not lighter: white text stays at 8:1 (design.md 11.1). */
+  background: var(--teal-dark);
+}
+
+.primary-action:not(:disabled):active {
   background: var(--teal-dark);
 }
 
@@ -578,11 +647,45 @@ button {
   background: var(--surface);
   color: var(--ink);
   font-weight: 800;
+  text-decoration: none;
 }
 
-.secondary-action:hover {
+.secondary-action:not(:disabled):hover,
+.secondary-action:focus-visible {
   border-color: var(--teal);
   color: var(--teal-dark);
+}
+
+/* One disabled look for every button (design.md 11.1). */
+.secondary-action:disabled {
+  cursor: not-allowed;
+  border-color: var(--soft);
+  background: var(--soft);
+  color: #ffffff;
+}
+
+/* Hidden until focused: the first stop for keyboard users (design.md 9). */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 100;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--teal-dark);
+  color: #ffffff;
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* The skip link focuses <main> itself; it is not a control, so no ring. */
+main[tabindex="-1"]:focus {
+  outline: none;
 }
 
 .metric-row {
@@ -808,6 +911,14 @@ button {
 }
 
 .flow-steps,
+.review-panel {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+
+.flow-steps,
 .request-form-panel,
 .review-panel {
   display: grid;
@@ -858,8 +969,11 @@ button {
   display: grid;
   gap: 7px;
   min-width: 0;
-  color: var(--ink);
-  font-weight: 800;
+}
+
+.field-control > label {
+  color: var(--muted);
+  font-weight: var(--weight-medium);
 }
 
 .field-wide {
@@ -875,6 +989,7 @@ button {
   background: #fbfbfa;
   color: var(--ink);
   font: inherit;
+  font-weight: var(--weight-normal);
 }
 
 .field-control input {
@@ -896,6 +1011,63 @@ button {
 .field-invalid input {
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.field-checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 4px;
+}
+
+.field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: var(--weight-medium);
+}
+
+.field-checkbox input {
+  width: auto;
+  min-height: 0;
+}
+
+.field-none-required {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: var(--weight-medium);
+}
+
+.field-none-required input {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+}
+
+.field-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.accessibility-fields {
+  gap: 14px;
+}
+
+.accessibility-block {
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.accessibility-block:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .form-actions {
@@ -920,7 +1092,7 @@ button {
 
 .review-copy {
   margin: 0;
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 800;
 }
 
@@ -943,13 +1115,76 @@ button {
 }
 
 .timeline-done {
-  color: var(--green);
+  color: var(--green-ink);
   font-weight: 800;
 }
 
+.page-heading {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.page-heading .eyebrow {
+  margin: 0;
+}
+
+.page-heading h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-strong);
+  line-height: 1.2;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.form-section {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.form-section:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.form-section h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+/* Solid teal keeps the focus outline at 3:1 or better against every surface
+   in the app (4.4-5.0:1 on light pages, cards and tinted panels, 3.5:1 on
+   the dark phone frame), as WCAG 2.2 requires for focus indicators. */
 :focus-visible {
-  outline: 3px solid rgba(14, 124, 123, 0.32);
+  outline: 3px solid var(--teal);
   outline-offset: 2px;
+}
+
+/* Single-form pages read as one centred column, as on /profile: the heading,
+   intro, form and any buttons below it share the form's width instead of the
+   form sitting against the left edge of a wide page. Keyed on the form's
+   class so no page component needs a layout class of its own. */
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page):has(> form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form)) {
+  max-width: 44rem;
+}
+
+:is(.attendee-registration-page, .organiser-page, .coordinator-page, .venue-page, .admin-page)
+  > form:is(.attendee-registration-form, .organiser-form, .coordinator-form, .venue-form, .admin-form) {
+  max-width: none;
 }
 
 @media (max-width: 1500px) {
@@ -1019,6 +1254,13 @@ button {
 @media (max-width: 720px) {
   .workspace {
     padding: 16px;
+  }
+
+  .flow-steps,
+  .review-panel {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .topbar {

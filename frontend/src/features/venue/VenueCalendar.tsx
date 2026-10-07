@@ -1,0 +1,249 @@
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Clock, Lock, Wrench, type LucideIcon,
+} from 'lucide-react';
+import {
+  Alert, Button, Card, EmptyState, ErrorState, FormField, LoadingState, PageLayout, useLoad, type ApiResult,
+} from '../../shared';
+import { listVenues, type Venue } from './venueApi';
+import { getVenueCalendar, MAX_CALENDAR_DAYS, type CalendarState, type VenueCalendar as CalendarData } from './venueCalendarApi';
+import {
+  dayCount, daysInRange, formatDay, formatMonth, formatTime, isDayKey, monthBounds, segmentsByDay, shiftMonth, todayKey,
+  type DaySegment,
+} from './calendarDates';
+import './venue.css';
+
+// E05-S03 "View the venue availability calendar" (SCRUM-42), built against
+// the calendar API in PR #134. Shared by Venue Staff (/venue/availability)
+// and Event Coordinators (/coordinator/calendar and
+// /coordinator/venues/:venueId/calendar); the server decides which event
+// details each viewer receives. The page frame, loading and error states
+// come from the shared blocks (ADR-017); the calendar itself is its own.
+
+// Each state carries an icon and a text label as well as a colour, so the
+// four states can be told apart without relying on colour (Scenario 1).
+const stateMeta: Record<CalendarState, { label: string; icon: LucideIcon }> = {
+  free:        { label: 'Free',        icon: CheckCircle2 },
+  tentative:   { label: 'Tentative',   icon: Clock },
+  confirmed:   { label: 'Confirmed',   icon: CalendarCheck },
+  blocked:     { label: 'Blocked',     icon: Wrench },
+  unavailable: { label: 'Unavailable', icon: Lock },
+};
+
+const legendOrder: CalendarState[] = ['free', 'tentative', 'confirmed', 'blocked', 'unavailable'];
+
+type Period = { from: string; to: string; mode: 'month' | 'custom' };
+
+function monthPeriod(dayKey: string): Period {
+  return { ...monthBounds(dayKey), mode: 'month' };
+}
+
+function StateBadge({ state }: { state: CalendarState }) {
+  const { label, icon: Icon } = stateMeta[state];
+  return (
+    <span className={`calendar-badge badge-${state}`}>
+      <Icon size={14} aria-hidden="true" /> {label}
+    </span>
+  );
+}
+
+function timeLabel(segment: DaySegment) {
+  const start = formatTime(segment.start);
+  const end = formatTime(segment.end, true);
+  return start === '00:00' && end === '24:00' ? 'All day' : `${start}–${end}`;
+}
+
+export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' }) {
+  const { venueId: routeVenueId } = useParams();
+  const [selectedId, setSelectedId] = useState(routeVenueId ?? '');
+  const [period, setPeriod] = useState<Period>(() => monthPeriod(todayKey()));
+  const [customFrom, setCustomFrom] = useState(period.from);
+  const [customTo, setCustomTo] = useState(period.to);
+  const [rangeError, setRangeError] = useState('');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // useLoad cancels the previous request, so a slow response for a previous
+  // venue or month cannot overwrite the one the user is looking at.
+  const options = useLoad(signal => listVenues('', signal), []);
+  const calendar = useLoad(async (signal): Promise<ApiResult<CalendarData | null>> => (
+    selectedId ? getVenueCalendar(selectedId, period.from, period.to, signal) : { ok: true, data: null }
+  ), [selectedId, period.from, period.to]);
+
+  // React Router reuses this screen between venue-specific URLs.
+  useEffect(() => {
+    if (routeVenueId) setSelectedId(routeVenueId);
+  }, [routeVenueId]);
+
+  // With no venue in the URL, show the first one in the catalogue.
+  useEffect(() => {
+    if (options.result.state === 'ready') {
+      const first = options.result.data[0]?.id ?? '';
+      setSelectedId(current => current || first);
+    }
+  }, [options.result]);
+
+  useEffect(() => { setExpanded(null); }, [selectedId, period.from, period.to]);
+
+  const goToMonth = (delta: number) => {
+    const next = monthPeriod(shiftMonth(period.from, delta));
+    setPeriod(next);
+    setCustomFrom(next.from);
+    setCustomTo(next.to);
+    setRangeError('');
+  };
+
+  const handleRangeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!isDayKey(customFrom) || !isDayKey(customTo)) {
+      setRangeError('Enter both a start date and an end date.');
+      return;
+    }
+    if (customTo < customFrom) {
+      setRangeError('The end date must be on or after the start date.');
+      return;
+    }
+    if (dayCount(customFrom, customTo) > MAX_CALENDAR_DAYS) {
+      setRangeError(`Choose a range of ${MAX_CALENDAR_DAYS} days or fewer.`);
+      return;
+    }
+    setRangeError('');
+    setPeriod({ from: customFrom, to: customTo, mode: 'custom' });
+  };
+
+  const periodLabel = period.mode === 'month'
+    ? formatMonth(period.from)
+    : `${formatDay(period.from)} – ${formatDay(period.to)}`;
+
+  const loaded = calendar.result.state === 'ready' ? calendar.result.data : null;
+  const days = useMemo(() => daysInRange(period.from, period.to), [period.from, period.to]);
+  const segments = useMemo(() => (loaded ? segmentsByDay(loaded.entries, days) : null), [loaded, days]);
+
+  const venueList = options.result.state === 'ready' ? options.result.data : [];
+  const venues = withSelectedVenue(venueList, selectedId, loaded?.venue.name);
+  const optionsLoading = options.result.state === 'loading' && !selectedId;
+
+  return (
+    <PageLayout eyebrow={audience === 'venue' ? 'Venue staff' : 'Event coordinator'} title="Availability calendar">
+      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time.</p>
+
+      <Card label="Calendar controls">
+        {options.result.state === 'error' && !selectedId ? (
+          <Alert tone="error">{options.result.failure.message}</Alert>
+        ) : (
+          <FormField label="Venue">
+            {props => (
+              <select {...props} value={selectedId} disabled={optionsLoading} onChange={event => setSelectedId(event.target.value)}>
+                {optionsLoading ? <option value="">Loading venues…</option> : null}
+                {venues.map(venue => (<option key={venue.id} value={venue.id}>{venue.name}</option>))}
+              </select>
+            )}
+          </FormField>
+        )}
+
+        <div className="calendar-period">
+          <Button icon={<ChevronLeft size={16} aria-hidden="true" />} onClick={() => goToMonth(-1)}>Previous month</Button>
+          <h2 aria-live="polite">{periodLabel}</h2>
+          <Button onClick={() => goToMonth(1)}>
+            Next month <ChevronRight size={16} aria-hidden="true" />
+          </Button>
+        </div>
+
+        <form className="calendar-range" aria-label="Custom date range" onSubmit={handleRangeSubmit} noValidate>
+          {rangeError ? <Alert tone="error">{rangeError}</Alert> : null}
+          <FormField label="From">
+            {props => <input {...props} type="date" value={customFrom} onChange={event => setCustomFrom(event.target.value)} />}
+          </FormField>
+          <FormField label="To">
+            {props => <input {...props} type="date" value={customTo} onChange={event => setCustomTo(event.target.value)} />}
+          </FormField>
+          <Button type="submit">Show range</Button>
+        </form>
+      </Card>
+
+      <ul className="calendar-legend" aria-label="Legend">
+        {legendOrder.map(state => (<li key={state}><StateBadge state={state} /></li>))}
+      </ul>
+
+      {options.result.state === 'ready' && venueList.length === 0 && !selectedId ? (
+        <EmptyState title="No venues to show yet">Venues appear here once Venue Staff add them to the catalogue.</EmptyState>
+      ) : null}
+
+      {calendar.result.state === 'loading' && selectedId ? <LoadingState label="Loading availability…" rows={4} /> : null}
+      {calendar.result.state === 'error' ? (
+        <ErrorState failure={calendar.result.failure} onRetry={calendar.reload} context="the availability calendar" />
+      ) : null}
+
+      {loaded && segments ? (
+        <>
+          {!loaded.venue.is_active ? (
+            <Alert tone="info">{loaded.venue.name} is retired, so none of its time is offered as Free.</Alert>
+          ) : null}
+          <ol className="calendar-days" aria-label={`Availability for ${loaded.venue.name}, ${periodLabel}`}>
+            {days.map((day) => {
+              const daySegments = segments.get(day) ?? [];
+              return (
+                <li key={day} className="calendar-day">
+                  <h3>{formatDay(day)}</h3>
+                  {daySegments.length === 0 ? (
+                    <p className="calendar-empty">No bookable hours.</p>
+                  ) : (
+                    <ul>
+                      {daySegments.map((segment, index) => {
+                        const { entry } = segment;
+                        // Position within the day, not start time: overlapping blocks
+                        // clipped to the window start share a start and a state.
+                        const key = `${day}-${index}`;
+                        const detailsId = `calendar-details-${key}`;
+                        const time = timeLabel(segment);
+                        return (
+                          <li key={key} className={`calendar-entry entry-${entry.state}`}>
+                            <span className="calendar-time">{time}</span>
+                            <StateBadge state={entry.state} />
+                            {entry.kind === 'block' ? (
+                              <span className="calendar-text">
+                                Maintenance block{entry.reason ? <> · <span className="calendar-reason">{entry.reason}</span></> : null}
+                              </span>
+                            ) : entry.event ? (
+                              <>
+                                <button
+                                  type="button" className="calendar-event-toggle" aria-expanded={expanded === key}
+                                  aria-controls={detailsId} onClick={() => setExpanded(current => (current === key ? null : key))}
+                                >
+                                  {entry.event.title}
+                                </button>
+                                {expanded === key ? (
+                                  <dl id={detailsId} className="calendar-details">
+                                    <dt>Event</dt><dd>{entry.event.title}</dd>
+                                    <dt>Event code</dt><dd>{entry.event.code ?? 'Not assigned'}</dd>
+                                    <dt>Date</dt><dd>{formatDay(day)}</dd>
+                                    <dt>Time</dt><dd>{time}</dd>
+                                  </dl>
+                                ) : null}
+                              </>
+                            ) : entry.state === 'unavailable' ? (
+                              <span className="calendar-text">Booked. Event details are not shown.</span>
+                            ) : entry.state === 'free' ? (
+                              <span className="calendar-text">Available</span>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
+      ) : null}
+    </PageLayout>
+  );
+}
+
+// A venue opened by id (for example a retired one, which search omits) may be
+// missing from the picker; keep it selectable under its calendar name.
+function withSelectedVenue(list: Venue[], selectedId: string, calendarName: string | undefined) {
+  if (!selectedId || list.some(venue => venue.id === selectedId)) return list;
+  return [{ id: selectedId, name: calendarName ?? 'Selected venue' } as Venue, ...list];
+}

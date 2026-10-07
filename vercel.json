@@ -3,6 +3,9 @@
   "installCommand": "npm install",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
+  "git": {
+    "deploymentEnabled": false
+  },
   "crons": [
     {
       "path": "/api/cron/outbox-relay",
@@ -10,9 +13,26 @@
     }
   ],
   "rewrites": [
+    { "source": "/api/equipment", "destination": "/api/venues?task=equipment" },
+    {
+      "source": "/api/notifications",
+      "destination": "/api/notifications/send?task=inbox"
+    },
     {
       "source": "/api/cron/notification-worker",
       "destination": "/api/cron/outbox-relay?task=worker"
+    },
+    {
+      "source": "/api/auth/verify",
+      "destination": "/api/auth/session?task=verify"
+    },
+    {
+      "source": "/api/auth/request-reset",
+      "destination": "/api/auth/session?task=request-reset"
+    },
+    {
+      "source": "/api/auth/reset-password",
+      "destination": "/api/auth/session?task=reset-password"
     },
     {
       "source": "/api/(.*)",
