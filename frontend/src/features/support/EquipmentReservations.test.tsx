@@ -5,7 +5,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { EquipmentRequests } from './EquipmentRequests';
-import { EquipmentReservationFormPage, freeSentence } from './EquipmentReservations';
+import { EquipmentReservationFormPage, eventLabel, eventPageFor, freeSentence } from './EquipmentReservations';
 import { deferred, stubApi, type FakeReply } from '../../testing/fakeApi';
 
 const event = {
@@ -281,4 +281,92 @@ test('E07-S04 - a late answer for the previous event never replaces the current 
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(screen.getByRole('heading', { level: 2, name: 'Lectern' })).toBeInTheDocument();
   expect(screen.queryByRole('heading', { level: 2, name: 'Wireless Microphone' })).not.toBeInTheDocument();
+});
+
+test('E07-S04 - wording helpers match the API sentences and links', () => {
+  expect(freeSentence(0)).toBe("None are free for this event's dates.");
+  expect(freeSentence(1)).toBe("Only 1 is free for this event's dates.");
+  expect(freeSentence(3)).toBe("Only 3 are free for this event's dates.");
+  expect(eventLabel({ eventCode: 'EVT-3001', title: 'EVT-3001 Approved Annual Conference' })).toBe('EVT-3001 Approved Annual Conference');
+  expect(eventLabel({ eventCode: 'EVT-A', title: 'Conference' })).toBe('EVT-A Conference');
+  expect(eventLabel({ eventCode: null, title: 'Winter Gala' })).toBe('Winter Gala');
+  expect(eventPageFor({ id: 'evt-x', eventCode: null, title: 'Winter Gala', status: 'planning' })).toBe('/support/events/evt-x/equipment');
+});
+
+test('E07-S04 - an event with no code or recorded dates still reads correctly', async () => {
+  const codeless = { id: 'evt-x', eventCode: null, title: 'Winter Gala', status: 'planning' };
+  const calls = stubApi({
+    'GET /api/equipment?mode=requests&event=evt-x': detail([{ ...line, freeQuantity: null }], { event: codeless }),
+    'POST /api/equipment?mode=requests&event=evt-x': { status: 201, body: outcome('reserved', 2, 2, { event: { eventCode: null, title: 'Winter Gala', startsAt: event.startsAt, endsAt: event.endsAt } }) },
+  }, { role: 'technical_support_staff' });
+  render(
+    <MemoryRouter initialEntries={['/support/events/evt-x/equipment']}>
+      <Routes>
+        <Route path="/support/events/:eventCode/equipment" element={<EquipmentRequests />} />
+        <Route path="/support/events/:eventCode/equipment/:requestId/reserve" element={<EquipmentReservationFormPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByText("Reserve each request from the units free for this event's dates. The Coordinator is notified of each reservation and change.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('link', { name: 'Reserve Wireless Microphone' }));
+  expect(await screen.findByText('Event dates')).toBeInTheDocument();
+  expect(screen.getByText('Event dates').nextSibling).toHaveTextContent('Not recorded');
+  expect(screen.getByText('Free for these dates').nextSibling).toHaveTextContent('Not recorded');
+  expect(screen.getByText('Event').nextSibling).toHaveTextContent('Winter Gala');
+  expect(screen.getByRole('heading', { level: 1 }).previousSibling).toHaveTextContent('Technical support');
+  fireEvent.click(screen.getByRole('button', { name: 'Reserve equipment' }));
+  expect(await screen.findByText('Wireless Microphone × 2 reserved for Winter Gala, 15 Oct 2026, 9:00 am – 5:00 pm.')).toBeInTheDocument();
+  expect(calls.find((call) => call.method === 'POST')?.url.searchParams.get('event')).toBe('evt-x');
+});
+
+test('E07-S04 - the reserve form shows the API refusal when the line cannot be loaded', async () => {
+  stubApi({
+    [`GET ${endpoint}`]: { status: 403, body: { error: 'Access denied. Only the assigned Coordinator may maintain equipment requests.' } },
+  }, { role: 'event_organiser' });
+  show('/support/events/EVT-A/equipment/req1/reserve');
+  expect(await screen.findByText('Access denied. Only the assigned Coordinator may maintain equipment requests.')).toBeInTheDocument();
+  expect(screen.queryByLabelText('Quantity to reserve')).not.toBeInTheDocument();
+});
+
+test('E07-S04 - a second submit while saving sends nothing more, and leaving mid-save drops the late reply', async () => {
+  const reply = deferred<FakeReply>();
+  const calls = stubApi({
+    [`GET ${endpoint}`]: detail([line]),
+    'GET /api/equipment?mode=requests&event=EVT-B': detail([{ ...line, id: 'reqB', name: 'Lectern' }], { event: { ...event, id: 'event-b', eventCode: 'EVT-B', title: 'Gala' } }),
+    [`POST ${endpoint}`]: () => reply.promise,
+  }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment/req1/reserve');
+  const form = (await screen.findByLabelText('Quantity to reserve')).closest('form')!;
+  fireEvent.submit(form);
+  fireEvent.submit(form);
+  expect(await screen.findByRole('button', { name: 'Reserving…' })).toBeDisabled();
+  expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('link', { name: 'Other event' }));
+  expect(await screen.findByRole('heading', { level: 2, name: 'Lectern' })).toBeInTheDocument();
+  reply.resolve({ status: 201, body: outcome('reserved', 2, 2) });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(screen.getByRole('heading', { level: 2, name: 'Lectern' })).toBeInTheDocument();
+  expect(screen.queryByText('Reserved')).not.toBeInTheDocument();
+});
+
+test('E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case', async () => {
+  stubApi({
+    [`GET ${endpoint}`]: detail([
+      { ...line, id: 'req1', reserved: true, reservation: { id: 'res1', status: 'reserved', quantityReserved: 1, requiresReconfirmation: false } },
+      { ...line, id: 'req2', name: 'Old Mixer', isActive: false, freeQuantity: null },
+    ]),
+  }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment');
+  expect(await screen.findByText("Retired items can't be reserved")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Release Wireless Microphone…' }));
+  expect(screen.getByRole('form', { name: 'Release Wireless Microphone?' })).toHaveTextContent('The 1 reserved unit goes back to the available pool');
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('form', { name: 'Release Wireless Microphone?' })).not.toBeInTheDocument();
+  cleanup();
+  vi.unstubAllGlobals();
+  stubApi({
+    [`GET ${endpoint}`]: detail([line], { event: { ...event, status: 'confirmed' }, canEdit: false, canReserve: false, canRelease: false }),
+  }, { role: 'event_coordinator' });
+  show('/coordinator/events/EVT-A/equipment');
+  expect(await screen.findByText(/Equipment requests are read-only here/)).toBeInTheDocument();
 });

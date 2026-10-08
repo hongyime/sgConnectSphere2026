@@ -120,8 +120,10 @@ function EventRequests({ eventCode }: { eventCode: string }) {
   );
   const state = useLocation().state as {
     equipmentSaved?: SaveResult;
-    reservationSaved?: ReservationOutcome;
-    reservationAction?: 'reserve' | 'change';
+    reservationSaved?: {
+      outcome: ReservationOutcome;
+      action: 'reserve' | 'change';
+    };
   } | null;
   const saved = state?.equipmentSaved;
   const [removing, setRemoving] = useState<EquipmentRequest | null>(null);
@@ -132,13 +134,14 @@ function EventRequests({ eventCode }: { eventCode: string }) {
   const [releasing, setReleasing] = useState<EquipmentRequest | null>(null);
   const [releaseError, setReleaseError] = useState('');
   const [released, setReleased] = useState<ReservationOutcome | null>(null);
+  // Only reachable from the release panel, which shows only for a line with a
+  // reservation and disables its button while busy.
   async function confirmRelease() {
-    if (!releasing?.reservation || busy) return;
     setBusy(true);
     setReleaseError('');
     const response = await releaseReservation(
       eventCode,
-      releasing.reservation.id,
+      releasing!.reservation!.id,
     );
     setBusy(false);
     if (!response.ok) {
@@ -210,8 +213,8 @@ function EventRequests({ eventCode }: { eventCode: string }) {
         <ReservationSaved outcome={released} action="release" />
       ) : state?.reservationSaved ? (
         <ReservationSaved
-          outcome={state.reservationSaved}
-          action={state.reservationAction ?? 'reserve'}
+          outcome={state.reservationSaved.outcome}
+          action={state.reservationSaved.action}
         />
       ) : null}
       {releasing?.reservation ? (

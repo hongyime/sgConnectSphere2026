@@ -97,7 +97,7 @@ export function ReservationSaved({
 }) {
   if (!outcome.changed) return <Alert tone="info">No changes to save.</Alert>;
   const { reservation: r, event } = outcome;
-  const when = `${eventLabel(event)}, ${datesOf(event)}`;
+  const when = `${eventLabel(event)}, ${formatDateRange(event.startsAt, event.endsAt)}`;
   if (action === 'release')
     return (
       <Alert tone="success" title="Released">
@@ -251,8 +251,10 @@ function ReservationForm({
     }
     navigate(back, {
       state: {
-        reservationSaved: response.data,
-        reservationAction: current ? 'change' : 'reserve',
+        reservationSaved: {
+          outcome: response.data,
+          action: current ? 'change' : 'reserve',
+        },
       },
     });
   }
