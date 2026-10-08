@@ -1,3 +1,4 @@
+import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
 import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
@@ -17,6 +18,7 @@ import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../featu
 // Role home pages and header links live in roles.ts; routes.test.tsx checks
 // they all point at routes registered here.
 import type { ReactElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import { LandingPage } from '../features/landing/LandingPage';
 import { LoginPage } from '../features/accessControl/LoginPage';
 import { PasswordRecovery } from '../features/accessControl/PasswordRecovery';
@@ -50,9 +52,8 @@ import { VenueCalendar } from '../features/venue/VenueCalendar';
 import { VenueForm } from '../features/venue/VenueForm';
 import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
 import { VenueBlockout } from '../features/venue/VenueBlockout';
-import {
-  EquipmentDashboard, RequestQueue, ReservationDetail, TechnicianAssignment,
-} from '../features/support/Support';
+import { EquipmentDashboard } from '../features/support/Support';
+import { EquipmentReservationFormPage } from '../features/support/EquipmentReservations';
 import {
   AdminHome, UserManagement, RoleAssignment, AuditLogViewer, ReportingDashboard, DigestPreferences, Recommendations,
 } from '../features/admin/Admin';
@@ -182,9 +183,14 @@ export const routes: AppRoute[] = [
   page('/support/catalogue/new', <EquipmentFormPage />, 'live', 'E07-S01'),
   page('/support/catalogue/:equipmentId/edit', <EquipmentFormPage />, 'live', 'E07-S01'),
   page('/support/catalogue/:equipmentId', <EquipmentDetail />, 'live', 'E07-S01'),
-  page('/support/queue', <RequestQueue />, 'mock', 'E07-S04'),
-  page('/support/requests/:requestId', <ReservationDetail />, 'mock', 'E07-S04'),
-  page('/support/technicians', <TechnicianAssignment />, 'mock', 'E07-S07'),
+  // E07-S04 (D35): reserving happens on the live event equipment pages; the
+  // old mock queue and reservation detail now lead to the live list.
+  page('/support/events/:eventCode/equipment/:requestId/reserve', <EquipmentReservationFormPage />, 'live', 'E07-S04'),
+  page('/support/queue', <Navigate to="/support/equipment-requests" replace />, 'redirect', 'E07-S04'),
+  page('/support/requests/:requestId', <Navigate to="/support/equipment-requests" replace />, 'redirect', 'E07-S04'),
+  page('/support/technicians', <StaffingQueue />, 'live', 'E07-S07'),
+  page('/support/technicians/:requestId', <StaffingRequestPage />, 'live', 'E07-S07'),
+  page('/support/schedule', <MySchedule />, 'live', 'E07-S07'),
   page('/support/conflicts', <EquipmentAvailability />, 'live', 'E07-S03'),
   page('/support/availability', <EquipmentAvailability />, 'live', 'E07-S03'),
 

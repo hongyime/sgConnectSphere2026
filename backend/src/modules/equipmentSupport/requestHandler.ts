@@ -17,6 +17,11 @@ import {
   saveEquipmentRequest,
   removeEquipmentRequest,
 } from './requests.js';
+import {
+  changeReservation,
+  releaseReservation,
+  reserveEquipment,
+} from './reservations.js';
 export function createEquipmentRequestHandler(deps: {
   authenticate: (req: VercelRequest) => Promise<AuthenticatedUser>;
   query: Query;
@@ -58,7 +63,17 @@ export function createEquipmentRequestHandler(deps: {
       }
       if (body?.action === 'removeRequest' && typeof body.id === 'string')
         return removeEquipmentRequest(deps.pool(), user, identifier, body.id);
-      throw new AccessError(400, 'Choose saveRequest or removeRequest.');
+      // E07-S04 reservation writers.
+      if (body?.action === 'reserve')
+        return reserveEquipment(deps.pool(), user, identifier, body);
+      if (body?.action === 'changeReservation')
+        return changeReservation(deps.pool(), user, identifier, body);
+      if (body?.action === 'releaseReservation')
+        return releaseReservation(deps.pool(), user, identifier, body);
+      throw new AccessError(
+        400,
+        'Choose saveRequest, removeRequest, reserve, changeReservation or releaseReservation.',
+      );
     });
   };
 }
