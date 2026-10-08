@@ -10,9 +10,9 @@ commit: cee0813
 ---
 
 Full Playwright suite (`npx playwright test`, desktop Chrome and Pixel 7) on
-Windows, with the `.field-control` alignment fix and its new layout test in
-the working tree (on top of `main` at `cee0813`; `commit` names the last code
-change before it). 176 passed, 138 skipped (existing `test.fixme`
+Windows, with the `.field-control` alignment fix and its new layout test as
+uncommitted changes on top of `main` at `cee0813` (they are committed in this
+PR). 176 passed, 138 skipped (existing `test.fixme`
 placeholders), 0 failed.
 
 Before this run, the new test was run with the CSS fix temporarily removed:
