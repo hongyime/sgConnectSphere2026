@@ -46,6 +46,11 @@ runs needed for the Definition of Done.
   Automated runs re-recorded on `8ac817e` (unit 313/313, DB 9/9, Vitest 331/331).
   The manual run stays on `c2ba65a`: the fix only changes coordinator-assignment
   rows, which that run did not exercise.
+- `b6e6a24` design.md fixes: status changes as StatusPills (section 7),
+  "Status changed" / "Details edited" wording (section 8.1). Vitest 333/333
+  re-recorded; no horizontal overflow at 393px and 320px. Desktop and phone
+  screenshots retaken for the PR. Not done here (section 12): the shared
+  `coordinator.css` drift (7 hex codes, 22 font sizes) belongs to a separate clean-up.
 - AC audit: every status change path writes an audit row (applyEventStatusChange,
   auto-assignment, submit); role refusals in the newer equipment/support/venue
   modules are logged; unlogged 403s are origin (CSRF) checks. ADR-009 already
