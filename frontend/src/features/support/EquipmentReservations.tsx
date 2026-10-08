@@ -17,6 +17,7 @@ import {
   StatusPill,
   formatDateRange,
   useLoad,
+  useSession,
 } from '../../shared';
 import {
   changeReservation,
@@ -180,6 +181,10 @@ function ReservationForm({
   line: EquipmentRequest | undefined;
 }) {
   const navigate = useNavigate();
+  const session = useSession();
+  const staff =
+    session.status === 'signed-in' &&
+    session.user.role === 'technical_support_staff';
   const back = eventPageFor(data.event);
   const current = line && isActive(line.reservation) ? line.reservation : null;
   const free = line?.freeQuantity ?? null;
@@ -200,8 +205,13 @@ function ReservationForm({
     };
   }, []);
 
+  // Wait for the session, so Technical Support never sees the refusal flash.
+  if (session.status === 'loading')
+    return <LoadingState label="Loading equipment request…" rows={2} />;
   const refusal = !line
     ? 'Equipment request not found for this event.'
+    : !staff
+      ? 'Access denied. Only Technical Support Staff can reserve equipment.'
     : !data.canReserve
       ? data.event.status === 'confirmed'
         ? "This event is confirmed, so its equipment reservations can't be changed here."

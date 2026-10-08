@@ -71,7 +71,7 @@ test('TC_E07S04_01 - Technical Support reserves the requested quantity and sees 
   expect(screen.getByText('Not reserved')).toBeInTheDocument();
   fireEvent.click(await screen.findByRole('link', { name: 'Reserve Wireless Microphone' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Reserve equipment' })).toBeInTheDocument();
-  expect(screen.getByText('Free for these dates').nextSibling).toHaveTextContent('5');
+  expect((await screen.findByText('Free for these dates')).nextSibling).toHaveTextContent('5');
   expect(screen.getByText('Event dates').nextSibling).toHaveTextContent('15 Oct 2026, 9:00 am – 5:00 pm');
   const quantity = screen.getByLabelText('Quantity to reserve');
   expect(quantity).toHaveValue(2);
@@ -168,7 +168,7 @@ test('E07-S04 - changing a reservation starts at the reserved quantity, shows Ne
   expect(await screen.findByText('Needs review')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('link', { name: 'Change Wireless Microphone reservation' }));
   expect(await screen.findByRole('heading', { level: 1, name: 'Change reservation' })).toBeInTheDocument();
-  expect(screen.getByRole('alert')).toHaveTextContent("This item's stock or status changed after it was reserved.");
+  expect(await screen.findByRole('alert')).toHaveTextContent("This item's stock or status changed after it was reserved.");
   expect(screen.getByText('Reserved now').nextSibling).toHaveTextContent('2 (partial)');
   expect(screen.getByLabelText('Quantity to reserve')).toHaveValue(2);
   fireEvent.change(screen.getByLabelText('Quantity to reserve'), { target: { value: '3' } });
@@ -369,4 +369,11 @@ test('E07-S04 - retired lines, single units and the read-only Coordinator view a
   }, { role: 'event_coordinator' });
   show('/coordinator/events/EVT-A/equipment');
   expect(await screen.findByText(/Equipment requests are read-only here/)).toBeInTheDocument();
+});
+
+test('E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve', async () => {
+  stubApi({ [`GET ${endpoint}`]: detail([line], { canReserve: false, canRelease: false, canEdit: true }) }, { role: 'event_coordinator' });
+  show('/support/events/EVT-A/equipment/req1/reserve');
+  expect(await screen.findByText('Access denied. Only Technical Support Staff can reserve equipment.')).toBeInTheDocument();
+  expect(screen.queryByLabelText('Quantity to reserve')).not.toBeInTheDocument();
 });
