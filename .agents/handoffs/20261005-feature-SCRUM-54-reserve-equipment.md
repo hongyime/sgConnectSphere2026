@@ -25,7 +25,7 @@ line's state. Subtasks SCRUM-163 to 166. Branch pre-created by Bryan on
 
 ## Not done / next step
 
-Aaron's own click-through (F4), then `tc-coverage.md`, postplan and the PR.
+Aaron's click-through (F4) passed 19/19 on 2026-10-08. Remaining: PR review by a teammate (Xiang Ying for her files), merge through the queue.
 
 ## Decisions taken without team sign-off
 
@@ -43,6 +43,9 @@ E07 stories record; it is the only record of who released and when).
   for her review.
 
 ## Learnings
+
+- Only an event's organisation reads the event Activity log today (`getEvent`); Coordinators read it once E14-S02 (T-75) lands.
+- Shared-style fault found in F4: `.field-control` stretches a shorter field in a two-column row. Raised with Amareet (skeleton owner); `align-content: start` fixes it without moving any other measured screen.
 
 - Free quantity must be stock minus the peak overlapping demand, not the sum
   of every overlapping reservation (SCRUM-51 and SCRUM-53 handoffs).

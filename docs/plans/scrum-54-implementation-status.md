@@ -270,6 +270,12 @@ of these areas, it is outside what was tested:
   branch of this story is covered (Run log, gate 4).
 - **The Playwright cases use a fake API** shaped like the real one; the real
   stack is covered by F3 and F4 and the database tests.
+- **Fields in a shared row can sit out of line** on E07-S01 to S03's forms
+  (for example Start and End on the availability page), found in F4. The cause
+  is the shared `.field-control` style, not this story; Amareet, who owns the
+  shared styles, will fix it. Measured on 22 form screens: adding
+  `align-content: start;` to `.field-control` aligns the three affected
+  screens and moves nothing else.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s scripts, and the database
@@ -317,3 +323,4 @@ fix gets its own row.
 | 2026-10-08 14:15 | `a9f4106` | F2 | _01–_07 | `npx playwright test` (full) | local, fake API | 260 passed, 0 failed, 320 skipped. Session record `20261008-141526-Bl0oper-frontend-e2e.md` | — | Claude (for Aaron) |
 | 2026-10-08 14:16 | `a9f4106` | F1 | _01, _02, _04 | `npx vitest run --no-file-parallelism` (whole frontend) | local | 343/343 passed. Session record `20261008-141658-Bl0oper-frontend-vitest.md` | — | Claude (for Aaron) |
 | 2026-10-08 14:17 | `a9f4106` | 5, 10 | — | `python scripts/check.py`; `npm run typecheck`; `npm run build` (root) | local | all passed | — | Claude (for Aaron) |
+| 2026-10-08 ≈14:45 | `633eca2` (application code as `a9f4106`) | F4 | _01–_04 | Aaron's own click-through, the 19-step script, by hand | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed. Session record `20261008-144500-Bl0oper-frontend-e2e.md` | Noted on step 10: the Start and End inputs on the availability page are not level. A shared-style fault (`.field-control`), not this story's; raised with Amareet, the shared frontend owner, who will fix it | Aaron |
