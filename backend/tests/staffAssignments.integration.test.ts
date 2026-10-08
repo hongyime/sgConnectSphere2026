@@ -122,3 +122,44 @@ test('TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07
     await db.close();
   }
 });
+
+// Follow-up to #227: two simultaneous assignments of the same colleague to
+// overlapping requests deadlocked inside PostgreSQL's exclusion-constraint
+// check about one run in a few (40P01 in CI). Race it repeatedly: every round
+// must give exactly one 201 and one clash 409, and never an error.
+test('TC_E07S07_03 simultaneous assignments of one colleague never deadlock (25 rounds)', async () => {
+  const db = await loginDatabase();
+  const { pool } = db;
+  const q = pool.query.bind(pool);
+  const org = randomUUID(), organiser = randomUUID(), coordId = randomUUID(), techA = randomUUID(), techB = randomUUID(), techX = randomUUID();
+  const as = (id: string): AuthenticatedUser => ({ id, email: `${id}@example.test`, role: 'technical_support_staff', isActive: true, failedLoginCount: 0 });
+  try {
+    await q(`INSERT INTO client_organisations(id,name) VALUES ($1,'Race client')`, [org]);
+    for (const [id, role, name] of [[organiser, 'event_organiser', 'Organiser'], [coordId, 'event_coordinator', 'Coordinator'],
+      [techA, 'technical_support_staff', 'Tech A'], [techB, 'technical_support_staff', 'Tech B'], [techX, 'technical_support_staff', 'Tech X']] as const) {
+      await q(`INSERT INTO users(id,email,password_hash,full_name,role,client_org_id,is_active) VALUES ($1,$2,'unused',$3,$4,$5,true)`,
+        [id, `${id}@example.test`, name, role, org]);
+    }
+    for (let round = 0; round < 25; round++) {
+      const day = String(round + 1).padStart(2, '0');
+      const requests: string[] = [];
+      for (const [code, slot] of [[`EVT-R${day}A`, `[2027-01-${day} 09:00+08,2027-01-${day} 12:00+08)`], [`EVT-R${day}B`, `[2027-01-${day} 10:00+08,2027-01-${day} 13:00+08)`]]) {
+        const eventId = randomUUID(), requestId = randomUUID();
+        await q(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,event_range,expected_attendance,status)
+          VALUES ($1,$2,$3,$4,$5,$2,$6::tstzrange,10,'planning')`, [eventId, code, organiser, coordId, org, slot]);
+        await q(`INSERT INTO tech_support_requests(id,event_id,support_required,support_description,support_range,status,requested_by)
+          VALUES ($1,$2,true,'1 technician',$3::tstzrange,'open',$4)`, [requestId, eventId, slot, coordId]);
+        requests.push(requestId);
+      }
+      const results = await Promise.all([
+        assignTechnician(pool, as(techA), { action: 'assign', request: requests[0], staff: techX }),
+        assignTechnician(pool, as(techB), { action: 'assign', request: requests[1], staff: techX }),
+      ]);
+      assert.deepEqual(results.map(r => r.status).sort(), [201, 409], `round ${round + 1}`);
+      assert.match((results.find(r => r.status === 409)!.body as { error: string }).error, /^Tech X is already assigned to EVT-R\d\d[AB] /);
+    }
+    assert.equal((await q(`SELECT count(*)::int AS n FROM tech_staff_assignments WHERE staff_id=$1 AND status='assigned'`, [techX])).rows[0].n, 25);
+  } finally {
+    await db.close();
+  }
+});

@@ -24,3 +24,9 @@ Goal: Update PR #234 from its live branch head with current `origin/main`, resol
 ## Verification
 
 - Pending. No test result is claimed yet.
+
+## Branch update on 2026-10-09
+
+- Started from live PR head `d073511` and merged `origin/main` at `1086940d` with no conflicts.
+- `docs/testing/tc-coverage.md` merged without conflict, so the coverage generator was not needed.
+- `python scripts/check.py` passed after the end-of-file hook added the missing final newline; repository hygiene and 87 tooling tests passed. Application tests were outside this branch-update task.

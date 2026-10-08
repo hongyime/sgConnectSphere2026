@@ -157,10 +157,29 @@ Many Sprint 3 and 4 screens already exist with sample data (`status: 'mock'`).
 - [ ] Every acceptance criterion in your story is covered; polish never replaces one.
 - [ ] Loading, empty and error states are all shown (check `/ui-kit` for how they look).
 - [ ] Screenshots at desktop and phone width (Pixel 7) look right: no clipped tables or overflowing text.
+- [ ] Fields side by side line up: a hint or error on one field doesn't push its neighbour's input down.
 - [ ] Keyboard works: every action is reachable with Tab, and the focus outline is visible.
 - [ ] Route status is `'live'`; any new header link is in `roles.ts`.
 - [ ] Vitest and Playwright pass; TC IDs are in test titles; `tc-coverage.md` is regenerated.
 - [ ] No new colours, font sizes or page wrappers outside `frontend/src/shared/`.
+
+## Changing the shared blocks or styles
+
+The shared blocks (`frontend/src/shared/`), `frontend/src/styles.css` and
+`design.md` belong to the skeleton owner (Amareet). If a shared block looks or
+behaves wrong on your screen, report it (or fix it in a `fix/` PR to the shared
+file) rather than patching it in your story's own CSS: a local patch hides the
+bug from every other screen.
+
+When you change a shared block or a shared style:
+
+- [ ] Add or extend a sample on `/ui-kit` (`frontend/src/app/UiKit.tsx`) that shows
+      the case, including awkward combinations (a field with a hint beside one
+      without, an error, a wide field, a long value).
+- [ ] Add a check to `tests/e2e/layout-and-focus.spec.ts` for any layout rule the
+      change relies on, and make sure it fails without your fix.
+- [ ] Look at `/ui-kit` at desktop and phone width before and after.
+- [ ] Update `design.md` if a rule changed.
 
 The repository-wide PR rules (title format, Jira key, verification section,
 postplan) are in `CONTRIBUTING.md` and `AGENTS.md`.
