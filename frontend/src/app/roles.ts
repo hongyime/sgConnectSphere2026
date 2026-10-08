@@ -67,7 +67,6 @@ export const roleNavigation: Record<Role, NavItem[]> = {
     { to: '/support/equipment-requests', label: 'Equipment requests' },
     { to: '/support/catalogue', label: 'Equipment catalogue' },
     { to: '/support', label: 'Dashboard', end: true },
-    { to: '/support/queue', label: 'Request queue' },
     { to: '/support/technicians', label: 'Technician staffing' },
   ],
   admin: [

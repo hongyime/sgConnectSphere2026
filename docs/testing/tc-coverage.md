@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **142** (45.2%)
+- Automated (explicit TC_ID in an active test title): **149** (47.5%)
   - Real-database (`.integration.test` / `.db.test`): **20**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **121**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **115** (36.6%)
+  - Live-assertion (other active tests): **128**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **108** (34.4%)
 - No test yet (no test file mentions the TC_ID): **57** (18.2%)
 
 ## Coverage by epic
@@ -23,14 +23,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 37 | 4 | 21 | 12 |
-| E07 | 30 | 20 | 10 | 0 |
+| E07 | 30 | 27 | 3 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 7 | 1 | 6 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **142** | **115** | **57** |
+| **Total** | **314** | **149** | **108** | **57** |
 
 ## Case-by-case status
 
@@ -253,13 +253,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S03_01` | E07-S03 | Verify that checking availability for a period with other reservations should ex | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
 | `TC_E07S03_02` | E07-S03 | Verify that an item free for the requested date and time but located at another  | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
 | `TC_E07S03_03` | E07-S03 | Verify that two events requiring the same item at non-overlapping times on the s | ✅ active | backend/tests/equipmentAvailability.integration.test.ts: TC_E07S03_01 TC_E07S03_02 TC_E07S03_03 real PostgreSQL availability, damaged stock, location and independent periods; backe |
-| `TC_E07S04_01` | E07-S04 | Verify that reserving the requested quantity when sufficient equipment is free s | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_01 - Verify that reserving the requested quantity when sufficient equipment is free should record the reservation and notify the Event Coordinator |
-| `TC_E07S04_02` | E07-S04 | Verify that recording a partial reservation when only part of the requested quan | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_02 - Verify that recording a partial reservation when only part of the requested quantity is free should notify the Coordinator of the shortfall |
-| `TC_E07S04_03` | E07-S04 | Verify that once an item becomes fully committed, a subsequent availability chec | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_03 - Verify that once an item becomes fully committed, a subsequent availability check for that period should show no free quantity |
-| `TC_E07S04_04` | E07-S04 | Verify that releasing a reservation when a event is cancelled or the equipment i | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_04 - Verify that releasing a reservation when a event is cancelled or the equipment is no longer required should return the quantity to the availab |
-| `TC_E07S04_05` | E07-S04 | Verify that requesting one fewer than the free quantity produces a full reservat | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_05 - Verify that requesting one fewer than the free quantity produces a full reservation and leaves the remainder free |
-| `TC_E07S04_06` | E07-S04 | Verify that requesting exactly the free quantity produces a full reservation and | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_06 - Verify that requesting exactly the free quantity produces a full reservation and leaves nothing free |
-| `TC_E07S04_07` | E07-S04 | Verify that requesting one more than the free quantity produces a partial reserv | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S04_07 - Verify that requesting one more than the free quantity produces a partial reservation that blocks confirmation |
+| `TC_E07S04_01` | E07-S04 | Verify that reserving the requested quantity when sufficient equipment is free s | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_01 reserving the requested quantity records the reservation against the event and notifies the Coordinator with e |
+| `TC_E07S04_02` | E07-S04 | Verify that recording a partial reservation when only part of the requested quan | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_02 TC_E07S04_07 a partial reservation records Partial and notifies the Coordinator of the shortfall and outstandi |
+| `TC_E07S04_03` | E07-S04 | Verify that once an item becomes fully committed, a subsequent availability chec | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_03 once every unit is reserved for a period the availability check shows no free quantity; tests/e2e/equipmentRes |
+| `TC_E07S04_04` | E07-S04 | Verify that releasing a reservation when a event is cancelled or the equipment i | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_04 releasing a reservation returns its units to the pool keeps the history and lets the line be reserved again; t |
+| `TC_E07S04_05` | E07-S04 | Verify that requesting one fewer than the free quantity produces a full reservat | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
+| `TC_E07S04_06` | E07-S04 | Verify that requesting exactly the free quantity produces a full reservation and | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
+| `TC_E07S04_07` | E07-S04 | Verify that requesting one more than the free quantity produces a partial reserv | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_02 TC_E07S04_07 a partial reservation records Partial and notifies the Coordinator of the shortfall and outstandi |
 | `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_01 - Verify that marking an item with no reservations in the period unavailable, with a reason and a period, should exclude it from availability ch |
 | `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_02 - Verify that marking an item unavailable while it is reserved for an upcoming event should flag the affected event and notify its Coordinator |
 | `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_03 - Verify that returning an item to service should restore it to availability checks |
@@ -510,6 +510,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request boundary validation refuses malformed bodies and identifiers without a transaction
 - handler reads list/detail and rejects malformed save/remove actions
 
+### `backend/tests/equipmentReservations.integration.test.ts`
+
+- E07-S04 D37 D45 changing a reservation tops it up to Reserved or reduces it and clears needs review counting its own units as free
+- E07-S04 D40 D41 confirmed events refuse every change and other statuses retired equipment and unknown records are refused
+- E07-S04 only Technical Support Staff reserve change or release and every refusal is audited with nothing changed
+- E07-S04 two reservations made at the same moment cannot commit more units than exist
+- E07-S04 no Coordinator notice is sent when the event has no active assigned Coordinator
+
+### `backend/tests/equipmentReservations.test.ts`
+
+- E07-S04 reservation input needs a request or reservation id and a whole quantity of at least 1
+- E07-S04 notices write Singapore dates the way the screens do
+- E07-S04 event labels and free-quantity sentences read naturally
+- E07-S04 reservation writers refuse signed-out callers and other roles before opening a transaction
+- E07-S04 invalid input is answered with field errors and no transaction once the caller is Technical Support
+- E07-S04 the equipment request route sends reserve changeReservation and releaseReservation to the reservation writers
+
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
 - SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
@@ -664,6 +681,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a clashing event whose title already starts with its code, or has no code, is named once
 - assignments are refused for cancelled requests, unstaffable events, unknown or inactive colleagues, and repeats
 - when two people assign the same colleague at once, the database refusal is reported as the same clash
+- the colleague is locked before the clash check, so two assignments of one person queue up (follow-up to #227)
+- a deadlock between two simultaneous assignments is reported as the same clash, not a server error
 - the database refusal still gives a sentence when the winner has already been removed or the colleague is unknown
 - any other database failure is not mistaken for a clash
 - removing one of several keeps the request staffed; removing twice is refused
@@ -975,6 +994,23 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - form load failure retries and save failure without field errors retains input
 - a save completing after leaving the form does not navigate back
 
+### `frontend/src/features/support/EquipmentReservations.test.tsx`
+
+- E07-S04 - changing a reservation starts at the reserved quantity, shows Needs review and saves the new quantity
+- E07-S04 - saving an unchanged reservation says there is nothing to save
+- E07-S04 - the Coordinator sees each line state and no reservation actions
+- E07-S04 - confirmed events offer no reservation actions and cancelled events offer release only
+- E07-S04 - the reserve form explains why a line cannot be reserved
+- E07-S04 - with nothing free the form warns before the round trip
+- E07-S04 - the reserve form works inside StrictMode and keeps the reply
+- E07-S04 - a late answer for the previous event never replaces the current reserve form
+- E07-S04 - wording helpers match the API sentences and links
+- E07-S04 - an event with no code or recorded dates still reads correctly
+- E07-S04 - the reserve form shows the API refusal when the line cannot be loaded
+- E07-S04 - a second submit while saving sends nothing more, and leaving mid-save drops the late reply
+- E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case
+- E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve
+
 ### `frontend/src/features/support/TechnicianStaffing.test.tsx`
 
 - the queue shows requests needing a technician first, with filters for staffed and all
@@ -1120,6 +1156,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
 - decision page /coordinator/events/EVT-C01/decide is one centred column
+- fields side by side keep their controls level when only one has a hint
 
 ### `tests/e2e/organiser.spec.ts`
 
@@ -1137,8 +1174,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - equipment dashboard shows open requests and shortfalls
 - equipment catalogue lists inventory rows
-- request queue filters by state
-- reservation detail records a shortfall
 - technician staffing lists support requests needing a technician
 - legacy conflict route opens live equipment availability
 

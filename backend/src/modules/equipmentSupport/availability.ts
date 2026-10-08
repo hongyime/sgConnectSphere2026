@@ -62,6 +62,39 @@ export function capacityFor(row: AvailabilityRow) {
   };
 }
 
+// One statement gives catalogue, reservations and withdrawals one snapshot.
+// Ranges are clipped to the selected half-open period; location is display-only.
+// E07-S04 passes the reservation being changed as `excludeReservationId`, so its
+// own units count as free to it.
+export async function availabilityRows(
+  query: Query,
+  start: string,
+  end: string,
+  equipmentId: string | null,
+  excludeReservationId: string | null = null,
+) {
+  return (
+    await query<AvailabilityRow>(
+      `
+    SELECT eq.id,eq.name,eq.total_quantity AS "totalStock",eq.home_location AS location,
+      eq.operational_status AS "operationalStatus",
+      coalesce((SELECT jsonb_agg(jsonb_build_object(
+        'startsAt',greatest(lower(c.slot),$1::timestamptz),
+        'endsAt',least(upper(c.slot),$2::timestamptz),
+        'quantity',c.quantity,'kind',c.kind)) FROM (
+          SELECT reservation_range AS slot,quantity_reserved AS quantity,'reserved' AS kind
+          FROM equipment_reservations WHERE equipment_id=eq.id AND status IN ('reserved','partial')
+            AND ($4::uuid IS NULL OR id<>$4::uuid)
+          UNION ALL
+          SELECT unavailable_range,quantity,'unavailable' FROM equipment_unavailability WHERE equipment_id=eq.id
+        ) c WHERE c.slot && tstzrange($1::timestamptz,$2::timestamptz,'[)')), '[]'::jsonb) AS commitments
+    FROM equipment eq WHERE eq.is_active AND ($3::uuid IS NULL OR eq.id=$3::uuid)
+    ORDER BY eq.name,eq.id`,
+      [start, end, equipmentId, excludeReservationId],
+    )
+  ).rows;
+}
+
 export function availabilityPeriod(params: URLSearchParams) {
   const start = params.get('start') ?? '',
     end = params.get('end') ?? '';
@@ -122,27 +155,12 @@ export async function checkEquipmentAvailability(
     );
   }
   const period = availabilityPeriod(params);
-  // One statement gives catalogue, reservations and withdrawals one snapshot.
-  // Ranges are clipped to the selected half-open period; location is display-only.
-  const rows = (
-    await query<AvailabilityRow>(
-      `
-    SELECT eq.id,eq.name,eq.total_quantity AS "totalStock",eq.home_location AS location,
-      eq.operational_status AS "operationalStatus",
-      coalesce((SELECT jsonb_agg(jsonb_build_object(
-        'startsAt',greatest(lower(c.slot),$1::timestamptz),
-        'endsAt',least(upper(c.slot),$2::timestamptz),
-        'quantity',c.quantity,'kind',c.kind)) FROM (
-          SELECT reservation_range AS slot,quantity_reserved AS quantity,'reserved' AS kind
-          FROM equipment_reservations WHERE equipment_id=eq.id AND status IN ('reserved','partial')
-          UNION ALL
-          SELECT unavailable_range,quantity,'unavailable' FROM equipment_unavailability WHERE equipment_id=eq.id
-        ) c WHERE c.slot && tstzrange($1::timestamptz,$2::timestamptz,'[)')), '[]'::jsonb) AS commitments
-    FROM equipment eq WHERE eq.is_active AND ($3::uuid IS NULL OR eq.id=$3::uuid)
-    ORDER BY eq.name,eq.id`,
-      [period.start, period.end, period.id],
-    )
-  ).rows;
+  const rows = await availabilityRows(
+    query,
+    period.start,
+    period.end,
+    period.id,
+  );
   if (period.id && rows.length === 0)
     throw new AccessError(404, 'Active equipment not found.');
   return {
