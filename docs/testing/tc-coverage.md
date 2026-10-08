@@ -681,6 +681,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a clashing event whose title already starts with its code, or has no code, is named once
 - assignments are refused for cancelled requests, unstaffable events, unknown or inactive colleagues, and repeats
 - when two people assign the same colleague at once, the database refusal is reported as the same clash
+- the colleague is locked before the clash check, so two assignments of one person queue up (follow-up to #227)
+- a deadlock between two simultaneous assignments is reported as the same clash, not a server error
 - the database refusal still gives a sentence when the winner has already been removed or the colleague is unknown
 - any other database failure is not mistaken for a clash
 - removing one of several keeps the request staffed; removing twice is refused
