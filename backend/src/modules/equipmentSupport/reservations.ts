@@ -207,7 +207,8 @@ async function lockReservation(
 }
 
 // Free units for the event's own dates (D39), excluding the reservation being
-// changed. Same calculation as E07-S03's availability check.
+// changed. Same calculation as E07-S03's availability check. The equipment row
+// is already locked and checked as active, so its availability row exists.
 async function freeQuantity(
   client: PoolClient,
   event: LockedEvent,
@@ -221,14 +222,14 @@ async function freeQuantity(
     equipmentId,
     excludeReservationId,
   );
-  return row ? capacityFor(row) : null;
+  return capacityFor(row!);
 }
 
 // D41: at most the requested quantity, and never more than is free.
 function quantityRefusal(
   quantity: number,
   requested: number,
-  capacity: ReturnType<typeof capacityFor> | null,
+  capacity: ReturnType<typeof capacityFor>,
   name: string,
 ): Result | null {
   if (quantity > requested) {
@@ -242,7 +243,7 @@ function quantityRefusal(
       },
     };
   }
-  if (!capacity || capacity.operationallyUnavailable) {
+  if (capacity.operationallyUnavailable) {
     const message = `${name} is not available for use, so none can be reserved.`;
     return {
       status: 409,

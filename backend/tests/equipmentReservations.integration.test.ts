@@ -55,7 +55,7 @@ async function setup() {
       `INSERT INTO users(id,email,password_hash,full_name,role,is_active,client_org_id) VALUES($1,$2,'unused',$3,$4,$5,$6)`,
       [id, `${id}@example.test`, name, role, active, org],
     );
-  const event = async (code: string, status: string, range = PERIOD, coordinator = ids.coord) => {
+  const event = async (code: string, status: string, range = PERIOD, coordinator: string | null = ids.coord) => {
     const id = randomUUID();
     await q(
       `INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,event_range,expected_attendance,status)
@@ -442,6 +442,13 @@ test('E07-S04 D40 D41 confirmed events refuse every change and other statuses re
     await releaseReservation(t.db.pool, t.tech, 'EVT-OPEN', { reservationId: openReservation.id });
     assert.equal((await refusal(changeReservation(t.db.pool, t.tech, 'EVT-OPEN', { reservationId: openReservation.id, quantity: 1 }))).message,
       'This reservation has been released. Reserve the request again instead.');
+    // Retiring is blocked while reservations are active (E07-S01), so this
+    // only guards a direct database change.
+    const mixer = await t.equipment('Spare Mixer', 2);
+    const mixerReservation = (await reserveEquipment(t.db.pool, t.tech, 'EVT-OPEN', { requestId: await t.request(open, mixer, 2), quantity: 1 })).body.reservation as { id: string };
+    await t.q('UPDATE equipment SET is_active=false WHERE id=$1', [mixer]);
+    assert.equal((await refusal(changeReservation(t.db.pool, t.tech, 'EVT-OPEN', { reservationId: mixerReservation.id, quantity: 2 }))).message,
+      "This equipment has been retired, so it can't be reserved.");
     // Validation, after authorisation.
     const invalid = await reserveEquipment(t.db.pool, t.tech, 'EVT-OPEN', { requestId: openLine, quantity: 0 });
     assert.deepEqual(invalid, { status: 400, body: { error: 'validation_failed', errors: { quantity: ['Enter a whole number greater than 0.'] } } });
@@ -506,6 +513,25 @@ test('E07-S04 two reservations made at the same moment cannot commit more units 
       2,
     );
     assert.equal(await t.free(stage), 0);
+  } finally {
+    await t.db.close();
+  }
+});
+
+test('E07-S04 no Coordinator notice is sent when the event has no active assigned Coordinator', async () => {
+  const t = await setup();
+  try {
+    const mic = await t.equipment('Wireless Microphone', 5);
+    const unassigned = await t.event('EVT-NOCOORD', 'approved', PERIOD, null);
+    const inactive = await t.event('EVT-INACTIVE', 'approved');
+    await t.q('UPDATE users SET is_active=false WHERE id=$1', [t.ids.coord]);
+    for (const [code, eventId] of [['EVT-NOCOORD', unassigned], ['EVT-INACTIVE', inactive]] as const) {
+      const result = await reserveEquipment(t.db.pool, t.tech, code, { requestId: await t.request(eventId, mic, 1), quantity: 1 });
+      assert.equal(result.status, 201);
+      assert.equal(result.body.notified, 0);
+      assert.equal((await t.activity(eventId)).length, 1, 'the Activity log entry is still written');
+    }
+    assert.equal((await t.q('SELECT count(*)::int AS n FROM notifications')).rows[0].n, 0);
   } finally {
     await t.db.close();
   }
