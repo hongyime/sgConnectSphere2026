@@ -1,5 +1,6 @@
 import { equipmentHandler } from '../../backend/src/modules/equipmentSupport/handler.js';
 import { supportHandler } from '../../backend/src/modules/equipmentSupport/supportHandler.js';
+import { staffingHandler } from '../../backend/src/modules/equipmentSupport/staffingHandler.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
@@ -24,6 +25,9 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'support') {
     await supportHandler(request, response); return;
+  }
+  if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'staffing') {
+    await staffingHandler(request, response); return;
   }
   if (request.method === 'GET') {
     const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
