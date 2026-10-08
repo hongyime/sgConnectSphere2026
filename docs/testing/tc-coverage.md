@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 314 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 315 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **142** (45.2%)
+- Total test cases: **315**
+- Automated (explicit TC_ID in an active test title): **142** (45.1%)
   - Real-database (`.integration.test` / `.db.test`): **22**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **119**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **115** (36.6%)
-- No test yet (no test file mentions the TC_ID): **57** (18.2%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **116** (36.8%)
+- No test yet (no test file mentions the TC_ID): **57** (18.1%)
 
 ## Coverage by epic
 
@@ -28,9 +28,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 7 | 1 | 6 | 0 |
+| E14 | 8 | 1 | 7 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **142** | **115** | **57** |
+| **Total** | **315** | **142** | **116** | **57** |
 
 ## Case-by-case status
 
@@ -401,6 +401,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ✅ active | backend/tests/auditLogImmutability.integration.test.ts: TC_E14S02_05: an activity log entry cannot be edited or deleted, even by the server connection; tests/e2e/e14.spec.ts: TC_E1 |
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
+| `TC_E14S02_08` | E14-S02 | Verify that access-denial entries should not be shown in the event Activity log  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_08 - Verify that access-denial entries should not be shown in the event Activity log a Coordinator reads |
 
 ### EXX
 
