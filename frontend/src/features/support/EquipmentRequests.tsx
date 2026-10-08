@@ -15,19 +15,27 @@ import {
   LoadingState,
   PageLayout,
   StatusPill,
+  formatDateRange,
   useLoad,
   useSession,
 } from '../../shared';
 import {
   getRequests,
   listRequestEvents,
+  releaseReservation,
   removeRequest,
   saveRequest,
   type EquipmentRequest,
   type RequestDetail,
   type RequestEvent,
+  type ReservationOutcome,
   type SaveResult,
 } from './equipmentRequestApi';
+import {
+  ReservationPills,
+  ReservationSaved,
+  isActive,
+} from './EquipmentReservations';
 function eventRef(event: RequestEvent) {
   return event.eventCode ?? event.id;
 }
@@ -110,12 +118,37 @@ function EventRequests({ eventCode }: { eventCode: string }) {
     (signal) => getRequests(eventCode, signal),
     [eventCode],
   );
-  const saved = (useLocation().state as { equipmentSaved?: SaveResult } | null)
-    ?.equipmentSaved;
+  const state = useLocation().state as {
+    equipmentSaved?: SaveResult;
+    reservationSaved?: ReservationOutcome;
+    reservationAction?: 'reserve' | 'change';
+  } | null;
+  const saved = state?.equipmentSaved;
   const [removing, setRemoving] = useState<EquipmentRequest | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [removed, setRemoved] = useState(false);
+  // E07-S04: Technical Support releases a line's reservation in two steps.
+  const [releasing, setReleasing] = useState<EquipmentRequest | null>(null);
+  const [releaseError, setReleaseError] = useState('');
+  const [released, setReleased] = useState<ReservationOutcome | null>(null);
+  async function confirmRelease() {
+    if (!releasing?.reservation || busy) return;
+    setBusy(true);
+    setReleaseError('');
+    const response = await releaseReservation(
+      eventCode,
+      releasing.reservation.id,
+    );
+    setBusy(false);
+    if (!response.ok) {
+      setReleaseError(response.message);
+      return;
+    }
+    setReleasing(null);
+    setReleased(response.data);
+    reload();
+  }
   async function confirmRemove() {
     if (!removing || busy) return;
     setBusy(true);
@@ -173,6 +206,30 @@ function EventRequests({ eventCode }: { eventCode: string }) {
       {removed ? (
         <Alert tone="success">Equipment request removed.</Alert>
       ) : null}
+      {released ? (
+        <ReservationSaved outcome={released} action="release" />
+      ) : state?.reservationSaved ? (
+        <ReservationSaved
+          outcome={state.reservationSaved}
+          action={state.reservationAction ?? 'reserve'}
+        />
+      ) : null}
+      {releasing?.reservation ? (
+        <ConfirmPanel
+          title={`Release ${releasing.name}?`}
+          description={`The ${releasing.reservation.quantityReserved} reserved ${releasing.reservation.quantityReserved === 1 ? 'unit goes' : 'units go'} back to the available pool for this event's dates. The request stays on the event and can be reserved again.`}
+          confirmLabel="Release reservation"
+          busyLabel="Releasing…"
+          danger
+          error={releaseError || undefined}
+          onConfirm={confirmRelease}
+          onCancel={() => {
+            setReleasing(null);
+            setReleaseError('');
+          }}
+          busy={busy}
+        />
+      ) : null}
       {removing ? (
         <ConfirmPanel
           title={`Remove ${removing.name}?`}
@@ -201,7 +258,17 @@ function EventRequests({ eventCode }: { eventCode: string }) {
             title={result.data.event.title}
             actions={<StatusPill status={result.data.event.status} />}
           >
-            {!result.data.canEdit ? (
+            {staff ? (
+              <p>
+                {result.data.canReserve
+                  ? `Reserve each request from the units free for this event's dates${result.data.event.startsAt && result.data.event.endsAt ? `, ${formatDateRange(result.data.event.startsAt, result.data.event.endsAt)}` : ''}. The Coordinator is notified of each reservation and change.`
+                  : result.data.canRelease
+                    ? 'This event is cancelled. Release its reservations to return the units to the available pool.'
+                    : result.data.event.status === 'confirmed'
+                      ? "This event is confirmed, so its equipment reservations can't be changed here."
+                      : 'Equipment can be reserved while the event is approved or planning.'}
+              </p>
+            ) : !result.data.canEdit ? (
               <p>
                 Equipment requests are read-only here. Only the assigned
                 Coordinator can change unreserved requests while this event is
@@ -226,7 +293,12 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                     header: 'Status',
                     cell: (r) => (
                       <>
-                        {r.reserved ? (
+                        {r.reservation ? (
+                          <ReservationPills
+                            reservation={r.reservation}
+                            requested={r.quantity}
+                          />
+                        ) : r.reserved ? (
                           <StatusPill status="neutral" label="Reserved" />
                         ) : (
                           <StatusPill
@@ -249,6 +321,25 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                     ),
                   },
                   { header: 'Notes', cell: (r) => r.notes || 'None recorded' },
+                  ...(staff &&
+                  (result.data.canReserve || result.data.canRelease)
+                    ? [
+                        {
+                          header: 'Actions',
+                          cell: (r: EquipmentRequest) => (
+                            <StaffActions
+                              line={r}
+                              detail={result.data}
+                              onRelease={() => {
+                                setReleasing(r);
+                                setReleaseError('');
+                                setReleased(null);
+                              }}
+                            />
+                          ),
+                        },
+                      ]
+                    : []),
                   ...(result.data.canEdit
                     ? [
                         {
@@ -292,6 +383,36 @@ function EventRequests({ eventCode }: { eventCode: string }) {
         Back to equipment requests
       </ButtonLink>
     </PageLayout>
+  );
+}
+// E07-S04: what Technical Support can do with one line.
+function StaffActions({
+  line,
+  detail,
+  onRelease,
+}: {
+  line: EquipmentRequest;
+  detail: RequestDetail;
+  onRelease: () => void;
+}) {
+  const active = isActive(line.reservation);
+  const form = `/support/events/${encodeURIComponent(eventRef(detail.event))}/equipment/${line.id}/reserve`;
+  return (
+    <>
+      {detail.canReserve && line.isActive ? (
+        <ButtonLink to={form}>
+          {active ? `Change ${line.name} reservation` : `Reserve ${line.name}`}
+        </ButtonLink>
+      ) : null}
+      {detail.canRelease && active ? (
+        <Button onClick={onRelease}>Release {line.name}…</Button>
+      ) : null}
+      {!active && !(detail.canReserve && line.isActive) ? (
+        <span>
+          {detail.canReserve ? "Retired items can't be reserved" : 'Nothing to release'}
+        </span>
+      ) : null}
+    </>
   );
 }
 export function EquipmentRequestFormPage() {
