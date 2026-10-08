@@ -14,11 +14,18 @@ line's state. Subtasks SCRUM-163 to 166. Branch pre-created by Bryan on
   (`requests.ts`), three new actions on the existing equipment route (no new
   `api/` file). E07-S03's free-quantity query is shared
   (`availabilityRows`, `availability.ts`) rather than copied.
-- Run record: `docs/plans/scrum-54-implementation-status.md`.
+- Frontend: reserve form (`EquipmentReservations.tsx`), reservation pills,
+  actions and the release panel on `EquipmentRequests.tsx`; the old mock
+  `/support/queue` and `/support/requests/:id` now go to the live list.
+- Tests: unit, real-database, Vitest and Playwright (TC_E07S04_01 to _07 live in
+  `tests/e2e/equipmentReservations.spec.ts`); 100% of changed lines and
+  branches; deliberate-bug checks; real-stack click-through (F3) 41/41.
+- Run record: `docs/plans/scrum-54-implementation-status.md` (rules, screens,
+  click-through script, known limits, every run).
 
 ## Not done / next step
 
-Tests, frontend, click-throughs; see the run record's gates.
+Aaron's own click-through (F4), then `tc-coverage.md`, postplan and the PR.
 
 ## Decisions taken without team sign-off
 
