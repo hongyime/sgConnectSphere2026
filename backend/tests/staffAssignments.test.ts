@@ -180,6 +180,32 @@ test('when two people assign the same colleague at once, the database refusal is
   assert.equal(sqlCalls(db.calls, /^ROLLBACK$/).length, 1);
 });
 
+test('the colleague is locked before the clash check, so two assignments of one person queue up (follow-up to #227)', async () => {
+  const db = fakeDatabase([
+    [/FOR UPDATE OF r/, { rows: [locked] }],
+    [/role = 'technical_support_staff' AND is_active/, { rows: [{ id: COLLEAGUE, name: 'Tech B' }] }],
+  ]);
+  await assignTechnician(db.pool, tech, { request: REQUEST, staff: COLLEAGUE });
+  const order = db.calls.map(call => call.sql);
+  const colleague = order.findIndex(sql => /FROM users\s+WHERE id::text = \$1 AND role = 'technical_support_staff' AND is_active FOR NO KEY UPDATE/.test(sql));
+  assert.ok(colleague > order.findIndex(sql => /FOR UPDATE OF r/.test(sql)), 'request locked first, then the colleague');
+  assert.ok(colleague < order.findIndex(sql => /a.request_id <> \$2/.test(sql)), 'colleague locked before the clash check');
+});
+
+test('a deadlock between two simultaneous assignments is reported as the same clash, not a server error', async () => {
+  let checks = 0;
+  const deadlock = Object.assign(new Error('deadlock detected'), { code: '40P01' });
+  const db = fakeDatabase([
+    [/FOR UPDATE OF r/, { rows: [locked] }],
+    [/role = 'technical_support_staff' AND is_active/, { rows: [{ id: COLLEAGUE, name: 'Tech B' }] }],
+    [/a.request_id <> \$2/, () => ({ rows: checks++ === 0 ? [] : [charity] })],
+    [/INSERT INTO tech_staff_assignments/, deadlock],
+    [/SELECT full_name AS name FROM users WHERE id::text/, { rows: [{ name: 'Tech B' }] }],
+  ]);
+  const result = await assignTechnician(db.pool, tech, { request: REQUEST, staff: COLLEAGUE });
+  assert.deepEqual(result, { status: 409, body: { error: 'Tech B is already assigned to EVT-CR Charity Run at an overlapping time.', conflicts: [charity] } });
+});
+
 test('the database refusal still gives a sentence when the winner has already been removed or the colleague is unknown', async () => {
   const db = fakeDatabase([
     [/FOR UPDATE OF r/, { rows: [locked] }],

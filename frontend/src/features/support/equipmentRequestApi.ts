@@ -9,6 +9,16 @@ export type EquipmentRequest = {
   operationalStatus: string;
   isActive: boolean;
   reserved: boolean;
+  // E07-S04: the current reservation, or the latest released one.
+  reservation: LineReservation | null;
+  // Technical Support only: units this line could use for the event's dates.
+  freeQuantity?: number | null;
+};
+export type LineReservation = {
+  id: string;
+  status: 'reserved' | 'partial' | 'released';
+  quantityReserved: number;
+  requiresReconfirmation: boolean;
 };
 export type EquipmentOption = {
   id: string;
@@ -23,12 +33,16 @@ export type RequestEvent = {
   title: string;
   status: string;
   requestCount?: number;
+  startsAt?: string;
+  endsAt?: string;
 };
 export type RequestDetail = {
   event: RequestEvent;
   requests: EquipmentRequest[];
   equipment: EquipmentOption[];
   canEdit: boolean;
+  canReserve?: boolean;
+  canRelease?: boolean;
 };
 export type SaveResult = {
   requestId: string;
@@ -64,4 +78,44 @@ export const removeRequest = (event: string, id: string) =>
     endpoint(event),
     jsonRequest('POST', { action: 'removeRequest', id }),
     'The equipment request could not be removed.',
+  );
+
+// E07-S04 reservation writers (Technical Support Staff).
+export type ReservationOutcome = {
+  changed: boolean;
+  notified: number;
+  event: { eventCode: string | null; title: string; startsAt: string; endsAt: string };
+  reservation: {
+    id: string;
+    requestId: string;
+    name: string;
+    status: LineReservation['status'];
+    quantityReserved: number;
+    quantityRequested: number;
+    outstanding: number;
+  };
+};
+export const reserveEquipment = (
+  event: string,
+  input: { requestId: string; quantity: number },
+) =>
+  apiCall<ReservationOutcome>(
+    endpoint(event),
+    jsonRequest('POST', { action: 'reserve', ...input }),
+    'The equipment could not be reserved.',
+  );
+export const changeReservation = (
+  event: string,
+  input: { reservationId: string; quantity: number },
+) =>
+  apiCall<ReservationOutcome>(
+    endpoint(event),
+    jsonRequest('POST', { action: 'changeReservation', ...input }),
+    'The reservation could not be changed.',
+  );
+export const releaseReservation = (event: string, reservationId: string) =>
+  apiCall<ReservationOutcome>(
+    endpoint(event),
+    jsonRequest('POST', { action: 'releaseReservation', reservationId }),
+    'The reservation could not be released.',
   );
