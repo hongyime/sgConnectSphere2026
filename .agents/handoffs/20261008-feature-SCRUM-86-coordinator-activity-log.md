@@ -41,6 +41,15 @@ runs needed for the Definition of Done.
   backend unit 313/313, activity-log DB tests 8/8, Vitest 331/331, and the
   manual run of TC_E14S02_01/_02/_04/_05/_08, all PASS. Desktop and 393px
   screenshots taken by Le Xin for the PR.
+- `8ac817e` fix: coordinator assignment/reassignment entries showed account
+  UUIDs; `listEventActivity()` now resolves them to names (Organiser view too).
+  Automated runs re-recorded on `8ac817e` (unit 313/313, DB 9/9, Vitest 331/331).
+  The manual run stays on `c2ba65a`: the fix only changes coordinator-assignment
+  rows, which that run did not exercise.
+- AC audit: every status change path writes an audit row (applyEventStatusChange,
+  auto-assignment, submit); role refusals in the newer equipment/support/venue
+  modules are logged; unlogged 403s are origin (CSRF) checks. ADR-009 already
+  describes T-75, so no architecture doc change.
 
 ## Notes for the reviewer
 
