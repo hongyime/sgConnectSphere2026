@@ -2,7 +2,7 @@
 // assigned Coordinator's event page. The API already leaves out access-denial
 // entries (#161, TC_E14S02_08), so every row here is a change to the event.
 // Entries can never be edited or deleted (Scenario 5), so there are no actions.
-import { Card, DataTable, formatDate, statusLabel, type Column } from '../../shared';
+import { Card, DataTable, StatusPill, formatDate, statusLabel, type Column } from '../../shared';
 import { editableFieldLabels } from './eventEditFields';
 
 export type ActivityEntry = {
@@ -33,9 +33,34 @@ export function describeChange(entry: ActivityEntry) {
     : `${label}: ${entry.new_value}`;
 }
 
+// The stored action is written for the database ("Status changed to
+// under_review", "Record updated"); show it in the interface's words (design.md 8.1).
+export function describeAction(entry: ActivityEntry) {
+  if (entry.field_changed === 'status') return 'Status changed';
+  if (entry.action === 'Record updated') return 'Details edited';
+  return entry.action;
+}
+
+// Statuses are StatusPills (design.md section 7); "to" is read out instead of the arrow.
+function Change({ entry }: { entry: ActivityEntry }) {
+  if (entry.field_changed !== 'status' || !entry.new_value) return <>{describeChange(entry)}</>;
+  return (
+    <span>
+      {entry.old_value ? (
+        <>
+          <StatusPill status={entry.old_value} />
+          <span aria-hidden="true"> → </span>
+          <span className="visually-hidden"> to </span>
+        </>
+      ) : null}
+      <StatusPill status={entry.new_value} />
+    </span>
+  );
+}
+
 const columns: Column<Row>[] = [
-  { header: 'Action', primary: true, cell: entry => entry.action },
-  { header: 'Change', cell: describeChange },
+  { header: 'Action', primary: true, cell: describeAction },
+  { header: 'Change', cell: entry => <Change entry={entry} /> },
   { header: 'By', cell: entry => entry.actor_name ?? 'Not recorded' },
   { header: 'When', cell: entry => formatDate(entry.occurred_at, true) },
 ];

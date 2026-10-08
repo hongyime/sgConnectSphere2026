@@ -6,7 +6,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { RequestDetail } from '../coordinator/CoordinatorWorkspace';
-import { describeChange, type ActivityEntry } from './ActivityLog';
+import { describeAction, describeChange, type ActivityEntry } from './ActivityLog';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -58,10 +58,17 @@ test('TC_E14S02_01: the assigned Coordinator reads who changed the event, what c
   const table = within(card).getByRole('table', { name: 'Changes to this event, oldest first' });
   const rows = within(table).getAllByRole('row').slice(1);
   expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('Status changed to approved');
-  expect(rows[0]).toHaveTextContent('Under review → Approved');
+  expect(rows[0]).toHaveTextContent('Status changed');
+  expect(rows[0]).not.toHaveTextContent('under_review');
+  // design.md section 7: statuses are StatusPills, with "to" for screen readers.
+  const pills = rows[0]!.querySelectorAll('.status-pill');
+  expect([...pills].map(pill => pill.textContent)).toEqual(['Under review', 'Approved']);
+  expect(rows[0]!.querySelector('.visually-hidden')).toHaveTextContent('to');
+  expect(rows[0]!.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
   expect(rows[0]).toHaveTextContent('Coordinator B');
   expect(rows[0]).toHaveTextContent('8 Oct 2026');
+  expect(rows[1]).toHaveTextContent('Details edited');
+  expect(rows[1]).not.toHaveTextContent('Record updated');
   expect(rows[1]).toHaveTextContent('Venue requirements: Lecture theatre with step-free access');
 });
 
@@ -107,4 +114,17 @@ test('an entry whose actor account was removed still shows, without a name', asy
   renderDetail();
   const card = await activityCard();
   expect(within(card).getAllByRole('row')[1]).toHaveTextContent('Not recorded');
+});
+
+test('stored actions are shown in plain words, and other actions as written', () => {
+  expect(describeAction(approved)).toBe('Status changed');
+  expect(describeAction(edited)).toBe('Details edited');
+  expect(describeAction({ ...edited, action: 'Coordinator reassigned', field_changed: 'coordinator_id' })).toBe('Coordinator reassigned');
+});
+
+test('a status change with no previous status shows only the new status', async () => {
+  stub([{ ...approved, action: 'Status changed to submitted', old_value: null, new_value: 'submitted' }]);
+  renderDetail();
+  const row = within(await activityCard()).getAllByRole('row')[1]!;
+  expect([...row.querySelectorAll('.status-pill')].map(pill => pill.textContent)).toEqual(['Submitted']);
 });
