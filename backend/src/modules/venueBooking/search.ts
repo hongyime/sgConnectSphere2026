@@ -2,11 +2,10 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 
-export type Criteria = { start: string; end: string; attendance: number; capacity: number; layout: string; location: string; accessibility: string[]; facilities: string[]; q: string };
-export type Option = { id: string; label: string };
-export type Candidate = { id: string; name: string; location: string; max_capacity: number; available: boolean; layouts: (Option & { capacity: number })[]; accessibility: Option[]; facilities: Option[] };
+import { assessVenue, type Criteria, type Option, type Candidate } from './assessment.js';
+export { assessVenue, type Criteria, type Option, type Candidate } from './assessment.js';
 
-async function authorize(query: Query, user: AuthenticatedUser | undefined) {
+export async function authorizeVenueSearch(query: Query, user: AuthenticatedUser | undefined) {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['event_coordinator']).allowed) {
     await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
@@ -15,21 +14,8 @@ async function authorize(query: Query, user: AuthenticatedUser | undefined) {
   }
 }
 
-export function assessVenue(venue: Candidate, criteria: Criteria) {
-  const mismatches: string[] = [];
-  const layout = venue.layouts.find(item => item.id === criteria.layout);
-  if (criteria.layout && !layout) mismatches.push('Required room layout is not supported.');
-  const capacity = criteria.layout ? layout?.capacity : venue.max_capacity;
-  if (capacity !== undefined && capacity < Math.max(criteria.attendance, criteria.capacity)) mismatches.push(`Capacity ${capacity} is below the required ${Math.max(criteria.attendance, criteria.capacity)} places.`);
-  if (criteria.location && !venue.location.toLowerCase().includes(criteria.location.toLowerCase())) mismatches.push('Location does not match.');
-  for (const id of criteria.accessibility) if (!venue.accessibility.some(item => item.id === id)) mismatches.push(`Missing accessibility feature: ${id}`);
-  for (const id of criteria.facilities) if (!venue.facilities.some(item => item.id === id)) mismatches.push(`Missing facility: ${id}`);
-  if (!venue.available) mismatches.push('Unavailable during the requested period.');
-  return { ...venue, effective_capacity: capacity ?? null, suitable: mismatches.length === 0, mismatches };
-}
-
 export async function venueSearch(query: Query, user: AuthenticatedUser | undefined, params: URLSearchParams) {
-  await authorize(query, user);
+  await authorizeVenueSearch(query, user);
   const layouts = (await query<Option>('SELECT id, label FROM room_layouts ORDER BY label')).rows;
   const accessibility = (await query<Option>('SELECT id, label FROM accessibility_features ORDER BY label')).rows;
   const facilities = (await query<Option>('SELECT id, label FROM facilities ORDER BY label')).rows;

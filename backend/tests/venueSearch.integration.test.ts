@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client } from 'pg';
+import { venueSuitability } from '../src/modules/venueBooking/suitability.js';
 import { venueSearch } from '../src/modules/venueBooking/search.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
-test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requirements, near matches and range boundaries', async()=> {
+test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requirements, suitability and range boundaries', async()=> {
  const url=process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
  assert.ok(url,'Configure a database; fixtures use a unique rollback-only schema.');
  const client=new Client({connectionString:url,connectionTimeoutMillis:8000});
@@ -49,6 +50,29 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requ
   assert.equal(byName.Small.suitable,false); assert.equal(byName.Small.effective_capacity,50);
   for(const word of ['layout','Loop','Projector']) assert.ok(byName.Missing.mismatches.some(m=>m.includes(word)));
   assert.ok(!JSON.stringify(result.venues).includes('Private maintenance detail')); assert.ok(!JSON.stringify(result.venues).includes(event));
+  // E06-S02 reads the same persisted requirements but applies its own hours rule.
+  await client.query("UPDATE venues SET opens_at='08:00', closes_at='22:00' WHERE id=$1", [ids.Full]);
+  const assessParams = new URLSearchParams({ event_id:event, venue_id:ids.Full, attendance:'1' });
+  const good = await venueSuitability(query,user,assessParams);
+  assert.equal(good.assessment.suitable,true);
+  assert.equal(good.assessment.comparisons[0].required,'80');
+  for (const period of ['[2026-11-10T07:59:59+08,2026-11-10T10:00:00+08)', '[2026-11-10T10:00:00+08,2026-11-10T22:00:01+08)', '[2026-11-10T10:00:00+08,2026-11-11T10:00:00+08)']) {
+   await client.query('UPDATE events SET event_range=$1 WHERE id=$2',[period,event]);
+   const advisory=await venueSuitability(query,user,assessParams);
+   assert.equal(advisory.assessment.suitable,false);
+   assert.equal(advisory.assessment.advisory,true);
+   assert.ok(advisory.assessment.mismatches.includes('Event is outside operating hours.'));
+   const unchanged=await venueSearch(query,user,new URLSearchParams({event_id:event,search:'1'}));
+   assert.equal(unchanged.venues?.find(v=>v.id===ids.Full)?.suitable,true);
+  }
+  await client.query('UPDATE events SET event_range=$1 WHERE id=$2',[range,event]);
+  for(const name of ['Small','Missing','Blocked']) {
+   assessParams.set('venue_id',ids[name]);
+   assert.equal((await venueSuitability(query,user,assessParams)).assessment.suitable,false);
+  }
+  assessParams.set('venue_id',ids.Inactive);
+  await assert.rejects(venueSuitability(query,user,assessParams),{status:404});
+  assert.equal((await client.query('SELECT count(*)::int AS count FROM venue_bookings')).rows[0].count,4);
   params.set('attendance','300'); const near=await venueSearch(query,user,params); assert.ok(near.venues?.length); assert.ok(near.venues?.every(v=>!v.suitable && v.mismatches.length));
   params.set('q','Full'); assert.equal((await venueSearch(query,user,params)).venues?.length,1);
   params.delete('q'); params.set('attendance','80'); params.set('start','2026-11-10T19:00:00+08:00'); params.set('end','2026-11-10T20:00:00+08:00');
