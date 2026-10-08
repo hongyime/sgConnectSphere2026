@@ -29,13 +29,34 @@ runs needed for the Definition of Done.
 - TC_E14S02_08 names seeded accounts (coord_b, organiser_a, EVT-2003) rather
   than placeholders, in line with #230.
 
-## Not done / next step
+## Done on this branch
 
-1. Backend: return the Activity log to a Coordinator permitted to view the event
-   (today only `eventVisibility.getEvent` builds it, behind `requireOrganiser`).
-   Keep the `a.action <> 'Access Denied'` filter.
-2. Frontend: show the read-only Activity log on the Coordinator event page.
-3. Unit and integration tests labelled TC_E14S02_01/_02/_04/_08; 100% coverage of changed code.
-4. Manual runs of TC_E14S02_01/_02/_04/_05/_08 with actual results in Remarks (T-65).
-   Seed substitutions: coordinator_1 -> coord_b + EVT-2003; EVT-B01 -> EVT-2003; reseed after _04.
-5. Raise Aaron's optional re-estimate of the remaining E14-S02 work at Sprint 3 planning.
+- `832cc53` docs: denial rule, TC_E14S02_08, role typo, regenerated exports.
+- `1291346` backend: `listEventActivity()` shared by the Organiser and the
+  assigned Coordinator reads; `activityLog` on `GET /api/events?assigned=1&id=`.
+  `backend/tests/activityLog.integration.test.ts` (TC_E14S02_01/_02/_04/_08) in `test:db`.
+- `c2ba65a` frontend: read-only `ActivityLog` card (Card + DataTable) on
+  `/coordinator/events/:eventCode`; `ActivityLog.test.tsx`.
+- Evidence on `c2ba65a` in `docs/testing/runs/20261008-*-lexinphun2024-debug-*.md`:
+  backend unit 313/313, activity-log DB tests 8/8, Vitest 331/331, and the
+  manual run of TC_E14S02_01/_02/_04/_05/_08, all PASS. Desktop and 393px
+  screenshots taken by Le Xin for the PR.
+
+## Notes for the reviewer
+
+- `eventVisibility.integration.test.ts` fails on `main` too (it applies only
+  migrations 0001-0004, so `venue_requirements` is missing); unrelated.
+- Running the local API with the whole `.env` sends `eventVisibility/runtime.ts`
+  queries to `DATABASE_POOLER_URL` (shared Supabase). During this run a
+  couple of sessions and Access Denied rows for organiser_a on EVT-2003 likely
+  reached Supabase before the API was restarted with only `DATABASE_URL`.
+- Found, not fixed here: the Organiser edit form has no registration setup
+  field, so a seeded request missing it cannot be completed through the UI;
+  its "Opens" label renders outside the registration dates fieldset.
+
+## Next step
+
+1. Push, open the PR (four template sections, `Closes SCRUM-86`), attach the
+   two screenshots, request review from someone other than Le Xin.
+2. Tell @bryanseah234 about the added rule and TC_E14S02_08 (Aaron's #192 review).
+3. Raise Aaron's optional re-estimate at Sprint 3 planning.
