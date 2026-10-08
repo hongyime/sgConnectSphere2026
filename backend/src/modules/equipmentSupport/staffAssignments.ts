@@ -10,8 +10,9 @@
 // Data: `tech_staff_assignments`, one row per colleague per request, covering
 // the request's whole support range. Removing sets `status = 'released'`, so
 // history stays but the slot is free: the table's exclusion constraint only
-// counts `assigned` rows, and it is the last guard against two people
-// assigning the same colleague at once. A request is `staffed` while it has at
+// counts `assigned` rows. Two people assigning the same colleague at once are
+// serialised by locking the colleague's user row, with the constraint as the
+// last guard. A request is `staffed` while it has at
 // least one assigned colleague and goes back to `open` when the last leaves.
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
@@ -128,8 +129,11 @@ async function lockRequest(client: PoolClient, id: string, forRemoval = false) {
   return request;
 }
 
+// 23P01: the exclusion constraint refused the insert. 40P01: a deadlock
+// between two such inserts. The colleague lock above should prevent both;
+// they stay as a backstop, reported as the same clash.
 const isOverlapViolation = (error: unknown) =>
-  (error as { code?: string })?.code === '23P01';
+  ['23P01', '40P01'].includes((error as { code?: string })?.code ?? '');
 
 export async function assignTechnician(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   await requireTechnician(database.query.bind(database) as Query, user);
@@ -140,8 +144,14 @@ export async function assignTechnician(database: Pool, user: AuthenticatedUser |
   try {
     return await inTransaction(database, async client => {
       const request = await lockRequest(client, id);
+      // Lock the colleague so two assignments of the same person queue up
+      // instead of racing: the second then sees the first in conflictsFor and
+      // gets the clash sentence. Without it, two simultaneous inserts each wait
+      // on the other's exclusion-constraint check and PostgreSQL aborts one
+      // with a deadlock. NO KEY UPDATE doesn't block foreign-key checks
+      // (e.g. notifications for this user). Lock order: request, then colleague.
       const colleague = (await client.query<{ id: string; name: string }>(`SELECT id, full_name AS name FROM users
-        WHERE id::text = $1 AND role = 'technical_support_staff' AND is_active`, [staffId])).rows[0];
+        WHERE id::text = $1 AND role = 'technical_support_staff' AND is_active FOR NO KEY UPDATE`, [staffId])).rows[0];
       if (!colleague) throw new AccessError(400, 'Only active Technical Support Staff can be assigned.');
       const already = await client.query(`SELECT 1 FROM tech_staff_assignments
         WHERE request_id = $1 AND staff_id = $2 AND status = 'assigned'`, [request.id, colleague.id]);
