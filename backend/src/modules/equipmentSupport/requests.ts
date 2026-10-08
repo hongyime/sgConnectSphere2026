@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { availabilityRows, capacityFor } from './availability.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type RequestInput = { equipmentId: string; quantity: number; notes: string };
@@ -14,6 +15,15 @@ type Event = {
   title: string;
   status: string;
   coordinatorId: string | null;
+  startsAt?: string;
+  endsAt?: string;
+};
+// E07-S04: the line's current reservation, or its latest released one.
+export type LineReservation = {
+  id: string;
+  status: 'reserved' | 'partial' | 'released';
+  quantityReserved: number;
+  requiresReconfirmation: boolean;
 };
 export type EquipmentRequest = {
   id: string;
@@ -25,6 +35,8 @@ export type EquipmentRequest = {
   operationalStatus: string;
   isActive: boolean;
   reserved: boolean;
+  reservation: LineReservation | null;
+  freeQuantity?: number | null;
 };
 export function validateRequestInput(body: unknown) {
   const data =
@@ -102,7 +114,8 @@ async function eventFor(
     throw new AccessError(400, 'An event id or code is required.');
   const event = (
     await query<Event>(
-      `SELECT id,event_code AS "eventCode",title,status,coordinator_id AS "coordinatorId"
+      `SELECT id,event_code AS "eventCode",title,status,coordinator_id AS "coordinatorId",
+      lower(event_range) AS "startsAt",upper(event_range) AS "endsAt"
     FROM events WHERE id::text=$1 OR event_code=$1 ${lock ? 'FOR NO KEY UPDATE' : ''}`,
       [identifier],
     )
@@ -127,7 +140,11 @@ async function rows(query: Query, eventId: string) {
     await query<EquipmentRequest>(
       `SELECT r.id,r.equipment_id AS "equipmentId",eq.name,r.quantity_requested AS quantity,
     coalesce(r.technical_notes,'') AS notes,eq.total_quantity AS "totalStock",eq.operational_status AS "operationalStatus",eq.is_active AS "isActive",
-    EXISTS(SELECT 1 FROM equipment_reservations x WHERE x.request_id=r.id) AS reserved
+    EXISTS(SELECT 1 FROM equipment_reservations x WHERE x.request_id=r.id) AS reserved,
+    (SELECT jsonb_build_object('id',x.id,'status',x.status,'quantityReserved',x.quantity_reserved,
+        'requiresReconfirmation',x.requires_reconfirmation)
+      FROM equipment_reservations x WHERE x.request_id=r.id
+      ORDER BY (x.status<>'released') DESC,x.created_at DESC,x.id LIMIT 1) AS reservation
     FROM equipment_requests r JOIN equipment eq ON eq.id=r.equipment_id WHERE r.event_id=$1 ORDER BY eq.name,r.id`,
       [eventId],
     )
@@ -165,9 +182,30 @@ export async function getEquipmentRequests(
       await denied(query, actor, identifier);
     throw error;
   }
+  const requests = await rows(query, event.id);
+  const staff = actor.role === 'technical_support_staff';
+  // Technical Support sees what each line could still reserve for the event's
+  // dates (its own active reservation counts as free to it).
+  if (staff && event.startsAt && event.endsAt)
+    for (const line of requests) {
+      const active =
+        line.reservation && line.reservation.status !== 'released'
+          ? line.reservation.id
+          : null;
+      const [row] = line.isActive
+        ? await availabilityRows(
+            query,
+            new Date(event.startsAt).toISOString(),
+            new Date(event.endsAt).toISOString(),
+            line.equipmentId,
+            active,
+          )
+        : [];
+      line.freeQuantity = row ? capacityFor(row).freeQuantity : null;
+    }
   return {
     event,
-    requests: await rows(query, event.id),
+    requests,
     equipment: (
       await query(
         `SELECT id,name,category,total_quantity,operational_status FROM equipment WHERE is_active ORDER BY name`,
@@ -176,6 +214,11 @@ export async function getEquipmentRequests(
     canEdit:
       actor.role === 'event_coordinator' &&
       ['approved', 'planning'].includes(event.status),
+    // E07-S04 D40: reserve or change while approved or planning; release also
+    // once cancelled; nothing once confirmed.
+    canReserve: staff && ['approved', 'planning'].includes(event.status),
+    canRelease:
+      staff && ['approved', 'planning', 'cancelled'].includes(event.status),
   };
 }
 async function notify(
