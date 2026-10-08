@@ -5,18 +5,17 @@ Goal: Document who applies production Supabase migrations after merge, the manua
 ## Done so far
 
 - Added `docs/ops/production-migrations.md` and linked it from the README guide list.
-- The procedure names Bryan as deploy owner, requires a pre-run `_connectsphere_migrations` check, applies migrations manually, verifies each migration, stops on failure, and requires a committed run record.
+- The procedure assigns migration work to the deploy owner role, requires a pre-run `_connectsphere_migrations` check, applies migrations manually, verifies each migration, stops on failure, and requires a committed run record.
+- Schema-dependent releases use a migration-only PR first, with backward-compatible SQL; the application-code PR stays unmerged until the post-run ledger check passes. Incompatible changes require a reviewed production deployment hold and resume control, which the current workflow does not provide.
 - Documented the current CLI behavior observed in `backend/src/database/cli.ts`: it applies all files missing from the ledger, so the operator must stop if more than one file is pending.
 - Committed the docs and initial T-65 run record as `ce70ff8`; the branch is pushed to `origin/docs/production-migrations`.
-- `python scripts/check.py` passed on `ce70ff8` with 87 tooling tests; the run is recorded in the latest tooling session file under `docs/testing/runs/`.
 - No production database connection or migration was run for this documentation change.
 
 ## Next
 
-- Open the reviewed PR and wait for the required CI checks and one human approval; `main` protection disables bypass.
+- Push the review fixes and wait for required CI checks and human approval; `main` protection disables bypass.
 
 ## Verification
 
-- `python scripts/check.py`: PASS — repository hygiene and tooling tests; 87 tests passed.
-- `python scripts/check_test_run_records.py`: PASS — all 160 records validated before this latest record was added.
-- Staged-file hooks passed on `ce70ff8`.
+- `python scripts/check.py`: PASS — repository hygiene and 87 tooling tests; a T-65 tooling session record was added.
+- No application build, runtime test, or production database operation was run.

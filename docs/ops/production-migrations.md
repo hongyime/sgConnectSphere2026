@@ -1,14 +1,23 @@
 # Production database migrations
 
-This runbook covers applying SQL migrations in the production Supabase database. **Bryan is the deploy owner and the person with production Supabase access.** He applies each migration by hand after its pull request merges to `main`.
+This runbook covers applying SQL migrations in the production Supabase database. The **deploy owner** is the role responsible for applying each migration after its pull request merges to `main`. Record that role in the run record; do not include a person's name or other personal data.
 
-## Trigger and owner
+## Release sequence and owner
 
-Immediately after a PR that adds a file under `backend/database/migrations/` merges to `main`, Bryan applies the new migration to production using the steps below. This is a manual database operation; a code merge or application deployment does not apply the migration for him.
+The Vercel workflow deploys on pushes to `main` when changed files are not under its documentation and tooling exclusions. A migration file under `backend/database/migrations/` is not excluded, so merging a migration can trigger a production deployment even when the PR contains no application-code change. Use this order for schema changes that require an application release:
+
+1. Split the change into a migration-only PR and a separate application-code PR. The migration PR may include documentation, but no application code or configuration that changes the deployment. The migration must remain compatible with the currently deployed application.
+2. Merge the migration-only PR. Its push may deploy the unchanged application. Backward compatibility keeps that application safe both before and after the schema change.
+3. Immediately apply and verify the migration using the steps below. Keep the application-code PR open; do not merge it or otherwise deploy code that depends on the new schema before the post-run ledger check passes.
+4. After the migration is verified, merge the application-code PR. Its production deployment then runs against the migrated schema.
+
+The current automatic deployment workflow has no production hold and resume control. If a migration is not backward-compatible with the deployed application, or its dependent code cannot be released separately, stop before merging or applying it. First add and review a deployment control that holds the code deployment until the migration has been applied and verified. Do not rely on an ad hoc workflow disable as a hold; the current workflow has no reliable resume trigger.
+
+The database operation is manual. A code merge or Vercel deployment does not apply a migration.
 
 ## Apply one migration safely
 
-1. Review the merged PR and confirm the migration file on `main`. Use a shell where `DATABASE_URL` is securely set to the production database. Do not print or copy its value into a terminal transcript, PR, or run record.
+1. Review the merged migration-only PR and confirm the migration file on `main` is compatible with the deployed application. Use a shell where `DATABASE_URL` is securely set to the production database. Do not print or copy its value into a terminal transcript, PR, or run record.
 2. Before running the CLI, use Supabase SQL Editor or another read-only SQL session to inspect the migration ledger:
 
    ```sql
@@ -35,7 +44,7 @@ Create one Markdown record for every production migration attempt, including fai
 
 `docs/ops/production-migration-runs/YYYYMMDD-HHmm-<migration-filename>.md`
 
-Use UTC in the filename and timestamp. Commit the record through the normal reviewed docs PR workflow promptly after the verification (or failure investigation). Record only migration-ledger evidence and sanitized errors; never include `DATABASE_URL`, credentials, personal data, or application rows.
+Use UTC in the filename and timestamp. Commit the record through the normal reviewed docs PR workflow promptly after the verification (or failure investigation). Record only migration-ledger evidence and sanitized errors; never include `DATABASE_URL`, credentials, personal data, or application rows. Identify the operator by role, not by name.
 
 Copy this template for each attempt:
 
@@ -43,7 +52,7 @@ Copy this template for each attempt:
 # Production migration run — <migration filename>
 
 - Started (UTC):
-- Operator: Bryan
+- Operator: deploy owner
 - Merged PR:
 - `main` commit:
 - Migration file:
