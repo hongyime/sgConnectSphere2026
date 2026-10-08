@@ -29,4 +29,4 @@ Run by Claude for Amareet.
 | TC_E07S07_05 | A replacement goes through the same check | PASS | Tech B is still refused; Tech A is assigned; one assigned row (Tech A) |
 | TC_E07S07_06 | Notified when assigned and when removed | PASS | Tech C's notices, in order: "Technical support requested", "Technical support assignment", "Technical support assignment removed" |
 | MULTIPLE | Refusals | PASS | A cross-site POST got 403; a Coordinator calling the staffing API got 403 |
-| MULTIPLE | Rest of the real-session suite | PASS | equipmentAvailability, equipmentCatalogue, equipmentRequests, loginRecovery and notificationInbox journeys on both viewports |
+| MULTIPLE | Rest of the real-session suite | PASS | equipmentAvailability, equipmentCatalogue, equipmentRequests and notificationInbox journeys on both viewports |
