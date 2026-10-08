@@ -12,7 +12,9 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import { decideEventRequest } from '../src/modules/eventLifecycle/decision.js';
-import { getAssignedEvent } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
+import {
+  getAssignedEvent, requestCoordinatorReassignment, respondToCoordinatorReassignment,
+} from '../src/modules/eventLifecycle/coordinatorAssignment.js';
 import { deactivateAccount } from '../src/modules/accessControl/deactivation.js';
 import { getEvent, type Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -154,4 +156,26 @@ test('TC_E14S02_08: access-denial entries and the refused users are not shown in
   for (const hidden of ['Access Denied', 'Organiser A', 'Coordinator A', f.ids.organiserA, f.ids.coordA, 'example.test']) {
     assert.equal(shown.includes(hidden), false, `${hidden} must not appear in the Activity log`);
   }
+}));
+
+test('TC_E14S02_01: Coordinator reassignment entries name the Coordinators instead of their account IDs', () => withFixture(async f => {
+  const request = await requestCoordinatorReassignment(f.pool, f.user(f.ids.coordB), 'EVT-2003', { toCoordinatorId: f.ids.coordA });
+  await respondToCoordinatorReassignment(f.pool, f.user(f.ids.coordA), request.id, 'accept');
+
+  const log = activityOf(await getAssignedEvent(f.pool, f.user(f.ids.coordA), 'EVT-2003'));
+  const coordinatorRows = log.filter(entry => entry.field_changed === 'coordinator_id');
+  assert.ok(coordinatorRows.length >= 2, 'the request and the acceptance are both logged');
+  for (const entry of coordinatorRows) {
+    assert.deepEqual([entry.old_value, entry.new_value], ['Coordinator B', 'Coordinator A'], entry.action);
+  }
+  const shown = JSON.stringify(log);
+  assert.equal(shown.includes(f.ids.coordA) || shown.includes(f.ids.coordB), false, 'no account IDs are shown');
+
+  // A value that is not an account ID is shown as written.
+  await f.pool.query(
+    `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
+     VALUES (NULL, 'event', $1, $1, 'Coordinator assignment pending', 'coordinator_id', 'No eligible Event Coordinator')`, [f.eventId]);
+  const pending = activityOf(await getAssignedEvent(f.pool, f.user(f.ids.coordA), 'EVT-2003')).at(-1)!;
+  assert.deepEqual([pending.action, pending.old_value, pending.new_value, pending.actor_name],
+    ['Coordinator assignment pending', null, 'No eligible Event Coordinator', null]);
 }));

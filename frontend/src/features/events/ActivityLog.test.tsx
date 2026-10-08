@@ -96,6 +96,10 @@ test('a change is described in words for status changes, edits and entries witho
   expect(describeChange({ ...edited, field_changed: 'somethingNew' })).toBe('SomethingNew: Lecture theatre with step-free access');
   expect(describeChange({ ...approved, field_changed: null })).toBe('None recorded');
   expect(describeChange({ ...approved, new_value: null })).toBe('Under review → Not recorded');
+  const reassigned = { ...approved, action: 'Coordinator reassigned', field_changed: 'coordinator_id', old_value: 'Coordinator B', new_value: 'Coordinator A' };
+  expect(describeChange(reassigned)).toBe('Coordinator: Coordinator B → Coordinator A');
+  expect(describeChange({ ...reassigned, old_value: null })).toBe('Coordinator: Coordinator A');
+  expect(describeChange({ ...reassigned, old_value: 'Coordinator A' })).toBe('Coordinator: Coordinator A');
 });
 
 test('an entry whose actor account was removed still shows, without a name', async () => {

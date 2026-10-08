@@ -16,6 +16,8 @@ export type ActivityEntry = {
 
 type Row = ActivityEntry & { key: string };
 
+const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
+
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit.
 export function describeChange(entry: ActivityEntry) {
   if (!entry.field_changed) return 'None recorded';
@@ -23,8 +25,12 @@ export function describeChange(entry: ActivityEntry) {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
     return entry.old_value ? `${statusLabel(entry.old_value)} → ${to}` : to;
   }
-  const label = statusLabel(editableFieldLabels[entry.field_changed] ?? entry.field_changed);
-  return entry.new_value ? `${label}: ${entry.new_value}` : label;
+  const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
+  if (!entry.new_value) return label;
+  // Coordinator assignment and reassignment keep the previous Coordinator.
+  return entry.old_value && entry.old_value !== entry.new_value
+    ? `${label}: ${entry.old_value} → ${entry.new_value}`
+    : `${label}: ${entry.new_value}`;
 }
 
 const columns: Column<Row>[] = [
