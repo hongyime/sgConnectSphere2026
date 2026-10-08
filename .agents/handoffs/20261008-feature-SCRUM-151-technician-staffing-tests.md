@@ -22,8 +22,8 @@ tests there would have dismissed its approval. Owner: Amareet.
 
 ## Next
 
-- Amareet runs the E07-S07 script by hand on a freshly seeded local database,
-  and records it as `run_type: manual`, `runner: amareetkm2024-del`, with
-  the actual result on every row.
+- Done: Amareet ran the E07-S07 script by hand on 9 October 2026, recorded in
+  `docs/testing/runs/20261009-021140-amareetkm2024-del-frontend-e2e.md` (7/7
+  rows PASS, each backed by a database check).
 - After merge: move SCRUM-57 (E07-S07) to Done by hand; jira-sync closes only
   SCRUM-151.
