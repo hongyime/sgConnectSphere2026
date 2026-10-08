@@ -1120,6 +1120,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
 - decision page /coordinator/events/EVT-C01/decide is one centred column
+- fields side by side keep their controls level when only one has a hint
 
 ### `tests/e2e/organiser.spec.ts`
 
