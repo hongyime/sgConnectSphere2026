@@ -75,8 +75,6 @@ export const technicians: Technician[] = [
   { id: 'T-103', name: 'Zoe Kwek',    assignments: [],           availableEvents: ['EVT-C01', 'EVT-C02', 'EVT-C03', 'EVT-N04'] },
 ];
 
-export function findEquipmentType(id: string) { return equipmentTypes.find(equipment => equipment.id === id); }
-export function findRequest(id: string) { return requests.find(request => request.id === id); }
 
 export const supportSummary = {
   openRequests: requests.filter(request => request.state !== 'Fulfilled').length,
