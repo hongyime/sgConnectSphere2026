@@ -52,13 +52,11 @@ Example: A booking from 10:00-12:00 with 30min setup and 45min turnaround occupi
   venue buffer migration is being renamed from 0014 to 0011.
 - The SQL callers to update are `search.ts`, `calendar.ts`, `blocks.ts`, and
   `catalogue.ts` under `backend/src/modules/venueBooking/`.
-- The user requested a commit and push to this branch, with no pull request.
+- The initial implementation request was to commit and push before PR #231 was opened; the later review-response work below superseded that scope.
 
 ## Next Steps
 
-- Finish the migration and four caller updates, run `python scripts/check.py`,
-  then commit and push the scoped changes. Preserve the session-start edits to
-  `.agents/STATE.md` and `.agents/JOURNAL.md`; do not stage them.
+- The earlier implementation and review-response steps are present on the live PR head. The current merge update and its remaining push step are recorded in the 2026-10-08 section below.
 
 ## 2026-10-07 review-response pass (PR #231, xiangyingg CHANGES_REQUESTED)
 
@@ -118,3 +116,17 @@ above uncommitted changes (the stash had already been dropped). Everything was
 reconstructed from the session record and re-verified before committing. If two
 agents must share one clone, serialize branch checkouts or use separate
 worktrees.
+
+
+## 2026-10-08 PR #231 update from the live branch
+
+- GitHub reported PR #231's live head as `feature/SCRUM-44-venue-setup-turnaround` at `06104c4`; the separate local branch worktree was stale and was left untouched.
+- Merged `origin/main` at `1086940` into the live PR head.
+- Resolved `backend/package.json` by keeping `equipmentReservations` in main's `test` and `test:db` scripts and preserving PR #231's `venueBufferConflicts.integration.test.ts` entry in `test:db`.
+- Regenerated `docs/testing/tc-coverage.md` with `python scripts/tc_coverage_audit.py`; generated totals are 152 automated, 108 scaffold, and 54 without tests (314 total).
+- No changes were made to `.agents/STATE.md` or `.agents/JOURNAL.md`.
+
+- `python scripts/check.py` passed after the handoff newline fix: 87 tooling tests passed; the pre-existing 161 run records validated. See the new T-65 session record under `docs/testing/runs/`.
+- Application tests/build and deployment were not run; this task resolves the merge and repository-generated coverage only.
+
+Next: commit the resolved merge and record, push normally to the existing PR branch, then confirm GitHub sees the new head.
