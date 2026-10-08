@@ -4,6 +4,8 @@
 # The delivery ledger names GitHub handles for contribution attribution, which
 # is the same kind of intentional public reference as CODEOWNERS.
 docs/backlog/sprint-1-delivery.md
+# This existing handoff records a public GitHub attribution from its source task.
+.agents/handoffs/20261005-feature-SCRUM-53-equipment-availability.md
 # The sprint retrospective quotes GitHub handles in its audit evidence.
 # These are already public on github.com and were committed in PR #99.
 docs/plans/sprint-1-retrospective.md
