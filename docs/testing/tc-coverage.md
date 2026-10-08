@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **315**
 - Automated (explicit TC_ID in an active test title): **146** (46.3%)
-  - Real-database (`.integration.test` / `.db.test`): **25**
+  - Real-database (`.integration.test` / `.db.test`): **23**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **120**
+  - Live-assertion (other active tests): **122**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **112** (35.6%)
 - No test yet (no test file mentions the TC_ID): **57** (18.1%)
 
@@ -859,6 +859,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the card is not shown before approval, so no support request is loaded
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
+
+### `frontend/src/features/events/ActivityLog.test.tsx`
+
+- an event with no recorded activity says so
+- a change is described in words for status changes, edits and entries without a field
+- an entry whose actor account was removed still shows, without a name
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
