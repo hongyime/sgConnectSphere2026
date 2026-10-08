@@ -151,16 +151,19 @@ EVT-3003's venue booking is still pending, so its venue is not confirmed.
 
 ## Results table
 
-Copy this into the run record and fill in "Actual result" for every row,
-even when it passes.
+Copy this into the run record under its frontmatter. It uses the four columns
+every run record must have (`TC_ID | Test Name | Outcome | Remarks`, checked
+by `scripts/check_test_run_records.py`). For each row, set **Outcome** to
+`PASS`, `FAIL`, `SKIP` or `N/A`. Then replace the text after the step
+numbers in **Remarks** with what you actually saw, even when it passes.
 
-| TC_ID | Test Name | Steps | Outcome | Actual result |
-| --- | --- | --- | --- | --- |
-| TC_E07S06_03 | Marking an event as needing no technical support creates no request and doesn't block confirmation | 1–4 | | |
-| TC_E07S06_02 | Submitting a support request before the venue is confirmed is accepted | 5–6, 10 | | |
-| TC_E07S06_01 | Submitting a support request describing the support and times notifies Technical Support Staff and records it against the event | 10–12 | | |
-| MULTIPLE | Form rejects a blank, too-long or reversed request | 7–9 | | |
-| MULTIPLE | Another Coordinator is refused; a confirmed event is read-only | 13–15 | | |
+| TC_ID | Test Name | Outcome | Remarks |
+| --- | --- | --- | --- |
+| TC_E07S06_03 | Marking an event as needing no technical support creates no request and doesn't block confirmation | | Steps 1–4: <what you saw> |
+| TC_E07S06_02 | Submitting a support request before the venue is confirmed is accepted | | Steps 5–6, 10: <what you saw> |
+| TC_E07S06_01 | Submitting a support request describing the support and times notifies Technical Support Staff and records it against the event | | Steps 10–12: <what you saw> |
+| MULTIPLE | Form rejects a blank, too-long or reversed request | | Steps 7–9: <what you saw> |
+| MULTIPLE | Another Coordinator is refused; a confirmed event is read-only | | Steps 13–15: <what you saw> |
 
 The "doesn't block confirmation" part of TC_E07S06_03 depends on E08-S03,
 which isn't built yet. This run checks the part E07-S06 owns: nothing is left
