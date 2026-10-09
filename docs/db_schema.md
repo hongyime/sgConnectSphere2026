@@ -121,8 +121,8 @@ erDiagram
         varchar name
         varchar location
         int max_capacity
-        smallint setup_minutes "Week 7 C-65; default 0"
-        smallint turnaround_minutes "Week 7 C-65; default 0"
+        int setup_time_minutes "Week 7 C-65; default 0; migration 0011 in PR #231"
+        int turnaround_time_minutes "Week 7 C-65; default 0; migration 0011 in PR #231"
         time opens_at
         time closes_at
         boolean is_active "false once retired"
@@ -182,7 +182,10 @@ erDiagram
         booking_status status "pending, tentative, confirmed, rejected, released, conflicting, expired"
         text purpose "Week 7 C-67; e.g. Main programme, Breakout A"
         int headcount "Week 7 C-67; governs suitability for this venue, falls back to EVENTS.expected_attendance (O-27)"
-        boolean is_primary "Week 7 C-67; the venue shown to Attendees (O-30)"
+        boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30)"
+        uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
+        timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
+        uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
         timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31)"
         timestamptz reminder_sent_at "Week 7 C-68; expiry reminder guard (O-33)"
         boolean requires_reconfirmation
@@ -372,18 +375,12 @@ erDiagram
     }
 ```
 
-### Pending migration for the Week 7 Customer Changes
+### Week 7 migration sequence
 
-Not yet written as SQL; recorded here so the ERD above and the next migration agree. One migration, `0011_week7_customer_changes.sql`, in this order:
+The ERD above describes the shared target schema. The checked-in migration 0001 still creates venue_bookings with booking_range and an exclusion constraint over Pending and Confirmed rows.
 
-1. `ALTER TYPE user_role ADD VALUE 'event_coordinator_lead'; ALTER TYPE user_role ADD VALUE 'safety_officer';` (T-72)
-2. `ALTER TYPE event_status ADD VALUE 'safety_review' BEFORE 'confirmed';` (T-71) and `ALTER TYPE booking_status ADD VALUE 'tentative' ...; ADD VALUE 'expired';` (T-69; `tentative` was previously modelled as `pending` with no hold distinction)
-3. `CREATE TYPE unavailability_reason AS ENUM (...)`, `CREATE TYPE safety_decision AS ENUM (...)`, `CREATE TYPE safety_factor AS ENUM (...)`
-4. `ALTER TABLE venues ADD COLUMN setup_minutes smallint NOT NULL DEFAULT 0, ADD COLUMN turnaround_minutes smallint NOT NULL DEFAULT 0;` (T-66)
-5. `ALTER TABLE venue_bookings ADD COLUMN occupancy_range tstzrange, purpose text, headcount int, is_primary boolean NOT NULL DEFAULT false, expires_at timestamptz, reminder_sent_at timestamptz;` backfill `occupancy_range = booking_range` for existing rows (buffers were 0), then `DROP CONSTRAINT venue_bookings_no_active_overlap` and recreate it on `occupancy_range` with `status IN ('pending', 'tentative', 'confirmed')` (ADR-003 amendment). `occupancy_range` is maintained by the application at write time, not a Postgres generated column, because it depends on another table's values.
-6. `ALTER TABLE venue_blocks ADD COLUMN reason_category unavailability_reason NOT NULL DEFAULT 'maintenance';` (T-67)
-7. `ALTER TABLE events ADD COLUMN assigned_by uuid REFERENCES users(id) ON DELETE SET NULL;` (`coordinator_id` is already nullable since 0001, T-70); `ALTER TABLE coordinator_reassignments ADD COLUMN addressed_to_lead boolean NOT NULL DEFAULT false, ALTER COLUMN to_coordinator_id DROP NOT NULL;`
-8. `CREATE TABLE safety_checks (...)`, `CREATE TABLE safety_check_factors (...)` with RLS mirroring `audit_logs` (read by Safety Officers, Leads and the event's Coordinator and Organiser; written only through the application role).
-9. Seed one `event_coordinator_lead` and one `safety_officer` account in the seed script (C-57).
+- PR #231 proposes migration 0011_venue_setup_turnaround_buffers.sql. It adds venues.setup_time_minutes, venues.turnaround_time_minutes, and occupied_window(); it does not yet alter venue_bookings or its exclusion constraint.
+- PR #232 proposes migration 0012_user_role_enum_additions.sql for the Week 7 roles. It is independent of booking-range persistence.
+- E06-S05 is the proposed owner of the shared migration 0013_venue_bookings_contract.sql. It depends on the proposed 0011 and 0012 migrations and adds the booking request/hold fields and statuses, backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for Tentative, Pending, and Confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
 
-The migration is written by the first Week 7 story to need it (E05-S05 is the likely first) and must land before any Week 7 story's frontend, following the migration-before-UI order the team used for 0008.
+These 0011–0013 assignments are the current coordination proposal, not merged schema state. Do not add a second E06-S03 migration for fields or constraints in 0013. Other Week 7 schema work, including event safety review, venue block categories, and coordinator reassignment fields, remains with its owning stories and must be ordered separately.
