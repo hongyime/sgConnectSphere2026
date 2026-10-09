@@ -17,7 +17,7 @@ import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
 import { canActAsRole, LOCKOUT_FAILURE_THRESHOLD } from '../accessControl/service.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
-import { AccessError } from '../eventVisibility/service.js';
+import { AccessError, listEventActivity } from '../eventVisibility/service.js';
 import { notifyUser } from '../notificationDispatcher/inApp.js';
 import { captureEventAudience, notifyEventChange } from '../eventNotifications/service.js';
 import { ACTIVE_EVENT_STATUSES, isEventStatus, validateEventStatusTransition } from './status.js';
@@ -193,7 +193,14 @@ export async function getAssignedEvent(database: Pool, user: AuthenticatedUser |
     throw new AccessError(403, 'Access denied. This event is not assigned to you.');
   }
   const pending = await database.query(`${REASSIGNMENT_SELECT} WHERE r.event_id = $1 AND r.status = 'pending'`, [event.id]);
-  return { ...event, pendingReassignment: pending.rows[0] ? toReassignment(pending.rows[0] as ReassignmentRow) : null };
+  // E14-S02 Scenario 1 (T-75): the assigned Coordinator reads the same
+  // Activity log as the Organiser, without access-denial entries.
+  const activity = await listEventActivity((sql, values) => database.query(sql, values), event.id);
+  return {
+    ...event,
+    pendingReassignment: pending.rows[0] ? toReassignment(pending.rows[0] as ReassignmentRow) : null,
+    activityLog: activity.rows,
+  };
 }
 
 // Eligible colleagues for the Scenario 3 picker: every other active,
