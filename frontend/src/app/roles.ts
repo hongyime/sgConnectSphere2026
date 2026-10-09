@@ -57,6 +57,7 @@ export const roleNavigation: Record<Role, NavItem[]> = {
     { to: '/coordinator/calendar', label: 'Venue calendar' },
   ],
   venue_staff: [
+    { to: '/venue/bookings', label: 'Booking requests' },
     { to: '/venue/inventory', label: 'Inventory' },
     { to: '/venue/availability', label: 'Availability' },
     { to: '/venue/blockout', label: 'Maintenance blocks' },

@@ -43,9 +43,6 @@ export function findVenue(id: string) {
   return venues.find(venue => venue.id === id);
 }
 
-export function findBooking(id: string) {
-  return bookings.find(booking => booking.id === id);
-}
 
 export const venueSummary = {
   pending: bookings.filter(booking => booking.status === 'Pending').length,

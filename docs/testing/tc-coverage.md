@@ -1048,6 +1048,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
 
+### `frontend/src/features/venue/BookingRequests.test.tsx`
+
+- Venue Staff see pending booking requests, each linking to its request
+- an empty queue says nothing is waiting
+- a refused queue shows the server message
+- a pending request shows its details and a way to decide
+- a rejected request shows who decided, the reason and the suggested venue
+- a rejected request with no reason or suggestion on record says so
+- a confirmed request shows its decision without a reason, and missing facts read as not recorded
+- an unknown request shows the server message and a way back
+- a late answer for the previous request never replaces the current one
+- the server\
+- a request someone else has just decided shows the server refusal, and cancelling clears it
+- a decision on an event with no Coordinator says nobody was notified
+- the approval message falls back when the Coordinator name is missing
+- when the venue list cannot load, the reason can still be sent without a suggestion
+- a request that is no longer pending has nothing to decide
+- an unknown request on the decision page shows the server message
+
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
 - removing a block goes through ConfirmPanel and reloads the list on success
@@ -1215,7 +1234,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - inventory search re-fetches venues filtered by the query
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
 - availability calendar loads the selected venue from the API
-- pending booking detail confirms a booking
+- Venue Staff approve a pending booking request
 
 ### `tests/notifications/postgres.test.ts`
 

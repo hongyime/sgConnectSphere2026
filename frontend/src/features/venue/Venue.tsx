@@ -1,10 +1,10 @@
 import { useId, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { AlertTriangle, Building2, CalendarClock, CheckCircle2, PencilLine, Plus, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Building2, CalendarClock, PencilLine, Plus, Search } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, ConfirmPanel, EmptyState, ErrorState, FactList, LoadingState, PageLayout, formatDate, useLoad,
 } from '../../shared';
-import { bookings, findBooking, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
+import { bookings, findVenue, venues, venueSummary, type BookingStatus } from './mocks';
 import { listVenues, retireVenue, VENUE_LIST_LIMIT, type BlockingBooking, type Venue } from './venueApi';
 import { VenueCalendar } from './VenueCalendar';
 import './venue.css';
@@ -34,7 +34,7 @@ export function VenueDashboard() {
         {bookings.map(booking => {
           const venue = findVenue(booking.venueId);
           return (
-            <Link key={booking.id} to={`/venue/bookings/${booking.id}`} className="venue-row">
+            <Link key={booking.id} to="/venue/bookings" className="venue-row">
               <div>
                 <strong>{booking.eventTitle}</strong>
                 <small>{booking.eventCode} · {venue?.name ?? 'Unknown venue'} · {booking.date} {booking.window}</small>
@@ -204,57 +204,4 @@ function VenueCard({ venue, onRetired }: { venue: Venue; onRetired: () => void }
 // here. The export name is kept so the /venue/availability route is unchanged.
 export function AvailabilityCalendar() {
   return <VenueCalendar audience="venue" />;
-}
-
-export function PendingBookingDetail() {
-  const { bookingId } = useParams();
-  const booking = findBooking(bookingId ?? '');
-  const venue = booking ? findVenue(booking.venueId) : undefined;
-  const [decision, setDecision] = useState<null | 'confirmed' | 'declined'>(null);
-  if (!booking || !venue) {
-    return (
-      <main className="venue-page">
-        <h1>Booking not found</h1>
-        <Link to="/venue" className="primary-action">Back to dashboard</Link>
-      </main>
-    );
-  }
-  return (
-    <main className="venue-page">
-      <header className="venue-heading">
-        <p className="eyebrow">{booking.id}</p>
-        <h1>{booking.eventTitle}</h1>
-        <span className={`status-pill status-${statusTone[booking.status]}`}>{booking.status}</span>
-      </header>
-      <section className="venue-detail-grid">
-        <article>
-          <h2>Requested slot</h2>
-          <dl>
-            <dt>Date</dt><dd>{booking.date}</dd>
-            <dt>Window</dt><dd>{booking.window}</dd>
-            <dt>Event code</dt><dd>{booking.eventCode}</dd>
-          </dl>
-        </article>
-        <article>
-          <h2>Venue fit</h2>
-          <dl>
-            <dt>Venue</dt><dd>{venue.name} (capacity {venue.capacity})</dd>
-            <dt>Suitability</dt><dd>{booking.suitability}%</dd>
-            <dt>Accessibility</dt><dd>{venue.accessibility.join(', ')}</dd>
-          </dl>
-        </article>
-      </section>
-      {decision ? (
-        <p role="status" className={decision === 'confirmed' ? 'venue-ok' : 'venue-alert'}>
-          {decision === 'confirmed' ? <CheckCircle2 size={16} aria-hidden="true" /> : <AlertTriangle size={16} aria-hidden="true" />}
-          Booking marked {decision} (mock, no backend call).
-        </p>
-      ) : (
-        <div className="venue-decision-actions">
-          <button type="button" className="primary-action" onClick={() => setDecision('confirmed')} disabled={booking.status === 'Blocked'}>Confirm booking</button>
-          <button type="button" className="secondary-action" onClick={() => setDecision('declined')}>Decline with reason</button>
-        </div>
-      )}
-    </main>
-  );
 }
