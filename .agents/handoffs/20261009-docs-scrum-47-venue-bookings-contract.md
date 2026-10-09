@@ -1,6 +1,6 @@
 # Handoff - docs/SCRUM-47-venue-bookings-contract
 
-Goal: Draft and publish a shared venue_bookings schema/API/state contract for SCRUM-47 / E06-S03, coordinated with PR #231 buffer migration and E06-S05 shared migration 0013.
+Goal: Draft and publish a shared venue_bookings schema/API/state contract for SCRUM-47 / E06-S03, coordinating E06-S05 migration 0013 enum additions with the follow-on migration 0014 constraints and exclusion rule.
 
 ## Done so far
 
@@ -9,7 +9,9 @@ Goal: Draft and publish a shared venue_bookings schema/API/state contract for SC
 - Confirmed PR #231's 0011 adds venue buffer columns and occupied_window(); it does not yet alter venue_bookings or its exclusion constraint.
 - Preserved the pre-existing uncommitted .agents/STATE.md and .agents/JOURNAL.md changes in the original worktree. This branch is based on current origin/main in a separate worktree.
 - Drafted docs/contracts/venue-bookings.md. Migration ownership, idempotency, and primary-release handling are explicit proposals for reviewer agreement.
+- Updated the migration sequence after PR #246 added `tentative` and `expired` in migration 0013: the contract now keeps any constraint or index predicate using those values in migration 0014, after 0013 commits.
 - Updated docs/api-changes-week7.md and docs/db_schema.md to match the shared contract, and added the contract to docs/source-of-truth.md.
+- Updated the contract and schema sequence after PR #246 landed migration 0013; the remaining shared schema work is now proposed as migration 0014.
 - Created the required PostPlan; its structural check passed and desktop/mobile Chromium screenshots were visually inspected.
 - Opened draft PR #244 and posted the top-level PostPlan review comment. On commit 7feae31, repository-checks, pr-conventions, lfs-guard, trufflehog, dependency-review, and application-checks (skip) all passed.
 
@@ -27,6 +29,7 @@ Collect human review on the proposed migration owner/order, retry key, and prima
 - python scripts/check_postplan_html.py artifacts/scrum-47-venue-bookings-contract.html - passed with one inline SVG.
 - Playwright Chromium - visually inspected screenshots at 1365x900 and 390x844; three sections and one SVG rendered.
 - python scripts/check.py - passed at HEAD 1086940: 87 tooling tests and repository hygiene. The tooling session record is in docs/testing/runs/.
+- python scripts/check.py - passed at HEAD c88e5f2: 165 test-run records validated and 87 repository-tooling tests passed. The T-65 record is in docs/testing/runs; application checks were not run.
 - git commit - created 7feae31 with the shared contract, synchronized API/schema views, handoff, and test evidence.
 - git push - pushed docs/SCRUM-47-venue-bookings-contract.
 - gh pr create and gh pr comment - opened draft PR #244 and posted the PostPlan URL.
@@ -35,6 +38,6 @@ Collect human review on the proposed migration owner/order, retry key, and prima
 
 ## Decisions for review
 
-- Proposed owner for shared 0013_venue_bookings_contract.sql: E06-S05; E06-S03 consumes the schema and owns the shared submission service/API, avoiding parallel migrations.
+- Proposed owner for shared 0014_venue_bookings_contract.sql: E06-S05; migration 0013 from PR #246 adds the enum values and hold expiry column before any later constraint uses them. E06-S03 consumes the schema and owns the shared submission service/API, avoiding parallel migrations.
 - Proposed Idempotency-Key for direct requests; hold conversion is idempotent by hold row id.
 - O-30 does not specify a primary replacement after release; the draft requires explicit Coordinator reselection before safety confirmation.

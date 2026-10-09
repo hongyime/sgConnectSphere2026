@@ -42,18 +42,17 @@ Database invariants: is_primary implies status = Confirmed; at most one primary 
 
 At PR #231 head 76fd43e on 9 October ([PR #231](https://github.com/hongyime/sgConnectSphere2026/pull/231)), 0011_venue_setup_turnaround_buffers.sql adds venues.setup_time_minutes, venues.turnaround_time_minutes, and the occupied_window(range, setup, turnaround) function. That migration does **not** yet add booking columns or change the booking exclusion constraint. Keep those buffer additions in PR #231; the shared contract migration consumes them and must not recreate or overwrite them.
 
-**Migration ownership proposal:** E06-S05 (SCRUM-49) owns one shared 0013_venue_bookings_contract.sql, as anticipated in PR #243’s follow-up. It depends on PR #231’s migration 0011 and PR #232’s migration 0012. Both were open when this draft was written; preserve the sequence if either is renumbered. E06-S03 owns the request service/API contract and consumes the same schema; E06-S04/S06 use its booking and conflict invariants. No parallel E06-S03 migration should add overlapping columns or constraints.
+**Migration ownership proposal:** E06-S05 (SCRUM-49) owns the shared booking schema work. Migration 0013, `0013_tentative_venue_holds.sql` (PR #246), adds `tentative` and `expired` to `booking_status`, adds `expires_at`, and creates an expiry lookup index that does not refer to either new enum value. It must not add any constraint or index predicate that uses those new values. The transaction must commit before a later migration uses them. E06-S05 should own migration 0014, proposed as `0014_venue_bookings_contract.sql`, for the remaining shared schema changes. It depends on migrations 0011, 0012, and the committed 0013. E06-S03 owns the request service/API contract and consumes the same schema; E06-S04/S06 use its booking and conflict invariants. No parallel E06-S03 migration should add overlapping columns or constraints.
 
-Migration 0013 should:
+Migration 0014 should:
 
-- Add tentative and expired to booking_status before using them in constraints; confirm no earlier migration has added them when this migration is finalized.
 - Add nullable purpose text (maximum 80 characters) and headcount integer (positive when present). Store null when omitted; do not copy event attendance into the booking field.
 - Add requested_by uuid REFERENCES users(id) and requested_at timestamptz. They are required by the application for every new Pending request; nullable storage preserves legacy rows that cannot be safely attributed. For a converted hold, these record the Coordinator who formally submitted it.
 - Add is_primary boolean NOT NULL DEFAULT false, with a check that only Confirmed rows can be primary and a partial unique index allowing at most one primary booking per event.
 - Add application-maintained occupancy_range tstzrange, backfill it with occupied_window(booking_range, setup_time_minutes, turnaround_time_minutes), and refresh it whenever the booking period, venue, or relevant buffer changes.
-- Add expires_at and reminder_sent_at for E06-S05. Tentative rows require an expiry; Pending rows have no active expiry. Conversion clears both fields. Expired rows retain the expiry timestamp as history.
+- Add reminder_sent_at for E06-S05. Add status-dependent constraints now that migration 0013 has committed: Tentative rows require an expiry; Pending rows have no active expiry; conversion clears expiry and reminder fields; Expired rows retain the expiry timestamp as history.
 - Add submission_key uuid for direct-request retry safety, with a partial unique index on (requested_by, submission_key) when the key is present.
-- Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is Tentative, Pending, or Confirmed. Keep the existing constraint name if practical so the database error mapper has one stable target.
+- Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is `tentative`, `pending`, or `confirmed`. Keep the existing constraint name if practical so the database error mapper has one stable target. This predicate uses the new `tentative` value, so create it only in migration 0014, after 0013 commits.
 
 The occupancy exclusion is per venue, not per event: one event may reserve multiple venues at the same time. Two active reservations for the same venue may not overlap after buffers are applied. The half-open occupancy interval is [booking start − setup, booking end + turnaround).
 
