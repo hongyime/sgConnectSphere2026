@@ -1,6 +1,7 @@
 import { equipmentHandler } from '../../backend/src/modules/equipmentSupport/handler.js';
 import { supportHandler } from '../../backend/src/modules/equipmentSupport/supportHandler.js';
 import { staffingHandler } from '../../backend/src/modules/equipmentSupport/staffingHandler.js';
+import { HOLD_ACTIONS, holdsHandler } from '../../backend/src/modules/venueBooking/holdsHandler.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
@@ -28,6 +29,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'staffing') {
     await staffingHandler(request, response); return;
+  }
+  // E06-S05: tentative holds, by ?task=holds or one of the hold actions.
+  if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'holds'
+    || (request.method === 'POST' && HOLD_ACTIONS.includes(String((request.body as Record<string, unknown> | undefined)?.action)))) {
+    await holdsHandler(request, response); return;
   }
   if (request.method === 'GET') {
     const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
@@ -128,7 +134,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', or 'remove_block'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', or 'extend_hold'."] },
     } };
   });
 }

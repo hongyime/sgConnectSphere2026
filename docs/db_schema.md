@@ -184,7 +184,6 @@ erDiagram
         int headcount "Week 7 C-67; governs suitability for this venue, falls back to EVENTS.expected_attendance (O-27)"
         boolean is_primary "Week 7 C-67; the venue shown to Attendees (O-30)"
         timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31)"
-        timestamptz reminder_sent_at "Week 7 C-68; expiry reminder guard (O-33)"
         boolean requires_reconfirmation
         text decision_reason
         uuid suggested_venue_id FK "alternative offered on rejection"
@@ -376,11 +375,13 @@ erDiagram
 
 Not yet written as SQL; recorded here so the ERD above and the next migration agree. One migration, `0011_week7_customer_changes.sql`, in this order:
 
+In practice the team split it by story: `0011` E05-S05 buffers, `0012` the T-72 roles, and `0013_tentative_venue_holds.sql` (written) adds `tentative` and `expired` to `booking_status` and `venue_bookings.expires_at`. The holds' overlap rule is enforced by the application under a venue row lock, because a new enum value cannot be used in the transaction that adds it; recreating the exclusion constraint on the occupancy range stays with E05-S05 and E06-S06.
+
 1. `ALTER TYPE user_role ADD VALUE 'event_coordinator_lead'; ALTER TYPE user_role ADD VALUE 'safety_officer';` (T-72)
 2. `ALTER TYPE event_status ADD VALUE 'safety_review' BEFORE 'confirmed';` (T-71) and `ALTER TYPE booking_status ADD VALUE 'tentative' ...; ADD VALUE 'expired';` (T-69; `tentative` was previously modelled as `pending` with no hold distinction)
 3. `CREATE TYPE unavailability_reason AS ENUM (...)`, `CREATE TYPE safety_decision AS ENUM (...)`, `CREATE TYPE safety_factor AS ENUM (...)`
 4. `ALTER TABLE venues ADD COLUMN setup_minutes smallint NOT NULL DEFAULT 0, ADD COLUMN turnaround_minutes smallint NOT NULL DEFAULT 0;` (T-66)
-5. `ALTER TABLE venue_bookings ADD COLUMN occupancy_range tstzrange, purpose text, headcount int, is_primary boolean NOT NULL DEFAULT false, expires_at timestamptz, reminder_sent_at timestamptz;` backfill `occupancy_range = booking_range` for existing rows (buffers were 0), then `DROP CONSTRAINT venue_bookings_no_active_overlap` and recreate it on `occupancy_range` with `status IN ('pending', 'tentative', 'confirmed')` (ADR-003 amendment). `occupancy_range` is maintained by the application at write time, not a Postgres generated column, because it depends on another table's values.
+5. `ALTER TABLE venue_bookings ADD COLUMN occupancy_range tstzrange, purpose text, headcount int, is_primary boolean NOT NULL DEFAULT false, expires_at timestamptz;` backfill `occupancy_range = booking_range` for existing rows (buffers were 0), then `DROP CONSTRAINT venue_bookings_no_active_overlap` and recreate it on `occupancy_range` with `status IN ('pending', 'tentative', 'confirmed')` (ADR-003 amendment). `occupancy_range` is maintained by the application at write time, not a Postgres generated column, because it depends on another table's values.
 6. `ALTER TABLE venue_blocks ADD COLUMN reason_category unavailability_reason NOT NULL DEFAULT 'maintenance';` (T-67)
 7. `ALTER TABLE events ADD COLUMN assigned_by uuid REFERENCES users(id) ON DELETE SET NULL;` (`coordinator_id` is already nullable since 0001, T-70); `ALTER TABLE coordinator_reassignments ADD COLUMN addressed_to_lead boolean NOT NULL DEFAULT false, ALTER COLUMN to_coordinator_id DROP NOT NULL;`
 8. `CREATE TABLE safety_checks (...)`, `CREATE TABLE safety_check_factors (...)` with RLS mirroring `audit_logs` (read by Safety Officers, Leads and the event's Coordinator and Organiser; written only through the application role).

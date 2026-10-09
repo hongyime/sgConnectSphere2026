@@ -20,7 +20,8 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: PostgreSQL event requ
   await client.query(`SET LOCAL search_path=${schema},public`);
   const extensions=await client.query("SELECT count(*)::int AS n FROM pg_extension WHERE extname IN ('pgcrypto','btree_gist')");
   assert.equal(extensions.rows[0].n,2,'Extensions must already be provisioned');
-  await client.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql',import.meta.url),'utf8'));
+  // 0013 adds tentative holds, which venue search treats as taken (E06-S05).
+  for (const migration of ['0001_connectsphere_schema.sql','0013_tentative_venue_holds.sql']) await client.query(await readFile(new URL(`../database/migrations/${migration}`,import.meta.url),'utf8'));
   const query: Query=(sql,values)=>client.query(sql,values);
   const org=(await client.query("INSERT INTO client_organisations(name) VALUES('Synthetic Org') RETURNING id")).rows[0].id;
   const uid=(await client.query("INSERT INTO users(full_name,email,password_hash,role) VALUES('Synthetic Coordinator','coordinator@example.test','fixture','event_coordinator') RETURNING id")).rows[0].id;
