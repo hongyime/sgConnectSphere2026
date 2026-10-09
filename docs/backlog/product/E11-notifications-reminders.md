@@ -50,7 +50,7 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | Coordinator assigned or reassigned, by the Lead or by acceptance | Yes | Incoming and outgoing | No | No | No | No |
 | New venue booking request | No | No | Responsible staff | No | No | No |
 | Venue booking confirmed, rejected or released | No | Yes | No | No | No | No |
-| Tentative hold expired (T-78: no reminder before expiry) | No | Yes | No | No | No | No |
+| Tentative hold expired (T-79: no reminder before expiry) | No | Yes | No | No | No | No |
 | Equipment result or operational shortfall | No | Yes | If affected | If affected | No | No |
 | Effective date/time/venue change | Yes | Yes | If affected | If affected | Yes | Yes |
 | Event submitted for its Operational Safety Check | Yes | Yes | No | No | No | No |

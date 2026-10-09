@@ -16,13 +16,28 @@ E05-S05 (#231); the frontend is SCRUM-143 and the browser tests SCRUM-144.
 - `api/cron/outbox-relay.ts?task=holds` runs `expireHolds`.
 - `calendar.ts`, `search.ts`, `blocks.ts` (Scenario 3 notices), `catalogue.ts`
   (retire refusal) use `holdsVenue()`, so a hold counts until `expires_at`.
-- Docs: T-78 (Bryan's 7 October answers), O-31 to O-34 closed, story Scenarios
+- Docs: T-79 (Bryan's 7 October answers; renumbered from T-78, which Jining's #243 uses), O-31, O-33 and O-34 closed (O-32 is #243's), story Scenarios
   7 and 8, TC_E06S05_06/_07, `api-changes-week7.md` Change 4, E11 matrix row,
   `db_schema.md`; exports regenerated (CAA 091026) and `source-of-truth.md`.
 - Tests: `backend/tests/venueHolds.test.ts` (unit, 100% of both new files),
   `backend/tests/venueHolds.integration.test.ts` (real PostgreSQL, added to CI),
   a runtime test for `?task=holds`, and the three older fixtures (calendar,
   search, catalogue) now also apply 0013.
+
+## Aligned with the shared contract (#244, choice A agreed with Amareet)
+
+- 0013 stays holds-only. The shared columns (purpose, headcount, requested_by/at,
+  is_primary, submission_key, occupancy_range) and the exclusion constraint on
+  the occupancy range go in a later migration after #231 merges.
+- Body fields follow the contract: `event_id`, `venue_id`, `starts_at`, `ends_at`,
+  `expires_at`, `booking_id`. The event is found from the booking.
+- `convert_hold` is idempotent: a converted booking returns 200 again with no
+  second write or audit entry.
+- T-78 (O-29): a hold must lie within its event's period.
+- Not done here, left to the shared E06-S03 submission service: setting
+  requested_by/requested_at (no columns yet) and the Approved-to-Planning move on
+  the first formal request. 400 `validation_failed` is kept (repo convention)
+  rather than the contract's proposed 422.
 
 ## Decisions for the reviewer to check
 

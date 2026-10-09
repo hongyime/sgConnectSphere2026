@@ -50,7 +50,7 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
   return { pool, query: answer as Query, calls };
 }
 const sqlCalls = (calls: Array<{ sql: string }>, pattern: RegExp) => calls.filter(call => pattern.test(call.sql));
-const EVENT_ROW = /FROM events WHERE id::text = \$1 OR event_code = \$1/;
+const EVENT_ROW = /FROM events WHERE (id::text = \$1 OR event_code = \$1|id = \(SELECT event_id FROM venue_bookings WHERE id = \$1\))/;
 const VENUE_ROW = /FROM venues WHERE id = \$1 AND is_active FOR NO KEY UPDATE/;
 const CLASH = /ORDER BY lower\(vb.booking_range\) LIMIT 1/;
 const HOLD_ROW = /FOR UPDATE OF vb/;
@@ -79,38 +79,44 @@ test('every operation refuses signed-out users and the wrong role, and audits th
 test('ids are checked before any lookup', async () => {
   const db = fakeDatabase([]);
   await assert.rejects(placeHold(db.pool, coordinator, null), { status: 400, message: 'An event id or code is required.' });
-  await assert.rejects(placeHold(db.pool, coordinator, { event: 'x'.repeat(161), venue: VENUE }), { status: 400 });
-  await assert.rejects(placeHold(db.pool, coordinator, { event: 'EVT-TC', venue: 'not-a-uuid' }), { status: 400, message: 'A venue id is required.' });
+  await assert.rejects(placeHold(db.pool, coordinator, { event_id: 'x'.repeat(161), venue_id: VENUE }), { status: 400 });
+  await assert.rejects(placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: 'not-a-uuid' }), { status: 400, message: 'A venue id is required.' });
   await assert.rejects(convertHold(db.pool, coordinator, undefined), { status: 400 });
-  await assert.rejects(convertHold(db.pool, coordinator, { event: 'EVT-TC', hold: 7 }), { status: 400, message: 'A hold id is required.' });
+  await assert.rejects(convertHold(db.pool, coordinator, { booking_id: 7 }), { status: 400, message: 'A booking id is required.' });
   await assert.rejects(releaseHold(db.pool, coordinator, 'text'), { status: 400 });
-  await assert.rejects(extendHold(db.pool, staff, null), { status: 400, message: 'A hold id is required.' });
+  await assert.rejects(extendHold(db.pool, staff, null), { status: 400, message: 'A booking id is required.' });
   await assert.rejects(listEventHolds(db.query, coordinator, ' '), { status: 400 });
   assert.equal(sqlCalls(db.calls, /events|venue_bookings/).length, 0);
 });
 
 test('validateHoldInput defaults to the event period and a 48-hour expiry', () => {
   assert.deepEqual(validateHoldInput({}, event, NOW), { input: { startsAt: event.startsAt, endsAt: event.endsAt, expiresAt: at(48) } });
-  const chosen = validateHoldInput({ startsAt: '2026-11-12T00:00:00Z', endsAt: '2026-11-12T06:00:00Z', expiresAt: at(1).toISOString() }, event, NOW);
-  assert.deepEqual(chosen.input, { startsAt: new Date('2026-11-12T00:00:00Z'), endsAt: new Date('2026-11-12T06:00:00Z'), expiresAt: at(1) });
-  assert.ok(validateHoldInput({ expiresAt: at(14 * 24).toISOString() }, event, NOW).input);
+  const chosen = validateHoldInput({ starts_at: '2026-11-12T01:30:00Z', ends_at: '2026-11-12T04:00:00Z', expires_at: at(1).toISOString() }, event, NOW);
+  assert.deepEqual(chosen.input, { startsAt: new Date('2026-11-12T01:30:00Z'), endsAt: new Date('2026-11-12T04:00:00Z'), expiresAt: at(1) });
+  assert.ok(validateHoldInput({ expires_at: at(14 * 24).toISOString() }, event, NOW).input);
 });
 
 test('validateHoldInput reports each bad field, including an expiry outside 1 hour to 14 days', () => {
-  assert.deepEqual(validateHoldInput({ startsAt: 'soon', endsAt: '', expiresAt: 'later' }, event, NOW).errors, {
-    startsAt: ['Enter when the hold starts.'], endsAt: ['Enter when the hold ends.'], expiresAt: ['Enter when the hold expires.'],
+  assert.deepEqual(validateHoldInput({ starts_at: 'soon', ends_at: '', expires_at: 'later' }, event, NOW).errors, {
+    starts_at: ['Enter when the hold starts.'], ends_at: ['Enter when the hold ends.'], expires_at: ['Enter when the hold expires.'],
   });
-  assert.deepEqual(validateHoldInput({ startsAt: 5, endsAt: '2026-11-12T00:00:00Z' }, event, NOW).errors, { startsAt: ['Enter when the hold starts.'] });
-  assert.deepEqual(validateHoldInput({ endsAt: '2026-11-12T01:00:00Z' }, event, NOW).errors, { endsAt: ['The hold must end after it starts.'] });
-  assert.deepEqual(validateHoldInput({ expiresAt: new Date(at(1).getTime() - 1).toISOString() }, event, NOW).errors,
-    { expiresAt: ['A hold must last at least 1 hour from now.'] });
-  assert.deepEqual(validateHoldInput({ expiresAt: new Date(at(14 * 24).getTime() + 1).toISOString() }, event, NOW).errors,
-    { expiresAt: ['A hold can last at most 14 days from now.'] });
+  assert.deepEqual(validateHoldInput({ starts_at: 5, ends_at: '2026-11-12T00:00:00Z' }, event, NOW).errors, { starts_at: ['Enter when the hold starts.'] });
+  assert.deepEqual(validateHoldInput({ ends_at: '2026-11-12T01:00:00Z' }, event, NOW).errors, { ends_at: ['The hold must end after it starts.'] });
+  assert.deepEqual(validateHoldInput({ expires_at: new Date(at(1).getTime() - 1).toISOString() }, event, NOW).errors,
+    { expires_at: ['A hold must last at least 1 hour from now.'] });
+  assert.deepEqual(validateHoldInput({ expires_at: new Date(at(14 * 24).getTime() + 1).toISOString() }, event, NOW).errors,
+    { expires_at: ['A hold can last at most 14 days from now.'] });
+});
+
+test('T-78 (O-29): a hold must lie within the event period', () => {
+  const outside = 'The hold must fall within the event, 12 Nov 2026, 9:00 am to 12 Nov 2026, 12:00 pm.';
+  assert.deepEqual(validateHoldInput({ starts_at: '2026-11-12T00:59:59Z' }, event, NOW).errors, { ends_at: [outside] });
+  assert.deepEqual(validateHoldInput({ ends_at: '2026-11-12T04:00:01Z' }, event, NOW).errors, { ends_at: [outside] });
 });
 
 test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved tentative with a 48-hour expiry and audited', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }]]);
-  const result = await placeHold(db.pool, coordinator, { event: ' EVT-TC ', venue: VENUE }, NOW);
+  const result = await placeHold(db.pool, coordinator, { event_id: ' EVT-TC ', venue_id: VENUE }, NOW);
   assert.equal(result.status, 201);
   const body = result.body as { hold: { id: string; status: string; expiresAt: string; venueName: string } };
   assert.deepEqual({ ...body.hold, id: undefined }, { id: undefined, venueId: VENUE, venueName: 'Main Hall', status: 'tentative', expiresAt: at(48).toISOString() });
@@ -138,83 +144,103 @@ test('TC_E06S05_01: an overlapping hold, request, booking or block is refused an
   ];
   for (const [status, message] of cases) {
     const db = clashWith(status);
-    assert.deepEqual(await placeHold(db.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW), { status: 409, body: { error: message } });
+    assert.deepEqual(await placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW), { status: 409, body: { error: message } });
     assert.equal(writes(db.calls), 0);
   }
   const noCode = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }],
     [CLASH, { rows: [{ status: 'pending', eventCode: null, title: 'Open Day', startsAt: event.startsAt, endsAt: event.endsAt }] }]]);
-  assert.match(String((await placeHold(noCode.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW)).body.error), /request for Open Day from/);
+  assert.match(String((await placeHold(noCode.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW)).body.error), /request for Open Day from/);
   const blocked = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }], [/FROM venue_blocks/, { rows: [{ reason: 'Aircon repair' }] }]]);
-  assert.deepEqual(await placeHold(blocked.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW),
+  assert.deepEqual(await placeHold(blocked.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
     { status: 409, body: { error: 'This venue is blocked for that period (Aircon repair).' } });
   assert.equal(writes(blocked.calls), 0);
 });
 
 test('a hold is refused for another Coordinator\'s event, an unplanned event, a bad period or a retired venue', async () => {
   const other = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, coordinatorId: 'someone-else' }] }]]);
-  await assert.rejects(placeHold(other.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW), { status: 403, message: 'Access denied. This event is not assigned to you.' });
+  await assert.rejects(placeHold(other.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW), { status: 403, message: 'Access denied. This event is not assigned to you.' });
   assert.equal(denials(other.calls), 1);
   const missing = fakeDatabase([]);
-  await assert.rejects(placeHold(missing.pool, coordinator, { event: 'EVT-NONE', venue: VENUE }, NOW), { status: 403 });
+  await assert.rejects(placeHold(missing.pool, coordinator, { event_id: 'EVT-NONE', venue_id: VENUE }, NOW), { status: 403 });
   const pendingEvent = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'pending_approval' }] }]]);
-  await assert.rejects(placeHold(pendingEvent.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW),
+  await assert.rejects(placeHold(pendingEvent.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
     { status: 409, message: 'Venues can only be held while an approved event is being planned.' });
   assert.equal(denials(pendingEvent.calls), 0);
   const invalid = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  assert.deepEqual(await placeHold(invalid.pool, coordinator, { event: 'EVT-TC', venue: VENUE, expiresAt: at(0.5).toISOString() }, NOW),
-    { status: 400, body: { error: 'validation_failed', errors: { expiresAt: ['A hold must last at least 1 hour from now.'] } } });
+  assert.deepEqual(await placeHold(invalid.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE, expires_at: at(0.5).toISOString() }, NOW),
+    { status: 400, body: { error: 'validation_failed', errors: { expires_at: ['A hold must last at least 1 hour from now.'] } } });
   const retired = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  await assert.rejects(placeHold(retired.pool, coordinator, { event: 'EVT-TC', venue: VENUE }, NOW),
+  await assert.rejects(placeHold(retired.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
     { status: 404, message: 'That venue was not found or is no longer in use.' });
   assert.equal(writes(retired.calls), 0);
 });
 
 test('TC_E06S05_04: submitting the booking request turns a live hold into a pending request and stops its expiry', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [hold] }]]);
-  assert.deepEqual(await convertHold(db.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
+  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }, NOW), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
   assert.match(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.sql, /status = 'pending', expires_at = NULL/);
-  assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD, event.id]);
+  assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD]);
+  assert.match(sqlCalls(db.calls, EVENT_ROW)[0]!.sql, /SELECT event_id FROM venue_bookings WHERE id = \$1/);
   assert.equal(sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!.values?.[2], 'Tentative hold on Main Hall submitted as a booking request');
 });
 
-test('an expired, missing or already-converted hold cannot be converted; nor one on an unplanned event', async () => {
+test('an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event', async () => {
   const expired = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: NOW }] }]]);
-  await assert.rejects(convertHold(expired.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW),
+  await assert.rejects(convertHold(expired.pool, coordinator, { booking_id: HOLD }, NOW),
     { status: 409, message: "This hold has expired, so it can't be changed. Place a new hold if the venue is still needed." });
+  const marked = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'expired' }] }]]);
+  await assert.rejects(convertHold(marked.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
   const cleared = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: null }] }]]);
-  await assert.rejects(convertHold(cleared.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW), { status: 409 });
-  const converted = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'pending' }] }]]);
-  await assert.rejects(convertHold(converted.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW), { status: 404, message: 'That tentative hold was not found.' });
+  await assert.rejects(convertHold(cleared.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
+  const confirmed = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'confirmed' }] }]]);
+  await assert.rejects(convertHold(confirmed.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404, message: 'That tentative hold was not found.' });
+  const noBooking = fakeDatabase([]);
+  await assert.rejects(convertHold(noBooking.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404 });
+  assert.equal(denials(noBooking.calls), 0);
   const missing = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  await assert.rejects(convertHold(missing.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW), { status: 404 });
-  const cancelled = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }]]);
-  await assert.rejects(convertHold(cancelled.pool, coordinator, { event: 'EVT-TC', hold: HOLD }, NOW), { status: 409 });
-  for (const db of [expired, cleared, converted, missing, cancelled]) assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
+  await assert.rejects(convertHold(missing.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404 });
+  const cancelled = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }], [HOLD_ROW, { rows: [hold] }]]);
+  await assert.rejects(convertHold(cancelled.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
+  const other = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, coordinatorId: 'someone-else' }] }]]);
+  await assert.rejects(convertHold(other.pool, coordinator, { booking_id: HOLD }, NOW), { status: 403 });
+  for (const db of [expired, marked, cleared, confirmed, noBooking, missing, cancelled, other]) assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
+});
+
+test('converting again after success returns the same pending booking with no second write or audit entry', async () => {
+  const db = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'planning' }] }], [HOLD_ROW, { rows: [{ ...hold, status: 'pending', expiresAt: null }] }]]);
+  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }, NOW), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
+  assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings|INSERT INTO audit_logs/).length, 0);
 });
 
 test('Scenario 4: the Coordinator releases a hold and the period is Free again', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: NOW }] }]]);
-  assert.deepEqual(await releaseHold(db.pool, coordinator, { event: 'EVT-TC', hold: HOLD }), { status: 200, body: { released: true } });
+  assert.deepEqual(await releaseHold(db.pool, coordinator, { booking_id: HOLD }), { status: 200, body: { released: true } });
   assert.match(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.sql, /status = 'released', expires_at = NULL/);
   assert.equal(sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!.values?.[2], 'Tentative hold on Main Hall released');
+});
+
+test('a hold the job has already expired cannot be released', async () => {
+  const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'expired' }] }]]);
+  await assert.rejects(releaseHold(db.pool, coordinator, { booking_id: HOLD }), { status: 409 });
+  assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
 });
 
 test('TC_E06S05_07: Venue Staff extend a live hold; the old and new expiry are logged with who changed it', async () => {
   const db = fakeDatabase([[HOLD_ROW, { rows: [hold] }]]);
   const later = at(72).toISOString();
-  assert.deepEqual(await extendHold(db.pool, staff, { hold: HOLD, expiresAt: later }, NOW), { status: 200, body: { hold: { id: HOLD, expiresAt: later } } });
+  assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at: later }, NOW), { status: 200, body: { hold: { id: HOLD, expiresAt: later } } });
   assert.deepEqual(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.values, [HOLD, new Date(later)]);
-  assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD, null]);
+  assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD]);
   assert.deepEqual(sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!.values,
     [staff.id, event.id, 'Tentative hold on Main Hall extended', at(48).toISOString(), later]);
 });
 
 test('an extension must be later than now-plus-1-hour, the current expiry and no more than 14 days; an expired hold cannot be extended', async () => {
   const live = () => fakeDatabase([[HOLD_ROW, { rows: [hold] }]]);
-  const expect = async (expiresAt: unknown, message: string) => {
+  const expect = async (expires_at: unknown, message: string) => {
     const db = live();
-    assert.deepEqual(await extendHold(db.pool, staff, { hold: HOLD, expiresAt }, NOW),
-      { status: 400, body: { error: 'validation_failed', errors: { expiresAt: [message] } } });
+    assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at }, NOW),
+      { status: 400, body: { error: 'validation_failed', errors: { expires_at: [message] } } });
     assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
   };
   await expect(undefined, 'Enter when the hold expires.');
@@ -222,7 +248,7 @@ test('an extension must be later than now-plus-1-hour, the current expiry and no
   await expect(at(48).toISOString(), 'Choose a later expiry than the current one.');
   await expect(at(15 * 24).toISOString(), 'A hold can last at most 14 days from now.');
   const expired = fakeDatabase([[HOLD_ROW, { rows: [{ ...hold, expiresAt: at(-1) }] }]]);
-  await assert.rejects(extendHold(expired.pool, staff, { hold: HOLD, expiresAt: at(72).toISOString() }, NOW), { status: 409 });
+  await assert.rejects(extendHold(expired.pool, staff, { booking_id: HOLD, expires_at: at(72).toISOString() }, NOW), { status: 409 });
   assert.equal(denials(expired.calls), 0);
 });
 
@@ -316,15 +342,15 @@ test('handler: GET routes to the event or staff list; POST to hold, convert, rel
   const { response, captured } = fakeResponse();
   await handler({ method: 'GET', url: '/api/venues?task=holds&event=EVT-TC', headers: {} }, response);
   assert.deepEqual([captured.status, (captured.body as { canHold: boolean }).canHold], [200, true]);
-  await handler({ method: 'POST', headers: {}, body: { action: 'hold', event: 'EVT-TC', venue: VENUE } }, response);
+  await handler({ method: 'POST', headers: {}, body: { action: 'hold', event_id: 'EVT-TC', venue_id: VENUE } }, response);
   assert.equal(captured.status, 201);
-  await handler({ method: 'POST', headers: {}, body: { action: 'convert_hold', event: 'EVT-TC', hold: HOLD } }, response);
+  await handler({ method: 'POST', headers: {}, body: { action: 'convert_hold', booking_id: HOLD } }, response);
   assert.deepEqual([captured.status, captured.body], [200, { booking: { id: HOLD, status: 'pending' } }]);
-  await handler({ method: 'POST', headers: {}, body: { action: 'release', event: 'EVT-TC', hold: HOLD } }, response);
+  await handler({ method: 'POST', headers: {}, body: { action: 'release', booking_id: HOLD } }, response);
   assert.deepEqual([captured.status, captured.body], [200, { released: true }]);
   user = staff;
   await handler({ method: 'GET', headers: {} }, response);
   assert.deepEqual([captured.status, captured.body], [200, { holds: [] }]);
-  await handler({ method: 'POST', headers: {}, body: { action: 'extend_hold', hold: HOLD, expiresAt: new Date(Date.now() + 72 * HOUR).toISOString() } }, response);
+  await handler({ method: 'POST', headers: {}, body: { action: 'extend_hold', booking_id: HOLD, expires_at: new Date(Date.now() + 72 * HOUR).toISOString() } }, response);
   assert.equal(captured.status, 200);
 });

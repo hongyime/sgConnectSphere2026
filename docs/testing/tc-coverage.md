@@ -784,9 +784,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - ids are checked before any lookup
 - validateHoldInput defaults to the event period and a 48-hour expiry
 - validateHoldInput reports each bad field, including an expiry outside 1 hour to 14 days
+- T-78 (O-29): a hold must lie within the event period
 - a hold is refused for another Coordinator\
-- an expired, missing or already-converted hold cannot be converted; nor one on an unplanned event
+- an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event
+- converting again after success returns the same pending booking with no second write or audit entry
 - Scenario 4: the Coordinator releases a hold and the period is Free again
+- a hold the job has already expired cannot be released
 - an extension must be later than now-plus-1-hour, the current expiry and no more than 14 days; an expired hold cannot be extended
 - the expiry job with nothing due changes nothing
 - the Coordinator lists the event\

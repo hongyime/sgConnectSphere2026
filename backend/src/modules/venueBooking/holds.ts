@@ -30,6 +30,7 @@ export const MIN_EXPIRY_MS = HOUR_MS;
 export const MAX_EXPIRY_MS = 14 * 24 * HOUR_MS;
 const HOLDABLE_STATUSES = ['approved', 'planning'];
 const NOT_HOLDABLE = 'Venues can only be held while an approved event is being planned.';
+const NOT_FOUND = 'That tentative hold was not found.';
 const EXPIRED = "This hold has expired, so it can't be changed. Place a new hold if the venue is still needed.";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -81,11 +82,14 @@ function uuid(value: unknown, what: string) {
   return id;
 }
 
-// The assigned Coordinator's event, locked while a hold on it changes.
-async function lockEvent(client: PoolClient, user: AuthenticatedUser, identifier: string) {
+// The assigned Coordinator's event, locked while a hold on it changes: found by
+// its id or code, or as the event that owns a booking.
+async function lockEvent(client: PoolClient, user: AuthenticatedUser, by: { event: string } | { booking: string }) {
+  const where = 'booking' in by ? 'id = (SELECT event_id FROM venue_bookings WHERE id = $1)' : 'id::text = $1 OR event_code = $1';
   const event = (await client.query<Event>(`SELECT id, event_code AS "eventCode", title, status, coordinator_id AS "coordinatorId",
       lower(event_range) AS "startsAt", upper(event_range) AS "endsAt"
-    FROM events WHERE id::text = $1 OR event_code = $1 FOR NO KEY UPDATE`, [identifier])).rows[0];
+    FROM events WHERE ${where} FOR NO KEY UPDATE`, ['booking' in by ? by.booking : by.event])).rows[0];
+  if (!event && 'booking' in by) throw new AccessError(404, NOT_FOUND);
   if (!event || event.coordinatorId !== user.id) throw new AccessError(403, 'Access denied. This event is not assigned to you.');
   return event;
 }
@@ -110,14 +114,19 @@ type Window = { startsAt: Date; endsAt: Date };
 export function validateHoldInput(body: Record<string, unknown>, event: Window, now: Date) {
   const errors: Record<string, string[]> = {};
   const parse = (value: unknown) => (typeof value === 'string' && value ? new Date(value) : undefined);
-  const start = body.startsAt === undefined ? event.startsAt : parse(body.startsAt);
-  const end = body.endsAt === undefined ? event.endsAt : parse(body.endsAt);
-  if (!start || Number.isNaN(start.getTime())) errors.startsAt = ['Enter when the hold starts.'];
-  if (!end || Number.isNaN(end.getTime())) errors.endsAt = ['Enter when the hold ends.'];
-  else if (start && !Number.isNaN(start.getTime()) && end <= start) errors.endsAt = ['The hold must end after it starts.'];
-  const expires = body.expiresAt === undefined ? new Date(now.getTime() + DEFAULT_HOLD_HOURS * HOUR_MS) : parse(body.expiresAt);
+  const start = body.starts_at === undefined ? event.startsAt : parse(body.starts_at);
+  const end = body.ends_at === undefined ? event.endsAt : parse(body.ends_at);
+  const startOk = start !== undefined && !Number.isNaN(start.getTime());
+  if (!startOk) errors.starts_at = ['Enter when the hold starts.'];
+  if (!end || Number.isNaN(end.getTime())) errors.ends_at = ['Enter when the hold ends.'];
+  else if (startOk && end <= start) errors.ends_at = ['The hold must end after it starts.'];
+  // T-78 (O-29): a booking, and so a hold that becomes one, lies within the event.
+  else if (startOk && (start < event.startsAt || end > event.endsAt)) {
+    errors.ends_at = [`The hold must fall within the event, ${formatSgt(event.startsAt)} to ${formatSgt(event.endsAt)}.`];
+  }
+  const expires = body.expires_at === undefined ? new Date(now.getTime() + DEFAULT_HOLD_HOURS * HOUR_MS) : parse(body.expires_at);
   const expiryError = checkExpiry(expires, now);
-  if (expiryError) errors.expiresAt = [expiryError];
+  if (expiryError) errors.expires_at = [expiryError];
   if (Object.keys(errors).length) return { errors };
   return { input: { startsAt: start!, endsAt: end!, expiresAt: expires! } };
 }
@@ -151,10 +160,10 @@ async function findClash(client: PoolClient, venueId: string, startsAt: Date, en
 export async function placeHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const identifier = eventIdentifier(data.event);
-  const venueId = uuid(data.venue, 'venue');
+  const identifier = eventIdentifier(data.event_id);
+  const venueId = uuid(data.venue_id, 'venue');
   return audited(database, actor, () => inTransaction(database, async client => {
-    const event = await lockEvent(client, actor, identifier);
+    const event = await lockEvent(client, actor, { event: identifier });
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
     const valid = validateHoldInput(data, event, now);
     if (!valid.input) return { status: 400, body: { error: 'validation_failed', errors: valid.errors } };
@@ -174,26 +183,30 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
 }
 
 type LockedHold = { id: string; eventId: string; venueId: string; venueName: string; status: string; expiresAt: Date | null; startsAt: Date; endsAt: Date };
-async function lockHold(client: PoolClient, bookingId: string, eventId?: string) {
+// Locks a hold (tentative or expired); any other booking is "not found"
+// unless `allow` names its status.
+async function lockHold(client: PoolClient, bookingId: string, allow: string[] = []) {
   const hold = (await client.query<LockedHold>(`SELECT vb.id, vb.event_id AS "eventId", vb.venue_id AS "venueId", v.name AS "venueName",
       vb.status, vb.expires_at AS "expiresAt", lower(vb.booking_range) AS "startsAt", upper(vb.booking_range) AS "endsAt"
     FROM venue_bookings vb JOIN venues v ON v.id = vb.venue_id
-    WHERE vb.id = $1 AND ($2::uuid IS NULL OR vb.event_id = $2) FOR UPDATE OF vb`, [bookingId, eventId ?? null])).rows[0];
-  if (!hold || hold.status !== 'tentative') throw new AccessError(404, 'That tentative hold was not found.');
+    WHERE vb.id = $1 FOR UPDATE OF vb`, [bookingId])).rows[0];
+  if (!hold || !['tentative', 'expired', ...allow].includes(hold.status)) throw new AccessError(404, NOT_FOUND);
   return hold;
 }
-const isLive = (hold: LockedHold, now: Date) => hold.expiresAt !== null && hold.expiresAt > now;
+const isLive = (hold: LockedHold, now: Date) => hold.status === 'tentative' && hold.expiresAt !== null && hold.expiresAt > now;
 
-// Scenario 3 (O-32): submitting the booking request completes the hold.
+// Scenario 3 (O-32, T-78): submitting the booking request completes the hold.
+// The same row becomes pending. A retry after success returns the booking
+// again with no second audit entry (docs/contracts/venue-bookings.md, #244).
 export async function convertHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const identifier = eventIdentifier(data.event);
-  const bookingId = uuid(data.hold, 'hold');
+  const bookingId = uuid(data.booking_id, 'booking');
   return audited(database, actor, () => inTransaction(database, async client => {
-    const event = await lockEvent(client, actor, identifier);
+    const event = await lockEvent(client, actor, { booking: bookingId });
+    const hold = await lockHold(client, bookingId, ['pending']);
+    if (hold.status === 'pending') return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    const hold = await lockHold(client, bookingId, event.id);
     if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
     await client.query(`UPDATE venue_bookings SET status = 'pending', expires_at = NULL WHERE id = $1`, [hold.id]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} submitted as a booking request` });
@@ -205,11 +218,11 @@ export async function convertHold(database: Pool, user: AuthenticatedUser | unde
 export async function releaseHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const identifier = eventIdentifier(data.event);
-  const bookingId = uuid(data.hold, 'hold');
+  const bookingId = uuid(data.booking_id, 'booking');
   return audited(database, actor, () => inTransaction(database, async client => {
-    const event = await lockEvent(client, actor, identifier);
-    const hold = await lockHold(client, bookingId, event.id);
+    const event = await lockEvent(client, actor, { booking: bookingId });
+    const hold = await lockHold(client, bookingId);
+    if (hold.status === 'expired') throw new AccessError(409, EXPIRED);
     await client.query(`UPDATE venue_bookings SET status = 'released', expires_at = NULL WHERE id = $1`, [hold.id]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} released` });
     return { status: 200, body: { released: true } };
@@ -220,13 +233,13 @@ export async function releaseHold(database: Pool, user: AuthenticatedUser | unde
 export async function extendHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['venue_staff'], STAFF_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const bookingId = uuid(data.hold, 'hold');
-  const expires = typeof data.expiresAt === 'string' && data.expiresAt ? new Date(data.expiresAt) : undefined;
+  const bookingId = uuid(data.booking_id, 'booking');
+  const expires = typeof data.expires_at === 'string' && data.expires_at ? new Date(data.expires_at) : undefined;
   return inTransaction(database, async client => {
     const hold = await lockHold(client, bookingId);
     if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
     const error = checkExpiry(expires, now) ?? (expires! <= hold.expiresAt! ? 'Choose a later expiry than the current one.' : null);
-    if (error) return { status: 400, body: { error: 'validation_failed', errors: { expiresAt: [error] } } };
+    if (error) return { status: 400, body: { error: 'validation_failed', errors: { expires_at: [error] } } };
     await client.query(`UPDATE venue_bookings SET expires_at = $2 WHERE id = $1`, [hold.id, expires]);
     await audit(client, { actorId: actor.id, eventId: hold.eventId, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} extended`,
       old: hold.expiresAt!.toISOString(), next: expires!.toISOString() });

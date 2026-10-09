@@ -1,10 +1,11 @@
 // HTTP entry for E06-S05 tentative holds (SCRUM-49):
 //   GET  /api/venues?task=holds&event=<id or code>   the assigned Coordinator's holds for an event
 //   GET  /api/venues?task=holds                      Venue Staff: every live hold, soonest expiry first
-//   POST /api/venues  { action: 'hold', event, venue, startsAt?, endsAt?, expiresAt? }
-//   POST /api/venues  { action: 'convert_hold', event, hold }
-//   POST /api/venues  { action: 'release', event, hold }
-//   POST /api/venues  { action: 'extend_hold', hold, expiresAt }
+//   POST /api/venues  { action: 'hold', event_id, venue_id, starts_at?, ends_at?, expires_at? }
+//   POST /api/venues  { action: 'convert_hold', booking_id }
+//   POST /api/venues  { action: 'release', booking_id }
+//   POST /api/venues  { action: 'extend_hold', booking_id, expires_at }
+// Field names follow the shared venue_bookings contract (#244).
 // The POST actions share /api/venues with the catalogue actions (and also
 // answer on ?task=holds) to stay within the Vercel Hobby plan's function limit.
 import type { Pool } from 'pg';

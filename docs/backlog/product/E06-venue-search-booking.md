@@ -189,7 +189,7 @@ E14-S02 completion no longer waits on these booking workflows. The original
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, O-31, O-32, O-33, O-34, T-78
+- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, O-31, O-32, O-33, O-34, T-79
 - **Owner**:
 
 ### User story
@@ -226,11 +226,11 @@ Given my hold's expiry date and time has passed and I have not submitted a booki
 
 #### Scenario 7 — Coordinator told at expiry
 
-Given my hold expires When the expiry job runs Then I receive one in-app notice and one email naming the venue, the event and the expiry time, saying the hold has expired and the venue is free; a later run sends nothing more. There is no reminder before expiry (T-78, replacing the O-33 default)
+Given my hold expires When the expiry job runs Then I receive one in-app notice and one email naming the venue, the event and the expiry time, saying the hold has expired and the venue is free; a later run sends nothing more. There is no reminder before expiry (T-79, replacing the O-33 default)
 
 #### Scenario 8 — Venue Staff may extend a hold
 
-Given a hold has not yet expired When Venue Staff set a later expiry date and time Then the new expiry applies, and the extension is recorded in the activity log with who made it; an expired hold cannot be extended and must be placed again (T-78)
+Given a hold has not yet expired When Venue Staff set a later expiry date and time Then the new expiry applies, and the extension is recorded in the activity log with who made it; an expired hold cannot be extended and must be placed again (T-79)
 
 #### Scenario 9 — Expiry exactly at the boundary
 
@@ -246,7 +246,7 @@ Given a hold expires at 10:00:00 When the expiry job runs at 09:59:59 Then the h
 - Confirm only one active hold or confirmed booking exists per venue and period
 - See the expiry date and time on every hold, defaulting to 48 hours after creation (assumes O-31)
 - Confirm an expired hold frees the venue and is never treated as a booking
-- Receive one notice, in-app and by email, when a hold expires (T-78)
+- Receive one notice, in-app and by email, when a hold expires (T-79)
 - Confirm Venue Staff can extend an unexpired hold and the extension is logged (assumes O-34)
 
 ## E06-S06 — Prevent double-booking of a venue
