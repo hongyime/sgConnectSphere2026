@@ -11,10 +11,11 @@ Goal: Draft and publish a shared venue_bookings schema/API/state contract for SC
 - Drafted docs/contracts/venue-bookings.md. Migration ownership, idempotency, and primary-release handling are explicit proposals for reviewer agreement.
 - Updated docs/api-changes-week7.md and docs/db_schema.md to match the shared contract, and added the contract to docs/source-of-truth.md.
 - Created the required PostPlan; its structural check passed and desktop/mobile Chromium screenshots were visually inspected.
+- Opened draft PR #244 and posted the top-level PostPlan review comment. On commit 7feae31, repository-checks, pr-conventions, lfs-guard, trufflehog, dependency-review, and application-checks (skip) all passed.
 
 ## Next
 
-Open a draft PR and post the PostPlan URL as a top-level comment. Keep it in draft while checks are pending; report the PR number and summary without merging.
+Collect human review on the proposed migration owner/order, retry key, and primary-release behavior. Keep the PR in draft until the team agrees on the proposals; then update the contract and mark the PR ready. Do not merge without the protected review workflow.
 
 ## Commands and outcomes
 
@@ -25,7 +26,11 @@ Open a draft PR and post the PostPlan URL as a top-level comment. Keep it in dra
 - python scripts/setup.py - installed local pinned tooling and hooks after the initial check reported missing tooling.
 - python scripts/check_postplan_html.py artifacts/scrum-47-venue-bookings-contract.html - passed with one inline SVG.
 - Playwright Chromium - visually inspected screenshots at 1365x900 and 390x844; three sections and one SVG rendered.
-- python scripts/check.py - passed at HEAD 1086940: 87 tooling tests and repository hygiene. The tooling session record is saved in docs/testing/runs/.
+- python scripts/check.py - passed at HEAD 1086940: 87 tooling tests and repository hygiene. The tooling session record is in docs/testing/runs/.
+- git commit - created 7feae31 with the shared contract, synchronized API/schema views, handoff, and test evidence.
+- git push - pushed docs/SCRUM-47-venue-bookings-contract.
+- gh pr create and gh pr comment - opened draft PR #244 and posted the PostPlan URL.
+- gh pr checks 244 - all six checks passed on commit 7feae31.
 - Application tests, migrations, and database checks were not run; this is a documentation-only contract draft.
 
 ## Decisions for review
