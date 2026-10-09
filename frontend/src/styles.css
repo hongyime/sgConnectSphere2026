@@ -967,6 +967,11 @@ main[tabindex="-1"]:focus {
 
 .field-control {
   display: grid;
+  /* Pack label, control, hint and error at the top. A field in the same
+     .form-grid row as a taller one (with a hint or error) is stretched to that
+     row's height; without this its rows spread out and the control slides
+     down out of line with its neighbour. */
+  align-content: start;
   gap: 7px;
   min-width: 0;
 }
