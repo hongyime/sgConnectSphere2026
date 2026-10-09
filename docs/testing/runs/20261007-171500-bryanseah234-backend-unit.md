@@ -1,9 +1,9 @@
 ---
 date: 2026-10-07T17:15:00+08:00
 runner: bryanseah234
-scope: backend/db
+scope: backend/unit
 environment: local
-run_type: manual
+run_type: automated
 test_case_version: 031026
 database: none
 commit: 2ed310a

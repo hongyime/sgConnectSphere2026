@@ -8,11 +8,14 @@ Goal: Fix the failing repository-checks and pr-conventions checks on PR #232, pr
 - Read the failed `pr-conventions` job log. The body headings pass; the actual failure was `feature/T-72-...`, rejected because the branch checker required at least two uppercase characters in an identifier before its numeric suffix. The branch rename API closes a PR whose head branch is renamed, so keep the existing PR ref.
 - Updated the branch checker to accept one-character uppercase identifiers and added a `T-72` regression case.
 - Fast-forwarded the local branch to the latest PR head without conflicts.
+- Corrected the 2026-10-07 run record to `scope: backend/unit` and
+  `run_type: automated`; `test_case_version: 031026` was already correct.
+  Renamed the file suffix to `backend-unit` so its filename matches the scope.
 
 ## Next
 
 - `python scripts/check.py` passes when the pre-existing `.agents/STATE.md` and `.agents/JOURNAL.md` working-tree changes are temporarily stashed; the stash was restored without staging.
-- Stage only this handoff, the run record, `scripts/check_metadata.py`, and `tooling/tests/test_metadata.py`; commit and push to PR #232.
+- Run `python scripts/check.py`, then commit and push only this handoff and the corrected run record to PR #232.
 - Wait for CI and report every check status. Do not merge; human review remains pending.
 
 ## Commands and outcomes
