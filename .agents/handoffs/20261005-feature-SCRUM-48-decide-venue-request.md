@@ -9,7 +9,35 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
 
 - Jira: SCRUM-48 (Sprint 3, 3 points), parent SCRUM-7
 - Branch pre-created by @bryanseah234 on 2026-10-05; merged `origin/main` on 2026-10-08
-- No code changes yet
+- Progress on 2026-10-09: backend steps 1.1-1.5 and screen steps 2.1-2.3 done (see below)
+
+## Done so far
+
+- `8e8777d` backend: `backend/src/modules/venueBooking/decisions.ts`;
+  `GET /api/venues?bookings=pending`, `GET /api/venues?booking=<id>`,
+  `POST /api/venues { action: 'decide', booking_id, decision, reason?, suggested_venue_id? }`.
+  Audit rows are `entity_type = 'venue_booking'` with `event_id` set, actions
+  `Booking Approved` / `Booking Rejected`; the Coordinator notice uses the audit id
+  as change id. Unit tests 100% (17), real-DB tests 12/12 (`venueBookingDecisions*.test.ts`).
+- `8a691eb` frontend: `/venue/bookings` (queue), `/venue/bookings/:id` (detail),
+  `/venue/bookings/:id/decide` (ConfirmPanel; reason required; optional suggested
+  venue). `BookingRequests.test.tsx` 20 tests, 100% coverage; `venue.spec.ts`
+  booking test rewritten (desktop + mobile pass). Mock detail, `findBooking` and
+  its venue.css rules removed; screen inventory row updated.
+
+## Still to do
+
+- Scenario 4 buffered-window check: after #231 (occupied_window) and #245 (shared
+  0013 migration, #244 contract) merge. #244 also says the first Confirmed booking
+  becomes primary when the event has none; `is_primary` arrives with 0013.
+- Scenario 2 Coordinator "amend to suggested venue": with Ji Ning's E06-S03.
+- TC_E06S04_05/_06 Coordinator Activity log: after #240 merges, add
+  `venue_booking` rows to `listEventActivity()`.
+- TC_E06S04_04 seed fixture, manual run of TC_01-_06 (TC_07 blocked on E10-S04),
+  T-65 records, PR.
+- Running locally: export only `DATABASE_URL` (the venues API prefers
+  `DATABASE_POOLER_URL`, the shared Supabase).
+
 
 ## What already exists
 
@@ -55,7 +83,3 @@ Write unit tests alongside each step (DoD: 100% coverage of changed code).
    2. Run unit, integration and coverage; record T-65 runs.
    3. Manual run of TC_E06S04_01 to _06 with actual results in Remarks; _07 blocked.
    4. Open PR (four template sections; cite SCRUM-48 / E06-S04).
-
-## Next step
-
-Start with Backend steps 1.1-1.4 and 1.6; they have no outside dependency.
