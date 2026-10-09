@@ -93,7 +93,7 @@ within hours. This is event-based; T-21's sessions wording is withdrawn by T-48.
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, O-27, O-29, O-30
+- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, T-78, O-27, O-29, O-30
 - **Owner**:
 
 ### User story
@@ -108,7 +108,7 @@ Given an event has recorded requirements and no pending request When I submit a 
 
 #### Scenario 2 — First request moves event to Planning
 
-Given the event has status Approved When the first booking request for any of its events is submitted Then the event status becomes Planning
+Given the event has status Approved When its first booking request is submitted Then the event status becomes Planning
 
 #### Scenario 3 — Several venue bookings for one event
 
@@ -116,15 +116,19 @@ Given the event already has a Pending or Confirmed venue booking When I submit a
 
 #### Scenario 3a — Each booking carries its own purpose and headcount
 
-Given I am requesting one of several venues for an event When I submit the request Then I may record a purpose (for example "Main programme" or "Breakout A") and an expected headcount for that booking; suitability and capacity checks for that venue use the booking's headcount when present and the event's expected attendance otherwise (assumes O-27)
+Given I am requesting one of several venues for an event When I submit the request Then I may record a purpose (for example "Main programme" or "Breakout A") and an expected headcount for that booking; suitability and capacity checks for that venue use the booking's headcount when present and the event's expected attendance otherwise (confirmed O-27, T-78)
 
 #### Scenario 3b — Bookings may cover different windows inside the event
 
-Given an event runs 09:00 to 18:00 When I request a breakout room for 14:00 to 16:00 Then the request is accepted; a request whose period falls outside the event's start and end is refused (assumes O-29)
+Given an event runs 09:00 to 18:00 When I request a breakout room for 14:00 to 16:00 Then the request is accepted; a request whose period falls outside the event's start and end is refused. Setup and turnaround buffers may extend beyond the event period and still reserve the venue (confirmed O-29, T-78)
 
 #### Scenario 3c — One booking is the primary venue
 
-Given an event has more than one Confirmed venue booking When I view the event Then the first booking to be Confirmed is marked primary by default and I may mark a different Confirmed booking as primary; the primary venue is the one shown to Attendees (assumes O-30)
+Given an event has more than one Confirmed venue booking When I view the event Then the first booking to be Confirmed is marked primary by default and I may mark a different Confirmed booking as primary; Pending bookings cannot be primary; the primary venue is the one shown to Attendees (confirmed O-30, T-78)
+
+#### Scenario 3d - Assigned Coordinator and planning status required (T-78)
+
+Given I am the assigned Event Coordinator and the event is Approved or Planning When I submit a valid booking request Then submission is permitted. Other actors or event statuses are refused. A Confirmed event needing a replacement must first return to Planning through the authorised reversion workflow.
 
 #### Scenario 4 — Venue taken by another event blocked
 
@@ -136,11 +140,11 @@ Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround
 
 ### Checklist
 
-- Submit a booking request for an event using its recorded requirements
+- Submit a booking request only as the assigned Event Coordinator while the event is Approved or Planning, using its recorded requirements (T-78)
 - Confirm the request is created as Pending and Venue Staff are notified
 - Confirm the venue calendar shows the period as Tentative
 - Confirm the event status moves from Approved to Planning on the first request
-- Hold several venue bookings, Pending or Confirmed, for one event, each with an optional purpose and headcount, and mark one as primary (C-67; assumes O-27, O-30)
+- Hold several venue bookings, Pending or Confirmed, for one event, each with an optional purpose and headcount, and mark one as primary (C-67; confirmed O-27 and O-30, T-78)
 - Be blocked from requesting a venue already Pending or Confirmed for another event in that period, counting that venue's setup and turnaround time (C-65)
 - View the status of each of my booking requests
 
@@ -203,7 +207,7 @@ E14-S02 completion no longer waits on these booking workflows. The original
 
 - **Sprint**: Sprint 3
 - **Points**: 5
-- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, O-31, O-32, O-33, O-34
+- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, T-78, O-31, O-32, O-33, O-34
 - **Owner**:
 
 ### User story
@@ -224,7 +228,7 @@ Given a venue already has a tentative hold or a confirmed booking for the period
 
 #### Scenario 3 — Hold becomes a booking request
 
-Given I hold a venue tentatively When I submit a booking request for that venue Then the hold becomes a pending booking request for the same period and the expiry no longer applies, because submitting the request is the action that completes the hold (assumes O-32)
+Given I hold a venue tentatively When I submit a booking request for that venue Then the hold becomes a pending booking request for the same period and the expiry no longer applies, because submitting the request is the action that completes the hold; an expired hold cannot be converted (confirmed O-32, T-78)
 
 #### Scenario 4 — Hold released
 

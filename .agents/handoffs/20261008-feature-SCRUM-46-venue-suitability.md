@@ -41,3 +41,15 @@ Operating hours must not enter the shared E06-S01 evaluator: T-77 deliberately
 makes this an E06-S02-only check. SQL availability remains a snapshot, not booking
 authorisation. API branch composition lacks a real HTTP-to-database acceptance
 run; current evidence is separate service/database and mocked-browser coverage.
+
+## PR #242 conflict resolution - 9 October 2026
+
+Merged origin/main 4563a52 into the PR working tree without committing. Retained
+both T-77 assessment-hours and T-78 booking decisions and both change-log entries.
+Used 091026 export references and regenerated backlog/BDR/test cases from combined
+Markdown (315 cases), compatibility workbook and coverage inventory. No application
+code or migration changes. Backend 26, frontend 8, browser 14, typecheck, build
+and 87 tooling tests passed; see the new 20261009 full-regression run record.
+Real DB and human manual checks were not rerun. No commit/push or Jira change.
+Stage is resolved; MERGE_HEAD remains until the user authorises a merge commit.
+Reviewer follow-up on assigned-Coordinator access remains with E01-S12.
