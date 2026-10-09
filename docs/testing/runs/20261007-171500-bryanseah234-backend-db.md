@@ -4,7 +4,7 @@ runner: bryanseah234
 scope: backend/db
 environment: local
 run_type: manual
-test_case_version: undated
+test_case_version: 031026
 database: none
 commit: 2ed310a
 pr: 232
