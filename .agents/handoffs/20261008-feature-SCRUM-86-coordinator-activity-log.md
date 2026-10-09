@@ -25,7 +25,7 @@ runs needed for the Definition of Done.
 ## Decisions for the reviewer to check
 
 - The new rule and TC_E14S02_08 add to the story's criteria; Product Owner
-  (@bryanseah234) sign-off is needed on the PR.
+  sign-off is needed on the PR.
 - TC_E14S02_08 names seeded accounts (coord_b, organiser_a, EVT-2003) rather
   than placeholders, in line with #230.
 
@@ -72,5 +72,5 @@ runs needed for the Definition of Done.
 
 1. Push, open the PR (four template sections, `Closes SCRUM-86`), attach the
    two screenshots, request review from someone other than Le Xin.
-2. Tell @bryanseah234 about the added rule and TC_E14S02_08 (Aaron's #192 review).
+2. Tell the Product Owner about the added rule and TC_E14S02_08 (Aaron's #192 review).
 3. Raise Aaron's optional re-estimate at Sprint 3 planning.

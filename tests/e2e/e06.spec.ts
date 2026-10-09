@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E06 - 25 cases. Source: docs/testing/cases/E06.md; T-76 transfers three booking-log specifications.
+// E06 - 37 cases. Source: docs/testing/cases/E06.md; T-76 transfers three booking-log specifications.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E06-S01", () => {
@@ -567,6 +567,80 @@ test.describe("E06-S06", () => {
     // 1. Sign in as Venue Staff
     // 2. Open the pending request for 10:59-13:00
     // 3. Attempt to approve it
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E06.md.
+
+test.describe("E06-S03 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E06S03_06 — Verify that a booking request whose period overlaps another event's buffered window should be blocked with the buffered window named", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S03_06).
+    void page;
+  });
+
+  test.fixme("TC_E06S03_07 — Verify that a Coordinator should be able to hold several venue bookings for one event, each with its own purpose, headcount and status", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S03_07).
+    void page;
+  });
+
+  test.fixme("TC_E06S03_08 — Verify that withdrawing one of several venue bookings should leave the others untouched and that a booking outside the event's period should be refused", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S03_08).
+    void page;
+  });
+
+});
+
+test.describe("E06-S04 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E06S04_04 — Verify that approving a request whose buffered window overlaps another confirmed booking's buffered window should be blocked even when the advertised times do not overlap", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S04_04).
+    void page;
+  });
+
+});
+
+test.describe("E06-S05 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E06S05_02 — Verify that a tentative hold should occupy the venue's buffered window so that an overlapping hold or request is refused", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_02).
+    void page;
+  });
+
+  test.fixme("TC_E06S05_03 — Verify that a new tentative hold should carry an expiry 48 hours after creation that Venue Staff can change", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_03).
+    void page;
+  });
+
+  test.fixme("TC_E06S05_04 — Verify that submitting a booking request for a held venue should complete the hold so that it no longer expires", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_04).
+    void page;
+  });
+
+  test.fixme("TC_E06S05_05 — Verify that an unconverted hold should become Expired when its expiry passes, freeing the venue and never counting as a booking", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_05).
+    void page;
+  });
+
+  test.fixme("TC_E06S05_06 — Verify that the Coordinator should receive a reminder 24 hours before a hold expires and a notice when it expires", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_06).
+    void page;
+  });
+
+  test.fixme("TC_E06S05_07 — Verify that Venue Staff should be able to extend an unexpired hold but not an expired one", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S05_07).
+    void page;
+  });
+
+});
+
+test.describe("E06-S06 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at the same moment", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S06_06).
+    void page;
+  });
+
+  test.fixme("TC_E06S06_07 — Verify that approving two requests from the same event on two different venues over the same period should confirm both", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S06_07).
     void page;
   });
 

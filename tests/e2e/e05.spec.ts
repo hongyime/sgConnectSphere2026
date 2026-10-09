@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// E05 - 24 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E05 - 37 cases. Source: docs/testing/cases/E05.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E05-S01", () => {
@@ -715,6 +715,79 @@ test.describe("E05-S04", () => {
     await page.getByLabel('New end date').fill('2027-01-07');
     await page.getByRole('button', { name: /Save shortened block/ }).click();
     await expect(page.getByText(/Block shortened/)).toBeVisible();
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E05.md.
+
+test.describe("E05-S05 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E05S05_01 — Verify that saving a setup time and a turnaround time on a venue should store both values and show them on the venue detail", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_01).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_02 — Verify that the availability calendar should show a booking's buffered occupancy window with the buffer distinguishable from the advertised event time", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_02).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_03 — Verify that changing a venue's turnaround time so that two confirmed bookings now overlap should flag the later booking as Conflicting, list the pair on save and notify the affected Coordinator, without releasing either booking", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_03).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_04 — Verify that a booking whose buffered window starts exactly when another's buffered window ends should not conflict, while one minute of overlap should", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_04).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_05 — Verify that a booking adjacent to a maintenance block should not be treated as conflicting because of its setup time", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_05).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_06).
+    void page;
+  });
+
+  test.fixme("TC_E05S05_07 — Verify that a venue whose existing booking overlaps the event only once its setup and turnaround time are applied should not appear as available in search", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S05_07).
+    void page;
+  });
+
+});
+
+test.describe("E05-S06 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_01).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events on save and release neither", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_02).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason and event", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_03).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_04 — Verify that an unavailability with no end date and time should be refused", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_04).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bookings it no longer touches", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_05).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_06 — Verify that E05-S04's block, shorten and remove behaviour still works for periods with no bookings after this story", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_06).
+    void page;
   });
 
 });

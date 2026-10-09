@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E09 - 35 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E09 - 36 cases. Source: docs/testing/cases/E09.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E09-S01", () => {
@@ -789,6 +789,16 @@ test.describe("E09-S07", () => {
     // Steps from the specification:
     // 1. Log in as organiser_a@clienta.com
     // 2. Open the registration list for "Community Meetup"
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E09.md.
+
+test.describe("E09-S01 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue", async ({ page }) => {
+    // Implement from docs/testing/cases/E09.md (TC_E09S01_06).
     void page;
   });
 
