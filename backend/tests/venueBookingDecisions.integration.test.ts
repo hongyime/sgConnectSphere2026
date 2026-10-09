@@ -53,11 +53,11 @@ async function fixture() {
   const coordinator = user(ids.coordinator, 'event_coordinator');
   const query: Query = (sql, values) => f.pool.query(sql, values);
 
-  // A Planning event with a Pending request for Small Room on 15 Jan 2027, 10:00-12:00 SGT.
-  async function pendingRequest(code = 'EVT-5001') {
+  // A Planning event with a Pending request for Small Room, 10:00-12:00 SGT on the given day.
+  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15') {
     const eventId = randomUUID();
     const bookingId = randomUUID();
-    const range = '[2027-01-15T10:00:00+08:00,2027-01-15T12:00:00+08:00)';
+    const range = `[${day}T10:00:00+08:00,${day}T12:00:00+08:00)`;
     await f.pool.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
       VALUES ($1, $2, $3, $4, $5, 'Product Expo 2026', 'planning', $6::tstzrange, 150)`,
     [eventId, code, ids.organiser, ids.coordinator, ids.org, range]);
@@ -238,12 +238,12 @@ test('an unknown booking is not found', () => withFixture(async f => {
 
 test('Venue Staff see pending requests, soonest first, and each booking with its decision', () => withFixture(async f => {
   const first = await f.pendingRequest('EVT-5001');
-  const decided = await f.pendingRequest('EVT-5002');
-  await f.pool.query(`UPDATE venue_bookings SET booking_range = '[2027-02-01T10:00:00+08:00,2027-02-01T12:00:00+08:00)' WHERE id = $1`, [decided.bookingId]);
+  const decided = await f.pendingRequest('EVT-5002', '2027-02-01');
+  const later = await f.pendingRequest('EVT-5003', '2027-03-01');
   await decideBooking(f.pool, f.staff, decided.bookingId, { decision: 'reject', reason: REASON, suggested_venue_id: f.ids.alternative });
 
   const list = await listPendingBookings(f.query, f.staff);
-  assert.deepEqual(list.bookings.map(booking => booking.id), [first.bookingId]);
+  assert.deepEqual(list.bookings.map(booking => booking.id), [first.bookingId, later.bookingId]);
   assert.deepEqual([list.bookings[0]!.venue.name, list.bookings[0]!.event.code, list.bookings[0]!.event.coordinatorName],
     ['Small Room', 'EVT-5001', 'Coordinator A']);
 
