@@ -122,7 +122,7 @@ export async function fakeDecisionBackend(page: Page, options: {
         coordinator_name: coordinator.name, statusHistory: [], activityLog: [], comments: [], outstandingQuestions: [],
         decision: decision(), canEdit: !rejected,
         editableFields: rejected ? [] : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance',
-          'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'],
+          'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'],
       } });
     }
     if (request.method() === 'POST' && params.get('decide') === '1' && ours) {

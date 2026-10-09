@@ -9,7 +9,7 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
     status, status_changed_at: '2026-09-10T00:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z', ends_at: '2026-10-10T12:00:00.000Z',
     expected_attendance: 200, venue_requirements: 'Outdoor start line', accessibility_note: 'Step-free access', equipment_requirements: 'PA system', layout_preference: 'Theatre',
     registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z', creator_name: 'Organiser A', canEdit: true,
-    editableFields: status === 'under_review' ? ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'] : ['title', 'description', 'purpose', 'registrationDates'],
+    editableFields: status === 'under_review' ? ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'] : ['title', 'description', 'purpose', 'registrationDates'],
     activityLog: [],
   };
   await page.route('**/api/events?*', async route => {

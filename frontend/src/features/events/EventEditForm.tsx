@@ -6,7 +6,7 @@
 // Fields outside `editable` are shown read-only with `lockedNote`, which is
 // how the Organiser's post-approval restrictions (Scenario 4) will render
 // once the Organiser read exposes these fields.
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Lock, Save } from 'lucide-react';
 import { Alert, Button, FormActions, FormSection } from '../../shared';
 import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
@@ -24,6 +24,7 @@ export type EventEditValues = {
   accessibility_note: string | null;
   equipment_requirements: string | null;
   layout_preference: string | null;
+  registration_setup?: string | null;
   registration_opens_at?: string | null;
   registration_closes_at?: string | null;
 };
@@ -52,7 +53,8 @@ const sections: { title: string; fields: FieldSpec[] }[] = [
     { field: 'layoutPreference', label: 'Layout', kind: 'textarea' },
   ] },
   { title: 'Registration', fields: [
-    { field: 'registrationDates', label: 'Registration dates', kind: 'text', wide: true, hint: 'Enter when registration opens and closes.' },
+    { field: 'registrationSetup', label: 'Registration setup', kind: 'textarea', wide: true },
+    { field: 'registrationDates', label: 'Registration dates', kind: 'text' },
   ] },
 ];
 
@@ -78,6 +80,7 @@ function toDraft(values: EventEditValues): Draft {
     accessibilityNote: values.accessibility_note ?? '',
     equipmentRequirements: values.equipment_requirements ?? '',
     layoutPreference: values.layout_preference ?? '',
+    registrationSetup: values.registration_setup ?? '',
     registrationDates: `${values.registration_opens_at ? toLocalInput(values.registration_opens_at) : ''}|${values.registration_closes_at ? toLocalInput(values.registration_closes_at) : ''}`,
   };
 }
@@ -198,25 +201,39 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
               id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
               onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
             };
+            const lock = locked ? <Lock size={12} aria-hidden="true" /> : null;
+            const state = `${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`;
+            const lockedHint = locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null;
+            const errorText = error ? <small id={`${id}-error`}>{error}</small> : null;
+            if (spec.field === 'registrationDates') {
+              // Two ordinary fields side by side in the section grid, rather
+              // than a nested fieldset the section's legend rule would float.
+              const [opens = '', closes = ''] = (draft.registrationDates ?? '').split('|');
+              const dateProps = { type: 'datetime-local', readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy };
+              return (
+                <Fragment key={spec.field}>
+                  <div className={`field-control${state}`}>
+                    <label htmlFor={`${id}-opens`}>Registration opens{lock}</label>
+                    <input id={`${id}-opens`} {...dateProps} value={opens} onChange={change => update(spec.field, `${change.target.value}|${closes}`)} />
+                    {lockedHint}
+                  </div>
+                  <div className={`field-control${state}`}>
+                    <label htmlFor={`${id}-closes`}>Registration closes{lock}</label>
+                    <input id={`${id}-closes`} {...dateProps} value={closes} onChange={change => update(spec.field, `${opens}|${change.target.value}`)} />
+                    {errorText}
+                  </div>
+                </Fragment>
+              );
+            }
             return (
-              <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`}>
-                {spec.field === 'registrationDates' ? <fieldset className="event-edit-date-pair">
-                  <legend>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</legend>
-                  <label htmlFor={`${id}-opens`}>Opens</label>
-                  <input id={`${id}-opens`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[0]} readOnly={locked}
-                    onChange={change => update(spec.field, `${change.target.value}|${(draft[spec.field] ?? '').split('|')[1] ?? ''}`)} />
-                  <label htmlFor={`${id}-closes`}>Closes</label>
-                  <input id={`${id}-closes`} type="datetime-local" aria-describedby={describedBy} aria-invalid={error ? true : undefined} value={(draft[spec.field] ?? '').split('|')[1] ?? ''} readOnly={locked}
-                    onChange={change => update(spec.field, `${(draft[spec.field] ?? '').split('|')[0] ?? ''}|${change.target.value}`)} />
-                </fieldset> : <>
-                  <label htmlFor={id}>{spec.label}{locked ? <Lock size={12} aria-hidden="true" /> : null}</label>
-                  {spec.kind === 'textarea'
-                    ? <textarea rows={3} {...common} />
-                    : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
-                </>}
+              <div key={spec.field} className={`field-control${spec.wide ? ' field-wide' : ''}${state}`}>
+                <label htmlFor={id}>{spec.label}{lock}</label>
+                {spec.kind === 'textarea'
+                  ? <textarea rows={3} {...common} />
+                  : <input type={spec.kind === 'datetime' ? 'datetime-local' : spec.kind === 'number' ? 'number' : 'text'} min={spec.kind === 'number' ? 1 : undefined} {...common} />}
                 {spec.hint ? <p id={`${id}-hint`} className="field-hint">{spec.hint}</p> : null}
-                {locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null}
-                {error ? <small id={`${id}-error`}>{error}</small> : null}
+                {lockedHint}
+                {errorText}
               </div>
             );
           })}
