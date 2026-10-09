@@ -128,11 +128,18 @@ test('an unknown booking is not found, and the transaction is left without chang
   await assert.rejects(getBooking(query, staff, bookingId), { status: 404 });
 });
 
-test('a booking that is no longer pending cannot be decided', async () => {
-  const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow({ status: 'confirmed' })] : undefined));
-  const result = await decideBooking(pool, staff, bookingId, { decision: 'reject', reason: 'Too small' });
-  assert.equal(result.status, 409);
-  assert.equal(has(calls, 'UPDATE venue_bookings'), false);
+test('a booking that is no longer pending cannot be decided, with a reason for each status', async () => {
+  const expected: [string, RegExp][] = [
+    ['confirmed', /already been decided/], ['rejected', /already been decided/], ['conflicting', /must be resolved/],
+    ['released', /withdrew/], ['tentative', /tentative hold/], ['expired', /expired/], ['unknown', /already been decided/],
+  ];
+  for (const [status, message] of expected) {
+    const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow({ status })] : undefined));
+    const result = await decideBooking(pool, staff, bookingId, { decision: 'reject', reason: 'Too small' });
+    assert.equal(result.status, 409);
+    assert.match((result.body as { error: string }).error, message, status);
+    assert.equal(has(calls, 'UPDATE venue_bookings'), false);
+  }
 });
 
 test('the suggested venue must differ from the requested one and be active', async () => {

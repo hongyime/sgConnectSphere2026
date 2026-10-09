@@ -34,6 +34,17 @@ type BookingRow = {
   decided_by_name: string | null; decided_at: Date | null; created_at: Date;
 };
 
+// Why a booking that isn't Pending can't be decided, worded for Venue Staff.
+// Conflicting bookings wait for the E05-S05/S06 resolution flow (PR #244).
+const NOT_DECIDABLE: Record<string, string> = {
+  confirmed: 'This request has already been decided, so it can no longer be changed.',
+  rejected: 'This request has already been decided, so it can no longer be changed.',
+  conflicting: 'This booking now clashes with a change to the venue. It must be resolved before it can be decided.',
+  released: 'The Coordinator withdrew this request, so there is nothing to decide.',
+  tentative: 'This is a tentative hold, not a request yet, so there is nothing to decide.',
+  expired: 'This hold has expired, so there is nothing to decide.',
+};
+
 const BOOKING_SELECT = `SELECT vb.id, vb.status, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at,
     v.id AS venue_id, v.name AS venue_name,
     e.id AS event_id, e.event_code, e.title AS event_title, e.expected_attendance,
@@ -159,7 +170,7 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };
     if (row.status !== 'pending') {
-      return { status: 409, body: { error: 'This request has already been decided, so it can no longer be changed.' } };
+      return { status: 409, body: { error: NOT_DECIDABLE[row.status] ?? NOT_DECIDABLE.confirmed } };
     }
 
     let suggestedName: string | null = null;
