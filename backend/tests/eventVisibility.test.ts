@@ -101,6 +101,18 @@ test('SCRUM-37: organiser detail exposes editable fields and full activity log c
   assert.equal(JSON.stringify(event.activityLog).includes('actor_email'), false);
 });
 
+test('SCRUM-37: registration setup is listed as editable for the organiser before approval only', async () => {
+  let row: Record<string, unknown> = { id: 'event-a', status: 'under_review', organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: user.clientOrgId };
+  const query: Query = async sql => {
+    if (sql.includes('SELECT e.id')) return { rows: [row] };
+    if (sql.includes("field_changed = 'status'") || sql.includes('FROM audit_logs a') || sql.includes('FROM event_threads')) return { rows: [] };
+    throw new Error(`Unexpected query: ${sql}`);
+  };
+  assert.ok((await getEvent(query, user, 'EVT-A01')).editableFields.includes('registrationSetup'));
+  row = { ...row, status: 'approved' };
+  assert.equal((await getEvent(query, user, 'EVT-A01')).editableFields.includes('registrationSetup'), false);
+});
+
 test('audit failure never returns event information or a false logged success', async () => {
   const query: Query = async sql => {
     if (sql.includes('INSERT')) throw new Error('Audit unavailable');
@@ -180,6 +192,28 @@ test('organiser can update registration dates before approval', async () => {
   };
   await updateEventInformation(query, user, 'EVT-A01', { registrationDates: { opensAt: '2026-09-01T00:00:00Z', closesAt: '2026-09-09T00:00:00Z' } });
   assert.match(calls.find(call => call.sql.startsWith('UPDATE events SET'))!.sql, /registration_opens_at/);
+});
+
+// E03-S07 Scenario 1 ("any field"): registration setup is editable before
+// approval, like the other requirement fields, and restricted after it.
+test('organiser can fill in registration setup before approval, but not after', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  let status = 'under_review';
+  const query: Query = async (sql, values) => {
+    calls.push({ sql, values });
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status, organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    return { rows: [] };
+  };
+  const result = await updateEventInformation(query, user, 'EVT-A01', { registrationSetup: '  Free registration  ' });
+  assert.deepEqual(result.fields, ['registrationSetup']);
+  const update = calls.find(call => call.sql.startsWith('UPDATE events SET'))!;
+  assert.match(update.sql, /registration_setup = \$1/);
+  assert.deepEqual(update.values, ['Free registration', 'event-a']);
+  assert.deepEqual(calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!.values, [user.id, 'event-a', 'registrationSetup', 'Free registration']);
+  await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { registrationSetup: '   ' }), { status: 400 });
+
+  status = 'approved';
+  await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { registrationSetup: 'Paid tickets' }), { status: 409 });
 });
 
 test('organiser post-approval unrestricted edits are audited', async () => {

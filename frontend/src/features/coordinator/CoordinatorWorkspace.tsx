@@ -247,7 +247,7 @@ export function RequestDetail() {
 const EDITABLE_AFTER_APPROVAL = ['approved', 'planning', 'confirmed', 'completed'];
 const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>([
   'title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance',
-  'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference',
+  'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup',
 ]);
 
 function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onSaved: () => void }) {

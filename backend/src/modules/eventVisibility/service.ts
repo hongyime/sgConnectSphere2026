@@ -74,8 +74,8 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     const canEdit = assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id));
     const organiserFields = approved
       ? ['title', 'description', 'purpose', 'registrationDates']
-      : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'];
-    const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'] : organiserFields;
+      : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'];
+    const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'] : organiserFields;
     return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canPostComment: organiser, canEdit, editableFields: canEdit ? editable : [] };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
@@ -115,7 +115,7 @@ export async function createEventComment(query: Query, user: AuthenticatedUser, 
 }
 
 const unrestrictedAfterApproval = new Set(['title', 'description', 'purpose', 'registrationDates']);
-const editableFields = new Set(['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates']);
+const editableFields = new Set(['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates']);
 
 export async function updateEventInformation(query: Query, user: AuthenticatedUser, identifier: string, input: unknown) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AccessError(400, 'invalid_payload');
@@ -145,9 +145,9 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
   const add = (sql: string, value: unknown, field: string) => { assignments.push(sql); values.push(value); audit.push({ field, value }); };
   for (const field of changed) {
     const value = patch[field];
-    if (['title', 'description', 'purpose', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference'].includes(field)) {
+    if (['title', 'description', 'purpose', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup'].includes(field)) {
       if (typeof value !== 'string' || !value.trim()) throw new AccessError(400, `${field} must be non-empty.`);
-      const column = field === 'venueRequirements' ? 'venue_requirements' : field === 'accessibilityNote' ? 'accessibility_note' : field === 'equipmentRequirements' ? 'equipment_requirements' : field === 'layoutPreference' ? 'layout_preference' : field;
+      const column = field === 'venueRequirements' ? 'venue_requirements' : field === 'accessibilityNote' ? 'accessibility_note' : field === 'equipmentRequirements' ? 'equipment_requirements' : field === 'layoutPreference' ? 'layout_preference' : field === 'registrationSetup' ? 'registration_setup' : field;
       add(`${column} = $${values.length + 1}`, value.trim(), field);
     } else if (field === 'expectedAttendance') {
       if (!Number.isInteger(value) || Number(value) <= 0) throw new AccessError(400, 'expectedAttendance must be a positive integer.');
