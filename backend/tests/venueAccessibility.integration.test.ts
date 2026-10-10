@@ -36,6 +36,9 @@ test('E02-S03 Scenario 3: venue search excludes venues missing a recorded predef
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
     await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));
+    // 0011 adds the venue buffer columns and occupied_window() that
+    // createVenue and the E05-S05 search availability check depend on.
+    await db.query(await readFile(new URL('../database/migrations/0011_venue_setup_turnaround_buffers.sql', import.meta.url), 'utf8'));
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
       VALUES ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser')`, [organiserId, org]);

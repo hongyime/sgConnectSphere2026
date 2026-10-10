@@ -50,7 +50,9 @@ test(
     // Exercise the actual repository migrations, not an approximation of the schema.
     // 0002_durable_notification_dispatch adds the dispatch_state/recipient_email
     // columns that insertNotificationDelivery (used by the capacity-drop flag path) needs.
-    for (const migration of ['0001_connectsphere_schema.sql', '0002_durable_notification_dispatch.sql']) {
+    // 0011_venue_setup_turnaround_buffers adds the setup/turnaround columns that
+    // createVenue/updateVenue now persist (E05-S05).
+    for (const migration of ['0001_connectsphere_schema.sql', '0002_durable_notification_dispatch.sql', '0011_venue_setup_turnaround_buffers.sql']) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
     }
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);

@@ -549,8 +549,8 @@ async function seed(client: Client) {
     for (const venue of venues) {
       await client.query(
         `
-          INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at, is_active)
-          VALUES ($1, $2, $3, $4, $5, $6, true)
+          INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at, is_active, setup_time_minutes, turnaround_time_minutes)
+          VALUES ($1, $2, $3, $4, $5, $6, true, 0, 0)
         `,
         [
           venueIds.get(venue.key),

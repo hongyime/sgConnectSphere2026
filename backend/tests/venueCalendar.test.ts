@@ -27,6 +27,9 @@ const venueRow = { id: 'venue-1', name: 'Grand Ballroom', opens_at: '08:00', clo
 function booking(status: 'pending' | 'confirmed', start: string, end: string, title: string, coordinatorId: string | null) {
   return {
     status, starts_at: sgt(start), ends_at: sgt(end),
+    // E05-S05: the real query returns these alongside the advertised times;
+    // the stub venue carries zero buffers, so buffered == advertised.
+    buffered_start: sgt(start), buffered_end: sgt(end),
     event_id: `event-${title}`, event_code: `EVT-${title}`, title, coordinator_id: coordinatorId,
   };
 }
