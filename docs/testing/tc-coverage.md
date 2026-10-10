@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 314 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 315 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **314**
-- Automated (explicit TC_ID in an active test title): **149** (47.5%)
-  - Real-database (`.integration.test` / `.db.test`): **20**
+- Total test cases: **315**
+- Automated (explicit TC_ID in an active test title): **153** (48.6%)
+  - Real-database (`.integration.test` / `.db.test`): **21**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **128**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **108** (34.4%)
-- No test yet (no test file mentions the TC_ID): **57** (18.2%)
+  - Live-assertion (other active tests): **131**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **105** (33.3%)
+- No test yet (no test file mentions the TC_ID): **57** (18.1%)
 
 ## Coverage by epic
 
@@ -28,9 +28,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 36 | 5 | 30 | 1 |
 | E10 | 20 | 0 | 15 | 5 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 7 | 1 | 6 | 0 |
+| E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **314** | **149** | **108** | **57** |
+| **Total** | **315** | **153** | **105** | **57** |
 
 ## Case-by-case status
 
@@ -394,13 +394,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E14S02_01` | E14-S02 | Verify that an event status change should be recorded with the actor, action, af | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_01 - Verify that an event status change should be recorded with the actor, action, affected event, and time |
-| `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_02 - Verify that a denied access attempt should be recorded with the user, target, and time |
+| `TC_E14S02_01` | E14-S02 | Verify that an event status change should be recorded with the actor, action, af | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_01: a status change is recorded and the assigned Coordinator reads it in the event Activity log; backend/tests/activityLog. |
+| `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_02: a refused event read is recorded with the user, the target and the time; tests/e2e/e14.spec.ts: TC_E14S02_02 - Verify t |
 | `TC_E14S02_03` | E14-S02 | [RETIRED — moved to TC_E06S04_05 by T-76] Verify that an approved venue booking  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that an approved venue booking should be recorded with the actor, action, affected reco |
-| `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_04 - Verify that an account deactivation should be recorded in the activity log |
+| `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_04: an account deactivation is recorded with the actor and the time; tests/e2e/e14.spec.ts: TC_E14S02_04 - Verify that an a |
 | `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ✅ active | backend/tests/auditLogImmutability.integration.test.ts: TC_E14S02_05: an activity log entry cannot be edited or deleted, even by the server connection; tests/e2e/e14.spec.ts: TC_E1 |
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
+| `TC_E14S02_08` | E14-S02 | Verify that access-denial entries should not be shown in the event Activity log  | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_08: access-denial entries and the refused users are not shown in the Coordinator Activity log; tests/e2e/e14.spec.ts: TC_E1 |
 
 ### EXX
 
@@ -877,6 +878,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the card is not shown before approval, so no support request is loaded
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
+
+### `frontend/src/features/events/ActivityLog.test.tsx`
+
+- an event with no recorded activity says so
+- a change is described in words for status changes, edits and entries without a field
+- an entry whose actor account was removed still shows, without a name
+- stored actions are shown in plain words, and other actions as written
+- a status change with no previous status shows only the new status
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
