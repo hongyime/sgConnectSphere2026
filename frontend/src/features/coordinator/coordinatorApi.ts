@@ -4,6 +4,7 @@
 // (401 sign-in prompt, 403 refusal, anything else a retryable error).
 import { apiCall, jsonRequest } from '../../shared';
 import type { OutstandingQuestion } from '../events/clarificationApi';
+import type { ActivityEntry } from '../events/ActivityLog';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
@@ -54,6 +55,8 @@ export type AssignedEventDetail = Omit<AssignedEventSummary, 'reassignment_pendi
   pendingReassignment: Reassignment | null;
   // E03-S02 (SCRUM-33): unanswered clarification questions.
   outstandingQuestions?: OutstandingQuestion[];
+  // E14-S02 (SCRUM-86, T-75): the event Activity log, without access denials.
+  activityLog?: ActivityEntry[];
 };
 
 export type Colleague = { id: string; full_name: string; email: string; active_events: number };

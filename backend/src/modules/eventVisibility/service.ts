@@ -61,12 +61,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       FROM audit_logs
       WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
-    const activity = await query(`SELECT a.occurred_at, a.action, a.field_changed,
-        a.old_value, a.new_value, u.full_name AS actor_name
-      FROM audit_logs a
-      LEFT JOIN users u ON u.id = a.actor_id
-      WHERE a.event_id = $1 AND a.entity_type = 'event' AND a.action <> 'Access Denied'
-      ORDER BY a.occurred_at ASC, a.id ASC`, [event.id]);
+    const activity = await listEventActivity(query, event.id);
     const comments = await listEventComments(query, event.id);
     const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
     const assignedCoordinator = user.role === 'event_coordinator' && event.coordinator_id === user.id;
@@ -85,6 +80,24 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     FROM (SELECT 1) anchor LEFT JOIN events e ON e.id::text = $2 OR e.event_code = $2`,
   [user.id, identifier]);
   throw new AccessError(403, 'Access denied. This event is not available to your organisation.');
+}
+
+// E14-S02 Scenario 1 (T-75): the event Activity log, shared by the Organiser
+// and the assigned Coordinator views. Access-denial rows are stored against
+// the event and name the refused user, often from another organisation, so
+// they are never shown here (#161); they are checked in the test database.
+// Coordinator assignment entries store user IDs, so show the names instead;
+// a value that is not a user ID ("No eligible Event Coordinator") is kept.
+export async function listEventActivity(query: Query, eventId: string) {
+  return query(`SELECT a.occurred_at, a.action, a.field_changed,
+      coalesce(was.full_name, a.old_value) AS old_value,
+      coalesce(now_is.full_name, a.new_value) AS new_value, u.full_name AS actor_name
+    FROM audit_logs a
+    LEFT JOIN users u ON u.id = a.actor_id
+    LEFT JOIN users was ON a.field_changed = 'coordinator_id' AND was.id::text = a.old_value
+    LEFT JOIN users now_is ON a.field_changed = 'coordinator_id' AND now_is.id::text = a.new_value
+    WHERE a.event_id = $1 AND a.entity_type = 'event' AND a.action <> 'Access Denied'
+    ORDER BY a.occurred_at ASC, a.id ASC`, [eventId]);
 }
 
 export async function listEventComments(query: Query, eventId: string) {
