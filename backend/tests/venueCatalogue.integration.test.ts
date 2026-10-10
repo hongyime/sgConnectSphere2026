@@ -49,8 +49,9 @@ test(
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.
     // 0002_durable_notification_dispatch adds the dispatch_state/recipient_email
-    // columns that insertNotificationDelivery (used by the capacity-drop flag path) needs.
-    for (const migration of ['0001_connectsphere_schema.sql', '0002_durable_notification_dispatch.sql']) {
+    // columns that insertNotificationDelivery (used by the capacity-drop flag path) needs;
+    // 0013 adds the tentative holds that stop a venue being retired (E06-S05).
+    for (const migration of ['0001_connectsphere_schema.sql', '0002_durable_notification_dispatch.sql', '0013_tentative_venue_holds.sql']) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
     }
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);

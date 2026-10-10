@@ -4,6 +4,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { requireCatalogueViewer, requireVenueStaff, type VenueErrors } from './catalogue.js';
+import { holdsVenue } from './holds.js';
 
 // E05-S04 "Block a venue for maintenance". A block is a venue_blocks row; venue
 // search (E06-S01) and the availability calendar (E05-S03) already read that
@@ -178,9 +179,8 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
 
 // Scenario 3. A confirmed booking has already been refused above, so the
 // affected events are the ones still holding the venue tentatively: a pending
-// booking (the calendar's "tentative" state) that has not ended, on an event
-// that has not ended. E06-S05 tentative holds must be added here when that
-// workflow lands. An event with no assigned Coordinator has nobody to tell
+// booking or an unexpired E06-S05 hold (both the calendar's "tentative"
+// state) that has not ended, on an event that has not ended. An event with no assigned Coordinator has nobody to tell
 // yet; assignment (E03-S01) notifies the Coordinator it later picks.
 // The notification ID is derived from the block ID, so a retried save never
 // sends the same Coordinator a second copy.
@@ -188,7 +188,7 @@ async function notifyAffectedCoordinators(client: PoolClient, venueName: string,
   const affected = await client.query<{ event_id: string; title: string; coordinator_id: string }>(`
     SELECT DISTINCT e.id AS event_id, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-    WHERE vb.venue_id = $1 AND vb.status = 'pending' AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+    WHERE vb.venue_id = $1 AND vb.status <> 'confirmed' AND ${holdsVenue('vb', 'now()')} AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       AND upper(vb.booking_range) > now()
       AND e.coordinator_id IS NOT NULL AND upper(e.event_range) > now()
       AND e.status NOT IN ('cancelled', 'completed', 'rejected')`,
