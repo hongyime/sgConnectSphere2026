@@ -12,7 +12,7 @@
 --
 -- PostgreSQL won't let a new enum value be used in the transaction that adds
 -- it, so this file only adds the values and the column. The overlap rule for
--- holds is enforced by the application (holds.ts), which locks the venue row
+-- holds is enforced by the application (holds.ts, #245), which locks the venue row
 -- before checking, so two holds or a hold and a request can't race.
 -- venue_bookings_no_active_overlap (pending/confirmed) is left for E06-S04/S06.
 
