@@ -7,7 +7,7 @@ the interfaces it touches. This file lists every REST endpoint the six Customer 
 add or alter, so that the owning story's developer, the frontend author on the shared
 skeleton (ADR-017) and the test-case author start from one list. Nothing here is
 implemented yet; each row names the story that will implement it and the test cases
-that will prove it. Update this file in the story's PR when the shape changes.
+that will prove it. The shared venue-booking schema, submission API and lifecycle are specified in [the venue bookings contract](contracts/venue-bookings.md); that contract controls where this overview differs. Update this file in the story's PR when the shape changes.
 
 Conventions carried over from the existing routes (ADR-014, `api/` is at the Hobby-plan
 function cap): new Coordinator, Lead and Safety Officer actions are query-parameter
@@ -39,8 +39,8 @@ ADR-009).
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/venues` `action: request_booking` | Coordinator | No longer refused when the event already has a Pending or Confirmed booking. Body gains optional `purpose` (text, 80 chars), `headcount` (int, defaults to the event's `expected_attendance`), `is_primary` (bool). Suitability checks compare the venue against `headcount`, not the event total. | E06-S03 | TC_E06S03_07, _08 |
-| `POST /api/venues` `action: set_primary` | Coordinator | Marks one booking of the event primary and clears the flag on the others. Exactly one Confirmed booking must be primary before submission for the safety check. | E06-S03 | TC_E06S03_07 |
+| `POST /api/venues` `action: request_booking` | Assigned Coordinator | Allows several bookings per event. Optional `purpose` and `headcount` remain null when omitted; suitability uses booking headcount or event attendance as fallback and is advisory. The server records the requester, creates a Pending non-primary booking, checks the event window, venue blocks and buffered occupancy, and moves Approved to Planning atomically. | E06-S03 | TC_E06S03_07, _08 |
+| `POST /api/venues` `action: set_primary` | Assigned Coordinator | The first booking to become Confirmed is made primary when none is primary. The Coordinator may select another Confirmed booking; Pending bookings cannot be primary. | E06-S03 | TC_E06S03_07 |
 | `GET /api/events?id=<id>` | Coordinator, Organiser | `venue_bookings: [...]` replaces the single `venue_booking` object; each entry carries `purpose`, `headcount`, `is_primary`, `occupancy_range`. | E06-S03, E10-S02 | TC_E10S02_05 |
 | `GET /api/attendee/events` and `?id=` | Attendee | Public event shows the primary venue; secondary venues appear under `other_venues` with their purpose (O-30). | E09-S01 | TC_E09S01_06 |
 | `POST /api/venues` `action: decide` | Venue Staff | Decision is per booking; approving one of an event's bookings does not touch the others. The exclusion constraint keys on `venue_id`, so two venues for one event over the same period never conflict. | E06-S06 | TC_E06S06_07 |
@@ -50,10 +50,10 @@ ADR-009).
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
 | `POST /api/venues` `action: hold` | Coordinator | New action. Creates a booking with `status: tentative`, `expires_at` defaulting to `now() + 48h` (O-31) and an explicit `expires_at` accepted within 1 hour to 14 days. Refused with 409 when the occupancy window overlaps any Pending, Tentative or Confirmed booking. | E06-S05 | TC_E06S05_01, _02, _03 |
-| `POST /api/venues` `action: convert_hold` | Coordinator | Turns a Tentative booking into a Pending request for the same range; `expires_at` is cleared. | E06-S05 | TC_E06S05_04 |
+| `POST /api/venues` `action: convert_hold` | Assigned Coordinator | Calls the shared submission service and changes the existing Tentative row to Pending for the same range. Submission clears expiry; expired holds cannot convert. Repeating conversion for the same booking id returns the existing Pending booking without duplicate effects. | E06-S05 | TC_E06S05_04 |
 | `POST /api/venues` `action: extend_hold` | Venue Staff | Sets a later `expires_at`; audit action `hold_extended`. Refused on a hold that has already expired. | E06-S05 | TC_E06S05_03, _07 |
 | `POST /api/venues` `action: release` | Coordinator | Existing release now also accepts a Tentative booking. | E06-S05 | E06-S05 Scenario 4 (no dedicated case) |
-| `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run additionally expires holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notifications to the Coordinator) and sends the 24-hour reminder once (`reminder_sent_at` guard). Response gains `holds_expired` and `reminders_sent` counts. | E06-S05 | TC_E06S05_05, _06 |
+| `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run additionally expires holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notifications to the Coordinator; per T-79, one notice at expiry and no separate reminder). Response gains `holds_expired` count. | E06-S05 | TC_E06S05_05 |
 
 ### Change 5 — Event Coordinator Lead and the unassigned queue (C-69, E03-S08 to E03-S10, E01-S12, E01-S13)
 
