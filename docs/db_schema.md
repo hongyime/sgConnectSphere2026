@@ -186,8 +186,7 @@ erDiagram
         uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
         timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
         uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
-        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31)"
-        timestamptz reminder_sent_at "Week 7 C-68; expiry reminder guard (O-33)"
+        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31, T-79)"
         boolean requires_reconfirmation
         text decision_reason
         uuid suggested_venue_id FK "alternative offered on rejection"
@@ -381,7 +380,7 @@ The ERD above describes the shared target schema. The checked-in migration 0001 
 
 - PR #231 proposes migration 0011_venue_setup_turnaround_buffers.sql. It adds venues.setup_time_minutes, venues.turnaround_time_minutes, and occupied_window(); it does not yet alter venue_bookings or its exclusion constraint.
 - PR #232 proposes migration 0012_user_role_enum_additions.sql for the Week 7 roles. It is independent of booking-range persistence.
-- PR #246 added migration 0013_tentative_venue_holds.sql. It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
-- E06-S05 is the proposed owner of the shared migration 0014_venue_bookings_contract.sql. It depends on migrations 0011, 0012, and the committed 0013; it adds the remaining booking request/hold fields, backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
+- PR #245 merged migration 0013_tentative_venue_holds.sql (holds only). It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
+- Migration 0014 is proposed as 0014_venue_bookings_contract.sql (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, and the committed 0013; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
 
 Migration 0013 is merged; migration 0014 remains a coordination proposal. Do not add a second E06-S03 migration for fields or constraints in 0014. Other Week 7 schema work, including event safety review, venue block categories, and coordinator reassignment fields, remains with its owning stories and must be ordered separately.

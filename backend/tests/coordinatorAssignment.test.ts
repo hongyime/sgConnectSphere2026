@@ -316,3 +316,22 @@ test('an event not assigned to the caller is refused like an unknown one, and au
   await assert.rejects(getAssignedEvent(pool, coordA, 'EVT-2001'), { status: 403 });
   assert.ok(has(calls, "'Access Denied'"));
 });
+
+// E14-S02 Scenario 1 (T-75): the assigned Coordinator reads the event's
+// Activity log; access-denial rows never appear in it (#161, TC_E14S02_08).
+test('TC_E14S02_01: the assigned Coordinator reads the event Activity log without access denials', async () => {
+  const entry = { occurred_at: new Date('2027-01-02T00:00:00Z'), action: 'Status Changed', field_changed: 'status',
+    old_value: 'under_review', new_value: 'approved', actor_name: 'Coordinator A' };
+  const { pool, calls } = fakeDatabase(sql => {
+    if (sql.includes('FROM events e JOIN users o')) return [{ id: eventId, event_code: 'EVT-2001', coordinator_id: coordA.id }];
+    if (sql.includes('FROM audit_logs a')) return [entry];
+    return undefined;
+  });
+  const event = await getAssignedEvent(pool, coordA, 'EVT-2001') as { activityLog: unknown[] };
+  assert.deepEqual(event.activityLog, [entry]);
+  const activity = find(calls, 'FROM audit_logs a')!;
+  assert.deepEqual(activity.values, [eventId]);
+  assert.match(activity.sql, /a\.entity_type = 'event' AND a\.action <> 'Access Denied'/);
+  assert.doesNotMatch(activity.sql, /email/);
+  assert.equal(has(calls, "'Access Denied', "), false);
+});

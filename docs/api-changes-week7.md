@@ -53,7 +53,7 @@ ADR-009).
 | `POST /api/venues` `action: convert_hold` | Assigned Coordinator | Calls the shared submission service and changes the existing Tentative row to Pending for the same range. Submission clears expiry; expired holds cannot convert. Repeating conversion for the same booking id returns the existing Pending booking without duplicate effects. | E06-S05 | TC_E06S05_04 |
 | `POST /api/venues` `action: extend_hold` | Venue Staff | Sets a later `expires_at`; audit action `hold_extended`. Refused on a hold that has already expired. | E06-S05 | TC_E06S05_03, _07 |
 | `POST /api/venues` `action: release` | Coordinator | Existing release now also accepts a Tentative booking. | E06-S05 | E06-S05 Scenario 4 (no dedicated case) |
-| `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run additionally expires holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notifications to the Coordinator) and sends the 24-hour reminder once (`reminder_sent_at` guard). Response gains `holds_expired` and `reminders_sent` counts. | E06-S05 | TC_E06S05_05, _06 |
+| `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run additionally expires holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notifications to the Coordinator; per T-79, one notice at expiry and no separate reminder). Response gains `holds_expired` count. | E06-S05 | TC_E06S05_05 |
 
 ### Change 5 — Event Coordinator Lead and the unassigned queue (C-69, E03-S08 to E03-S10, E01-S12, E01-S13)
 

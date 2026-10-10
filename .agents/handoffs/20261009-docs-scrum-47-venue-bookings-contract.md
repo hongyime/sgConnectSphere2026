@@ -14,10 +14,17 @@ Goal: Draft and publish a shared venue_bookings schema/API/state contract for SC
 - Updated the contract and schema sequence after PR #246 landed migration 0013; the remaining shared schema work is now proposed as migration 0014.
 - Created the required PostPlan; its structural check passed and desktop/mobile Chromium screenshots were visually inspected.
 - Opened draft PR #244 and posted the top-level PostPlan review comment. On commit 7feae31, repository-checks, pr-conventions, lfs-guard, trufflehog, dependency-review, and application-checks (skip) all passed.
+- Merged origin/main cleanly.
+- Addressed reviewer feedback from Amareetkm and Lexinphun:
+  - Confirmed migration 0013 is holds-only (merged in #245); shared columns proposed for migration 0014 (`0014_venue_bookings_contract.sql`) after PR #231 lands.
+  - Added Venue Staff `decide` action shape (`POST /api/venues`) for E06-S04.
+  - Removed `reminder_sent_at` column per T-79 (single notification on expiry, no separate reminder).
+  - Adopted repo standard 400 `validation_failed` error code instead of 422.
+  - Specified refusal handling for deciding a Conflicting booking.
 
 ## Next
 
-Collect human review on the proposed migration owner/order, retry key, and primary-release behavior. Keep the PR in draft until the team agrees on the proposals; then update the contract and mark the PR ready. Do not merge without the protected review workflow.
+Mark PR #244 ready for review, monitor CI checks and await teammate approvals.
 
 ## Commands and outcomes
 
