@@ -158,6 +158,15 @@ active scaffold files, ADR-009 and derived exports are reconciled in this change
 Jira reconciliation follows the merged backlog; the scope PR must not close
 SCRUM-86 automatically.
 
+## 8 October 2026: E06-S02 operating-hours clarification
+
+T-77 records the Product Owner clarification relayed by the story owner:
+E06-S02 flags an event outside venue operating hours as unsuitable, explicitly
+naming the failure. Fully contained events pass. The result stays advisory and
+must be available to Venue Staff in the owning booking workflow. E06-S01 search
+continues without an operating-hours suitability filter. Both backlog views and
+TC_E06S02_05 carry the clarification; Jira reconciliation follows merge.
+
 ## 9 October 2026 - PO confirms venue booking defaults (T-78)
 
 Recorded the story owner's relayed PO confirmation of O-27, O-29, O-30 and

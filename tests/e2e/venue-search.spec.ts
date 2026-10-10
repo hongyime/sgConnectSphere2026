@@ -21,6 +21,7 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03: combined filters and near-match fa
  await expect(page.getByRole('region', {name:'Central Hall',exact:true}).getByRole('alert')).toHaveCount(0);
  await expect(page.getByRole('region', {name:'Venue results'}).getByRole('alert')).toHaveCount(1);
  await expect(page.getByRole('region', {name:'Venue results'}).getByRole('alert')).toContainText('No full matches');
+ await expect(page.getByRole('link', {name:'Check recorded event requirements'})).toHaveAttribute('href', '/coordinator/events/EVT-TEST/venues/v/suitability');
  await expect(page.getByRole('main')).toHaveClass(/ui-page/);
  await expect(page.getByRole('heading', {level:1})).toHaveCount(1);
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
