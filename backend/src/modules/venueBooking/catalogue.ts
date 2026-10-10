@@ -4,6 +4,7 @@ import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { insertNotificationDelivery } from '../notificationDispatcher/postgres.js';
+import { writeEventNotification } from '../eventNotifications/service.js';
 import { accessibilityMatchCondition } from './matchAccessibility.js';
 
 export type VenueLayoutInput = { label: string; capacity: number };
@@ -401,7 +402,7 @@ async function detectAndMarkBufferConflicts(
   );
 
   const laterBookingIds = conflicts.rows.map(row => row.booking_id);
-  const coordinatorNotifications: Map<string, { eventId: string; title: string }[]> = new Map();
+  const coordinatorNotifications: Map<string, { eventId: string; title: string; bookingId: string }[]> = new Map();
 
   for (const row of conflicts.rows) {
     if (!coordinatorNotifications.has(row.coordinator_id ?? '')) {
@@ -410,6 +411,7 @@ async function detectAndMarkBufferConflicts(
     coordinatorNotifications.get(row.coordinator_id ?? '')!.push({
       eventId: row.event_id,
       title: row.title,
+      bookingId: row.booking_id,
     });
   }
 
@@ -423,11 +425,14 @@ async function detectAndMarkBufferConflicts(
       if (!coordinatorId) continue;
       for (const event of events) {
         const message = `The venue's buffer times have changed, creating a scheduling conflict for "${event.title}". The booking has been marked as conflicting and requires review.`;
-        const notification = await client.query<{ id: string }>(
-          `INSERT INTO notifications (user_id, event_id, title, message) VALUES ($1, $2, $3, $4) RETURNING id`,
-          [coordinatorId, event.eventId, 'Booking conflict detected', message],
-        );
-        await insertNotificationDelivery(client, notification.rows[0]!.id);
+        await writeEventNotification(client, {
+          eventId: event.eventId,
+          changeId: `${event.bookingId}:buffer-conflict`,
+          userId: coordinatorId,
+          occurredAt: new Date(),
+          title: 'Booking conflict detected',
+          message,
+        });
       }
     }
   }

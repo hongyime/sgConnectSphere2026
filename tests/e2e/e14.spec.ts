@@ -87,7 +87,7 @@ test.describe("E14-S02", () => {
   test.fixme("TC_E14S02_05 - Verify that any attempt to edit or delete an activity log entry should be refused", async ({ page }) => {
     // 1. As an Event Coordinator permitted to view the event, open its Activity log
     // 2. Confirm no edit or delete control is offered for the entry
-    // 3. For each existing application role (event_organiser, event_coordinator, venue_staff, technical_support and attendee), attempt direct API update and delete requests against the entry
+    // 3. For each existing application role (event_organiser, event_coordinator, venue_staff, technical_support_staff and attendee), attempt direct API update and delete requests against the entry
     // 4. As the database test harness, attempt UPDATE and DELETE of that entry through the application database connection in separate transactions
     // 5. Read the original entry after each refused attempt to confirm its contents and row remain unchanged
     void page;
@@ -122,6 +122,25 @@ test.describe("E14-S02", () => {
   test.skip("TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. Do not execute this retired case; use TC_E06S04_07 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
+    void page;
+  });
+
+  /**
+   * AC: E14-S02 - Scenario 1 (Status change recorded; access-denial entries not shown; T-75)
+   * Sprint: 3
+   * Pre-conditions:
+   * Event EVT-2003 belongs to Client B, is Under Review and is assigned to coord_b@connectsphere.com; organiser_a@clienta.com belongs to Client A; the database is a disposable test database seeded with `npm run db:seed:test --workspace backend`
+   * Test data:
+   * Refused user: organiser_a@clienta.com (Organiser A, Client A) | Event: EVT-2003 (Client B) | Reader: coord_b@connectsphere.com
+   * Expected result:
+   * The Activity log shows the status-change entry from step 3 and no "Access Denied" entry; neither "Organiser A" nor organiser_a@clienta.com appears anywhere in the log
+   */
+  test.fixme("TC_E14S02_08 - Verify that access-denial entries should not be shown in the event Activity log a Coordinator reads", async ({ page }) => {
+    // 1. As organiser_a@clienta.com, attempt to open EVT-2003 directly and confirm the request is refused
+    // 2. As the tester, confirm in the test database that an "Access Denied" row naming organiser_a@clienta.com now exists for that attempt
+    // 3. As coord_b@connectsphere.com, approve EVT-2003 so the log also holds a status-change entry
+    // 4. As coord_b@connectsphere.com, open EVT-2003's Activity log
+    // 5. Check every entry shown
     void page;
   });
 
