@@ -16,3 +16,4 @@ docs/plans/sprint-1-retrospective.md
 # One directory rule instead of one line per record, so concurrent PRs adding
 # records never conflict here (decision 0014).
 docs/testing/runs/
+.agents/handoffs/20261008-feature-SCRUM-86-coordinator-activity-log.md
