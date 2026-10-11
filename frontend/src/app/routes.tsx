@@ -2,6 +2,7 @@ import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/supp
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
 import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
+import { MarkUnavailablePage } from '../features/support/EquipmentUnavailability';
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
 // To add a page: add one entry here. `access: 'signed-in'` pages render inside
@@ -182,6 +183,7 @@ export const routes: AppRoute[] = [
   page('/support/catalogue', <EquipmentCatalogue />, 'live', 'E07-S01'),
   page('/support/catalogue/new', <EquipmentFormPage />, 'live', 'E07-S01'),
   page('/support/catalogue/:equipmentId/edit', <EquipmentFormPage />, 'live', 'E07-S01'),
+  page('/support/catalogue/:equipmentId/unavailable', <MarkUnavailablePage />, 'live', 'E07-S05'),
   page('/support/catalogue/:equipmentId', <EquipmentDetail />, 'live', 'E07-S01'),
   // E07-S04 (D35): reserving happens on the live event equipment pages; the
   // old mock queue and reservation detail now lead to the live list.
