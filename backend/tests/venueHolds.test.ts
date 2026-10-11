@@ -40,7 +40,7 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
   const calls: Array<{ sql: string; values?: unknown[] }> = [];
   const answer = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
-    const rule = rules.find(([pattern]) => pattern.test(sql));
+    const rule = rules.find(([pattern]) => pattern.test(sql)) ?? (CLOCK.test(sql) ? [CLOCK, { rows: [{ now: NOW }] }] as const : undefined);
     const reply = rule ? (typeof rule[1] === 'function' ? rule[1](values) : rule[1]) : { rows: [] };
     if (reply instanceof Error) throw reply;
     return { rowCount: reply.rows.length, ...reply };
@@ -50,6 +50,7 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
   return { pool, query: answer as Query, calls };
 }
 const sqlCalls = (calls: Array<{ sql: string }>, pattern: RegExp) => calls.filter(call => pattern.test(call.sql));
+const CLOCK = /SELECT clock_timestamp\(\) AS now/;
 const EVENT_ROW = /FROM events WHERE (id::text = \$1 OR event_code = \$1|id = \(SELECT event_id FROM venue_bookings WHERE id = \$1\))/;
 const VENUE_ROW = /FROM venues WHERE id = \$1 AND is_active FOR NO KEY UPDATE/;
 const CLASH = /ORDER BY lower\(vb.booking_range\) LIMIT 1/;
@@ -177,7 +178,7 @@ test('a hold is refused for another Coordinator\'s event, an unplanned event, a 
 
 test('TC_E06S05_04: submitting the booking request turns a live hold into a pending request and stops its expiry', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [hold] }]]);
-  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }, NOW), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
+  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
   assert.match(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.sql, /status = 'pending', expires_at = NULL/);
   assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD]);
   assert.match(sqlCalls(db.calls, EVENT_ROW)[0]!.sql, /SELECT event_id FROM venue_bookings WHERE id = \$1/);
@@ -186,37 +187,69 @@ test('TC_E06S05_04: submitting the booking request turns a live hold into a pend
 
 test('an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event', async () => {
   const expired = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: NOW }] }]]);
-  await assert.rejects(convertHold(expired.pool, coordinator, { booking_id: HOLD }, NOW),
+  await assert.rejects(convertHold(expired.pool, coordinator, { booking_id: HOLD }),
     { status: 409, message: "This hold has expired, so it can't be changed. Place a new hold if the venue is still needed." });
   const marked = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'expired' }] }]]);
-  await assert.rejects(convertHold(marked.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
+  await assert.rejects(convertHold(marked.pool, coordinator, { booking_id: HOLD }), { status: 409 });
   const cleared = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: null }] }]]);
-  await assert.rejects(convertHold(cleared.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
+  await assert.rejects(convertHold(cleared.pool, coordinator, { booking_id: HOLD }), { status: 409 });
   const confirmed = fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [{ ...hold, status: 'confirmed' }] }]]);
-  await assert.rejects(convertHold(confirmed.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404, message: 'That tentative hold was not found.' });
+  await assert.rejects(convertHold(confirmed.pool, coordinator, { booking_id: HOLD }), { status: 404, message: 'That tentative hold was not found.' });
   const noBooking = fakeDatabase([]);
-  await assert.rejects(convertHold(noBooking.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404 });
+  await assert.rejects(convertHold(noBooking.pool, coordinator, { booking_id: HOLD }), { status: 404 });
   assert.equal(denials(noBooking.calls), 0);
   const missing = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  await assert.rejects(convertHold(missing.pool, coordinator, { booking_id: HOLD }, NOW), { status: 404 });
+  await assert.rejects(convertHold(missing.pool, coordinator, { booking_id: HOLD }), { status: 404 });
   const cancelled = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }], [HOLD_ROW, { rows: [hold] }]]);
-  await assert.rejects(convertHold(cancelled.pool, coordinator, { booking_id: HOLD }, NOW), { status: 409 });
+  await assert.rejects(convertHold(cancelled.pool, coordinator, { booking_id: HOLD }), { status: 409 });
   const other = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, coordinatorId: 'someone-else' }] }]]);
-  await assert.rejects(convertHold(other.pool, coordinator, { booking_id: HOLD }, NOW), { status: 403 });
+  await assert.rejects(convertHold(other.pool, coordinator, { booking_id: HOLD }), { status: 403 });
   for (const db of [expired, marked, cleared, confirmed, noBooking, missing, cancelled, other]) assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
 });
 
 test('converting again after success returns the same pending booking with no second write or audit entry', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'planning' }] }], [HOLD_ROW, { rows: [{ ...hold, status: 'pending', expiresAt: null }] }]]);
-  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }, NOW), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
+  assert.deepEqual(await convertHold(db.pool, coordinator, { booking_id: HOLD }), { status: 200, body: { booking: { id: HOLD, status: 'pending' } } });
   assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings|INSERT INTO audit_logs/).length, 0);
 });
 
 test('Scenario 4: the Coordinator releases a hold and the period is Free again', async () => {
-  const db = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: NOW }] }]]);
+  const db = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'cancelled' }] }], [HOLD_ROW, { rows: [hold] }]]);
   assert.deepEqual(await releaseHold(db.pool, coordinator, { booking_id: HOLD }), { status: 200, body: { released: true } });
   assert.match(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.sql, /status = 'released', expires_at = NULL/);
   assert.equal(sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!.values?.[2], 'Tentative hold on Main Hall released');
+});
+
+test('expiry is judged at database time read after the locks, not when the request arrived', async () => {
+  // The hold was live when the request came in, but the database clock read
+  // after the lock wait is past its expiry.
+  const late = () => fakeDatabase([[EVENT_ROW, { rows: [event] }], [HOLD_ROW, { rows: [hold] }], [CLOCK, { rows: [{ now: at(48) }] }]]);
+  const convert = late();
+  await assert.rejects(convertHold(convert.pool, coordinator, { booking_id: HOLD }), { status: 409 });
+  const extend = late();
+  await assert.rejects(extendHold(extend.pool, staff, { booking_id: HOLD, expires_at: at(72).toISOString() }), { status: 409 });
+  const release = late();
+  await assert.rejects(releaseHold(release.pool, coordinator, { booking_id: HOLD }), { status: 409 });
+  for (const db of [convert, extend, release]) {
+    assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
+    // The clock is read after the hold row is locked.
+    const order = db.calls.map(call => (HOLD_ROW.test(call.sql) ? 'lock' : CLOCK.test(call.sql) ? 'clock' : '')).filter(Boolean);
+    assert.deepEqual(order, ['lock', 'clock']);
+  }
+});
+
+test('an extension locks the venue before the hold, like placing a hold does', async () => {
+  const db = fakeDatabase([[HOLD_ROW, { rows: [hold] }]]);
+  await extendHold(db.pool, staff, { booking_id: HOLD, expires_at: at(72).toISOString() });
+  const venueLock = db.calls.findIndex(call => /FROM venues v JOIN venue_bookings vb ON vb.venue_id = v.id WHERE vb.id = \$1 FOR NO KEY UPDATE OF v/.test(call.sql));
+  const holdLock = db.calls.findIndex(call => HOLD_ROW.test(call.sql));
+  assert.ok(venueLock >= 0 && venueLock < holdLock);
+});
+
+test('without an injected time the expiry job uses the database clock', async () => {
+  const db = fakeDatabase([[CLOCK, { rows: [{ now: at(5) }] }]]);
+  await expireHolds(db.pool);
+  assert.deepEqual(sqlCalls(db.calls, /SET status = 'expired'/)[0]!.values, [at(5)]);
 });
 
 test('a hold the job has already expired cannot be released', async () => {
@@ -228,7 +261,7 @@ test('a hold the job has already expired cannot be released', async () => {
 test('TC_E06S05_07: Venue Staff extend a live hold; the old and new expiry are logged with who changed it', async () => {
   const db = fakeDatabase([[HOLD_ROW, { rows: [hold] }]]);
   const later = at(72).toISOString();
-  assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at: later }, NOW), { status: 200, body: { hold: { id: HOLD, expiresAt: later } } });
+  assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at: later }), { status: 200, body: { hold: { id: HOLD, expiresAt: later } } });
   assert.deepEqual(sqlCalls(db.calls, /UPDATE venue_bookings/)[0]!.values, [HOLD, new Date(later)]);
   assert.deepEqual(sqlCalls(db.calls, HOLD_ROW)[0]!.values, [HOLD]);
   assert.deepEqual(sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!.values,
@@ -239,7 +272,7 @@ test('an extension must be later than now-plus-1-hour, the current expiry and no
   const live = () => fakeDatabase([[HOLD_ROW, { rows: [hold] }]]);
   const expect = async (expires_at: unknown, message: string) => {
     const db = live();
-    assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at }, NOW),
+    assert.deepEqual(await extendHold(db.pool, staff, { booking_id: HOLD, expires_at }),
       { status: 400, body: { error: 'validation_failed', errors: { expires_at: [message] } } });
     assert.equal(sqlCalls(db.calls, /UPDATE venue_bookings/).length, 0);
   };
@@ -248,7 +281,7 @@ test('an extension must be later than now-plus-1-hour, the current expiry and no
   await expect(at(48).toISOString(), 'Choose a later expiry than the current one.');
   await expect(at(15 * 24).toISOString(), 'A hold can last at most 14 days from now.');
   const expired = fakeDatabase([[HOLD_ROW, { rows: [{ ...hold, expiresAt: at(-1) }] }]]);
-  await assert.rejects(extendHold(expired.pool, staff, { booking_id: HOLD, expires_at: at(72).toISOString() }, NOW), { status: 409 });
+  await assert.rejects(extendHold(expired.pool, staff, { booking_id: HOLD, expires_at: at(72).toISOString() }), { status: 409 });
   assert.equal(denials(expired.calls), 0);
 });
 
@@ -336,7 +369,7 @@ test('handler: methods, origin and actions', async () => {
 });
 
 test('handler: GET routes to the event or staff list; POST to hold, convert, release or extend', async () => {
-  const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }], [HOLD_ROW, { rows: [{ ...hold, expiresAt: new Date(Date.now() + 48 * HOUR) }] }]]);
+  const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }], [HOLD_ROW, { rows: [hold] }]]);
   let user = coordinator;
   const handler = createHoldsHandler({ authenticate: async () => user, query: db.query, pool: () => db.pool, allowedOrigin: () => true });
   const { response, captured } = fakeResponse();
@@ -351,6 +384,6 @@ test('handler: GET routes to the event or staff list; POST to hold, convert, rel
   user = staff;
   await handler({ method: 'GET', headers: {} }, response);
   assert.deepEqual([captured.status, captured.body], [200, { holds: [] }]);
-  await handler({ method: 'POST', headers: {}, body: { action: 'extend_hold', booking_id: HOLD, expires_at: new Date(Date.now() + 72 * HOUR).toISOString() } }, response);
+  await handler({ method: 'POST', headers: {}, body: { action: 'extend_hold', booking_id: HOLD, expires_at: at(72).toISOString() } }, response);
   assert.equal(captured.status, 200);
 });

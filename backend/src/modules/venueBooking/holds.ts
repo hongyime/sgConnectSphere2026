@@ -171,7 +171,7 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
     // venue are decided one at a time, so two can't both see it free.
     const venue = (await client.query<Venue>(`SELECT id, name FROM venues WHERE id = $1 AND is_active FOR NO KEY UPDATE`, [venueId])).rows[0];
     if (!venue) throw new AccessError(404, 'That venue was not found or is no longer in use.');
-    const clash = await findClash(client, venue.id, valid.input.startsAt, valid.input.endsAt, now, null);
+    const clash = await findClash(client, venue.id, valid.input.startsAt, valid.input.endsAt, await databaseNow(client), null);
     if (clash) return { status: 409, body: { error: clash } };
     const id = randomUUID();
     await client.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status, expires_at)
@@ -180,6 +180,13 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: id, action: `Tentative hold placed on ${venue.name}`, next: valid.input.expiresAt.toISOString() });
     return { status: 201, body: { hold: { id, venueId: venue.id, venueName: venue.name, status: 'tentative', expiresAt: valid.input.expiresAt.toISOString() } } };
   }));
+}
+
+// The database's clock, read in its own statement after the row locks are
+// held, so a request that waited on a lock judges expiry at the time it
+// actually acts, not when it arrived (Bryan's review of #245).
+async function databaseNow(client: PoolClient) {
+  return (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
 }
 
 type LockedHold = { id: string; eventId: string; venueId: string; venueName: string; status: string; expiresAt: Date | null; startsAt: Date; endsAt: Date };
@@ -198,7 +205,7 @@ const isLive = (hold: LockedHold, now: Date) => hold.status === 'tentative' && h
 // Scenario 3 (O-32, T-78): submitting the booking request completes the hold.
 // The same row becomes pending. A retry after success returns the booking
 // again with no second audit entry (docs/contracts/venue-bookings.md, #244).
-export async function convertHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
+export async function convertHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const bookingId = uuid(data.booking_id, 'booking');
@@ -207,7 +214,7 @@ export async function convertHold(database: Pool, user: AuthenticatedUser | unde
     const hold = await lockHold(client, bookingId, ['pending']);
     if (hold.status === 'pending') return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
+    if (!isLive(hold, await databaseNow(client))) throw new AccessError(409, EXPIRED);
     await client.query(`UPDATE venue_bookings SET status = 'pending', expires_at = NULL WHERE id = $1`, [hold.id]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} submitted as a booking request` });
     return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
@@ -222,7 +229,8 @@ export async function releaseHold(database: Pool, user: AuthenticatedUser | unde
   return audited(database, actor, () => inTransaction(database, async client => {
     const event = await lockEvent(client, actor, { booking: bookingId });
     const hold = await lockHold(client, bookingId);
-    if (hold.status === 'expired') throw new AccessError(409, EXPIRED);
+    // A hold whose expiry has passed is left for the expiry job, so its notice is still sent.
+    if (!isLive(hold, await databaseNow(client))) throw new AccessError(409, EXPIRED);
     await client.query(`UPDATE venue_bookings SET status = 'released', expires_at = NULL WHERE id = $1`, [hold.id]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} released` });
     return { status: 200, body: { released: true } };
@@ -230,13 +238,17 @@ export async function releaseHold(database: Pool, user: AuthenticatedUser | unde
 }
 
 // Scenario 8 (O-34): Venue Staff move a live hold's expiry later; logged with who did it.
-export async function extendHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
+// The venue row is locked first, as placeHold does, so an extension and a new
+// hold on the same venue are decided one after the other.
+export async function extendHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['venue_staff'], STAFF_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const bookingId = uuid(data.booking_id, 'booking');
   const expires = typeof data.expires_at === 'string' && data.expires_at ? new Date(data.expires_at) : undefined;
   return inTransaction(database, async client => {
+    await client.query(`SELECT v.id FROM venues v JOIN venue_bookings vb ON vb.venue_id = v.id WHERE vb.id = $1 FOR NO KEY UPDATE OF v`, [bookingId]);
     const hold = await lockHold(client, bookingId);
+    const now = await databaseNow(client);
     if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
     const error = checkExpiry(expires, now) ?? (expires! <= hold.expiresAt! ? 'Choose a later expiry than the current one.' : null);
     if (error) return { status: 400, body: { error: 'validation_failed', errors: { expires_at: [error] } } };
@@ -248,10 +260,11 @@ export async function extendHold(database: Pool, user: AuthenticatedUser | undef
 }
 
 // Scenarios 6, 7 and 9: mark holds whose expiry has passed as expired and tell
-// their Coordinator once. Run by the scheduled job; `now` is injectable so the
-// exact boundary (expires_at <= now) can be tested.
-export async function expireHolds(database: Pool, now = new Date()) {
+// their Coordinator once. Run by the scheduled job at database time; `now` is
+// injectable so the exact boundary (expires_at <= now) can be tested.
+export async function expireHolds(database: Pool, at?: Date) {
   return inTransaction(database, async client => {
+    const now = at ?? await databaseNow(client);
     const expired = (await client.query<{ id: string; eventId: string; eventCode: string | null; title: string; coordinatorId: string | null; venueName: string; expiresAt: Date }>(`
       UPDATE venue_bookings vb SET status = 'expired'
       FROM events e, venues v

@@ -221,3 +221,52 @@ test('two simultaneous holds on one venue and period: exactly one succeeds', asy
     await f.close();
   }
 });
+
+test('a request that waits on a lock past the expiry is refused; a passed hold cannot be released (review of #245)', async () => {
+  const f = await fixture();
+  const blocker = await f.pool.connect();
+  const settled = (promise: Promise<unknown>) => Promise.race([promise.then(() => true, () => true), new Promise(resolve => setTimeout(() => resolve(false), 400))]);
+  try {
+    await f.event('EVT-TC', 'Tech Conference 2027', f.ids.coordA, '[2027-07-10 09:00+08,2027-07-10 12:00+08)');
+    await f.event('EVT-CR', 'Charity Run', f.ids.coordA, '[2027-07-11 09:00+08,2027-07-11 12:00+08)');
+    await f.event('EVT-GA', 'Gala', f.ids.coordA, '[2027-07-12 09:00+08,2027-07-12 12:00+08)');
+    const toConvert = holdId(await placeHold(f.pool, f.coordA, { event_id: 'EVT-TC', venue_id: f.ids.hall }));
+    const toExtend = holdId(await placeHold(f.pool, f.coordA, { event_id: 'EVT-CR', venue_id: f.ids.studio }));
+    const toRelease = holdId(await placeHold(f.pool, f.coordA, { event_id: 'EVT-GA', venue_id: f.ids.hall }));
+    const expireSoon = (id: string) => f.q(`UPDATE venue_bookings SET expires_at = clock_timestamp() + interval '1 second' WHERE id = $1`, [id]);
+
+    // Convert waits on the hold row; the expiry passes while it waits.
+    await expireSoon(toConvert);
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT 1 FROM venue_bookings WHERE id = $1 FOR UPDATE', [toConvert]);
+    const convert = convertHold(f.pool, f.coordA, { booking_id: toConvert });
+    assert.equal(await settled(convert), false);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    await blocker.query('COMMIT');
+    await assert.rejects(convert, { status: 409 });
+    assert.equal((await f.row(toConvert)).status, 'tentative');
+
+    // Extend waits on the venue row (the lock placing a hold takes); the expiry passes while it waits.
+    await expireSoon(toExtend);
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT 1 FROM venues WHERE id = $1 FOR UPDATE', [f.ids.studio]);
+    const extend = extendHold(f.pool, f.staff, { booking_id: toExtend, expires_at: new Date(Date.now() + 24 * HOUR).toISOString() });
+    assert.equal(await settled(extend), false);
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    await blocker.query('COMMIT');
+    await assert.rejects(extend, { status: 409 });
+
+    // A hold whose expiry passed but which the job hasn't marked can't be released;
+    // the job then marks it expired and the Coordinator gets the notice.
+    await f.q(`UPDATE venue_bookings SET expires_at = clock_timestamp() - interval '1 minute' WHERE id = $1`, [toRelease]);
+    await assert.rejects(releaseHold(f.pool, f.coordA, { booking_id: toRelease }), { status: 409 });
+    const run = await expireHolds(f.pool);
+    assert.equal(run.holdsExpired, 3);
+    assert.equal((await f.row(toRelease)).status, 'expired');
+    assert.equal((await f.q(`SELECT 1 FROM notifications WHERE user_id = $1 AND title = 'Tentative hold expired'`, [f.ids.coordA])).rowCount, 3);
+  } finally {
+    await blocker.query('ROLLBACK').catch(() => undefined);
+    blocker.release();
+    await f.close();
+  }
+});

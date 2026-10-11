@@ -39,6 +39,19 @@ E05-S05 (#231); the frontend is SCRUM-143 and the browser tests SCRUM-144.
   the first formal request. 400 `validation_failed` is kept (repo convention)
   rather than the contract's proposed 422.
 
+## Bryan's PO review (10 October), addressed
+
+- Convert, extend and release judge expiry at database time (`clock_timestamp()`,
+  read in its own statement after the row locks), not a time captured before
+  the lock wait.
+- Release refuses a hold whose expiry has passed, leaving it to the job so the
+  notice is still sent.
+- Extend locks the venue row before the hold, the same lock placing a hold
+  takes, so extensions and new holds are serialised.
+- Real-PostgreSQL deadline-race test added; it fails on the old code ("Missing
+  expected rejection") and passes with the fix.
+- Migration 0013 merged separately as #246 (deploy order per the runbook).
+
 ## Decisions for the reviewer to check
 
 - **A hold stops holding the venue the moment `expires_at` passes**, not when
