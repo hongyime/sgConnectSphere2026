@@ -405,3 +405,38 @@ test('E07-S05 no notice is sent when the event has no assigned Coordinator or th
     await t.db.close();
   }
 });
+
+test('E07-S05 a one-unit withdrawal says 1 unit, and a return that waited while the period was removed is refused', async () => {
+  const t = await setup();
+  try {
+    const projector = await t.equipment('Projector-HD', 1);
+    await t.reserved(await t.event('EVT-U8'), projector, 1);
+    const marked = await t.mark(projector, 1);
+    assert.match((await t.notices(t.ids.coord))[0]!.message, /\(Sensor repair\), 1 unit out of service\. The reservation of 1 needs review\.$/);
+    const id = (marked.body as { unavailability: { id: string } }).unavailability.id;
+    // Another return holds the item's lock; this one finds the period, waits
+    // for the lock, and by then the period is gone.
+    const other = await t.db.pool.connect();
+    try {
+      await other.query('BEGIN');
+      await other.query('SELECT id FROM equipment WHERE id=$1 FOR UPDATE', [projector]);
+      const waiting = returnToService(t.db.pool, t.tech, { unavailabilityId: id });
+      for (let i = 0; i < 100; i += 1) {
+        const blocked = (await t.q(`SELECT count(*)::int AS n FROM pg_locks WHERE NOT granted`)).rows[0].n;
+        if (blocked > 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+      await other.query('DELETE FROM equipment_unavailability WHERE id=$1', [id]);
+      await other.query('COMMIT');
+      await assert.rejects(waiting, {
+        status: 404,
+        message: 'This unavailable period was not found. It may already have been returned to service.',
+      });
+    } finally {
+      other.release();
+    }
+    assert.equal((await t.audits(id)).filter((a) => a.action === 'Equipment returned to service').length, 0);
+  } finally {
+    await t.db.close();
+  }
+});

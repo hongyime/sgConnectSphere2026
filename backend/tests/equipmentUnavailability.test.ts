@@ -133,6 +133,9 @@ test('E07-S05 the equipment route sends markUnavailable and returnToService to t
     pool: () => ({ query: async () => ({ rows: [] }), connect: async () => assert.fail('validation stops first') }) as unknown as Pool,
     allowedOrigin: () => true,
   });
+  await handler({ method: 'GET', url: '/api/equipment', headers: {} }, response);
+  assert.equal(status, 200);
+  assert.ok(sql.some((text) => text.includes('FROM equipment WHERE is_active')), 'no id lists the catalogue');
   await handler({ method: 'GET', url: `/api/equipment?id=${equipmentId}`, headers: {} }, response);
   assert.equal(status, 200);
   assert.deepEqual((body as { equipment: { unavailability: unknown } }).equipment.unavailability, [

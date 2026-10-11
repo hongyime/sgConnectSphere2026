@@ -172,11 +172,11 @@ export function UnavailablePeriods({ equipment, onChanged }: { equipment: Equipm
     };
   }, []);
 
-  async function confirmReturn() {
-    if (!returning || busy) return;
+  async function confirmReturn(period: UnavailablePeriod) {
+    if (busy) return;
     setBusy(true);
     setError(undefined);
-    const result = await returnToService(returning.id);
+    const result = await returnToService(period.id);
     if (!mounted.current) return;
     setBusy(false);
     if (!result.ok) {
@@ -199,12 +199,11 @@ export function UnavailablePeriods({ equipment, onChanged }: { equipment: Equipm
           busyLabel="Returning…"
           busy={busy}
           error={error}
-          onConfirm={confirmReturn}
+          onConfirm={() => confirmReturn(returning)}
+          // ConfirmPanel disables Cancel while busy.
           onCancel={() => {
-            if (!busy) {
-              setReturning(null);
-              setError(undefined);
-            }
+            setReturning(null);
+            setError(undefined);
           }}
         />
       ) : null}

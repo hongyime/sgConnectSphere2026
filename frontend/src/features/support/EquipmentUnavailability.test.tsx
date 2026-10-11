@@ -8,7 +8,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { EquipmentDetail } from './EquipmentCatalogue';
 import { MarkUnavailablePage, formatDays, inServiceFor, today, validate } from './EquipmentUnavailability';
-import { stubApi } from '../../testing/fakeApi';
+import { deferred, stubApi, type FakeReply } from '../../testing/fakeApi';
 import type { UnavailablePeriod } from './unavailabilityApi';
 
 const camera = {
@@ -58,6 +58,7 @@ function show(path: string, strict = false) {
       <Routes>
         <Route path="/support/catalogue/:equipmentId" element={<EquipmentDetail />} />
         <Route path="/support/catalogue/:equipmentId/unavailable" element={<MarkUnavailablePage />} />
+        <Route path="/support/catalogue" element={<p>Catalogue page</p>} />
       </Routes>
     </MemoryRouter>
   );
@@ -327,4 +328,103 @@ test('E07-S05 the helpers count the peak of overlapping periods and write dates 
   expect(validate({ ...values, reason: 'x'.repeat(256) }, 4, late)).toEqual({ reason: 'Reason must be at most 255 characters.' });
   expect(validate({ ...values, quantity: '2' }, 1, late)).toEqual({ quantity: 'Only 1 unit is in service for these dates.' });
   expect(validate({ ...values, quantity: '1' }, 0, late)).toEqual({ quantity: 'No units are in service for these dates.' });
+});
+
+test('E07-S05 one unit reads "1 unit", two notified events read "Their Coordinators", and a missing period list reads as none', async () => {
+  stubApi(
+    {
+      // An older reply without the periods field.
+      'GET /api/equipment?id=eq1': () => ({ body: { equipment: { ...camera, unavailability: undefined } } }),
+      'POST /api/equipment': () => ({
+        status: 201,
+        body: {
+          unavailability: { ...period, quantity: 1 },
+          affectedReservations: [
+            { id: 'r1', eventId: 'e1', eventCode: 'EVT-A', title: 'Conference', quantity: 2 },
+            { id: 'r2', eventId: 'e2', eventCode: 'EVT-B', title: 'Charity Run', quantity: 1 },
+          ],
+          notified: 2,
+        },
+      }),
+    },
+    { role: 'technical_support_staff' },
+  );
+  show('/support/catalogue/eq1');
+  expect(await screen.findByText('No unavailable periods')).toBeInTheDocument();
+  fireEvent.click(await screen.findByRole('link', { name: 'Mark unavailable' }));
+  await fill({ from: '2030-12-01', to: '2030-12-05', quantity: '1', reason: 'Sensor repair' });
+  fireEvent.click(screen.getByRole('button', { name: 'Mark unavailable' }));
+  expect(await screen.findByText('Their Coordinators have been notified.')).toBeInTheDocument();
+  cleanup();
+  vi.unstubAllGlobals();
+  stubApi({ 'GET /api/equipment?id=eq1': () => item({ unavailability: [{ ...period, quantity: 1 }] }) }, { role: 'technical_support_staff' });
+  show('/support/catalogue/eq1');
+  fireEvent.click(await screen.findByRole('button', { name: 'Return to service…' }));
+  expect(screen.getByText(/^The 1 unit out for 1 Dec 2030 – 5 Dec 2030 \(Sensor repair\)/)).toBeInTheDocument();
+});
+
+test('E07-S05 a second submit while saving sends nothing more, and a reply after leaving the page is ignored', async () => {
+  const save = deferred<FakeReply>();
+  const calls = stubApi(
+    { 'GET /api/equipment?id=eq1': () => item(), 'POST /api/equipment': () => save.promise },
+    { role: 'technical_support_staff' },
+  );
+  show('/support/catalogue/eq1/unavailable', true);
+  await fill({ from: '2030-12-01', to: '2030-12-05', reason: 'Sensor repair' });
+  const form = screen.getByRole('button', { name: 'Mark unavailable' }).closest('form')!;
+  fireEvent.submit(form);
+  fireEvent.submit(form);
+  expect(await screen.findByRole('button', { name: 'Saving…' })).toBeInTheDocument();
+  expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('link', { name: 'Cancel' }));
+  expect(await screen.findByText('HD Camera')).toBeInTheDocument();
+  save.resolve({ status: 201, body: { unavailability: period, affectedReservations: [], notified: 0 } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(screen.queryByText('Marked unavailable')).not.toBeInTheDocument();
+});
+
+test('E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored', async () => {
+  const back = deferred<FakeReply>();
+  const calls = stubApi(
+    { 'GET /api/equipment?id=eq1': () => item({ unavailability: [period] }), 'POST /api/equipment': () => back.promise },
+    { role: 'technical_support_staff' },
+  );
+  show('/support/catalogue/eq1', true);
+  fireEvent.click(await screen.findByRole('button', { name: 'Return to service…' }));
+  const panel = screen.getByRole('form', { name: 'Return HD Camera to service?' });
+  fireEvent.submit(panel);
+  fireEvent.submit(panel);
+  expect(await screen.findByRole('button', { name: 'Returning…' })).toBeInTheDocument();
+  expect(calls.filter((call) => call.method === 'POST')).toHaveLength(1);
+  fireEvent.click(screen.getByRole('link', { name: 'Back to catalogue' }));
+  expect(await screen.findByText('Catalogue page')).toBeInTheDocument();
+  back.resolve({ body: { returned: true, equipment: { id: 'eq1', name: 'HD Camera' }, unavailability: period } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  expect(screen.getByText('Catalogue page')).toBeInTheDocument();
+});
+
+test('E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form', async () => {
+  let fail = true;
+  let posts = 0;
+  stubApi(
+    {
+      'GET /api/equipment?id=eq1': () => (fail ? { status: 503, body: { error: 'Service unavailable. Please try again.' } } : item()),
+      'POST /api/equipment': () =>
+        posts++ === 0
+          ? { status: 409, body: { error: "This equipment has been retired, so its availability can't be changed." } }
+          : { status: 500, body: { errors: { other: ['Not a form field.'] } } },
+    },
+    { role: 'technical_support_staff' },
+  );
+  show('/support/catalogue/eq1/unavailable');
+  expect(await screen.findByText('Service unavailable. Please try again.')).toBeInTheDocument();
+  fail = false;
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+  await fill({ from: '2030-12-01', to: '2030-12-05', reason: 'Sensor repair' });
+  fireEvent.click(screen.getByRole('button', { name: 'Mark unavailable' }));
+  expect(await screen.findByText("This equipment has been retired, so its availability can't be changed.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Mark unavailable' }));
+  expect(await screen.findByText('The equipment could not be marked unavailable.')).toBeInTheDocument();
+  expect(screen.queryByText('Not a form field.')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Reason')).toHaveValue('Sensor repair');
 });
