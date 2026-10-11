@@ -152,3 +152,20 @@ No whole-application 100% coverage or full AC4 integration claim is made.
 
 Pre-PR regression after updating to main `1086940`: see
 [rerun evidence](runs/20261008-213559-jininggg-full-regression.md).
+
+## PR #242 assigned-event access correction
+
+Bryan's 11 October review requires event-level authorization on assessment.
+The assessment scopes the event requirements query by the authenticated user's
+coordinator assignment, for both UUID and event-code lookups. Other Coordinators,
+unassigned events and missing events receive the same 404 `Event not found.`;
+client-supplied coordinator IDs cannot override the authenticated identity.
+
+Regression coverage is in `backend/tests/venueSuitability.test.ts` and
+`backend/tests/venueSearch.integration.test.ts`, including assigned-user success.
+The existing E06-S01 search access policy is unchanged by this scoped correction;
+its wider event-access alignment remains E01-S12 follow-up work. Operating-hours
+and advisory suitability behaviour are unchanged.
+
+Post-review PostgreSQL regression: [execution record](runs/20261011-004023-jininggg-backend-db.md).
+Passed on disposable local PostgreSQL after correcting the event-code fixture.

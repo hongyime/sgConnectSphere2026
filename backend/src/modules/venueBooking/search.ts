@@ -14,7 +14,7 @@ export async function authorizeVenueSearch(query: Query, user: AuthenticatedUser
   }
 }
 
-export async function venueSearch(query: Query, user: AuthenticatedUser | undefined, params: URLSearchParams) {
+export async function venueSearch(query: Query, user: AuthenticatedUser | undefined, params: URLSearchParams, assignedEventOnly = false) {
   await authorizeVenueSearch(query, user);
   const layouts = (await query<Option>('SELECT id, label FROM room_layouts ORDER BY label')).rows;
   const accessibility = (await query<Option>('SELECT id, label FROM accessibility_features ORDER BY label')).rows;
@@ -26,7 +26,8 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
       e.expected_attendance AS attendance, e.layout_id AS layout, e.accessibility_note,
       ARRAY(SELECT feature_id FROM event_accessibility_needs WHERE event_id=e.id) AS accessibility,
       ARRAY(SELECT facility_id FROM event_facility_needs WHERE event_id=e.id) AS facilities
-      FROM events e WHERE (e.id::text=$1 OR e.event_code=$1) AND e.status <> 'draft'`, [eventId]);
+      FROM events e WHERE (e.id::text=$1 OR e.event_code=$1) AND e.status <> 'draft'
+      ${assignedEventOnly ? 'AND e.coordinator_id = $2' : ''}`, assignedEventOnly ? [eventId, user!.id] : [eventId]);
     if (!result.rows[0]) throw new AccessError(404, 'Event not found.');
     defaults = result.rows[0];
   }

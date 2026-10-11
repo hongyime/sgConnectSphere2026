@@ -53,3 +53,18 @@ and 87 tooling tests passed; see the new 20261009 full-regression run record.
 Real DB and human manual checks were not rerun. No commit/push or Jira change.
 Stage is resolved; MERGE_HEAD remains until the user authorises a merge commit.
 Reviewer follow-up on assigned-Coordinator access remains with E01-S12.
+
+## Bryan review correction - 11 October 2026
+
+Assessment now scopes the event requirements SELECT to the authenticated
+Coordinator, for both UUID/code, before loading private fields. Same safe 404
+for another Coordinator, unassigned or missing event. Search policy unchanged;
+its E01-S12 alignment remains separate. Unit regression 28, frontend 8, browser
+14, typecheck/build passed. PostgreSQL regression added but Docker unavailable.
+See the new 20261011 full-regression record. No commit/push or Jira changes.
+
+PostgreSQL follow-up: started Docker and ran the regression on a fresh local
+PostgreSQL 17 container. Initial run exposed a null event_code in the test fixture;
+set an explicit synthetic code and reran successfully (1 integration test).
+See the new 20261011 backend-db record; earlier skip evidence is unchanged.
+Shared Supabase was not used. No commit or push.

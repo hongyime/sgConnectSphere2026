@@ -53,6 +53,16 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   // E06-S02 reads the same persisted requirements but applies its own hours rule.
   await client.query("UPDATE venues SET opens_at='08:00', closes_at='22:00' WHERE id=$1", [ids.Full]);
   const assessParams = new URLSearchParams({ event_id:event, venue_id:ids.Full, attendance:'1' });
+  const eventCode = 'EVT-REGRESSION';
+  await client.query('UPDATE events SET event_code=$1 WHERE id=$2',[eventCode,event]);
+  for (const identifier of [event, eventCode]) {
+   const scoped = new URLSearchParams({event_id:identifier, venue_id:ids.Full, coordinator_id:uid});
+   await assert.rejects(venueSuitability(query,{...user,id:randomUUID()},scoped),{status:404,message:'Event not found.'});
+   assert.equal((await venueSuitability(query,user,scoped)).event.id,event);
+  }
+  await client.query('UPDATE events SET coordinator_id=NULL WHERE id=$1',[event]);
+  await assert.rejects(venueSuitability(query,user,assessParams),{status:404,message:'Event not found.'});
+  await client.query('UPDATE events SET coordinator_id=$1 WHERE id=$2',[uid,event]);
   const good = await venueSuitability(query,user,assessParams);
   assert.equal(good.assessment.suitable,true);
   assert.equal(good.assessment.comparisons[0].required,'80');

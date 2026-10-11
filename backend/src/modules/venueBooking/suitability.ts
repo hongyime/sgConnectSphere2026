@@ -47,13 +47,15 @@ export function assessEventVenue(venue: Candidate & Hours, criteria: Criteria, o
 export async function venueSuitability(query: Query, user: AuthenticatedUser | undefined, params: URLSearchParams) {
   // Reuse search's auth and authoritative event defaults. Client-supplied
   // attendance, role, facilities or dates cannot override recorded requirements.
+  // Scope the event read itself to the authenticated Coordinator (ID or code);
+  // never load another event's requirements before checking its assignment.
   const eventId = params.get('event_id');
   const venueId = params.get('venue_id');
   await authorizeVenueSearch(query, user);
   if (!eventId || !venueId || eventId.length > 240 || venueId.length > 240) {
     throw new AccessError(400, 'An event and venue are required.');
   }
-  const search = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, search: '1' }));
+  const search = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, search: '1' }), true);
   if (search.errors) throw new AccessError(400, 'The event needs valid recorded requirements before suitability can be checked.');
   const venue = search.venues!.find(v => v.id === venueId);
   if (!venue) throw new AccessError(404, 'Active venue not found.');

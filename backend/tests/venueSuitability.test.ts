@@ -55,15 +55,15 @@ test('missing layout is explained; no selected layout uses maximum; absent requi
   assert.equal(assessEventVenue(venue, { ...criteria, layout: 'unknown', accessibility: ['unknown'], facilities: ['unknown'] }, options).suitable, false);
 });
 
-function repository(overrides: { event?: boolean; venue?: boolean; hours?: boolean; attendance?: number } = {}) {
+function repository(overrides: { event?: boolean; venue?: boolean; hours?: boolean; attendance?: number; coordinator?: string | null } = {}) {
   const writes: string[] = [];
-  const query: Query = async <T extends Record<string, unknown>>(sql: string) => {
+  const query: Query = async <T extends Record<string, unknown>>(sql: string, values?: unknown[]) => {
     let rows: unknown[] = [];
     if (sql.startsWith('INSERT')) writes.push(sql);
     else if (sql.includes('FROM room_layouts')) rows = options.layouts;
     else if (sql.includes('SELECT id, label FROM accessibility_features')) rows = options.accessibility;
     else if (sql.includes('SELECT id, label FROM facilities')) rows = options.facilities;
-    else if (sql.includes('FROM events e')) rows = overrides.event === false ? [] : [{ id: 'event', title: 'Event', start: criteria.start, end: criteria.end, attendance: overrides.attendance ?? 100, layout: 'theatre', accessibility: ['ramp'], facilities: ['wifi'], accessibility_note: 'Manual note' }];
+    else if (sql.includes('FROM events e')) rows = overrides.event === false || (sql.includes('e.coordinator_id = $2') && (overrides.coordinator === undefined ? user.id : overrides.coordinator) !== values?.[1]) ? [] : [{ id: 'event', title: 'Event', start: criteria.start, end: criteria.end, attendance: overrides.attendance ?? 100, layout: 'theatre', accessibility: ['ramp'], facilities: ['wifi'], accessibility_note: 'Manual note' }];
     else if (sql.includes('SELECT v.id')) rows = overrides.venue === false ? [] : [venue];
     else if (sql.includes('SELECT opens_at')) rows = overrides.hours === false ? [] : [venue];
     else throw new Error('Unexpected query');
@@ -97,3 +97,21 @@ test('missing identifiers and invalid event requirements are rejected', async ()
 test('missing/draft event and missing/retired venue return not found', async () => {
   for (const override of [{ event: false }, { venue: false }, { hours: false }]) await assert.rejects(venueSuitability(repository(override).query, user, params()), { status: 404 });
 });
+
+for (const identifier of ['event', 'EVT-3001']) {
+  test(`assessment refuses another Coordinator or unassigned event by ${identifier} without reading venue details`, async () => {
+    for (const coordinator of ['another-coordinator', null]) {
+      const repo = repository({ coordinator });
+      const reads: string[] = [];
+      const query: Query = async (sql, values) => {
+        reads.push(sql);
+        return repo.query(sql, values);
+      };
+      const input = params();
+      input.set('event_id', identifier);
+      input.set('coordinator_id', user.id);
+      await assert.rejects(venueSuitability(query, user, input), { status: 404, message: 'Event not found.' });
+      assert.equal(reads.some(sql => sql.includes('SELECT v.id') || sql.includes('SELECT opens_at')), false);
+    }
+  });
+}
