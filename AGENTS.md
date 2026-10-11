@@ -56,6 +56,17 @@ Keep imported template material scoped to what this repo actually uses. Do not
 add paid services, AI reviewers, bot auto-merge, privileged `pull_request_target`
 workflows, or deployment secrets without a recorded team decision.
 
+## Worktree lifecycle
+
+Never leave secondary git worktrees on disk. If a task or harness creates a
+temporary worktree for review, testing, or parallel branch updates, you must
+safely tear it down before finishing the task or committing:
+1. Unlink any junction or nested dependencies (`.venv-tools`).
+2. Run `git worktree remove --force <path>` and delete leftover folders.
+3. Run `git worktree prune`.
+`python scripts/check.py` enforces this and will fail if any secondary worktree
+is detected. To clean automatically, run `python scripts/check_worktrees.py --clean`.
+
 ## Recording test runs
 
 Per team decision **T-65** in `docs/bdr/B-team-decisions.md`, record every test
