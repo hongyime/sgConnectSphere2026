@@ -13,6 +13,7 @@ import {
 } from '../../shared';
 import { EventEditForm } from '../events/EventEditForm';
 import { fieldList } from '../events/eventEditFields';
+import { ActivityLog } from '../events/ActivityLog';
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import type { EditableField } from '../events/eventEditApi';
 import {
@@ -235,6 +236,8 @@ export function RequestDetail() {
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
           {/* E07-S06 (SCRUM-146): request technical support, or mark the event as needing none. */}
           {SUPPORT_VISIBLE.includes(event.status) ? <TechnicalSupportCard key={`support-${event.id}`} eventCode={eventRef(event)} /> : null}
+          {/* E14-S02 (SCRUM-86, T-75): read-only, so no edit or delete controls. */}
+          <ActivityLog entries={event.activityLog ?? []} />
         </>
       ) : null}
     </PageLayout>
