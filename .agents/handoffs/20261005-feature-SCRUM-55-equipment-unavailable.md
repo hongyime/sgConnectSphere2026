@@ -21,12 +21,20 @@ Bryan on 2026-10-05; `main` merged in on 2026-10-12.
   `.integration.test.ts` (real database), both in `backend/package.json`;
   a CI step in `application-checks.yml`.
 
+- Screens: "Mark unavailable" on the equipment detail page opens
+  `/support/catalogue/:equipmentId/unavailable` (`EquipmentUnavailability.tsx`);
+  the detail page lists current and future periods with "Return to service…"
+  and shows each outcome at the top. Two lines added to Xiang Ying's
+  `EquipmentCatalogue.tsx` and one optional field to `equipmentApi.ts`.
+- Tests: Vitest (14), Playwright (`equipmentUnavailability.spec.ts`, replacing
+  the `test.fixme` cases), 100% of new lines and branches, deliberate-bug
+  check, real-stack click-through (36/36). Every run is in the run record's
+  Run log.
+
 ## Not done / next step
 
-- Screens: "Mark unavailable…" on the equipment detail page, the form page,
-  the list of periods with "Return to service…".
-- Vitest, Playwright (replacing the `test.fixme` cases), coverage,
-  deliberate-bug check, real-stack click-through, Aaron's click-through, PR.
+- Aaron's own click-through (F4) of the script in the run record, then the PR
+  (regenerate `tc-coverage.md` last, postplan, `Closes SCRUM-167` to 169).
 
 ## Decisions taken without team sign-off
 
