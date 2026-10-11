@@ -777,6 +777,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - maintenance blocks notify a live hold\
 - two simultaneous holds on one venue and period: exactly one succeeds
+- a request that waits on a lock past the expiry is refused; a passed hold cannot be released (review of #245)
 
 ### `backend/tests/venueHolds.test.ts`
 
@@ -790,6 +791,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event
 - converting again after success returns the same pending booking with no second write or audit entry
 - Scenario 4: the Coordinator releases a hold and the period is Free again
+- expiry is judged at database time read after the locks, not when the request arrived
+- an extension locks the venue before the hold, like placing a hold does
+- without an injected time the expiry job uses the database clock
 - a hold the job has already expired cannot be released
 - an extension must be later than now-plus-1-hour, the current expiry and no more than 14 days; an expired hold cannot be extended
 - the expiry job with nothing due changes nothing

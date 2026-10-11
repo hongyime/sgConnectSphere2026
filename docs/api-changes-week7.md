@@ -7,7 +7,7 @@ the interfaces it touches. This file lists every REST endpoint the six Customer 
 add or alter, so that the owning story's developer, the frontend author on the shared
 skeleton (ADR-017) and the test-case author start from one list. Nothing here is
 implemented yet; each row names the story that will implement it and the test cases
-that will prove it. Update this file in the story's PR when the shape changes.
+that will prove it. The shared venue-booking schema, submission API and lifecycle are specified in [the venue bookings contract](contracts/venue-bookings.md); that contract controls where this overview differs. Update this file in the story's PR when the shape changes.
 
 Conventions carried over from the existing routes (ADR-014, `api/` is at the Hobby-plan
 function cap): new Coordinator, Lead and Safety Officer actions are query-parameter
@@ -39,8 +39,8 @@ ADR-009).
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/venues` `action: request_booking` | Coordinator | No longer refused when the event already has a Pending or Confirmed booking. Body gains optional `purpose` (text, 80 chars), `headcount` (int, defaults to the event's `expected_attendance`), `is_primary` (bool). Suitability checks compare the venue against `headcount`, not the event total. | E06-S03 | TC_E06S03_07, _08 |
-| `POST /api/venues` `action: set_primary` | Coordinator | Marks one booking of the event primary and clears the flag on the others. Exactly one Confirmed booking must be primary before submission for the safety check. | E06-S03 | TC_E06S03_07 |
+| `POST /api/venues` `action: request_booking` | Assigned Coordinator | Allows several bookings per event. Optional `purpose` and `headcount` remain null when omitted; suitability uses booking headcount or event attendance as fallback and is advisory. The server records the requester, creates a Pending non-primary booking, checks the event window, venue blocks and buffered occupancy, and moves Approved to Planning atomically. | E06-S03 | TC_E06S03_07, _08 |
+| `POST /api/venues` `action: set_primary` | Assigned Coordinator | The first booking to become Confirmed is made primary when none is primary. The Coordinator may select another Confirmed booking; Pending bookings cannot be primary. | E06-S03 | TC_E06S03_07 |
 | `GET /api/events?id=<id>` | Coordinator, Organiser | `venue_bookings: [...]` replaces the single `venue_booking` object; each entry carries `purpose`, `headcount`, `is_primary`, `occupancy_range`. | E06-S03, E10-S02 | TC_E10S02_05 |
 | `GET /api/attendee/events` and `?id=` | Attendee | Public event shows the primary venue; secondary venues appear under `other_venues` with their purpose (O-30). | E09-S01 | TC_E09S01_06 |
 | `POST /api/venues` `action: decide` | Venue Staff | Decision is per booking; approving one of an event's bookings does not touch the others. The exclusion constraint keys on `venue_id`, so two venues for one event over the same period never conflict. | E06-S06 | TC_E06S06_07 |
