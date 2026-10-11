@@ -157,3 +157,16 @@ estimates remain historical evidence. Both backlog views, acceptance cases,
 active scaffold files, ADR-009 and derived exports are reconciled in this change.
 Jira reconciliation follows the merged backlog; the scope PR must not close
 SCRUM-86 automatically.
+
+## 9 October 2026 - PO confirms venue booking defaults (T-78)
+
+Recorded the story owner's relayed PO confirmation of O-27, O-29, O-30 and
+O-32, retaining the original questions/defaults as history. Booking-specific
+purpose/headcount and contained periods are confirmed; buffer occupancy may
+extend outside the event. First confirmed booking is primary, with Coordinator
+selection of another confirmed booking permitted. Requests are limited to the
+assigned Coordinator and Approved/Planning events; confirmed-event replacements
+require the authorised reversion workflow first. Submission ends an unexpired
+hold's expiry; an expired hold cannot convert. Both E06 backlog views updated.
+Other open questions, including O-28 and O-31/O-33/O-34, remain unconfirmed.
+This records requirements, not implementation or story completion.

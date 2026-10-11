@@ -100,8 +100,9 @@ against a PostgreSQL database (local, Supabase or CI service container).
 `none` for suites that touch no persistence at all, such as pure frontend
 component tests. The label is what a reviewer uses to judge whether an
 acceptance criterion about persistence or a cross-feature interaction has real
-evidence behind it (Sprint 2 retrospective action). Records written before
-3 October 2026 omit the field.
+evidence behind it (Sprint 2 retrospective action). Records dated before
+`2026-10-03T12:19:39+08:00` may omit the field; PR #204 added it at that time.
+Records dated at or after that timestamp must include it.
 
 ### `test_case_version`
 
@@ -125,6 +126,19 @@ order:
 `TC_ID` is the identifier from `docs/testing/cases/`, for example
 `TC_E01S01_01`. `Test Name` is the short description from the workbook or the
 test title in code. `Outcome` must be one of the four values below.
+
+For a manual run (`run_type: manual`), write the **actual result** in
+`Remarks` on every row, including rows that pass: what you saw on screen, the
+status it changed to, who was notified, or the exact message shown. "PASS"
+alone records the verdict but not the evidence. The course test-case template
+(IS212 Week 4, slide 22) keeps "Actual Result" separate from "Pass/Fail";
+`Remarks` carries it here so the column order the exporter relies on stays
+unchanged. Automated runs may leave `Remarks` blank, because the command and
+its output are the evidence.
+
+```markdown
+| TC_E03S02_01 | Coordinator sends two questions | PASS | Status changed to Awaiting clarification; organiser_c got one notice listing both questions |
+```
 
 ### `Outcome` values
 
@@ -196,6 +210,11 @@ is needed.
    PR as the code it covers, or as a standalone commit if it is a standalone
    verification run.
 
+`python scripts/check.py` validates every session record's YAML frontmatter,
+filename fields, and results table. Historical TC_ID values are preserved as
+written; the checker validates that each row has an ID and a documented
+outcome without requiring the ID to match the current catalogue.
+
 ## Agent instruction block
 
 After a test run that is used as evidence, create exactly one session record file in
@@ -217,6 +236,8 @@ After a test run that is used as evidence, create exactly one session record fil
   the point of abort and note "run aborted" plus the reason in `Remarks` for any
   test that did not complete.
 - Use `MULTIPLE` for any suite where the runner does not emit per-test TC_IDs.
+- For a manual run, fill `Remarks` on every row with the actual result
+  observed, including passing rows (see "Results table").
 - Do not edit existing session files.
 
 ## Relationship to the per-story implementation logs

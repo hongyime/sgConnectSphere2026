@@ -163,6 +163,8 @@ object names:
 - how many Under Review requests are missing required information, since
   those can't be approved until the Organiser completes them.
 
+Run on 8 October 2026; the result is the last row of the Run log.
+
 ## Click-through script
 
 Frontend gate F3, and Aaron's own customer-view check (F4). Labels and
@@ -435,6 +437,7 @@ fix gets its own row.
 | 2026-10-02 23:06 | `036c4bc+local` (these records) | F5 | — | `python scripts/check.py` | local | passed | — | Claude (for Aaron) |
 | 2026-10-02 ≈23:17 | `036c4bc` | — | — | SCRUM-33's click-through script, run by mistake instead of this one | local, the same stack | Aaron: "everything passes". Not evidence for this story; the database showed only SCRUM-33's steps (questions sent, answered, sent again, coord_a refused), so it was reset and the right script run | — | Aaron |
 | 2026-10-02 23:24–23:33 | `036c4bc` | F4 | _01–_12 | The click-through script (25 steps), clicked by hand in a browser: normal and private windows, as organiser_a, coord_b, coord_a, organiser_c and organiser_b | local, freshly reset and seeded `connectsphere_dev_stack`, Docker `postgres:17`, API on 3001, `npm run dev` | All 25 steps passed. Session record `20261002-233300-Bl0oper-frontend-e2e.md` | Aaron: "everything passes". The database afterwards matched a full run: Winter Gala Rejected with its reason and name unchanged; Accessible Design Workshop Approved with one feature and an empty note; one "Request approved" and one "Request rejected" notice to organiser_a, each with an outbox row; EVT-2003 still Under Review | Aaron |
+| 2026-10-08 02:15 | `1ad3820` | Before the demo | — | Read-only production check, four queries approved by Aaron before they ran: the status values; the `events.decision_reason`, `events.status_changed_at` and `events.coordinator_assigned_at` columns; the recorded migrations (`_connectsphere_migrations`); and a count of Under Review requests missing required information, using the same rule as the approval check (every text field filled, "none required" counting as filled, accessibility answered by a note or at least one predefined feature). Run with `node --env-file=.env` inside `BEGIN READ ONLY` … `ROLLBACK` | production (Supabase, transaction pooler); `transaction_read_only` reported `on`; rolled back, nothing written | **What this story needs: all present.** **"All repository migrations applied": not met**, 0009 and 0010 unrecorded (see What was seen). **1 of 5** Under Review requests is missing required information | `rejected`, `approved` and `under_review` exist, and so do the three columns. Recorded migrations: 0001 to 0008. 0009 is not recorded; its table was created by hand, as already known. 0010 (activity log entries can't be changed, #190) is not recorded either, so production may not have that protection; the decision itself doesn't depend on it. The one incomplete request can't be approved until its Organiser completes it (see Known limits). Each status value was listed twice, most likely because the same database also holds a separate `test` schema (not checked further). Only object names, file names and counts were returned | Claude (for Aaron) |
 
 ## Completion boundary
 

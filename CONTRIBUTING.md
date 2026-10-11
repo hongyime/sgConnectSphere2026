@@ -109,20 +109,33 @@ A product backlog item is considered done only when all of these conditions are 
   relevant to the change. Acceptance criteria that involve persistence or
   interactions between features are evidenced by real-database or end-to-end
   runs, labelled as such in the PR; mocked tests alone do not satisfy them.
-- Manual verification passes where the story needs human UI or workflow checking.
-- Code has been peer-reviewed by at least one other developer.
+- Unit tests cover the new and changed code at 100%, including boundary and
+  error cases, or the PR states why a gap cannot be covered.
+- Integration and manual end-to-end tests are run before the Sprint Review
+  using the test case template in `docs/testing/cases/`, and each run is logged
+  in `docs/testing/runs/` with the tester, date and outcome (T-65).
+- Code and its test cases have been reviewed by at least one other developer,
+  who checks that the code works and that the tests are correct and valid, not
+  faked. AI-generated code and tests are inspected by a human before review.
 - Peer review was requested only after the PR was review-ready: no merge
   conflicts, up to date with `main`, and required checks passing or queued for
   the latest commit.
-- Security, accessibility, and UI criteria are satisfied where applicable.
-- Documentation and architecture are updated where the change affects setup,
-  interfaces, decisions, backlog interpretation, or team workflow.
-- The item is deployable and integrated into the increment through the reviewed
-  pull-request process.
+- Documentation, architecture views and project logs are updated where the
+  change affects setup, interfaces, decisions, backlog interpretation, or team
+  workflow.
+- The item is merged into `main` through the reviewed pull-request process.
 
 An item that does not meet all Definition of Done conditions is not counted as
-complete. Return it to the product backlog or keep it open in review until the
-missing condition is resolved.
+complete and returns to the Product Backlog.
+
+A story marked Done stays Done. If a Done story later needs a fix or a change,
+create a new user story for it and record what went wrong and how the team
+prevents it (instructor guidance of 6 October 2026).
+
+Non-functional criteria (security, accessibility, performance, UI) and public
+deployment are not part of this Definition of Done; `design.md` remains a team
+standard for screens. See `docs/plans/instructor-guidance-2026-10-06.md` for
+the instructor guidance behind these conditions.
 
 ## AI-assisted work and sprint discipline
 

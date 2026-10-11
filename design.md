@@ -343,6 +343,12 @@ Mark required fields in the label text, not with colour. The render-prop
 gives you `id`, `aria-describedby` and `aria-invalid`; spread them onto the
 control.
 
+Fields side by side in a `FormSection` row keep their controls level, even
+when only one has a hint or an error. `.field-control` packs its label,
+control, hint and error at the top (`align-content: start`); don't override
+that in a story's CSS. The `/ui-kit` form pairs a hinted field with a plain one,
+and `tests/e2e/layout-and-focus.spec.ts` fails if they drift apart.
+
 **ConfirmPanel.** Reached only from a button whose label ends in an ellipsis
 ("Reject…"). `confirmLabel` repeats the verb ("Reject request"). Pass
 `reasonLabel` when the business rule needs a reason (T-39: rejections). Pass
