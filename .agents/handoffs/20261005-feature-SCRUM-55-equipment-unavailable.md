@@ -20,7 +20,6 @@ Bryan on 2026-10-05; `main` merged in on 2026-10-12.
 - Tests: `equipmentUnavailability.test.ts` (unit) and
   `.integration.test.ts` (real database), both in `backend/package.json`;
   a CI step in `application-checks.yml`.
-
 - Screens: "Mark unavailable" on the equipment detail page opens
   `/support/catalogue/:equipmentId/unavailable` (`EquipmentUnavailability.tsx`);
   the detail page lists current and future periods with "Return to service…"
@@ -30,11 +29,12 @@ Bryan on 2026-10-05; `main` merged in on 2026-10-12.
   the `test.fixme` cases), 100% of new lines and branches, deliberate-bug
   check, real-stack click-through (36/36). Every run is in the run record's
   Run log.
+- Aaron's own click-through (F4): 19/19 on 2026-10-12.
 
 ## Not done / next step
 
-- Aaron's own click-through (F4) of the script in the run record, then the PR
-  (regenerate `tc-coverage.md` last, postplan, `Closes SCRUM-167` to 169).
+- PR review and merge (one PR for the story; the branch name carries
+  SCRUM-55, so the merge closes it, as intended).
 
 ## Decisions taken without team sign-off
 

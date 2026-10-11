@@ -280,3 +280,4 @@ fix gets its own row.
 | 2026-10-12 01:06 | `f899019` | 1 | — | `npm test` (backend) | local | 327/327 passed. Session record `20261012-010622-Bl0oper-backend-unit.md` | — | Claude (for Aaron) |
 | 2026-10-12 01:06 | `f899019` | F1 | _01–_03 | `npx vitest run --no-file-parallelism` (whole frontend) | local | 365/365 passed. Session record `20261012-010635-Bl0oper-frontend-vitest.md` | — | Claude (for Aaron) |
 | 2026-10-12 01:08 | `f899019` | 5, 10 | — | `npm run typecheck`; `npm run build`; `python scripts/check.py` (root) | local | all passed | — | Claude (for Aaron) |
+| 2026-10-12 ≈01:27 | `80c4431` (application code as `f899019`) | F4 | _01–_03 | Aaron's own click-through, the 19-step script, by hand | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed. Session record `20261012-012700-Bl0oper-frontend-e2e.md` | Every message as scripted | Aaron |
