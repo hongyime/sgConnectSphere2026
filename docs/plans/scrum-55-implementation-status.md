@@ -107,7 +107,110 @@ and how many rows it holds.
 
 ## Click-through script
 
-Written once the screens are built.
+What the customer sees, step by step, on the real frontend, real API and a
+freshly reset and seeded local database. Note pass or fail for each step; on a
+fail, copy the exact words seen. The run uses EVT-3001 (approved, 15 Oct
+2026, 9:00 am – 5:00 pm, Coordinator `coord_a`), so **run it on or before
+15 October 2026**; after that, the 15 October withdrawals in steps 9 to 11
+are refused as already ended.
+
+**Before you start:** the database is reset and seeded, the API runs on
+port 3001 and the frontend on http://localhost:5173. Every seeded account's
+password is `ValidPass123`. Use two browser windows (one private) so
+`tech_a@connectsphere.com` and `coord_a@connectsphere.com` stay signed in
+side by side.
+
+**Setting up a reservation to flag** (E07-S02 and E07-S04's screens):
+
+1. `coord_a`: **Equipment requests** → **EVT-3001** → **Add equipment
+   request** → Equipment item **Projector-HD**, Quantity requested **2** →
+   **Save equipment request**. You see "Equipment request saved".
+2. `tech_a`: **Equipment requests** → **EVT-3001** → **Reserve Projector-HD**
+   → **Reserve equipment**. You see "Projector-HD × 2 reserved for EVT-3001
+   Approved Annual Conference, 15 Oct 2026, 9:00 am – 5:00 pm."
+
+**TC_E07S05_01, an item with no reservations:**
+
+3. `tech_a`: **Equipment catalogue** → **Microphone-Wireless**. Below the
+   item's card is a card **Unavailable periods** with "No unavailable
+   periods" and a **Mark unavailable** button.
+4. Click **Mark unavailable**. The page is headed **Mark equipment
+   unavailable**, with a card **Microphone-Wireless** showing Total stock
+   **6** and In service for these dates **Choose the dates**; **Units to take
+   out** shows **6**. From and To sit level, side by side.
+5. Click **Mark unavailable** with nothing filled in. Red at the top: "Fix the
+   highlighted fields, then save again." Under From: "Start date must be a
+   real date." Under To: "End date must be a real date." Under Reason: "Enter
+   a reason."
+6. From **1 Oct 2026**, To **5 Oct 2026**, then **Mark unavailable**. Under
+   To: "The end date must be today or later."
+7. From **1 Dec 2026**, To **5 Dec 2026**, Reason **Sensor repair** (Units
+   stays 6; In service for these dates shows 6) → **Mark unavailable**. Back
+   on the item's page, green **Marked unavailable**: "Microphone-Wireless × 6
+   out of service for 1 Dec 2026 – 5 Dec 2026 (Sensor repair). No
+   reservations were affected." The table lists **1 Dec 2026 – 5 Dec 2026 |
+   6 of 6 | Sensor repair | Return to service…**
+8. **Equipment availability**: Start **3 Dec 2026, 9:00 am**, End **3 Dec
+   2026, 5:00 pm** → **Check availability**. Microphone-Wireless shows **0**
+   free. Change both dates to **6 Dec 2026**: it shows **6** free.
+
+**TC_E07S05_02, an item reserved for an event:**
+
+9. **Equipment catalogue** → **Projector-HD** → **Mark unavailable**. From
+   and To **15 Oct 2026**, Units **1**, Reason **Lamp check** → **Mark
+   unavailable**. Green: "Projector-HD × 1 out of service for 15 Oct 2026
+   (Lamp check). No reservations were affected." (9 are still in service and
+   EVT-3001 needs only 2, so it isn't flagged.) Under Reservation history,
+   EVT-3001's status still reads **reserved**.
+10. **Mark unavailable** again, From and To **15 Oct 2026**. In service for
+    these dates now shows **9**, and Units to take out defaults to **9**. Type
+    **10** → **Mark unavailable**. Under the field: "Only 9 units are in
+    service for these dates." Nothing is saved.
+11. Units **8**, Reason **Lamp replacement** → **Mark unavailable**. Green:
+    "Projector-HD × 8 out of service for 15 Oct 2026 (Lamp replacement)."
+    Below it, amber **Reservations need review**: "These reservations no
+    longer fit and are flagged for review:", "EVT-3001 Approved Annual
+    Conference: 2 reserved", "Its Coordinator has been notified." Reservation
+    history now reads **Needs review**. Unavailable periods lists two rows:
+    **15 Oct 2026 | 1 of 10 | Lamp check** and **15 Oct 2026 | 8 of 10 |
+    Lamp replacement**.
+12. `tech_a`: **Equipment requests** → **EVT-3001**. The Projector-HD line
+    shows the pills **Reserved** and **Needs review**.
+13. `coord_a`: the bell → **Equipment reservation needs review** (click the
+    title to open it). It reads: "EVT-3001 Approved Annual Conference, 15 Oct
+    2026, 9:00 am – 5:00 pm: Projector-HD is unavailable from 15 Oct 2026 to
+    15 Oct 2026 (Lamp replacement), 8 units out of service. The reservation
+    of 2 needs review." There is only one such notice.
+14. `coord_a`: **Equipment requests** → **EVT-3001**. The Projector-HD line
+    shows **Reserved** and **Needs review**.
+
+**TC_E07S05_03, return to service:**
+
+15. `tech_a`: **Equipment catalogue** → **Microphone-Wireless** → **Return to
+    service…**. A panel **Return Microphone-Wireless to service?** reads "The
+    6 units out for 1 Dec 2026 – 5 Dec 2026 (Sensor repair) count as
+    available again. Reservations already flagged for review stay flagged
+    until they are changed or released." **Cancel** closes it. Open it again
+    → **Return to service**. Green **Returned to service**:
+    "Microphone-Wireless × 6 is back in service for 1 Dec 2026 – 5 Dec 2026."
+    The card reads "No unavailable periods".
+16. **Equipment availability** for **3 Dec 2026, 9:00 am – 5:00 pm**:
+    Microphone-Wireless shows **6** free again.
+17. **Projector-HD** → **Return to service…** on the **Lamp replacement** row
+    → **Return to service**. Only the Lamp check row is left. Reservation
+    history still reads **Needs review** (returning doesn't clear flags), and
+    `coord_a` gets no new notice: still only the one from step 13.
+
+**Who can do it:**
+
+18. `coord_a`: type **http://localhost:5173/support/catalogue** in the address
+    bar → **Projector-HD**. The Unavailable periods card lists the Lamp check
+    row with **View only**, and there is no Mark unavailable button. Add
+    **/unavailable** to the end of the address: "Access denied. Only Technical
+    Support Staff can maintain equipment; Coordinators can view it."
+19. `tech_a`, DevTools device toolbar at **393 px** wide: Projector-HD's page
+    and its Mark unavailable form fit with no sideways scroll; the table rows
+    stack into cards; From and To stack one above the other.
 
 ## Known limits
 
@@ -127,6 +230,14 @@ of these areas, it is outside what was tested:
   with Xiang Ying.
 - **The Playwright cases use a fake API** shaped like the real one; the real
   stack is covered by F3 and F4 and the database tests.
+- **Coverage gaps outside this story:** `handler.ts` lines 26–28 and 40–42
+  (availability and update/retire dispatch), `EquipmentCatalogue.tsx` lines
+  31, 42 and 105 and `equipmentApi.ts` line 25 have no test in the suites
+  measured here; they are Xiang Ying's lines, unchanged. Every new or changed
+  line and branch of this story is covered (Run log, gate 4).
+- **The click-through needs EVT-3001's date still ahead** (15 October 2026):
+  after it, the 15 October withdrawals in steps 9 to 11 are refused as
+  already ended, which is the rule working, not a fault.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s scripts, and the database
@@ -149,3 +260,23 @@ fix gets its own row.
 
 | When (SGT) | Commit | Gate | TC IDs | Command | Where | Result | What was seen | Run by |
 |---|---|---|---|---|---|---|---|---|
+| 2026-10-12 00:46 | `d8ce717+local` (committed as `aae3df7`) | 2 | _01–_03 | `npx tsx --test tests/equipmentUnavailability.integration.test.ts` (backend) | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` | 10/10 passed | — | Claude (for Aaron) |
+| 2026-10-12 00:46 | `d8ce717+local` | 1 | — | `npx tsx --test tests/equipmentUnavailability.test.ts` | local | **5/6, failed "E07-S05 D51 invalid dates quantities and reasons are refused with field errors"** | Expected "The end date must be today or later.", got "End date must be on or after the start date.": the test's end date was also before its start date. Fault in the test; fixed | Claude (for Aaron) |
+| 2026-10-12 00:46 | `d8ce717+local` | 1 | — | The same | local | 6/6 passed | — | Claude (for Aaron) |
+| 2026-10-12 ≈00:49 | `aae3df7+local` | F1 | _01–_03 | `npx vitest run --no-file-parallelism src/features/support/EquipmentUnavailability.test.tsx` | local | **9/10, failed TC_01** | "Unable to find an accessible element with the role "link" and name "Mark unavailable"": the test looked before the session had loaded; it now waits | Claude (for Aaron) |
+| 2026-10-12 00:51 | `aae3df7+local` | F1 | _01–_03 | The same, plus `EquipmentCatalogue.test.tsx` | local | 17/17 passed | — | Claude (for Aaron) |
+| 2026-10-12 ≈00:52 | `aae3df7+local` | F2 | _01–_03 | `npx playwright test tests/e2e/equipmentUnavailability.spec.ts tests/e2e/equipmentCatalogue.spec.ts tests/e2e/equipmentAvailability.spec.ts` | local, fake API | 20/20 passed (desktop and Pixel 7) | — | Claude (for Aaron) |
+| 2026-10-12 ≈00:53 | `aae3df7+local` (committed as `09ddf6f`) | 1, 5, F1 | — | `npm run typecheck` (root); `npm test` (backend); `npx vitest run --no-file-parallelism` (whole frontend) | local | all passed: 327/327; 361/361 | — | Claude (for Aaron) |
+| 2026-10-12 ≈00:55 | `09ddf6f` | 4 | — | `npx c8 --src src npx tsx --test` over the E07-S05 unit and database files, the handler and catalogue unit files | local, same container | 21/21 passed; `unavailability.ts` 100% lines, **98.05% branches (264, 405)**; `handler.ts` every changed line covered | Gaps: the one-unit wording; a return that waited while its period was removed; the route listing the catalogue (changed branch). `handler.ts` 26–28 and 40–42 are Xiang Ying's unchanged availability and update/retire lines | Claude (for Aaron) |
+| 2026-10-12 00:56 | `09ddf6f+local` | 4 | — | The same, with tests added | local, same container | 22/22 passed; **branch 405 still uncovered** | Two returns at once didn't overlap in time, so the second was refused one step earlier; the test now holds the item's lock in a second transaction | Claude (for Aaron) |
+| 2026-10-12 00:57 | `09ddf6f+local` | 4 | — | The same | local, same container | 22/22 passed; `unavailability.ts` **100% lines and branches** | — | Claude (for Aaron) |
+| 2026-10-12 00:58 | `09ddf6f+local` (committed as `f899019`) | 4 | — | `npx vitest run --coverage` over `EquipmentUnavailability.tsx` and `unavailabilityApi.ts` | local | First 10/10 with 90.97% branches; after removing two guards that could not be reached and adding four tests, 14/14 and **100% statements, branches, functions and lines** | Remaining gaps are Xiang Ying's unchanged lines (Known limits) | Claude (for Aaron) |
+| 2026-10-12 00:59 | `f899019`, with bugs put in on purpose | deliberate bug | _01–_03 | `equipmentUnavailability.integration.test.ts`, three times, each with one bug, restored from git afterwards | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` | **Each bug was caught**: every overlapping reservation flagged failed the D54 test; the in-service check removed failed the D51 and two-at-once tests; return not deleting failed TC_03 | Shows the tests check these rules | Claude (for Aaron) |
+| 2026-10-12 00:59 | `f899019`, with bugs put in on purpose | deliberate bug | _02 | `EquipmentUnavailability.test.tsx`, twice, restored from git afterwards | local | **Each bug was caught**: units in service ignoring existing periods failed 3 tests; flagged reservations not listed failed TC_02 and 2 more | — | Claude (for Aaron) |
+| 2026-10-12 ≈01:02 | `f899019` | F3 | _01–_03 | Click-through script driven in Chromium (`f3_55.mjs`, outside the repo) | local real stack: Vite 5173, API 3001, freshly reset and seeded `connectsphere_dev_stack` | **35/36** | Step 7 "row listed" read the periods table before the page had reloaded: the script's own fault; it now waits | Claude (for Aaron) |
+| 2026-10-12 01:03 | `f899019` | F3 | _01–_03 | The same, after a fresh reset | local real stack | 36/36 passed. Session record `20261012-010325-Bl0oper-frontend-e2e.md` | Messages word for word in the session record | Claude (for Aaron) |
+| 2026-10-12 01:03 | `f899019` | 2, 3 | _01–_03 | `npm run test:db --workspace backend` | local, Docker `postgres:17` (17.11), `connectsphere_notification_test` | **81/82, failed E01-S02 (`eventVisibility`)**; all 11 SCRUM-55 tests passed. Session record `20261012-010355-Bl0oper-backend-db.md` | "column e.venue_requirements does not exist": on `main` since #161, not from this story | Claude (for Aaron) |
+| 2026-10-12 01:04 | `f899019` | F2 | _01–_03 | `npx playwright test` (full) | local, fake API | 268 passed, 0 failed, 316 skipped. Session record `20261012-010414-Bl0oper-frontend-e2e.md` | — | Claude (for Aaron) |
+| 2026-10-12 01:06 | `f899019` | 1 | — | `npm test` (backend) | local | 327/327 passed. Session record `20261012-010622-Bl0oper-backend-unit.md` | — | Claude (for Aaron) |
+| 2026-10-12 01:06 | `f899019` | F1 | _01–_03 | `npx vitest run --no-file-parallelism` (whole frontend) | local | 365/365 passed. Session record `20261012-010635-Bl0oper-frontend-vitest.md` | — | Claude (for Aaron) |
+| 2026-10-12 01:08 | `f899019` | 5, 10 | — | `npm run typecheck`; `npm run build`; `python scripts/check.py` (root) | local | all passed | — | Claude (for Aaron) |
