@@ -916,6 +916,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
 
+### `frontend/src/features/coordinator/VenueHolds.test.tsx`
+
+- the card lists live and expired holds with their expiry, and links to venue search
+- with no holds the card explains the 48-hour hold; an event that cannot hold says so and has no link
+- a failed or malformed load shows an error with a retry, and the rest of the page still renders
+- Scenario 4: release asks first; Keep cancels, Release hold releases
+- a refused action shows the server sentence and leaves the list as it was
+- a chosen expiry is checked against 1 hour to 14 days and sent when valid
+- a changed period outside the event is caught before sending
+- a refused release shows the server sentence
+- server field errors land next to their fields
+- an event that can no longer hold venues shows why, and a failed load offers a retry
+- validateHold and expiryProblem enforce the period, the event window and the expiry limits
+
 ### `frontend/src/features/events/ActivityLog.test.tsx`
 
 - an event with no recorded activity says so
@@ -1068,6 +1082,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
 
+### `frontend/src/features/venue/TentativeHolds.test.tsx`
+
+- with nothing held the page says so; a failed load offers a retry
+- Scenario 8: a later expiry is saved, confirmed and the list reloads
+- an earlier or too-distant expiry is refused before sending; Cancel closes the form
+- a server refusal or field error is shown on the hold
+- validateExtension checks a missing value, the 1-hour floor and the current expiry
+
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
 - removing a block goes through ConfirmPanel and reloads the list on success
@@ -1100,6 +1122,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
 
 - venue A\
+
+### `frontend/src/features/venue/VenueSearch.navigation.test.tsx`
+
+- event-scoped results offer Hold this venue only for an available venue
 
 ### `frontend/src/features/venue/VenueSuitability.test.tsx`
 
@@ -1251,6 +1277,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
 - availability calendar loads the selected venue from the API
 - pending booking detail confirms a booking
+
+### `tests/e2e/venueHolds.spec.ts`
+
+- the hold list and form fit the screen without sideways scrolling
 
 ### `tests/notifications/postgres.test.ts`
 

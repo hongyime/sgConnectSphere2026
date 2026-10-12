@@ -48,6 +48,8 @@ import { SupportRequestForm } from '../features/coordinator/TechnicalSupport';
 import { PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
 import { DecisionPanel } from '../features/coordinator/DecisionPanel';
 import { VenueSuitability } from '../features/venue/VenueSuitability';
+import { HoldVenueForm } from '../features/coordinator/VenueHolds';
+import { TentativeHolds } from '../features/venue/TentativeHolds';
 import { VenueSearch } from '../features/venue/VenueSearch';
 import { VenueCalendar } from '../features/venue/VenueCalendar';
 import { VenueForm } from '../features/venue/VenueForm';
@@ -165,6 +167,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),
   page('/coordinator/events/:eventCode/venues', <VenueSearch />, 'live', 'E06-S01'),
   page('/coordinator/events/:eventCode/venues/:venueId/suitability', <VenueSuitability />, 'live', 'E06-S02'),
+  page('/coordinator/events/:eventCode/venues/:venueId/hold', <HoldVenueForm />, 'live', 'E06-S05'),
 
   // Venue Staff
   page('/venue', <VenueDashboard />, 'mock'),
@@ -178,6 +181,7 @@ export const routes: AppRoute[] = [
       summary="Venue Staff approve or reject a single pending booking request with a required reason. Approving flags any competing pending requests as conflicting." />
   ), 'coming-soon', 'E06-S04'),
   page('/venue/blockout', <VenueBlockout />, 'live', 'E05-S04'),
+  page('/venue/holds', <TentativeHolds />, 'live', 'E06-S05'),
 
   // Technical Support Staff
   page('/support', <EquipmentDashboard />, 'mock'),

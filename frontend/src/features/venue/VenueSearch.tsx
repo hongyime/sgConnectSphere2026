@@ -114,6 +114,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
             ['Accessibility', v.accessibility.map(f => f.label).join(', ') || 'None'],
           ]} />
           {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/suitability`}>Check recorded event requirements</ButtonLink>}
+          {eventCode && v.available && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/hold`}>Hold this venue</ButtonLink>}
           {v.mismatches.length > 0 && <div><strong>Unmet requirements</strong><ul>{v.mismatches.map(m => <li key={m}>{m}</li>)}</ul></div>}
         </Card>)}
       </>}
