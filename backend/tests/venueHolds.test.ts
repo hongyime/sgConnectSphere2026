@@ -117,7 +117,7 @@ test('T-78 (O-29): a hold must lie within the event period', () => {
 
 test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved tentative with a 48-hour expiry and audited', async () => {
   const db = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }]]);
-  const result = await placeHold(db.pool, coordinator, { event_id: ' EVT-TC ', venue_id: VENUE }, NOW);
+  const result = await placeHold(db.pool, coordinator, { event_id: ' EVT-TC ', venue_id: VENUE });
   assert.equal(result.status, 201);
   const body = result.body as { hold: { id: string; status: string; expiresAt: string; venueName: string } };
   assert.deepEqual({ ...body.hold, id: undefined }, { id: undefined, venueId: VENUE, venueName: 'Main Hall', status: 'tentative', expiresAt: at(48).toISOString() });
@@ -130,6 +130,10 @@ test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved ten
   const entry = sqlCalls(db.calls, /INSERT INTO audit_logs/)[0]!;
   assert.deepEqual(entry.values, [coordinator.id, event.id, 'Tentative hold placed on Main Hall', null, at(48).toISOString()]);
   assert.equal(EVENT_ROW.test(sqlCalls(db.calls, /FOR NO KEY UPDATE/)[0]!.sql), true);
+  const order = db.calls.map(call =>
+    EVENT_ROW.test(call.sql) ? 'event' : VENUE_ROW.test(call.sql) ? 'venue' : CLOCK.test(call.sql) ? 'clock' : CLASH.test(call.sql) ? 'clash' : '',
+  ).filter(Boolean);
+  assert.deepEqual(order, ['event', 'venue', 'clock', 'clash']);
 });
 
 test('TC_E06S05_01: an overlapping hold, request, booking or block is refused and named', async () => {
@@ -145,33 +149,33 @@ test('TC_E06S05_01: an overlapping hold, request, booking or block is refused an
   ];
   for (const [status, message] of cases) {
     const db = clashWith(status);
-    assert.deepEqual(await placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW), { status: 409, body: { error: message } });
+    assert.deepEqual(await placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }), { status: 409, body: { error: message } });
     assert.equal(writes(db.calls), 0);
   }
   const noCode = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }],
     [CLASH, { rows: [{ status: 'pending', eventCode: null, title: 'Open Day', startsAt: event.startsAt, endsAt: event.endsAt }] }]]);
-  assert.match(String((await placeHold(noCode.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW)).body.error), /request for Open Day from/);
+  assert.match(String((await placeHold(noCode.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE })).body.error), /request for Open Day from/);
   const blocked = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }], [/FROM venue_blocks/, { rows: [{ reason: 'Aircon repair' }] }]]);
-  assert.deepEqual(await placeHold(blocked.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
+  assert.deepEqual(await placeHold(blocked.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }),
     { status: 409, body: { error: 'This venue is blocked for that period (Aircon repair).' } });
   assert.equal(writes(blocked.calls), 0);
 });
 
 test('a hold is refused for another Coordinator\'s event, an unplanned event, a bad period or a retired venue', async () => {
   const other = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, coordinatorId: 'someone-else' }] }]]);
-  await assert.rejects(placeHold(other.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW), { status: 403, message: 'Access denied. This event is not assigned to you.' });
+  await assert.rejects(placeHold(other.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }), { status: 403, message: 'Access denied. This event is not assigned to you.' });
   assert.equal(denials(other.calls), 1);
   const missing = fakeDatabase([]);
-  await assert.rejects(placeHold(missing.pool, coordinator, { event_id: 'EVT-NONE', venue_id: VENUE }, NOW), { status: 403 });
+  await assert.rejects(placeHold(missing.pool, coordinator, { event_id: 'EVT-NONE', venue_id: VENUE }), { status: 403 });
   const pendingEvent = fakeDatabase([[EVENT_ROW, { rows: [{ ...event, status: 'pending_approval' }] }]]);
-  await assert.rejects(placeHold(pendingEvent.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
+  await assert.rejects(placeHold(pendingEvent.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }),
     { status: 409, message: 'Venues can only be held while an approved event is being planned.' });
   assert.equal(denials(pendingEvent.calls), 0);
-  const invalid = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  assert.deepEqual(await placeHold(invalid.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE, expires_at: at(0.5).toISOString() }, NOW),
+  const invalid = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }]]);
+  assert.deepEqual(await placeHold(invalid.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE, expires_at: at(0.5).toISOString() }),
     { status: 400, body: { error: 'validation_failed', errors: { expires_at: ['A hold must last at least 1 hour from now.'] } } });
   const retired = fakeDatabase([[EVENT_ROW, { rows: [event] }]]);
-  await assert.rejects(placeHold(retired.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }, NOW),
+  await assert.rejects(placeHold(retired.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }),
     { status: 404, message: 'That venue was not found or is no longer in use.' });
   assert.equal(writes(retired.calls), 0);
 });

@@ -157,7 +157,7 @@ async function findClash(client: PoolClient, venueId: string, startsAt: Date, en
   return block ? `This venue is blocked for that period (${block.reason}).` : null;
 }
 
-export async function placeHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown, now = new Date()) {
+export async function placeHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const identifier = eventIdentifier(data.event_id);
@@ -165,13 +165,16 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
   return audited(database, actor, () => inTransaction(database, async client => {
     const event = await lockEvent(client, actor, { event: identifier });
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    const valid = validateHoldInput(data, event, now);
-    if (!valid.input) return { status: 400, body: { error: 'validation_failed', errors: valid.errors } };
     // Lock the venue: holds (and, once E06-S03 does the same, requests) for one
     // venue are decided one at a time, so two can't both see it free.
     const venue = (await client.query<Venue>(`SELECT id, name FROM venues WHERE id = $1 AND is_active FOR NO KEY UPDATE`, [venueId])).rows[0];
     if (!venue) throw new AccessError(404, 'That venue was not found or is no longer in use.');
-    const clash = await findClash(client, venue.id, valid.input.startsAt, valid.input.endsAt, await databaseNow(client), null);
+    // Read the database clock only after both locks. A request may have waited
+    // on either row, so its expiry default and bounds must start from this time.
+    const now = await databaseNow(client);
+    const valid = validateHoldInput(data, event, now);
+    if (!valid.input) return { status: 400, body: { error: 'validation_failed', errors: valid.errors } };
+    const clash = await findClash(client, venue.id, valid.input.startsAt, valid.input.endsAt, now, null);
     if (clash) return { status: 409, body: { error: clash } };
     const id = randomUUID();
     await client.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status, expires_at)

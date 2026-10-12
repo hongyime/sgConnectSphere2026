@@ -6,6 +6,48 @@ it on schedule with one notice, and make the calendar, venue search, blocks and
 venue retirement treat an unexpired hold as taken. Scenario 5 (buffers) waits on
 E05-S05 (#231); the frontend is SCRUM-143 and the browser tests SCRUM-144.
 
+## PR #245 follow-up: hold creation lock-wait race (12 October 2026)
+
+Diagnosis: confirmed from the current implementation. `placeHold`'s default
+`now = new Date()` is captured on entry, and `validateHoldInput(data, event,
+now)` runs before the venue `FOR NO KEY UPDATE` lock. A request that waits for
+that lock therefore validates a default expiry or an explicit 1-hour/14-day
+bound against arrival time, then can insert later with less time remaining.
+`convertHold`, `releaseHold` and `extendHold` already use `databaseNow()` after
+their row locks; the missing path is hold creation.
+
+Evidence: `holds.ts` lines 160-174 show validation before the venue lock, while
+`databaseNow()` at lines 186-189 uses `SELECT clock_timestamp()` and is already
+used after locks by the other hold operations. The existing PostgreSQL
+lock-wait regression covers convert and extend, but not `placeHold`.
+
+Fix plan: make `placeHold` acquire the event and venue locks, read database
+time, then compute/default and validate expiry. Add PostgreSQL lock-wait
+coverage for both the 48-hour default and a chosen expiry that crosses below
+the 1-hour minimum while waiting. Keep the pure `validateHoldInput` boundary
+tests and add a unit assertion for query ordering.
+
+Done: added the lock-wait regression first and observed it fail against the
+unfixed code because the default expiry was short of 48 hours after the wait.
+`placeHold` now acquires the event and venue locks, reads `clock_timestamp()`,
+then defaults and validates expiry; the same database time is used to find
+clashes. The unit test asserts event-lock → venue-lock → clock → clash order.
+An exploratory attempt to make a lock wait cross the 14-day maximum was
+discarded: a fixed expiry gets closer, not farther away, while the request
+waits. Existing unit tests cover that upper-bound check.
+
+Verification on `cf021bd` before the fix commit: `npm test --workspace backend`
+passed 358/358 with `holds.ts` at 100% statements, branches, functions and
+lines; the PostgreSQL 17 venue-holds integration file passed 6/6; backend
+typecheck passed. T-65 records: `20261012-202913-bryanseah234-backend-unit.md`
+and `20261012-203241-bryanseah234-backend-db.md`.
+
+`python3 scripts/check.py` passed: repository hygiene, 87 tooling tests and 197
+test-run records validated. The local hook needed a temporary `python` shim
+because this shell provides `python3` only.
+
+Next: commit and push this fix to PR #245. Do not merge the PR.
+
 ## Done
 
 - `backend/database/migrations/0013_tentative_venue_holds.sql`: `tentative` and

@@ -222,6 +222,57 @@ test('two simultaneous holds on one venue and period: exactly one succeeds', asy
   }
 });
 
+test('TC_E06S05_03 placeHold validates the default expiry and bounds after waiting for the venue lock', async () => {
+  const f = await fixture();
+  const blocker = await f.pool.connect();
+  const waitForVenueLock = async () => {
+    const deadline = Date.now() + 5000;
+    while (Date.now() < deadline) {
+      const waiting = await f.q(`SELECT pid FROM pg_stat_activity
+        WHERE datname = current_database() AND pid <> $1 AND wait_event_type = 'Lock'
+          AND query LIKE 'SELECT id, name FROM venues WHERE id = %'
+        LIMIT 1`, [blocker.processID]);
+      if (waiting.rowCount) return;
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    assert.fail('placeHold did not wait for the locked venue row');
+  };
+  const placeAfterLockWait = async (eventCode: string, expiresAt?: string, delayMs = 1500) => {
+    await blocker.query('BEGIN');
+    await blocker.query('SELECT id FROM venues WHERE id = $1 FOR UPDATE', [f.ids.hall]);
+    const body = { event_id: eventCode, venue_id: f.ids.hall, ...(expiresAt ? { expires_at: expiresAt } : {}) };
+    const placing = placeHold(f.pool, f.coordA, body);
+    await waitForVenueLock();
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    await blocker.query('COMMIT');
+    return placing;
+  };
+  try {
+    await f.event('EVT-DEFAULT', 'Default expiry event', f.ids.coordA, '[2027-08-10 09:00+08,2027-08-10 12:00+08)');
+    await f.event('EVT-BOUND', 'Bound expiry event', f.ids.coordA, '[2027-08-11 09:00+08,2027-08-11 12:00+08)');
+
+    const defaultResult = await placeAfterLockWait('EVT-DEFAULT');
+    assert.equal(defaultResult.status, 201);
+    const defaultHold = holdId(defaultResult);
+    const saved = (await f.q<{ expires_at: Date; sampled_at: Date }>(`SELECT expires_at, clock_timestamp() AS sampled_at
+      FROM venue_bookings WHERE id = $1`, [defaultHold])).rows[0]!;
+    assert.ok(Math.abs(saved.expires_at.getTime() - saved.sampled_at.getTime() - 48 * HOUR) < 1000,
+      'the default expiry should be 48 hours from after the lock wait');
+
+    // At request time this expiry is just over one hour away. The venue lock
+    // wait consumes the margin, so creation must be rejected afterward.
+    const expiresAt = new Date(Date.now() + HOUR + 1500).toISOString();
+    const boundedResult = await placeAfterLockWait('EVT-BOUND', expiresAt, 2000);
+    assert.deepEqual(boundedResult, { status: 400, body: { error: 'validation_failed', errors: {
+      expires_at: ['A hold must last at least 1 hour from now.'],
+    } } });
+  } finally {
+    await blocker.query('ROLLBACK').catch(() => undefined);
+    blocker.release();
+    await f.close();
+  }
+});
+
 test('a request that waits on a lock past the expiry is refused; a passed hold cannot be released (review of #245)', async () => {
   const f = await fixture();
   const blocker = await f.pool.connect();
