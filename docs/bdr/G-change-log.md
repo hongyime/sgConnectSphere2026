@@ -170,3 +170,31 @@ require the authorised reversion workflow first. Submission ends an unexpired
 hold's expiry; an expired hold cannot convert. Both E06 backlog views updated.
 Other open questions, including O-28 and O-31/O-33/O-34, remain unconfirmed.
 This records requirements, not implementation or story completion.
+
+## 12 October 2026: Week 9 customer Q&A (version 7)
+
+Archived the eight source materials supplied to the project under
+`docs/bdr/customer-sources/` and recorded all 66 Week 9 Q&A rows in workbook
+order as C-71 to C-136. The original answer wording remains in section A;
+status and the separate "What it settled for us" column record whether the
+customer settled, partly answered or delegated each question.
+
+Reconciled O-20 to O-44 against Week 9 and added O-45 to O-49 for residual
+questions and design dependencies. O-10 is open again because C-107 conflicts
+with C-62/T-48 on bookings across sessions. O-23 stays open because C-111 says
+venue blocks should not be open-ended while C-119 permits open-ended
+unavailability. C-78 adds the combined layout capacity rule for multi-venue
+events. O-22, O-38 and O-44 retain their unresolved details. C-89
+records manual Venue Staff selection without turning T-64's team routing model
+into a customer-mandated roster.
+
+Several clear answers conflict with earlier customer or team positions and need
+downstream review: C-107 on bookings across sessions (O-10), C-120 on
+confirmed-event status after venue loss (O-24), C-132 on the safety-review
+trigger (O-40), and C-134 on where safety factors are assessed (O-42). The BDR
+records these answers and flags the conflicts; this update does not amend
+backlog stories, architecture decisions or implementation.
+
+Regenerated the BDR and ADR Word exports from Markdown as `CAA 121026` and
+updated the source-of-truth index. The exports remain derivative; the Markdown
+sections are authoritative.
