@@ -35,7 +35,7 @@ Updated 13 October 2026. This register turns the team's selected Week 9 answers 
 
 ## Delivery sequence
 
-1. **Decision record — in progress:** BDR v8, T-79 to T-91, and O-10/O-22 to O-24/O-34/O-37 to O-49 reconciled. Verify the new rows and generated BDR/ADR exports before commit.
+1. **Decision record — ready for review:** BDR v8, T-79 to T-91, and O-10/O-22 to O-24/O-34/O-37 to O-49 reconciled; customer sources are archived, the BDR/ADR exports are regenerated, and the impact register is verified. Merge this source-of-truth PR before reconciling Jira.
 2. **Backlog and test catalogue — staged:** update matching product and Release 1 Markdown, then canonical test cases. Sprint 3 stories below keep their existing criteria through the sprint end; prepare their correction as follow-up work under T-73. Update future-sprint/unassigned stories before Sprint 4 planning.
 3. **Architecture and UI/UX:** update schema, contracts, ADRs, diagrams, API notes, flows and design artifacts from the revised stories. Identify migration order and deployment/backfill risks.
 4. **Implementation by story:** split branches/PRs by coherent story or vertical slice. A story is not Done until its AC, automated/manual evidence, review and Definition of Done are satisfied.

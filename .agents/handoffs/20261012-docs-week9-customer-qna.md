@@ -30,7 +30,7 @@ Goal: record the team's selected Week 9 Q&A decisions in canonical BDR Markdown,
 
 ## Not done / next step
 
-- The merged tree passed `python scripts/check.py` in a clean temporary worktree at `e20c354`: repository hygiene passed and all 87 tooling tests passed. Application checks were not run. A T-65 tooling run record was added.
+- The merged tree plus the impact-register status update passed `python scripts/check.py` in a clean temporary worktree based on `1bccb19`: repository hygiene passed and all 87 tooling tests passed. Application checks were not run. A T-65 tooling run record was added.
 - Push the decision-record branch and open its review PR.
 - Follow with scoped PRs for future/unassigned stories and canonical test cases (including E02-S05 and E04-S02), then architecture/contract/schema/flow/design artifacts. Do not amend active Sprint 3 stories until 17 October; prepare explicit follow-up tasks for them.
 - Keep implementation changes story-sized and gated by the updated canonical requirements, tests, and Definition of Done.
@@ -42,7 +42,7 @@ Goal: record the team's selected Week 9 Q&A decisions in canonical BDR Markdown,
 - python scripts/agent_handoffs.py completed at task start.
 - Live Jira JQL was read-only and confirmed the Sprint 3 assignments and dates above.
 - python scripts/export_adr_bdr_docx.py --date 131026 regenerated the dated exports after merging current main. The BDR export contains Version 8, T-91 and O-49; the ADR export was refreshed. Both open as DOCX files.
-- `python scripts/check.py` passed in a clean temporary worktree at `e20c354`: repository hygiene and 87 tooling tests passed. The T-65 record validator found 189 records before the new final run record was added. Application checks were not run.
+- `python scripts/check.py` passed in a clean temporary worktree with the staged impact-register update based on `1bccb19`: repository hygiene and 87 tooling tests passed. The check found 190 test-run records before the new run record was added. Application checks were not run.
 - python scripts/check_test_run_records.py passed and validated 181 test-run records, including the new T-65 record.
 - git diff --cached --check passed without whitespace errors.
 - Do not commit session-managed changes in .agents/STATE.md or .agents/JOURNAL.md.
