@@ -89,3 +89,16 @@ E05-S05 (#231); the frontend is SCRUM-143 and the browser tests SCRUM-144.
 See the T-65 records in `docs/testing/runs/` cited by the PR. Local-only
 failures that also fail on clean main: `test:runtime` health check (Windows),
 `registration.db.test.ts`, `eventVisibility.integration.test.ts`.
+
+## PR #245 main merge (13 October 2026)
+
+- Merged `origin/main` into `feature/SCRUM-138-tentative-hold-backend`.
+- Resolved `api/venues/index.ts` with both the tentative-hold dispatcher and
+  main's venue-assessment route; combined the hold and venue-suitability test
+  entries in `backend/package.json`.
+- Regenerated `docs/testing/tc-coverage.md`: 162 automated, 101 scaffolded,
+  and 52 without tests (315 total).
+- `scripts/check.py` passed, including repository hygiene and all 87 tooling
+  tests. Ran it using the repository tooling environment on `PATH` because
+  this shell does not define a `python` command.
+- Next: commit and push the merge resolution; leave PR #245 open.

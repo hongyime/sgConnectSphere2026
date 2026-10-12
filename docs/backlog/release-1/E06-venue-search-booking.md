@@ -42,7 +42,7 @@ Given a venue is blocked or already confirmed the event's period When I run the 
 
 - **Sprint**: Sprint 3
 - **Points**: 3
-- **BDR references**: C-06, T-13, T-21, B-08
+- **BDR references**: C-06, T-13, T-48 (supersedes T-21), T-77, B-08
 - **Owner**:
 
 ### User story
@@ -67,6 +67,19 @@ Given a venue meets all recorded requirements for the event When I view it Then 
 
 Given a venue is marked unsuitable When I submit a booking request for it anyway Then the request is accepted and the unsuitability is shown to the Venue Staff for their decision
 
+#### Scenario 5 - Operating hours checked without blocking booking (T-77)
+
+Given an event has recorded start and end times When I check a venue's suitability
+Then an event outside the venue's operating hours is marked Unsuitable with
+"outside operating hours" explicitly named; an event fully within the hours passes
+this criterion. Suitability remains advisory and an unsuitable venue may still be
+requested, with its failures shown to Venue Staff for their decision.
+
+Product Owner clarification relayed on 8 October 2026. E06-S01 operating hours
+remain display-only; its search behaviour is unchanged. Use the existing Singapore
+timezone and daily opening-window convention. Exact opening and closing times are
+within hours. This is event-based; T-21's sessions wording is withdrawn by T-48.
+
 ### Checklist
 
 - View a suitability status for a venue against a specific event
@@ -74,6 +87,7 @@ Given a venue is marked unsuitable When I submit a booking request for it anyway
 - See every failing requirement named
 - See the venue marked suitable when it meets all recorded requirements
 - Confirm suitability is advisory and does not itself block a booking request
+- Identify outside operating hours as an advisory failure in E06-S02, without adding that rule to E06-S01
 
 ## E06-S03 — Request a venue booking
 

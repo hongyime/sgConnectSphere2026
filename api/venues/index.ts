@@ -2,6 +2,7 @@ import { equipmentHandler } from '../../backend/src/modules/equipmentSupport/han
 import { supportHandler } from '../../backend/src/modules/equipmentSupport/supportHandler.js';
 import { staffingHandler } from '../../backend/src/modules/equipmentSupport/staffingHandler.js';
 import { HOLD_ACTIONS, holdsHandler } from '../../backend/src/modules/venueBooking/holdsHandler.js';
+import { venueSuitability } from '../../backend/src/modules/venueBooking/suitability.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
@@ -37,6 +38,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (request.method === 'GET') {
     const searchParams = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (searchParams.get('mode') === 'assessment') {
+      await respond(response, async () => venueSuitability(query, await currentUser(request), searchParams));
+      return;
+    }
     if (searchParams.get('mode') === 'suitability') {
       await respondWithResult(response, async () => {
         const result = await venueSearch(query, await currentUser(request), searchParams);
