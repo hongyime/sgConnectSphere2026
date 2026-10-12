@@ -7,6 +7,12 @@ E14-S02 manual run (PR #240 follow-ups): the Organiser could not edit
 #132 (edit endpoint). Owners of the original work: Xiang Ying (#175) and
 Amareet (#148, #176).
 
+## Story
+
+E03-S07 was Done in Sprint 2, so this fix is the new Sprint 3 story
+E03-S11, agreed with the PO on 12 October 2026. Its Jira key is not
+created yet; add it to the PR body when it is. E03-S07 stays Done.
+
 ## Done
 
 - Backend `updateEventInformation` (`backend/src/modules/eventVisibility/service.ts`)
@@ -26,6 +32,9 @@ Amareet (#148, #176).
   e2e helper, decisionBackend helper) include `registrationSetup`.
 
 ## Not done / for the owners
+
+- Create E03-S11 in Jira and cite its key in PR #247. Adding E03-S11 to
+  `docs/backlog/` is for the PO (backlog source of truth).
 
 - `.ui-form-section legend` in `frontend/src/shared/shared.css` matches nested
   legends. Narrowing it to `> legend` is the skeleton owner's call.
