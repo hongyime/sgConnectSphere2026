@@ -198,3 +198,35 @@ backlog stories, architecture decisions or implementation.
 Regenerated the BDR and ADR Word exports from Markdown as `CAA 121026` and
 updated the source-of-truth index. The exports remain derivative; the Markdown
 sections are authoritative.
+
+## 13 October 2026: Team selections from Week 9 Q&A (version 8)
+
+The team reviewed the impact register and selected rules for the
+Week 9 answers. Added T-79 to T-91 and reconciled the affected open-question
+rows while retaining every original customer answer in section A.
+
+T-79 follows C-107 and reverses T-48: Sessions return to Release 1 under Event;
+venue bookings and equipment attach to Sessions, while one event-level attendee
+registration can select multiple Sessions. T-80 selects C-119's open-ended
+unavailability rule despite its conflict with C-111, and keeps buffers off
+maintenance blocks. T-81 applies C-120's automatic return to Planning when a
+venue is lost and notifies the Coordinator. T-82 starts Safety Review
+automatically and records both the factor checklist and the overall decision
+and comments. T-83 removes the Coordinator-initiated reassignment request and
+limits the queue to Leads.
+
+T-84 sets per-hold expiry and warning times, with at most two extensions and a
+reason for each. T-85 defines one event registration with selected Sessions,
+per-Session and combined event caps, and an over-capacity Pending review path.
+T-86 adopts multi-role accounts while seed data assigns one role per account.
+T-87 imposes no fixed minimum lead time and a team-selected maximum of two years.
+T-88 closes pending change requests as Obsolete when the event becomes terminal.
+T-89 keeps venue-to-staff assignments as setup data without a roster screen.
+T-90 adds E02-S05 to Release 1 at its existing three-point estimate, with sprint
+placement left to planning. T-91 allows Venue Staff to edit blocks, retains
+history, and notifies affected Coordinators when blocks are lifted.
+
+These are scope decisions, not implementation evidence. Both backlog views,
+test cases, schema/contracts, ADRs, flows and UI design must agree before the
+affected stories are considered ready. Generated exports follow their Markdown
+sources. Jira changes remain downstream of the merged canonical backlog.

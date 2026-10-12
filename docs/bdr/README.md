@@ -2,7 +2,7 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 7  ·  12 October 2026
+Version 8  ·  13 October 2026
 
 ## Purpose
 
@@ -10,11 +10,11 @@ This document holds every decision behind the backlog and the evidence for it. T
 
 It exists to answer one question for any story or acceptance criterion: why is this here, and who decided it. Entries are separated into what the customer told us and what the team chose, because those carry different weight. Where the team chose, the entry says so plainly rather than presenting an assumption as a requirement.
 
-## What changed in version 7
+## What changed in version 8
 
-Archived the eight source materials supplied to the project in `customer-sources/`. Added all 66 Week 9 Q&A rows as C-71 to C-136 in workbook order, preserving the answer wording and recording its effect separately. Updated O-20 to O-44 against the answers and added O-45 to O-49 for remaining gaps and team-design dependencies.
+Recorded the team's selections from the Week 9 impact review as T-79 to T-91 and reconciled O-10, O-22 to O-24, O-34, O-37 to O-49. The decisions restore Sessions for Release 1, choose C-119's open-ended block behavior despite its conflict with C-111, define venue-loss and automatic safety-review transitions, set registration/capacity behavior, update role cardinality and hold/block policies, set a two-year date limit, close obsolete change requests, and add E02-S05 to Release 1. Team choices are labelled separately from customer answers.
 
-The Week 9 answers confirm several Week 7 details, including Lead assignment, venue booking approval, hold expiry, and the Operational Safety Check. C-78 adds combined layout capacity for multi-venue events (O-07). The answers also expose conflicts that need follow-up: C-107 conflicts with C-62/T-48 on whether sessions may share one event (O-10); C-111 and C-119 disagree about open-ended venue blocks (O-23); C-120 conflicts with T-28/T-67 on what happens to a Confirmed event when a venue becomes unavailable (O-24); C-132 replaces T-71's manual safety-review trigger with an automatic one (O-40); and C-134 says assessment factors may be reviewed outside the system, unlike T-71's in-system checklist assumption (O-42). These answers are recorded here; downstream backlog and architecture changes are not made in this documentation update.
+The canonical lifecycle now returns a Confirmed event to Planning automatically when venue loss triggers change review; completed arrangements enter Safety Review automatically. The safety record includes both the team's per-factor checklist and the decision/comments required by C-134. One event registration can select multiple Sessions while both per-Session and combined event capacities are enforced. Open-ended blocks follow T-80 as a team resolution, preserving C-111's conflicting answer in the source record. The downstream backlog, acceptance cases, architecture and UI flows are being aligned to these decisions in this change set; implementation and Jira reconciliation follow the repository's source-of-truth workflow.
 
 ## What changed in version 6
 
@@ -70,7 +70,7 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 C-01 to C-70 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
 
-T-01 to T-74 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-91 — team decisions, each naming the clarification it follows from or the gap it closes.
 
 O-01 to O-49 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies.
 
@@ -88,15 +88,15 @@ Under Review → Rejected (E03-S03, terminal and read-only)
 
 Planning or Confirmed → Cancelled (E10-S04, terminal and read-only)
 
-Confirmed → Planning (E08-S04; T-28/C-61 retain the team rule of manual reversion. Week 9 C-120 says venue loss returns the event to Planning/change review; this conflict is recorded under O-24 for downstream reconciliation.)
+Confirmed → Planning (E08-S04 for a Coordinator's deliberate reversion; venue loss automatically triggers Planning/change review and Coordinator notification under C-120/T-81.)
 
-Planning → Safety Review (current T-71 story design has the Coordinator submit after every venue and technical arrangement is confirmed. Week 9 C-132 says the review starts automatically; reconcile the trigger under O-40.)
+Planning → Safety Review automatically after every required venue and technical arrangement is confirmed (C-132, T-82).
 
 Safety Review → Confirmed (Safety Officer approves) or Safety Review → Planning (Safety Officer rejects or requests changes, with a mandatory reason; never cancels). C-131 confirms the Safety Check sits between Planning and Confirmed.
 
-Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review (from version 6 the Event Coordinator Lead assigns from the unassigned queue, T-70). E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. The new Safety Review stories in E08 set Safety Review and, on approval, Confirmed; their trigger is under reconciliation following C-132. E08-S05 sets Completed. E10-S04 sets Cancelled.
+Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review (the Event Coordinator Lead assigns from the unassigned queue, T-70/T-83). E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. E08 arrangement completion automatically enters Safety Review; the Safety Officer's decision sets Confirmed or returns the event to Planning. E08-S04 remains the Coordinator's deliberate reversion path. Venue loss also automatically returns a Confirmed event to Planning (T-81). E08-S05 sets Completed. E10-S04 sets Cancelled.
 
-This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14. Safety Review is the team's name for the stage the customer places between Planning and Confirmed (C-131). The customer leaves the assessment format to the team and says factors may be reviewed outside the system while the system records the decision and comments (C-134); T-71's in-system checklist assumption needs reconciliation under O-42.
+This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14. Safety Review is the team's name for the stage the customer places between Planning and Confirmed (C-131). The system records the Safety Officer's decision and comments as C-134 requires and also keeps the team's in-system checklist for each factor (T-82); the checklist is not presented as a customer requirement.
 
 
 ## Section files
