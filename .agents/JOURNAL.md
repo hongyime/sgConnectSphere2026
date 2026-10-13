@@ -1,5 +1,12 @@
 # Agent Journal
 
+- 2026-10-14: Production's read-only ledger showed 0009 and 0010 already
+  applied, with 0013 the sole pending file. The runbook permits the existing
+  migrate CLI when exactly one file is pending, so 0013 was applied alone and
+  verified read-only; all 13 migration files are now recorded. The run record
+  is in PR #260. Do not batch migrations or reapply files already in the ledger;
+  the selector in #258 remains a future safety improvement, not a prerequisite
+  for this verified one-file case.
 - 2026-10-14: The Sprint 3 board view omits subtasks. Audit all Subtask issues against the Sprint field; the current sprint has 10 incomplete parent stories and 19 incomplete subtasks. Keep assignments intact and decide carryovers only after the sprint closes under T-73.
 - 2026-10-14: T-69/ADR-006 already select the existing outbox relay for tentative-hold expiry, and T-84 replaces the fixed warning interval with per-hold configuration. Jira's old GitHub Actions/15-minute title was inconsistent; align the ticket to the accepted relay decision and record any cadence change before touching deployment configuration or secrets.
 - 2026-10-14: Accepted Week 9 answers C-71 to C-136 and team decisions T-79 to T-91 are now in canonical BDR Markdown. Preserve the recorded C-111/C-119 conflict and the selected C-119 behavior in downstream work.
