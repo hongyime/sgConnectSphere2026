@@ -2,6 +2,7 @@
 
 - 2026-10-14: Re-fetched current main (`8f246ae`) and synced hold PRs after the Week 9 architecture merge. PR #245 is conflict-free at `84ffaa2` with required checks passing but still needs fresh peer approval; #252 includes that branch at `c884ccd`, remains draft, has a passing repository check and one application check in progress. The production 0013 gate is cleared through #260. T-73 keeps the T-92 Sprint 3 behavior active through 17 October; implement T-84 and Session-linked holds as follow-up work after checking the final Jira sprint state. The SCRUM-144 manual run is still pending.
 - 2026-10-14: PR #217 and #248 have passing required checks but no formal approval; #217 also has an optional Vercel failure. PR #230 has passing required checks and fixes on head `2cd535b`, while Xiang Ying's changes request is on older `cb0406a`; a fresh review of the current head remains the blocker.
+- 2026-10-14: Pushed the refreshed owner STATE/JOURNAL to PR #259 in commit `018c1c4`; its repository check is running and teammate approval is still required. The refresh records the corrected #245/#252 stack state and the remaining review/manual-run gates.
 - 2026-10-14: Production's read-only ledger showed 0009 and 0010 already
   applied, with 0013 the sole pending file. The runbook permits the existing
   migrate CLI when exactly one file is pending, so 0013 was applied alone and

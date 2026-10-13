@@ -58,7 +58,7 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
 - #261 SCRUM-161 venue buffers: replacement for closed #231; open and mergeable at `d18acba`; required checks pass and teammate approval is required.
-- #259 owner STATE/JOURNAL consolidation: open at `002a025`; required checks pass and teammate approval is still required. This update refreshes the hold PR sync status and will trigger another check run.
+- #259 owner STATE/JOURNAL consolidation: latest continuity refresh is pushed; its current repository check is running and teammate approval is required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: mergeable and ready for review; all required checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
@@ -96,5 +96,5 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 2. Record the product owner's exact SCRUM-141 cadence choice before changing schedule configuration or any deployment secret.
 3. Merge the run-record PR #260 and owner state/journal PR #259 after teammate review. Do not self-approve.
 4. Track #261's peer review; keep SCRUM-44 open until its remaining frontend acceptance is complete. #245's checks pass but it needs fresh peer approval; #252's current application check and human review remain outstanding. Keep #252 draft until #245 merges.
-5. Finish this owner snapshot update and push it to #259; let checks rerun and obtain teammate approval before merging.
+5. Wait for the latest #259 repository check and teammate approval; do not merge before both are clear.
 6. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
