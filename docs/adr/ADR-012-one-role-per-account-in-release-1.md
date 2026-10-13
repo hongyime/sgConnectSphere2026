@@ -1,6 +1,6 @@
 # ADR-012 — One role per account in release 1
 
-- **Status:** Accepted
+- **Status:** Superseded 13 October 2026 by ADR-019
 - **Related BDR:** C-33, T-10, C-69, C-70, T-72, O-44
 
 ### Context
@@ -28,3 +28,11 @@ USERS.role holds a single value. Multi-role support is deferred and the story is
 ### Amended 3 October 2026 for the Week 7 Customer Changes
 
 The `user_role` vocabulary gains `event_coordinator_lead` and `safety_officer` (T-72). The decision stands: an account holds exactly one of the now seven values (O-44 asks the customer to confirm that a Lead is not also a Coordinator). The cost paragraph above becomes more likely to bite, because a small team may well want one person to be both a Coordinator and the Lead; if that happens the `USER_ROLES` join table named as the migration target is the answer, not a second account.
+
+### Superseded for Week 9 (13 October 2026)
+
+Team decision T-86 replaces the single-role constraint with many-to-many role
+membership. Seed data still assigns one role per account. C-136 confirms only
+preloaded-account provisioning; it does not determine role cardinality. ADR-019
+records the current model and migration path. The earlier constraints and their
+rationale remain part of the historical record.

@@ -84,3 +84,26 @@ this hook layer; the explicit Venue Staff relationship is follow-up schema work.
 Tentative holds now expire (C-68, T-69), which is the first time-driven state change in the system: nothing a user does triggers it. T-69 places the expiry job on the existing Scheduler and Outbox Relay process rather than introducing a scheduler, so the container count in the C4 model stays at two background processes. On each poll the relay also runs `UPDATE venue_bookings SET status = 'expired' WHERE status = 'tentative' AND expires_at <= now() RETURNING ...` in one transaction with the notification and audit rows for each expired hold, so the outbox guarantee (notification row and business write commit together) holds for system-generated changes exactly as it does for user-generated ones. The 24-hour reminder (O-33) is a second query in the same poll keyed on `reminder_sent_at IS NULL AND expires_at <= now() + interval '24 hours'`. Both are idempotent by construction: the status change and the `reminder_sent_at` stamp are the guards, so a re-run after a crash produces no duplicate (TC_E06S05_06 step 3).
 
 The routing matrix in E11-S01 gains rows for the Event Coordinator Lead (queue entry, reassignment requests) and the Safety Officer (event enters Safety Review, safety decision). Neither role is a matrix column because nothing else routes to them; the resolver treats them as named recipients of those changes.
+
+### Amended 13 October 2026 for Week 9
+
+The Week 7 fixed 24-hour hold warning is superseded by T-84. Each hold has a
+Venue Staff-configured expiry and Coordinator-configured warning interval, with
+no system default. The existing relay checks the per-row warning threshold and
+expiry; `reminder_sent_at` and status remain the idempotency guards. A changed
+expiry or warning interval resets the warning marker according to the hold
+contract. No new scheduler is introduced.
+
+Under C-132/T-82, the transaction that completes the last required venue,
+equipment, or technical-support arrangement creates the pending Safety Check,
+changes Planning to Safety Review, and writes the Safety Officer/Organiser
+notifications and audit entry atomically. If a block makes a Confirmed Event's
+venue unavailable (C-120/T-81), the block/booking update, Planning reversion,
+Coordinator notification and audit history commit together. Venue-block edits
+and lifts use the same outbox boundary; Organiser and Attendee notices wait for
+confirmed replacement arrangements or a formal event change.
+
+The Week 7 routing-matrix wording about Coordinator reassignment requests is
+historical. Under T-83, Lead assignment and direct reassignment are the routed
+actions; there is no new Coordinator request, Lead request queue, or incoming
+Coordinator acceptance event.
