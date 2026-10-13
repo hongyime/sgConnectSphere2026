@@ -8,7 +8,7 @@ Safely report and clean disposable Git worktrees without deleting uncommitted or
 - The cleaner removes ignored dependency symlinks/junctions themselves, with Windows junction handling through `os.rmdir`; the shell command was removed.
 - `AGENTS.md` distinguishes disposable task worktrees from intentional review and stacked-branch worktrees.
 - Targeted tests: 34 passed, with 100% line and branch coverage for `scripts/check_worktrees.py`. The full repository check passed with 121 tooling tests at `30d2e0a`.
-- T-65 session record: `docs/testing/runs/20261014-003200-bryanseah234-tooling.md`.
+- T-65 records: `docs/testing/runs/20261014-003200-bryanseah234-tooling.md` (full check and coverage) and `docs/testing/runs/20261014-003523-bryanseah234-tooling.md` (isolated CLI smoke check).
 
 ## Remaining work
 
