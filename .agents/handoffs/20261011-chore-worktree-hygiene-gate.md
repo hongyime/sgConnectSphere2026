@@ -7,11 +7,11 @@ Safely report and clean disposable Git worktrees without deleting uncommitted or
 - Committed the implementation as `30d2e0a`: the checker warns when secondary worktrees exist; `--clean` removes only clean, fully pushed branches with an upstream; `--clean --force` is explicit and documented as destructive.
 - The cleaner removes ignored dependency symlinks/junctions themselves, with Windows junction handling through `os.rmdir`; the shell command was removed.
 - `AGENTS.md` distinguishes disposable task worktrees from intentional review and stacked-branch worktrees.
-- Targeted tests: 34 passed, with 100% line and branch coverage for `scripts/check_worktrees.py`. The full repository check passed with 121 tooling tests at `30d2e0a`. The T-65 session record is being added in the follow-up commit.
+- Targeted tests: 34 passed, with 100% line and branch coverage for `scripts/check_worktrees.py`. The full repository check passed with 121 tooling tests at `30d2e0a`.
+- T-65 session record: `docs/testing/runs/20261014-003200-bryanseah234-tooling.md`.
 
 ## Remaining work
 
-- Add the T-65 run record and commit it.
 - Update PR #248 with the four required sections, `Closes SCRUM-177`, verification results, and a PostPlan artifact/comment.
 - Fetch latest `origin` before pushing. Leave the PR open until PR-head checks pass and a teammate re-reviews the fixes.
 
