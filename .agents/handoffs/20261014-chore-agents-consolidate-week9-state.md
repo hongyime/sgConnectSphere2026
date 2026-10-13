@@ -4,14 +4,15 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 ## Current state
 
-- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 remains open for teammate review. Checks passed on prior head `77f10f6`; this update will rerun them.
+- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 remains open at `002a025` for teammate review. Its required checks passed; this update will rerun them.
 - Updated `.agents/STATE.md` and `.agents/JOURNAL.md` in the owner consolidation PR. The Sprint 3 audit now records 10 incomplete parent stories and 19 incomplete subtasks; the previous state snapshot undercounted one subtask group.
 - Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. Neither is a confirmed carryover before the Sprint 3 close on 17 October.
 - Jira now reflects SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
-- PR #217's Amareet review request to remove the already-merged #240 handoff is satisfied. Its duplicate task handoff was consolidated into the original task-start file; head `a6a8b48` has all required checks passing and still needs peer approval.
-- PR descriptions #217, #230 and #248 report current heads/check status and remaining review blockers. Re-review requests were sent to Amareet for #217/#248 and Xiang Ying for #230; peer decisions remain pending.
+- PR #217's Amareet review request to remove the already-merged #240 handoff is satisfied. Its duplicate task handoff was consolidated into the original task-start file; head `a6a8b48` has all required checks passing, no formal approval, and an optional Vercel failure.
+- PR descriptions #217, #230 and #248 report current heads/check status and remaining review blockers. #230 head `2cd535b` has the case-data/workbook fixes and passing required checks, but Xiang Ying's changes request remains on older commit `cb0406a`; she still needs to review the current head. #248 head `63cfa4c` has passing checks but no formal approval. Reviewer requests remain active.
 - The production ledger was checked read-only before and after applying 0013. Before the write, 0009 and 0010 were present and 0013 was the sole pending file among 13. The existing CLI applied only 0013; the postcheck confirmed all 13 files recorded and none pending. The run record is `docs/ops/production-migration-runs/20261013-1853-0013_tentative_venue_holds.sql.md` in PR #260.
-- Jira SCRUM-138 was updated before the write and remains Done. SCRUM-182 now says the selector was not needed for this verified one-file catch-up; #258 remains a future CLI safety improvement and awaits review. The production dependency is satisfied for #245/#252, but both remain conflicting and need review.
+- Jira SCRUM-138 was updated before the write and remains Done. SCRUM-182 now says the selector was not needed for this verified one-file catch-up; #258 remains a future CLI safety improvement and awaits review. The production dependency is satisfied for #245/#252. PR #245 is synced with current main at `84ffaa2`, conflict-free and mergeable with required checks passing; fresh peer approval is needed. PR #252 is synced to #245/current main at `c884ccd`, conflict-free and mergeable but remains draft; its repository check passed, one application check is in progress, and reviewers have not been requested. Amareet's SCRUM-144 manual run remains due before Sprint Review.
+- T-73 keeps active Sprint 3 E06-S05 assumptions through 17 October. #245/#252 continue to implement T-92; T-84 configured expiry/warnings and Session-linked holds are post-sprint implementation work in the Week 9 impact register.
 
 ## Not done / next step
 
@@ -19,6 +20,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 - Resolve the product owner's exact SCRUM-141 cadence choice before changing scheduler configuration or deployment secrets.
 - Merge production run record PR #260 after teammate review; its required checks pass.
 - Reconcile Sprint 3 carryovers after the sprint closes on 17 October.
+- The owner-branch `python scripts/check.py` passed on base `002a025`; T-65 record: `docs/testing/runs/20261014-074629-bryanseah234-tooling.md`. Stage and commit this snapshot update, fetch current main, push normally to #259, then wait for fresh checks and teammate review.
 
 ## Verification
 
@@ -36,5 +38,12 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 - Corrected the #259 snapshot from old head `77f10f6` to current owner-branch head `d522d44`; its required checks passed and peer approval remains required.
 - SCRUM-50 and SCRUM-60 already have remote story branches but no code commits beyond handoffs. Main contains mock E08-S03 readiness/confirmation screens. SCRUM-50 should wait for PRs #231 and #256; SCRUM-60 crosses the venue, equipment, support and Safety Review workflows. SCRUM-180/181 still lack points and assignees, so they are not ready for skeleton branches.
-- PR #231 source branch was renamed to `feature/SCRUM-161-venue-setup-turnaround-pr231`; GitHub closed #231 rather than retargeting it. The merged latest-main commit and regenerated coverage were pushed normally, and replacement PR #261 is open at `d18acba` with checks running. PR #231's description links to #261. The owner snapshot changes in this PR still need a normal push and fresh checks.
+- PR #231 source branch was renamed to `feature/SCRUM-161-venue-setup-turnaround-pr231`; GitHub closed #231 rather than retargeting it. The merged latest-main commit and regenerated coverage were pushed normally, and replacement PR #261 is open at `d18acba` with checks running. PR #231's description links to #261.
 - `python scripts/check.py` passed on owner branch base `fe7d541` (87 tooling tests); T-65 record: `docs/testing/runs/20261014-033241-bryanseah234-tooling.md`. GitHub was reachable through a per-command resolver override; Atlassian MCP remained unreachable, so Jira was not re-queried after the 2026-10-14 live snapshot.
+
+## Hold-PR and review refresh (14 October 2026)
+
+- Latest `origin/main` was fetched and confirmed at `8f246ae`. PR #245 was synced and pushed at `84ffaa2`; all required checks pass and fresh peer approval is still needed. #252 includes that updated branch at `c884ccd` and remains draft; its repository check passed, one application check is in progress, and no reviewers have been requested. Both are conflict-free and mergeable.
+- PR #217 remains mergeable with required checks passing but no formal approval; its optional Vercel check fails. PR #230 is mergeable with required checks passing; Xiang's changes request is tied to `cb0406a`, not current head `2cd535b`, so a fresh review is needed. PR #248 is mergeable with required checks passing but no formal approval.
+- Repository hygiene/tooling checks passed for the #245 and #252 integration work; T-65 run records are in those branches. #245 current-head required checks are green; #252's current application result remains pending in GitHub Actions.
+- The hold PRs stay on Sprint 3 T-92 until the 17 October close under T-73. After close, check actual Jira state before creating T-84/Session-linked follow-up work. Amareet's SCRUM-144 manual run remains pending.
