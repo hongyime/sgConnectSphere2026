@@ -105,41 +105,45 @@ Given an event is in Safety Review When anyone other than a Safety Officer attem
 
 ## E08-S04 — Revert a confirmed event to planning
 
-- **Sprint**:
+- **Sprint**: Sprint 4
 - **Points**: 1
-- **BDR references**: C-48, T-03, T-28, C-70, T-71
+- **BDR references**: C-48, T-03, T-28, C-70, T-71, C-120, T-81, C-132, T-82
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want to return a confirmed event to planning when an arrangement breaks so that its status reflects reality.
+As an Event Coordinator, I want a confirmed event to return to Planning when an arrangement requires it so that the system reflects the event's readiness and starts safety review at the right time.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Reverted with a recorded reason
+#### Scenario 1 — Manual reversion records a reason
 
-Given an event is Confirmed When I revert it to Planning and record a reason Then the status becomes Planning and the Event Organiser is notified with the reason
+Given an event is Confirmed When I deliberately revert it to Planning and record a reason Then the status becomes Planning and the Event Organiser is notified with the reason
 
-#### Scenario 2 — Registered Attendees notified
+#### Scenario 2 — Registered Attendees notified on deliberate reversion
 
-Given registered Attendees exist When the event is reverted Then they are notified that arrangements are being revised
+Given registered Attendees exist When I deliberately revert the event Then they are notified that arrangements are being revised
 
-#### Scenario 3 — No automatic reversion
+#### Scenario 3 — Other broken arrangements remain flagged
 
-Given an arrangement breaks on a confirmed event When no one reverts it Then the status stays Confirmed and the affected arrangement is flagged
+Given a non-venue arrangement breaks on a Confirmed event When the owning workflow flags it Then the affected arrangement is flagged and the Coordinator can use the deliberate reversion workflow; venue-block loss follows Scenario 5
 
-#### Scenario 4 — Reverted event passes the safety check again
+#### Scenario 4 — Arrangements reconfirmed and safety review starts automatically
 
-Given a Confirmed event has been reverted to Planning When its arrangements are complete again and it is resubmitted (E08-S03) Then it enters Safety Review and needs a fresh approval before it is Confirmed again; the earlier safety decision stays in the activity log but is not reused (C-70, T-71)
+Given a reverted event has all required venue and technical arrangements confirmed again When the final required arrangement is confirmed Then the event enters Safety Review automatically, the Safety Officer is notified, and the previous safety decision remains in history but is not reused (C-132, T-82)
+
+#### Scenario 5 — Venue loss automatically returns event to Planning
+
+Given a block makes a Confirmed event's active venue booking unavailable When the block is saved Then the event returns to Planning/change review automatically, the assigned Coordinator is notified immediately, and the event is not cancelled (C-120, T-81)
 
 ### Checklist
 
-- Revert a confirmed event to Planning with a recorded reason
-- Confirm the Organiser is notified with the reason
-- Confirm registered Attendees are notified
-- Confirm the status never reverts automatically
-- Confirm the reversion is recorded in the activity log
-- Confirm a reverted event must pass the Operational Safety Check again before it is Confirmed again
+- Deliberately revert a Confirmed event with a recorded reason
+- Notify the Organiser and registered Attendees on deliberate reversion
+- Flag other broken arrangements and retain the deliberate reversion action
+- Automatically enter Safety Review after all required arrangements are reconfirmed
+- Automatically return a Confirmed event to Planning and notify its Coordinator on venue loss
+- Retain earlier safety decisions in history without reusing them
 
 ## E08-S05 — Complete an event
 

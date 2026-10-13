@@ -33,35 +33,39 @@ _No checklist recorded._
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-19, C-62, T-48
+- **BDR references**: C-19, C-62, C-107, T-48, T-79, T-85
 - **Owner**:
 
 ### User story
 
-As an Event Organiser, I want to define an event made up of one or more sessions so that each session's requirements can be planned separately.
+As an Event Organiser, I want to define an event made up of one or more Sessions so that each Session's requirements can be planned separately.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Sessions hold their own requirements
 
-Given I am creating an event When I add sessions Then each session stores its own date, time, expected attendance, venue requirements and equipment requirements
+Given I am creating an event When I add one or more Sessions Then each Session stores its date, time, expected attendance, venue requirements, and equipment requirements beneath the Event
 
-#### Scenario 2 — Single-session event needs no structure
+#### Scenario 2 — Single-session event needs no extra setup
 
-Given my event has a single session When I create it Then no additional structure is required and the event behaves as a single-session event
+Given my event has one Session When I create it Then the system supports it as a single-session Event without requiring extra registration or lifecycle setup
 
-#### Scenario 3 — Suitability judged per session
+#### Scenario 3 — Suitability judged per Session
 
-Given two sessions of my event have different expected attendance When a venue search is run for each Then suitability is assessed against that session's own attendance and requirements
+Given two Sessions have different attendance or requirements When venue suitability is assessed for each Then each assessment uses that Session's own requirements and attendance
 
-#### Scenario 4 — Deleted session releases its booking
+#### Scenario 4 — Session booking is independent
 
-Given a session has a confirmed venue booking When I delete that session Then the booking is released, the Venue Staff are notified, and the deletion is recorded in the activity log
+Given one Event uses the same venue for different Sessions When bookings are requested Then each booking is linked to its Session and its own time window; a booking for one Session does not replace another Session's booking
+
+#### Scenario 5 — Deleted Session releases its booking
+
+Given a Session has a confirmed venue booking When I delete that Session Then the booking is released, Venue Staff are notified, and the deletion is recorded in the activity log
 
 ### Checklist
 
-- Add one or more sessions, each with its own date, time, attendance and requirements
-- Create a single-session event without extra steps
-- Edit a session's date, time or requirements before its booking is confirmed
-- Delete a session, releasing any confirmed booking and notifying Venue Staff
-- See each session listed with its own venue booking and equipment status
+- Add one or more Sessions beneath an Event with their own date, time, attendance, venue and equipment requirements
+- Create a single-session Event without extra lifecycle steps
+- Assess venue suitability against each Session independently
+- Link bookings to the Session whose period they cover
+- Delete a Session and release its confirmed booking with notification and history
