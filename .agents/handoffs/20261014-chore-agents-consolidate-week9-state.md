@@ -31,3 +31,9 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 - PR #217 handoff cleanup repository check passed at base `5cf492a`; T-65 record: `docs/testing/runs/20261014-015537-bryanseah234-tooling.md`.
 - PR #257 was changed from draft to ready for review after confirming it is up to date with main, conflict-free, and has all six checks passing.
 - PostPlan v4 reflects the verified production migration and current blockers: https://loake29e7gzf.postplan.dev/v/4. The link is being refreshed in PR #259.
+
+## Follow-up audit
+
+- Corrected the #259 snapshot from old head `77f10f6` to current owner-branch head `d522d44`; its required checks passed and peer approval remains required.
+- SCRUM-50 and SCRUM-60 already have remote story branches but no code commits beyond handoffs. Main contains mock E08-S03 readiness/confirmation screens. SCRUM-50 should wait for PRs #231 and #256; SCRUM-60 crosses the venue, equipment, support and Safety Review workflows. SCRUM-180/181 still lack points and assignees, so they are not ready for skeleton branches.
+- Local #231 recovery: merged remote PR head `532a664` with `origin/main` `8f246ae` and regenerated `tc-coverage.md`. The resulting local commit `a0ac005` and its check record are in the separate #231 worktree but have not been pushed. A fresh fetch and both GitHub/Jira MCP reads failed because the network could not resolve GitHub / reach the Atlassian MCP endpoint; do not treat remote PR status as updated.

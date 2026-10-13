@@ -44,12 +44,20 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #
 - The production dependency for #245 and #252 is now satisfied. Both remain conflicting; #245 needs renewed review and #252 remains a draft with no current checks. Do not merge until conflicts, review and required checks are resolved.
 - PR #231 is conflicting and has changes requested; it blocks SCRUM-142. PR #231's title references SCRUM-161 while its branch references SCRUM-44; SCRUM-161 is already Done in Jira, so do not infer full story completion from that subtask flag.
 
+**Implementation scaffold sequencing (local audit, 2026-10-14):**
+
+- SCRUM-50 (Le Xin, 5 points) and SCRUM-60 (Aaron, 5 points) already have remote branches, but those branches contain handoffs only. Main has mock E08-S03 readiness and confirmation screens; those are scaffolds, not delivery evidence.
+- SCRUM-50 should build on the shared booking contract and buffered occupancy work; PR #231 (migration 0011) and #256 (E06-S03 booking foundation) are still open, so do not fork another implementation path before they land.
+- SCRUM-60's readiness gate spans venue bookings, equipment reservations, support assignments, and Safety Review. Keep its existing mock screens as the starting point while the dependent backend workflows are completed.
+- SCRUM-180 and SCRUM-181 remain outside Sprint 3 and have no points or assignees; do not create implementation branches until planning assigns them.
+- A local #231 integration commit `a0ac005` merges PR head `532a664` with current `origin/main` `8f246ae` and regenerates `tc-coverage.md`. It is not pushed because GitHub DNS resolution failed; the remote PR remains at its prior head until a successful fetch/push.
+
 ## Open PR snapshot (checked 2026-10-14)
 
 All PRs below target main. “Required checks” means `repository-checks`, `pr-conventions`, `lfs-guard`, and `application-checks`.
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
-- #259 owner STATE/JOURNAL consolidation: open and mergeable on prior head `77f10f6`; required checks passed and teammate approval is still required. This update will rerun checks.
+- #259 owner STATE/JOURNAL consolidation: open and mergeable on head `d522d44`; required checks passed and teammate approval is still required. This refresh updates the Sprint 3 scaffold and local #231 integration notes; checks must be rerun on the new head.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: mergeable and ready for review; all required checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
@@ -87,4 +95,5 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 2. Record the product owner's exact SCRUM-141 cadence choice before changing schedule configuration or any deployment secret.
 3. Merge the run-record PR #260 and owner state/journal PR #259 after teammate review. Do not self-approve.
 4. Resolve the conflicts and requested review changes on #231/#245/#252 before extending dependent work; #245/#252 no longer wait on production 0013, and SCRUM-142 remains blocked by SCRUM-44.
-5. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
+5. Push the local #231 integration after GitHub DNS returns; rename its source branch to a SCRUM-161 name and obtain fresh human review before merging.
+6. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
