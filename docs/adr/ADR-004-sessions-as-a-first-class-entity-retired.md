@@ -2,6 +2,7 @@
 
 - **Status:** RETIRED — superseded in version 3 by C-62 and T-48
 - **Related BDR:** C-19, C-62, T-19, T-21, T-48
+- **Current design:** Session entities are restored for Release 1 by ADR-018; this retired record remains the history of the earlier decision.
 
 ### Context
 
@@ -27,3 +28,11 @@ An event comprises one or more sessions. Venue bookings, equipment requests and 
 - Single-session events carry one row of overhead.
 
 RETIRED in version 3. Bryan (G1), Week 4 (BDR C-62): a multi-session event must be set up as separate events, and the Organiser creates one event per session. The SESSIONS table, its composite keys and every per-session column are removed, and 29 release stories reverted to event level. Multi-session was never among the twenty core features, so the release is now better aligned with them. The reasoning above is retained because the decision was correct on the evidence available when it was taken — C-19 said per-session requirements existed and that splitting rules were undiscussed. It was superseded, not wrong.
+
+### Restored for Week 9 (13 October 2026)
+
+Week 9 C-107 supplies later customer evidence for Session-specific venue periods
+and equipment. Team decision T-79 restores Sessions as first-class Event
+children for Release 1. ADR-018 records the current decision and its migration
+consequences. This does not amend or erase the earlier C-62 answer or the reason
+this ADR was retired in version 3.

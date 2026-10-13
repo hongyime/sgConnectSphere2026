@@ -1,36 +1,37 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 315 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 351 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **315**
-- Automated (explicit TC_ID in an active test title): **159** (50.5%)
-  - Real-database (`.integration.test` / `.db.test`): **24**
+- Total test cases: **351**
+- Automated (explicit TC_ID in an active test title): **160** (45.6%)
+  - Real-database (`.integration.test` / `.db.test`): **25**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **134**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **102** (32.4%)
-- No test yet (no test file mentions the TC_ID): **54** (17.1%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **102** (29.1%)
+- No test yet (no test file mentions the TC_ID): **89** (25.4%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 25 | 11 | 2 |
-| E02 | 13 | 12 | 1 | 0 |
+| E02 | 21 | 12 | 1 | 8 |
 | E03 | 52 | 39 | 3 | 10 |
+| E04 | 5 | 0 | 0 | 5 |
 | E05 | 37 | 27 | 0 | 10 |
-| E06 | 37 | 7 | 18 | 12 |
-| E07 | 30 | 27 | 3 | 0 |
-| E08 | 26 | 0 | 15 | 11 |
-| E09 | 36 | 5 | 30 | 1 |
-| E10 | 20 | 0 | 15 | 5 |
+| E06 | 38 | 8 | 18 | 12 |
+| E07 | 34 | 27 | 3 | 4 |
+| E08 | 27 | 0 | 15 | 12 |
+| E09 | 44 | 5 | 30 | 9 |
+| E10 | 29 | 0 | 15 | 14 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **315** | **159** | **102** | **54** |
+| **Total** | **351** | **160** | **102** | **89** |
 
 ## Case-by-case status
 
@@ -96,6 +97,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S03_01` | E02-S03 | Verify that selecting predefined accessibility requirements should store them wi | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator |
 | `TC_E02S03_02` | E02-S03 | Verify that a free-text accessibility requirement should be stored and shown to  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching |
 | `TC_E02S03_03` | E02-S03 | Verify that recorded predefined accessibility requirements should exclude or fla | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them |
+| `TC_E02S05_01` | E02-S05 | Copying my completed event should create a draft with its Sessions and requireme | ❌ none | — |
+| `TC_E02S05_02` | E02-S05 | Missing venue or equipment references should be flagged against the copied Sessi | ❌ none | — |
+| `TC_E02S05_03` | E02-S05 | Submitting a copied draft should apply the current date-horizon rules | ❌ none | — |
+| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ❌ none | — |
+| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ❌ none | — |
+| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ❌ none | — |
+| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ❌ none | — |
+| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ❌ none | — |
 
 ### E03
 
@@ -154,6 +163,16 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ❌ none | — |
 | `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ❌ none | — |
 
+### E04
+
+| TC_ID | Story | Scenario | Status | Where |
+| --- | --- | --- | --- | --- |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ❌ none | — |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ❌ none | — |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
+
 ### E05
 
 | TC_ID | Story | Scenario | Status | Where |
@@ -208,6 +227,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_04 - Verify that submitting a booking request for a venue marked unsuitable should still be accepted, with the unsuitability shown to Venue Staff |
+| `TC_E06S02_05` | E06-S02 | Verify operating hours are an advisory suitability criterion only in E06-S02 | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_01 - Verify that submitting a booking request for a event with no existing pending request should create it as Pending and notify Venue Staff |
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_02 - Verify that submitting the first booking request for an Approved event should move its status to Planning |
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
@@ -272,6 +292,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S07_04` | E07-S07 | Verify that removing an existing assignment from a staff member's schedule shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; backend |
 | `TC_E07S07_05` | E07-S07 | Verify that assigning a replacement colleague after removing an assignment shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; tests/a |
 | `TC_E07S07_06` | E07-S07 | Verify that the assigned staff member should receive a notification when they ar | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL; tests/a |
+| `TC_E07S08_01` | E07-S08 | An equipment request should be linked to a Session of its owning Event | ❌ none | — |
+| `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ❌ none | — |
+| `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ❌ none | — |
+| `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ❌ none | — |
 
 ### E08
 
@@ -288,9 +312,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ❌ none | — |
 | `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_01 - Verify that reverting a Confirmed event to Planning with a recorded reason should update its status and notify the Organiser with the reason |
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_02 - Verify that reverting a Confirmed event with registered Attendees should notify them that arrangements are being revised |
-| `TC_E08S04_03` | E08-S04 | Verify that an arrangement breaking on a Confirmed event should not automaticall | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead b |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead b |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log |
-| `TC_E08S04_05` | E08-S04 | Verify that a reverted event should pass the Operational Safety Check again befo | ❌ none | — |
+| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ❌ none | — |
+| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_01 - Verify that a Confirmed event should automatically become Completed once its last event |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_02 - Verify that an Event Coordinator should be able to manually mark a Confirmed event complete once its last event has started |
 | `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_03 - Verify that attempting to mark an event complete before its first event has started should be blocked |
@@ -308,18 +333,24 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E09S01_01` | E09-S01 | Verify that submitting the required registration information for an open event w | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity; tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the requi |
-| `TC_E09S01_02` | E09-S01 | Verify that registering for a multi-event event should let the Attendee choose w | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
-| `TC_E09S01_03` | E09-S01 | Verify that attempting to register again for a event already registered for shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
+| `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity; tests/e2e/e09.spec.ts: TC_E09S01_01 - Verify that submitting the requi |
+| `TC_E09S01_02` | E09-S01 | [RETIRED — T-79 restores Sessions under one Event; selecting Sessions is covered | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
+| `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
 | `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields |
 | `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused |
-| `TC_E09S01_06` | E09-S01 | Verify that an Attendee viewing a multi-venue event should see only the primary  | ❌ none | — |
-| `TC_E09S02_01` | E09-S02 | Verify that an Event Organiser should be able to set a registration limit for a  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit; tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser sh |
-| `TC_E09S02_02` | E09-S02 | Verify that registration should stop once the event reaches the lower of the Org | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join; tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should s |
-| `TC_E09S02_03` | E09-S02 | Verify that when only one place remains, two simultaneous registration attempts  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
-| `TC_E09S02_04` | E09-S02 | Verify that opening the registration page for a full event should close registra | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
-| `TC_E09S02_06` | E09-S02 | Verify that a VIP can be added manually when normal registration is full but ven | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
-| `TC_E09S02_07` | E09-S02 | Verify that a manual VIP addition is blocked once total registrations equal venu | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_07 - Verify that a manual VIP addition is blocked once total registrations equal venue capacity |
+| `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ❌ none | — |
+| `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ❌ none | — |
+| `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit; tests/e2e/e09.spec.ts: TC_E09S02_01 - Verify that an Event Organiser sh |
+| `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join; tests/e2e/e09.spec.ts: TC_E09S02_02 - Verify that registration should s |
+| `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
+| `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
+| `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
+| `TC_E09S02_07` | E09-S02 | A manual addition should be blocked when either capacity is full | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_07 - Verify that a manual VIP addition is blocked once total registrations equal venue capacity |
+| `TC_E09S02_08` | E09-S02 | A registration should be confirmed up to the approved capacity of every selected | ❌ none | — |
+| `TC_E09S02_09` | E09-S02 | A registration exceeding a selected Session capacity should remain Pending | ❌ none | — |
+| `TC_E09S02_10` | E09-S02 | A registration exceeding combined Event capacity should remain Pending | ❌ none | — |
+| `TC_E09S02_11` | E09-S02 | An Organiser should approve a Pending request only if both capacity limits still | ❌ none | — |
+| `TC_E09S02_12` | E09-S02 | Combined Event capacity should reflect confirmed Session layout capacities | ❌ none | — |
 | `TC_E09S03_01` | E09-S03 | Verify that an Event Organiser should be able to set the registration opening an | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_01 - Verify that an Event Organiser should be able to set the registration opening and closing dates for an event |
 | `TC_E09S03_02` | E09-S03 | Verify that an Event Organiser should be able to set a withdrawal deadline for a | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event |
 | `TC_E09S03_03` | E09-S03 | Verify that an Attendee viewing an event before its registration opening date sh | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date s |
@@ -328,14 +359,16 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S03_06` | E09-S03 | Verify that enabling the waiting list for an event should offer it to Attendees  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full |
 | `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
 | `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
-| `TC_E09S04_01` | E09-S04 | Verify that joining the waiting list for a full event with the list enabled shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_01 - Verify that joining the waiting list for a full event with the list enabled should add the Attendee and confirm their position |
+| `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ❌ none | — |
+| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_01 - Verify that joining the waiting list for a full event with the list enabled should add the Attendee and confirm their position |
 | `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_02 - Verify that when a place is released in a event with a waiting list, all waitlisted Attendees should be notified and the place claimed on a fi |
 | `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
-| `TC_E09S05_01` | E09-S05 | Verify that withdrawing from a single event before the withdrawal deadline shoul | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S05_01 — withdrawal requires a reason before recording; tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single e |
+| `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S05_01 — withdrawal requires a reason before recording; tests/e2e/e09.spec.ts: TC_E09S05_01 - Verify that withdrawing from a single e |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
+| `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ❌ none | — |
 | `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S06_01 — feedback requires a rating; tests/e2e/e09.spec.ts: TC_E09S06_01 - Verify that marking a registered Attendee as attended for  |
 | `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed |
 | `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked |
@@ -354,17 +387,26 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled wit |
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_04 - Verify that when the Coordinator approves a change request, the event should be updated and the Organiser notified |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_05 - Verify that when the Coordinator declines a change request, the Organiser should be notified |
-| `TC_E10S02_01` | E10-S02 | Verify that increasing a event's expected attendance beyond its confirmed venue' | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_01 - Verify that increasing a event |
+| `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ❌ none | — |
+| `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ❌ none | — |
+| `TC_E10S02_01` | E10-S02 | An attendance change should flag only bookings whose governing Session headcount | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_01 - Verify that increasing a event |
 | `TC_E10S02_02` | E10-S02 | Verify that editing only the event description on an event with confirmed venue  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing |
 | `TC_E10S02_03` | E10-S02 | Verify that saving a change that affects confirmed arrangements should show whic | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect |
 | `TC_E10S02_04` | E10-S02 | Verify that a venue change that reduces a event's capacity below its registratio | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_04 - Verify that a venue change that reduces a event |
-| `TC_E10S02_05` | E10-S02 | Verify that changing a event's date or time should flag its venue booking and eq | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_05 - Verify that changing a event |
+| `TC_E10S02_05` | E10-S02 | Changing a Session date should flag its booking and equipment reservation for re | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_05 - Verify that changing a event |
 | `TC_E10S02_06` | E10-S02 | Verify that when a date or time change flags arrangements for reconfirmation, th | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_06 - Verify that when a date or time change flags arrangements for reconfirmation, the assigned Technical Support Staff should also be notified, no |
-| `TC_E10S02_07` | E10-S02 | Verify that increasing expected attendance on a multi-venue event should flag on | ❌ none | — |
-| `TC_E10S04_01` | E10-S04 | Verify that cancelling an event and recording a reason should release its venue  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_01 - Verify that cancelling an event and recording a reason should release its venue bookings and equipment reservations, update the venue calendar |
+| `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ❌ none | — |
+| `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ❌ none | — |
+| `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ❌ none | — |
+| `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
+| `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
+| `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
+| `TC_E10S03_04` | E10-S03 | Pending change requests should become Obsolete when a rescheduled Event later be | ❌ none | — |
+| `TC_E10S04_01` | E10-S04 | Cancelling an Event should release all Session bookings and equipment reservatio | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_01 - Verify that cancelling an event and recording a reason should release its venue bookings and equipment reservations, update the venue calendar |
 | `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_03 - Verify that cancelling a event should notify all of its registered and waitlisted Attendees |
 | `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_04 - Verify that a cancelled event should be read-only and show its cancellation reason and date to any viewer |
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_05 - Verify that an Event Organiser attempting to cancel directly should have the action recorded as a cancellation request for the Coordinator to  |
+| `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ❌ none | — |
 | `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ❌ none | — |
 | `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ❌ none | — |
 | `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ❌ none | — |
