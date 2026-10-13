@@ -1,5 +1,9 @@
 # Agent Journal
 
+- 2026-10-14: Accepted Week 9 answers C-71 to C-136 and team decisions T-79 to T-91 are now in canonical BDR Markdown. Preserve the recorded C-111/C-119 conflict and the selected C-119 behavior in downstream work.
+- 2026-10-14: Release 1 labels and live Jira Sprint 3 membership can disagree. Follow T-73 conservatively and reconcile assignments after the sprint closes rather than changing active commitments mid-sprint.
+- 2026-10-14: The accepted Session model and multi-role accounts are recorded in ADR-018/019 and the target schema. Keep C-134's decision/comments requirement distinct from the team-added safety checklist; event attendance and Session attendance serve different purposes.
+
 - 2026-10-03: E05 test cases name data not in the seed; use seeded
   equivalents and list them in the record's Remarks.
 
