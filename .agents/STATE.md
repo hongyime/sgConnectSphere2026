@@ -48,9 +48,9 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #
 
 All PRs below target main. “Required checks” means `repository-checks`, `pr-conventions`, `lfs-guard`, and `application-checks`.
 
-- #259 owner STATE/JOURNAL consolidation: open and mergeable; all required checks passed on prior head `f1556dd`. This status refresh will rerun checks; teammate approval is still required.
+- #259 owner STATE/JOURNAL consolidation: open and mergeable; all required checks passed on prior head `9892a9e`. This status refresh will rerun checks; teammate approval is still required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
-- #257 Week 9 Jira reconciliation: mergeable draft; review required; required checks pass.
+- #257 Week 9 Jira reconciliation: mergeable and ready for review; all required checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
 - #252 hold screens: conflicting draft; review required; no current checks reported; production 0013 verification is also required.
 - #251 Dependabot Actions updates: mergeable; approved; required checks pass. #250 tooling updates: mergeable; approved; required checks pass.
@@ -82,7 +82,7 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 
 ## Next actions
 
-1. Obtain teammate approval to merge #217 and #248; their required checks currently pass. Get Xiang Ying's re-review on #230 after the corrected cases; its change request remains open. Do not self-approve.
+1. Re-review requests are active for #217 (Xiang Ying and Amareet), #230 (Xiang Ying), and #248 (Amareet). Required checks pass; peer decisions remain pending. Do not self-approve.
 2. Record the product owner's exact SCRUM-141 cadence choice before changing schedule configuration or any deployment secret.
 3. On the production-connected environment, perform the read-only ledger precheck, select one dependency-ready migration at a time, then use the runbook's pre/post checks and a separate run record for each application. No production action is recorded as complete here.
 4. Resolve the conflicts and requested review changes on #231/#245/#252 before extending dependent work; SCRUM-142 remains blocked by SCRUM-44.
