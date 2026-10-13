@@ -58,7 +58,7 @@ Next: commit and push this fix to PR #245. Do not merge the PR.
 - `api/cron/outbox-relay.ts?task=holds` runs `expireHolds`.
 - `calendar.ts`, `search.ts`, `blocks.ts` (Scenario 3 notices), `catalogue.ts`
   (retire refusal) use `holdsVenue()`, so a hold counts until `expires_at`.
-- Docs: T-79 (Bryan's 7 October answers; renumbered from T-78, which Jining's #243 uses), O-31, O-33 and O-34 closed (O-32 is #243's), story Scenarios
+- Docs: T-92 (Bryan's 7 October answers; renumbered from T-78, which Jining's #243 uses), O-31, O-33 and O-34 closed (O-32 is #243's), story Scenarios
   7 and 8, TC_E06S05_06/_07, `api-changes-week7.md` Change 4, E11 matrix row,
   `db_schema.md`; exports regenerated (CAA 091026) and `source-of-truth.md`.
 - Tests: `backend/tests/venueHolds.test.ts` (unit, 100% of both new files),
