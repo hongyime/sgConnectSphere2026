@@ -12,13 +12,35 @@ frame. It is usable for file-level proposal work, but future exact
 screen-by-screen inspection should use frame-specific links or exported
 screenshots/SVGs.
 
+## Week 9 refinement scope (13 October 2026)
+
+The accepted backlog/architecture update requires these screen changes before
+the affected stories are implemented. This plan is the current UI/UX handoff;
+the existing Figma boards remain proposal material until the screens below are
+reviewed and exported. Preserve the shared design language in `design.md` and
+ADR-017.
+
+| Workflow | Screens/states to add or revise | Required behavior |
+|---|---|---|
+| Event request and reuse (E02-S05/S07, E04-S02) | Create/edit request, Session editor, copy-from-past-request dialog, date validation | Keep the Event's expected attendance as the overall planning total and capture attendance separately for each Session; only Session attendance is the suitability fallback. Organiser enters one or more Sessions with their own period and requirements; copied Session structure has blank dates/times and no transactional data under O-51. No fixed minimum lead time; show the two-year maximum as a team policy. |
+| Coordinator planning (E06/E07/E08) | Event detail grouped by Session; venue/equipment planning per Session; event-level support | Keep lifecycle and registration windows at Event level. Show separate booking and equipment state for each Session, then transition automatically to Safety Review when all required arrangements confirm. |
+| Venue operations (E05/E06) | Open-ended block editor, edit history, lift confirmation, hold configuration/extension | Allow no end date; show history and actor; lifting notifies affected Coordinator. Show per-hold expiry and warning values without defaults; require a reason and show remaining extensions (maximum two). Do not show buffer shading around maintenance blocks. |
+| Safety review (E08-S03/S06) | Safety Officer queue, event/session arrangement summary, factor checklist, decision/comments | Queue appears automatically after arrangements confirm. Record overall decision and comments plus the team's in-system checklist. The Coordinator has no submit-for-review control. |
+| Attendee registration (E09-S01/S02/S03/S05) | Public Event detail, Session selection, capacity summary, Pending state, Organiser review | One registration selects one or more Sessions. Explain Session and combined Event capacity; show Pending for Organiser review when a limit is exceeded. Keep Event-level waitlist behavior. Do not add a per-Session waitlist while O-50 is open. |
+| Lead assignment (E03-S08/S09/S10) | Unassigned queue, direct reassignment confirmation, oversight list | Lead-only queue. Lead assignment/reassignment takes effect directly; remove Coordinator reassignment-request and incoming-acceptance screens. |
+| Multi-role account (E01 access) | Role-aware shell and route/navigation states | One account may have multiple role grants. Seed data still has one; no dedicated role-switching screen is assumed. Show only routes/actions granted to the account and preserve server-side authorization. |
+
+O-50 (per-Session waitlist) and O-51 (exact copied data) are team assumptions,
+not customer statements. Keep both visible in the relevant states and copy; do
+not present either as settled customer behavior.
+
 ## What exists in Figma now
 
 The file has one page, `Page 1`, with a large imported wireframe section:
 
 - Section: `ConnectSphere Wireframes.dc.html.html by html.to.design FREE version`
 - Main frame: `Frame`, approximately `1920 x 11371`
-- First visible workflow: `Access & role-based shell - Login -> role switch -> dashboard`
+- First visible workflow: `Access & role-based shell - Login -> role switch -> dashboard`. The switcher is an existing proposal, not a settled Release 1 requirement; T-86 permits multiple role memberships, while seed data remains one-role and E01-S09 stays future UI scope.
 - First visible screen: `Login - default state`
 
 The canvas also contains design inspiration notes:
@@ -189,7 +211,7 @@ workflow depth without mixing responsibilities:
 | Venue Staff | Venue request queue, venue availability/detail review, approve/reject with alternative venue | Booking request detail, availability response | Tentative holds, venue conflict suggestions |
 | Technical Support Staff | Equipment request queue, equipment reservation detail, partial reservation and staff assignment states | Equipment assignment summary, conflict response | Substitution suggestions, technician workload view |
 | Attendee | Event discovery, event detail, registration, waitlist, withdrawal | Event detail, register/waitlist, ticket/status, withdrawal | Personalized recommendations, post-event feedback |
-| Shared Access and Notifications | Login/account shell, permission denied, notification center, audit/history drawer | Login, notifications, role-aware home | Role switching, digest preferences |
+| Shared Access and Notifications | Login/account shell, permission denied, notification center, audit/history drawer | Login, notifications, role-aware home | Role switching under E01-S09, digest preferences |
 
 Depth-first means each role should get a complete mini-flow, not a single pretty
 dashboard. For each role, show:
