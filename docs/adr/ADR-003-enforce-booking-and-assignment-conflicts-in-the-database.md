@@ -38,3 +38,15 @@ The decision stands; the range the constraint guards changes shape (C-65, T-66).
 Because the venue's buffer values are copied into the booking row at write time, changing a venue's buffers later does not move existing `occupancy_range` values and so never trips the constraint retroactively; the application detects the newly overlapping pairs on save and marks them Conflicting (E05-S05 Scenario 4). That is the deliberate split: the constraint guarantees no two live bookings are *written* overlapping, the application reports overlaps that *arise* from a configuration change.
 
 Several bookings per event (C-67, T-68) need no change here: the constraint keys on `venue_id`, never on `event_id`, so two venues for one event over the same period are two non-conflicting rows (E06-S06 Scenario 5, TC_E06S06_07).
+
+### Amended 13 October 2026 for Week 9
+
+T-79 restores Session ownership. Each booking period is contained by its linked
+Session, and suitability falls back to that Session's expected attendance when
+the booking has no headcount. The exclusion constraint remains keyed on Venue
+and buffered occupancy, so two different Sessions cannot reserve the same Venue
+at overlapping occupancy times. A booking's `(session_id, event_id)` pair is
+validated by a composite foreign key. Maintenance blocks may have an open end;
+their raw range is checked against event use/hold intervals without applying
+setup or turnaround buffers (T-80). These rules add no new constraint strategy:
+the database still arbitrates concurrent active venue occupancy.

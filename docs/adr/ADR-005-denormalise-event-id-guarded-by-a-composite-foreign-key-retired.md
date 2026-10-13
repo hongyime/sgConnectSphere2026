@@ -2,6 +2,7 @@
 
 - **Status:** RETIRED — superseded in version 3 by C-62 and T-48
 - **Related BDR:** T-21, C-62, T-48
+- **Current design:** The Session ownership constraint is restored for Release 1 by ADR-018; this retired record remains historical context.
 
 ### Context
 
@@ -27,3 +28,11 @@ Session-scoped tables carry both session_id and event_id. SESSIONS gains UNIQUE 
 - Developers must populate both columns.
 
 RETIRED in version 3, as a direct consequence of ADR-004 being retired. With no SESSIONS table there is nothing to denormalise: bookings, reservations, technical support requests and registrations attach to the event directly, and the UNIQUE (id, event_id) constraint on SESSIONS disappears with it. The composite-foreign-key technique remains a good answer to “why did you denormalise?” should the team denormalise anything else.
+
+### Restored for Week 9 (13 October 2026)
+
+ADR-018 restores Session ownership. Venue bookings and equipment requests and
+reservations carry both `session_id` and `event_id`, guarded by a composite
+foreign key to `SESSIONS (id, event_id)`. Technical-support and registration
+records remain Event-level. The restored implementation uses the integrity
+technique described here; the original retirement remains historical.

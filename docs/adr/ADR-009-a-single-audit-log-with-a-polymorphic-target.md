@@ -36,3 +36,20 @@ not the shared append-only storage or the immutability requirement.
 ### Amended 3 October 2026 for the Week 7 Customer Changes
 
 The Operational Safety Check (C-70, T-71, E08-S06) adds decisions that must be auditable with their reasoning: `safety_check_submitted`, `safety_check_approved`, `safety_check_changes_requested` and `safety_check_rejected`. They are ordinary `AUDIT_LOGS` rows with `entity_type = 'event'`; the seven-factor checklist is not forced into the mixed `field_changed` / `old_value` / `new_value` columns but lives in a new `SAFETY_CHECKS` table that the audit row references by `entity_id` of the decision, keeping this table narrow and the checklist queryable. The same pattern covers the other Week 7 additions without new columns: `hold_expired`, `hold_extended`, `venue_unavailability_recorded`, `booking_marked_conflicting`, `lead_assigned`, `lead_reassigned`. Decision 0011-era immutability (migration 0010) applies to all of them unchanged.
+
+### Amended 13 October 2026 for Week 9
+
+T-82 requires both the Safety Officer's overall decision/comments and a
+checklist record for each safety factor. The checklist remains queryable in
+`SAFETY_CHECKS`/`SAFETY_CHECK_FACTORS`; C-134 itself requires the decision and
+comments, while the checklist is the team's workflow aid. Automatic entry into
+Safety Review is recorded as a system audit action. T-88's automatic Obsolete
+transition for pending change requests is also an immutable audit event.
+
+T-91 requires Venue Staff block edits and lifts to retain prior and current
+range/reason plus actor/time. The target schema therefore adds append-only
+`VENUE_BLOCK_HISTORY` snapshots; the audit log records the business action and
+ties it to the Event where one is affected. Hold configuration and each of the
+at most two reasoned extensions are audited without overwriting extension
+history. These records augment the existing immutable audit log rather than
+placing mixed checklist or history payloads in `old_value`/`new_value` alone.

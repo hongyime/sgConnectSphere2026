@@ -1,20 +1,27 @@
-# PR #230 seeded account names review fixes
+# Handoff — docs/seeded-account-names
 
-Address PR #230 / E01-S12 (SCRUM-156) by matching the cross-coordinator refusal case to the seeded EVT-2003 fixture, regenerating the acceptance-test workbook, and completing the required PR description sections.
+Goal: Finish PR #230 by syncing its seeded-account test documentation with current `origin/main`, correcting the review findings, regenerating the dated test-case workbook, and refreshing the PR evidence.
 
-## Done so far
+## Current state
 
-- Confirmed EVT-2003 is assigned to coordB and has status under_review in backend/src/database/cli.ts.
-- Updated TC_E01S12_02 to identify EVT-2003 and its seeded Under Review status while coord_a is signed in.
-- Regenerated the dated acceptance-test workbook from canonical Markdown; updated the source-of-truth index.
+- Fetched `origin` before starting this branch task and merged the current `origin/main` into `docs/seeded-account-names`.
+- Resolved the Week 9 overlap in `docs/testing/cases/E10.md` from the latest main version, then reapplied the seeded account names (`coord_a`, `venue_a`, `tech_a`).
+- Updated `TC_E01S12_03` to use the future seeded Jasmine Hall booking for EVT-3001 and expect `Unavailable` without event details.
+- Replaced reused seeded event titles in the new-request scenarios with `Team Offsite 2`, including the dependent Lead-queue case.
+- Replaced remaining placeholder account names with seeded accounts (`coord_a`, `venue_a`/`venue_b`, `tech_a`/`tech_b`, `organiser_a`, and attendees A/B). The third technician required by one conflict scenario is now explicitly documented as a test-only `tech_c` fixture.
+- Corrected the owner and status data for the E05 overlapping bookings, E11 notification recipient, and E14 status-change actor to match the seed, and marked non-seed E03 status variants as explicit test fixtures.
+- Consolidated this task's two handoffs into this original task file. The duplicate handoff was removed; no merged handoff was edited.
+- Regenerated `docs/testing/PROJECT TEST CASES CAA 141026.xlsx` (351 cases across 13 epic files) and updated the acceptance-test row in `docs/source-of-truth.md`.
+- `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` passed before commit: repository hygiene, 87 tooling tests, and 194 test-run records validated. A post-commit run with its T-65 record is still needed for PR evidence.
+- The PR body and refreshed PostPlan still need current verification evidence.
 
-## Verification
+## Next
 
-- scripts/export_testcases_xlsx.py --date 081026: generated 314 cases across 12 epic files.
-- scripts/check.py: passed hygiene checks and all 87 repository tooling tests.
-- git diff --check: clean.
+- Review the complete PR diff and workbook output, create the merge-resolution commit, then run and record the post-commit repository check for PR evidence.
+- Upload a refreshed PostPlan and update the PR description; leave the PR open for CI and reviewer approval.
 
-## Next steps
+## Decisions
 
-- Commit and push the focused documentation and generated workbook changes.
-- Update PR #230's body with all four required headings and observed verification.
+- `TC_E01S12_03` uses the seeded `EVT-3001` booking at Jasmine Hall on 15/10/2026: it is a future booking on this task date and belongs to coord_a, so coord_b should see only `Unavailable`.
+- New request scenarios use a distinct draft title rather than reusing an already-seeded event title.
+- No application tests are needed for this documentation and workbook change.
