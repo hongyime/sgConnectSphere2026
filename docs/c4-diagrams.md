@@ -19,8 +19,8 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 | **Event Coordinator** | Internal User | Internal staff member who owns planning for an event and acts as the main point of contact. |
 | **Venue Staff** | Internal User | Internal staff responsible for the venue catalogue, availability and booking decisions. |
 | **Technical Support Staff** | Internal User | Internal staff responsible for equipment availability, reservations and support-staff assignment. |
-| **Event Coordinator Lead** | Internal User | Internal staff member who works the unassigned queue, assigns and reassigns Event Coordinators, and oversees every assignment and active event. Added by the Week 7 Customer Changes (C-69, T-72). |
-| **Safety Officer** | Internal User | Internal staff member who conducts the Operational Safety Check between completed arrangements and confirmation, approving, rejecting or requesting changes. Added by the Week 7 Customer Changes (C-70, T-72). |
+| **Event Coordinator Lead** | Internal User | Internal staff member who works the unassigned queue, assigns and reassigns Event Coordinators, and oversees every assignment and active event. Coordinators do not submit in-system reassignment requests (T-83). |
+| **Safety Officer** | Internal User | Internal staff member who reviews an Event after arrangements are confirmed; the system starts Safety Review automatically and records the decision/comments plus the team's factor checklist (C-132, C-134, T-82). |
 
 ---
 
@@ -35,6 +35,8 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 ## Level 1 — System Context
 
 ConnectSphere sits between the seven user roles and the external Email Provider.
+An account may hold more than one role; the roles below describe access grants,
+not mutually exclusive account types. Seed data still assigns one role per account (T-86).
 
 - Each of the seven actors interacts with ConnectSphere exclusively through the **Web Application**:
   - **Event Organiser** — creates, submits and tracks event requests, and raises change requests.
@@ -56,7 +58,7 @@ ConnectSphere sits between the seven user roles and the external Email Provider.
 | **Application Server** | Python (framework TBC) | Modular monolith exposing a REST API: authentication/authorisation, event lifecycle, venue booking, equipment, registration and change management. |
 | **Database** | PostgreSQL 16 with `btree_gist` | Stores events, venues, bookings, equipment, reservations, registrations, notification outbox and audit log. |
 | **Job Queue** | Redis | Holds notification jobs, published only after the originating transaction has committed. |
-| **Scheduler and Outbox Relay** | Background process | Polls committed notification deliveries and publishes them; also runs periodic domain evaluations: auto-completing an event once its end time has passed and, from Week 7, expiring tentative holds and sending expiry reminders (ADR-006 amendment, T-69). |
+| **Scheduler and Outbox Relay** | Background process | Polls committed notification deliveries and publishes them; also runs periodic domain evaluations: auto-completing an event once its end time has passed and processing each hold's explicitly configured expiry and warning interval (T-84). |
 | **Notification Worker** | Background process | Consumes queued jobs, calls the Email Provider, and records the delivery outcome. |
 
 ### Container relationships
@@ -84,12 +86,12 @@ ConnectSphere sits between the seven user roles and the external Email Provider.
 | Component | Type | Responsibility |
 |---|---|---|
 | **API Router** | REST controllers | Routes requests and validates payloads. |
-| **Access Control** | Application service | Authentication, lockout, password reset, role and client-organisation scoping. |
-| **Event Lifecycle** | Application service | Request, review, clarification, approval, status transitions, the unassigned queue and Lead assignment (E03-S08 to E03-S10), submission for and recording of the Operational Safety Check (E08-S03, E08-S06), confirmation, reversion and completion. |
-| **Venue Management** | Application service | Catalogue including per-venue setup and turnaround buffers, layouts, availability on the buffered occupancy window, unavailability with reason categories over existing bookings, search, suitability per booking headcount, several bookings per event, tentative holds with expiry, and booking decisions. |
-| **Equipment and Support** | Application service | Catalogue, availability, requests, reservations and technical staff assignment. |
-| **Registration** | Application service | Registration window, venue-capacity enforcement, manual VIP addition, waiting list, withdrawal and attendance. |
-| **Change Management** | Application service | Change requests, arrangement impact detection and cancellation. |
+| **Access Control** | Application service | Authentication, lockout, password reset, many-to-many role grants and client-organisation scoping; checks a caller's grants on every request (ADR-019). |
+| **Event Lifecycle** | Application service | Request, review, clarification, approval, Session structure, status transitions, the unassigned queue and Lead-only assignment/reassignment, automatic Safety Review after readiness, reversion and completion; closes pending change requests as Obsolete on terminal status. |
+| **Venue Management** | Application service | Session-linked bookings, per-venue setup/turnaround buffers, layouts, open-ended editable blocks with retained history, Session-level suitability, configured hold expiry/warning and reasoned extensions, booking decisions and routing from setup assignments. |
+| **Equipment and Support** | Application service | Session-linked equipment requests/reservations and availability; Event-level technical-support requests and staff assignment. |
+| **Registration** | Application service | Event-level registration window, attendee-selected Sessions, one active registration per account/Event, per-Session and combined Event capacity, Pending Organiser review, Event-level waitlist, withdrawal and attendance. |
+| **Change Management** | Application service | Change requests, arrangement impact detection, Obsolete closure on Completed/Cancelled, and cancellation. |
 | **Notification Dispatcher** | Application service | Resolves recipients and writes notification delivery rows inside the business transaction. |
 | **Audit Logger** | Application service | Append-only record of status changes, access denials, booking decisions and deactivations. |
 | **Data Access Layer** | ORM and repositories | Repositories, transactions, `tstzrange` columns and `EXCLUDE` constraint enforcement. |
@@ -107,6 +109,7 @@ ConnectSphere sits between the seven user roles and the external Email Provider.
 - Event Lifecycle → Equipment and Support — requests equipment reservation from
 - Registration → Event Lifecycle — blocks until the event is Confirmed
 - Registration → Venue Management — reads booked venue capacity from
+- Registration → Event Lifecycle — reads selected Session periods and Event status from
 - Change Management → Venue Management — flags affected bookings in
 - Change Management → Equipment and Support — flags affected reservations in
 - Change Management → Event Lifecycle — applies approved changes through

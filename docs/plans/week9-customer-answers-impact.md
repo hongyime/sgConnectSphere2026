@@ -6,7 +6,7 @@ Updated 13 October 2026. The customer answers are recorded as C-71 to C-136 in t
 
 | Area | Selected rule | Authority |
 | --- | --- | --- |
-| Sessions | Restore Sessions beneath Events. Venue bookings and equipment requests/reservations link to Sessions. One Event-level registration selects one or more Sessions. | C-107; T-79; supersedes T-48 |
+| Sessions | Restore Sessions beneath Events. Venue bookings and equipment requests/reservations link to Sessions. Each Session has separate attendance for suitability; the Event-level attendance remains the overall planning total. One Event-level registration selects one or more Sessions. | C-107; T-79; supersedes T-48; attendance split is a team design choice |
 | Open venue blocks and buffers | Blocks may remain open until lifted, following C-119 despite conflicting C-111. Buffers apply between event uses and holds, not maintenance blocks. | C-111, C-118, C-119; team resolution T-80 |
 | Venue loss | Return a Confirmed Event to Planning/change review and immediately notify its Coordinator; do not cancel. | C-120/C-121; T-81 |
 | Safety review | Enter Safety Review automatically after all required venue and technical arrangements are confirmed. Record each safety-factor checklist and the Safety Officer's decision/comments. | C-132/C-134; T-82 |
@@ -29,17 +29,18 @@ Two boundaries remain explicit assumptions: per-Session waitlist behavior (O-50)
 | Canonical test catalogue | Added E02-S05/S07, E04-S02, E07-S08 and E10-S03 cases; updated E08-S04, E09-S01/S02/S03/S05 and E10-S01/S02/S04; retired only cases whose criteria were superseded. |
 | BDR assumptions and change log | Recorded O-50/O-51 and updated the BDR history to distinguish current decisions from unresolved design assumptions. |
 | Exports | Regenerate dated backlog, test-case, and BDR/ADR Word exports from Markdown. Refresh the legacy test workbook input and generated coverage inventory. |
+| Architecture and UI handoff | Reconciled ADRs 003/004/005/006/007/009/010/012 and added ADR-018/019; updated the target schema, booking contract, API overview, C4/module/class views, user flows, design status vocabulary and Figma refinement plan. Actual database migrations, application behavior and Figma frame edits remain downstream. |
 
 ## Remaining impact and work
 
 | Workstream | Files or areas | Required work |
 | --- | --- | --- |
 | Sprint 3 backlog and cases | E01-S12/S13, E03-S08/S09/S10, E05-S05/S06, E06-S02/S03/S04/S05/S06, E07-S01..S07, E08-S03/S06, E10-S05, E14-S02 | Keep current acceptance assumptions through 17 October under T-73. After Sprint 3 closes, verify actual Jira sprint state, create a follow-up for each story still incomplete, retain Done stories and prior evidence, and add only the new behavior that remains. Do not edit these active-sprint criteria in this PR. |
-| Data model and migrations | `docs/db_schema.md`, backend migrations, seed data | Restore Event→Session; model session-linked venue bookings/equipment requests/reservations and registration Session selections; keep Event lifecycle and registration windows at Event level; support many-to-many user roles; nullable-ended blocks and edit history; per-hold expiry/warning/extension count/reasons; safety factor checklist plus decision/comments; Obsolete change-request history. Define migration/backfill and consistency constraints before code. |
-| Shared contracts and APIs | `docs/contracts/venue-bookings.md`, `docs/api-changes-week7.md`, backend modules | Add Session identifiers and validate Event/Session ownership. Define booking and equipment availability by Session period; preserve buffers only for event uses/holds. Specify Pending registration review and transactional enforcement of both capacity limits. Model block edits/lifts, hold extensions, safety auto-trigger, Lead authority and terminal request closure. |
-| ADRs and architecture views | ADR-003/004/005/006/007/009/012; `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/modular-monolith-architecture.md` | Reconcile restored Sessions, role cardinality, block/hold lifecycle, safety review, event lifecycle and registration capacity. Retain historical ADR context and record consequences, ownership, constraints and migration decisions. |
-| User flows and UI/UX | `docs/dynamic-user-flows.md`, `design.md`, story-linked Figma plans, shared frontend skeleton | Show Session setup and attendee selection; per-Session capacity and Event-level Pending review; automatic safety review with checklist and comments; Lead-only assignment; per-hold expiry/extensions; open-ended editable blocks and lift notices. Do not add a Coordinator request flow, venue-roster screen, or per-Session waitlist unless O-50 is resolved differently. |
-| Backend/frontend implementation | Event lifecycle, sessions, venue bookings, equipment, registration, access control, audit/history, notifications and affected role pages | Split into story-sized branches after requirements and architecture are reviewed. Preserve event-level lifecycle/windows and seed-data role behavior. Add migration, unit, integration and manual E2E evidence; meet the Definition of Done and record cited runs under T-65. Do not claim completion from design or catalogue updates. |
+| Data model and migrations | `docs/db_schema.md`, backend migrations, seed data | The target schema now defines Event→Session, Session-linked venue/equipment records, event-level registration selections, many-to-many roles, open-ended blocks/history, configured holds, safety decision/checklist and Obsolete request history. Migration/backfill and seed changes are still required; retain current data and audit history and do not invent defaults for legacy holds. |
+| Shared contracts and APIs | `docs/contracts/venue-bookings.md`, `docs/api-changes-week7.md`, backend modules | The contract and API overview now specify Session ownership, per-Session suitability, block/hold behavior, Pending capacity review, automatic Safety Review, Lead authority and terminal request closure. Endpoint implementations and transactional guarantees remain code work. |
+| ADRs and architecture views | ADR-003/004/005/006/007/009/010/012/018/019; `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/modular-monolith-architecture.md`, `docs/plans/e11-notification-hooks.md` | Updated in the architecture follow-up with explicit supersession links, consequences, ownership, migration notes and history. Preserve C-62 as historical evidence and distinguish customer rules from team choices. The E11 handoff now records T-83/T-89 without rewriting its dated implementation snapshot. |
+| User flows and UI/UX | `docs/dynamic-user-flows.md`, `design.md`, `docs/design/figma-wireframe-refinement-plan.md`, shared frontend skeleton | Updated repository flows/notes for Session setup and attendee selection; per-Session capacity and Pending review; automatic safety review; Lead-only assignment; per-hold settings/extensions; open-ended editable blocks and lift notices. Actual Figma frames and application screens remain to update after these requirements are reviewed; keep O-50/O-51 visible and do not add a Coordinator request flow, roster screen or per-Session waitlist by assumption. |
+| Backend/frontend implementation | Migrations/seed data; `backend/src/modules/{eventLifecycle,venueBooking,equipmentSupport,registration,accessControl,changeManagement,eventNotifications,shared}`; `frontend/src/features/{organiser,coordinator,venue,support,attendee}`; `frontend/src/app/roles.ts` and API/session types | No application code is included in the documentation PRs. After requirements and architecture merge, create story-sized PRs: Event/Session model and copy/date validation; Session-linked bookings/equipment; configured holds and block history; multi-role access; registration selections/capacity/Pending review; automatic safety review; Obsolete closure; notification routing. Include migrations/backfill and access-control checks, 100% unit coverage of changed code or stated gaps, manual E2E evidence and review. Preserve Done-story and active Sprint 3 boundaries. |
 | Jira | Existing SCRUM-30 (E02-S05), SCRUM-39 (E04-S02), Sprint 4 stories, new E02-S07/E07-S08 | Reconcile only after canonical Markdown merges. Update existing tickets rather than duplicating them; create new Stories for E02-S07/E07-S08 after checking classification and current Jira state. Preserve original estimates and sprint commitments; leave estimates/sprints blank until planning where not approved. |
 
 ## Sprint boundary and Jira snapshot
@@ -50,11 +51,11 @@ Relevant To Do items observed read-only on 13 October include SCRUM-30 (E02-S05)
 
 ## Delivery sequence
 
-1. Merge the Week 9 decision-record PR before downstream Jira reconciliation.
-2. Review and merge the backlog/test catalogue follow-up; retain O-50/O-51 as open assumptions until resolved.
-3. Update architecture, data model, shared contracts, flows and UI plans from the merged requirements.
-4. Implement in story-sized PRs with the required unit, integration and manual E2E evidence and peer review.
-5. Reconcile Jira only after canonical Markdown merges; defer Sprint 3 stories until sprint close and recheck live state then.
+1. Review and merge the Week 9 decision-record PR (#253).
+2. Review and merge the stacked backlog/test follow-up (#254), then the stacked architecture/UI follow-up.
+3. Reconcile Jira only after canonical Markdown merges; recheck issue status, ownership, estimate and sprint before any write.
+4. Update actual Figma frames from the merged requirements; retain O-50/O-51 as assumptions until resolved.
+5. Implement in story-sized PRs with migration, unit, integration and manual E2E evidence and peer review. Revisit Sprint 3 stories only after sprint close.
 
 ## Verification limits
 

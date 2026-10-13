@@ -1,13 +1,13 @@
-## API changes for the Week 7 Customer Changes
+## API changes for the Week 7 and Week 9 Customer Changes
 
-Version 1 · 3 October 2026
+Version 2 · 13 October 2026
 
 The Week 7 "Managing Changes" guide asks that a requirement change be traced through to
-the interfaces it touches. This file lists every REST endpoint the six Customer Changes
-add or alter, so that the owning story's developer, the frontend author on the shared
-skeleton (ADR-017) and the test-case author start from one list. Nothing here is
-implemented yet; each row names the story that will implement it and the test cases
-that will prove it. The shared venue-booking schema, submission API and lifecycle are specified in [the venue bookings contract](contracts/venue-bookings.md); that contract controls where this overview differs. Update this file in the story's PR when the shape changes.
+the interfaces it touches. This file records the Week 7 baseline and its Week 9
+reconciliation for the owning story, shared-skeleton frontend and test-case authors.
+The Week 9 addendum is authoritative where it supersedes Week 7 assumptions. Nothing
+here is implemented by this documentation update; each row names the story and cases
+that will prove it. The shared booking contract controls the venue API details.
 
 Conventions carried over from the existing routes (ADR-014, `api/` is at the Hobby-plan
 function cap): new Coordinator, Lead and Safety Officer actions are query-parameter
@@ -30,8 +30,8 @@ ADR-009).
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/venues` `action: block` | Venue Staff | Body gains mandatory `reason_category` (`maintenance`, `equipment_failure`, `renovation`, `safety_concern`, `other`) alongside the free-text `reason`. The call no longer refuses when the range overlaps Pending or Confirmed bookings: it records the block, marks each overlapping booking Conflicting and returns `affected_bookings: [...]` with Coordinator and event details. A range without an end is refused. | E05-S06 | TC_E05S06_01, _02, _03, _04 |
-| `POST /api/venues` `action: shorten_block` / `remove_block` | Venue Staff | Removing or shortening a block clears Conflicting back to the prior status for bookings no longer overlapped. | E05-S06 | TC_E05S06_05, _06 |
+| `POST /api/venues` `action: block` | Venue Staff | Body gains mandatory `reason_category` (`maintenance`, `equipment_failure`, `renovation`, `safety_concern`, `other`) alongside the free-text `reason`. The call no longer refuses when the range overlaps Pending or Confirmed bookings: it records the block, marks each overlapping booking Conflicting and returns `affected_bookings: [...]` with Coordinator and event details. An open-ended range is allowed and remains active until lifted (T-80). | E05-S06 | TC_E05S06_01, _02, _03, _04 |
+| `POST /api/venues` `action: edit_block` / `lift_block` | Venue Staff | Edits retain prior/new range and reason, actor and time. Lifting retains history and notifies affected Coordinators; conflict restoration follows C-122. If a block makes a Confirmed Event's active booking unavailable, return the Event to Planning and notify its Coordinator immediately (T-81/T-91). | E05-S06, E08-S04 | TC_E05S06_05, _06 |
 | `GET /api/events?id=<id>` | Coordinator, Organiser | Event detail lists each booking with `status`, and for `conflicting` the block's `reason_category` and `block_range`. | E05-S06, E10-S05 | TC_E10S05_01, _02 |
 | `GET /api/venues?blocks=1&id=<id>` | Venue Staff, Coordinator | Block rows return `reason_category`. | E05-S06 | TC_E05S06_01 |
 
@@ -39,7 +39,7 @@ ADR-009).
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/venues` `action: request_booking` | Assigned Coordinator | Allows several bookings per event. Optional `purpose` and `headcount` remain null when omitted; suitability uses booking headcount or event attendance as fallback and is advisory. The server records the requester, creates a Pending non-primary booking, checks the event window, venue blocks and buffered occupancy, and moves Approved to Planning atomically. | E06-S03 | TC_E06S03_07, _08 |
+| `POST /api/venues` `action: request_booking` | Assigned Coordinator | Allows several bookings per event and carries `session_id`. Optional `purpose` and `headcount` remain null when omitted; suitability uses booking headcount or linked Session expected attendance as fallback and is advisory. The server validates Session ownership/range, checks venue blocks and buffered occupancy, and moves Approved to Planning atomically. | E06-S03 | TC_E06S03_07, _08 |
 | `POST /api/venues` `action: set_primary` | Assigned Coordinator | The first booking to become Confirmed is made primary when none is primary. The Coordinator may select another Confirmed booking; Pending bookings cannot be primary. | E06-S03 | TC_E06S03_07 |
 | `GET /api/events?id=<id>` | Coordinator, Organiser | `venue_bookings: [...]` replaces the single `venue_booking` object; each entry carries `purpose`, `headcount`, `is_primary`, `occupancy_range`. | E06-S03, E10-S02 | TC_E10S02_05 |
 | `GET /api/attendee/events` and `?id=` | Attendee | Public event shows the primary venue; secondary venues appear under `other_venues` with their purpose (O-30). | E09-S01 | TC_E09S01_06 |
@@ -49,54 +49,82 @@ ADR-009).
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/venues` `action: hold` | Assigned Coordinator | New action. Body `{event_id, venue_id, starts_at?, ends_at?, expires_at?}` (field names per the shared venue_bookings contract); the period defaults to the event's and must lie within it (T-78). Event must be Approved or Planning and the venue active. Creates a booking with `status: tentative`, `expires_at` defaulting to `now() + 48h` (O-31, T-92) and an explicit `expires_at` accepted within 1 hour to 14 days. Refused with 409, naming what is in the way, when the period overlaps a Pending or Confirmed booking, an unexpired Tentative hold or a maintenance block. Audit "Tentative hold placed on <venue>". | E06-S05 | TC_E06S05_01, _03 (_02 when E05-S05 lands) |
-| `POST /api/venues` `action: convert_hold` | Assigned Coordinator | Body `{booking_id}`. Turns an unexpired Tentative booking into a Pending request on the same row (expiry judged at database time after the row lock); `expires_at` is cleared (O-32, T-78). A retry after success returns the same booking with no second audit entry. 409 on an expired hold. | E06-S05 | TC_E06S05_04 |
-| `POST /api/venues` `action: extend_hold` | Venue Staff | Body `{booking_id, expires_at}`. Locks the venue row before the hold, as placing a hold does, so the two are serialised. Sets a later `expires_at`, at most 14 days ahead; audit "Tentative hold on <venue> extended" with old and new values (O-34). 409 on a hold that has already expired. | E06-S05 | TC_E06S05_03, _07 |
-| `POST /api/venues` `action: release` | Assigned Coordinator | Body `{booking_id}`. Releases an unexpired Tentative booking; once its expiry has passed it is refused (409) and left for the expiry job, so the notice is still sent. Releasing pending and confirmed bookings stays with E06-S04. | E06-S05 | E06-S05 Scenario 4 (no dedicated case) |
-| `GET /api/venues?task=holds&event=<id or code>` | Assigned Coordinator | New branch. The event's Tentative and Expired holds (a passed hold reads as `expired` before the job runs) and `canHold`. | E06-S05 | TC_E06S05_03 |
-| `GET /api/venues?task=holds` | Venue Staff | New branch. Every unexpired hold, soonest expiry first, for extending. | E06-S05 | TC_E06S05_07 |
-| `GET /api/cron/outbox-relay?task=holds` | scheduler (bearer secret) | New branch. Marks holds whose `expires_at <= now()` as `expired`, audits each, and sends the Coordinator one in-app notice with an email delivery (T-92: no reminder). Response `{holds_expired, notified}`. A hold stops holding the venue as soon as its expiry passes, so a late run only delays the status change and notice. | E06-S05 | TC_E06S05_05, _06 |
+| `POST /api/venues` `action: hold` | Coordinator | Creates a Session-linked booking with `status: tentative`. Venue Staff explicitly configures expiry per hold; there is no default or fixed 1-hour/14-day range. Refused with 409 when the occupancy window overlaps any Pending, Tentative or Confirmed booking. | E06-S05 | TC_E06S05_01, _02, _03 |
+| `POST /api/venues` `action: convert_hold` | Assigned Coordinator | Calls the shared submission service and changes the existing Tentative row to Pending for the same range. Submission clears expiry; expired holds cannot convert. Repeating conversion for the same booking id returns the existing Pending booking without duplicate effects. | E06-S05 | TC_E06S05_04 |
+| `POST /api/venues` `action: extend_hold` | Venue Staff | Requires a reason; allows at most two extensions of an unexpired hold and appends extension history. The Coordinator sets the per-hold warning interval; the relay warns at the configured threshold rather than a fixed 24 hours (T-84). | E06-S05 | TC_E06S05_03, _07 |
+| `POST /api/venues` `action: release` | Coordinator | Existing release now also accepts a Tentative booking. | E06-S05 | E06-S05 Scenario 4 (no dedicated case) |
+| `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run expires configured holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notification to the Coordinator) and sends the configured warning; no default expiry or warning interval is used (T-84). | E06-S05 | TC_E06S05_05 |
 
 ### Change 5 — Event Coordinator Lead and the unassigned queue (C-69, E03-S08 to E03-S10, E01-S12, E01-S13)
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
 | `POST /api/events` | Organiser | Submission no longer calls `assignCoordinator`; the event stays `submitted` with `coordinator_id` null and appears in the queue. Response field `coordinator` is null until assigned. | E03-S08 | TC_E03S08_01 |
-| `GET /api/events?unassigned=1` | Lead | New branch. Lists `submitted` events with no Coordinator, oldest first, with organiser, requested date, expected attendance and venue requirements. | E03-S08 | TC_E03S08_02 |
+| `GET /api/events?unassigned=1` | Lead | Lists `submitted` Events with no Coordinator, oldest first, with the overall planning attendance and a Session summary of dates, attendance and venue requirements. | E03-S08 | TC_E03S08_02; T-79 |
 | `GET /api/events?coordinators=1&workload=1` | Lead | Existing colleague list extended for the Lead with `active_events` per Coordinator. | E03-S08 | TC_E03S08_03 |
 | `POST /api/events?assign=1&id=<id>` | Lead | New branch. Body `{coordinator_id}`. Sets `coordinator_id`, `coordinator_assigned_at`, `assigned_by`; status `submitted` to `under_review`; audit `lead_assigned`; notifies Coordinator and Organiser. 409 if the event is no longer unassigned. | E03-S08 | TC_E03S08_03, _04, _05 |
-| `POST /api/events?reassign=1&id=<id>&by_lead=1` | Lead | New branch. Body `{coordinator_id, note}`. Direct replacement without the colleague's acceptance (O-36); audit `lead_reassigned`; notifies outgoing, incoming and Organiser. | E03-S09 | TC_E03S09_01 |
-| `POST /api/events?reassign=1&id=<id>` | Coordinator | Existing request gains body `to_lead: true` as an alternative to `colleague_id` (O-37); creates a reassignment row with `addressed_to_lead`. | E03-S09 | TC_E03S09_02, _03 |
-| `GET /api/events?reassignments=1&to_lead=1` | Lead | Lists reassignment requests addressed to the Lead. `POST /api/events?reassignment=<id>` with `decision: assign` + `coordinator_id`, or `decision: decline` + `note`. | E03-S09 | TC_E03S09_03 |
+| `POST /api/events?reassign=1&id=<id>&by_lead=1` | Lead | Direct replacement at any event stage without colleague acceptance; audit `lead_reassigned`; notify affected Coordinators and Organiser (T-83). | E03-S09 | TC_E03S09_01 |
+| `POST /api/events?reassign=1&id=<id>` | Coordinator | Removed by T-83. Coordinators cannot request reassignment through the system or initiate peer reassignment; the Lead manages all reassignment. Historical request records are not treated as active work. | E03-S09 | No active request case; preserve any retired historical IDs |
+| `GET /api/events?reassignments=1&to_lead=1` | Lead | Removed by T-83. The Lead's direct assignment/reassignment action takes effect immediately; there is no request queue, accept or decline step. | E03-S09 | No active request case; preserve any retired historical IDs |
 | `GET /api/events?oversight=1[&status=][&coordinator=]` | Lead | New branch. Every active event with its Coordinator or `Unassigned`, filterable. | E03-S10 | TC_E03S10_01, _02 |
 | `GET /api/events?assigned=1` and `?id=<id>` | Coordinator | Scoped to the caller's own assignments (E01-S12): the unassigned queue is excluded, a colleague's event returns 403 with nothing revealed and the attempt is audited; venue availability states stay visible with other events' details withheld. | E01-S12 | TC_E01S12_01 to _04 |
-| `GET /api/auth/session` | Lead | `role: event_coordinator_lead` is a valid session role; the shared skeleton routes it to the Lead landing page. | E01-S13 | TC_E01S13_01, _02 |
+| `GET /api/auth/session` | Lead | The response exposes `roles: [event_coordinator_lead, ...]`; the shared skeleton shows only routes granted to this account. | E01-S13 | TC_E01S13_01, _02 |
 
 ### Change 6 — Safety Officer and the Operational Safety Check (C-70, E08-S03, E08-S04, E08-S06)
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
-| `POST /api/events?safety=submit&id=<id>` | Coordinator | New branch replacing the direct confirm step. Readiness check: every booking Confirmed or Released and at least one Confirmed and primary; equipment fully reserved; support assigned. On failure 409 with `outstanding: [{kind, venue_or_item, status}]`. On success status `planning` to `safety_review`, insert `safety_checks` row with `submitted_at`, audit `safety_check_submitted`, notifies Safety Officers and Organiser. | E08-S03 | TC_E08S03_08, _09 |
-| `GET /api/events?safety=queue` | Safety Officer | New branch. Events in `safety_review`, oldest first, with every input the seven factors need (venues with capacity, layout and restrictions; expected attendance; accessibility needs; equipment list). | E08-S06 | TC_E08S06_01, _06 |
+| Automatic arrangement-complete transition | System | No Coordinator submit endpoint. When all required Session-linked venue/equipment arrangements and Event-level technical support are confirmed, automatically create a pending `safety_checks` row with `created_at`, set status `planning` to `safety_review`, audit the transition and notify Safety Officers and Organiser (C-132/T-82). | E08-S03 | TC_E08S03_08, _09 |
+| `GET /api/events?safety=queue` | Safety Officer | Events in `safety_review`, oldest first, with every input the seven factors need by Session (venue, capacity, layout, Session attendance, accessibility and equipment), plus the overall Event attendance for planning context. | E08-S06 | TC_E08S06_01, _06; T-79 |
 | `GET /api/events?id=<id>` | Safety Officer | Read access to an event in `safety_review` (and its history afterwards); otherwise 403. | E08-S06 | TC_E08S06_05 |
-| `POST /api/events?safety=decide&id=<id>` | Safety Officer | New branch. Body `{decision: approved \| changes_requested \| rejected, reason, factors: [{factor, satisfactory, comment}]}`; all seven factors required; `reason` mandatory unless `approved`. `approved` moves to `confirmed` and notifies Organiser and Coordinator with the confirmed details; the other two return to `planning`, flag the arrangements named in the comments and notify the Coordinator and Organiser. Never cancels (O-41). Audit `safety_check_approved` / `_changes_requested` / `_rejected`. | E08-S06 | TC_E08S06_02 to _05 |
+| `POST /api/events?safety=decide&id=<id>` | Safety Officer | Body `{decision: approved \| changes_requested \| rejected, comments, factors: [{factor, satisfactory, comment}]}`. Persist decision and comments (C-134); comments carry the explanation for changes/rejection (C-133), with no separate reason field. The system checklist for each factor is the T-82 workflow aid. `approved` moves to `confirmed`; the other decisions return to `planning`. Both outcomes notify the Coordinator and Organiser; a safety decision never cancels the Event. | E08-S06 | TC_E08S06_02 to _05 |
 | `POST /api/events?revert=1&id=<id>` | Coordinator | Existing revert from Confirmed to Planning now also clears the approved safety check so a later resubmission is reviewed again (E08-S04 Scenario 4). | E08-S04 | TC_E08S04_05 |
-| `GET /api/auth/session` | Safety Officer | `role: safety_officer` is a valid session role with its own landing page. | E01-S13 | TC_E01S13_01, _02 |
+| `GET /api/auth/session` | Safety Officer | The response exposes `roles: [safety_officer, ...]`; authorization checks the account's granted role set. | E01-S13 | TC_E01S13_01, _02 |
 
 ### Status vocabulary exposed to clients
 
-| Enum | Values after Week 7 | Added |
+| Enum | Values after Week 9 | Added |
 | --- | --- | --- |
-| `event_status` | draft, submitted, under_review, awaiting_clarification, rejected, approved, planning, **safety_review**, confirmed, cancelled, completed | safety_review (T-71, interim pending O-39) |
+| `event_status` | draft, submitted, under_review, awaiting_clarification, rejected, approved, planning, **safety_review**, confirmed, cancelled, completed | safety_review (T-71) |
 | `booking_status` | pending, **tentative**, confirmed, rejected, released, conflicting, **expired** | tentative, expired (T-69) |
 | `user_role` | event_organiser, event_coordinator, **event_coordinator_lead**, venue_staff, technical_support_staff, **safety_officer**, attendee | two roles (T-72) |
 | `unavailability_reason` | maintenance, equipment_failure, renovation, safety_concern, other | new enum (T-67) |
+| `registration_status` | **pending**, registered, waitlisted, withdrawn | pending for Organiser review of over-capacity submissions (T-85) |
+| `change_status` | pending, approved, declined, applied, **obsolete** | obsolete when Event becomes Completed or Cancelled (T-88) |
 
 Frontend status pills, filters and the `roles.ts` route table (see `docs/frontend-guide.md`)
-must be extended for every bold value before the owning story's UI ships.
+must be extended for every bold value before the owning story's UI ships. An
+authenticated account may have multiple `user_role` memberships; the session
+contract exposes the granted roles, while seed data starts with one (T-86).
+
+### Week 9 reconciliation — sessions, registration and lifecycle (C-71 to C-136; T-79 to T-91)
+
+The shapes below are interface requirements for story refinement, not customer
+wording. The owning story and API implementation PR must finalize endpoint details.
+
+| Interface | Role | Week 9 requirement | Trace |
+|---|---|---|---|
+| Event create/update and `GET /api/events?id=<id>` | Organiser, Coordinator | Preserve the Event's overall expected-attendance planning total and represent one or more child Sessions, each with separate date/time, expected attendance, layout, venue/accessibility requirements and equipment requirements. Only Session attendance is the fallback for that Session's booking suitability. Event lifecycle, registration window and technical support remain Event-level. Event dates more than two years ahead are rejected; no fixed minimum lead time is imposed. | E02-S01/S02/S05/S07, E04-S02; T-79/T-87; O-51 |
+| `POST /api/venues` `action: request_booking` / `hold` | Assigned Coordinator | Include and validate `session_id`; booking period lies within that Session. Per-booking headcount falls back to Session expected attendance. Multiple bookings for an Event, including repeat bookings of one venue across separate Sessions, remain supported. | E06; C-107/T-79 |
+| Equipment request/reservation endpoints | Coordinator, Technical Support Staff | Include Session ownership on each request/reservation; available periods use the linked Session. Keep technical-support assignment Event-level. | E07-S08; C-107/T-79 |
+| `GET /api/attendee/events` and registration submission | Attendee | Show Session choices and accept one Event registration selecting one or more Sessions. Enforce each selected Session's confirmed layout capacity and combined Event capacity derived from confirmed Session layouts. A submission over either limit becomes Pending for Organiser decision and is not an approved seat. Keep the Event-level waitlist for combined Event capacity; no per-Session waitlist is assumed while O-50 is open. | E04-S02, E09-S01/S02/S03/S05; T-85; O-50 |
+| Organiser registration review | Organiser | List Pending over-capacity registrations and recheck both capacity limits when approving. Reject approval if either limit would be exceeded. Preserve one active registration per account/Event; withdrawing releases the attendee's places in the Event and all selected Sessions. | E09-S01/S02/S05; T-85 |
+| Automatic readiness transition | System | On confirmation of all required Session venue/equipment arrangements and Event-level technical support, create the safety review and move Planning to Safety Review. Do not expose a Coordinator `safety=submit` action. | E08-S03; C-132/T-82 |
+| Safety decision | Safety Officer | Persist overall decision and comments, plus the team-added checklist for each safety factor. Approval moves to Confirmed; changes/rejection return to Planning. | E08-S06; C-134/T-82 |
+| Event block / lifecycle transaction | System, Venue Staff | If block creation/edit makes a Confirmed Event's active venue unavailable, flag it, return it to Planning and notify its Coordinator immediately. Do not cancel; Organiser/Attendee messages follow confirmed replacement arrangements or formal changes. | E05-S06, E08-S04, E10-S05; C-120/C-121/T-81 |
+| Change request lifecycle | System | When Event status becomes Completed or Cancelled, atomically move its Pending change requests to Obsolete, preserve history and emit audit events. | E10-S01/S03/S04; C-77/T-88 |
+| Venue block and hold lifecycle | Venue Staff, Coordinator | Permit open-ended blocks; retain edit/lift history; notify the affected Coordinator on lift. Configure each hold expiry/warning without a default; require a reason for at most two extensions. | E05-S06, E06-S05; T-80/T-84/T-91 |
+| Venue-to-staff routing | Setup only | Store venue-to-staff assignment for notification routing; add no roster-management screen to Release 1. | T-89; O-49 |
+
+O-50 (Session waitlist) and O-51 (exact copy-forward scope) remain team
+assumptions. Keep them visible in API copy, validation and design until reviewed;
+do not label either as a customer requirement. The Session copy route must copy
+only the scope accepted under O-51 and must not copy transactional records by
+default.
 
 ### Out of scope here
 
-Attendee-facing registration, equipment and notification-inbox endpoints are unchanged
-by Week 7 except where listed. The migration that backs these endpoints is described
-under "Pending migration for the Week 7 Customer Changes" in `docs/db_schema.md`.
+The Week 9 architecture PR updates contracts and target schema only. These API
+changes are implementation follow-ups; existing migrations and routes are not
+claimed to implement them. Code changes need story-sized PRs, coverage and the
+Definition of Done after the requirements/design changes merge.

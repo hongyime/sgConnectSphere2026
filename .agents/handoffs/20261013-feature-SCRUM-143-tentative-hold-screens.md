@@ -43,6 +43,27 @@ after #245 does.
 
 ## Next
 
-1. Merge `main` in after #245 lands, then mark this PR ready.
-2. SCRUM-144: real-stack Playwright journey and Amareet's manual run.
-3. SCRUM-142 (buffers) after #231.
+1. Latest `main` (`8f246ae`) and the updated #245 branch (`84ffaa2`) are merged
+   cleanly in this worktree. Keep this PR draft until #245 lands; then fetch
+   `main` again, confirm it has no newer commits, and mark ready only after
+   required checks and review are clear.
+2. SCRUM-144: Amareet's manual run is still required before Sprint Review.
+3. SCRUM-142 (buffers) depends on replacement PR #261; PR #231 closed during
+   the branch rename.
+
+## Integration status (14 October 2026)
+
+- The stack now includes the latest main architecture/docs and #245's
+  production-migration note. There were no merge conflicts. The #245 run record
+  says migration 0013 was applied once and the post-check found all 13
+  migrations applied with none pending; see PR #260.
+- T-73 keeps the existing Sprint 3 hold acceptance through 17 October, so these
+  screens continue to follow T-92. T-84 and the Session-linked hold model are
+  post-sprint follow-up work; the Week 9 impact register leaves their
+  migrations and application behavior to story-sized implementation PRs.
+- This branch remains draft and has no review requests yet. The current-head
+  checks must run after its integration commit is pushed. The SCRUM-144 manual
+  run is also pending; do not add `Closes SCRUM-144` to Jira before its record
+  exists.
+- SCRUM-141's scheduler cadence and secret are still a separate owner
+  decision. No trigger or deployment secret was added.

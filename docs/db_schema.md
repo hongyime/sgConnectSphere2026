@@ -7,25 +7,31 @@ erDiagram
     CLIENT_ORGANISATIONS ||--o{ EVENTS : "owns"
     USERS ||--o{ PASSWORD_RESET_TOKENS : "has"
     USERS ||--o{ EVENTS : "organises_or_coordinates"
+    USERS ||--o{ USER_ROLES : "holds"
 
-    EVENTS ||--o{ VENUE_BOOKINGS : "booked_for"
+    EVENTS ||--|{ SESSIONS : "contains"
+    ROOM_LAYOUTS ||--o{ SESSIONS : "planned_as"
+    SESSIONS ||--o{ VENUE_BOOKINGS : "booked_for"
     VENUES ||--o{ VENUE_BOOKINGS : "hosts"
     VENUES ||--o{ VENUE_BLOCKS : "unavailable_during"
+    VENUE_BLOCKS ||--o{ VENUE_BLOCK_HISTORY : "change_history"
+    VENUE_BOOKINGS ||--o{ VENUE_HOLD_EXTENSIONS : "extended_by"
+    VENUES ||--o{ VENUE_STAFF_ASSIGNMENTS : "routed_to"
+    USERS ||--o{ VENUE_STAFF_ASSIGNMENTS : "assigned_to"
     VENUES ||--|{ VENUE_SUPPORTED_LAYOUTS : "supports"
     ROOM_LAYOUTS ||--o{ VENUE_SUPPORTED_LAYOUTS : "offered_as"
-    ROOM_LAYOUTS ||--o{ EVENTS : "required_by"
 
     VENUES ||--o{ VENUE_ACCESSIBILITY_FEATURES : "provides"
     ACCESSIBILITY_FEATURES ||--o{ VENUE_ACCESSIBILITY_FEATURES : "offered_as"
-    EVENTS ||--o{ EVENT_ACCESSIBILITY_NEEDS : "requires"
-    ACCESSIBILITY_FEATURES ||--o{ EVENT_ACCESSIBILITY_NEEDS : "needed_as"
+    SESSIONS ||--o{ SESSION_ACCESSIBILITY_NEEDS : "requires"
+    ACCESSIBILITY_FEATURES ||--o{ SESSION_ACCESSIBILITY_NEEDS : "needed_as"
 
     VENUES ||--o{ VENUE_FACILITIES : "offers"
     FACILITIES ||--o{ VENUE_FACILITIES : "offered_as"
-    EVENTS ||--o{ EVENT_FACILITY_NEEDS : "requires"
-    FACILITIES ||--o{ EVENT_FACILITY_NEEDS : "needed_as"
+    SESSIONS ||--o{ SESSION_FACILITY_NEEDS : "requires"
+    FACILITIES ||--o{ SESSION_FACILITY_NEEDS : "needed_as"
 
-    EVENTS ||--o{ EQUIPMENT_REQUESTS : "needs"
+    SESSIONS ||--o{ EQUIPMENT_REQUESTS : "needs"
     EQUIPMENT ||--o{ EQUIPMENT_REQUESTS : "requested_as"
     EQUIPMENT_REQUESTS ||--o{ EQUIPMENT_RESERVATIONS : "fulfilled_by"
     EQUIPMENT ||--o{ EQUIPMENT_RESERVATIONS : "allocated_as"
@@ -37,15 +43,17 @@ erDiagram
 
     EVENTS ||--o{ EVENT_REGISTRATIONS : "admits"
     USERS ||--o{ EVENT_REGISTRATIONS : "registers"
+    EVENT_REGISTRATIONS ||--o{ EVENT_REGISTRATION_SESSIONS : "selects"
+    SESSIONS ||--o{ EVENT_REGISTRATION_SESSIONS : "attended_as"
     EVENT_REGISTRATIONS ||--o| EVENT_ATTENDANCE : "recorded_as"
 
     EVENTS ||--o{ EVENT_THREADS : "discussed_in"
     USERS ||--o{ EVENT_THREADS : "authors"
-    EVENTS ||--o{ COORDINATOR_REASSIGNMENTS : "handed_over_by"
+    EVENTS ||--o{ COORDINATOR_REASSIGNMENTS : "legacy_history_only"
     EVENTS ||--o{ SAFETY_CHECKS : "reviewed_by"
     USERS ||--o{ SAFETY_CHECKS : "decides"
     SAFETY_CHECKS ||--|{ SAFETY_CHECK_FACTORS : "assesses"
-    USERS ||--o{ COORDINATOR_REASSIGNMENTS : "requests_or_receives"
+    USERS ||--o{ COORDINATOR_REASSIGNMENTS : "legacy_request_history"
     EVENTS ||--o{ CHANGE_REQUESTS : "amended_by"
     USERS ||--o{ CHANGE_REQUESTS : "raises"
 
@@ -69,13 +77,19 @@ erDiagram
         varchar email UK
         varchar password_hash
         varchar full_name
-        user_role role "one role per account in release 1; seven values from Week 7: + event_coordinator_lead, safety_officer"
         varchar contact_number
         boolean is_active "false once deactivated"
         timestamptz deactivated_at
         smallint failed_login_count "lockout at 5"
         timestamptz locked_until
         timestamptz created_at
+    }
+
+    USER_ROLES {
+        uuid user_id PK,FK
+        user_role role PK "many roles may be held; seed accounts start with one role (T-86)"
+        timestamptz granted_at
+        uuid granted_by FK "null for migration or seed"
     }
 
     PASSWORD_RESET_TOKENS {
@@ -90,9 +104,9 @@ erDiagram
     EVENTS {
         uuid id PK
         uuid organiser_id FK
-        uuid coordinator_id FK "null while in the unassigned queue; set by the Lead (E03-S08) or by accepted reassignment"
+        uuid coordinator_id FK "null while unassigned; assigned or directly reassigned by a Lead (T-83)"
         timestamptz coordinator_assigned_at "when the current Coordinator took over"
-        uuid assigned_by FK "the Lead who assigned or reassigned; null for accepted peer reassignments"
+        uuid assigned_by FK "the Lead who assigned or reassigned; null for legacy or unassigned rows"
         uuid client_org_id FK
         varchar title
         text description
@@ -105,15 +119,25 @@ erDiagram
         timestamptz registration_opens_at
         timestamptz registration_closes_at
         timestamptz withdrawal_deadline
-        tstzrange event_range "start and end, replaces the former SESSIONS.session_range"
-        int expected_attendance "planning input for venue suitability, not a registration cap"
-        uuid layout_id FK "shared vocabulary with venue layouts"
-        text venue_requirements "free text, E02-S01 mandatory field"
-        text accessibility_note "free text, excluded from matching"
-        text equipment_requirements "free text; 'none_required' sentinel means explicitly opted out"
-        text layout_preference "free text organiser input, E02-S01; distinct from layout_id, the confirmed structured layout; 'none_required' sentinel means explicitly opted out"
+        tstzrange event_range "overall event envelope derived from its Sessions"
+        int expected_attendance "event-level planning total, not a registration cap or per-Session booking fallback"
         text registration_setup "free text; 'none_required' sentinel means explicitly opted out"
         timestamptz created_at
+    }
+
+    SESSIONS {
+        uuid id PK
+        uuid event_id FK "Event owns one or more Sessions"
+        varchar title
+        tstzrange session_range "Session-specific start/end; within event_range"
+        int expected_attendance "per-Session suitability fallback when booking headcount is absent (T-79)"
+        uuid layout_id FK
+        text venue_requirements "free text; 'none_required' sentinel means explicitly opted out"
+        text accessibility_note "free text; excluded from automated matching"
+        text equipment_requirements "free text; 'none_required' sentinel means explicitly opted out"
+        text layout_preference "free text organiser input, distinct from confirmed layout_id"
+        timestamptz created_at
+        "UNIQUE (id, event_id) supports session ownership composite foreign keys"
     }
 
     VENUES {
@@ -152,8 +176,8 @@ erDiagram
         uuid feature_id PK,FK
     }
 
-    EVENT_ACCESSIBILITY_NEEDS {
-        uuid event_id PK,FK
+    SESSION_ACCESSIBILITY_NEEDS {
+        uuid session_id PK,FK
         uuid feature_id PK,FK
     }
 
@@ -168,25 +192,29 @@ erDiagram
         uuid facility_id PK,FK
     }
 
-    EVENT_FACILITY_NEEDS {
-        uuid event_id PK,FK
+    SESSION_FACILITY_NEEDS {
+        uuid session_id PK,FK
         uuid facility_id PK,FK
     }
 
     VENUE_BOOKINGS {
         uuid id PK
         uuid venue_id FK
-        uuid event_id FK
-        tstzrange booking_range "advertised start and end"
+        uuid event_id FK "denormalised with session_id and checked by composite FK"
+        uuid session_id FK
+        uuid layout_id FK "confirmed layout for this Session at this Venue"
+        tstzrange booking_range "within the linked Session's period"
         tstzrange occupancy_range "application-maintained: booking_range widened by the venue's setup and turnaround at write time; the EXCLUDE constraint keys on this (ADR-003)"
         booking_status status "pending, tentative, confirmed, rejected, released, conflicting, expired"
         text purpose "Week 7 C-67; e.g. Main programme, Breakout A"
-        int headcount "Week 7 C-67; governs suitability for this venue, falls back to EVENTS.expected_attendance (O-27)"
+        int headcount "Week 7 C-67; governs suitability for this venue, falls back to SESSIONS.expected_attendance (T-79)"
         boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30)"
         uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
         timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
         uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
-        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31, T-92)"
+        timestamptz expires_at "tentative holds only; explicitly configured per hold, no system default (C-99, C-124)"
+        interval warning_before "Coordinator-configured warning interval per hold (C-125)"
+        timestamptz reminder_sent_at
         boolean requires_reconfirmation
         text decision_reason
         uuid suggested_venue_id FK "alternative offered on rejection"
@@ -198,11 +226,44 @@ erDiagram
     VENUE_BLOCKS {
         uuid id PK
         uuid venue_id FK
-        tstzrange block_range
+        tstzrange block_range "lower bound required; upper bound may be open until lifted; no buffers"
         unavailability_reason reason_category "Week 7 C-66: maintenance, equipment_failure, renovation, safety_concern, other"
         varchar reason "free-text note"
         uuid created_by FK
         timestamptz created_at
+        timestamptz lifted_at "null while active; lifting retains the row and history"
+        uuid lifted_by FK
+    }
+
+    VENUE_BLOCK_HISTORY {
+        uuid id PK
+        uuid block_id FK
+        varchar action "created, edited, lifted"
+        tstzrange previous_range "null for creation"
+        tstzrange new_range "null for lift"
+        varchar previous_reason
+        varchar new_reason
+        uuid actor_id FK "null only for system-originated changes"
+        timestamptz changed_at
+    }
+
+    VENUE_STAFF_ASSIGNMENTS {
+        uuid venue_id PK,FK
+        uuid staff_id PK,FK
+        timestamptz active_from
+        timestamptz active_until
+        "setup/routing data; no Release 1 roster-management screen (T-89)"
+    }
+
+    VENUE_HOLD_EXTENSIONS {
+        uuid id PK
+        uuid booking_id FK
+        smallint extension_number "1 or 2; unique per booking"
+        timestamptz previous_expiry
+        timestamptz new_expiry
+        text reason "required for every extension"
+        uuid extended_by FK "Venue Staff"
+        timestamptz extended_at
     }
 
     EQUIPMENT {
@@ -228,6 +289,7 @@ erDiagram
     EQUIPMENT_REQUESTS {
         uuid id PK
         uuid event_id FK
+        uuid session_id FK
         uuid equipment_id FK
         int quantity_requested
         text technical_notes
@@ -239,6 +301,7 @@ erDiagram
         uuid id PK
         uuid request_id FK
         uuid event_id FK
+        uuid session_id FK
         uuid equipment_id FK
         int quantity_reserved
         tstzrange reservation_range
@@ -272,10 +335,19 @@ erDiagram
     EVENT_REGISTRATIONS {
         uuid id PK
         uuid event_id FK
-        uuid attendee_id FK "UNIQUE with event_id"
-        registration_status status "registered, waitlisted, withdrawn"
+        uuid attendee_id FK "at most one active registration with event_id"
+        registration_status status "pending, registered, waitlisted, withdrawn"
+        boolean manually_added "distinguishes Organiser-added attendee (T-50)"
         timestamptz registered_at "orders first-come waitlist claims"
         timestamptz withdrawn_at
+    }
+
+    EVENT_REGISTRATION_SESSIONS {
+        uuid registration_id PK,FK
+        uuid event_id FK "same Event as registration and Session"
+        uuid session_id PK,FK
+        timestamptz selected_at
+        "composite FKs prevent selecting a Session belonging to another Event"
     }
 
     EVENT_ATTENDANCE {
@@ -300,10 +372,10 @@ erDiagram
     COORDINATOR_REASSIGNMENTS {
         uuid id PK
         uuid event_id FK
-        uuid from_coordinator_id FK "the assigned Coordinator who asked"
-        uuid to_coordinator_id FK "the named colleague; must accept before ownership moves"
-        reassignment_status status "pending, accepted, declined; at most one pending per event"
-        boolean addressed_to_lead "Week 7 C-69 (O-37): true when the Coordinator asks the Lead rather than a named colleague; to_coordinator_id null until the Lead decides"
+        uuid from_coordinator_id FK "legacy requestor; historical rows only"
+        uuid to_coordinator_id FK "legacy target; historical rows only"
+        reassignment_status status "legacy pending/accepted/declined history; no new request rows after T-83"
+        boolean addressed_to_lead "legacy Week 7 field; no Coordinator-to-Lead request flow after T-83"
         timestamptz requested_at
         timestamptz decided_at "null while pending"
     }
@@ -314,9 +386,10 @@ erDiagram
         uuid requested_by FK
         text description
         jsonb requested_changes
-        change_status status "pending, approved, declined, applied"
+        change_status status "pending, approved, declined, applied, obsolete"
         uuid reviewed_by FK
         text decision_reason
+        timestamptz closed_at "set for terminal decision, including automatic Obsolete"
         timestamptz reviewed_at
         timestamptz created_at
     }
@@ -358,10 +431,10 @@ erDiagram
     SAFETY_CHECKS {
         uuid id PK
         uuid event_id FK
-        uuid safety_officer_id FK
-        safety_decision decision "approved, changes_requested, rejected (Week 7 C-70, E08-S06)"
-        text reason "mandatory for changes_requested and rejected"
-        timestamptz submitted_at "when the Coordinator submitted for review (E08-S03)"
+        uuid safety_officer_id FK "null until a Safety Officer records the decision"
+        safety_decision decision "null while pending; approved, changes_requested, rejected"
+        text comments "overall comments; carries the reason for changes_requested/rejected (C-133/C-134)"
+        timestamptz created_at "created automatically when all required arrangements confirm (C-132, T-82)"
         timestamptz decided_at
     }
 
@@ -374,13 +447,77 @@ erDiagram
     }
 ```
 
+### Week 9 constraints and migration boundary
+
+- Every Event has one or more child Sessions. `EVENTS.event_range` is the overall
+  envelope; each `SESSIONS.session_range` stores that Session's period and must be
+  within the Event envelope. Event expected attendance remains an overall
+  planning total; each Session has its own expected attendance, used as a
+  booking-suitability fallback only for that Session (T-79). There is no minimum
+  lead-time rule; requested event dates more than two years ahead are rejected
+  by the application (T-87).
+- Venue bookings and equipment requests/reservations carry both `event_id` and
+  `session_id`. `SESSIONS` has `UNIQUE (id, event_id)`; dependent rows use a
+  composite foreign key so the Session and denormalised Event cannot disagree.
+  Technical-support requests and assignments stay Event-level (T-79).
+- A booking period is within its Session period. Per-booking headcount is
+  authoritative; if absent, suitability uses the linked Session's expected
+  attendance. The venue exclusion constraint remains keyed by venue and buffered
+  occupancy period, covering pending, tentative, and confirmed uses. Maintenance
+  blocks accept an open upper range and are tested against event uses/holds without
+  setup or turnaround buffers (T-80).
+- A tentative hold has a Venue Staff-configured expiry and Coordinator-configured
+  warning interval, with no system default. Each extension is an immutable
+  `VENUE_HOLD_EXTENSIONS` row; a transaction permits at most two rows per booking
+  and requires the reason. Hold expiry/release/conversion remains governed by T-78
+  and T-84.
+- Venue Staff-to-venue routing is held in `VENUE_STAFF_ASSIGNMENTS` setup data; no
+  roster-management screen is in Release 1 (T-89). Venue-block edits and lifts
+  append `VENUE_BLOCK_HISTORY` snapshots; a lift retains the block row, attributes
+  the actor/time and notifies each affected Coordinator (T-91).
+- Registration remains one row per attendee/Event. A partial unique constraint
+  allows only one active `EVENT_REGISTRATIONS` row per account/Event; the join table
+  records one or more attendee-selected Sessions. Approved registrations occupy
+  one place in every selected Session and one place against combined Event
+  capacity, derived from confirmed Session layout capacities. Over-capacity
+  submissions are `pending` for Organiser review; the current working assumption
+  has no per-Session waitlist (O-50). The existing Event-level waitlist remains for
+  combined Event capacity. This distinction is not a new customer answer.
+- When required venue/equipment/support arrangements become complete, the system
+  creates the safety review, moves the Event from Planning to Safety Review, and
+  notifies the Safety Officer. The factor checklist and overall decision/comments
+  are stored separately; C-134 requires decision/comments, while T-82 adds the
+  checklist as a team workflow aid. A terminal Event transition marks its pending
+  change requests Obsolete and records each transition (T-88).
+- Roles are many-to-many in `USER_ROLES`; seed data starts with one role per
+  account. Venue blocks retain open-ended ranges and change history. These are
+  target-schema proposals for the affected stories, not claims that migrations or
+  application code have shipped.
+
+Data migration must preserve the current rows and audit trail. Backfill one
+Session per existing Event from its current date/time and requirement fields;
+move its layout/accessibility/facility needs to that Session; link existing venue
+bookings and equipment rows to the new Session; and retain Event-level technical
+support and registration windows. Existing registration rows select the backfilled
+Session. Add the `USER_ROLES` rows from each existing `USERS.role` before dropping
+the single-role column. Convert deleted block behavior to a lifted timestamp only
+after retaining a history snapshot. Backfill hold expiry/warning configuration
+without inventing defaults; unresolved legacy tentative holds must be reviewed
+before the migration can require per-hold configuration. No migration is included
+in this documentation PR.
+
+The legacy `COORDINATOR_REASSIGNMENTS` relation remains readable for historical
+records only. New Lead assignment/reassignment is captured in the Event and audit
+history; no Coordinator request, incoming acceptance or decline is written under
+T-83.
+
 ### Week 7 migration sequence
 
 The ERD above describes the shared target schema. The checked-in migration 0001 still creates venue_bookings with booking_range and an exclusion constraint over Pending and Confirmed rows.
 
 - PR #231 proposes migration 0011_venue_setup_turnaround_buffers.sql. It adds venues.setup_time_minutes, venues.turnaround_time_minutes, and occupied_window(); it does not yet alter venue_bookings or its exclusion constraint.
 - PR #232 proposes migration 0012_user_role_enum_additions.sql for the Week 7 roles. It is independent of booking-range persistence.
-- PR #246 merged migration 0013_tentative_venue_holds.sql (holds only; the hold code is #245). It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
+- PR #245 merged migration 0013_tentative_venue_holds.sql (holds only). It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
 - Migration 0014 is proposed as 0014_venue_bookings_contract.sql (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, and the committed 0013; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
 
-Migration 0013 is merged; migration 0014 remains a coordination proposal. Do not add a second E06-S03 migration for fields or constraints in 0014. Other Week 7 schema work, including event safety review, venue block categories, and coordinator reassignment fields, remains with its owning stories and must be ordered separately.
+Migration 0013 is merged; migration 0014 remains a coordination proposal. Do not add a second E06-S03 migration for fields or constraints in 0014. Safety review and venue-block schema work remains with its owning stories; legacy Coordinator reassignment requests remain read-only history under T-83, with any removal/deprecation planned separately.
