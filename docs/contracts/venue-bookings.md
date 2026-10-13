@@ -34,7 +34,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | requested_by | uuid foreign key, nullable for legacy rows | Coordinator who submitted the formal request; the service requires it for every new Pending request. |
 | requested_at | timestamptz, nullable for Tentative rows | Time the formal request was submitted. |
 | submission_key | uuid, nullable | Direct-request idempotency key; unique with requested_by when present. |
-| expires_at | timestamptz, nullable | Hold expiry state; conversion clears it and Expired preserves expires_at (T-79: one notice at expiry, no separate reminder). |
+| expires_at | timestamptz, nullable | Hold expiry state; conversion clears it and Expired preserves expires_at (T-92: one notice at expiry, no separate reminder). |
 | requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state. |
 | created_at | timestamptz, required | Row creation time; remains the hold creation time after conversion. |
 
@@ -50,7 +50,7 @@ Migration 0014 should:
 - Add requested_by uuid REFERENCES users(id) and requested_at timestamptz. They are required by the application for every new Pending request; nullable storage preserves legacy rows that cannot be safely attributed. For a converted hold, these record the Coordinator who formally submitted it.
 - Add is_primary boolean NOT NULL DEFAULT false, with a check that only Confirmed rows can be primary and a partial unique index allowing at most one primary booking per event.
 - Add application-maintained occupancy_range tstzrange, backfill it with occupied_window(booking_range, setup_time_minutes, turnaround_time_minutes), and refresh it whenever the booking period, venue, or relevant buffer changes.
-- Add status-dependent constraints now that migration 0013 has committed: Tentative rows require an expiry (`expires_at IS NOT NULL`); Pending rows have no active expiry; conversion clears `expires_at`; Expired rows retain the expiry timestamp as history (T-79).
+- Add status-dependent constraints now that migration 0013 has committed: Tentative rows require an expiry (`expires_at IS NOT NULL`); Pending rows have no active expiry; conversion clears `expires_at`; Expired rows retain the expiry timestamp as history (T-92).
 - Add submission_key uuid for direct-request retry safety, with a partial unique index on (requested_by, submission_key) when the key is present.
 - Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is `tentative`, `pending`, or `confirmed`. Keep the existing constraint name if practical so the database error mapper has one stable target. This predicate uses the new `tentative` value, so create it only in migration 0014, after 0013 commits.
 

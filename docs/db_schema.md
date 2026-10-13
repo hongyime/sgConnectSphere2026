@@ -186,7 +186,7 @@ erDiagram
         uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
         timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
         uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
-        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31, T-79)"
+        timestamptz expires_at "Week 7 C-68; tentative holds only, default created_at + 48h (O-31, T-92)"
         boolean requires_reconfirmation
         text decision_reason
         uuid suggested_venue_id FK "alternative offered on rejection"
