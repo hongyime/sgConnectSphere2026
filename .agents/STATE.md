@@ -6,7 +6,9 @@ Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live 
 
 **Sprint 3 is active** (Jira sprint 36, 2026-10-04 to 2026-10-17). The latest merged Week 9 decision, backlog/test, and architecture/UI PRs are #253, #254, and #255. Main now records customer answers C-71 to C-136, team decisions T-79 to T-91, the affected backlog and canonical test cases, ADR-018/019, and updated schema/API/architecture/flow/design handoffs. Application implementation and actual Figma frame work remain downstream. The BDR and ADR Word exports are dated 13 October.
 
-**Live Sprint 3 incomplete issues checked 2026-10-14:**
+**Live Sprint 3 parent-story status checked 2026-10-14:**
+
+Board data shows 21 parent-story issues: 11 Done and 10 incomplete. Jira board data omits subtasks, so a separate subtask query was used; 18 subtasks are also incomplete.
 
 - Bryan: SCRUM-44 (E05-S05, In Review; PR #231) and SCRUM-176 (E03-S11, To Do; PR #247 has changes requested).
 - Ji Ning: SCRUM-46 (In Review), SCRUM-47 (In Progress), and SCRUM-75 (In Progress; carried from Sprint 2).
@@ -15,6 +17,14 @@ Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live 
 - Aaron: SCRUM-55 (In Review) and SCRUM-60 (To Do).
 
 These are live sprint items, not yet confirmed Sprint 3 carryovers. Reconcile any incomplete work after the sprint closes on 17 October under T-73; preserve current owners and commitments until then. Bryan already owns SCRUM-44 and SCRUM-176.
+
+**Live Sprint 3 incomplete subtasks (checked 2026-10-14):**
+
+- Amareet: SCRUM-139/140/141 In Review, SCRUM-142 To Do, and SCRUM-143/144 In Progress. SCRUM-141 needs Bryan's scheduler and secret decision recorded before deployment-secret work; SCRUM-142 depends on Bryan's #231 buffer work being merged.
+- Aaron: SCRUM-163/164/165/166/167/168/169, all In Review.
+- Ji Ning: SCRUM-170/171/172 In Review and SCRUM-173/174/175 To Do.
+
+These subtasks also remain active Sprint 3 work, not confirmed carryovers. Reconcile all parent stories and subtasks only after sprint close under T-73.
 
 ## Week 9 follow-through and Jira
 
@@ -33,7 +43,7 @@ These are live sprint items, not yet confirmed Sprint 3 carryovers. Reconcile an
 
 All PRs below target main. “Required checks pass” means repository-checks, pr-conventions, lfs-guard, and application-checks.
 
-- #258, SCRUM-182 migration selector: mergeable; review required; repository-checks, pr-conventions, and lfs-guard pass; one application-checks run passed and a duplicate required application-checks run remains pending. Optional Vercel deploy failed on the account's daily quota.
+- #258, SCRUM-182 migration selector: mergeable; review required; all required checks pass. Optional Vercel deploy failed on the account's daily quota.
 - #257 Week 9 Jira reconciliation: mergeable; review required; required checks pass.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
 - #252 hold screens: conflicting; review required; no current checks reported; production 0013 verification is also required.
@@ -68,6 +78,7 @@ All PRs below target main. “Required checks pass” means repository-checks, p
 ## Next actions
 
 1. Obtain teammate review/approval where required; answer changes requested and clear conflicts on #230, #231, #232, #245, #247, and #249. Do not self-approve.
-2. On T14/3410, perform the read-only production ledger precheck, select one dependency-ready migration at a time, then use the runbook's pre/post checks and a separate run record for each application. No production action is recorded as complete here.
-3. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
-4. After #258 merges, verify its final-head review/check status and update the Jira reconciliation only against the merged evidence.
+2. Record Bryan's scheduler and secret decision for SCRUM-141 before any deployment-secret change; resume SCRUM-142 only after #231 is merged.
+3. On T14/3410, perform the read-only production ledger precheck, select one dependency-ready migration at a time, then use the runbook's pre/post checks and a separate run record for each application. No production action is recorded as complete here.
+4. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
+5. After #258 merges, verify its final-head review/check status and update the Jira reconciliation only against the merged evidence.
