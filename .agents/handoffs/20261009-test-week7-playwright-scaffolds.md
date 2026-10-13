@@ -7,7 +7,8 @@ Goal: Bring PR #217 up to current `origin/main`, regenerate its generated covera
 - Fetched `origin` and merged `origin/main` at `8f246ae` into the PR branch.
 - The only merge conflict was generated `docs/testing/tc-coverage.md`; regenerated it from the merged tests and canonical workbook. Current inventory: 351 cases, 153 automated, 160 scaffolds, 38 without a test reference.
 - The merged coverage file is staged as the conflict resolution. `.agents/STATE.md` and `.agents/JOURNAL.md` have no branch-authored change.
-- `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` passed: repository hygiene, 87 tooling tests, and 200 test-run records. No application checks were run.
+- The post-commit check passed repository hygiene and 87 tooling tests at `6272d98`; its T-65 run record is `docs/testing/runs/20261014-000027-bryanseah234-tooling.md`.
+- A follow-up check after adding that record passed and validated 201 run records. No application checks were run.
 - The first check attempt failed because `python` was not on `PATH`; rerunning with the repo tooling environment resolved that.
 
 ## Next
@@ -19,7 +20,7 @@ Goal: Bring PR #217 up to current `origin/main`, regenerate its generated covera
 - `git fetch origin --prune` — fetched the current remote refs before branch work.
 - `git merge --no-edit origin/main` — merged `8f246ae`; conflict limited to generated `tc-coverage.md`.
 - `.venv-tools/bin/python scripts/tc_coverage_audit.py` — regenerated `tc-coverage.md` from current sources.
-- `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` — passed repository hygiene and 87 tooling tests; validated 200 run records.
+- `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` — passed repository hygiene and 87 tooling tests; validated 200 records before adding the PR run record and 201 records afterward.
 
 ## Decisions
 
