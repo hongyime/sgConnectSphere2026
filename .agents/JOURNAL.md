@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-10-14: The Sprint 3 board view omits subtasks. Audit all Subtask issues against the Sprint field; the current sprint has 10 incomplete parent stories and 19 incomplete subtasks. Keep assignments intact and decide carryovers only after the sprint closes under T-73.
+- 2026-10-14: T-69/ADR-006 already select the existing outbox relay for tentative-hold expiry, and T-84 replaces the fixed warning interval with per-hold configuration. Jira's old GitHub Actions/15-minute title was inconsistent; align the ticket to the accepted relay decision and record any cadence change before touching deployment configuration or secrets.
 - 2026-10-14: Accepted Week 9 answers C-71 to C-136 and team decisions T-79 to T-91 are now in canonical BDR Markdown. Preserve the recorded C-111/C-119 conflict and the selected C-119 behavior in downstream work.
 - 2026-10-14: Release 1 labels and live Jira Sprint 3 membership can disagree. Follow T-73 conservatively and reconcile assignments after the sprint closes rather than changing active commitments mid-sprint.
 - 2026-10-14: The accepted Session model and multi-role accounts are recorded in ADR-018/019 and the target schema. Keep C-134's decision/comments requirement distinct from the team-added safety checklist; event attendance and Session attendance serve different purposes.

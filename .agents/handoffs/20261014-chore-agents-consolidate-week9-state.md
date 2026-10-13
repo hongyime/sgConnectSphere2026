@@ -2,27 +2,28 @@
 
 Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs and live Jira/GitHub status so a new machine can resume without relying on chat history.
 
-## Done so far
+## Current state
 
-- Started on an owner-only consolidation branch based on the fetched origin/main at 8f246ae; the worktree was clean.
-- Read the three merged Week 9 handoffs for PRs #253, #254, and #255. Consolidated their durable decisions into the journal and refreshed current status in STATE.
-- Rechecked Sprint 3 issue assignments and the open pull request list on 2026-10-14. Bryan owns SCRUM-44 and SCRUM-176; neither is a confirmed Sprint 3 carryover before the sprint closes.
-- Used the active-sprint board data plus a separate subtask query: 10 parent stories and 18 subtasks are incomplete. Amareet owns SCRUM-141 (In Review; scheduler/secret decision needed) and SCRUM-142 (To Do; depends on #231).
-- Recorded that the production migration ledger remains unverified from this environment. No production query or migration was run.
-- Found conflicting SCRUM-141 scheduler sources: Jira says GitHub Actions, docs/api-changes-week7.md says Vercel Cron with a bearer secret, and accepted T-69/ADR-006 specify the existing Scheduler and Outbox Relay. No scheduler choice or deployment secret was added.
+- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 remains open for teammate review.
+- Updated `.agents/STATE.md` and `.agents/JOURNAL.md` in the owner consolidation PR. The Sprint 3 audit now records 10 incomplete parent stories and 19 incomplete subtasks; the previous state snapshot undercounted one subtask group.
+- Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. Neither is a confirmed carryover before the Sprint 3 close on 17 October.
+- Jira now reflects SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
+- PR #217's Amareet review request to remove the already-merged #240 handoff is satisfied. Its duplicate task handoff was consolidated into the original task-start file; head `a6a8b48` has all required checks passing and still needs peer approval.
+- PR descriptions #217, #230 and #248 now report current head/check status and remaining review blockers. #230 remains CHANGES_REQUESTED; #248 and #217 still need teammate approval.
+- This session has no production database access or authenticated dashboard session. No migration ledger query or production migration was run. PR #258 (one-at-a-time CLI selector) remains unmerged, and #245/#252 remain blocked on production verification of 0013 plus their current conflicts/review state.
 
 ## Not done / next step
 
-Obtain peer review and merge this owner consolidation PR. On T14/3410, do the production ledger precheck and apply one dependency-ready migration at a time with the runbook's pre/post checks and an immutable run record. Reconcile Sprint 3 carryovers after its 17 October close.
+- Obtain required teammate approvals; do not self-approve or message reviewers without authorization.
+- Resolve the product owner's exact SCRUM-141 cadence choice before changing scheduler configuration or deployment secrets.
+- On the production-connected environment, read the migration ledger, then apply one dependency-ready migration per runbook with separate pre/post checks and records.
+- Reconcile Sprint 3 carryovers after the sprint closes on 17 October.
 
 ## Verification
 
-- git fetch origin --prune: origin/main was 8f246ae and the owner branch started at the same commit.
-- python3 scripts/agent_handoffs.py listed the three merged Week 9 handoffs.
-- Live Jira active-sprint board data, subtask JQL, and GitHub PR snapshots were read-only and checked on 2026-10-14.
-- PATH=/tmp/codex-python-shim:$PATH python scripts/check.py passed on the staged consolidation at base commit 8f246ae; repository hygiene passed and all 87 tooling tests passed. T-65 record: docs/testing/runs/20261014-013138-bryanseah234-tooling.md. The check validated 194 existing records before the new record was added.
-- python3 scripts/check_postplan_html.py artifacts/agents-consolidation-20261014.html passed; desktop and mobile layouts were visually checked in headless Chrome.
-- PostPlan version 2 includes the Sprint 3 subtask details: https://loake29e7gzf.postplan.dev/v/2; linked in top-level comment https://github.com/hongyime/sgConnectSphere2026/pull/259#issuecomment-6151569642.
-- PATH=/tmp/codex-python-shim:$PATH python scripts/check.py passed after the Sprint 3 subtask update at base commit 7492492; 87 tooling tests passed and 195 existing run records were validated. T-65 record: docs/testing/runs/20261014-014136-bryanseah234-tooling.md.
-- PR #259 at head c375032 passed all required checks and is mergeable; teammate review/approval remains required.
-- PATH=/tmp/codex-python-shim:$PATH python scripts/check.py passed for the final handoff update at base commit c375032; 87 tooling tests passed and 196 existing records were validated. T-65 record: docs/testing/runs/20261014-014519-bryanseah234-tooling.md.
+- `git fetch origin --prune` and `git pull --ff-only`: `origin/main` remained `8f246ae`.
+- `python3 scripts/agent_handoffs.py` listed the current task handoffs.
+- Live Jira board parent data, Jira Subtask Sprint-field data, targeted issue records, and GitHub PR heads/reviews/checks were read-only and checked on 2026-10-14.
+- `scripts/check.py` — PASS at base `bc93d2f`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-020843-bryanseah234-tooling.md`.
+- PR #217 handoff cleanup repository check passed at base `5cf492a`; T-65 record: `docs/testing/runs/20261014-015537-bryanseah234-tooling.md`.
+- PostPlan v3 is ready with the corrected review-pending headline: https://loake29e7gzf.postplan.dev/v/3. PR #259 still needs its description/comment updated when GitHub API rate limits clear.

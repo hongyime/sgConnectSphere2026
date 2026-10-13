@@ -1,6 +1,6 @@
 # Agent State
 
-Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live Jira Sprint 3 data, and open GitHub PRs. Detailed task history is in `.agents/handoffs/`; `python scripts/agent_handoffs.py` lists it. This file and JOURNAL are owner-maintained through one `chore(agents): consolidate ...` PR (decision 0014), not routine PRs.
+Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live Jira Sprint 3 data, and current open GitHub PRs. Detailed task history is in `.agents/handoffs/`; `python scripts/agent_handoffs.py` lists it. This file and JOURNAL are owner-maintained through the open consolidation PR #259 under decision 0014, not routine PRs.
 
 ## Where things stand
 
@@ -8,7 +8,7 @@ Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live 
 
 **Live Sprint 3 parent-story status checked 2026-10-14:**
 
-Board data shows 21 parent-story issues: 11 Done and 10 incomplete. Jira board data omits subtasks, so a separate subtask query was used; 18 subtasks are also incomplete.
+There are 21 parent-story issues: 11 Done and 10 incomplete. Board search omits subtasks, so the subtask inventory was checked separately against each issue's Sprint field.
 
 - Bryan: SCRUM-44 (E05-S05, In Review; PR #231) and SCRUM-176 (E03-S11, To Do; PR #247 has changes requested).
 - Ji Ning: SCRUM-46 (In Review), SCRUM-47 (In Progress), and SCRUM-75 (In Progress; carried from Sprint 2).
@@ -16,47 +16,52 @@ Board data shows 21 parent-story issues: 11 Done and 10 incomplete. Jira board d
 - Amareet: SCRUM-49 (In Progress).
 - Aaron: SCRUM-55 (In Review) and SCRUM-60 (To Do).
 
-These are live sprint items, not yet confirmed Sprint 3 carryovers. Reconcile any incomplete work after the sprint closes on 17 October under T-73; preserve current owners and commitments until then. Bryan already owns SCRUM-44 and SCRUM-176.
+These are live sprint items, not confirmed Sprint 3 carryovers. Reconcile incomplete work after the sprint closes on 17 October under T-73; preserve current owners and commitments until then. Bryan already owns SCRUM-44 and SCRUM-176.
 
 **Live Sprint 3 incomplete subtasks (checked 2026-10-14):**
 
-- Amareet: SCRUM-139/140/141 In Review, SCRUM-142 To Do, and SCRUM-143/144 In Progress. SCRUM-141 needs Bryan's scheduler and secret decision recorded before deployment-secret work; SCRUM-142 depends on Bryan's #231 buffer work being merged.
+There are 19 incomplete subtasks:
+
+- Amareet: SCRUM-139/140/141 In Review, SCRUM-142 To Do, SCRUM-143/144 In Progress.
 - Aaron: SCRUM-163/164/165/166/167/168/169, all In Review.
 - Ji Ning: SCRUM-170/171/172 In Review and SCRUM-173/174/175 To Do.
 
-These subtasks also remain active Sprint 3 work, not confirmed carryovers. Reconcile all parent stories and subtasks only after sprint close under T-73.
+SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #231. These subtasks remain active Sprint 3 work, not confirmed carryovers. Reconcile all parent stories and subtasks only after sprint close under T-73.
 
 ## Week 9 follow-through and Jira
 
 - Canonical Markdown was merged before downstream Jira reconciliation, following `docs/source-of-truth.md`.
 - Jira follow-up PR #257 records the Week 9 reconciliation. SCRUM-180 (E02-S07) and SCRUM-181 (E07-S08) are To Do outside Sprint 3, without points or assignees. Twelve eligible existing Jira descriptions were refreshed; Sprint 3 commitments and Done stories were protected.
-- SCRUM-182 is a technical enabler for the production migration CLI. It is In Review and implemented on PR #258, which adds the one-migration-at-a-time selector. Its no-selector local/test behavior remains all-pending.
+- SCRUM-177 (PR #248) is In Review; SCRUM-178 (PR #217) is In Review; SCRUM-179 (PR #230) remains In Progress while its change request is open.
+- SCRUM-182 is a technical enabler for the migration CLI. It is In Review and implemented on PR #258, which adds the one-migration-at-a-time selector. Its no-selector behavior remains all-pending.
+- SCRUM-141 was reconciled to the accepted existing outbox-relay decision in T-69/ADR-006; T-84 supplies per-hold warning timing. Jira's old GitHub Actions/15-minute wording was removed. The repository currently schedules the existing Vercel relay daily; the product owner has been asked to decide whether to retain that cadence or record a different one. No scheduler or deployment secret was added or changed.
 
 ## Production migrations and Amareet's request
 
-- Production migration ledger status is **unverified**: this checkout has no access to the T14/3410 environment, production database URL, or `psql`. No production ledger query or migration was run.
-- Migration 0013 is merged in #246, but merge does not prove it is on production. The runbook requires a read-only precheck and postcheck and a committed run record for each attempt. SCRUM-182/#258 implements the selected one-at-a-time CLI path but is still awaiting review and merge.
-- PR #231 proposes migration 0011 and has changes requested plus a merge conflict; PR #232 proposes migration 0012 and has changes requested. Check dependencies and the real ledger before choosing the next file. Do not assume 0009, 0010, or 0013 are still pending.
+- Production migration ledger status is **unverified**. This session had no production database credentials or authenticated dashboard session. No production ledger query or migration was run.
+- Migration 0013 is merged in #246, but merge does not prove it is on production. The runbook requires a read-only precheck and postcheck plus a committed run record for each attempt. SCRUM-182/#258 implements the selected one-at-a-time CLI path but is still awaiting review and merge.
+- The production status of migrations 0009, 0010, and 0013 is unknown until the ledger is checked. Do not assume any are pending.
 - PRs #245 and #252 depend on production verification of 0013 and renewed review. Both currently have merge conflicts; #245 also awaits review, and #252 has no current checks reported.
+- PR #231 is conflicting and has changes requested; it blocks SCRUM-142. PR #231's title references SCRUM-161 while its branch references SCRUM-44; SCRUM-161 is already Done in Jira, so do not infer full story completion from that subtask flag.
 
 ## Open PR snapshot (checked 2026-10-14)
 
-All PRs below target main. “Required checks pass” means repository-checks, pr-conventions, lfs-guard, and application-checks.
+All PRs below target main. “Required checks” means `repository-checks`, `pr-conventions`, `lfs-guard`, and `application-checks`.
 
-- #258, SCRUM-182 migration selector: mergeable; review required; all required checks pass. Optional Vercel deploy failed on the account's daily quota.
-- #257 Week 9 Jira reconciliation: mergeable; review required; required checks pass.
+- #259 owner STATE/JOURNAL consolidation: open; the latest local owner-state edits still need pushing before its PR checks and review status can be refreshed.
+- #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
+- #257 Week 9 Jira reconciliation: mergeable draft; review required; required checks pass.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
-- #252 hold screens: conflicting; review required; no current checks reported; production 0013 verification is also required.
-- #251 Dependabot Actions updates: mergeable; approved; required checks pass; optional Vercel deploy failed.
-- #250 Dependabot tooling updates: mergeable; approved; required checks pass.
+- #252 hold screens: conflicting draft; review required; no current checks reported; production 0013 verification is also required.
+- #251 Dependabot Actions updates: mergeable; approved; required checks pass. #250 tooling updates: mergeable; approved; required checks pass.
 - #249 SCRUM-55 equipment unavailable: conflicting; review required; reported checks pass.
-- #248 worktree hygiene gate: mergeable; review required; required checks pass.
+- #248 SCRUM-177 worktree hygiene: mergeable; review required; required checks pass.
 - #247 SCRUM-176 registration setup: mergeable; changes requested; reported checks pass.
 - #245 SCRUM-138 tentative holds: conflicting; review required; reported checks pass; production 0013 verification is also required.
 - #232 Coordinator Lead/Safety Officer roles: mergeable; changes requested; reported checks pass.
-- #231 SCRUM-161 venue buffers: conflicting; changes requested; reported checks pass. Bryan's review response and branch-name correction remain necessary before extending work on it.
-- #230 SCRUM-179 seeded-account test cases: mergeable; changes requested; required checks pass.
-- #217 SCRUM-178 Week 7 test scaffolds: mergeable; review required; required checks pass.
+- #231 SCRUM-44 venue buffers: conflicting; changes requested; reported checks pass.
+- #230 SCRUM-179 seeded-account cases: mergeable; changes requested; required checks pass.
+- #217 SCRUM-178 Week 7 test scaffolds: mergeable; review required; all required checks pass on head `a6a8b48`. Optional Vercel deploy failed.
 
 ## Live infrastructure and team workflow
 
@@ -77,8 +82,8 @@ All PRs below target main. “Required checks pass” means repository-checks, p
 
 ## Next actions
 
-1. Obtain teammate review/approval where required; answer changes requested and clear conflicts on #230, #231, #232, #245, #247, and #249. Do not self-approve.
-2. Record Bryan's scheduler and secret decision for SCRUM-141 before any deployment-secret change; resume SCRUM-142 only after #231 is merged.
-3. On T14/3410, perform the read-only production ledger precheck, select one dependency-ready migration at a time, then use the runbook's pre/post checks and a separate run record for each application. No production action is recorded as complete here.
-4. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
-5. After #258 merges, verify its final-head review/check status and update the Jira reconciliation only against the merged evidence.
+1. Obtain teammate approval to merge #217 and #248; their required checks currently pass. Get Xiang Ying's re-review on #230 after the corrected cases; its change request remains open. Do not self-approve.
+2. Record the product owner's exact SCRUM-141 cadence choice before changing schedule configuration or any deployment secret.
+3. On the production-connected environment, perform the read-only ledger precheck, select one dependency-ready migration at a time, then use the runbook's pre/post checks and a separate run record for each application. No production action is recorded as complete here.
+4. Resolve the conflicts and requested review changes on #231/#245/#252 before extending dependent work; SCRUM-142 remains blocked by SCRUM-44.
+5. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
