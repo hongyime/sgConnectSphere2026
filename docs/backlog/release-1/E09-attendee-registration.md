@@ -4,129 +4,138 @@
 
 - **Sprint**: Sprint 4
 - **Points**: 5
-- **BDR references**: C-35, T-48, C-67, T-68, O-30
+- **BDR references**: C-35, C-67, C-97, C-107, T-68, T-78, T-79, T-85
 - **Owner**:
 
 ### User story
 
-As an Attendee, I want to register for a confirmed event so that my place is reserved and I receive the event information.
+As an Attendee, I want to register once for a confirmed Event and select the Sessions I will attend so that my place is reserved across the Event I chose.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Place reserved in an open event
+#### Scenario 1 — Place reserved in an open Event
 
-Given an event is Confirmed, registration is open and places remain When I submit the required registration information Then my place is reserved and I receive a confirmation containing the event details
+Given an Event is Confirmed, registration is open, and selected Sessions have capacity When I submit the required registration information and select one or more Sessions Then one active Event-level registration records those Sessions and I receive a confirmation with the Event and selected Session details
 
-#### Scenario 2 — Duplicate registration prevented
+#### Scenario 2 — One active registration per account and Event
 
-Given I have already registered for the event When I try to register again Then I am told I am already registered and no duplicate registration is created
+Given I already have an active registration for an Event When I attempt to submit another registration for that Event Then ConnectSphere tells me I am already registered and does not create a second active registration; selecting multiple Sessions remains part of the existing registration
 
 #### Scenario 3 — Missing fields identified
 
 Given a required registration field is empty When I submit Then registration is blocked and the missing fields are identified
 
-#### Scenario 4 — Unconfirmed event refused
+#### Scenario 4 — Unconfirmed Event refused
 
-Given an event is not Confirmed When I attempt to register Then registration is refused
+Given an Event is not Confirmed When I attempt to register Then registration is refused
 
-#### Scenario 5 — One venue shown for a multi-venue event
+#### Scenario 5 — Event and Session venue information shown
 
-Given a Confirmed event has several Confirmed venue bookings When I view it to register Then the venue shown is the one its Coordinator marked primary, and the other venues are not listed as separate places to register (C-67; assumes O-30)
+Given a Confirmed Event has one or more confirmed venue bookings When I view registration Then the Event summary shows its primary venue and the selected Session details show their own confirmed venues; venues are not separate registrations (C-67, T-78, T-79)
 
 ### Checklist
 
-- Register for a confirmed event
-- Provide name, email address and contact number as the required registration information
-- Receive a confirmation containing the event details
-- Be told I am already registered rather than creating a duplicate
-- Be blocked with missing fields identified when required information is absent
-- Be refused registration for an event that is not Confirmed
+- Register once for a Confirmed Event and select one or more Sessions
+- Receive one confirmation with Event and selected Session details
+- Be prevented from creating a second active registration for the same account and Event
+- Be blocked with missing required information identified
+- Be refused registration for an Event that is not Confirmed
+- See the primary Event venue and the venue for each selected Session
 
 ## E09-S02 — Enforce registration capacity
 
 - **Sprint**: Sprint 4
 - **Points**: 3
-- **BDR references**: C-05, C-58, T-30, T-31, T-50, B-11
+- **BDR references**: C-05, C-58, C-78, C-98, T-30, T-31, T-50, T-85, B-11, O-50
 - **Owner**:
 
 ### User story
 
-As an Event Organiser, I want registration to stop at the booked venue's capacity so that more people do not register than the venue can hold.
+As an Event Organiser, I want the system to enforce each selected Session's approved layout capacity and the combined Event capacity so that registrations do not exceed either limit.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Venue capacity enforced
+#### Scenario 1 — Both capacity limits enforced
 
-Given the event's capacity is the booked venue's capacity When registrations reach that number Then further registrations are refused
+Given a registration selects one or more Sessions When the request is within each selected Session's approved layout capacity and within the combined Event capacity Then it may be confirmed; if either limit would be exceeded it is not confirmed as an approved seat (C-78, T-85)
 
-#### Scenario 2 — Simultaneous final registration
+#### Scenario 2 — Over-capacity submission remains Pending
 
-Given one place remains When two Attendees submit registrations at the same moment Then only one succeeds and the other is told the event is full
+Given an Attendee submits a registration that would exceed a selected Session capacity or the combined Event capacity When it is received Then it is saved as Pending for the Event Organiser to approve or reject and does not count as an approved seat (C-98, T-85)
 
-#### Scenario 3 — Full event offers the waiting list
+#### Scenario 3 — Pending request approval rechecks both limits
 
-Given the event is full When an Attendee opens the registration page Then registration is closed and the waiting list is offered where it is enabled
+Given a registration is Pending When the Event Organiser approves it Then approval succeeds only if both the selected Session capacities and combined Event capacity remain available; otherwise it stays unapproved until capacity/arrangements change or it is rejected
 
-#### Scenario 4 — VIP added beyond normal registration
+#### Scenario 4 — Concurrent submissions do not overbook
 
-Given normal registration is full and total registrations remain below the booked venue's capacity When the Event Coordinator adds a VIP attendee manually Then the registration is created and recorded as a manual addition
+Given one approved seat remains in a Session or in the combined Event capacity When two registrations are submitted at the same time Then at most one is confirmed against that remaining capacity and any other submission that exceeds capacity is Pending
 
-#### Scenario 5 — VIP blocked at venue capacity
+#### Scenario 5 — Waiting list remains event-level
 
-Given total registrations already equal the booked venue's capacity When the Event Coordinator attempts to add a VIP manually Then the addition is blocked
+Given the combined Event capacity is full When an Attendee opens registration Then the existing Event-level waiting-list option is offered where enabled; whether a full individual Session offers a separate waiting list is open under O-50
+
+#### Scenario 6 — Manual addition allowed within both limits
+
+Given normal registration is full but both the selected Session and combined Event capacity have room When the Event Organiser manually adds an Attendee Then the registration is created as a distinguishable manual addition (C-58, T-50)
+
+#### Scenario 7 — Manual addition blocked at either limit
+
+Given the selected Session or combined Event capacity is already full When the Event Organiser manually adds an Attendee Then the addition is blocked and neither capacity is exceeded
 
 ### Checklist
 
-- Confirm registration is refused once the booked venue's capacity is reached
-- Confirm a simultaneous final registration is handled without over-booking
-- Confirm the waiting list is offered when the event is full and the list is enabled
-- Add a VIP attendee manually when normal registration is full
-- Be blocked from adding a VIP once total registrations equal venue capacity
-- Confirm a manual addition is distinguishable from a normal registration
+- Set combined Event capacity from confirmed Session layout capacities
+- Enforce both every selected Session capacity and combined Event capacity
+- Keep an Attendee over-capacity submission Pending for Organiser review without counting it as an approved seat
+- Recheck both limits when the Organiser approves a Pending registration
+- Prevent concurrent requests from exceeding either limit
+- Offer the Event-level waiting list when combined Event capacity is full; apply O-50 for individual full Sessions
+- Allow manual VIP additions only within both limits and block them at either limit
 
 ## E09-S03 — Control the registration period
 
 - **Sprint**: Sprint 4
 - **Points**: 3
-- **BDR references**: C-24, C-44, T-42
+- **BDR references**: C-24, C-44, T-42, T-79, T-85
 - **Owner**:
 
 ### User story
 
-As an Event Organiser, I want to set when registration opens and closes, and when withdrawal closes, so that Attendees can act only during the permitted windows.
+As an Event Organiser, I want to set one registration and withdrawal window for the Event so that attendees can select Sessions within a consistent Event-level period.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Before registration opens
 
-Given the registration opening date has not been reached When an Attendee views the event Then registration is shown as not yet open and the opening date is stated
+Given the Event-level registration opening date has not been reached When an Attendee views the Event Then registration is shown as not yet open and the opening date is stated
 
 #### Scenario 2 — After registration closes
 
-Given the registration closing date has passed When an Attendee tries to register Then registration is refused
+Given the Event-level registration closing date has passed When an Attendee tries to register for any Session Then registration is refused
 
-#### Scenario 3 — Closing date after event start warned
+#### Scenario 3 — Closing date after Event start warned
 
-Given I set a closing date that falls after the event has started When I save Then I am warned and asked to confirm this is intended
+Given I set the Event-level closing date after the Event has started When I save Then I am warned and asked to confirm
 
-#### Scenario 4 — Waiting list enabled
+#### Scenario 4 — Waiting list enabled for Event
 
-Given I enable the waiting list for an event When an event becomes full Then Attendees are offered the waiting list
+Given I enable the waiting list for an Event When its combined Event capacity is full Then the Event-level waiting list is offered where enabled
 
 ### Checklist
 
-- Set registration opening and closing dates
-- Set a withdrawal deadline
-- Enable or disable the waiting list for the event
-- Confirm registration is refused outside the permitted window
-- Confirm the opening date is shown to Attendees before registration opens
-- Be warned when setting a closing date after the event has started
+- Set Event-level registration opening, closing, and withdrawal dates
+- Enable or disable the waiting list for the Event
+- Apply the same registration window to all selected Sessions
+- Show the opening date before registration opens
+- Refuse registration outside the Event-level window
+- Warn when the closing date is after the Event has started
 
 ## E09-S04 — Join the waiting list
 
 - **Sprint**: Sprint 4
 - **Points**: 5
-- **BDR references**: C-23, T-33, T-46, B-10
+- **BDR references**: C-23, T-33, T-46, B-10, O-50
 - **Owner**:
 
 ### User story
@@ -137,7 +146,7 @@ As an Attendee, I want to join the waiting list when an event is full so that I 
 
 #### Scenario 1 — Joined a full event's list
 
-Given an event is full and the waiting list is enabled When I join the waiting list Then I am added and told I will be notified when a place is released
+Given the combined Event capacity is full and its Event-level waiting list is enabled When I join the waiting list Then I am added and told I will be notified when a place is released (Session-specific waiting-list behavior remains open under O-50)
 
 #### Scenario 2 — Released place notified to all
 
@@ -164,27 +173,27 @@ Given the waiting list is disabled for an event When the event is full Then no w
 
 - **Sprint**: Sprint 4
 - **Points**: 3
-- **BDR references**: C-24, T-48, B-10
+- **BDR references**: C-24, T-48, B-10, T-79, T-85
 - **Owner**:
 
 ### User story
 
-As an Attendee, I want to withdraw my registration so that my place is released to someone else.
+As an Attendee, I want to withdraw my Event registration so that my Event place and places in all selected Sessions are released together.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Registration withdrawn
+#### Scenario 1 — Registration withdrawn from Event and Sessions
 
-Given I am registered and the withdrawal deadline has not passed When I withdraw Then my registration is cancelled and the place becomes available again
+Given I have an active Event registration selecting one or more Sessions and the withdrawal deadline has not passed When I withdraw Then the Event registration is cancelled and its approved places are released from every selected Session and from the combined Event capacity
 
 #### Scenario 2 — Withdrawal after deadline refused
 
-Given the withdrawal deadline has passed When I try to withdraw Then I am told withdrawal has closed and given a contact for assistance
+Given the Event-level withdrawal deadline has passed When I try to withdraw Then I am told withdrawal has closed and given a contact for assistance
 
 ### Checklist
 
-- Withdraw my registration before the deadline
-- Confirm the released place becomes available again
+- Withdraw one Event registration before the Event-level deadline
+- Release its approved places in all selected Sessions and combined Event capacity
 - Be refused after the withdrawal deadline, with a contact provided
 
 ## E09-S06 — Record attendance

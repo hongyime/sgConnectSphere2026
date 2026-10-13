@@ -31,3 +31,12 @@ Open item: this record fixes the application topology, not the framework. An ear
 ### Amended 3 October 2026 for the Week 7 Customer Changes
 
 The Week 7 Customer Changes add two internal roles, the Event Coordinator Lead (C-69) and the Safety Officer (C-70), bringing the count to seven (T-72). The decision stands and is, if anything, stronger: both new roles look at the same event record as the Coordinator with a different set of actions enabled, which is the case this record was written for. Each gains a route group and a landing page on the shared skeleton (ADR-017, E01-S13), and the role-based navigation grows from five groups to seven. "All five roles" in the title and body is therefore read as "all roles"; the number was never the point. The code-splitting cost noted above grows with the role count and is still accepted.
+
+### Amended 13 October 2026 for Week 9
+
+T-86 permits one account to hold multiple roles; ADR-019 replaces ADR-012's
+single-role Release 1 constraint. The shared application continues to expose
+role-authorized routes and actions, while the API checks granted roles on every
+request. Seed accounts still carry one role. A dedicated role-switching screen
+is not implied; the wireframe plan records this as an interface detail for
+design review.

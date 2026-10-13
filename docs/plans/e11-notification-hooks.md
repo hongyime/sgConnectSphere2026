@@ -60,12 +60,13 @@ is detected as a no-op. Email jobs reuse the existing outbox's channel uniquenes
 and retry behaviour. The hook never calls Redis or the email provider.
 
 `resolveVenueStaff(client, venueIds)` is an optional **trusted server adapter** for
-the explicit venue-to-staff relationship. It is not a request-body list. Until
-venue management implements that relationship, capture returns unresolved venue
-IDs, and affected hooks return them and emit a structured dependency warning.
-Known recipients still receive their notifications; Venue Staff integration
-remains incomplete. There is no `decided_by` or all-Venue-Staff fallback. Tests
-inject an explicit assignment resolver and also verify the unresolved path.
+the explicit venue-to-staff relationship. It is not a request-body list. The
+Week 9 target stores venue-to-staff assignments as setup data (T-89), but this
+implementation snapshot predates that model: until persistence and the resolver
+are implemented, capture returns unresolved venue IDs and affected hooks return
+them with a structured dependency warning. Known recipients still receive
+their notifications. There is no `decided_by` or all-Venue-Staff fallback.
+Tests inject an explicit assignment resolver and also verify the unresolved path.
 
 ## Coordinator integration and merge coordination
 
@@ -104,7 +105,7 @@ files. Jira remains unchanged until the approved backlog change merges.
 
 | Task | Owning work | Completion evidence |
 | --- | --- | --- |
-| Create the explicit venue-to-staff assignment relationship and maintenance permissions; provide the resolver | Venue management / E05 and E06 owners | Migration, assignment management and real recipient resolution, including old/new venues |
+| Persist venue-to-staff assignments as setup data and provide the trusted resolver | Venue management / E05 and E06 owners | Target relationship and setup source are defined, a roster screen is excluded (T-89), and real recipient resolution covers old/new venues; maintenance permissions remain unspecified |
 | Call booking-request and booking-decision hooks from real transactions | E06-S03 / E06-S04 | Pending/confirmed/rejected/released tests with correct staff and Coordinator |
 | Call equipment/support hooks with explicit affected-role flags | E07 owners | Reservation, shortfall and availability changes notify only affected responsibilities |
 | Integrate change approval, publication updates, reconfirmation and cancellation release flows | E08 / E10 owners | Effective public changes and cancellation retain correct before/after recipients |
@@ -168,3 +169,28 @@ table in [implementation evidence](../testing/event-notifications.md#current-dep
 for owning stories, Jira statuses and remaining callers. The absent explicit
 venue-to-staff relationship and deployed delivery evidence remain unresolved.
 No notification runtime change is made by the E06 presentation/record refresh.
+
+## Week 9 design update (2026-10-13)
+
+The 27 September and 2 October sections above are implementation snapshots; keep
+their historical account of the then-current workflow. Week 9 decisions T-83
+and T-89 now govern future work:
+
+- Lead assignment and direct reassignment are the routed actions. Do not create
+  new Coordinator reassignment requests, Lead request queues or incoming
+  acceptance/decline notifications. Existing request rows remain readable as
+  history; preserve completed story evidence under T-74.
+- Venue-to-staff assignments belong in setup data for targeted notification
+  routing. Release 1 has no roster-management screen and must not broadcast to
+  every Venue Staff account. The target relation is `VENUE_STAFF_ASSIGNMENTS`;
+  persistence and `resolveVenueStaff` integration remain implementation work.
+- T-89 does not specify an interface or permission model for maintaining that
+  setup data. Do not infer a roster screen or new access policy; decide the
+  setup mechanism with the owning E05/E06 work before implementation.
+- The 27 September inbox note says “five roles” because it records the role set
+  at that time. The current product has seven role types (T-72), and T-86 allows
+  an account to hold multiple grants; inbox access follows current grants.
+
+These decisions update the target and follow-up work only. They do not claim
+that existing notification code implements the new assignment model or remove
+historical records and test evidence.
