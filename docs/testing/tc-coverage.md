@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **315**
-- Automated (explicit TC_ID in an active test title): **156** (49.5%)
+- Automated (explicit TC_ID in an active test title): **157** (49.8%)
   - Real-database (`.integration.test` / `.db.test`): **21**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **134**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **102** (32.4%)
+  - Live-assertion (other active tests): **135**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **101** (32.1%)
 - No test yet (no test file mentions the TC_ID): **57** (18.1%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 13 | 12 | 1 | 0 |
 | E03 | 52 | 39 | 3 | 10 |
 | E05 | 37 | 24 | 0 | 13 |
-| E06 | 37 | 7 | 18 | 12 |
+| E06 | 37 | 8 | 17 | 12 |
 | E07 | 30 | 27 | 3 | 0 |
 | E08 | 26 | 0 | 15 | 11 |
 | E09 | 36 | 5 | 30 | 1 |
@@ -30,7 +30,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **315** | **156** | **102** | **57** |
+| **Total** | **315** | **157** | **101** | **57** |
 
 ## Case-by-case status
 
@@ -212,7 +212,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_02 - Verify that submitting the first booking request for an Approved event should move its status to Planning |
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_04 - Verify that submitting a request for a venue already Pending or Confirmed for another event over the same period should be blocked with the co |
-| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_05 - Verify that an Event Coordinator should be able to view the status of each of their own booking requests |
+| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
 | `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ❌ none | — |
 | `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ❌ none | — |
 | `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ❌ none | — |
@@ -735,6 +735,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
 
+### `backend/tests/venueBookingRequests.test.ts`
+
+- booking validation normalizes dates, trims optional purpose and whitelists client input
+- booking validation rejects malformed IDs, dates, reversed periods and non-integer headcounts
+- read and preparation reject anonymous, inactive, locked and wrong-role users
+- read/preparation refuse another Coordinator or unassigned event without loading bookings
+- preparation uses recorded requirements and optional booking headcount in Approved/Planning only
+- preparation validates contained windows including exact boundaries and missing event attendance
+- preparation refuses missing or inactive venues
+- prepared booking criteria can produce an advisory unsuitable assessment without creating a booking
+- booking-list HTTP handler authenticates, prevents caching, refuses writes and hides internal errors
+
 ### `backend/tests/venueCalendar.test.ts`
 
 - getVenueCalendar requires a signed-in user
@@ -1045,6 +1057,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
+### `frontend/src/features/venue/VenueBookingRequests.test.tsx`
+
+- empty list, error retry and missing route parameter use shared states
+- refused access shows no private event details
+- route change ignores a late response for the previous event
+- request form preserves optional fields, date edits and advisory failures when reviewed
+- request form shows server validation and busy state prevents duplicate reviews
+
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
 - changing the calendar route loads the new venue
@@ -1204,6 +1224,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/technicalSupport.spec.ts`
 
 - E07-S06 the request form refuses a blank, too-long or reversed request before sending
+
+### `tests/e2e/venue-booking-requests.spec.ts`
+
+- booking list shows an empty state and a safe refusal without event details
 
 ### `tests/e2e/venue-search.spec.ts`
 

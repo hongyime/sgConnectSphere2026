@@ -4,6 +4,7 @@
 - **Owner**: Amareet (SCRUM-118)
 - **Audited against**: `frontend/src/app/routes.tsx` and its rendered components at main commit `139217e`, plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
+- **E06-S03 branch refresh**: 2026-10-12, assigned-event booking-status list only; submission remains deferred and other rows/counts were not re-audited.
 - **E07-S03 branch refresh**: 2026-10-07, SCRUM-53 equipment availability routes; other rows were not re-audited.
 - **E07-S04 branch refresh**: 2026-10-08, SCRUM-54 reservation routes; other rows and the counts were not re-audited.
 - **Focused refresh**: E05-S04 route status checked against main commit `1c1be82` after PR #185 merged on 2026-10-03; other rows were not re-audited.
@@ -58,7 +59,7 @@ in the second table below.
 | E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | live | Form, List | The live `VenueBlockout` form and block list are in merged PR #185 (SCRUM-120; merge `9584c77`). Route status does not imply the story Definition of Done is met. |
 | E06-S01 | Search for suitable venues | Event Coordinator | Sprint 2 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Catalogue search with suitability filters. |
 | E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). This remains a Sprint 3 story; its owner must verify all acceptance criteria before treating it as done. |
-| E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | — | none | Form | Expected to live under `/coordinator/events/:eventCode/venues` or the planning workspace. |
+| E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/venue-bookings` | live | List | Assigned-event booking status only, linked from event venue search. Submission is not available; the reusable request form is not mounted. See `docs/testing/venue-booking-requests.md`. |
 | E06-S04 | Decide on a venue booking request | Venue Staff member | Sprint 3 | `/venue/bookings/:bookingId`, `/venue/bookings/:bookingId/decide` | mock, coming-soon | Detail, Decision | Pending booking detail plus the planned approve-or-reject screen. |
 | E06-S05 | Hold a venue tentatively | Event Coordinator | Sprint 3 | — | none | Decision | Expected to surface inside the planning workspace or venue search. |
 | E06-S06 | Prevent double-booking of a venue | Venue Staff member | Sprint 3 | — | none | Other | Backend rule; conflicts surface in `/venue/bookings/:bookingId` and the Coordinator venue calendar. |
@@ -117,7 +118,7 @@ as a viewer prototype; listing a prototype does not authorise its role or API.
 | `/search` | mock | Design-review mock for a generic search surface. |
 | `/ui-states` | mock | Design-review mock showing empty, error and loading states. |
 
-## Counts
+## Baseline counts (before focused branch refreshes)
 
 - Release 1 stories: 47.
 - Routes with a primary Release 1 story tag: live 32, mock 17, coming-soon 3, redirect 1 (53 total).
