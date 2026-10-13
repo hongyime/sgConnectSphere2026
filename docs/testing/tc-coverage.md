@@ -979,6 +979,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an entry whose actor account was removed still shows, without a name
 - stored actions are shown in plain words, and other actions as written
 - a status change with no previous status shows only the new status
+- hold entries read as an expiry, an expiry change, or simply a venue hold
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 

@@ -27,6 +27,20 @@ after #245 does.
 - Older event-page tests (`TechnicalSupport.test.tsx`,
   `CoordinatorEditing.test.tsx`) stub the new holds call.
 
+## SCRUM-144 (tests) added to this PR (option A agreed with Amareet)
+
+- `tests/auth-e2e/venueHolds.spec.ts`: real sessions, API and PostgreSQL:
+  hold from search, another Coordinator refused naming the hold, Venue Staff
+  extend (audit actor checked, activity log shows "Hold expiry: … → …"),
+  convert, release, and a passed hold reading Expired.
+- `docs/testing/manual/E06-S05-click-through.md`: 16 steps on the seeded stack
+  (`coord_a`, `venue_a`, EVT-3003). Dry-run by Claude on a fresh seed; every
+  quoted message was copied from the screens.
+- Activity log: hold entries now read "Hold expires …" / "Hold expiry: … → …"
+  instead of raw ISO times or booking ids (`ActivityLog.tsx`).
+- Add `Closes SCRUM-144` to the PR body only once Amareet's manual run record
+  is committed, so Jira doesn't close it early.
+
 ## Next
 
 1. Merge `main` in after #245 lands, then mark this PR ready.
