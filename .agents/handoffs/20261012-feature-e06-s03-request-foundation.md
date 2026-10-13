@@ -20,3 +20,7 @@ Evidence: docs/testing/runs/20261012-203121-jininggg-full-regression.md and 2026
 ## Learnings
 
 Keep E06-S03 preparation separate from committing authorization: future callers must lock/revalidate inside the final transaction. Status read is safe to deliver before shared migration; it does not justify marking the whole story Done. On 13 October the user authorized committing and pushing this foundation. Keep the branch/title free of the SCRUM key and avoid closing clauses for this partial slice; reference SCRUM-47 in the commit body. No PR creation or merge requested.
+
+## PR 256 conflict resolution - 13 October
+
+Merged main c9de13f (Week 9 decisions/catalogue). Only docs/testing/tc-coverage.md conflicted: regenerated from merged catalogue and branch tests, retaining both. No application or migration conflicts. PR #256 exists as a draft; user requested conflict resolution. Application code unchanged by this merge.
