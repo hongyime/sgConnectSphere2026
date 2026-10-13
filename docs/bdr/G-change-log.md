@@ -239,3 +239,7 @@ These are scope decisions, not implementation evidence. Both backlog views,
 test cases, schema/contracts, ADRs, flows and UI design must agree before the
 affected stories are considered ready. Generated exports follow their Markdown
 sources. Jira changes remain downstream of the merged canonical backlog.
+
+## Version 8 to version 9
+
+Applied Week 9 choices to eligible stories and recorded remaining assumptions. Restored E04-S02 and added E02-S05 to Release 1; added E02-S07 for the two-year date horizon and E07-S08 for Session-linked equipment behavior. Updated Sprint 4 registration, arrangement-change, safety-reversion, rescheduling and cancellation criteria while leaving Sprint 3 stories untouched until close under T-73. Added O-50 for Session waitlist behavior and O-51 for copied Session/arrangement data; both remain explicit assumptions for review.

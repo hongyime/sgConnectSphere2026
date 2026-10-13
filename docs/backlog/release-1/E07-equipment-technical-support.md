@@ -236,3 +236,39 @@ Given I have removed an assignment When I assign a replacement Then the same con
 - Remove an existing assignment
 - Assign a replacement colleague subject to the same conflict check
 - Confirm the staff member is notified when assigned or removed
+
+## E07-S08 — Link equipment requests and reservations to Sessions
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-107, T-74, T-79
+- **Owner**:
+
+### User story
+
+As a Technical Support Staff member, I want equipment requests and reservations to identify the Session they support so that availability and fulfilment use the correct Session period.
+
+### Acceptance criteria
+
+#### Scenario 1 — Request linked to its Session
+
+Given an Event has multiple Sessions When an Event Coordinator records equipment needed for one Session Then the request is linked to that Session and remains part of the Event
+
+#### Scenario 2 — Reservation linked to its Session
+
+Given a request is approved for reservation When Technical Support Staff reserve equipment Then each reservation identifies the same Session and uses its date/time for availability checks
+
+#### Scenario 3 — Cross-event Session rejected
+
+Given a request belongs to one Event When a Session from a different Event is selected Then the request or reservation is rejected and no cross-event link is saved
+
+#### Scenario 4 — Event-level assignment remains
+
+Given Technical Support Staff are assigned to support an Event When Sessions are added or changed Then the staff assignment remains event-level unless a separate accepted requirement changes it
+
+### Checklist
+
+- Record equipment requests against a Session of the owning Event
+- Reserve equipment against the requested Session and check its period
+- Reject Session identifiers belonging to another Event
+- Keep technical-support staff assignment event-level
