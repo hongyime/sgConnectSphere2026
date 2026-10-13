@@ -42,7 +42,7 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #
 - The runbook permits the current CLI when exactly one migration is pending. `npx tsx src/database/cli.ts migrate` ran once from `backend/`, exited 0 and reported only 0013 applied. The post-run read-only ledger includes 0013 at `2026-10-13T18:53:10.865Z`; all 13 migration files are accounted for and none are pending. Run record: `docs/ops/production-migration-runs/20261013-1853-0013_tentative_venue_holds.sql.md`, committed in PR #260.
 - Jira SCRUM-138 was updated before the production write and remains Done. SCRUM-182's description was revised to reflect that the selector was not a prerequisite for this one-file catch-up; PR #258 remains a future one-at-a-time CLI improvement and awaits review.
 - The production dependency for #245 and #252 is now satisfied. Both remain conflicting; #245 needs renewed review and #252 remains a draft with no current checks. Do not merge until conflicts, review and required checks are resolved.
-- PR #231 is conflicting and has changes requested; it blocks SCRUM-142. PR #231's title references SCRUM-161 while its branch references SCRUM-44; SCRUM-161 is already Done in Jira, so do not infer full story completion from that subtask flag.
+- GitHub's source-branch rename closed PR #231 instead of retargeting it. Replacement PR #261 now uses `feature/SCRUM-161-venue-setup-turnaround-pr231`; it is mergeable with checks running and the reviewers requested. Its backend-only scope does not complete parent SCRUM-44, so SCRUM-142 remains blocked.
 
 **Implementation scaffold sequencing (local audit, 2026-10-14):**
 
@@ -50,14 +50,15 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #
 - SCRUM-50 should build on the shared booking contract and buffered occupancy work; PR #231 (migration 0011) and #256 (E06-S03 booking foundation) are still open, so do not fork another implementation path before they land.
 - SCRUM-60's readiness gate spans venue bookings, equipment reservations, support assignments, and Safety Review. Keep its existing mock screens as the starting point while the dependent backend workflows are completed.
 - SCRUM-180 and SCRUM-181 remain outside Sprint 3 and have no points or assignees; do not create implementation branches until planning assigns them.
-- A local #231 integration commit `a0ac005` merges PR head `532a664` with current `origin/main` `8f246ae` and regenerates `tc-coverage.md`. It is not pushed because GitHub DNS resolution failed; the remote PR remains at its prior head until a successful fetch/push.
+- Replacement PR #261 head `d18acba` merges former PR #231 head `532a664` with current `origin/main` `8f246ae`, regenerates `tc-coverage.md`, and carries the tooling run record. The old #231 description links to #261. Parent SCRUM-44 remains open pending the calendar distinction and full acceptance.
 
 ## Open PR snapshot (checked 2026-10-14)
 
 All PRs below target main. “Required checks” means `repository-checks`, `pr-conventions`, `lfs-guard`, and `application-checks`.
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
-- #259 owner STATE/JOURNAL consolidation: open and mergeable on head `d522d44`; required checks passed and teammate approval is still required. This refresh updates the Sprint 3 scaffold and local #231 integration notes; checks must be rerun on the new head.
+- #261 SCRUM-161 venue buffers: replacement for closed #231; open and mergeable at `d18acba`; required checks are running and teammate approval is required.
+- #259 owner STATE/JOURNAL consolidation: open; required checks passed on `d522d44` and teammate approval is still required. This local refresh adds the #261 replacement and must be pushed and rechecked.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: mergeable and ready for review; all required checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
@@ -68,7 +69,7 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 - #247 SCRUM-176 registration setup: mergeable; changes requested; reported checks pass.
 - #245 SCRUM-138 tentative holds: conflicting; review required; reported checks pass. The production 0013 dependency is satisfied.
 - #232 Coordinator Lead/Safety Officer roles: mergeable; changes requested; reported checks pass.
-- #231 SCRUM-44 venue buffers: conflicting; changes requested; reported checks pass.
+- #231 SCRUM-44 venue buffers: closed after the source branch rename; its description points to replacement #261.
 - #230 SCRUM-179 seeded-account cases: mergeable; changes requested by Xiang Ying remain uncleared on the latest head; the reported case-data/workbook fixes are present and required checks pass.
 - #217 SCRUM-178 Week 7 test scaffolds: mergeable; review required; all required checks pass on head `a6a8b48`. Optional Vercel deploy failed.
 
@@ -94,6 +95,6 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 1. Re-review requests are active for #217 (Xiang Ying and Amareet), #230 (Xiang Ying), and #248 (Amareet). #217 and #248 need peer approval; #230 still has Xiang Ying's change request until she reviews the latest head. Required checks pass; #217's optional Vercel deploy failed. Do not self-approve.
 2. Record the product owner's exact SCRUM-141 cadence choice before changing schedule configuration or any deployment secret.
 3. Merge the run-record PR #260 and owner state/journal PR #259 after teammate review. Do not self-approve.
-4. Resolve the conflicts and requested review changes on #231/#245/#252 before extending dependent work; #245/#252 no longer wait on production 0013, and SCRUM-142 remains blocked by SCRUM-44.
-5. Push the local #231 integration after GitHub DNS returns; rename its source branch to a SCRUM-161 name and obtain fresh human review before merging.
+4. Track #261's checks and peer review; keep SCRUM-44 open until its remaining frontend acceptance is complete. Resolve #245/#252 conflicts and reviews; neither waits on production 0013 now.
+5. Push the latest owner snapshot to PR #259 and let its checks rerun; obtain teammate approval before merging.
 6. Recheck Sprint 3 at close on 17 October, then confirm carryovers and assign any agreed Bryan follow-up work.
