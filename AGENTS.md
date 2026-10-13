@@ -58,14 +58,14 @@ workflows, or deployment secrets without a recorded team decision.
 
 ## Worktree lifecycle
 
-Never leave secondary git worktrees on disk. If a task or harness creates a
-temporary worktree for review, testing, or parallel branch updates, you must
-safely tear it down before finishing the task or committing:
-1. Unlink any junction or nested dependencies (`.venv-tools`).
-2. Run `git worktree remove --force <path>` and delete leftover folders.
-3. Run `git worktree prune`.
-`python scripts/check.py` enforces this and will fail if any secondary worktree
-is detected. To clean automatically, run `python scripts/check_worktrees.py --clean`.
+Remove disposable worktrees created for a task when that task is complete; keep
+intentional review or stacked-branch worktrees. `python scripts/check.py`
+reports secondary worktrees as a warning. To remove worktrees that are clean
+and fully pushed, run `python scripts/check_worktrees.py --clean`; it skips
+worktrees with local changes, unpushed commits, or no upstream. Review its
+removal plan before using `--clean --force`, which can discard work. The cleaner
+unlinks ignored dependency symlinks and junctions (including `.venv-tools` and
+`node_modules`) themselves so their targets remain intact.
 
 ## Recording test runs
 
