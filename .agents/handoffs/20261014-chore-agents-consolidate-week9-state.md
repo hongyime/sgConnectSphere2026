@@ -4,7 +4,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 ## Current state
 
-- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 remains open for teammate review.
+- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 remains open for teammate review; all required checks passed on prior head `f1556dd`.
 - Updated `.agents/STATE.md` and `.agents/JOURNAL.md` in the owner consolidation PR. The Sprint 3 audit now records 10 incomplete parent stories and 19 incomplete subtasks; the previous state snapshot undercounted one subtask group.
 - Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. Neither is a confirmed carryover before the Sprint 3 close on 17 October.
 - Jira now reflects SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
@@ -24,6 +24,6 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 - `git fetch origin --prune` and `git pull --ff-only`: `origin/main` remained `8f246ae`.
 - `python3 scripts/agent_handoffs.py` listed the current task handoffs.
 - Live Jira board parent data, Jira Subtask Sprint-field data, targeted issue records, and GitHub PR heads/reviews/checks were read-only and checked on 2026-10-14.
-- `scripts/check.py` — PASS at base `bc93d2f`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-020843-bryanseah234-tooling.md`.
+- `scripts/check.py` — PASS at base `f1556dd`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-021959-bryanseah234-tooling.md`.
 - PR #217 handoff cleanup repository check passed at base `5cf492a`; T-65 record: `docs/testing/runs/20261014-015537-bryanseah234-tooling.md`.
-- PostPlan v3 is ready with the corrected review-pending headline: https://loake29e7gzf.postplan.dev/v/3. PR #259 still needs its description/comment updated when GitHub API rate limits clear.
+- PostPlan v3 is ready with the corrected review-pending headline: https://loake29e7gzf.postplan.dev/v/3. The v3 report is linked in PR #259 description and the top-level comment.

@@ -48,7 +48,7 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose current implementation PR is #
 
 All PRs below target main. “Required checks” means `repository-checks`, `pr-conventions`, `lfs-guard`, and `application-checks`.
 
-- #259 owner STATE/JOURNAL consolidation: open; the latest local owner-state edits still need pushing before its PR checks and review status can be refreshed.
+- #259 owner STATE/JOURNAL consolidation: open and mergeable; all required checks passed on prior head `f1556dd`. This status refresh will rerun checks; teammate approval is still required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: mergeable draft; review required; required checks pass.
 - #256 E06-S03 booking foundation: mergeable; review required; reported checks pass.
