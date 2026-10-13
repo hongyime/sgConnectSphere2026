@@ -12,12 +12,13 @@ Goal: Finish PR #230 by syncing its seeded-account test documentation with curre
 - Corrected the owner and status data for the E05 overlapping bookings, E11 notification recipient, and E14 status-change actor to match the seed, and marked non-seed E03 status variants as explicit test fixtures.
 - Consolidated this task's two handoffs into this original task file. The duplicate handoff was removed; no merged handoff was edited.
 - Regenerated `docs/testing/PROJECT TEST CASES CAA 141026.xlsx` (351 cases across 13 epic files) and updated the acceptance-test row in `docs/source-of-truth.md`.
-- `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` passed before commit: repository hygiene, 87 tooling tests, and 194 test-run records validated. A post-commit run with its T-65 record is still needed for PR evidence.
-- The PR body and refreshed PostPlan still need current verification evidence.
+- Merge resolution and case/workbook corrections are committed as `12aa20d`.
+- The post-commit `PATH=.venv-tools/bin:$PATH .venv-tools/bin/python scripts/check.py` passed: repository hygiene, 87 tooling tests, and 194 test-run records validated. Its T-65 record is `docs/testing/runs/20261014-001621-bryanseah234-tooling.md`.
+- The PR body and refreshed PostPlan still need current CI/review status after the branch push.
 
 ## Next
 
-- Review the complete PR diff and workbook output, create the merge-resolution commit, then run and record the post-commit repository check for PR evidence.
+- Validate the new run record with `scripts/check.py`, then fetch and push the branch. Refresh the PostPlan, update the PR body, and leave #230 open for CI and reviewer approval.
 - Upload a refreshed PostPlan and update the PR description; leave the PR open for CI and reviewer approval.
 
 ## Decisions
