@@ -158,6 +158,15 @@ active scaffold files, ADR-009 and derived exports are reconciled in this change
 Jira reconciliation follows the merged backlog; the scope PR must not close
 SCRUM-86 automatically.
 
+## 8 October 2026: E06-S02 operating-hours clarification
+
+T-77 records the Product Owner clarification relayed by the story owner:
+E06-S02 flags an event outside venue operating hours as unsuitable, explicitly
+naming the failure. Fully contained events pass. The result stays advisory and
+must be available to Venue Staff in the owning booking workflow. E06-S01 search
+continues without an operating-hours suitability filter. Both backlog views and
+TC_E06S02_05 carry the clarification; Jira reconciliation follows merge.
+
 ## 9 October 2026 - PO confirms venue booking defaults (T-78)
 
 Recorded the story owner's relayed PO confirmation of O-27, O-29, O-30 and
@@ -170,3 +179,67 @@ require the authorised reversion workflow first. Submission ends an unexpired
 hold's expiry; an expired hold cannot convert. Both E06 backlog views updated.
 Other open questions, including O-28 and O-31/O-33/O-34, remain unconfirmed.
 This records requirements, not implementation or story completion.
+
+## 12 October 2026: Week 9 customer Q&A (version 7)
+
+Archived the eight source materials supplied to the project under
+`docs/bdr/customer-sources/` and recorded all 66 Week 9 Q&A rows in workbook
+order as C-71 to C-136. The original answer wording remains in section A;
+status and the separate "What it settled for us" column record whether the
+customer settled, partly answered or delegated each question.
+
+Reconciled O-20 to O-44 against Week 9 and added O-45 to O-49 for residual
+questions and design dependencies. O-10 is open again because C-107 conflicts
+with C-62/T-48 on bookings across sessions. O-23 stays open because C-111 says
+venue blocks should not be open-ended while C-119 permits open-ended
+unavailability. C-78 adds the combined layout capacity rule for multi-venue
+events. O-22, O-38 and O-44 retain their unresolved details. C-89
+records manual Venue Staff selection without turning T-64's team routing model
+into a customer-mandated roster.
+
+Several clear answers conflict with earlier customer or team positions and need
+downstream review: C-107 on bookings across sessions (O-10), C-120 on
+confirmed-event status after venue loss (O-24), C-132 on the safety-review
+trigger (O-40), and C-134 on where safety factors are assessed (O-42). The BDR
+records these answers and flags the conflicts; this update does not amend
+backlog stories, architecture decisions or implementation.
+
+Regenerated the BDR and ADR Word exports from Markdown as `CAA 121026` and
+updated the source-of-truth index. The exports remain derivative; the Markdown
+sections are authoritative.
+
+## 13 October 2026: Team selections from Week 9 Q&A (version 8)
+
+The team reviewed the impact register and selected rules for the
+Week 9 answers. Added T-79 to T-91 and reconciled the affected open-question
+rows while retaining every original customer answer in section A.
+
+T-79 follows C-107 and reverses T-48: Sessions return to Release 1 under Event;
+venue bookings and equipment attach to Sessions, while one event-level attendee
+registration can select multiple Sessions. T-80 selects C-119's open-ended
+unavailability rule despite its conflict with C-111, and keeps buffers off
+maintenance blocks. T-81 applies C-120's automatic return to Planning when a
+venue is lost and notifies the Coordinator. T-82 starts Safety Review
+automatically and records both the factor checklist and the overall decision
+and comments. T-83 removes the Coordinator-initiated reassignment request and
+limits the queue to Leads.
+
+T-84 sets per-hold expiry and warning times, with at most two extensions and a
+reason for each. T-85 defines one event registration with selected Sessions,
+per-Session and combined event caps, and an over-capacity Pending review path.
+T-86 adopts multi-role accounts while seed data assigns one role per account.
+T-87 imposes no fixed minimum lead time and a team-selected maximum of two years.
+T-88 closes pending change requests as Obsolete when the event becomes terminal.
+T-89 keeps venue-to-staff assignments as setup data without a roster screen.
+T-90 adds E02-S05 to Release 1 at its existing three-point estimate, with sprint
+placement left to planning. T-91 allows Venue Staff to edit blocks, retains
+history, and notifies affected Coordinators when blocks are lifted.
+
+These are scope decisions, not implementation evidence. Both backlog views,
+test cases, schema/contracts, ADRs, flows and UI design must agree before the
+affected stories are considered ready. Generated exports follow their Markdown
+sources. Jira changes remain downstream of the merged canonical backlog.
+
+## Version 8 to version 9
+
+Applied Week 9 choices to eligible stories and recorded remaining assumptions. Restored E04-S02 and added E02-S05 to Release 1; added E02-S07 for the two-year date horizon and E07-S08 for Session-linked equipment behavior. Updated Sprint 4 registration, arrangement-change, safety-reversion, rescheduling and cancellation criteria while leaving Sprint 3 stories untouched until close under T-73. Added O-50 for Session waitlist behavior and O-51 for copied Session/arrangement data; both remain explicit assumptions for review.
