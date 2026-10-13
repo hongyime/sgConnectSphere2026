@@ -407,21 +407,45 @@ the page greys out or blocks.
 ## 7. Status vocabulary
 
 Statuses are the product's shared nouns. Use the stored value, let
-`StatusPill` label it, and never invent a synonym in the UI ("Pending" is not
-a ConnectSphere status; see T-17).
+`StatusPill` label it, and never invent a synonym in the UI. `pending` is not an
+Event lifecycle status; it is used by venue bookings and over-capacity
+registrations for separate review workflows.
+
+| Scope | Stored value | Label | Hue |
+| --- | --- | --- | --- |
+| Event | `draft` | Draft | Slate |
+| Event | `submitted` | Submitted | Blue |
+| Event | `under_review` | Under review | Blue |
+| Event | `awaiting_clarification` | Awaiting clarification | Amber |
+| Event | `approved` | Approved | Green |
+| Event | `planning` | Planning | Blue |
+| Event | `safety_review` | Safety Review | Blue |
+| Event | `confirmed` | Confirmed | Green |
+| Event | `completed` | Completed | Green |
+| Event | `rejected` | Rejected | Red |
+| Event | `cancelled` | Cancelled | Red |
+
+Registration and change-request labels:
+
+| Scope | Stored value | Label | Hue |
+| --- | --- | --- | --- |
+| Registration | `pending` | Pending review | Amber |
+| Registration | `registered` | Registered | Green |
+| Registration | `waitlisted` | Waitlisted | Amber |
+| Registration | `withdrawn` | Withdrawn | Slate |
+| Change request | `obsolete` | Obsolete | Slate |
+
+Venue booking labels:
 
 | Stored value | Label | Hue |
 | --- | --- | --- |
-| `draft` | Draft | Slate |
-| `submitted` | Submitted | Blue |
-| `under_review` | Under review | Blue |
-| `awaiting_clarification` | Awaiting clarification | Amber |
-| `planning` | Planning | Blue |
-| `approved` | Approved | Green |
+| `pending` | Pending | Amber |
+| `tentative` | Tentative | Amber |
 | `confirmed` | Confirmed | Green |
-| `completed` | Completed | Green |
 | `rejected` | Rejected | Red |
-| `cancelled` | Cancelled | Red |
+| `released` | Released | Slate |
+| `conflicting` | Conflicting | Red |
+| `expired` | Expired | Slate |
 
 Venue calendar states (E05-S03), shown as badges with an icon and text beside
 each colour:
@@ -435,8 +459,9 @@ each colour:
 | `unavailable` | Unavailable | `--surface-strong` with `--muted` text |
 
 Generic tones (`success`, `info`, `warning`, `danger`, `neutral`, `future`)
-exist for things that are not records (a reassignment request pending, a
-scheduled job). Prefer the record vocabulary whenever the thing is a record.
+exist for conditions that are not records (a queued background job or an
+in-progress operation). Prefer the record vocabulary whenever the thing is a
+record.
 
 ---
 

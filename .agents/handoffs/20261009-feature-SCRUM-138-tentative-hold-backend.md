@@ -119,12 +119,18 @@ Next: commit and push this fix to PR #245. Do not merge the PR.
 
 ## Not done / next
 
-1. **Production needs 0013 before this code deploys.** Production is at 0008;
-   without 0013 the calendar, venue search, block creation and venue retire all
-   fail (`expires_at` missing). Same blocker as the 0009/0010 catch-up.
-2. Scenario 5 after #231: call Bryan's `occupied_window()` in `findClash`.
-3. Frontend (SCRUM-143), browser tests (SCRUM-144), manual run before review.
-4. Correct the SCRUM-48 comment (show the text to the user first).
+1. The production prerequisite is cleared: migration 0013 was applied and
+   verified on 14 October; the run record is in PR #260. Do not run 0013 again.
+2. Scenario 5 still waits on the correctly keyed replacement for #231, PR #261,
+   to merge; then use `occupied_window()` in `findClash`.
+3. PR #252 contains SCRUM-143 and SCRUM-144 and remains stacked on this PR.
+   Amareet's manual run is still required before Sprint Review.
+4. T-73 keeps active Sprint 3 acceptance through 17 October. After the sprint
+   closes, recheck Jira and create follow-up work for T-84 and the Week 9
+   Session-linked hold changes; do not mix those new criteria into the active
+   sprint implementation without that reconciliation.
+5. The SCRUM-48 comment correction remains unposted; no Jira credentials are
+   available in this environment.
 
 ## Commands
 
@@ -143,4 +149,27 @@ failures that also fail on clean main: `test:runtime` health check (Windows),
 - `scripts/check.py` passed, including repository hygiene and all 87 tooling
   tests. Ran it using the repository tooling environment on `PATH` because
   this shell does not define a `python` command.
-- Next: commit and push the merge resolution; leave PR #245 open.
+- This was the earlier sync to the then-current main; PR #245 remained open.
+
+## Current integration (14 October 2026)
+
+- Fetched latest `origin/main` (`8f246ae`), which includes the merged Week 9
+  backlog/test and architecture PRs #253–#255. Resolved the new documentation
+  conflicts by retaining the current main versions of the API, shared booking
+  contract and schema. Regenerated the ADR/BDR Word exports as CAA 141026 and
+  updated `docs/source-of-truth.md` to point at those exports.
+- T-73 explicitly keeps active Sprint 3 acceptance assumptions through
+  17 October. This PR and stacked #252 therefore implement the existing
+  Sprint 3 hold behavior. T-84 (configured expiry/warning, capped reasoned
+  extensions) and the Session-linked model are post-sprint follow-up work; the
+  Week 9 impact register says migrations and application behavior remain to be
+  implemented. Reconcile actual Jira sprint state after close before creating
+  those follow-up stories.
+- The #246 migration is already on production, verified by the pre/post ledger
+  checks recorded in #260. #245 still needs its merge conflicts resolved,
+  required checks to pass and human review; do not merge before those gates.
+- #231 closed during a branch rename. Replacement #261 carries the correctly
+  keyed SCRUM-161 work; until it merges, the buffered-window scenario remains
+  outstanding in this PR. #252 stays draft and stacked until #245 lands.
+- The expiry route still has no configured scheduler. Cadence and secret remain
+  a separate owner decision; no deployment secret or trigger was added here.

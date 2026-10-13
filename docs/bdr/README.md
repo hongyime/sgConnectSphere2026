@@ -12,7 +12,7 @@ It exists to answer one question for any story or acceptance criterion: why is t
 
 ## What changed in version 9
 
-Applied the Week 9 decisions to eligible future backlog stories and recorded two residual design assumptions as O-50 and O-51. E04-S02 and E02-S05 are included in Release 1; E02-S07 and E07-S08 carry new date-horizon and Session-linked equipment behavior without reopening completed stories. Sprint 3 criteria remain deferred until its close under T-73. Canonical acceptance cases were aligned for those changes; the remaining architecture, UI flows, implementation, Jira reconciliation and peer review are tracked in the impact register.
+Applied the Week 9 decisions to eligible future backlog stories and recorded two residual design assumptions as O-50 and O-51. E04-S02 and E02-S05 are included in Release 1; E02-S07 and E07-S08 carry new date-horizon and Session-linked equipment behavior without reopening completed stories. Sprint 3 criteria remain deferred until its close under T-73. Canonical acceptance cases, ADRs, target schema/contracts, architecture views and repository UI/UX handoff are aligned in the stacked follow-ups. Actual Figma frames and application code remain downstream; Jira reconciliation waits until canonical Markdown merges.
 
 Release 1 currently contains 60 stories and 173 estimated points. Four stories have no sprint assignment; E02-S07 and E07-S08 also have no estimate pending planning. The total excludes estimates for those two stories and may change after planning. Eight items remain open: O-08, O-11, O-12, O-13, O-18, O-19, O-50 and O-51; the first six are outside Release 1, while O-50/O-51 affect the assumptions for E09-S02/S04 and E02-S05.
 
