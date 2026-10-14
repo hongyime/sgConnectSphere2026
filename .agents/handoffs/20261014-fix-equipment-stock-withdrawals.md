@@ -14,3 +14,7 @@ The current SQL counts simultaneous active reservations but omits dated withdraw
 - Manual acceptance remains pending for the follow-up story. A peer-reviewed backend fix may merge separately; no automatic closure of #264 or existing Jira story.
 
 Next: commit, push and open review-ready follow-up PR; link PostPlan and comment on #249. No approvals or Request changes reviews.
+
+Record-format correction before publication: an original-query FAIL record contained literal regex pipe characters in its table command, which the validator treated as extra columns. Preserved that file byte-for-byte under docs/testing/history/e07-s09-stock-withdrawals/. Reran the original-query reproduction and created a new valid immutable FAIL session with its real finish time; the command is outside the table. Fixed application code restored in finally.
+
+PostPlan: https://ql6zqam2o3on.postplan.dev/v/1 (standalone HTML, structural check and rendered screenshot visually inspected; synthetic diagram only).
