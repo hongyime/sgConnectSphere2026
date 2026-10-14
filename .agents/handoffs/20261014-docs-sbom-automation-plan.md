@@ -15,7 +15,7 @@ Goal: publish the current CycloneDX dependency inventories from the public repos
 
 ## Remaining work
 
-- Push the branch and open a draft PR; teammate review and merge through the queue are the remaining gates. Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`.
+- PR #266 is ready for teammate review; required checks passed on head `75f4a1d`. Human approval and merge-queue completion remain. Do not self-approve or edit `.agents/STATE.md`/`.agents/JOURNAL.md`.
 - No SBOM publishing workflow, release attachment, Docker, database, or Supabase operation was added.
 
 ## Chosen approach
@@ -33,4 +33,6 @@ Goal: publish the current CycloneDX dependency inventories from the public repos
 - Full `scripts/check.py` after adding that record — passed, validated 254 run records, and ran all 128 tooling tests. It emitted only the existing secondary-worktree warning.
 - T-65 run `docs/testing/runs/20261014-182314-bryanseah234-tooling.md` records the successful check on the rebased commit `a511a00` using test-case version `141026`.
 - Full `scripts/check.py` on `a511a00` — passed, validated 262 run records, and ran all 128 tooling tests. It emitted only the existing secondary-worktree warning.
+- PR #266 required checks passed after the PR body update and after marking it ready; the branch is mergeable but still needs teammate review.
+- PostPlan: `https://3p73sfucwh7x.postplan.dev`; top-level comment: `https://github.com/hongyime/sgConnectSphere2026/pull/266#issuecomment-6166276662`.
 - The initial check without `.venv-tools/bin` on PATH was not passing evidence: it first added the SBOM's missing final newline, then exposed digest false positives and the missing `python` command. A later full check passed with `.venv-tools/bin` prefixed to PATH.
