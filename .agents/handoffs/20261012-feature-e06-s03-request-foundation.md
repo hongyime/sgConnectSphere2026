@@ -28,3 +28,7 @@ Merged main c9de13f (Week 9 decisions/catalogue). Only docs/testing/tc-coverage.
 ## Bl0oper review - 14 October
 
 Merged main efd8e3b, preserving hold tests in package.json and regenerating coverage. Removed unused preparation/validation and form, including their tests; current scope is read-only booking status. Added explicit DB CI step. Holds #245 is merged. Earlier implementation/coverage notes are historical. Current checks: 4 backend (100% read modules coverage), 8 frontend, 4 browser, 1 local PostgreSQL, typecheck/build pass. Human manual verification remains pending. Postplan and refreshed PR evidence prepared.
+
+## Repeated main conflict - 14 October
+
+Main 03e7644 adds migration selection tests. Retained both suites in backend/package.json; regenerated coverage. 15 focused tests pass. Repository hygiene passes but new main worktree-hygiene tests fail on Windows (3 failures, 11 errors of 128); see 20261014-131155 tooling record. No unrelated tooling repairs or worktree deletion. Preserve remote 94615ac merge as well.

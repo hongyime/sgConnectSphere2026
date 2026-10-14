@@ -52,7 +52,7 @@ Suggested Jira mapping:
 
 | Jira field | Source |
 | --- | --- |
-| Issue type | Story for backlog rows; Task/Sub-task for technical work |
+| Issue type | Story for user stories with a matching backlog entry and for cross-cutting technical enablers under E00; Subtask for discipline-scoped work belonging to exactly one Story |
 | Summary | Story ID plus short story title |
 | Description | User story, workflow notes, and decision-review context |
 | Acceptance criteria | Backlog/test-case acceptance criteria |
