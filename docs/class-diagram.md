@@ -1,15 +1,13 @@
-## Class diagram — venue booking and event lifecycle after the Week 7 Customer Changes
+## Class diagram — Week 9 Session, booking and event lifecycle model
 
-Version 1 · 3 October 2026
+Version 2 · 13 October 2026
 
-The Week 7 "Managing Changes" guide asks for a class diagram alongside the ERD and the
-C4 views, so that a change to a rule can be traced to the object that owns it. This
-diagram covers the two domains the six Customer Changes touch: venue booking
-(C-65 to C-68) and the event lifecycle (C-69, C-70). It is a domain model of the
-`Event Lifecycle` and `Venue Management` components in `docs/c4-diagrams.md`, not a
-transcript of the TypeScript modules; where a class maps to a table in
-`docs/db_schema.md` the table is named in a note. Attributes and operations added or
-changed by Week 7 are marked `W7`.
+This diagram traces the Week 7/Week 9 booking, Session, registration, access and
+event-lifecycle decisions to the domain objects that own them. It is a domain model
+of the `Event Lifecycle`, `Venue Management`, `Equipment and Support`, `Registration`
+and `Access Control` components in `docs/c4-diagrams.md`, not a transcript of the
+TypeScript modules. Where a class maps to a table in `docs/db_schema.md`, the table
+is named in a note. Week 9 decisions are marked `W9`.
 
 ### Venue booking
 
@@ -35,6 +33,9 @@ classDiagram
 
     class VenueBooking {
         +uuid id
+        +uuid eventId
+        +uuid sessionId W9
+        +uuid layoutId W9
         +Range bookingRange
         +Range occupancyRange W7
         +BookingStatus status
@@ -42,7 +43,9 @@ classDiagram
         +int headcount W7
         +bool isPrimary W7
         +DateTime expiresAt W7
-        +DateTime reminderSentAt W7
+        +Duration warningBefore W9
+        +DateTime reminderSentAt
+        +int extensionCount W9
         +bool requiresReconfirmation
         +string decisionReason
         +requestBooking()
@@ -51,17 +54,52 @@ classDiagram
         +release()
         +markConflicting(reason) W7
         +expire() W7
-        +extend(newExpiry, by) W7
+        +extend(newExpiry, reason, by) W9
         +convertHoldToRequest() W7
     }
 
     class VenueBlock {
         +uuid id
-        +Range blockRange
+        +Range blockRange "nullable end" W9
         +UnavailabilityReason reasonCategory W7
         +string reason
-        +shorten(newRange)
-        +remove()
+        +DateTime liftedAt W9
+        +edit(newRange, newReason, by) W9
+        +lift(by) W9
+    }
+
+    class VenueBlockHistory {
+        +uuid id
+        +string action
+        +Range previousRange
+        +Range newRange
+        +string previousReason
+        +string newReason
+        +uuid actorId
+        +DateTime changedAt
+    }
+
+    class VenueHoldExtension {
+        +uuid id
+        +int extensionNumber "maximum 2" W9
+        +DateTime previousExpiry
+        +DateTime newExpiry
+        +string reason
+        +uuid extendedBy
+        +DateTime extendedAt
+    }
+
+    class Session {
+        +uuid id
+        +Range sessionRange W9
+        +int expectedAttendance W9
+        +uuid layoutId W9
+        +string venueRequirements W9
+        +string equipmentRequirements W9
+    }
+
+    class Event {
+        +uuid id
     }
 
     class BookingStatus {
@@ -93,14 +131,19 @@ classDiagram
 
     Venue "1" o-- "0..*" VenueBooking : hosts
     Venue "1" o-- "0..*" VenueBlock : unavailableDuring
+    Event "1" o-- "1..*" Session : contains
+    Session "1" --> "0..*" VenueBooking : scheduledFor
+    VenueBooking "1" o-- "0..2" VenueHoldExtension : extensionHistory
     VenueBooking --> BookingStatus
     VenueBlock --> UnavailabilityReason
+    VenueBlock "1" o-- "0..*" VenueBlockHistory : changes
     HoldExpiryJob ..> VenueBooking : expires and reminds
     VenueBooking "0..1" --> "0..1" Venue : suggestedVenue on rejection
 
-    note for Venue "Table VENUES. occupancyWindow() widens a range by setupMinutes before and turnaroundMinutes after; every availability, search and conflict check uses it (C-65, E05-S05 Scenarios 2 and 7). recordUnavailability() marks overlapping Pending or Confirmed bookings Conflicting instead of refusing (C-66, E05-S06)."
-    note for VenueBooking "Table VENUE_BOOKINGS. occupancyRange is filled on write and is what the EXCLUDE constraint keys on (ADR-003 amended). Several bookings per Event are allowed; purpose, headcount and isPrimary are per booking (C-67). tentative holds carry expiresAt and are expired by HoldExpiryJob (C-68)."
-    note for HoldExpiryJob "Runs inside the Scheduler and Outbox Relay poll (ADR-006 amended, T-69). Both operations are idempotent: status and reminderSentAt are the guards."
+    note for Venue "Table VENUES. occupancyWindow() widens event-use/hold ranges by setupMinutes and turnaroundMinutes. Maintenance blocks use their raw, possibly open-ended range and receive no buffer (T-80)."
+    note for VenueBooking "Table VENUE_BOOKINGS. occupancyRange is filled on write and is what the exclusion constraint keys on (ADR-003 amended). Every booking belongs to one Session; missing headcount falls back to that Session's expectedAttendance. Holds have explicitly configured expiry/warning and at most two reasoned extensions (T-79/T-84)."
+    note for VenueBlock "Tables VENUE_BLOCKS and VENUE_BLOCK_HISTORY. Lift retains the block and its history; each edit snapshots old/new range and reason. Affected Coordinators receive a lift notice (T-91)."
+    note for HoldExpiryJob "Runs inside the Scheduler and Outbox Relay poll (ADR-006 amended). It evaluates each configured expiry and warning interval; no system default is applied (T-84)."
 ```
 
 ### Event lifecycle
@@ -121,12 +164,11 @@ classDiagram
         +submit()
         +assignCoordinator(lead, coordinator) W7
         +reassignCoordinator(lead, coordinator) W7
-        +requestReassignment(from, to or lead) W7
         +approve(reason)
         +reject(reason)
         +requestClarification(question)
         +startPlanning()
-        +submitForSafetyCheck() W7
+        +startSafetyReviewWhenReady() W9
         +recordSafetyDecision(check) W7
         +revertToPlanning(reason)
         +cancel(reason)
@@ -150,26 +192,32 @@ classDiagram
     }
 
     class CoordinatorReassignment {
+        <<legacy history only>>
         +uuid id
         +uuid fromCoordinatorId
         +uuid toCoordinatorId
         +bool addressedToLead W7
         +ReassignmentStatus status
-        +accept()
-        +decline(note)
+    }
+
+    class Session {
+        +uuid id
+        +Range sessionRange W9
+        +int expectedAttendance W9
+        +uuid layoutId W9
     }
 
     class SafetyCheck {
         +uuid id
         +uuid safetyOfficerId
         +SafetyDecision decision
-        +string reason
-        +DateTime submittedAt
+        +string comments W9
+        +DateTime createdAt "created automatically" W9
         +DateTime decidedAt
         +assessFactor(factor, satisfactory, comment)
-        +approve()
-        +requestChanges(reason)
-        +reject(reason)
+        +approve(comments)
+        +requestChanges(comments)
+        +reject(comments)
         +isComplete() bool
     }
 
@@ -205,7 +253,7 @@ classDiagram
 
     class User {
         +uuid id
-        +UserRole role
+        +UserRole[] roles W9
         +string fullName
     }
 
@@ -221,37 +269,99 @@ classDiagram
     }
 
     Event --> EventStatus
+    Event "1" o-- "1..*" Session : contains W9
     Event "1" o-- "0..*" CoordinatorReassignment : handedOverBy
     Event "1" o-- "0..*" SafetyCheck : reviewedBy
     SafetyCheck "1" *-- "7" SafetyCheckFactor : assesses
     SafetyCheckFactor --> SafetyFactor
     SafetyCheck --> SafetyDecision
-    User --> UserRole
+    User "1" o-- "1..*" UserRole : grants W9
     User "0..1" --> "0..*" Event : coordinates
     User "1" --> "0..*" Event : organises
     User "0..1" --> "0..*" Event : assignedBy (Lead)
     User "1" --> "0..*" SafetyCheck : decides (Safety Officer)
     UnassignedQueue ..> Event : reads submitted and unassigned
 
-    note for Event "Table EVENTS. submit() no longer auto-assigns a Coordinator (E03-S01 superseded, T-70); the Event waits in UnassignedQueue until a Lead calls assignCoordinator() (E03-S08). submitForSafetyCheck() replaces the direct Planning to Confirmed step of E08-S03 and requires arrangementsComplete() (every booking Confirmed or withdrawn, equipment reserved, support assigned)."
-    note for SafetyCheck "Tables SAFETY_CHECKS and SAFETY_CHECK_FACTORS. approve() moves the Event to Confirmed; requestChanges() and reject() both return it to Planning and never cancel it (O-41, E08-S06). Every decision is also an AUDIT_LOGS row (ADR-009 amended)."
-    note for CoordinatorReassignment "Table COORDINATOR_REASSIGNMENTS. A Coordinator may name a colleague (E03-S07 behaviour) or set addressedToLead so the Lead decides (O-37, E03-S09)."
+    note for Event "Table EVENTS. Event expectedAttendance is the overall planning total; each Session has its own attendance used for that Session's booking-suitability fallback (T-79). A Lead assigns or reassigns Coordinators directly; no Coordinator request/acceptance workflow is available (T-83). When arrangementsComplete() becomes true, the system creates SafetyCheck and moves Planning to Safety Review (T-82)."
+    note for SafetyCheck "Table SAFETY_CHECKS; decision/comments are null while pending. SAFETY_CHECK_FACTORS stores the team-added checklist. The pending record is automatic; the Safety Officer records overall decision/comments plus each factor. Approval moves the Event to Confirmed; changes/rejection return it to Planning and never cancel it. Every transition is audited (ADR-009 amended)."
+    note for CoordinatorReassignment "Legacy history only. New reassignment is written as a Lead action in the audit log; no new request, accept or decline rows are created after T-83."
+```
+
+### Sessions and Event registration
+
+```mermaid
+classDiagram
+    direction LR
+
+    class Event {
+        +uuid id
+        +Range eventRange
+        +DateTime registrationOpensAt
+        +DateTime registrationClosesAt
+        +int combinedCapacity()
+    }
+
+    class Session {
+        +uuid id
+        +Range sessionRange
+        +int expectedAttendance
+        +uuid layoutId
+        +int confirmedLayoutCapacity()
+    }
+
+    class EventRegistration {
+        +uuid id
+        +RegistrationStatus status
+        +DateTime registeredAt
+        +bool manuallyAdded
+        +withdraw()
+    }
+
+    class RegistrationSession {
+        +uuid registrationId
+        +uuid sessionId
+        +DateTime selectedAt
+    }
+
+    class RegistrationStatus {
+        <<enumeration>>
+        pending
+        registered
+        waitlisted
+        withdrawn
+    }
+
+    class CapacityService {
+        <<service>>
+        +checkSessionAndEventCapacity(registration) Result
+        +approvePending(registrationId) Result
+    }
+
+    Event "1" o-- "1..*" Session : contains
+    Event "1" o-- "0..*" EventRegistration : admits
+    Session "1" o-- "0..*" RegistrationSession : selectedBy
+    EventRegistration "1" o-- "1..*" RegistrationSession : selects
+    EventRegistration --> RegistrationStatus
+    CapacityService ..> Session : checks each selected capacity
+    CapacityService ..> Event : checks combined capacity
+
+    note for EventRegistration "Tables EVENT_REGISTRATIONS and EVENT_REGISTRATION_SESSIONS. One active registration per account/Event selects one or more Sessions. Pending over-capacity submissions do not occupy approved seats; approval rechecks both limits (T-85). Event-level waitlist remains for combined capacity; per-Session waitlist is open under O-50."
+    note for CapacityService "Session capacity is derived from confirmed Session layout capacity. Combined Event capacity is derived from confirmed Session layout capacities. The limits are enforced atomically across concurrent registration/approval writes (T-85)."
 ```
 
 ### Reading the two diagrams together
 
-- A `VenueBooking` belongs to exactly one `Event`; from Week 7 an `Event` may own
-  several, so `Event.arrangementsComplete()` iterates its bookings rather than
-  reading a single one (C-67, E08-S03).
-- `Event.submitForSafetyCheck()` is the only transition that creates a
-  `SafetyCheck`; `SafetyCheck.approve()` is the only path to `confirmed` once the
-  migration lands (T-71). The `Safety Review` status is the team's interim answer to
-  O-39 and may be renamed or folded into `Planning` after the customer Q&A.
+- A `VenueBooking` belongs to one Session; each Session belongs to one Event.
+  `Event.arrangementsComplete()` checks all required Session bookings and
+  equipment plus Event-level technical support (T-79/T-82).
+- The system automatically creates the pending `SafetyCheck` when arrangements
+  complete; a Coordinator does not submit it. `SafetyCheck.approve()` is the
+  only transition from Safety Review to Confirmed (T-82).
 - `HoldExpiryJob` and `UnassignedQueue` are stereotyped `<<service>>` because they
   own no state of their own; both read and write through the classes they point at.
 
 ### Change log
 
-- v1 (3 October 2026): first version, created for the Week 7 Customer Changes. Covers
-  venue booking and the event lifecycle only; equipment, registration and
-  notification classes are out of scope until a change touches them.
+- v1 (3 October 2026): first version for the Week 7 Customer Changes.
+- v2 (13 October 2026): added Sessions, registration, roles, hold and block
+  history; updated lifecycle, assignment and Safety Review for T-79 to T-91.

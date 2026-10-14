@@ -136,7 +136,7 @@ _No checklist recorded._
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: -
+- **BDR references**: C-74, T-79, T-87, T-90, O-51
 - **Owner**:
 
 ### User story
@@ -147,15 +147,23 @@ As an Event Organiser, I want to create a new request by copying a previous even
 
 #### Scenario 1 — Previous event copied
 
-Given I have a previous event When I choose to copy it Then a new draft is created with the requirements copied and the dates left blank
+Given I choose one of my own completed or past events When I copy it Then ConnectSphere creates a new draft with the event requirements and Session structure copied, all event and Session dates/times left blank, and no bookings, reservations, or registrations carried over (assumes O-51)
 
 #### Scenario 2 — Missing reference flagged
 
-Given the copied event referenced a venue or equipment item that no longer exists When the draft is created Then that requirement is flagged for review rather than copied silently
+Given the copied event references a venue or equipment item that no longer exists When the draft is created Then the affected requirement is flagged for review and identifies its Session rather than being copied silently
+
+#### Scenario 3 — Dates remain subject to current submission policy
+
+Given I later submit the copied draft When I enter event and Session dates Then the current E02-S01 and E02-S07 validation applies; copying does not bypass the two-year horizon or the Coordinator feasibility review
 
 ### Checklist
 
-_No checklist recorded._
+- Copy one of my own completed or past events into a new draft
+- Confirm requirements and Session structure are copied while event and Session dates/times are blank
+- Confirm bookings, equipment reservations and registrations are not copied (assumes O-51)
+- See unavailable venue/equipment references flagged against the relevant Session
+- Submit a copied draft subject to the current date rules
 
 ## E02-S06 — Attach supporting documents
 
@@ -188,3 +196,44 @@ Given a document is attached to an event When I delete it Then it is removed and
 - Be rejected with the permitted types and limit stated when the file is too large or the wrong type
 - See attached documents as an assigned internal user
 - Delete an attachment, with the deletion recorded in the activity log
+
+## E02-S07 — Validate the event date horizon
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-71, C-72, T-87
+- **Owner**:
+
+### User story
+
+As an Event Organiser, I want to submit a request without a fixed minimum lead time while dates more than two years ahead are rejected so that a Coordinator can assess feasibility within a bounded planning horizon.
+
+### Acceptance criteria
+
+#### Scenario 1 — No fixed minimum lead time
+
+Given a requested event date is not in the past and is within the permitted horizon When I submit the request Then ConnectSphere does not reject it solely because it is fewer than a fixed number of days or months away; the assigned Coordinator assesses feasibility
+
+#### Scenario 2 — Dates beyond two years rejected
+
+Given any requested event or Session date is later than two calendar years after the Singapore-local submission date When I submit the request Then submission is blocked and the out-of-range date is identified
+
+#### Scenario 3 — Two-year boundary accepted
+
+Given every requested event and Session date is on or before the date two calendar years after the Singapore-local submission date When I submit an otherwise valid request Then the date-horizon check passes
+
+#### Scenario 4 — Past Event date rule preserved
+
+Given the requested Event date is in the past When I submit the request Then E02-S01 past-date validation still blocks it
+
+#### Scenario 5 — Past Session date rejected
+
+Given any requested Session date is in the past When I submit the request Then submission is blocked and the past Session date is identified
+
+### Checklist
+
+- Submit a feasible request without an invented minimum lead time
+- Be blocked when any Event or Session date exceeds two calendar years from submission
+- Pass the exact two-year boundary
+- Confirm a past Event date remains blocked by E02-S01
+- Be blocked when any Session date is in the past
