@@ -25,6 +25,26 @@ Two PRs, per `docs/ops/production-migrations.md`:
 - Resolved IDs are still filtered to active `venue_staff` users, as before.
 - Migration number 0016: 0011/0015 (#261), 0012 (#232), 0014 (#263) are taken.
 
+## Done
+
+- `6373955` migration 0016 (migration branch). `0dfcd68` default resolver in
+  `captureEventAudience`, seed assignments (Venue Staff A: Orchid Hall, Lotus
+  Room, Maple Room; Venue Staff B: Jasmine Hall, Cedar Auditorium), two new
+  real-database tests. `tc-coverage.md` regenerated.
+- Evidence at `3dcc5b6`: backend unit 373/373; notification DB tests 10/10;
+  every changed line of `eventNotifications/service.ts` covered. Full
+  `test:db` 76/78, the two failures identical on `main`. Records
+  `docs/testing/runs/20261014-135516-*` and `20261014-135525-*`.
+
+## Next
+
+- Le Xin: manual run of TC_E11S01_02 on the seeded local stack. As `coord_a`
+  change the end time of EVT-3003 (Orchid Hall, Venue Staff A) and EVT-3001
+  (Jasmine Hall, Venue Staff B); the venue's own staff get an "Event update",
+  the other Venue Staff do not. Record seed substitutions
+  (`venue_staff_1` -> `venue_a`/`venue_b`, `coordinator_1` -> `coord_a`).
+- Merge the migration PR, deploy owner applies 0016, then merge the code PR.
+
 ## Open
 
 - Production has no assignment rows after the migration. Who loads the real
