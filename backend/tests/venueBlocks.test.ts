@@ -96,3 +96,45 @@ test('invalid input is rejected before a transaction opens', async () => {
   const shortened = await shortenVenueBlock(denyPool, venueStaff, 'venue-1', 'block-1', { from: 'bad', to: valid.to });
   assert.equal(shortened.status, 400);
 });
+
+// E05-S05 Scenario 5: venue setup/turnaround buffers must NOT be applied to
+// the booking-versus-maintenance-block check. Proves at the SQL-shape level
+// that neither the block-creation conflict check nor the coordinator
+// notification query wraps the booking range in occupied_window(); the
+// real-database boundary (a block ending before the advertised event start
+// but overlapping setup time) is covered in venueBufferConflicts.integration.test.ts.
+test('createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window', async () => {
+  let conflictSql = '';
+  let notifySql = '';
+  const calls: string[] = [];
+  const client = {
+    query: async (sql: string, values?: unknown[]) => {
+      calls.push(sql);
+      if (sql.includes('FROM venues WHERE id::text')) return { rows: [{ id: 'v1', name: 'Riverside Hall' }] };
+      if (sql.includes('SELECT DISTINCT')) {
+        notifySql = sql;
+        return { rows: [] };
+      }
+      if (sql.includes('FROM venue_bookings vb')) {
+        conflictSql = sql;
+        return { rows: [] };
+      }
+      if (sql.includes('FROM venue_blocks WHERE venue_id')) return { rows: [] };
+      if (sql.includes('INSERT INTO venue_blocks')) {
+        return { rows: [{ id: 'b1', venue_id: 'v1', reason: valid.reason,
+          starts_at: new Date('2027-01-04T16:00:00.000Z'), ends_at: new Date('2027-01-10T16:00:00.000Z'),
+          created_at: new Date('2027-01-01T00:00:00.000Z') }] };
+      }
+      return { rows: [] };
+    },
+    release: () => {},
+  };
+  const pool = { query: client.query, connect: async () => client } as unknown as Pool;
+
+  const result = await createVenueBlock(pool, venueStaff, 'v1', valid);
+  assert.equal(result.status, 201);
+  assert.ok(conflictSql, 'expected the booking-conflict check to run');
+  assert.ok(notifySql, 'expected the coordinator-notification query to run');
+  assert.ok(!conflictSql.includes('occupied_window'), `conflict check must not use buffers: ${conflictSql}`);
+  assert.ok(!notifySql.includes('occupied_window'), `notification query must not use buffers: ${notifySql}`);
+});

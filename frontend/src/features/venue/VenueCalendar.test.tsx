@@ -264,3 +264,13 @@ test('two blocks clipped to the same start get separate rows and keys', async ()
   consoleError.mockRestore();
   expect(duplicateKeyWarnings).toHaveLength(0);
 });
+
+
+test('buffer segments and review flags are labelled without changing booking state', async () => {
+  const confirmed = novemberEntries.find(entry => entry.state === 'confirmed')!;
+  calendarReply = url => ({ body: calendarBody(url, [{ ...confirmed, reason: 'Setup time', bufferConflict: true }]) });
+  renderCalendar();
+  expect(await screen.findByRole('button', { name: 'Annual Tech Summit · Setup time · Buffer conflict — needs review' })).toBeInTheDocument();
+  const day = await dayItem(/12 Nov/);
+  expect(within(day).getByText('Confirmed')).toBeInTheDocument();
+});
