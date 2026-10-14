@@ -50,4 +50,3 @@ Desktop.ini
 # URL, not a durable deliverable. Keep intermediate renders and scratch
 # comment drafts out of git. Finished postplans live at their postplan.dev URL
 # and are linked from PR comments per docs/contributing/creating-a-postplan.md.
-artifacts/
