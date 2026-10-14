@@ -27,3 +27,9 @@ Base e4c5e89. Read E05-S05 acceptance and shared venue-bookings contract. Separa
 The review suggestion to suppress C in a retained A–B–C chain assumes B stops occupying. Acceptance explicitly forbids releasing bookings after a buffer change. B still holds the venue, so a real B–C overlap remains flagged; tests enforce this. Priority only chooses review flags, not automatic eviction. This interpretation needs peer confirmation.
 
 Next: final repository check, commit and normal push to #261; leave findings/evidence comment only and request peer re-review.
+
+## Latest main integration
+
+Main 979cc08 (#256 read-only booking request foundation) merged during verification. Merged it without dropping either test list; regenerated tc-coverage.md. No new booking write service or migration landed, so the database guard remains the final write protection for current consumers. Final post-merge regression records supersede earlier counts while preserving the known full-database fixture failure.
+
+Final main-integrated checks: 380 backend units, 360 frontend units, 21 focused PostgreSQL cases, both typechecks, full build, repository hygiene and 128 tooling tests PASS. Full database 85/86 FAIL record is pre-main-integration; its unchanged eventVisibility fixture issue remains outside this fix. New PostgreSQL trigger and modified flag semantics need peer review; no manual acceptance/production claim.
