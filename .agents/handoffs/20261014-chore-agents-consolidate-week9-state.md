@@ -4,7 +4,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 ## Current state
 
-- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 is open and mergeable. All six reported checks passed on preceding head `022ff47`; this push needs a fresh check run and teammate approval before merge. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`.
+- `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 is open and mergeable. All six reported checks pass on head `cc8d69f`; teammate approval remains required. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`.
 - Updated `.agents/STATE.md` and `.agents/JOURNAL.md` in the owner consolidation PR. The Sprint 3 audit now records 10 incomplete parent stories and 19 incomplete subtasks; the previous state snapshot undercounted one subtask group.
 - Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. SCRUM-176 is In Progress because linked PR #247 has changes requested; neither issue is a confirmed carryover before Sprint 3 closes on 17 October.
 - Jira now reflects SCRUM-176 In Progress (#247), SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-176's status correction was noted in Jira without changing owner, estimate, sprint or scope. SCRUM-177's acceptance criteria now name the four recognized dependency links (`.venv-tools`, root `node_modules`, `backend/node_modules`, `frontend/node_modules`) and keep arbitrary ignored symlinks protected unless `--force` is explicit. SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
@@ -22,7 +22,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 - Resolve the product owner's exact SCRUM-141 cadence choice before changing scheduler configuration or deployment secrets.
 - Merge production run record PR #260 after teammate review; its required checks pass.
 - Reconcile Sprint 3 carryovers after the sprint closes on 17 October.
-- The owner-branch `python scripts/check.py` passed on base `022ff47` with 87 tooling tests; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. The PR's six checks passed on that head; this push adds the run record and current state, and requires a fresh GitHub check run and teammate approval.
+- The owner-branch `python scripts/check.py` passed on base `022ff47` with 87 tooling tests; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. A later push at `cc8d69f` passed all six GitHub checks; teammate approval remains required before merge.
 
 ## Verification
 
