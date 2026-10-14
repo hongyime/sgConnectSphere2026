@@ -1,6 +1,7 @@
 // App-wide layout and focus regressions from the UX audit (no Jira ticket).
 // The API is stubbed; these check presentation only.
 import { expect, test, type Page } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 const venue = { id: 'V-01', name: 'Grand Ballroom', location: 'Level 1', max_capacity: 300, opens_at: '08:00',
   closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] };
@@ -98,3 +99,24 @@ for (const path of singleFormPages) {
     expect(Math.abs(headingLeft - formBox.left)).toBeLessThanOrEqual(2);
   });
 }
+
+// Aaron's report (7 Oct): in a two-column FormSection, a field whose
+// neighbour has a hint was stretched to the row's height and its control slid
+// down. The UI kit pairs a hinted field with a plain one so this stays caught.
+test('fields side by side keep their controls level when only one has a hint', async ({ page }) => {
+  await signInAs(page, 'admin');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/ui-kit');
+  const form = page.locator('form.ui-form').first();
+  const withHint = form.getByLabel('Expected attendance', { exact: true });
+  const withoutHint = form.getByLabel('Layout', { exact: true });
+  await expect(withHint).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  // Re-measure until styles and fonts settle: a real misalignment never does.
+  const gap = async () => {
+    const [a, b] = [await withHint.boundingBox(), await withoutHint.boundingBox()];
+    return a && b && a.x < b.x ? Math.abs(a.y - b.y) : Number.POSITIVE_INFINITY;
+  };
+  // Same row in the two-column grid, and the controls start at the same height.
+  await expect.poll(gap, { timeout: 5000 }).toBeLessThanOrEqual(1);
+});

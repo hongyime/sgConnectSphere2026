@@ -42,6 +42,8 @@ setup after cloning, moving the repository, or changing the tooling dependencies
   and split frontend/foundation work plan.
 - [GitHub owner setup](docs/github-owner-setup.md): activate the merge protections
   that cannot be enabled by a write-only collaborator.
+- [Production database migrations](docs/ops/production-migrations.md): owner, safety checks, manual apply,
+  verification, and run records.
 - [Security policy](SECURITY.md): how to report vulnerabilities and handle secrets.
 - [Architecture boundary](docs/architecture.md) and
   [initial decision record](docs/decisions/0001-repository-foundation.md).

@@ -40,7 +40,7 @@ As a ConnectSphere staff member, I want significant actions to be recorded so th
 
 #### Scenario 1 — Status change recorded
 
-Given an event status changes When the change completes Then an entry is recorded with the actor, the action, the affected event and the time, and an Event Coordinator permitted to view the event can read it in the event Activity log
+Given an event status changes When the change completes Then an entry is recorded with the actor, the action, the affected event and the time, and an Event Coordinator permitted to view the event can read it in the event Activity log; access-denial entries are not shown in that log
 
 #### Scenario 2 — Access denial recorded
 
@@ -65,6 +65,7 @@ Given an activity log entry exists When any user attempts to edit or delete it T
 - Record every account deactivation
 - Confirm log entries cannot be edited or deleted by any user
 - Verify that an Event Coordinator can read the event Activity log within existing event access rules
+- Confirm access-denial entries, and the names of the users they refer to, are not shown in the event Activity log
 - Verify denial and deactivation entries in a controlled test database; no Administrator sign-in is required
 
 ### Planning and reader scope
@@ -79,3 +80,11 @@ a prerequisite for closing E14-S02.
 Use the existing event Activity log for Coordinator viewing. Denial and account
 deactivation records are checked in the test database, not exposed through a
 new application role. A global Administrator log viewer is deferred to Release 2.
+
+Access-denial entries are stored against the event they refused and name the
+refused user, who is often from another client organisation. The event
+Activity log therefore never shows them; they are checked in the test
+database only (TC_E14S02_02). This keeps the #161 data-isolation fix in place
+when the log is opened to Coordinators. Added at the story owner's request
+from the post-merge review of #192; the story is not Done, so it is updated
+in place (T-74), and TC_E14S02_08 verifies it.

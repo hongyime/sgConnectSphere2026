@@ -1,0 +1,188 @@
+name: Vercel Preview Cleanup
+
+# Deletes Vercel preview deployments older than 30 days.
+#
+# The Hobby plan allows a limited number of preview deployments; stale PR
+# previews from merged or closed branches accumulate indefinitely because
+# vercel-deploy.yml never cleans up after itself. Each merged PR leaves one
+# preview per push behind; by Sprint 3 that was dozens of orphaned
+# deployments. SCRUM-112.
+#
+# Uses the same three secrets as vercel-deploy.yml, all set on the repo:
+#   VERCEL_TOKEN       Vercel personal access token
+#   VERCEL_ORG_ID      Vercel team id (theprawnvercel)
+#   VERCEL_PROJECT_ID  Vercel project id (sgconnectsphere)
+#
+# API endpoints (confirmed 2026-10-05, see delete-deployment-preview.sh
+# precedent in open source and vercel.com/docs/rest-api):
+#   GET  https://api.vercel.com/v6/deployments?projectId=...&teamId=...&target=preview
+#   DELETE https://api.vercel.com/v13/deployments/{uid}?teamId=...
+#
+# Production deployments (`target=production`) are never deleted; we only
+# page through `target=preview`. Any preview deployment older than 30 days
+# in an eligible state (READY, ERROR, or CANCELED) can be deleted.
+#
+# Known limitation: This workflow does not skip preview deployments that
+# belong to open PRs; all matching previews older than 30 days are deleted.
+#
+# A failure only marks this scheduled run red; it does not change the
+# repository. Set workflow_dispatch inputs.dry_run to true to preview
+# deletions; scheduled runs execute them.
+
+on:
+  schedule:
+    - cron: "0 17 */3 * *" # Day-of-month stepping resets monthly; runs can be one day apart (31st to 1st).
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "List deletions without executing them"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-preview-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      # Scheduled runs execute; manual runs honour the dry_run input.
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' && 'true' || 'false' }}
+      AGE_DAYS: "30"
+    steps:
+      - name: Guard required secrets
+        id: guard
+        shell: bash
+        run: |
+          if [ -z "${VERCEL_TOKEN:-}" ] || [ -z "${VERCEL_ORG_ID:-}" ] || [ -z "${VERCEL_PROJECT_ID:-}" ]; then
+            echo "::warning::VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID not fully configured; skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete preview deployments older than ${{ env.AGE_DAYS }} days
+        if: steps.guard.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cutoff_ms=$(( ($(date -u +%s) - AGE_DAYS * 86400) * 1000 ))
+          echo "Cutoff timestamp (ms): $cutoff_ms ($(date -u -d "@$((cutoff_ms / 1000))" '+%Y-%m-%dT%H:%M:%SZ'))"
+          echo "Dry run: $DRY_RUN"
+          echo
+
+          list_url="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_ORG_ID}&target=preview&limit=100&until=${cutoff_ms}"
+          page=0
+          total_candidates=0
+          total_deleted=0
+          total_failed=0
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+
+          while [ -n "$list_url" ]; do
+            page=$((page + 1))
+            echo "Page $page: $list_url"
+
+            if ! http=$(curl -sS -o "$response_file" -w "%{http_code}" --max-time 30 \
+              -H "Authorization: Bearer $VERCEL_TOKEN" \
+              -H "Accept: application/json" \
+              "$list_url"); then
+              echo "::error::GET deployments failed on page $page (curl transport error)."
+              exit 1
+            fi
+            if [ "$http" != "200" ]; then
+              echo "::error::GET deployments failed on page $page with HTTP $http."
+              exit 1
+            fi
+            if ! jq -e 'if (.deployments | type) != "array" then false
+              elif (.pagination | type) != "object" then false
+              elif (.pagination | has("next") | not) then false
+              else (.pagination.next == null or (.pagination.next | type == "number"))
+              end' "$response_file" >/dev/null; then
+              echo "::error::GET deployments returned an invalid response on page $page; expected a deployments array and pagination.next timestamp."
+              exit 1
+            fi
+
+            # Extract (uid, created, url, state) tuples for this page.
+            # READY, ERROR, and CANCELED previews older than AGE_DAYS are
+            # eligible; BUILDING/QUEUED deployments are left alone.
+            if ! rows_output=$(jq -r \
+              --argjson cutoff "$cutoff_ms" \
+              '.deployments[]
+                | select(.target == "preview")
+                | select(.state == "READY" or .state == "ERROR" or .state == "CANCELED")
+                | select(.created < $cutoff)
+                | [.uid, .created, (.url // "-"), .state] | @tsv' "$response_file"); then
+              echo "::error::Could not parse deployments on page $page."
+              exit 1
+            fi
+            mapfile -t rows <<< "$rows_output"
+
+            for row in "${rows[@]}"; do
+              [ -z "$row" ] && continue
+              uid=$(echo "$row" | cut -f1)
+              created=$(echo "$row" | cut -f2)
+              url=$(echo "$row" | cut -f3)
+              state=$(echo "$row" | cut -f4)
+              age_days=$(( ( $(date -u +%s) - created / 1000 ) / 86400 ))
+              total_candidates=$((total_candidates + 1))
+
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "DRY-RUN would delete $uid ($state, ${age_days}d old, $url)"
+                continue
+              fi
+
+              delete_url="https://api.vercel.com/v13/deployments/${uid}?teamId=${VERCEL_ORG_ID}"
+              http=$(curl -sS -o /tmp/del.json -w "%{http_code}" --max-time 30 \
+                -X DELETE \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                "$delete_url" || echo "000")
+
+              if [ "$http" = "200" ] || [ "$http" = "202" ] || [ "$http" = "204" ]; then
+                echo "DELETED $uid ($state, ${age_days}d old, $url)"
+                total_deleted=$((total_deleted + 1))
+              else
+                echo "::warning::DELETE $uid returned HTTP $http: $(cat /tmp/del.json)"
+                total_failed=$((total_failed + 1))
+              fi
+            done
+
+            # Vercel paginates with pagination.next = created timestamp; feed
+            # it back as `until` to walk older deployments.
+            next=$(jq -r '.pagination.next // empty' "$response_file")
+            if [ -z "$next" ] || [ "$next" = "null" ]; then
+              list_url=""
+            else
+              list_url="https://api.vercel.com/v6/deployments?projectId=${VERCEL_PROJECT_ID}&teamId=${VERCEL_ORG_ID}&target=preview&limit=100&until=${next}"
+            fi
+          done
+
+          echo
+          echo "Summary: candidates=$total_candidates deleted=$total_deleted failed=$total_failed dry_run=$DRY_RUN"
+          {
+            echo "## Vercel preview cleanup"
+            echo "- Cutoff: ${AGE_DAYS} days (deployments older than this are candidates)"
+            echo "- Dry run: $DRY_RUN"
+            echo "- Candidates: $total_candidates"
+            echo "- Deleted: $total_deleted"
+            echo "- Failed: $total_failed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$total_failed" -gt 0 ]; then
+            echo "::error::$total_failed deletions failed; see the step log above."
+            exit 1
+          fi

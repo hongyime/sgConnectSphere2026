@@ -85,7 +85,9 @@ export function UiKit() {
             <FormField label="Event name" hint="As the attendees will see it." error={name ? undefined : 'Event name can’t be left empty.'} wide>
               {props => <input {...props} value={name} onChange={change => setName(change.target.value)} />}
             </FormField>
-            <FormField label="Expected attendance">
+            {/* One field with a hint beside one without: their controls must stay
+                level (tests/e2e/layout-and-focus.spec.ts, design.md FormField). */}
+            <FormField label="Expected attendance" hint="A whole number of people.">
               {props => <input {...props} type="number" min={1} defaultValue={120} />}
             </FormField>
             <FormField label="Layout">

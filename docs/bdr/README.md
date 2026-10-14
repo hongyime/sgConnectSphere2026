@@ -2,13 +2,25 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 6  ·  2 October 2026
+Version 9  ·  13 October 2026
 
 ## Purpose
 
-This document holds every decision behind the backlog and the evidence for it. The backlogs themselves live in CONNECTSPHERE BACKLOGS CAA 140926.xlsx and contain story data only; each story there carries a Backlog Decision Reference pointing back to the entries here.
+This document holds every decision behind the backlog and the evidence for it. The backlogs themselves are canonical Markdown under `docs/backlog/`; generated workbook `CONNECTSPHERE BACKLOGS CAA 131026.xlsx` contains story data, with each story carrying a Backlog Decision Reference pointing back to the entries here.
 
 It exists to answer one question for any story or acceptance criterion: why is this here, and who decided it. Entries are separated into what the customer told us and what the team chose, because those carry different weight. Where the team chose, the entry says so plainly rather than presenting an assumption as a requirement.
+
+## What changed in version 9
+
+Applied the Week 9 decisions to eligible future backlog stories and recorded two residual design assumptions as O-50 and O-51. E04-S02 and E02-S05 are included in Release 1; E02-S07 and E07-S08 carry new date-horizon and Session-linked equipment behavior without reopening completed stories. Sprint 3 criteria remain deferred until its close under T-73. Canonical acceptance cases, ADRs, target schema/contracts, architecture views and repository UI/UX handoff are aligned in the stacked follow-ups. Actual Figma frames and application code remain downstream; Jira reconciliation waits until canonical Markdown merges.
+
+Release 1 currently contains 60 stories and 173 estimated points. Four stories have no sprint assignment; E02-S07 and E07-S08 also have no estimate pending planning. The total excludes estimates for those two stories and may change after planning. Eight items remain open: O-08, O-11, O-12, O-13, O-18, O-19, O-50 and O-51; the first six are outside Release 1, while O-50/O-51 affect the assumptions for E09-S02/S04 and E02-S05.
+
+## What changed in version 8
+
+Recorded the team's selections from the Week 9 impact review as T-79 to T-91 and reconciled O-10, O-22 to O-24, O-34, O-37 to O-49. The decisions restore Sessions for Release 1, choose C-119's open-ended block behavior despite its conflict with C-111, define venue-loss and automatic safety-review transitions, set registration/capacity behavior, update role cardinality and hold/block policies, set a two-year date limit, close obsolete change requests, and add E02-S05 to Release 1. Team choices are labelled separately from customer answers.
+
+The canonical lifecycle returns a Confirmed event to Planning automatically when venue loss triggers change review; completed arrangements enter Safety Review automatically. The safety record includes both the team's per-factor checklist and the decision/comments required by C-134. One event registration can select multiple Sessions while both per-Session and combined event capacities are enforced. Open-ended blocks follow T-80 as a team resolution, preserving C-111's conflicting answer in the source record. Generated exports follow their Markdown sources; implementation and Jira reconciliation follow the source-of-truth workflow.
 
 ## What changed in version 6
 
@@ -26,8 +38,6 @@ Two roles are added (T-72). The Event Coordinator Lead replaces auto-assignment 
 
 The customer Q&A that would resolve the document's ambiguities may fall after Sprint 3 planning. T-73 records the team's process: write the stories now against recorded defaults, carry every ambiguity as O-20 to O-44 with its default and its Q&A question, tag dependent criteria "(assumes O-xx)", and pull into Sprint 3 first the stories with no High-priority open item. T-74 applies the Week 7 guide's three scenarios: a Done story stays Done and new behaviour on it is a new story; an incomplete story is updated in place; a story is reopened only when an original criterion turns out unsatisfied, which no Week 7 change does. Each of C-65 to C-70 is classified as new requirement, clarification or correction in its row.
 
-Release 1 grows beyond 47 stories and 155 points. The new story count, estimates and sprint placement are set in the backlog PR that follows this one; the architecture, C4 model, user flows, database schema and ADR-003, ADR-007, ADR-009 and ADR-012 all change and are handled in the architecture PR.
-
 ## What changed in version 5
 
 The team worked through the open assumptions in section C and answered eight of them. Six confirmed what the backlog already assumed and changed nothing. Two produced edits.
@@ -38,7 +48,7 @@ A three-second response target was adopted for venue search, opening the venue a
 
 Six assumptions were confirmed unchanged and closed: O-02 lockout at five attempts with an emailed reset link, O-06 mandatory rejection reason, O-09 Rejected is terminal, O-16 no waiting-list hold window, O-14 the fuller status vocabulary, and O-17 the design scale of roughly 500 internal staff.
 
-Six items remain open, all on stories outside Release 1: O-08, O-11, O-12, O-13, O-18 and O-19. Each will be decided if and when its story is scheduled.
+As of version 8, six items remained open on stories outside Release 1: O-08, O-11, O-12, O-13, O-18 and O-19. Version 9 adds the two explicit Week 9 design assumptions O-50/O-51 listed above.
 
 Release 1 is unchanged at 47 stories and 155 points. The architecture, C4 model and database schema required no changes.
 
@@ -62,11 +72,11 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 ## How to read the reference codes
 
-C-01 to C-70 — customer clarifications. C-01 to C-64 are taken verbatim from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, verbatim, in document order.
+C-01 to C-70 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
 
-T-01 to T-74 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-91 — team decisions, each naming the clarification it follows from or the gap it closes.
 
-O-01 to O-44 — questions still open, or closed with the answer recorded against them. O-20 to O-44 carry the default each Week 7 story is written to and the question to put to the customer.
+O-01 to O-49 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies.
 
 B-01 to B-11 — boundary rulings from the story overlap audit and the test-case audit.
 
@@ -82,15 +92,15 @@ Under Review → Rejected (E03-S03, terminal and read-only)
 
 Planning or Confirmed → Cancelled (E10-S04, terminal and read-only)
 
-Confirmed → Planning (E08-S04, manual reversion only, never automatic — confirmed again by C-61)
+Confirmed → Planning (E08-S04 for a Coordinator's deliberate reversion; venue loss automatically triggers Planning/change review and Coordinator notification under C-120/T-81.)
 
-Planning → Safety Review (the Coordinator submits for review once every venue and technical arrangement is confirmed; added in version 6 by T-71 for C-70)
+Planning → Safety Review automatically after every required venue and technical arrangement is confirmed (C-132, T-82).
 
-Safety Review → Confirmed (Safety Officer approves) or Safety Review → Planning (Safety Officer rejects or requests changes, with a mandatory reason; never cancels). Interim placement pending O-39.
+Safety Review → Confirmed (Safety Officer approves) or Safety Review → Planning (Safety Officer rejects or requests changes, with a mandatory reason; never cancels). C-131 confirms the Safety Check sits between Planning and Confirmed.
 
-Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review (from version 6 the Event Coordinator Lead assigns from the unassigned queue, T-70). E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. The new Safety Review stories in E08 set Safety Review and, on approval, Confirmed; E08-S03's confirmation checks become the precondition for submitting to review. E08-S05 sets Completed. E10-S04 sets Cancelled.
+Transition owners: E02-S01 sets Submitted. E03-S01 sets Under Review (the Event Coordinator Lead assigns from the unassigned queue, T-70/T-83). E03-S02 sets Awaiting Clarification. E03-S03 sets Approved or Rejected. E06-S03 sets Planning on the first venue booking request. E08 arrangement completion automatically enters Safety Review; the Safety Officer's decision sets Confirmed or returns the event to Planning. E08-S04 remains the Coordinator's deliberate reversion path. Venue loss also automatically returns a Confirmed event to Planning (T-81). E08-S05 sets Completed. E10-S04 sets Cancelled.
 
-This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14. Safety Review is the team's interim name for the stage C-70 places before "preparation"; O-39 asks the customer to confirm the placement.
+This diverges from C-49, in which the customer named four statuses. The divergence is deliberate and is recorded as T-01 and O-14. Safety Review is the team's name for the stage the customer places between Planning and Confirmed (C-131). The system records the Safety Officer's decision and comments as C-134 requires and also keeps the team's in-system checklist for each factor (T-82); the checklist is not presented as a customer requirement.
 
 
 ## Section files
