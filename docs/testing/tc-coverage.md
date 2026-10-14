@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **354**
-- Automated (explicit TC_ID in an active test title): **174** (49.2%)
+- Automated (explicit TC_ID in an active test title): **177** (50.0%)
   - Real-database (`.integration.test` / `.db.test`): **32**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **141**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.2%)
+  - Live-assertion (other active tests): **144**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (27.4%)
 - No test yet (no test file mentions the TC_ID): **80** (22.6%)
 
 ## Coverage by epic
@@ -24,14 +24,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 0 | 8 |
 | E06 | 38 | 15 | 16 | 7 |
-| E07 | 37 | 30 | 3 | 4 |
+| E07 | 37 | 33 | 0 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
 | E10 | 29 | 0 | 15 | 14 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **354** | **174** | **100** | **80** |
+| **Total** | **354** | **177** | **97** | **80** |
 
 ## Case-by-case status
 
@@ -280,9 +280,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S04_05` | E07-S04 | Verify that requesting one fewer than the free quantity produces a full reservat | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
 | `TC_E07S04_06` | E07-S04 | Verify that requesting exactly the free quantity produces a full reservation and | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
 | `TC_E07S04_07` | E07-S04 | Verify that requesting one more than the free quantity produces a partial reserv | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_02 TC_E07S04_07 a partial reservation records Partial and notifies the Coordinator of the shortfall and outstandi |
-| `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_01 - Verify that marking an item with no reservations in the period unavailable, with a reason and a period, should exclude it from availability ch |
-| `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_02 - Verify that marking an item unavailable while it is reserved for an upcoming event should flag the affected event and notify its Coordinator |
-| `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_03 - Verify that returning an item to service should restore it to availability checks |
+| `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_01 marking an item with no reservations unavailable for a period with a reason excludes it from availability fo |
+| `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_02 marking a reserved item unavailable flags the affected event and notifies its Coordinator once; tests/e2e/eq |
+| `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_03 returning an item to service deletes the period restores availability and is audited; tests/e2e/equipmentUna |
 | `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
@@ -572,6 +572,26 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 reservation writers refuse signed-out callers and other roles before opening a transaction
 - E07-S04 invalid input is answered with field errors and no transaction once the caller is Technical Support
 - E07-S04 the equipment request route sends reserve changeReservation and releaseReservation to the reservation writers
+
+### `backend/tests/equipmentUnavailability.integration.test.ts`
+
+- E07-S05 D54 only reservations that no longer fit are flagged, and a partial reservation counts
+- E07-S05 D53 returning to service clears no flags and sends no notice
+- E07-S05 D51 overlapping withdrawals add up but never past the stock, exactly the units in service is accepted
+- E07-S05 retired and unknown items are refused, items under maintenance can still be marked, and an ended period cannot be returned
+- E07-S05 only Technical Support Staff mark or return and every refusal is audited with nothing changed
+- E07-S05 two withdrawals saved at the same moment cannot take out more units than exist
+- E07-S05 no notice is sent when the event has no assigned Coordinator or the Coordinator account changed role
+- E07-S05 a one-unit withdrawal says 1 unit, and a return that waited while the period was removed is refused
+
+### `backend/tests/equipmentUnavailability.test.ts`
+
+- E07-S05 D51 a withdrawal is whole Singapore days with a trimmed reason, stored as a half-open range
+- E07-S05 D51 invalid dates quantities and reasons are refused with field errors
+- E07-S05 days and in-service sentences read the way the screens write them
+- E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
+- E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
+- E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -1151,6 +1171,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 - a second submit while saving sends nothing more, and leaving mid-save drops the late reply
 - E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case
 - E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve
+
+### `frontend/src/features/support/EquipmentUnavailability.test.tsx`
+
+- E07-S05 D51 the form checks dates, units and reason before sending anything
+- E07-S05 D51 the units default to those in service for the chosen dates until the user types a number
+- E07-S05 a server refusal is shown word for word, next to its field
+- E07-S05 Coordinators see the periods without actions and are refused the form; retired items have no actions
+- E07-S05 a refused return is shown in the panel, and Cancel closes it
+- E07-S05 the saved message says which Coordinators were told when some events have none
+- E07-S05 the helpers count the peak of overlapping periods and write dates the way the screens do
+- E07-S05 one unit reads
+- E07-S05 a second submit while saving sends nothing more, and a reply after leaving the page is ignored
+- E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored
+- E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form
 
 ### `frontend/src/features/support/TechnicianStaffing.test.tsx`
 
