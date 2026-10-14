@@ -1,6 +1,6 @@
 -- E05-S05 follow-up to 0011. Do not overwrite a booking's lifecycle status
 -- when buffers change: a flagged confirmed/pending/held booking still occupies.
--- 0014 is reserved for the shared booking contract; this additive migration
+-- 0015 is reserved for the shared booking contract; this additive migration
 -- also works after a previously applied version of 0011.
 ALTER TABLE venue_bookings ADD COLUMN buffer_conflict boolean NOT NULL DEFAULT false;
 

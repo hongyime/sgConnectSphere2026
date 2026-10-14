@@ -1,5 +1,21 @@
 # Agent Journal
 
+This archive keeps reusable lessons consolidated from completed handoffs. Current PR and sprint status belongs in STATE.md and each active task handoff; it does not belong here.
+
+## Learnings consolidated on 2026-10-14
+
+- Jira’s sprint board view can omit Subtasks. Reconcile sprint scope by checking each issue’s Sprint field; report parent stories and subtasks separately.
+- Release 1 planning labels and Jira sprint membership can differ. Preserve the actual sprint and current assignment; under T-73, decide carryovers after the sprint closes.
+- Use canonical GitHub Markdown as the requirements source. Jira, spreadsheets, Word exports, Figma notes and PostPlans are derivative views. Do not update derivatives ahead of an unmerged source change.
+- T-59’s Supabase test schema is in the same database as production public. Only the transaction-rollback deactivation test is currently supported there. Never use db:reset, general seeding, or committing database suites against Supabase. GitHub Actions’ managed PostgreSQL service is a CI facility; it is not an instruction to run Docker Desktop locally.
+- T-65 is an evidence rule: record a run only when its result is cited for a PR, story completion or demo. Records are immutable, one file per session, and must describe only observed outcomes.
+- T-69 and ADR-006 select the existing outbox relay for hold-expiry notifications; T-84 sets warning timing per hold. Record a Product Owner cadence choice before changing scheduler configuration or secrets.
+- Before a production migration, inspect the ledger read-only. If exactly one migration is pending, follow the runbook’s one-file path, then verify the ledger again. Never reapply files already recorded.
+- Done stories stay Done. Correct incomplete work in place; use a new story for new scope. Cross-cutting Jira technical enablers belong under E00 as Stories; discipline work owned by one product story belongs under that story as a Subtask.
+- A clean Git status does not reveal ignored user data. Worktree cleanup may remove only the repository’s recognized dependency links unless a user explicitly requests a forced removal.
+
+## Earlier task history
+
 - 2026-10-03: E05 test cases name data not in the seed; use seeded
   equivalents and list them in the record's Remarks.
 
@@ -258,3 +274,4 @@
   Desktop/mobile screenshots visually checked. Timezone behaviour unchanged;
   non-blocking scope advice applies to future PRs. User authorized committing and
   pushing this follow-up for re-review; final CI and human approval remain required.
+- 2026-10-14: Audited Sprint 3 implementation branches against the merged Week 9 backlog and shared booking contract. SCRUM-50 and SCRUM-60 branches are already present but handoff-only; E08-S03 has mock readiness/confirmation screens in main. SCRUM-50 should wait for the buffered booking and E06-S03 contract work; SCRUM-60 depends on the venue, equipment, support and Safety Review workflows. SCRUM-180/181 have no points or assignees and remain outside Sprint 3. GitHub renamed the SCRUM-44 branch and closed PR #231; the merge and coverage refresh were pushed to correctly keyed replacement PR #261 (`d18acba`), whose checks are running. PR #231 now points to #261. Owner snapshot refresh still needs pushing to #259.

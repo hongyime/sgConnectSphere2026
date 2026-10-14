@@ -33,3 +33,7 @@ Next: final repository check, commit and normal push to #261; leave findings/evi
 Main 979cc08 (#256 read-only booking request foundation) merged during verification. Merged it without dropping either test list; regenerated tc-coverage.md. No new booking write service or migration landed, so the database guard remains the final write protection for current consumers. Final post-merge regression records supersede earlier counts while preserving the known full-database fixture failure.
 
 Final main-integrated checks: 380 backend units, 360 frontend units, 21 focused PostgreSQL cases, both typechecks, full build, repository hygiene and 128 tooling tests PASS. Full database 85/86 FAIL record is pre-main-integration; its unchanged eventVisibility fixture issue remains outside this fix. New PostgreSQL trigger and modified flag semantics need peer review; no manual acceptance/production claim.
+
+## Conflict resolution after Session foundation
+
+Merged main ea46909. Preserved buffer and Event Session database tests in package.json, retained Session schema and proposed 0015 shared contract, renamed the unmerged buffer guard to 0016 and updated fixture/document references. Regenerated coverage from combined sources. New immutable regression records describe this merge working tree; no manual acceptance claim.

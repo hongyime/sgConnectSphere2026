@@ -40,7 +40,7 @@ test('E02-S03 Scenario 3: venue search excludes venues missing a recorded predef
     // createVenue and the E05-S05 search availability check depend on.
     await db.query(await readFile(new URL('../database/migrations/0011_venue_setup_turnaround_buffers.sql', import.meta.url), 'utf8'));
     await db.query(await readFile(new URL('../database/migrations/0013_tentative_venue_holds.sql', import.meta.url), 'utf8'));
-  await db.query(await readFile(new URL('../database/migrations/0015_venue_buffer_write_guard.sql', import.meta.url), 'utf8'));
+  await db.query(await readFile(new URL('../database/migrations/0016_venue_buffer_write_guard.sql', import.meta.url), 'utf8'));
 
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
