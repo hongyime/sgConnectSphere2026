@@ -27,6 +27,8 @@ CASES_DIR = REPO_ROOT / "docs" / "testing" / "cases"
 COLUMNS = ("Sprint Number", "Story ID", "AC Reference", "Step(1-5)",
            "Test Case ID", "Test Case Scenerio", "Pre Conditions",
            "Test Steps", "Test Data", "Expected Result")
+# Display-only value; canonical Sprint metadata stays blank until assigned.
+UNASSIGNED_SPRINT_DISPLAY = "Unassigned"
 
 
 def _parse_metadata(lines: list[str]) -> dict[str, str]:
@@ -83,7 +85,7 @@ def _parse_case_block(block: str, story_id_context: str) -> Optional[dict]:
     sections = _split_sections(body_lines)
 
     sprint_raw = metadata.get("Sprint", "").strip()
-    sprint_value: object = ""
+    sprint_value: object = UNASSIGNED_SPRINT_DISPLAY
     if sprint_raw:
         try:
             sprint_value = int(sprint_raw)
@@ -171,7 +173,7 @@ def _write_workbook(rows: list[dict], destination: Path) -> None:
             row["test_data"], row["expected"],
         ])
 
-    for column_letter, width in zip("ABCDEFGHIJ", (10, 12, 32, 16, 18, 40, 40, 60, 40, 60)):
+    for column_letter, width in zip("ABCDEFGHIJ", (14, 12, 32, 16, 18, 40, 40, 60, 40, 60)):
         sheet.column_dimensions[column_letter].width = width
     for cells in sheet.iter_rows(min_row=2):
         for cell in cells:
