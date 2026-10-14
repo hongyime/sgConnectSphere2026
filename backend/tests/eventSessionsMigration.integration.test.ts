@@ -18,7 +18,9 @@ test('TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Ev
     await db.query(`SET search_path TO ${schema}, public`);
 
     const migrations = (await readdir(new URL('../database/migrations/', import.meta.url)))
-      .filter(name => name.endsWith('.sql') && name !== '0014_event_sessions.sql')
+      // Apply only the pre-Session baseline. Future migrations such as 0015
+      // depend on the Session foundation and must not run before it here.
+      .filter(name => name.endsWith('.sql') && name < '0014_event_sessions.sql')
       .sort((a, b) => a.localeCompare(b));
     for (const migration of migrations) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
