@@ -667,6 +667,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reset transaction rolls back token consumption and lock changes on database failure
 - API rejects cross-origin changes and wrong methods
 
+### `backend/tests/migrationSelection.test.ts`
+
+- the migration selector is optional and accepts one exact available filename
+- the migration selector rejects malformed arguments and unknown or path-like filenames
+- the default selection returns every pending file in filename order
+- an explicit selection returns only that pending migration
+- an explicit selection already in the ledger returns an empty list
+- an explicit filename outside the migration directory is rejected
+- the runner applies only the selected migration and records only that filename
+- the runner preserves all-pending behavior without a selector
+- an already-applied selected migration reports a no-op without opening a transaction
+- an unknown selected filename is rejected before any database query
+- a failed migration is rolled back and the error is preserved
+
 ### `backend/tests/notificationInbox.integration.test.ts`
 
 - prepared email uses current account email and a provider rejection preserves the inbox

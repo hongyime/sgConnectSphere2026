@@ -27,12 +27,20 @@ The database operation is manual. A code merge or Vercel deployment does not app
    ```
 
    Compare the ledger with the `.sql` files in `backend/database/migrations/`. If the ledger is missing or cannot be read, stop and investigate. Do not let the CLI create the ledger as a substitute for this pre-check.
-3. Confirm exactly one migration file is pending, and that it is the migration from the merged PR. The current CLI applies **every** migration file absent from `_connectsphere_migrations`, in filename order; it has no per-file selector. If more than one file is pending, stop. Do not run the CLI, rename or move migration files, or try to work around the CLI. Arrange a supported one-at-a-time path before proceeding.
-4. From the `backend/` directory, run only the migrate command:
+3. Compare the ledger with the migration files. If the ledger has more than one pending file, select only the next migration whose dependencies are satisfied. Never use the default all-pending mode against production. Do not rename or move migration files.
+4. From the `backend/` directory, run the exact pending migration with the selector. Replace the example filename with exactly one pending filename confirmed by the pre-run ledger check:
 
    ```sh
-   npx tsx src/database/cli.ts migrate
+   npx tsx src/database/cli.ts migrate --only 0009_keepalive_logs.sql
    ```
+
+   For example, only if the pre-run ledger check confirms the file is pending:
+
+   ```sh
+   npx tsx src/database/cli.ts migrate --only 0013_tentative_venue_holds.sql
+   ```
+
+   Run one command per migration. After its post-run ledger check and run record are complete, repeat the pre-run ledger query and selector command for the next pending file. The selector accepts one exact repository filename; it rejects missing or unknown files and reports an already-recorded migration without applying SQL. The no-selector command still applies all pending files for existing local workflows; do not use it in production.
 
    Never run `reset` or `seed` against production. Do not set `ALLOW_DATABASE_RESET` for this operation.
 5. If the command fails, stop. Do not retry blindly or proceed to another migration. Re-read the ledger with the read-only query, record the sanitized failure, and have the deploy owner investigate the database state before any further write.
@@ -57,7 +65,7 @@ Copy this template for each attempt:
 - `main` commit:
 - Migration file:
 - Pre-run ledger check: PASS / STOPPED — <expected pending filename and any relevant ledger finding>
-- Command: `npx tsx src/database/cli.ts migrate` from `backend/`
+- Command: `npx tsx src/database/cli.ts migrate --only <exact-migration-filename.sql>` from `backend/`
 - Outcome: PASS / FAILED / NOT RUN
 - Post-run ledger check: PASS / FAILED / NOT RUN — <whether the expected filename is present; note any unexpected filename>
 - Notes: <sanitized outcome or follow-up; no credentials or application data>
