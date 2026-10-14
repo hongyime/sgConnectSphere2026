@@ -2,6 +2,8 @@
 
 - 2026-10-14: Corrected the owner state snapshot to the CAA 131026 BDR/ADR and workbook exports listed in `docs/source-of-truth.md`. Reclassified Jira SCRUM-182 as a Story under E00/SCRUM-127 because it is a cross-cutting technical enabler; preserved its status, assignee, sprint and scope. PR #262 aligns both Jira guidance docs, clarifying that E00 enabler Stories do not need product `EXX-SXX` rows; latest head `4f89cf0` passes all six checks with auto-merge enabled and teammate approval pending. Local repository check record: `docs/testing/runs/20261014-091651-bryanseah234-tooling.md`.
 
+- 2026-10-14: Refreshed the owner snapshot after expanding PR #262 to clarify both Jira guidance documents. The new T-65 repository-check record is linked from STATE and the task handoff. PR #259 remains mergeable with auto-merge enabled and awaits teammate approval.
+
 - 2026-10-14: All six reported checks passed on owner PR #259 head `cc8d69f`; its PR body now reflects the green status. The owner continuity update awaits teammate approval before merge.
 
 - 2026-10-14: `scripts/check.py` passed repository hygiene and all 87 tooling tests on owner PR #259 base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. All six reported GitHub checks passed on that head. The current push adds the record and owner-state refresh; a new GitHub check run and teammate approval are required.

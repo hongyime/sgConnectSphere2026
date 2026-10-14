@@ -59,8 +59,8 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
 - #261 SCRUM-161 venue buffers: replacement for closed #231; open and mergeable at d18acba; required checks pass and peer approval is required.
-- #259 owner STATE/JOURNAL consolidation: open and mergeable. All six reported checks passed on prior head `2fe2d0a`; this refresh needs fresh checks and teammate approval. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`.
-- #262 Jira enabler classification guidance: open and mergeable at `fc64a88`; all six reported checks pass and teammate approval is required.
+- #259 owner STATE/JOURNAL consolidation: open, mergeable, and auto-merge-enabled; teammate approval remains required. Check GitHub for required-check status on the current head before merge. The local tooling run is recorded at `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`.
+- #262 Jira enabler classification guidance: open and mergeable at `4f89cf0`; all six reported checks pass, auto-merge is enabled, and teammate approval is required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: open at 7609866; all six checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: open at 9546159; all required checks pass; review is required.
