@@ -1,5 +1,7 @@
 # Agent Journal
 
+- 2026-10-14: Fixed the last destructive edge in PR #248: a clean Git status does not reveal ignored files, and `git worktree remove` deletes them. The cleaner now skips ignored user data except removable dependency links; the focused suite passes 40 tests with 100% line and branch coverage, and `scripts/check.py` passes 127 tooling tests. PR #248 is green at `ddd3743` and still needs peer re-review. PR #230's handoff was refreshed at `9131d0c`; its content corrections remain in place, all six checks pass, and Xiang's older change request still needs re-review.
+
 - 2026-10-14: Corrected SCRUM-50 and SCRUM-60 Jira descriptions to the already-merged Week 7 Sprint 3 planning baseline; statuses, assignees, points and sprint membership did not change. Week 9 behavior remains after Sprint 3 under T-73.
 - 2026-10-14: Synced the existing SCRUM-50 and SCRUM-60 task branches with main 8f246ae and pushed type-only starter contracts at a0140fc and 61d5bbd. No runtime implementation was added. SCRUM-50 waits on #256/#261; SCRUM-60 follows T-71 through Sprint 3, with T-82 after close.
 - 2026-10-14: PR #257 head 7609866 has all six required checks passing; peer review remains. PR #259 head `d09797f` has all six checks passing with teammate approval pending. The application check on draft #252 is now green; it still has no reviewer requests.

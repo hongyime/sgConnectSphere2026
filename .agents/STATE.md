@@ -65,12 +65,12 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 - #252 hold screens: open draft at c884ccd; conflict-free/mergeable against current main, repository and application checks pass, and no review requests are set. The production 0013 dependency is satisfied.
 - #251 Dependabot Actions updates: mergeable; approved; required checks pass. #250 tooling updates: mergeable; approved; required checks pass.
 - #249 SCRUM-55 equipment unavailable: conflicting; review required; reported checks pass.
-- #248 SCRUM-177 worktree hygiene: mergeable at `63cfa4c`; required checks pass and no formal approval is recorded.
+- #248 SCRUM-177 worktree hygiene: mergeable at `ddd3743`; all reported checks pass and peer re-review is required. The branch fixes Amareet's review findings and now also refuses to remove ignored user files, with a regression test. Auto-merge is enabled but waits for approval.
 - #247 SCRUM-176 registration setup: mergeable; changes requested; reported checks pass.
 - #245 SCRUM-138 tentative holds: open at 84ffaa2; conflict-free/mergeable against current main, all required checks pass, and fresh peer approval is required. The production dependency is satisfied.
 - #232 Coordinator Lead/Safety Officer roles: mergeable; changes requested; reported checks pass.
 - #231 SCRUM-44 venue buffers: closed after the source branch rename; its description points to replacement #261.
-- #230 SCRUM-179 seeded-account cases: mergeable at `2cd535b`; Xiang Ying's changes request is on older head `cb0406a`, while the case-data/workbook fixes are present and required checks pass. Xiang's fresh review of the latest head is still needed.
+- #230 SCRUM-179 seeded-account cases: mergeable at `9131d0c`; all six checks pass. Xiang Ying's change request is still attached to `cb0406a`; the corrected fixtures, workbook, and handoff are present, but a teammate must re-review the latest head.
 - #217 SCRUM-178 Week 7 test scaffolds: mergeable at `a6a8b48`; required checks pass and no formal approval is recorded. Optional Vercel deploy failed.
 
 ## Live infrastructure and team workflow
