@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **153** (43.6%)
+- Automated (explicit TC_ID in an active test title): **159** (45.3%)
   - Real-database (`.integration.test` / `.db.test`): **22**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **130**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **160** (45.6%)
+  - Live-assertion (other active tests): **136**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **154** (43.9%)
 - No test yet (no test file mentions the TC_ID): **38** (10.8%)
 
 ## Coverage by epic
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 13 | 0 |
 | E04 | 5 | 0 | 0 | 5 |
 | E05 | 37 | 24 | 13 | 0 |
-| E06 | 38 | 8 | 30 | 0 |
+| E06 | 38 | 14 | 24 | 0 |
 | E07 | 34 | 27 | 3 | 4 |
 | E08 | 27 | 0 | 26 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **153** | **160** | **38** |
+| **Total** | **351** | **159** | **154** | **38** |
 
 ## Case-by-case status
 
@@ -243,13 +243,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_05 - Verify that an approved venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_06 - Verify that a rejected venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
-| `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused |
+| `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_02 — Verify that a tentative hold should occupy the venue |
-| `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_03 — Verify that a new tentative hold should carry an expiry 48 hours after creation that Venue Staff can change |
-| `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_04 — Verify that submitting a booking request for a held venue should complete the hold so that it no longer expires |
-| `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_05 — Verify that an unconverted hold should become Expired when its expiry passes, freeing the venue and never counting as a booking |
-| `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive a reminder 24 hours before a hold exp | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_06 — Verify that the Coordinator should receive a reminder 24 hours before a hold expires and a notice when it expires |
-| `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_07 — Verify that Venue Staff should be able to extend an unexpired hold but not an expired one |
+| `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
+| `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
+| `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
+| `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
+| `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
 | `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
 | `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |
@@ -647,6 +647,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reset transaction rolls back token consumption and lock changes on database failure
 - API rejects cross-origin changes and wrong methods
 
+### `backend/tests/migrationSelection.test.ts`
+
+- the migration selector is optional and accepts one exact available filename
+- the migration selector rejects malformed arguments and unknown or path-like filenames
+- the default selection returns every pending file in filename order
+- an explicit selection returns only that pending migration
+- an explicit selection already in the ledger returns an empty list
+- an explicit filename outside the migration directory is rejected
+- the runner applies only the selected migration and records only that filename
+- the runner preserves all-pending behavior without a selector
+- an already-applied selected migration reports a no-op without opening a transaction
+- an unknown selected filename is rejected before any database query
+- a failed migration is rolled back and the error is preserved
+
 ### `backend/tests/notificationInbox.integration.test.ts`
 
 - prepared email uses current account email and a provider rejection preserves the inbox
@@ -814,6 +828,35 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues excludes a venue missing even one requested accessibility feature
 - searchVenues with no accessibility ids requested applies no accessibility filter
 - searchVenues applies the layout and accessibility filters together
+
+### `backend/tests/venueHolds.integration.test.ts`
+
+- maintenance blocks notify a live hold\
+- two simultaneous holds on one venue and period: exactly one succeeds
+- a request that waits on a lock past the expiry is refused; a passed hold cannot be released (review of #245)
+
+### `backend/tests/venueHolds.test.ts`
+
+- a hold holds the venue until it expires; pending and confirmed bookings always do
+- every operation refuses signed-out users and the wrong role, and audits the refusal
+- ids are checked before any lookup
+- validateHoldInput defaults to the event period and a 48-hour expiry
+- validateHoldInput reports each bad field, including an expiry outside 1 hour to 14 days
+- T-78 (O-29): a hold must lie within the event period
+- a hold is refused for another Coordinator\
+- an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event
+- converting again after success returns the same pending booking with no second write or audit entry
+- Scenario 4: the Coordinator releases a hold and the period is Free again
+- expiry is judged at database time read after the locks, not when the request arrived
+- an extension locks the venue before the hold, like placing a hold does
+- without an injected time the expiry job uses the database clock
+- a hold the job has already expired cannot be released
+- an extension must be later than now-plus-1-hour, the current expiry and no more than 14 days; an expired hold cannot be extended
+- the expiry job with nothing due changes nothing
+- the Coordinator lists the event\
+- Venue Staff list every live hold, soonest expiry first
+- handler: methods, origin and actions
+- handler: GET routes to the event or staff list; POST to hold, convert, release or extend
 
 ### `backend/tests/venueSearch.test.ts`
 
