@@ -36,7 +36,10 @@ test(
     await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`);
     await db.query(`SET search_path TO ${schema}, public`);
-    await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));
+    // 0013 adds tentative holds, which the calendar reads (E06-S05).
+    for (const migration of ['0001_connectsphere_schema.sql', '0013_tentative_venue_holds.sql']) {
+      await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role) VALUES
       ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser'),
