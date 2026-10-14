@@ -1,34 +1,34 @@
-# Handoff — feature/T-72-coordinator-lead-safety-officer
+# T-72 seeded-role database evidence
 
-Goal: Fix the failing repository-checks and pr-conventions checks on PR #232, preserve the existing branch and PR, and stop without merging.
+Goal: satisfy the remaining PR #232 review request with an isolated real PostgreSQL reset, migration ledger check, seed load, and successful sign-ins for the seeded Coordinator Lead and Safety Officer accounts, without using Docker Desktop locally or writing to shared Supabase.
 
-## Done so far
+## Current state
 
-- Confirmed `test_case_version` must name the newest canonical test-case workbook available for the run date. `PROJECT TEST CASES CAA 031026.xlsx` was the newest workbook available for the 2026-10-07 run; updated only that field in the run record.
-- Read the failed `pr-conventions` job log. The body headings pass; the actual failure was `feature/T-72-...`, rejected because the branch checker required at least two uppercase characters in an identifier before its numeric suffix. The branch rename API closes a PR whose head branch is renamed, so keep the existing PR ref.
-- Updated the branch checker to accept one-character uppercase identifiers and added a `T-72` regression case.
-- Fast-forwarded the local branch to the latest PR head without conflicts.
-- Corrected the 2026-10-07 run record to `scope: backend/unit` and
-  `run_type: automated`; `test_case_version: 031026` was already correct.
-  Renamed the file suffix to `backend-unit` so its filename matches the scope.
-- Merged `origin/main` cleanly.
-- Removed stale duplicate handoff `20261007-feature-t-72-coordinator-lead-safety-officer.md` per Amareet's review note.
-- Added newly merged activity log handoff to `.shellignore`.
+- PR #232 remains open on feature/T-72-coordinator-lead-safety-officer. This branch is synced with origin/main 979cc08; the next push will update the existing PR.
+- The repository already provisions a disposable PostgreSQL service on GitHub Actions. A workflow step now uses that CI-managed database, runs db:reset, and verifies every migration file present on this branch, including 0012 and 0013.
+- A focused verifier checks the 15 seeded users, verifies coord_lead@connectsphere.com and safety_officer@connectsphere.com have the expected roles, calls the real login service for each, and confirms an active auth_sessions row was persisted.
+- The migration directory on this branch contains the main migration set plus 0012; there is no 0011 migration file in origin/main. The verifier reports the exact file list instead of assuming a numbered sequence.
+- No local database run was performed. No Docker Desktop was started for this test, and no Supabase write was made.
+- npm run typecheck --workspace backend — passed after adding the verifier.
+- python scripts/check.py — repository hygiene passed; 124/128 tooling tests passed. Four existing worktree-path tests fail on this Windows host; an immutable T-65 tooling record captures the result, and current-head Linux CI is required.
+- Xiang’s existing changes-requested review still requires re-review after this evidence is available on the latest head. Do not merge without teammate approval.
 
-## Next
+## Files changed
 
-- Run `python scripts/check.py`, then commit and push to PR #232.
-- Await re-review from @xiangyingg.
+- .github/workflows/application-checks.yml — run db:reset and the seeded-role verifier on the existing GitHub Actions PostgreSQL service.
+- backend/package.json — add a dedicated verifier command.
+- backend/src/database/verifyT72RoleSignins.ts — assert migration ledger, seed count, expected roles, successful login, and persisted sessions.
+- docs/testing/runs/ — add an immutable T-65 backend/db CI record only after the workflow result is observed.
 
-## Commands and outcomes
+## Verification
 
-- `gh run view 37862069381 --job 113599892941 --log` — confirmed `pr-conventions` failed with `PR branch must use the naming convention in CONTRIBUTING.md`.
-- `gh pr view 232 --json body,statusCheckRollup,reviewDecision,headRefOid,baseRefName,headRefName,title,url` — PR is open; required checks `repository-checks` and `pr-conventions` failed on the previous head.
-- `python scripts/check_metadata.py branch feature/T-72-coordinator-lead-safety-officer` — passes with the updated matcher.
-- `python scripts/check.py` — passed after temporarily stashing the two pre-existing auto-generated continuity-file changes; 160 test-run records validated and 87 tooling tests passed. The continuity changes were restored and remain unstaged.
+- python scripts/agent_handoffs.py — run to confirm current handoffs before further changes.
+- GitHub Actions application-checks on the updated #232 head — pending until the workflow change is pushed; record only the observed result.
+- No local PostgreSQL, Docker Desktop, Supabase, application suite, or T-65 database evidence has been used in this worktree.
 
-## Decisions
+## Next actions
 
-- Keep the remote PR branch name. Renaming the head ref would close this open PR.
-- The test-run workbook version is `031026`, derived from the repository’s workbook filenames and the run date, not guessed.
-- Do not stage or commit `.agents/STATE.md` or `.agents/JOURNAL.md`.
+1. Run repository checks, commit and push to the existing #232 branch.
+2. Wait for application-checks. If the reset and verifier pass, create one T-65 session record from the Actions run using environment ci, database real, scope backend/db, and the tested commit SHA.
+3. Refresh the PR body with the command, result, run URL, migration file count/list, and T-65 record; request Xiang’s re-review.
+4. Keep the PR open until the required teammate approval and checks pass.
