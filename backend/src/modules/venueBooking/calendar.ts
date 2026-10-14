@@ -1,6 +1,7 @@
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { requireCatalogueViewer } from './catalogue.js';
+import { holdsVenue } from './holds.js';
 
 // E05-S03 "View the venue availability calendar". Read-only: bookings come
 // from venue_bookings, maintenance blocks from venue_blocks, and Free is
@@ -57,7 +58,7 @@ export function parseCalendarRange(from: unknown, to: unknown): { start: number;
 }
 
 type BookingRow = {
-  status: 'pending' | 'confirmed';
+  status: 'pending' | 'tentative' | 'confirmed';
   starts_at: Date; ends_at: Date;
   event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
 };
@@ -74,7 +75,7 @@ function bookingEntry(user: AuthenticatedUser, booking: BookingRow): CalendarEnt
   const period = { kind: 'booking' as const, start: booking.starts_at.toISOString(), end: booking.ends_at.toISOString() };
   if (!canSeeEventDetails(user, booking)) return { state: 'unavailable', ...period };
   return {
-    state: booking.status === 'pending' ? 'tentative' : 'confirmed',
+    state: booking.status === 'confirmed' ? 'confirmed' : 'tentative',
     ...period,
     event: { id: booking.event_id, code: booking.event_code, title: booking.title },
   };
@@ -126,16 +127,16 @@ export async function getVenueCalendar(
   // NULL or infinite bound would otherwise become 1970 or an invalid date.
   // GREATEST/LEAST ignore NULLs, so an unbounded side takes the window edge.
   //
-  // Only pending and confirmed bookings hold the venue (the same statuses the
-  // venue_bookings_no_active_overlap constraint covers). Rejected, released
-  // and conflicting requests leave the period Free.
+  // Pending and confirmed bookings hold the venue, and so does an E06-S05
+  // tentative hold until it expires; both of the first two show as Tentative.
+  // Rejected, released, conflicting and expired ones leave the period Free.
   const bookings = await query<BookingRow>(`
     SELECT vb.status,
       greatest(lower(vb.booking_range), $2::timestamptz) AS starts_at,
       least(upper(vb.booking_range), $3::timestamptz) AS ends_at,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-    WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed')
+    WHERE vb.venue_id = $1 AND ${holdsVenue('vb', 'now()')}
       AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
