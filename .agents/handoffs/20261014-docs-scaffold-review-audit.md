@@ -20,7 +20,7 @@ Goal: execute the Scaffold Review Audit in `artifacts/scaffold-review-plan-20261
 
 - `python3 scripts/agent_handoffs.py` — completed at task start; no handoff for the branch existed then.
 - Report validation — 354 unique matrix rows, 8 columns each, disposition totals sum to 354, all relative links resolve.
-- `python3 scripts/check.py` — passed on rerun: 261 test-run records validated; all configured hooks passed; `.env.template` matched; 128 repository-tooling tests passed. Existing secondary-worktree warning only. The first run returned 1 while a concurrent writer changed the report; the staged frozen report snapshot (`04739b0dbd5d9f523a31ae7cbbfeea791abafe9c`) was restored and the rerun completed without changing it.
+- `python3 scripts/check.py` — passed after the final report was staged: 261 test-run records validated; all configured hooks passed; `.env.template` matched; 128 repository-tooling tests passed. It emitted a warning for pre-existing secondary worktrees. Earlier runs stopped on pre-commit “files were modified” diagnostics while the report draft was being revised; isolated `detect-secrets` scans of the audit files and full tracked tree passed without modifying files.
 
 ## Constraints
 
