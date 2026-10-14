@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **354**
-- Automated (explicit TC_ID in an active test title): **167** (47.2%)
-  - Real-database (`.integration.test` / `.db.test`): **25**
+- Automated (explicit TC_ID in an active test title): **169** (47.7%)
+  - Real-database (`.integration.test` / `.db.test`): **27**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **141**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.2%)
-- No test yet (no test file mentions the TC_ID): **87** (24.6%)
+- No test yet (no test file mentions the TC_ID): **85** (24.0%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 25 | 11 | 2 |
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 52 | 39 | 3 | 10 |
-| E04 | 5 | 0 | 0 | 5 |
+| E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 38 | 15 | 16 | 7 |
 | E07 | 37 | 30 | 3 | 4 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **354** | **167** | **100** | **87** |
+| **Total** | **354** | **169** | **100** | **85** |
 
 ## Case-by-case status
 
@@ -167,8 +167,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ❌ none | — |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ❌ none | — |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
 | `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
 | `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
 | `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |

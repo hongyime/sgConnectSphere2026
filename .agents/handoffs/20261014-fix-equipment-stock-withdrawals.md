@@ -18,3 +18,5 @@ Next: commit, push and open review-ready follow-up PR; link PostPlan and comment
 Record-format correction before publication: an original-query FAIL record contained literal regex pipe characters in its table command, which the validator treated as extra columns. Preserved that file byte-for-byte under docs/testing/history/e07-s09-stock-withdrawals/. Reran the original-query reproduction and created a new valid immutable FAIL session with its real finish time; the command is outside the table. Fixed application code restored in finally.
 
 PostPlan: https://ql6zqam2o3on.postplan.dev/v/1 (standalone HTML, structural check and rendered screenshot visually inspected; synthetic diagram only).
+
+Latest main f68ee66 (Sessions foundation and continuity consolidation) merged; regenerated dated exports/coverage and reran 21 database cases, 373 backend units, backend typecheck and repository hygiene/128 tooling tests: all PASS. PR diff leaves STATE/JOURNAL identical to main; those changes are inherited only.
