@@ -58,14 +58,14 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
 - #261 SCRUM-161 venue buffers: replacement for closed #231; open and mergeable at d18acba; required checks pass and peer approval is required.
-- #259 owner STATE/JOURNAL consolidation: open and mergeable; teammate approval remains required. Check status is available on the live PR.
+- #259 owner STATE/JOURNAL consolidation: open and mergeable; its six checks passed on preceding head `022ff47` and will rerun for this push. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. Teammate approval remains required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: open at 7609866; all six checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: open at 9546159; all required checks pass; review is required.
 - #252 hold screens: open draft at c884ccd; conflict-free/mergeable against current main, repository and application checks pass, and no review requests are set. The production 0013 dependency is satisfied.
 - #251 Dependabot Actions updates: mergeable; approved; required checks pass. #250 tooling updates: mergeable; approved; required checks pass.
 - #249 SCRUM-55 equipment unavailable: conflicting; review required; reported checks pass.
-- #248 SCRUM-177 worktree hygiene: mergeable at `7002b6c`; the allowlist follow-up preserves arbitrary ignored symlinks and only unlinks recognized dependency links. The 41-test focused suite has 100% line and branch coverage; `scripts/check.py` passes 128 tooling tests. New-head GitHub checks and peer re-review are pending; auto-merge is enabled but waits for approval.
+- #248 SCRUM-177 worktree hygiene: mergeable at `7002b6c`; the allowlist follow-up preserves arbitrary ignored symlinks and only unlinks recognized dependency links. The 41-test focused suite has 100% line and branch coverage; `scripts/check.py` passes 128 tooling tests. All reported GitHub checks pass; teammate re-review/approval is required. Auto-merge remains enabled.
 - #247 SCRUM-176 registration setup: mergeable; reported checks pass; the coverage inventory requested in Bryan's review was regenerated on the branch. GitHub still records CHANGES_REQUESTED, so owner re-review remains necessary before merge.
 - #245 SCRUM-138 tentative holds: open at 84ffaa2; conflict-free/mergeable against current main, all required checks pass, and fresh peer approval is required. The production dependency is satisfied.
 - #232 Coordinator Lead/Safety Officer roles: mergeable; changes requested; reported checks pass.

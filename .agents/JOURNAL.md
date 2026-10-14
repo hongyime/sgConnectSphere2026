@@ -1,5 +1,9 @@
 # Agent Journal
 
+- 2026-10-14: `scripts/check.py` passed repository hygiene and all 87 tooling tests on owner PR #259 base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. All six reported GitHub checks passed on that head. The current push adds the record and owner-state refresh; a new GitHub check run and teammate approval are required.
+
+- 2026-10-14: Live GitHub checks completed on #248 head `7002b6c`; all reported checks pass and teammate re-review remains the merge gate.
+
 - 2026-10-14: Refreshed owner state for #248's allowlist correction at `7002b6c` and the updated SCRUM-177 criteria. `scripts/check.py` passed repository hygiene and 87 tooling tests at base `ac2a503`; T-65 record: `docs/testing/runs/20261014-084231-bryanseah234-tooling.md`.
 
 - 2026-10-14: Follow-up audit of #248 found that ignored arbitrary symlinks were still being treated as removable. Commit `7002b6c` now unlinks only the four recognized dependency paths and leaves arbitrary ignored symlinks untouched unless `--force` is explicit. Updated AGENTS.md, Jira SCRUM-177 acceptance criteria/comment, and the task handoff. The focused suite passed 41 tests with 100% line/branch coverage; `scripts/check.py` passed 128 tooling tests. T-65 record: `docs/testing/runs/20261014-083846-bryanseah234-tooling.md`. New-head GitHub checks and peer re-review remain pending.
