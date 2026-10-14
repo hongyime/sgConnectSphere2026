@@ -1,16 +1,19 @@
-# PR #249 main merge conflict resolution
+# PR #249 current-main merge conflict resolution
 
-Resolve conflicts on `feature/SCRUM-55-equipment-unavailable` while preserving the equipment unavailability feature and incorporating current `main` changes. PR #249 remains open; push the resolution without merging it on GitHub.
+Update the actual PR #249 head on `feature/SCRUM-55-equipment-unavailable` with current `main` after #256 landed, preserving both equipment unavailability and venue booking request work. Resolve and push the merge commit; leave PR #249 open for fresh review and protected merge.
 
 ## Done so far
 
-- Read the repository workflow and handoff instructions.
-- Fetched the PR branch and `origin/main`, checked out the PR branch, and started `git merge origin/main`.
-- The merge staged cleanly except for `backend/package.json` and generated `docs/testing/tc-coverage.md`.
-- In `backend/package.json`, combine the equipment-unavailability test entries from the PR with the venue-suitability test entry from `main`.
-- Regenerated `docs/testing/tc-coverage.md` with the pinned coverage audit. It reports 159 automated, 99 scaffolded, and 57 without tests (315 total).
-- `scripts/check.py` passed, including repository hygiene and all 87 repository tooling tests. The system had no `python` command; ran it through the tooling environment with its `bin` directory added to `PATH`.
+- Re-read `README.md`, `CONTRIBUTING.md`, `docs/repository-setup.md`, `.agents/STATE.md`, the `feature/SCRUM-55-equipment-unavailable` handoff, and the current handoff index.
+- Fetched live PR #249 head `a8281e2` and current `origin/main` `979cc08`. The local branch was 17 commits behind the live PR head; fast-forwarded it before merging.
+- Merged `origin/main` at `979cc08`. Automatic merge succeeded except for `backend/package.json` and generated `docs/testing/tc-coverage.md`.
+- Resolved `backend/package.json` by retaining both `venueBookingRequests` and `equipmentUnavailability` in unit and database test scripts, and keeping the focused venue booking request DB script.
+- Regenerated `docs/testing/tc-coverage.md` with `python scripts/tc_coverage_audit.py`: 167 automated, 97 scaffolded, 87 with no test (351 total).
+- Ran `python scripts/check.py` with the worktree's repository tooling. It validated 229 run records, then failed 4 of 128 tooling tests on Windows path handling; a T-65 tooling record captures the outcome. The required Linux CI check must pass after push.
+- No application tests were run locally in this worktree; the PR CI will rerun them on the merged branch.
+- The merge commit and push are pending. The push will dismiss previous approvals under the active ruleset; an approval after the latest push must come from a teammate other than the pusher.
 
-## Done
+## Next steps
 
-- Merge resolution and check are complete. Commit the staged merge and this handoff, then push `feature/SCRUM-55-equipment-unavailable`; leave PR #249 open.
+- Inspect the final merge diff, commit the conflict resolution and this handoff, and push `feature/SCRUM-55-equipment-unavailable`.
+- Confirm the PR's required checks pass, then wait for a fresh teammate approval; do not merge PR #249 directly around the queue.

@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **166** (47.3%)
+- Automated (explicit TC_ID in an active test title): **167** (47.6%)
   - Real-database (`.integration.test` / `.db.test`): **22**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **143**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **98** (27.9%)
+  - Live-assertion (other active tests): **144**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (27.6%)
 - No test yet (no test file mentions the TC_ID): **87** (24.8%)
 
 ## Coverage by epic
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E04 | 5 | 0 | 0 | 5 |
 | E05 | 37 | 24 | 0 | 13 |
-| E06 | 38 | 14 | 17 | 7 |
+| E06 | 38 | 15 | 16 | 7 |
 | E07 | 34 | 30 | 0 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **166** | **98** | **87** |
+| **Total** | **351** | **167** | **97** | **87** |
 
 ## Case-by-case status
 
@@ -232,7 +232,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_02 - Verify that submitting the first booking request for an Approved event should move its status to Planning |
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_04 - Verify that submitting a request for a venue already Pending or Confirmed for another event over the same period should be blocked with the co |
-| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_05 - Verify that an Event Coordinator should be able to view the status of each of their own booking requests |
+| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
 | `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ❌ none | — |
 | `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ❌ none | — |
 | `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ❌ none | — |
@@ -811,6 +811,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
 
+### `backend/tests/venueBookingRequests.test.ts`
+
+- read reject anonymous, inactive, locked and wrong-role users
+- read refuse another Coordinator or unassigned event without loading bookings
+- booking-list HTTP handler authenticates, prevents caching, refuses writes and hides internal errors
+
 ### `backend/tests/venueCalendar.test.ts`
 
 - getVenueCalendar requires a signed-in user
@@ -1164,6 +1170,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
+### `frontend/src/features/venue/VenueBookingRequests.test.tsx`
+
+- empty list, error retry and missing route parameter use shared states
+- refused access shows no private event details
+- route change ignores a late response for the previous event
+
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
 - changing the calendar route loads the new venue
@@ -1323,6 +1335,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/technicalSupport.spec.ts`
 
 - E07-S06 the request form refuses a blank, too-long or reversed request before sending
+
+### `tests/e2e/venue-booking-requests.spec.ts`
+
+- booking list shows an empty state and a safe refusal without event details
 
 ### `tests/e2e/venue-search.spec.ts`
 
