@@ -17,3 +17,9 @@ Resolve PR #261 conflicts against current main, preserving SCRUM-161 venue buffe
 ## Next
 
 Repository check, commit and normal push to feature/SCRUM-161-venue-setup-turnaround-pr231. No approval, Request changes review or merge into main. Teammate review and new-head CI remain required.
+
+## Latest main follow-up
+
+Main advanced to 03e7644 during verification, adding shared migration selection and worktree hygiene. Merged again, retained migrationSelection unit test and buffer integration test, regenerated coverage and reran verification before final push.
+
+Latest resolved tree with main 03e7644: backend unit 374/374 PASS; focused PostgreSQL 13/13 PASS; repository hygiene and 128 tooling tests PASS. Latest run records derive application HEAD fbf7bd5 before final merge commit; their boilerplate main reference 367b279 describes the earlier integration, while this final rerun includes 03e7644. Existing immutable records remain unedited.
