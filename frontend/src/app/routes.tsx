@@ -48,6 +48,7 @@ import { SupportRequestForm } from '../features/coordinator/TechnicalSupport';
 import { PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
 import { DecisionPanel } from '../features/coordinator/DecisionPanel';
 import { VenueSuitability } from '../features/venue/VenueSuitability';
+import { VenueBookingRequests } from '../features/venue/VenueBookingRequests';
 import { HoldVenueForm } from '../features/coordinator/VenueHolds';
 import { TentativeHolds } from '../features/venue/TentativeHolds';
 import { VenueSearch } from '../features/venue/VenueSearch';
@@ -166,6 +167,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),
   page('/coordinator/events/:eventCode/venues', <VenueSearch />, 'live', 'E06-S01'),
+  page('/coordinator/events/:eventCode/venue-bookings', <VenueBookingRequests />, 'live', 'E06-S03'),
   page('/coordinator/events/:eventCode/venues/:venueId/suitability', <VenueSuitability />, 'live', 'E06-S02'),
   page('/coordinator/events/:eventCode/venues/:venueId/hold', <HoldVenueForm />, 'live', 'E06-S05'),
 

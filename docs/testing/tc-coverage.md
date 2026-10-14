@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 351 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 354 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **163** (46.4%)
-  - Real-database (`.integration.test` / `.db.test`): **22**
+- Total test cases: **354**
+- Automated (explicit TC_ID in an active test title): **169** (47.7%)
+  - Real-database (`.integration.test` / `.db.test`): **27**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **140**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **101** (28.8%)
-- No test yet (no test file mentions the TC_ID): **87** (24.8%)
+  - Live-assertion (other active tests): **141**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.2%)
+- No test yet (no test file mentions the TC_ID): **85** (24.0%)
 
 ## Coverage by epic
 
@@ -21,17 +21,17 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 25 | 11 | 2 |
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 52 | 39 | 3 | 10 |
-| E04 | 5 | 0 | 0 | 5 |
+| E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 24 | 0 | 13 |
-| E06 | 38 | 14 | 17 | 7 |
-| E07 | 34 | 27 | 3 | 4 |
+| E06 | 38 | 15 | 16 | 7 |
+| E07 | 37 | 30 | 3 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
 | E10 | 29 | 0 | 15 | 14 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **163** | **101** | **87** |
+| **Total** | **354** | **169** | **100** | **85** |
 
 ## Case-by-case status
 
@@ -167,8 +167,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ❌ none | — |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ❌ none | — |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
 | `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
 | `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
 | `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
@@ -232,7 +232,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_02 - Verify that submitting the first booking request for an Approved event should move its status to Planning |
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_04 - Verify that submitting a request for a venue already Pending or Confirmed for another event over the same period should be blocked with the co |
-| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_05 - Verify that an Event Coordinator should be able to view the status of each of their own booking requests |
+| `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
 | `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ❌ none | — |
 | `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ❌ none | — |
 | `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ❌ none | — |
@@ -296,6 +296,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ❌ none | — |
 | `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ❌ none | — |
 | `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ❌ none | — |
+| `TC_E07S09_01` | E07-S09 | Stock reduction includes overlapping withdrawals | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_01 stock 10 with 4 withdrawn and 5 reserved: reducing to 8 flags the reservation and notifies once |
+| `TC_E07S09_02` | E07-S09 | Withdrawal boundaries and peak demand are respected | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_02 catalogue stock reduction:  |
+| `TC_E07S09_03` | E07-S09 | Withdrawal-aware stock edit rolls back on outbox failure | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_03 withdrawal-aware stock edit rolls back stock, review flags and notifications when outbox persistence fails |
 
 ### E08
 
@@ -647,6 +650,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reset transaction rolls back token consumption and lock changes on database failure
 - API rejects cross-origin changes and wrong methods
 
+### `backend/tests/migrationSelection.test.ts`
+
+- the migration selector is optional and accepts one exact available filename
+- the migration selector rejects malformed arguments and unknown or path-like filenames
+- the default selection returns every pending file in filename order
+- an explicit selection returns only that pending migration
+- an explicit selection already in the ledger returns an empty list
+- an explicit filename outside the migration directory is rejected
+- the runner applies only the selected migration and records only that filename
+- the runner preserves all-pending behavior without a selector
+- an already-applied selected migration reports a no-op without opening a transaction
+- an unknown selected filename is rejected before any database query
+- a failed migration is rolled back and the error is preserved
+
 ### `backend/tests/notificationInbox.integration.test.ts`
 
 - prepared email uses current account email and a provider rejection preserves the inbox
@@ -776,6 +793,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - block changes require a signed-in Venue Staff member
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
+
+### `backend/tests/venueBookingRequests.test.ts`
+
+- read reject anonymous, inactive, locked and wrong-role users
+- read refuse another Coordinator or unassigned event without loading bookings
+- booking-list HTTP handler authenticates, prevents caching, refuses writes and hides internal errors
 
 ### `backend/tests/venueCalendar.test.ts`
 
@@ -1139,6 +1162,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
+### `frontend/src/features/venue/VenueBookingRequests.test.tsx`
+
+- empty list, error retry and missing route parameter use shared states
+- refused access shows no private event details
+- route change ignores a late response for the previous event
+
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
 - changing the calendar route loads the new venue
@@ -1302,6 +1331,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/technicalSupport.spec.ts`
 
 - E07-S06 the request form refuses a blank, too-long or reversed request before sending
+
+### `tests/e2e/venue-booking-requests.spec.ts`
+
+- booking list shows an empty state and a safe refusal without event details
 
 ### `tests/e2e/venue-search.spec.ts`
 
