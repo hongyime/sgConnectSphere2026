@@ -26,6 +26,8 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   // availability check in search.ts depends on.
   await client.query(await readFile(new URL('../database/migrations/0011_venue_setup_turnaround_buffers.sql',import.meta.url),'utf8'));
   await client.query(await readFile(new URL('../database/migrations/0013_tentative_venue_holds.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/0015_venue_buffer_write_guard.sql', import.meta.url), 'utf8'));
+
   const query: Query=(sql,values)=>client.query(sql,values);
   const org=(await client.query("INSERT INTO client_organisations(name) VALUES('Synthetic Org') RETURNING id")).rows[0].id;
   const uid=(await client.query("INSERT INTO users(full_name,email,password_hash,role) VALUES('Synthetic Coordinator','coordinator@example.test','fixture','event_coordinator') RETURNING id")).rows[0].id;

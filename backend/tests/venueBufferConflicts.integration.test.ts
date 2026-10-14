@@ -17,6 +17,9 @@ import { createVenue, getVenue, updateVenue } from '../src/modules/venueBooking/
 import { createVenueBlock } from '../src/modules/venueBooking/blocks.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
+import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
+import { venueSearch } from '../src/modules/venueBooking/search.js';
+import { placeHold, convertHold } from '../src/modules/venueBooking/holds.js';
 import { loginDatabase } from './helpers/loginDatabase.js';
 
 const SGT = '+08:00';
@@ -135,7 +138,8 @@ test('TC_E05S05_03: a buffer edit flags the later of two newly-overlapping booki
     assert.equal(body.bufferConflicts[0]!.title, 'Midday Seminar');
 
     assert.equal(await bookingStatus(f, eventA), 'confirmed');
-    assert.equal(await bookingStatus(f, eventB), 'conflicting');
+    assert.equal(await bookingStatus(f, eventB), 'confirmed');
+    assert.equal((await f.pool.query('SELECT buffer_conflict FROM venue_bookings WHERE event_id=$1',[eventB])).rows[0].buffer_conflict,true);
 
     const notifications = await f.pool.query<{ title: string; user_id: string }>(
       `SELECT title, user_id FROM notifications WHERE event_id = $1`, [eventB]);
@@ -173,4 +177,143 @@ test('TC_E05S05_05: a block ending before the advertised start but overlapping s
   } finally {
     await f.close();
   }
+});
+
+test('buffer conflicts preserve occupancy and confirmed priority, include live holds and exclude history', async () => {
+  const f = await fixture();
+  try {
+    const pending = await book(f, 'PRIORITY-P', 'pending', '2027-06-01T10:00', '2027-06-01T11:00', 'Pending request');
+    const confirmed = await book(f, 'PRIORITY-C', 'confirmed', '2027-06-01T11:30', '2027-06-01T12:30', 'Confirmed event');
+    const held = await book(f, 'PRIORITY-H', 'pending', '2027-06-01T13:00', '2027-06-01T14:00', 'Live hold');
+    await f.pool.query("UPDATE venue_bookings SET status='tentative',expires_at=clock_timestamp()+interval '1 day' WHERE event_id=$1", [held]);
+    await book(f, 'OLD-A', 'confirmed', '2020-06-01T10:00', '2020-06-01T11:00', 'Past A');
+    const old = await book(f, 'OLD-B', 'confirmed', '2020-06-01T11:30', '2020-06-01T12:30', 'Past B');
+    const changed = await updateVenue(f.pool, f.staff, f.ids.venue, { setup_time_minutes: 60 });
+    assert.equal(changed.status, 200);
+    const rows = (await f.pool.query('SELECT event_id,status,buffer_conflict FROM venue_bookings')).rows;
+    const row = (id: string) => rows.find(r => r.event_id === id);
+    assert.deepEqual([row(pending).status,row(pending).buffer_conflict],['pending',true]);
+    assert.deepEqual([row(confirmed).status,row(confirmed).buffer_conflict],['confirmed',false]);
+    assert.deepEqual([row(held).status,row(held).buffer_conflict],['tentative',true]);
+    assert.equal(row(old).buffer_conflict,false);
+    assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM notifications WHERE event_id=$1',[old])).rows[0].n,0);
+    // A read-only warning must not create a new hole in capacity.
+    const booking = (await f.pool.query('SELECT id FROM venue_bookings WHERE event_id=$1',[pending])).rows[0];
+    await assert.rejects(f.pool.query("INSERT INTO venue_bookings(venue_id,event_id,booking_range,status) VALUES($1,$2,'[2027-06-01 10:15+08,2027-06-01 10:30+08)','pending')",[f.ids.venue,pending]),{code:'23P01'});
+    assert.ok(booking.id);
+    // Smaller buffers clear only their reason-specific flag; status survives.
+    await updateVenue(f.pool, f.staff, f.ids.venue, { setup_time_minutes: 0 });
+    assert.equal((await f.pool.query('SELECT buffer_conflict FROM venue_bookings WHERE event_id=$1',[pending])).rows[0].buffer_conflict,false);
+  } finally { await f.close(); }
+});
+
+test('TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers', async () => {
+  const f = await fixture();
+  try {
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:45});
+    const original = await book(f,'WRITE-A','confirmed','2027-06-01T10:00','2027-06-01T12:00','Original');
+    // Raw intervals do not overlap: database guard must catch the buffers.
+    await assert.rejects(book(f,'WRITE-B','pending','2027-06-01T13:14','2027-06-01T14:00','Overlap'),{code:'23P01'});
+    await book(f,'WRITE-C','pending','2027-06-01T13:15','2027-06-01T14:00','Adjacent');
+    await f.pool.query("INSERT INTO venue_blocks(venue_id,block_range,reason) VALUES($1,'[2027-06-02 08:00+08,2027-06-02 12:00+08)','Maintenance')",[f.ids.venue]);
+    await book(f,'WRITE-D','pending','2027-06-02T12:00','2027-06-02T14:00','After maintenance');
+    assert.equal(await bookingStatus(f,original),'confirmed');
+    await assert.rejects(book(f,'WRITE-E','pending','2027-06-02T10:00','2027-06-02T11:00','Inside maintenance'),{code:'23P01'});
+  } finally { await f.close(); }
+});
+
+test('TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertised search windows', async () => {
+  const f = await fixture();
+  try {
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:30});
+    await book(f,'CAL-A','confirmed','2027-06-01T10:00','2027-06-01T11:00','Calendar booking');
+    const query: Query = (sql, values) => f.pool.query(sql, values);
+    const calendar = await getVenueCalendar(query,f.coordinator,f.ids.venue,'2027-06-01','2027-06-01');
+    const free = calendar.entries.filter(entry => entry.state === 'free');
+    assert.equal(free.find(entry => entry.start.includes('04:00:00.000Z'))?.start,'2027-06-01T04:00:00.000Z'); // 12:00 SGT
+    const search = await venueSearch(query,f.coordinator,new URLSearchParams({start:'2027-06-01T11:30:00+08:00',end:'2027-06-01T12:30:00+08:00',attendance:'100',search:'1'}));
+    assert.equal(search.venues?.find(v => v.id === f.ids.venue)?.available,false);
+    const entries = calendar.entries.filter(entry => entry.kind === 'booking');
+    assert.deepEqual(entries.map(entry => entry.reason ?? 'Event'),['Setup time','Event','Turnaround time']);
+    for (const entry of calendar.entries) assert.ok(new Date(entry.start) < new Date(entry.end));
+    // Turnaround reaches into a day whose raw event has already ended.
+    await book(f,'CAL-B','confirmed','2027-06-02T23:00','2027-06-02T23:45','Over midnight');
+    const clipped = await getVenueCalendar(query,f.coordinator,f.ids.venue,'2027-06-03','2027-06-03');
+    const turn = clipped.entries.find(entry => entry.kind === 'booking');
+    assert.equal(turn?.reason,'Turnaround time');
+    assert.equal(turn?.start,'2027-06-02T16:00:00.000Z');
+    assert.equal(turn?.end,'2027-06-02T16:15:00.000Z');
+    // Setup-only slice before the next day's advertised event.
+    await book(f,'CAL-C','confirmed','2027-06-05T00:15','2027-06-05T01:00','Next day');
+    const setupOnly = await getVenueCalendar(query,f.coordinator,f.ids.venue,'2027-06-04','2027-06-04');
+    const setup = setupOnly.entries.find(entry => entry.kind === 'booking');
+    assert.equal(setup?.reason,'Setup time');
+    assert.ok(new Date(setup!.start) < new Date(setup!.end));
+  } finally { await f.close(); }
+});
+
+test('new hold and conversion enforce buffered clashes; flags remain visible without private event disclosure', async () => {
+  const f = await fixture();
+  try {
+    const original = await book(f,'HOLD-A','confirmed','2027-06-01T10:00','2027-06-01T12:00','Existing booking');
+    // Broad event allows an adjacent hold period within its advertised event.
+    const event = randomUUID();
+    await f.pool.query("INSERT INTO events(id,organiser_id,coordinator_id,client_org_id,title,status,event_range,expected_attendance) VALUES($1,$2,$3,$4,'Hold event','planning','[2027-06-01 09:00+08,2027-06-01 18:00+08)',100)",[event,f.ids.organiser,f.ids.coordinator,f.ids.org]);
+    const first = await placeHold(f.pool,f.coordinator,{event_id:event,venue_id:f.ids.venue,starts_at:'2027-06-01T12:30:00+08:00',ends_at:'2027-06-01T13:00:00+08:00'});
+    assert.equal(first.status,201);
+    const id = (first.body as {hold:{id:string}}).hold.id;
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:45});
+    const refused = await placeHold(f.pool,f.coordinator,{event_id:event,venue_id:f.ids.venue,starts_at:'2027-06-01T13:14:00+08:00',ends_at:'2027-06-01T14:00:00+08:00'});
+    assert.equal(refused.status,409);
+    assert.equal((await convertHold(f.pool,f.coordinator,{booking_id:id})).status,409);
+    assert.equal(await bookingStatus(f,original),'confirmed');
+    const query: Query = (sql, values) => f.pool.query(sql, values);
+    const own = await getVenueCalendar(query,f.coordinator,f.ids.venue,'2027-06-01','2027-06-01');
+    assert.ok(own.entries.some(entry => entry.bufferConflict));
+    const privateView = await getVenueCalendar(query,{...f.coordinator,id:randomUUID()},f.ids.venue,'2027-06-01','2027-06-01');
+    assert.ok(privateView.entries.filter(entry => entry.kind === 'booking').every(entry => !entry.event && !entry.bufferConflict && !entry.reason));
+  } finally { await f.close(); }
+});
+
+test('a retained conflict chain flags every real pair without releasing or flagging the highest-priority booking', async () => {
+  const f = await fixture();
+  try {
+    const a = await book(f,'CHAIN-A','confirmed','2027-06-01T10:00','2027-06-01T11:00','A');
+    const b = await book(f,'CHAIN-B','confirmed','2027-06-01T11:30','2027-06-01T12:30','B');
+    const c = await book(f,'CHAIN-C','confirmed','2027-06-01T13:00','2027-06-01T14:00','C');
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:60});
+    for (const [event,flag] of [[a,false],[b,true],[c,true]] as const) {
+      const row=(await f.pool.query('SELECT status,buffer_conflict FROM venue_bookings WHERE event_id=$1',[event])).rows[0];
+      assert.equal(row.status,'confirmed'); assert.equal(row.buffer_conflict,flag);
+    }
+    assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM notifications')).rows[0].n,3);
+  } finally { await f.close(); }
+});
+
+test('concurrent raw booking writes cannot bypass buffers', async () => {
+  const f = await fixture();
+  try {
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:30});
+    const event = await book(f,'RACE-E','confirmed','2027-06-02T10:00','2027-06-02T11:00','Other day');
+    const insert=(range:string)=>f.pool.query("INSERT INTO venue_bookings(venue_id,event_id,booking_range,status) VALUES($1,$2,$3,'pending')",[f.ids.venue,event,range]);
+    const results=await Promise.allSettled([insert('[2027-06-01 10:00+08,2027-06-01 11:00+08)'),insert('[2027-06-01 11:30+08,2027-06-01 12:30+08)')]);
+    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+    const rejected=results.find(r=>r.status==='rejected') as PromiseRejectedResult;
+    assert.equal(rejected.reason.code,'23P01');
+  } finally { await f.close(); }
+});
+
+test('buffer notifications skip missing Coordinators, and clearing flags preserves capacity review', async () => {
+  const f = await fixture();
+  try {
+    const a=await book(f,'NO-COORD-A','confirmed','2027-06-01T10:00','2027-06-01T11:00','Unassigned');
+    const b=await book(f,'NO-COORD-B','confirmed','2027-06-01T11:30','2027-06-01T12:30','Assigned');
+    await f.pool.query('UPDATE events SET coordinator_id=NULL WHERE id=$1',[a]);
+    await f.pool.query('UPDATE venue_bookings SET requires_reconfirmation=true WHERE event_id=$1',[b]);
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:60});
+    assert.equal((await f.pool.query('SELECT count(*)::int AS n FROM notifications')).rows[0].n,1);
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:0});
+    const row=(await f.pool.query('SELECT buffer_conflict,requires_reconfirmation,status FROM venue_bookings WHERE event_id=$1',[b])).rows[0];
+    assert.deepEqual(row,{buffer_conflict:false,requires_reconfirmation:true,status:'confirmed'});
+  } finally { await f.close(); }
 });

@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **166** (47.3%)
-  - Real-database (`.integration.test` / `.db.test`): **25**
+- Automated (explicit TC_ID in an active test title): **168** (47.9%)
+  - Real-database (`.integration.test` / `.db.test`): **27**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **140**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **101** (28.8%)
-- No test yet (no test file mentions the TC_ID): **84** (23.9%)
+- No test yet (no test file mentions the TC_ID): **82** (23.4%)
 
 ## Coverage by epic
 
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 52 | 39 | 3 | 10 |
 | E04 | 5 | 0 | 0 | 5 |
-| E05 | 37 | 27 | 0 | 10 |
+| E05 | 37 | 29 | 0 | 8 |
 | E06 | 38 | 14 | 17 | 7 |
 | E07 | 34 | 27 | 3 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **166** | **101** | **84** |
+| **Total** | **351** | **168** | **101** | **82** |
 
 ## Case-by-case status
 
@@ -202,9 +202,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
 | `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail |
-| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ❌ none | — |
+| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertised search windows |
 | `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_03: a buffer edit flags the later of two newly-overlapping bookings, notifies once, keeps both |
-| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ❌ none | — |
+| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers |
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ❌ none | — |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ❌ none | — |
@@ -792,6 +792,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - invalid input is rejected before a transaction opens
 - createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window
 
+### `backend/tests/venueBufferConflicts.integration.test.ts`
+
+- buffer conflicts preserve occupancy and confirmed priority, include live holds and exclude history
+- new hold and conversion enforce buffered clashes; flags remain visible without private event disclosure
+- a retained conflict chain flags every real pair without releasing or flagging the highest-priority booking
+- concurrent raw booking writes cannot bypass buffers
+- buffer notifications skip missing Coordinators, and clearing flags preserves capacity review
+
 ### `backend/tests/venueCalendar.test.ts`
 
 - getVenueCalendar requires a signed-in user
@@ -833,6 +841,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - createVenue persists the buffer fields on insert and returns them (E05-S05 Scenario 1)
 - createVenue stores zero buffers when none are supplied
 - updateVenue returns the updated buffer values (E05-S05 Scenario 1)
+- buffer overflow is a 400, other database errors survive, and every failed edit rolls back
 
 ### `backend/tests/venueHolds.integration.test.ts`
 
@@ -862,6 +871,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Venue Staff list every live hold, soonest expiry first
 - handler: methods, origin and actions
 - handler: GET routes to the event or staff list; POST to hold, convert, release or extend
+- database buffer-guard refusals become 409 and rollback a hold creation
 
 ### `backend/tests/venueSearch.test.ts`
 
@@ -1157,6 +1167,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - shows a failed load and retries on request
 - does not present a plain venue record as an empty calendar
 - two blocks clipped to the same start get separate rows and keys
+- buffer segments and review flags are labelled without changing booking state
 
 ### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
 

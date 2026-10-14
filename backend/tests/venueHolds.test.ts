@@ -391,3 +391,12 @@ test('handler: GET routes to the event or staff list; POST to hold, convert, rel
   await handler({ method: 'POST', headers: {}, body: { action: 'extend_hold', booking_id: HOLD, expires_at: at(72).toISOString() } }, response);
   assert.equal(captured.status, 200);
 });
+
+test('database buffer-guard refusals become 409 and rollback a hold creation', async () => {
+  const db = fakeDatabase([
+    [EVENT_ROW,{rows:[event]}], [VENUE_ROW,{rows:[venue]}],
+    [/INSERT INTO venue_bookings/,Object.assign(new Error('buffer overlap'),{code:'23P01'})],
+  ]);
+  await assert.rejects(placeHold(db.pool,coordinator,{event_id:'EVT-TC',venue_id:VENUE}),{status:409});
+  assert.equal(sqlCalls(db.calls,/^ROLLBACK$/).length,1);
+});

@@ -141,7 +141,7 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
       SELECT e.event_code, e.title, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
       FROM venue_bookings vb
         JOIN events e ON e.id = vb.event_id
-      WHERE vb.venue_id = $1 AND vb.status IN ('confirmed', 'conflicting')
+      WHERE vb.venue_id = $1 AND vb.status = 'confirmed'
         AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(vb.booking_range)`, [venue.id, start, end]);
     if (conflicts.rows.length) {

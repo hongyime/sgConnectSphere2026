@@ -390,10 +390,15 @@ test('validateVenueInput accepts zero and positive whole-minute buffers, rejecti
   assert.equal(ok.errors, undefined);
   assert.equal(ok.input!.setup_time_minutes, 0);
   assert.equal(ok.input!.turnaround_time_minutes, 90);
+  assert.equal(validateVenueInput({ ...validBody(), setup_time_minutes: 2_147_483_647 }).errors, undefined);
 
   assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: -1 }).errors?.setup_time_minutes);
   assert.ok(validateVenueInput({ ...validBody(), turnaround_time_minutes: 1.5 }).errors?.turnaround_time_minutes);
   assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: '30' }).errors?.setup_time_minutes);
+  for (const value of [3_000_000_000, Infinity, Number.MAX_SAFE_INTEGER]) {
+    assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: value }).errors?.setup_time_minutes);
+    assert.ok(validateVenueInput({ ...validBody(), turnaround_time_minutes: value }).errors?.turnaround_time_minutes);
+  }
 
   const omitted = validateVenueInput(validBody());
   assert.equal(omitted.errors, undefined);
@@ -483,4 +488,20 @@ test('updateVenue returns the updated buffer values (E05-S05 Scenario 1)', async
   assert.equal(body.venue.setup_time_minutes, 30);
   assert.equal(body.venue.turnaround_time_minutes, 45);
   assert.deepEqual(body.bufferConflicts, []);
+});
+
+
+test('buffer overflow is a 400, other database errors survive, and every failed edit rolls back', async () => {
+  for (const code of ['22008','22015','XX000']) {
+    const existing = { id: 'venue-1', ...validBody(), is_active: true, setup_time_minutes: 0, turnaround_time_minutes: 0 };
+    const pool = scriptedPool((sql, values) => {
+      if (sql.includes('FROM venues v') && sql.includes('FOR UPDATE')) return { rows: [existing] };
+      if (sql.includes('WITH active')) throw Object.assign(new Error('database failure'), { code });
+      return venueInsertAnswer(() => {})(sql, values);
+    });
+    await assert.rejects(updateVenue(pool, venueStaff, 'venue-1', { setup_time_minutes: 30 }),
+      code === 'XX000' ? { code } : { status: 400 });
+    assert.ok(pool.calls.some(call => call.sql === 'ROLLBACK'));
+    assert.ok(!pool.calls.some(call => call.sql.includes('SELECT setup_time_minutes, turnaround_time_minutes FROM venues')));
+  }
 });

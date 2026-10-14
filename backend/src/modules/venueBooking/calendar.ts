@@ -21,6 +21,7 @@ export type CalendarEntry = {
   end: string;
   event?: { id: string; code: string | null; title: string };
   reason?: string;
+  bufferConflict?: boolean;
 };
 
 export const CALENDAR_TIMEZONE = 'Asia/Singapore';
@@ -60,6 +61,7 @@ export function parseCalendarRange(from: unknown, to: unknown): { start: number;
 type BookingRow = {
   status: 'pending' | 'tentative' | 'confirmed';
   starts_at: Date; ends_at: Date;
+  buffer_conflict?: boolean;
   event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
 };
 type BlockRow = { reason: string; starts_at: Date; ends_at: Date };
@@ -78,6 +80,7 @@ function bookingEntry(user: AuthenticatedUser, booking: BookingRow): CalendarEnt
     state: booking.status === 'confirmed' ? 'confirmed' : 'tentative',
     ...period,
     event: { id: booking.event_id, code: booking.event_code, title: booking.title },
+    ...(booking.buffer_conflict ? { bufferConflict: true } : {}),
   };
 }
 
@@ -115,8 +118,8 @@ export async function getVenueCalendar(
   const viewer = await requireCatalogueViewer(query, user, 'venue_calendar');
   const range = parseCalendarRange(from, to);
 
-  const venueResult = await query<{ id: string; name: string; opens_at: string; closes_at: string; is_active: boolean }>(`
-    SELECT v.id, v.name, to_char(v.opens_at, 'HH24:MI') AS opens_at, to_char(v.closes_at, 'HH24:MI') AS closes_at, v.is_active
+  const venueResult = await query<{ id: string; name: string; opens_at: string; closes_at: string; is_active: boolean; setup_time_minutes?: number; turnaround_time_minutes?: number }>(`
+    SELECT v.id, v.name, to_char(v.opens_at, 'HH24:MI') AS opens_at, to_char(v.closes_at, 'HH24:MI') AS closes_at, v.is_active, v.setup_time_minutes, v.turnaround_time_minutes
     FROM venues v WHERE v.id::text = $1`, [venueId]);
   const venue = venueResult.rows[0];
   if (!venue) throw new AccessError(404, 'Venue not found.');
@@ -130,16 +133,19 @@ export async function getVenueCalendar(
   const bookings = await query<BookingRow & {
     buffered_start: Date;
     buffered_end: Date;
+    unavailable_start?: Date; unavailable_end?: Date;
   }>(`
-    SELECT vb.status,
+    SELECT vb.status, vb.buffer_conflict,
       greatest(lower(vb.booking_range), $2::timestamptz) AS starts_at,
       least(upper(vb.booking_range), $3::timestamptz) AS ends_at,
       greatest(lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $2::timestamptz) AS buffered_start,
       least(upper(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $3::timestamptz) AS buffered_end,
+      greatest(lower(occupied_window(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes), v.turnaround_time_minutes, v.setup_time_minutes)), $2::timestamptz) AS unavailable_start,
+      least(upper(occupied_window(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes), v.turnaround_time_minutes, v.setup_time_minutes)), $3::timestamptz) AS unavailable_end,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND ${holdsVenue('vb', 'now()')}
-      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz)
+      AND occupied_window(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes), v.turnaround_time_minutes, v.setup_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
     SELECT reason,
@@ -150,11 +156,27 @@ export async function getVenueCalendar(
     ORDER BY lower(block_range)`, window);
 
   const occupied: Array<[number, number]> = [
-    ...bookings.rows.map(row => [new Date(row.buffered_start).getTime(), new Date(row.buffered_end).getTime()] as [number, number]),
+    ...bookings.rows.map(row => [new Date(row.unavailable_start ?? row.buffered_start).getTime(), new Date(row.unavailable_end ?? row.buffered_end).getTime()] as [number, number]),
     ...blocks.rows.map(row => [new Date(row.starts_at).getTime(), new Date(row.ends_at).getTime()] as [number, number]),
   ];
   const entries: CalendarEntry[] = [
-    ...bookings.rows.map(row => bookingEntry(viewer, { ...row, starts_at: new Date(row.starts_at), ends_at: new Date(row.ends_at) })),
+    ...bookings.rows.flatMap(row => {
+      const start = new Date(row.starts_at).getTime();
+      const end = new Date(row.ends_at).getTime();
+      const occupiedStart = new Date(row.buffered_start).getTime();
+      const occupiedEnd = new Date(row.buffered_end).getTime();
+      const segments: CalendarEntry[] = [];
+      const add = (from: number, to: number, reason?: string) => {
+        if (from >= to) return;
+        const entry = bookingEntry(viewer, { ...row, starts_at: new Date(from), ends_at: new Date(to) });
+        if (reason && entry.state !== 'unavailable') entry.reason = reason;
+        segments.push(entry);
+      };
+      add(occupiedStart, Math.min(start, occupiedEnd), 'Setup time');
+      add(Math.max(start, occupiedStart), Math.min(end, occupiedEnd));
+      add(Math.max(end, occupiedStart), occupiedEnd, 'Turnaround time');
+      return segments;
+    }),
     ...blocks.rows.map(row => ({
       state: 'blocked' as const, kind: 'block' as const, reason: row.reason,
       start: new Date(row.starts_at).toISOString(), end: new Date(row.ends_at).toISOString(),
