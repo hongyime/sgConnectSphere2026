@@ -1,18 +1,20 @@
 # feature/SCRUM-50-prevent-double-booking
 
-Goal: E06-S06 Prevent double-booking of a venue (Jira SCRUM-50, assignee b). This branch was pre-created
-off `main` by the Product Owner so the assignee can begin work immediately
-without the branch-creation step. No code changes have been made yet.
+Goal: prepare the SCRUM-50 (E06-S06, 5-point) branch for its current Jira owner to implement venue-level double-booking protection.
 
-- Jira: SCRUM-50
-- Assignee: b
-- Summary: E06-S06 Prevent double-booking of a venue
-- Pre-created by: @bryanseah234 on 2026-10-05
-- Status at pre-creation: To Do (Sprint 3)
+## Current state
 
-## Not done / next step
+- The Jira issue remains To Do in Sprint 3 with its existing assignee and estimate.
+- This branch was synced with the latest main snapshot 8f246ae.
+- Added a type-only approval-conflict contract at backend/src/modules/venueBooking/approvalConflicts.ts; it contains no runtime behavior.
+- The implementation depends on the venue-booking request foundation in PR #256 and the buffered occupancy work in PR #261. The contract is ready for those repositories to land.
+- Sprint 3 behavior remains the C-65/T-66 buffered-window and C-67/T-68 per-venue scope. Apply the Week 9 Session and open-ended-block decisions only after Sprint 3 closes under T-73.
 
-Everything. Pull the branch, read the Jira issue for scope and acceptance
-criteria, follow [docs/frontend-guide.md](../../docs/frontend-guide.md) or the
-relevant backend convention, update this file as you go, and open a PR when
-ready. Delete this "Not done / next step" paragraph on your first real commit.
+## Next steps
+
+Implement the transactional conflict query and approval guard after #256 and #261 are available; then add unit/database coverage for existing confirmed bookings, competing pending requests, simultaneous approvals, buffered overlap, and multiple venues for one event. Keep the event-level case independent across venue IDs.
+
+## Verification
+
+- python scripts/check.py — PASS at base f542803; repository hygiene and 87 tooling tests. T-65 record: docs/testing/runs/20261014-080123-bryanseah234-tooling.md.
+- No application lint, application tests, build or deployment checks were run.
