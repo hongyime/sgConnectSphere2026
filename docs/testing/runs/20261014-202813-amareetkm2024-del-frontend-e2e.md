@@ -36,13 +36,17 @@ held again before step 15; the extra release does not affect any step.
 
 Database check after the run (times Singapore):
 
-| When | Audit action | Actor | Value recorded |
-| --- | --- | --- | --- |
-| 20:28:13 | Tentative hold placed on Cedar Auditorium | coord_a | expires 16 Oct 2026, 8:28 pm (48 hours) |
-| 20:28:47 | Tentative hold on Cedar Auditorium extended | venue_a | 16 Oct 2026, 8:28 pm → 16 Oct 2026, 10:30 pm |
-| 20:29:16 | Tentative hold on Cedar Auditorium submitted as a booking request | coord_a | Cedar Auditorium row now `pending`, no expiry |
-| 20:30:08 / 20:30:22 | Lotus Room hold placed, then released | coord_a | Lotus Room row `released` |
-| 20:32:02 | Tentative hold placed on Jasmine Hall | coord_a | expiry moved to 20:31:03 by the step-15 update; row still `tentative` (the expiry job does not run locally) |
+- 20:28:13 — "Tentative hold placed on Cedar Auditorium" by coord_a; expires
+  16 Oct 2026, 8:28 pm (48 hours).
+- 20:28:47 — "Tentative hold on Cedar Auditorium extended" by venue_a;
+  16 Oct 2026, 8:28 pm → 16 Oct 2026, 10:30 pm.
+- 20:29:16 — "Tentative hold on Cedar Auditorium submitted as a booking
+  request" by coord_a; the Cedar Auditorium row is now `pending` with no expiry.
+- 20:30:08 and 20:30:22 — Lotus Room hold placed, then released, by coord_a;
+  the row is `released`.
+- 20:32:02 — "Tentative hold placed on Jasmine Hall" by coord_a; the step-15
+  update moved its expiry to 20:31:03, and the row is still `tentative` (the
+  expiry job does not run locally).
 
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
