@@ -1,42 +1,20 @@
 # Agent Journal
 
-- 2026-10-14: Corrected the owner state snapshot to the CAA 131026 BDR/ADR and workbook exports listed in `docs/source-of-truth.md`. Reclassified Jira SCRUM-182 as a Story under E00/SCRUM-127 because it is a cross-cutting technical enabler; preserved its status, assignee, sprint and scope. PR #262 aligns both Jira guidance docs, clarifying that E00 enabler Stories do not need product `EXX-SXX` rows; latest head `4f89cf0` passes all six checks with auto-merge enabled and teammate approval pending. Local repository check record: `docs/testing/runs/20261014-091651-bryanseah234-tooling.md`.
+This archive keeps reusable lessons consolidated from completed handoffs. Current PR and sprint status belongs in STATE.md and each active task handoff; it does not belong here.
 
-- 2026-10-14: Refreshed the owner snapshot after expanding PR #262 to clarify both Jira guidance documents. The new T-65 repository-check record is linked from STATE and the task handoff. PR #259 remains mergeable with auto-merge enabled and awaits teammate approval.
+## Learnings consolidated on 2026-10-14
 
-- 2026-10-14: All six reported checks passed on owner PR #259 head `cc8d69f`; its PR body now reflects the green status. The owner continuity update awaits teammate approval before merge.
+- Jira’s sprint board view can omit Subtasks. Reconcile sprint scope by checking each issue’s Sprint field; report parent stories and subtasks separately.
+- Release 1 planning labels and Jira sprint membership can differ. Preserve the actual sprint and current assignment; under T-73, decide carryovers after the sprint closes.
+- Use canonical GitHub Markdown as the requirements source. Jira, spreadsheets, Word exports, Figma notes and PostPlans are derivative views. Do not update derivatives ahead of an unmerged source change.
+- T-59’s Supabase test schema is in the same database as production public. Only the transaction-rollback deactivation test is currently supported there. Never use db:reset, general seeding, or committing database suites against Supabase. GitHub Actions’ managed PostgreSQL service is a CI facility; it is not an instruction to run Docker Desktop locally.
+- T-65 is an evidence rule: record a run only when its result is cited for a PR, story completion or demo. Records are immutable, one file per session, and must describe only observed outcomes.
+- T-69 and ADR-006 select the existing outbox relay for hold-expiry notifications; T-84 sets warning timing per hold. Record a Product Owner cadence choice before changing scheduler configuration or secrets.
+- Before a production migration, inspect the ledger read-only. If exactly one migration is pending, follow the runbook’s one-file path, then verify the ledger again. Never reapply files already recorded.
+- Done stories stay Done. Correct incomplete work in place; use a new story for new scope. Cross-cutting Jira technical enablers belong under E00 as Stories; discipline work owned by one product story belongs under that story as a Subtask.
+- A clean Git status does not reveal ignored user data. Worktree cleanup may remove only the repository’s recognized dependency links unless a user explicitly requests a forced removal.
 
-- 2026-10-14: `scripts/check.py` passed repository hygiene and all 87 tooling tests on owner PR #259 base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. All six reported GitHub checks passed on that head. The current push adds the record and owner-state refresh; a new GitHub check run and teammate approval are required.
-
-- 2026-10-14: Live GitHub checks completed on #248 head `7002b6c`; all reported checks pass and teammate re-review remains the merge gate.
-
-- 2026-10-14: Refreshed owner state for #248's allowlist correction at `7002b6c` and the updated SCRUM-177 criteria. `scripts/check.py` passed repository hygiene and 87 tooling tests at base `ac2a503`; T-65 record: `docs/testing/runs/20261014-084231-bryanseah234-tooling.md`.
-
-- 2026-10-14: Follow-up audit of #248 found that ignored arbitrary symlinks were still being treated as removable. Commit `7002b6c` now unlinks only the four recognized dependency paths and leaves arbitrary ignored symlinks untouched unless `--force` is explicit. Updated AGENTS.md, Jira SCRUM-177 acceptance criteria/comment, and the task handoff. The focused suite passed 41 tests with 100% line/branch coverage; `scripts/check.py` passed 128 tooling tests. T-65 record: `docs/testing/runs/20261014-083846-bryanseah234-tooling.md`. New-head GitHub checks and peer re-review remain pending.
-
-- 2026-10-14: Evidence audit corrected SCRUM-176 from To Do to In Progress because its linked PR #247 is open with changes requested; Jira now records the reason, and the assignee/sprint/scope were preserved. The coverage inventory from Bryan's review is present on the branch, but GitHub still requires a human owner re-review. Updated SCRUM-177's Jira acceptance criteria to preserve ignored user files and directories during worktree cleanup, matching the regression guard added on #248. `scripts/check.py` passed repository hygiene and 87 tooling tests at base `60c35db`; T-65 record: `docs/testing/runs/20261014-083105-bryanseah234-tooling.md`.
-
-- 2026-10-14: Fixed the last destructive edge in PR #248: a clean Git status does not reveal ignored files, and `git worktree remove` deletes them. The cleaner now skips ignored user data except removable dependency links; the focused suite passes 40 tests with 100% line and branch coverage, and `scripts/check.py` passes 127 tooling tests. PR #248 is green at `ddd3743` and still needs peer re-review. PR #230's handoff was refreshed at `9131d0c`; its content corrections remain in place, all six checks pass, and Xiang's older change request still needs re-review.
-
-- 2026-10-14: Corrected SCRUM-50 and SCRUM-60 Jira descriptions to the already-merged Week 7 Sprint 3 planning baseline; statuses, assignees, points and sprint membership did not change. Week 9 behavior remains after Sprint 3 under T-73.
-- 2026-10-14: Synced the existing SCRUM-50 and SCRUM-60 task branches with main 8f246ae and pushed type-only starter contracts at a0140fc and 61d5bbd. No runtime implementation was added. SCRUM-50 waits on #256/#261; SCRUM-60 follows T-71 through Sprint 3, with T-82 after close.
-- 2026-10-14: PR #257 head 7609866 has all six required checks passing; peer review remains. PR #259 head `d09797f` has all six checks passing with teammate approval pending. The application check on draft #252 is now green; it still has no reviewer requests.
-
-- 2026-10-14: Re-fetched current main (`8f246ae`) and synced hold PRs after the Week 9 architecture merge. PR #245 is conflict-free at `84ffaa2` with required checks passing but still needs fresh peer approval; #252 includes that branch at `c884ccd`, remains draft with repository and application checks passing. The production 0013 gate is cleared through #260. T-73 keeps the T-92 Sprint 3 behavior active through 17 October; implement T-84 and Session-linked holds as follow-up work after checking the final Jira sprint state. The SCRUM-144 manual run is still pending.
-- 2026-10-14: PR #217 and #248 have passing required checks but no formal approval; #217 also has an optional Vercel failure. PR #230 has passing required checks and fixes on head `2cd535b`, while Xiang Ying's changes request is on older `cb0406a`; a fresh review of the current head remains the blocker.
-- 2026-10-14: Pushed the refreshed owner STATE/JOURNAL to PR #259 in commit `018c1c4`; its repository check is running and teammate approval is still required. The refresh records the corrected #245/#252 stack state and the remaining review/manual-run gates.
-- 2026-10-14: Production's read-only ledger showed 0009 and 0010 already
-  applied, with 0013 the sole pending file. The runbook permits the existing
-  migrate CLI when exactly one file is pending, so 0013 was applied alone and
-  verified read-only; all 13 migration files are now recorded. The run record
-  is in PR #260. Do not batch migrations or reapply files already in the ledger;
-  the selector in #258 remains a future safety improvement, not a prerequisite
-  for this verified one-file case.
-- 2026-10-14: The Sprint 3 board view omits subtasks. Audit all Subtask issues against the Sprint field; the current sprint has 10 incomplete parent stories and 19 incomplete subtasks. Keep assignments intact and decide carryovers only after the sprint closes under T-73.
-- 2026-10-14: T-69/ADR-006 already select the existing outbox relay for tentative-hold expiry, and T-84 replaces the fixed warning interval with per-hold configuration. Jira's old GitHub Actions/15-minute title was inconsistent; align the ticket to the accepted relay decision and record any cadence change before touching deployment configuration or secrets.
-- 2026-10-14: Accepted Week 9 answers C-71 to C-136 and team decisions T-79 to T-91 are now in canonical BDR Markdown. Preserve the recorded C-111/C-119 conflict and the selected C-119 behavior in downstream work.
-- 2026-10-14: Release 1 labels and live Jira Sprint 3 membership can disagree. Follow T-73 conservatively and reconcile assignments after the sprint closes rather than changing active commitments mid-sprint.
-- 2026-10-14: The accepted Session model and multi-role accounts are recorded in ADR-018/019 and the target schema. Keep C-134's decision/comments requirement distinct from the team-added safety checklist; event attendance and Session attendance serve different purposes.
+## Earlier task history
 
 - 2026-10-03: E05 test cases name data not in the seed; use seeded
   equivalents and list them in the record's Remarks.
