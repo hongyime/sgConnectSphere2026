@@ -4,7 +4,7 @@ Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live 
 
 ## Where things stand
 
-**Sprint 3 is active** (Jira sprint 36, 2026-10-04 to 2026-10-17). The latest merged Week 9 decision, backlog/test, and architecture/UI PRs are #253, #254, and #255. Main now records customer answers C-71 to C-136, team decisions T-79 to T-91, the affected backlog and canonical test cases, ADR-018/019, and updated schema/API/architecture/flow/design handoffs. Application implementation and actual Figma frame work remain downstream. The BDR and ADR Word exports now point to CAA 141026.
+**Sprint 3 is active** (Jira sprint 36, 2026-10-04 to 2026-10-17). The latest merged Week 9 decision, backlog/test, and architecture/UI PRs are #253, #254, and #255. Main now records customer answers C-71 to C-136, team decisions T-79 to T-91, the affected backlog and canonical test cases, ADR-018/019, and updated schema/API/architecture/flow/design handoffs. Application implementation and actual Figma frame work remain downstream. The BDR/ADR Word exports and backlog/test workbooks are CAA 131026, matching `docs/source-of-truth.md`.
 
 **Live Sprint 3 parent-story status checked 2026-10-14:**
 
@@ -33,7 +33,8 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose replacement implementation PR 
 - Canonical Markdown was merged before downstream Jira reconciliation, following `docs/source-of-truth.md`.
 - Jira follow-up PR #257 records the Week 9 reconciliation. SCRUM-180 (E02-S07) and SCRUM-181 (E07-S08) are To Do outside Sprint 3, without points or assignees. Twelve Week 9 descriptions were refreshed, and SCRUM-50/SCRUM-60 were corrected to the already-merged Week 7 Sprint 3 baseline; status, owners, estimates and sprint assignments were preserved.
 - SCRUM-176 is now In Progress to match the open, changes-requested PR #247; Jira records the 2026-10-14 status correction. SCRUM-177 (PR #248) is In Review; Jira now limits removable links to `.venv-tools`, root `node_modules`, `backend/node_modules` and `frontend/node_modules`. Arbitrary ignored symlinks remain user data unless `--force` is explicit. SCRUM-178 (PR #217) is In Review; SCRUM-179 (PR #230) remains In Progress while its change request is open.
-- SCRUM-182 is a technical enabler for the migration CLI. It is In Review and implemented on PR #258, which adds the one-migration-at-a-time selector. Its no-selector behavior remains all-pending. The Jira description now reflects the verified production ledger: the selector was not needed to apply the sole pending 0013, but remains a future safety improvement.
+- SCRUM-182 is a cross-cutting technical enabler under E00 (parent SCRUM-127), so Jira now classifies it as a Story per `docs/jira-ticket-classification.md`. It is In Review and implemented on PR #258, which adds the one-migration-at-a-time selector. Its no-selector behavior remains all-pending. The Jira description reflects the verified production ledger: the selector was not needed to apply the sole pending 0013, but remains a future safety improvement. Status, assignee, scope and sprint membership were preserved.
+- PR #262 aligns `docs/jira-agent-workflow.md` with the classification rule: cross-cutting technical enablers under E00 are Stories; discipline-scoped work belonging to one Story is a Subtask. It is mergeable, all six checks pass on `fc64a88`, and teammate approval is pending.
 - SCRUM-141 was reconciled to the accepted existing outbox-relay decision in T-69/ADR-006; T-84 supplies per-hold warning timing. Jira's old GitHub Actions/15-minute wording was removed. The repository currently schedules the existing Vercel relay daily; the product owner has been asked to decide whether to retain that cadence or record a different one. No scheduler or deployment secret was added or changed.
 
 ## Production migrations and Amareet's request
@@ -58,7 +59,8 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 
 - #260 production migration 0013 run record: open and mergeable; all six checks pass; teammate approval is required.
 - #261 SCRUM-161 venue buffers: replacement for closed #231; open and mergeable at d18acba; required checks pass and peer approval is required.
-- #259 owner STATE/JOURNAL consolidation: open and mergeable; all six reported checks pass on head `cc8d69f`. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`. Teammate approval remains required.
+- #259 owner STATE/JOURNAL consolidation: open and mergeable. All six reported checks passed on prior head `2fe2d0a`; this refresh needs fresh checks and teammate approval. `scripts/check.py` passed 87 tooling tests at base `022ff47`; T-65 record: `docs/testing/runs/20261014-084551-bryanseah234-tooling.md`.
+- #262 Jira enabler classification guidance: open and mergeable at `fc64a88`; all six reported checks pass and teammate approval is required.
 - #258 SCRUM-182 migration selector: mergeable; review required; required checks pass. Optional Vercel deploy failed.
 - #257 Week 9 Jira reconciliation: open at 7609866; all six checks pass; peer approval is required.
 - #256 E06-S03 booking foundation: open at 9546159; all required checks pass; review is required.
