@@ -56,6 +56,23 @@ Keep imported template material scoped to what this repo actually uses. Do not
 add paid services, AI reviewers, bot auto-merge, privileged `pull_request_target`
 workflows, or deployment secrets without a recorded team decision.
 
+## Worktree lifecycle
+
+Remove disposable worktrees created for a task when that task is complete; keep
+intentional review or stacked-branch worktrees. `python scripts/check.py`
+reports secondary worktrees as a warning. To remove worktrees that are clean
+and fully pushed, run `python scripts/check_worktrees.py --clean`; it skips
+worktrees with local changes, unpushed commits, no upstream, or ignored files
+beyond recognized dependency links. It only unlinks `.venv-tools`, root
+`node_modules`, `backend/node_modules`, and `frontend/node_modules` when they
+are symlinks or junctions; arbitrary ignored symlinks and other ignored user
+data block cleanup. These links are removed themselves so their targets remain
+intact. `--clean --force` immediately permits removal of protected work; use it
+only when you intend to discard that work.
+
+## Database test environments
+
+Before running backend database tests against Supabase, read docs/testing/supabase-test-schema.md. T-59 uses a test schema inside the shared Supabase database. Only the rollback-based deactivation integration test is currently supported there. Never run db:reset, general seeding, or a database suite that commits writes against Supabase; never bypass the reset guard. Use native loopback PostgreSQL for suites requiring a disposable database. Local contributors and agents do not start Docker Desktop for this workflow. GitHub Actions provisions its own managed PostgreSQL service containers in CI.
 ## Recording test runs
 
 Per team decision **T-65** in `docs/bdr/B-team-decisions.md`, record every test
