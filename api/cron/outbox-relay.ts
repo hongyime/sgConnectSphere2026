@@ -5,6 +5,7 @@ import { dispatchCommittedDeliveries, publishCommittedDeliveries } from '../../b
 import { postgresDeliveryStore } from '../../backend/src/modules/notificationDispatcher/postgres.js';
 import { createDeliveryTransport } from '../../backend/src/providers/durableRedis.js';
 import { sendDurableBrevoEmail } from '../../backend/src/providers/brevo.js';
+import { expireHolds } from '../../backend/src/modules/venueBooking/holds.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // /api/cron/notification-worker rewrites here with ?task=worker (see vercel.json)
@@ -35,6 +36,19 @@ export default async function handler(request: VercelRequest, response: VercelRe
       sendJson(response, 200, result);
     } catch {
       sendJson(response, 503, { error: 'notification_worker_unavailable' });
+    }
+    return;
+  }
+
+  // E06-S05: mark tentative holds whose expiry has passed as expired and tell
+  // their Coordinator. A passed hold already stops holding the venue without
+  // this (holds.ts), so a late run only delays the status change and notice.
+  if (task === 'holds') {
+    try {
+      const result = await expireHolds(notificationDatabase());
+      sendJson(response, 200, { holds_expired: result.holdsExpired, notified: result.notified });
+    } catch {
+      sendJson(response, 503, { error: 'hold_expiry_unavailable' });
     }
     return;
   }
