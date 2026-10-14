@@ -22,6 +22,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { submitBooking } from './bookingSubmission.js';
 
 export const DEFAULT_HOLD_HOURS = 48;
 const HOUR_MS = 60 * 60 * 1000;
@@ -212,21 +213,8 @@ const isLive = (hold: LockedHold, now: Date) => hold.status === 'tentative' && h
 export async function convertHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const bookingId = uuid(data.booking_id, 'booking');
-  return audited(database, actor, () => inTransaction(database, async client => {
-    const event = await lockEvent(client, actor, { booking: bookingId });
-    await client.query(`SELECT v.id FROM venues v JOIN venue_bookings vb ON vb.venue_id = v.id WHERE vb.id = $1 FOR NO KEY UPDATE OF v`, [bookingId]);
-    const hold = await lockHold(client, bookingId, ['pending']);
-    if (hold.status === 'pending') return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
-    if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    const now = await databaseNow(client);
-    if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
-    const clash = await findClash(client, hold.venueId, hold.startsAt, hold.endsAt, now, hold.id);
-    if (clash) return { status: 409, body: { error: clash } };
-    await client.query(`UPDATE venue_bookings SET status = 'pending', expires_at = NULL WHERE id = $1`, [hold.id]);
-    await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} submitted as a booking request` });
-    return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
-  }));
+  uuid(data.booking_id, 'booking');
+  return audited(database, actor, () => submitBooking(database, actor, { ...data, action: 'convert_hold' }));
 }
 
 // Scenario 4: the period returns to Free.

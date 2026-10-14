@@ -5,8 +5,9 @@ import { VenueBookingRequests } from './VenueBookingRequests';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const data = { event: { id: 'event', event_code: 'EVT-1', title: 'Assigned Event', status: 'planning' }, bookings: [
-  { id: 'one', venue_id: 'v', venue_name: 'Main Hall', location: 'Campus', status: 'pending', starts_at: '2027-01-15T01:00:00Z', ends_at: '2027-01-15T02:00:00Z', decision_reason: null },
-  { id: 'two', venue_id: 'v2', venue_name: 'Breakout Room', location: 'Campus', status: 'rejected', starts_at: '2027-01-15T02:00:00Z', ends_at: '2027-01-15T03:00:00Z', decision_reason: 'Room unavailable' },
+  { id: 'one', venue_id: 'v', venue_name: 'Main Hall', location: 'Campus', status: 'pending', starts_at: '2027-01-15T01:00:00Z', ends_at: '2027-01-15T02:00:00Z', decision_reason: null,
+    purpose: 'Main programme', headcount: 120, is_primary: false, suitability_snapshot: { mismatches: ['Event is outside operating hours.'] } },
+  { id: 'two', venue_id: 'v2', venue_name: 'Breakout Room', location: 'Campus', status: 'confirmed', starts_at: '2027-01-15T02:00:00Z', ends_at: '2027-01-15T03:00:00Z', decision_reason: 'Room confirmed', is_primary: true },
 ] };
 function mount(path = '/events/EVT-1') {
   render(<MemoryRouter initialEntries={[path]}><Link to="/events/OTHER">Other event</Link><Routes>
@@ -20,8 +21,12 @@ test('TC_E06S03_05: list shows every request status and period without submissio
   expect(await screen.findByText('Main Hall')).toBeInTheDocument();
   expect(screen.getByText('Breakout Room')).toBeInTheDocument();
   expect(screen.getByText('Pending', { exact: true })).toBeInTheDocument();
-  expect(screen.getByText('Rejected', { exact: true })).toBeInTheDocument();
-  expect(screen.getByText(/Room unavailable/)).toBeInTheDocument();
+  expect(screen.getByText('Confirmed', { exact: true })).toBeInTheDocument();
+  expect(screen.getByText(/Room confirmed/)).toBeInTheDocument();
+  expect(screen.getByText('Primary venue')).toBeInTheDocument();
+  expect(screen.getByText('Main programme')).toBeInTheDocument();
+  expect(screen.getByText('120')).toBeInTheDocument();
+  expect(screen.getByText('Event is outside operating hours.')).toBeInTheDocument();
   expect(screen.getAllByText('Booking period')).toHaveLength(2);
   expect(screen.queryByRole('button', { name: /submit|request booking/i })).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'Search venues for this event' })).toHaveAttribute('href', '/coordinator/events/EVT-1/venues');

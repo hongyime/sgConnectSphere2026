@@ -526,3 +526,16 @@ Migration 0013 is merged; migration 0014 is the Session foundation; migration 00
 ### E05-S05 buffer review guard (PR #261)
 
 Migration `0016_venue_buffer_write_guard.sql` adds `venue_bookings.buffer_conflict` (boolean, default false) and an active-booking write trigger. The flag preserves lifecycle status; it does not release occupancy. The trigger serializes on the venue and checks buffered overlaps for insert/range/status/expiry changes, with advertised-time checks against maintenance blocks. Buffer-only flag updates remain allowed. The Session foundation uses 0014; 0015 remains reserved for the shared booking-contract migration. See `docs/contracts/venue-bookings.md` for the compatibility requirement when adding stored occupancy/exclusion rules.
+
+### E06-S03 Sprint 3 submission increment (15 October 2026)
+
+The working `0015_venue_bookings_contract.sql` adds nullable purpose, headcount,
+requester/time, submission key and JSONB submission payload/advisory snapshot,
+plus a default-false primary flag with confirmed-only and per-event uniqueness
+checks. Legacy rows remain valid. It does not add the target `occupancy_range`,
+layout confirmation or configured-hold columns, nor replace the 0016 guard.
+Occupancy continues to use current venue buffers via `occupied_window()`.
+The older 0012 dependency above is not required for this increment. Migration
+ownership still needs agreement with E06-S04; no production application is
+claimed. See the current contract addendum for event-based Sprint 3 compatibility
+and the staff-routing/decision integrations that remain pending.

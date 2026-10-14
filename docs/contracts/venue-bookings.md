@@ -38,7 +38,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | expires_at | timestamptz, nullable for legacy rows | Explicit Venue Staff setting per hold, with no system default. A new hold cannot enter the expiry worker until configured; conversion clears it and Expired preserves it. |
 | warning_before | interval, nullable for legacy rows | Coordinator-configured warning interval for this hold. It replaces a fixed 24-hour warning. |
 | reminder_sent_at | timestamptz, nullable | Idempotency marker for the configured warning. Reset if the expiry or warning interval is changed. |
-| buffer_conflict | boolean, default false (0015) | E05-S05 reason-specific review flag. Preserve the original booking status and occupancy. |
+| buffer_conflict | boolean, default false (0016) | E05-S05 reason-specific review flag. Preserve the original booking status and occupancy. |
 | requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state; capacity review remains separate from the buffer flag. |
 | created_at | timestamptz, required | Row creation time; remains the hold creation time after conversion. |
 
@@ -205,3 +205,33 @@ Migration 0016 adds `buffer_conflict` and a database trigger that checks all new
 For a newly conflicting pair, Confirmed has review priority over Pending, then Tentative; equal-status later bookings are flagged. Both affected events' Coordinators are notified once per buffer edit. This is an implementation choice for peer confirmation, not a new customer decision. All actual overlaps in a retained chain remain conflicts because no participant is released.
 
 Calendar entries split setup, advertised event and turnaround into positive, clipped periods with the original booking state and a visible buffer-conflict label. Free intervals describe advertised booking windows after allowing the prospective booking's own setup/turnaround, matching search. Other Coordinators receive only Unavailable periods, without event details or conflict reasons. Buffer inputs are bounded by the existing integer storage range; timestamp/interval overflow rolls back with a 400.
+
+## Sprint 3 submission increment (15 October 2026)
+
+The E06-S03 working implementation prepares additive migration 0015 for
+`purpose`, `headcount`, `requested_by`, `requested_at`, `submission_key`,
+`submission_payload`, `suitability_snapshot` and confirmed-only/unique-primary
+constraints. E06-S03 is recommended as its first-consumer owner; E06-S04 ownership
+agreement and peer review remain pending. The older mention of 0012 is not a
+dependency for these fields. The merged foundations are 0011, 0013 and 0014;
+the 0016 buffer guard is required before enabling submission in deployment.
+
+This increment preserves `occupied_window()` and the 0016 write guard rather
+than introducing stored occupancy or replacing exclusion constraints. Existing
+buffer-conflict rows must remain migratable. Stored occupancy/exclusion changes
+above remain target proposals, not changes shipped by this increment. The saved
+advisory snapshot is the assessment at submission time, not a promise of future
+availability; staff decisions must recheck the current venue/booking state.
+
+Under T-73, the Sprint 3 request body is event-based and uses event attendance
+as its absent-headcount fallback. The service validates exactly one compatibility
+Session and supplies its link internally; it refuses multi-Session events until
+the later explicit selection flow. It does not adopt Week 9 hold-expiry defaults
+or extension changes early. `convert_hold` and direct requests share a service.
+
+Requests return 201 (new direct request) or 200 (conversion/retry), including
+`booking`, `event_status` and `suitability`. An identical direct retry returns the
+same saved assessment and does not repeat effects. Booking-request notifications
+resolve staff for the requested venue only. SCRUM-189/#271/#272 production
+resolver integration remains pending; unresolved routing is reported explicitly.
+Primary confirmation/selection and staff assessment presentation remain E06-S04.

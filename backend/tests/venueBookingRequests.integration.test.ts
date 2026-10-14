@@ -35,6 +35,8 @@ test('TC_E06S03_05: PostgreSQL request list isolates assigned events and preserv
       [venue, event, status, `2027-01-15T${String(9 + index).padStart(2, '0')}:00:00+08`, `2027-01-01T00:00:0${index}Z`]);
     }
     await client.query("INSERT INTO venue_bookings(venue_id,event_id,status,booking_range,decision_reason) VALUES($1,$2,'rejected','[2027-01-15T09:00:00+08,2027-01-15T10:00:00+08)','PRIVATE OTHER REASON')", [venue, other]);
+    await client.query(await readFile(new URL('../database/migrations/0015_venue_bookings_contract.sql', import.meta.url), 'utf8'));
+    assert.equal((await client.query('SELECT requested_by FROM venue_bookings LIMIT 1')).rows[0].requested_by, null);
     for (const identifier of [event, 'EVT-REQUESTS']) {
       const result = await listBookingRequests(query, user, identifier);
       assert.deepEqual(result.bookings.map(b => b.status), [...statuses].reverse());

@@ -23,7 +23,7 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
   let defaults: Record<string, unknown> = {};
   const eventId = params.get('event_id');
   if (eventId) {
-    const result = await query(`SELECT e.id, e.title, lower(e.event_range) AS start, upper(e.event_range) AS end,
+    const result = await query(`SELECT e.id, e.title, e.status, lower(e.event_range) AS start, upper(e.event_range) AS end,
       e.expected_attendance AS attendance, e.layout_id AS layout, e.accessibility_note,
       ARRAY(SELECT feature_id FROM event_accessibility_needs WHERE event_id=e.id) AS accessibility,
       ARRAY(SELECT facility_id FROM event_facility_needs WHERE event_id=e.id) AS facilities

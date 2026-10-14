@@ -1,81 +1,99 @@
-# E06-S03 booking request foundation
+# E06-S03 venue booking requests
 
-SCRUM-47; implementation snapshot: 12 October 2026, based on main `01ad35b`.
-This is a partial implementation, not evidence that E06-S03 is Done.
+SCRUM-47; implementation snapshot: 15 October 2026, based on main `5c22e26`.
+This increment remains partial: responsible Venue Staff routing, decision/primary
+venue behaviour and a human manual run are not claimed complete.
 
-## Available now
+## Implemented in this increment
 
-- Assigned Event Coordinators can open **View venue booking requests** from an
-  event's venue search. `/coordinator/events/:eventCode/venue-bookings` lists
-  persisted bookings, newest first, including venue, period, status and decision
-  reason. Historical bookings remain visible when a venue is retired.
-- `GET /api/venues?mode=booking_requests&event_id=<UUID-or-event-code>` derives
-  identity from authentication and checks assignment in both event and booking
-  queries. Anonymous, inactive, locked and other-role users cannot read it.
-  Another Coordinator receives 404 for an unassigned event. Responses are private
-  and not cached. Other HTTP methods receive 405; there is no booking write API.
-- Following Bl0oper's PR #256 review, unused preparation/validation helpers and
-  the unmounted request form were removed. They belong in the submission PR
-  alongside the workflow that actually uses them.
-- CI now runs `test:venue-booking-requests:db` explicitly in
-  `.github/workflows/application-checks.yml` using its disposable PostgreSQL service.
+- Assigned Coordinators can submit from the event's **Venue suitability** screen
+  while Approved or Planning. Shared cards, controls, alerts and buttons provide
+  the desktop/mobile presentation.
+- `POST /api/venues`, action `request_booking`, requires an `Idempotency-Key`
+  UUID header. Fields: `event_id`, `venue_id`, RFC 3339 `starts_at`/`ends_at`,
+  optional `purpose` (80 characters) and positive integer `headcount`.
+  Identity, status, primary flags and recipients are server-controlled.
+- Submission locks and rechecks event, account, venue and (on conversion) hold.
+  Periods stay within the event and its single compatibility Session. Multi-Session
+  events are refused explicitly until the later selection journey (T-73/T-79).
+- Requests are Pending and non-primary; the calendar shows tentative occupancy.
+  Multiple venues or non-conflicting periods are permitted. Conflicts include
+  live Tentative, Pending and Confirmed bookings through `occupied_window()`.
+  Maintenance uses advertised periods, consistent with merged #261. Messages
+  show unavailable windows without other events' identities.
+- Suitability uses booking headcount when supplied, otherwise event attendance
+  for Sprint 3. Layout, accessibility, facilities and operating-hours assessment
+  is reused. Unsuitability remains advisory, saved as `suitability_snapshot` for
+  the later staff decision screen. E06-S01 opening-hours matching is unchanged.
+- Booking, Approved-to-Planning, audit and notification/outbox persistence share
+  one transaction; an outbox failure rolls everything back. The Organiser receives
+  the status update; the acting Coordinator is excluded.
+- Existing `convert_hold` uses the same service, retains the hold id, stops expiry,
+  checks expiry after locks and supports safe retries. Direct retries return the
+  saved assessment without duplicate rows or effects.
+- The assigned-event list keeps newest-first ordering and retired-venue history,
+  adding purpose, headcount, persisted advisory failures and primary flags when
+  supplied by the decision workflow.
 
-The read path covers the status-display portion of TC_E06S03_05. It is an
-event-scoped list, not the workbook's all-events "My Booking Requests" journey.
-Existing submission scaffolds remain deferred. No Pending creation is implemented or claimed.
+## Modules and migration
 
-## Integration still required
+`bookingSubmission.ts` owns the reusable transaction; `bookingSubmissionHandler.ts`
+owns the mutation HTTP boundary; `VenueBookingForm.tsx` composes shared UI. Existing
+list, assessment, action router and hold conversion modules are extended.
 
-| Dependency | Remaining work |
+Migration `0015_venue_bookings_contract.sql` adds nullable request metadata,
+retry payload and advisory snapshot, plus confirmed-only/unique-primary checks.
+Legacy rows remain valid. It preserves the merged `0016` buffer guard and computes
+occupancy from current buffers rather than persisting a stale copy.
+Migration ownership is recommended for E06-S03 as first consumer but still needs
+agreement with E06-S04. Open PR #271 uses `0016` for staff assignments, colliding
+with the merged guard; its owner must renumber it. No production migration was run.
+
+## Acceptance and remaining integration
+
+| Area | Evidence / remaining work |
 | --- | --- |
-| #231 / E05-S05 buffers, shared booking contract | Integrate buffered occupancy and blocks, then the agreed 0014 exclusion/booking-field migration. No migration is added here. |
-| E06-S05 holds (#245 merged) | Integrate the existing holds workflow with future submission and test conversion/expiry races. Preserve its merged code and tests. |
-| E06-S03 submission | Persist Pending request and requester/purpose/headcount; atomic Approved-to-Planning, audit and notification/outbox writes; repeat/concurrent submission tests. |
-| Venue-to-staff relationship / E06-S04 | Resolve actual responsible staff, deliver request notices and expose advisory assessment to the decision workflow. Do not substitute decided_by or broadcast to all staff. |
-| E06-S04 primary venue | First-confirmed primary selection and confirmed-only replacement follow the owning decision workflow. |
+| Pending, calendar and Planning transition | Unit, real PostgreSQL and intercepted browser coverage. Responsible staff routing is still needed to finish Scenario 1. |
+| Multiple requests, purpose/headcount, periods, assignment/status gates | Implemented; database tests cover retries, simultaneous submissions and refusals. |
+| Advisory suitability (TC_E06S02_04) | A real unsuitable Pending request and failing criteria are persisted; staff presentation remains E06-S04. |
+| Responsible staff notifications | SCRUM-189 / #271 and #272. Inject `NotificationOptions.resolveVenueStaff`; only this requested venue's active staff receive notices. Current production wiring reports unresolved venue ids rather than broadcasting or inferring `decided_by`. |
+| Staff decisions and primary venue | E06-S04. Schema invariants exist; confirmation and primary selection are not implemented here. |
+| Session selection | Post-Sprint-3 follow-up under T-73/T-79; no Session UI here. |
+| Human manual E2E | Follow [the script](manual/E06-S03-click-through.md), then create a fresh T-65 record. Automated screenshots are not a manual run. |
 
-The future submission service must validate input inside its transaction,
-lock/revalidate the event, venue and hold, and perform final conflict protection.
-A read-only status result is not authorization to commit. Raw request periods stay
-inside the event; setup/turnaround occupancy may extend beyond it (T-78 and
-`docs/contracts/venue-bookings.md`). E06-S01/S02 matching logic is unchanged.
+TC_E06S03_03 still describes the superseded single-Pending restriction in the
+catalogue. Use current multiple-booking rules and TC_E06S03_07; no obsolete
+restriction is implemented or claimed. Withdrawal in TC_E06S03_08 is outside
+this submission increment.
 
-## Verification
+## Verification commands
 
 ```text
 npm test --workspace backend
-npm test --workspace frontend -- --run --no-file-parallelism src/features/venue/VenueBookingRequests.test.tsx src/features/venue/VenueSearch.navigation.test.tsx
+npm test --workspace frontend -- --no-file-parallelism
 npm run test:venue-booking-requests:db --workspace backend
-npx playwright test tests/e2e/venue-booking-requests.spec.ts tests/e2e/venue-search.spec.ts tests/e2e/venue-suitability.spec.ts --workers=1
+node --import tsx --test backend/tests/venueHolds.integration.test.ts backend/tests/venueBufferConflicts.integration.test.ts backend/tests/venueSearch.integration.test.ts
+npm run test:db --workspace backend
+npx playwright test tests/e2e/venue-booking-submission.spec.ts tests/e2e/venue-booking-requests.spec.ts tests/e2e/venue-search.spec.ts tests/e2e/venue-suitability.spec.ts --workers=1
 npm run typecheck
 npm run build
 npm run test:runtime
 python scripts/check.py
 ```
 
-Database tests require `TEST_DATABASE_URL` pointing at a disposable local
-Postgres instance with pgcrypto/btree_gist installed. They create a unique schema
-in a transaction and roll it back; do not use the shared database. The focused
-test verifies SQL ownership, ordering, historical visibility against base-schema fixtures. It does not exercise future buffer or
-hold-conversion migrations. Browser tests intercept the API; they are not a real
-database submission journey or a human manual run.
+Use `TEST_DATABASE_URL` for disposable native loopback PostgreSQL; never shared
+Supabase or Docker Desktop. Full DB regression also needs the disposable public
+schema migrated for the existing registration fixture. Browser tests intercept APIs
+with synthetic data. Fresh T-65 records report observed outcomes and coverage;
+Windows tooling and event-visibility fixture failures remain explicit.
 
-Historical test records describe the original foundation, including helpers
-subsequently removed in review. The 14 October review record describes the
-remaining read-only code and current checks. No human manual run is claimed.
+## Human manual verification (15 October 2026)
 
-## Source discrepancies
-
-- Jira SCRUM-47 was incorrectly marked **Done** by automation after docs-only
-  PR #244. On 12 October 2026 it was restored to **In Progress**, following the
-  team's chosen correction. Jira comment 10254 supersedes comment 10253:
-  implementation continues under this story and its existing subtasks, without
-  a duplicate follow-up story. The full submission workflow remains incomplete.
-- The shared contract still has Draft/proposal labels and attributes merged 0013
-  to #245; the migration actually merged in #246. This slice does not rewrite
-  another workflow's contract or allocate its migration independently.
-- TC_E06S03_03 and its old scaffold still describe a one-Pending-per-event rule,
-  superseded by confirmed multiple-booking rules. Do not implement that old rule.
-
-Before claiming story completion, finish the dependent transaction, reconcile
-the stale case wording and perform/log the actual human booking journey.
+[Partial manual execution record](runs/20261015-014746-jininggg-frontend-e2e.md):
+advisory Pending creation, Planning transition, multiple requests, ordering,
+period refusals, blank values, Coordinator isolation, mobile presentation,
+hold conversion and Tentative calendar display were observed by the human tester.
+Read-only local DB checks corroborated metadata, cleared expiry, audits and queued
+status-notice delivery. Buffer-only overlap, retries/expiry races and actual
+staff/provider receipt are not claimed as manual results. Screenshot files still
+need saving/linking through the team's PostPlan convention before PR evidence use.

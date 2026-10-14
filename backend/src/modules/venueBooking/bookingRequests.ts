@@ -23,7 +23,7 @@ export async function listBookingRequests(query: Query, user: AuthenticatedUser 
   const event = await assignedEvent(query, actor, identifier);
   const bookings = (await query(`SELECT b.id, b.venue_id, v.name AS venue_name, v.location,
     b.status, lower(b.booking_range) AS starts_at, upper(b.booking_range) AS ends_at,
-    b.created_at, b.decision_reason
+    b.created_at, b.decision_reason, b.purpose, b.headcount, b.is_primary, b.suitability_snapshot
     FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
     JOIN events e ON e.id=b.event_id
     WHERE b.event_id=$1 AND e.coordinator_id=$2

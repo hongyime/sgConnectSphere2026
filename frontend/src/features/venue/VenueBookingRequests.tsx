@@ -19,6 +19,10 @@ export function VenueBookingRequests() {
         <FactList columns={2} items={[
           ['Location', booking.location], ['Booking period', formatDateRange(booking.starts_at, booking.ends_at)],
         ]} />
+        {booking.purpose && <p><strong>Purpose:</strong> {booking.purpose}</p>}
+        {booking.headcount != null && <p><strong>Booking headcount:</strong> {booking.headcount}</p>}
+        {booking.is_primary && <p>Primary venue</p>}
+        {!!booking.suitability_snapshot?.mismatches.length && <div><h3>Advisory unmet requirements at submission</h3><ul>{booking.suitability_snapshot.mismatches.map(message => <li key={message}>{message}</li>)}</ul></div>}
         {booking.decision_reason && <p><strong>Decision reason:</strong> {booking.decision_reason}</p>}
       </Card>)}
     </>}
