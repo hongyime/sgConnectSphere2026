@@ -15,6 +15,7 @@ def main() -> int:
         return 1
     commands = [
         [str(tool_python), "-m", "pre_commit", "validate-config"],
+        [str(tool_python), "scripts/check_test_run_records.py"],
         [str(tool_python), "-m", "pre_commit", "run", "--all-files", "--show-diff-on-failure"],
         # .env.template must match what scripts/generate_env_template.py would
         # produce from the code. This mirrors the tc-coverage.md drift gate in

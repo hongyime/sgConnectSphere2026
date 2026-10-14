@@ -12,4 +12,4 @@ commit: 0000000                    # 7-character SHA from: git rev-parse --short
 
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
-| TC_EXXSXX_XX | Paste the test name from the workbook | PASS | |
+| TC_EXXSXX_XX | Paste the test name from the workbook | PASS | Manual runs: what you actually saw, even on a PASS |

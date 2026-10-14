@@ -2,9 +2,9 @@
 
 ## E10-S01 — Request a change after submission
 
-- **Sprint**:
+- **Sprint**: Sprint 4
 - **Points**: 3
-- **BDR references**: C-14, C-52, C-54, T-16
+- **BDR references**: C-14, C-52, C-54, C-77, T-16, T-88
 - **Owner**:
 
 ### User story
@@ -15,133 +15,159 @@ As an Event Organiser, I want to request a change to my event after it has been 
 
 #### Scenario 1 — Change request recorded
 
-Given my event has been approved or confirmed When I submit a change request describing what should change Then the assigned Coordinator is notified and the request is recorded against the event
+Given my Event has been approved or confirmed When I submit a change request describing what should change Then the assigned Coordinator is notified and the request is recorded against the Event
 
 #### Scenario 2 — Confirmed details shown alongside
 
-Given a change request is pending When I view my event Then the currently confirmed details are still shown alongside the pending request
+Given a change request is Pending When I view my Event Then the currently confirmed details are shown alongside the pending request
 
 #### Scenario 3 — Refused edit offers the form
 
-Given I attempt to edit a restricted field directly after approval When the edit is refused Then I am offered the change request form pre-filled with that field
+Given I attempt to edit a restricted field directly after approval When the edit is refused Then I am offered the change-request form pre-filled with that field
 
 #### Scenario 4 — Approved change applied
 
-Given the Coordinator approves my change request When it is applied Then the event is updated and I am notified
+Given the Coordinator approves my change request When it is applied Then the Event is updated and I am notified
+
+#### Scenario 5 — Declined request communicated
+
+Given the Coordinator declines my change request When the decision is recorded Then I am notified and the confirmed Event details remain unchanged
+
+#### Scenario 6 — Terminal Event closes pending requests as Obsolete
+
+Given the Event becomes Completed or Cancelled while one or more change requests are Pending When the Event reaches that terminal status Then each Pending request becomes Obsolete, the transition is recorded in history, and Obsolete is distinct from a Coordinator rejection (C-77, T-88)
 
 ### Checklist
 
-- Submit a change request against an approved or confirmed event
-- Describe the change requested
-- Confirm the assigned Coordinator is notified
-- See currently confirmed details alongside any pending request
-- Reach the change request form when a restricted direct edit is refused
+- Submit a change request against an approved or confirmed Event
+- See current confirmed details alongside a pending request
+- Reach the change-request form when a restricted direct edit is refused
 - Be notified when the Coordinator approves or declines the request
+- Confirm Pending requests become Obsolete with history when the Event becomes Completed or Cancelled
 
 ## E10-S02 — Distinguish minor edits from arrangement-affecting changes
 
-- **Sprint**:
+- **Sprint**: Sprint 4
 - **Points**: 5
-- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27
+- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27, C-107, T-79
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want the system to tell me when a change affects arrangements already confirmed so that I re-check them rather than assuming they still hold.
+As an Event Coordinator, I want the system to identify which Session arrangements a change affects so that I re-check the right bookings and reservations.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Attendance beyond capacity flagged
+#### Scenario 1 — Session attendance beyond capacity flagged
 
-Given an event has one or more confirmed venue bookings When its expected attendance is increased Then each venue booking whose governing headcount (the booking's own headcount where set, otherwise the event's attendance) now exceeds that venue's capacity is flagged for review, and the others are not (C-67; assumes O-27) and the Venue Staff are notified
+Given a Session has a confirmed venue booking When its expected attendance changes Then each booking whose own headcount is set uses that headcount, otherwise it uses the Session attendance; only a booking whose governing headcount exceeds capacity is flagged and Venue Staff are notified
 
 #### Scenario 2 — Description-only edit flags nothing
 
-Given an event has a confirmed venue and equipment When only the event description is edited Then no arrangements are flagged
+Given an Event has confirmed venue and equipment arrangements When only its Event description is edited Then no arrangements are flagged
 
-#### Scenario 3 — Affected arrangements shown first
+#### Scenario 3 — Affected Session arrangements shown first
 
-Given a change affects confirmed arrangements When I save it Then I am shown which arrangements are affected before the change takes effect
+Given a change affects confirmed arrangements When I save it Then I am shown the affected Session bookings and equipment reservations before the change takes effect
 
 #### Scenario 4 — Over-subscription warns only
 
-Given a venue change reduces the event's capacity below its registration count When the change is saved Then I am warned and shown the over-subscription, and no Attendee is automatically removed or waitlisted
+Given a change would make a Session or combined Event registration capacity lower than approved registrations When the change is saved Then I am warned and shown the over-subscription, and no Attendee is automatically removed or waitlisted
 
-#### Scenario 5 — Date change flags venue and equipment
+#### Scenario 5 — Session date/time change flags its arrangements
 
-Given the event's date or time changes When the change takes effect Then every one of its venue bookings and its equipment reservations are flagged as requiring reconfirmation
+Given a Session date or time changes When the change takes effect Then that Session's venue booking and equipment reservations are flagged for reconfirmation; an Event-wide date/time change flags all of its Session arrangements
+
+#### Scenario 6 — Affected staff notified
+
+Given a change flags a venue or equipment arrangement When the affected arrangements are identified Then the assigned Venue Staff and Technical Support Staff are notified
 
 ### Checklist
 
-- Confirm attendance increases beyond venue capacity flag the booking for review
-- Confirm description-only edits flag nothing
-- See which arrangements are affected before a change takes effect
-- Confirm over-subscription warns the Coordinator without removing Attendees
-- Confirm date or time changes flag both venue and equipment for reconfirmation
-- Confirm affected Venue Staff and Technical Support Staff are notified
+- Flag only the Session arrangement whose governing headcount exceeds capacity
+- Leave arrangements unflagged for description-only edits
+- Show affected Session bookings/reservations before applying a change
+- Warn about over-subscription without automatically removing or waitlisting Attendees
+- Flag the affected Session or all Sessions for date/time changes as appropriate
+- Notify staff responsible for the affected arrangements
 
 ## E10-S03 — Reschedule an event
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-25, O-18
+- **BDR references**: C-25, O-18, C-77, C-107, T-79, T-88
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want to reschedule an event to new dates so that it can still take place when the original dates no longer work.
+As an Event Coordinator, I want to reschedule an Event while identifying the Session arrangements that must be reconfirmed so that it can still take place when the original dates no longer work.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Date change flags bookings
+#### Scenario 1 — Session date change flags its arrangements
 
-Given an event has a confirmed venue and equipment When I change its date Then the existing bookings are flagged as requiring reconfirmation and are not moved silently
+Given an Event has confirmed Session venue bookings or equipment reservations When I change one Session's date or time Then only that Session's existing arrangements are flagged for reconfirmation and are not moved silently
 
-#### Scenario 2 — Registered Attendees notified
+#### Scenario 2 — Event-wide date change flags all Sessions
 
-Given Attendees have registered for the event When it is rescheduled Then all registered Attendees are notified of the new date and time
+Given I change the Event-wide date When the change takes effect Then every Session booking and equipment reservation is flagged for reconfirmation
+
+#### Scenario 3 — Registered Attendees notified
+
+Given Attendees have registered for the Event When it is rescheduled Then all registered Attendees are notified of the new Event and Session dates/times
+
+#### Scenario 4 — Pending change requests closed on terminal Event
+
+Given the Event becomes Completed or Cancelled while another change request is Pending When the terminal status is recorded Then the pending request becomes Obsolete and the transition is recorded in history (C-77, T-88)
 
 ### Checklist
 
-_No checklist recorded._
+- Flag the affected Session arrangements when one Session is rescheduled
+- Flag all Session arrangements for an Event-wide date change
+- Notify registered Attendees of the new dates and times
+- Close Pending change requests as Obsolete when the Event becomes Completed or Cancelled
 
 ## E10-S04 — Cancel an event
 
-- **Sprint**:
+- **Sprint**: Sprint 4
 - **Points**: 5
-- **BDR references**: C-14, C-54, T-07, T-48
+- **BDR references**: C-14, C-54, C-77, T-07, T-48, T-79, T-88
 - **Owner**:
 
 ### User story
 
-As an Event Coordinator, I want to cancel an event and release its arrangements so that venues and equipment do not stay committed to something that will not happen.
+As an Event Coordinator, I want to cancel an Event and release its Session arrangements so that venues and equipment do not stay committed to something that will not happen.
 
 ### Acceptance criteria
 
-#### Scenario 1 — Event cancelled, arrangements released
+#### Scenario 1 — Event cancelled and Session arrangements released
 
-Given an Event Organiser requests cancellation When I cancel the event and record a reason Then its status becomes Cancelled, its venue booking and equipment reservations are released, the venue calendar is updated and the affected staff are notified
+Given an Event Organiser requests cancellation When I cancel the Event and record a reason Then its status becomes Cancelled, all Session venue bookings and equipment reservations are released, calendars/availability are updated, and affected staff are notified
 
-#### Scenario 2 — Attendees and waitlist notified
+#### Scenario 2 — Attendees and waiting list notified
 
-Given Attendees are registered or waitlisted for a cancelled event When the cancellation completes Then all of them are notified
+Given Attendees are registered or waitlisted for a cancelled Event When cancellation completes Then all are notified
 
-#### Scenario 3 — Cancelled event read-only
+#### Scenario 3 — Cancelled Event read-only
 
-Given an event has been cancelled When any user views it Then it is read-only and shows the cancellation reason and date
+Given an Event has been cancelled When any user views it Then it is read-only and shows the cancellation reason and date
 
 #### Scenario 4 — Organiser cancellation becomes a request
 
 Given an Event Organiser attempts to cancel directly When they submit Then the action is recorded as a cancellation request for the Coordinator to action
 
+#### Scenario 5 — Pending change requests become Obsolete
+
+Given the Event has Pending change requests When cancellation completes Then each request becomes Obsolete and the transition is recorded in history (C-77, T-88)
+
 ### Checklist
 
-- Cancel an event, releasing its venue and equipment
-- Record a reason for the cancellation
-- Confirm the released venue becomes available again on the calendar
-- Confirm released equipment returns to the available pool
-- Confirm registered and waitlisted Attendees are notified
-- Confirm a cancelled event is read-only and shows its reason and date
+- Cancel an Event and release every Session booking and equipment reservation
+- Record a reason for cancellation
+- Confirm venue and equipment availability is restored
+- Notify registered and waitlisted Attendees and affected staff
+- Keep the cancelled Event read-only with its reason and date
+- Close Pending change requests as Obsolete with history
 
 ## E10-S05 — Handle a venue lost from a confirmed event
 

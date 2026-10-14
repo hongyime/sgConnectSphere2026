@@ -32,6 +32,12 @@ How to write it (decisions 0013 and 0014):
 Do not write secrets, tokens, connection strings, or personal data into any of
 these files -- reference secrets by env-var name only. Never write secrets,
 personal data, or machine-specific paths into any other committed file.
+Before starting or reviewing any user story, read the Definition of Done in
+`CONTRIBUTING.md` and the grading guidance in
+`docs/plans/instructor-guidance-2026-10-06.md`: human review of code and test
+cases, 100% unit coverage of changed code (or a stated reason), manually
+logged end-to-end runs before the Sprint Review, and Done stories are never
+reopened.
 For product, backlog, design, testing, or Jira work, also read
 `docs/source-of-truth.md` before editing derivative Markdown, Figma notes, Jira
 issues, or scaffold files.

@@ -428,3 +428,45 @@
     align-items: stretch;
   }
 }
+
+/* E07-S06 technical support card and form (TechnicalSupport.tsx). */
+.support-requests {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.support-request {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.support-request-description {
+  margin: 0 0 var(--space-1);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.support-request small {
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.support-form {
+  display: grid;
+  gap: var(--space-4);
+}
+
+@media (max-width: 720px) {
+  .support-request {
+    flex-direction: column;
+  }
+}
