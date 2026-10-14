@@ -70,6 +70,9 @@ data block cleanup. These links are removed themselves so their targets remain
 intact. `--clean --force` immediately permits removal of protected work; use it
 only when you intend to discard that work.
 
+## Database test environments
+
+Before running backend database tests against Supabase, read docs/testing/supabase-test-schema.md. T-59 uses a test schema inside the shared Supabase database. Only the rollback-based deactivation integration test is currently supported there. Never run db:reset, general seeding, or a database suite that commits writes against Supabase; never bypass the reset guard. Use native loopback PostgreSQL for suites requiring a disposable database. Local contributors and agents do not start Docker Desktop for this workflow. GitHub Actions provisions its own managed PostgreSQL service containers in CI.
 ## Recording test runs
 
 Per team decision **T-65** in `docs/bdr/B-team-decisions.md`, record every test
