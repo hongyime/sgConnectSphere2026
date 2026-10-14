@@ -11,16 +11,20 @@ Related: `docs/jira-agent-workflow.md`, `docs/source-of-truth.md`,
 
 ## The three ticket types
 
-### 1. Story
+### 1. User-story Story
 
-A Story maps 1:1 to a user story in `docs/backlog/product/`. Its summary
-uses the story ID as a prefix with no brackets: `E01-S05 Title`. It is
-parented to its Epic. Stories in `docs/backlog/product/` already follow the
-`EXX-SXX` identifier scheme; every Jira Story should have exactly one
-matching Markdown file.
+For a product user story, the Jira Story maps 1:1 to a user story in
+`docs/backlog/product/`. Its summary uses the story ID as a prefix with no
+brackets: `E01-S05 Title`. It is parented to its Epic. Stories in
+`docs/backlog/product/` already follow the `EXX-SXX` identifier scheme; every
+user-story Story should have exactly one matching Markdown file.
 
-Do not create a Story unless a corresponding `EXX-SXX` entry exists in
-`docs/backlog/product/` (or is being added in the same PR).
+The E00 technical-enabler category in section 3 also uses Jira's Story issue
+type. Those Stories serve cross-cutting repository work and do not require a
+product-story row or `EXX-SXX` identifier.
+
+Do not create a user-story Story unless a corresponding `EXX-SXX` entry exists
+in `docs/backlog/product/` (or is being added in the same PR).
 
 ### 2. Subtask
 
@@ -42,9 +46,10 @@ A Subtask cannot have Subtasks of its own (Atlassian platform constraint).
 
 ### 3. Technical enabler (Story under E00)
 
-A technical enabler covers cross-cutting work that serves no single user
-story: CI pipeline changes, repository tooling, test harnesses, deploy
-configuration, backlog or ADR migrations, and similar infrastructure.
+A technical enabler uses Jira's Story issue type under E00 and covers
+cross-cutting work that serves no single user story: CI pipeline changes,
+repository tooling, test harnesses, deploy configuration, backlog or ADR
+migrations, and similar infrastructure. It has no product-story ID.
 
 These tickets cannot honestly be a Subtask, because a Subtask requires
 exactly one Story parent. Forcing an enabler under an arbitrary Story would
