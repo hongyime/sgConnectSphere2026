@@ -1,6 +1,7 @@
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { requireCatalogueViewer } from './catalogue.js';
+import { holdsVenue } from './holds.js';
 
 // E05-S03 "View the venue availability calendar". Read-only: bookings come
 // from venue_bookings, maintenance blocks from venue_blocks, and Free is
@@ -57,7 +58,7 @@ export function parseCalendarRange(from: unknown, to: unknown): { start: number;
 }
 
 type BookingRow = {
-  status: 'pending' | 'confirmed' | 'conflicting';
+  status: 'pending' | 'tentative' | 'confirmed';
   starts_at: Date; ends_at: Date;
   event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
 };
@@ -74,7 +75,7 @@ function bookingEntry(user: AuthenticatedUser, booking: BookingRow): CalendarEnt
   const period = { kind: 'booking' as const, start: booking.starts_at.toISOString(), end: booking.ends_at.toISOString() };
   if (!canSeeEventDetails(user, booking)) return { state: 'unavailable', ...period };
   return {
-    state: booking.status === 'pending' ? 'tentative' : 'confirmed',
+    state: booking.status === 'confirmed' ? 'confirmed' : 'tentative',
     ...period,
     event: { id: booking.event_id, code: booking.event_code, title: booking.title },
   };
@@ -137,7 +138,7 @@ export async function getVenueCalendar(
       least(upper(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $3::timestamptz) AS buffered_end,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
-    WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed', 'conflicting')
+    WHERE vb.venue_id = $1 AND ${holdsVenue('vb', 'now()')}
       AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
