@@ -4,6 +4,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from 'pg';
+import { parseMigrationSelection, runMigrations } from './migrationSelection.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -388,9 +389,21 @@ const events: SeedEvent[] = [
 
 async function main() {
   const command = process.argv[2];
+  const commandArgs = process.argv.slice(3);
 
   if (!command || !['migrate', 'reset', 'seed', 'validate'].includes(command)) {
-    throw new Error('Usage: npm run db:<migrate|reset|seed:test|validate> --workspace backend');
+    throw new Error(
+      'Usage: npm run db:<migrate|reset|seed:test|validate> --workspace backend; ' +
+        'migrate accepts optional --only <exact-migration-file.sql>',
+    );
+  }
+
+  let selectedMigration: string | undefined;
+  if (command === 'migrate') {
+    const files = await listMigrationFiles();
+    selectedMigration = parseMigrationSelection(commandArgs, files);
+  } else if (commandArgs.length > 0) {
+    throw new Error('Only the migrate command accepts migration options.');
   }
 
   const client = new Client({ connectionString: requireDatabaseUrl() });
@@ -398,7 +411,7 @@ async function main() {
 
   try {
     if (command === 'migrate') {
-      await migrate(client);
+      await migrate(client, selectedMigration);
     } else if (command === 'reset') {
       assertResetAllowed();
       await resetDatabase(client);
@@ -453,39 +466,20 @@ function isSafeResetTarget(databaseUrl: string) {
   );
 }
 
-async function migrate(client: Client) {
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS _connectsphere_migrations (
-      name text PRIMARY KEY,
-      applied_at timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-
-  const applied = await client.query<{ name: string }>(
-    'SELECT name FROM _connectsphere_migrations',
-  );
-  const appliedNames = new Set(applied.rows.map((row) => row.name));
-  const files = (await readdir(migrationsDir))
+async function listMigrationFiles() {
+  return (await readdir(migrationsDir))
     .filter((file) => file.endsWith('.sql'))
     .sort((a, b) => a.localeCompare(b));
+}
 
-  for (const file of files) {
-    if (appliedNames.has(file)) {
-      continue;
-    }
-
-    const sql = await readFile(join(migrationsDir, file), 'utf8');
-    await client.query('BEGIN');
-    try {
-      await client.query(sql);
-      await client.query('INSERT INTO _connectsphere_migrations (name) VALUES ($1)', [file]);
-      await client.query('COMMIT');
-      console.log(`applied migration ${file}`);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    }
-  }
+async function migrate(client: Client, selectedMigration?: string) {
+  const files = await listMigrationFiles();
+  await runMigrations(
+    client,
+    files,
+    selectedMigration,
+    (file) => readFile(join(migrationsDir, file), 'utf8'),
+  );
 }
 
 async function resetDatabase(client: Client) {

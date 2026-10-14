@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import {
-  Alert, Button, Card, EmptyState, ErrorState, FactList, FormActions, FormField,
+  Alert, Button, ButtonLink, Card, EmptyState, ErrorState, FactList, FormActions, FormField,
   FormSection, LoadingState, PageLayout, StatusPill, apiCall, useLoad,
 } from '../../shared';
 import './venue.css';
@@ -68,6 +68,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
   }
 
   return <>
+    {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-bookings`}>View venue booking requests</ButtonLink>}
     {d.title && <Card title={d.title}><p>Search criteria are filled from this event. Changing them here does not update the event.</p></Card>}
     <Card title="Search criteria">
       <p>Times use your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}). Suitability is advisory; unavailable venues cannot be treated as free.</p>
@@ -113,6 +114,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
             ['Facilities', v.facilities.map(f => f.label).join(', ') || 'None'],
             ['Accessibility', v.accessibility.map(f => f.label).join(', ') || 'None'],
           ]} />
+          {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/suitability`}>Check recorded event requirements</ButtonLink>}
           {v.mismatches.length > 0 && <div><strong>Unmet requirements</strong><ul>{v.mismatches.map(m => <li key={m}>{m}</li>)}</ul></div>}
         </Card>)}
       </>}

@@ -5,6 +5,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { insertNotificationDelivery } from '../notificationDispatcher/postgres.js';
 import { accessibilityMatchCondition } from './matchAccessibility.js';
+import { holdsVenue } from './holds.js';
 
 export type VenueLayoutInput = { label: string; capacity: number };
 export type VenueInput = {
@@ -382,7 +383,7 @@ export async function retireVenue(database: Pool, user: AuthenticatedUser | unde
     const blocking = await client.query<{ event_code: string | null; title: string; starts_at: Date }>(`
       SELECT e.event_code, e.title, lower(vb.booking_range) AS starts_at
       FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-      WHERE vb.venue_id = $1 AND vb.status IN ('pending', 'confirmed') AND lower(vb.booking_range) > now()
+      WHERE vb.venue_id = $1 AND ${holdsVenue('vb', 'now()')} AND lower(vb.booking_range) > now()
       ORDER BY lower(vb.booking_range)
     `, [id]);
     if (blocking.rows.length) {
