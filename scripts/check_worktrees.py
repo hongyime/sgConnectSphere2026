@@ -8,6 +8,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+DEPENDENCY_LINK_PATHS = (
+    Path(".venv-tools"),
+    Path("node_modules"),
+    Path("backend/node_modules"),
+    Path("frontend/node_modules"),
+)
+
 
 def parse_worktree_output(stdout: str) -> list[dict[str, str]]:
     """Parse output from ``git worktree list --porcelain``."""
@@ -102,12 +109,10 @@ def worktree_is_safe_to_remove(path: Path) -> tuple[bool, str]:
         return False, "could not inspect ignored worktree files"
 
     try:
-        removable_link_candidates = {Path(entry.name) for entry in path.iterdir()}
+        list(path.iterdir())
     except OSError:
         return False, "could not inspect ignored worktree files"
-    removable_link_candidates.update(
-        {Path("backend/node_modules"), Path("frontend/node_modules")}
-    )
+    removable_link_candidates = set(DEPENDENCY_LINK_PATHS)
     for raw_path in ignored.stdout.split("\0"):
         if not raw_path:
             continue
@@ -131,19 +136,12 @@ def is_link_or_junction(path: Path) -> bool:
 def unlink_directory_links(worktree: Path, *, force: bool = False) -> tuple[bool, list[str]]:
     """Unlink dependency links themselves without traversing their targets."""
     try:
-        candidates = list(worktree.iterdir())
+        list(worktree.iterdir())
     except OSError as exc:
         return False, [f"could not inspect {worktree}: {exc}"]
-    candidates.extend(
-        worktree / relative
-        for relative in ("backend/node_modules", "frontend/node_modules")
-    )
+    candidates = [worktree / relative for relative in DEPENDENCY_LINK_PATHS]
     removed: list[str] = []
-    seen: set[Path] = set()
     for path in candidates:
-        if path in seen:
-            continue
-        seen.add(path)
         if not is_link_or_junction(path):
             continue
         if not force:

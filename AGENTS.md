@@ -63,10 +63,12 @@ intentional review or stacked-branch worktrees. `python scripts/check.py`
 reports secondary worktrees as a warning. To remove worktrees that are clean
 and fully pushed, run `python scripts/check_worktrees.py --clean`; it skips
 worktrees with local changes, unpushed commits, no upstream, or ignored files
-beyond removable dependency links. Review its removal plan before using
-`--clean --force`, which can discard work. The cleaner unlinks ignored dependency
-symlinks and junctions (including `.venv-tools` and `node_modules`) themselves
-so their targets remain intact.
+beyond recognized dependency links. It only unlinks `.venv-tools`, root
+`node_modules`, `backend/node_modules`, and `frontend/node_modules` when they
+are symlinks or junctions; arbitrary ignored symlinks and other ignored user
+data block cleanup. These links are removed themselves so their targets remain
+intact. `--clean --force` immediately permits removal of protected work; use it
+only when you intend to discard that work.
 
 ## Recording test runs
 

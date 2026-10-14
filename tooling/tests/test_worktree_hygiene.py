@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import call, patch
 
 from scripts.check_worktrees import (
+    DEPENDENCY_LINK_PATHS,
     clean_worktrees,
     is_link_or_junction,
     list_worktrees,
@@ -160,27 +161,51 @@ class WorktreeHygieneTests(unittest.TestCase):
         self.assertFalse(safe)
         self.assertIn("ignored files", reason)
 
+    def test_ignored_dependency_symlink_is_safe_to_unlink(self):
+        for relative in DEPENDENCY_LINK_PATHS:
+            with self.subTest(relative=relative.as_posix()), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                worktree = root / "worktree"
+                worktree.mkdir()
+                target = root / "shared-node-modules"
+                target.mkdir()
+                link = worktree / relative
+                link.parent.mkdir(parents=True, exist_ok=True)
+                link.symlink_to(target, target_is_directory=True)
+                with patch(
+                    "scripts.check_worktrees.subprocess.run",
+                    side_effect=[
+                        result(),
+                        result("origin/feature\n"),
+                        result("0\n"),
+                        result(relative.as_posix() + "\0"),
+                    ],
+                ):
+                    self.assertEqual(
+                        worktree_is_safe_to_remove(worktree),
+                        (True, "clean and fully pushed"),
+                    )
+
     @patch(
         "scripts.check_worktrees.subprocess.run",
         side_effect=[
             result(),
             result("origin/feature\n"),
             result("0\n"),
-            result("node_modules\0"),
+            result("user-data-link\0"),
         ],
     )
-    def test_ignored_dependency_symlink_is_safe_to_unlink(self, _run):
+    def test_ignored_arbitrary_symlink_is_not_safe_to_remove(self, _run):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             worktree = root / "worktree"
             worktree.mkdir()
-            target = root / "shared-node-modules"
+            target = root / "user-data"
             target.mkdir()
-            (worktree / "node_modules").symlink_to(target, target_is_directory=True)
-            self.assertEqual(
-                worktree_is_safe_to_remove(worktree),
-                (True, "clean and fully pushed"),
-            )
+            (worktree / "user-data-link").symlink_to(target, target_is_directory=True)
+            safe, reason = worktree_is_safe_to_remove(worktree)
+        self.assertFalse(safe)
+        self.assertIn("ignored files", reason)
 
     @patch(
         "scripts.check_worktrees.subprocess.run",
@@ -240,17 +265,28 @@ class WorktreeHygieneTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("could not inspect", messages[0])
 
-    def test_duplicate_link_candidate_is_processed_once(self):
-        worktree = Path("/repo/wt")
-        nested = worktree / "backend/node_modules"
-        with (
-            patch.object(Path, "iterdir", return_value=[nested]),
-            patch("scripts.check_worktrees.is_link_or_junction", return_value=False) as is_link,
-        ):
+    @patch("scripts.check_worktrees.subprocess.run", return_value=result())
+    def test_unlink_only_recognized_dependency_links(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            worktree = root / "worktree"
+            worktree.mkdir()
+            target = root / "shared-node-modules"
+            target.mkdir()
+            marker = target / "keep.txt"
+            marker.write_text("target remains")
+            dependency_link = worktree / "node_modules"
+            dependency_link.symlink_to(target, target_is_directory=True)
+            user_link = worktree / "user-data-link"
+            user_link.symlink_to(target, target_is_directory=True)
+
             ok, messages = unlink_directory_links(worktree)
-        self.assertTrue(ok)
-        self.assertEqual(messages, [])
-        self.assertEqual(is_link.call_args_list, [call(nested), call(worktree / "frontend/node_modules")])
+
+            self.assertTrue(ok)
+            self.assertEqual(messages, [str(dependency_link)])
+            self.assertFalse(dependency_link.exists())
+            self.assertTrue(user_link.is_symlink())
+            self.assertEqual(marker.read_text(), "target remains")
 
     @patch("scripts.check_worktrees.subprocess.run", return_value=result())
     def test_force_unlinks_symlink_without_following_target(self, _run):
@@ -316,7 +352,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             worktree.mkdir()
             target = root / "target"
             target.mkdir()
-            link = worktree / "project-link"
+            link = worktree / "node_modules"
             link.symlink_to(target, target_is_directory=True)
 
             ok, messages = unlink_directory_links(worktree)
