@@ -10,6 +10,7 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
 - Jira: SCRUM-48 (Sprint 3, 3 points), parent SCRUM-7
 - Branch pre-created by @bryanseah234 on 2026-10-05; merged `origin/main` on 2026-10-08
 - Progress on 2026-10-09: backend steps 1.1-1.5 and screen steps 2.1-2.3 done (see below)
+- Progress on 2026-10-14: merged `main` (Week 9 docs, holds #245); booking decisions now in the Coordinator Activity log
 
 ## Done so far
 
@@ -25,14 +26,28 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
   booking test rewritten (desktop + mobile pass). Mock detail, `findBooking` and
   its venue.css rules removed; screen inventory row updated.
 
+- 2026-10-14: merged `origin/main`. Conflicts were additive: the venues API
+  action list now ends `'extend_hold', or 'decide'`; `backend/package.json`
+  keeps both the hold and decision test files; `tc-coverage.md` regenerated.
+- 2026-10-14: TC_E06S04_05/_06 Coordinator view. `listEventActivity()` takes
+  `{ includeBookings: true }` from `getAssignedEvent()` only, adding
+  `entity_type = 'venue_booking'` rows with the venue name. The Organiser view
+  is unchanged. `ActivityLog` shows them as "Booking approved" / "Booking
+  rejected" and "Small Room: Pending → Confirmed" in words, not event
+  StatusPills. Holds (#245) already log as `entity_type = 'event'`, so they were
+  visible before this change.
+- Local evidence on 2026-10-14 (exploratory, no T-65 record yet): backend unit
+  386/386; Vitest 377/377; `ActivityLog.tsx` 100%; decision + activity-log DB
+  tests 19/19 on the local `connectsphere-db` container. Full `test:db` 87/89:
+  `eventVisibility.integration` and `registration.db` fail identically on clean
+  `main` 03e7644 (missing `venue_requirements` / `public.users`), unrelated.
+
 ## Still to do
 
 - Scenario 4 buffered-window check: after #231 (occupied_window) and #245 (shared
   0013 migration, #244 contract) merge. #244 also says the first Confirmed booking
   becomes primary when the event has none; `is_primary` arrives with 0013.
 - Scenario 2 Coordinator "amend to suggested venue": with Ji Ning's E06-S03.
-- TC_E06S04_05/_06 Coordinator Activity log: after #240 merges, add
-  `venue_booking` rows to `listEventActivity()`.
 - TC_E06S04_04 seed fixture, manual run of TC_01-_06 (TC_07 blocked on E10-S04),
   T-65 records, PR.
 - Running locally: export only `DATABASE_URL` (the venues API prefers

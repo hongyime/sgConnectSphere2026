@@ -14,7 +14,8 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { decideBooking, getBooking, listPendingBookings } from '../src/modules/venueBooking/decisions.js';
 import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
-import type { Query } from '../src/modules/eventVisibility/service.js';
+import { getAssignedEvent } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
+import { listEventActivity, type Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { loginDatabase } from './helpers/loginDatabase.js';
 
@@ -86,6 +87,16 @@ type Fixture = Awaited<ReturnType<typeof fixture>>;
 async function withFixture(work: (f: Fixture) => Promise<void>) {
   const f = await fixture();
   try { await work(f); } finally { await f.close(); }
+}
+
+type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null };
+
+// T-75: the assigned Coordinator reads the decision in the event Activity log;
+// the Organiser's view of the same log leaves booking decisions out.
+async function activityEntries(f: Fixture, eventId: string) {
+  const coordinatorView = (await getAssignedEvent(f.pool, f.coordinator, eventId)).activityLog as ActivityRow[];
+  const organiserView = (await listEventActivity(f.query, eventId)).rows as ActivityRow[];
+  return { coordinatorView, organiserView };
 }
 
 function within(time: Date, from: Date, to: Date) {
@@ -169,6 +180,12 @@ test('TC_E06S04_05: an approval is recorded with the actor, action, booking, eve
   assert.deepEqual([entry!.actor_id, entry!.entity_type, entry!.event_id, entry!.action, entry!.old_value, entry!.new_value],
     [f.ids.staff, 'venue_booking', eventId, 'Booking Approved', 'pending', 'confirmed']);
   within(entry!.occurred_at, before, after);
+
+  const { coordinatorView, organiserView } = await activityEntries(f, eventId);
+  assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking')
+    .map(row => [row.action, row.venue_name, row.actor_name, row.old_value, row.new_value]),
+  [['Booking Approved', 'Small Room', 'Venue Staff A', 'pending', 'confirmed']]);
+  assert.equal(organiserView.some(row => row.entity_type === 'venue_booking'), false);
 }));
 
 test('TC_E06S04_06: a rejection is recorded with the actor, action, booking, event and time', () => withFixture(async f => {
@@ -182,6 +199,12 @@ test('TC_E06S04_06: a rejection is recorded with the actor, action, booking, eve
   assert.deepEqual([entry!.actor_id, entry!.entity_type, entry!.event_id, entry!.action, entry!.old_value, entry!.new_value],
     [f.ids.staff, 'venue_booking', eventId, 'Booking Rejected', 'pending', 'rejected']);
   within(entry!.occurred_at, before, after);
+
+  const { coordinatorView, organiserView } = await activityEntries(f, eventId);
+  assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking')
+    .map(row => [row.action, row.venue_name, row.actor_name, row.old_value, row.new_value]),
+  [['Booking Rejected', 'Small Room', 'Venue Staff A', 'pending', 'rejected']]);
+  assert.equal(organiserView.some(row => row.entity_type === 'venue_booking'), false);
 }));
 
 test('only Venue Staff can decide; a refusal is audited and leaves the request pending', () => withFixture(async f => {
