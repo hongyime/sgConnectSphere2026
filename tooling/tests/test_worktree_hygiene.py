@@ -116,10 +116,102 @@ class WorktreeHygieneTests(unittest.TestCase):
 
     @patch(
         "scripts.check_worktrees.subprocess.run",
-        side_effect=[result(), result("origin/feature\n"), result("0\n")],
+        side_effect=[result(), result("origin/feature\n"), result("0\n"), result()],
     )
     def test_clean_fully_pushed_worktree_is_safe(self, _run):
-        self.assertEqual(worktree_is_safe_to_remove(Path("/repo/wt")), (True, "clean and fully pushed"))
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(
+                worktree_is_safe_to_remove(Path(tmp)),
+                (True, "clean and fully pushed"),
+            )
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[
+            result(),
+            result("origin/feature\n"),
+            result("0\n"),
+            result("ignored-cache/keep.txt\0"),
+        ],
+    )
+    def test_ignored_directory_data_is_not_safe_to_remove(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            worktree = Path(tmp)
+            (worktree / "ignored-cache").mkdir()
+            (worktree / "ignored-cache/keep.txt").write_text("keep")
+            safe, reason = worktree_is_safe_to_remove(worktree)
+        self.assertFalse(safe)
+        self.assertIn("ignored files", reason)
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[
+            result(),
+            result("origin/feature\n"),
+            result("0\n"),
+            result("ignored.bin\0"),
+        ],
+    )
+    def test_ignored_regular_top_level_file_is_not_safe_to_remove(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            worktree = Path(tmp)
+            (worktree / "ignored.bin").write_text("keep")
+            safe, reason = worktree_is_safe_to_remove(worktree)
+        self.assertFalse(safe)
+        self.assertIn("ignored files", reason)
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[
+            result(),
+            result("origin/feature\n"),
+            result("0\n"),
+            result("node_modules\0"),
+        ],
+    )
+    def test_ignored_dependency_symlink_is_safe_to_unlink(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            worktree = root / "worktree"
+            worktree.mkdir()
+            target = root / "shared-node-modules"
+            target.mkdir()
+            (worktree / "node_modules").symlink_to(target, target_is_directory=True)
+            self.assertEqual(
+                worktree_is_safe_to_remove(worktree),
+                (True, "clean and fully pushed"),
+            )
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[result(), result("origin/feature\n"), result("0\n"), OSError("git failed")],
+    )
+    def test_ignored_file_inspection_error_is_not_safe(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            safe, reason = worktree_is_safe_to_remove(Path(tmp))
+        self.assertFalse(safe)
+        self.assertIn("could not inspect ignored", reason)
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[result(), result("origin/feature\n"), result("0\n"), result(returncode=1)],
+    )
+    def test_ignored_file_inspection_failure_is_not_safe(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            safe, reason = worktree_is_safe_to_remove(Path(tmp))
+        self.assertFalse(safe)
+        self.assertIn("could not inspect ignored", reason)
+
+    @patch(
+        "scripts.check_worktrees.subprocess.run",
+        side_effect=[result(), result("origin/feature\n"), result("0\n"), result()],
+    )
+    def test_unreadable_worktree_directory_is_not_safe(self, _run):
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch.object(Path, "iterdir", side_effect=OSError("permission denied")):
+                safe, reason = worktree_is_safe_to_remove(Path(tmp))
+        self.assertFalse(safe)
+        self.assertIn("could not inspect ignored", reason)
 
     @patch("scripts.check_worktrees.subprocess.run", side_effect=OSError("missing path"))
     def test_missing_worktree_is_not_safe_to_remove(self, _run):

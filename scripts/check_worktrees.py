@@ -44,7 +44,7 @@ def list_worktrees(cwd: Path | None = None) -> list[dict[str, str]] | None:
 
 
 def worktree_is_safe_to_remove(path: Path) -> tuple[bool, str]:
-    """Require a clean worktree with an upstream and no commits ahead of it."""
+    """Require a clean, pushed worktree without ignored user files."""
     try:
         status = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=all"],
@@ -87,6 +87,36 @@ def worktree_is_safe_to_remove(path: Path) -> tuple[bool, str]:
         return False, "could not compare branch with its upstream"
     if ahead.stdout.strip() != "0":
         return False, f"has {ahead.stdout.strip()} commit(s) ahead of its upstream"
+
+    try:
+        ignored = subprocess.run(
+            ["git", "ls-files", "--others", "--ignored", "--exclude-standard", "-z"],
+            cwd=path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return False, "could not inspect ignored worktree files"
+    if ignored.returncode != 0:
+        return False, "could not inspect ignored worktree files"
+
+    try:
+        removable_link_candidates = {Path(entry.name) for entry in path.iterdir()}
+    except OSError:
+        return False, "could not inspect ignored worktree files"
+    removable_link_candidates.update(
+        {Path("backend/node_modules"), Path("frontend/node_modules")}
+    )
+    for raw_path in ignored.stdout.split("\0"):
+        if not raw_path:
+            continue
+        relative = Path(raw_path)
+        if (
+            relative not in removable_link_candidates
+            or not is_link_or_junction(path / relative)
+        ):
+            return False, "has ignored files beyond removable dependency links"
     return True, "clean and fully pushed"
 
 
