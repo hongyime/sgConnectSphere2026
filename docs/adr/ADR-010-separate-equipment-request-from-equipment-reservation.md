@@ -24,3 +24,11 @@ EQUIPMENT_REQUESTS and EQUIPMENT_RESERVATIONS as separate tables, with each rese
 ### What it costs
 
 - Two tables to keep in step. Releasing a reservation must not delete the underlying request.
+
+### Amended 13 October 2026 for Week 9
+
+T-79 makes an Equipment Request and each resulting Reservation Session-specific.
+Both rows retain their Event owner and reference the same Session through the
+composite `(session_id, event_id)` constraint. The request/reservation
+separation remains: partial fulfilment and later release still preserve the
+request history. Technical-support requests and staffing remain Event-level.

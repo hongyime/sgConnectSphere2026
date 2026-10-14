@@ -12,7 +12,7 @@ sequenceDiagram
 
     EO->>UI: Log in
     UI->>IAM: Submit credentials
-    IAM->>DB: Read user, role and client organisation
+    IAM->>DB: Read user, role memberships and client organisation
     DB-->>IAM: Authorised organiser identity
     IAM-->>UI: Create authenticated session
 
@@ -20,6 +20,11 @@ sequenceDiagram
     UI->>EVT: Create or load draft
     EVT->>DB: Read or write event request
     EVT-->>UI: Display editable request
+
+    EO->>UI: Enter overall attendance and add one or more Sessions
+    UI->>EVT: Save Event total and Session dates, attendance and requirements
+    EVT->>DB: Store Session records beneath the Event
+    Note over EVT,DB: Event keeps overall attendance, lifecycle and registration window; each Session has separate attendance and venue/equipment requirements (T-79)
 
     EO->>UI: Save draft
     UI->>EVT: Save incomplete requirements
@@ -33,8 +38,16 @@ sequenceDiagram
         EVT->>NOT: Raise submitted event
         NOT->>DB: Write Coordinator delivery rows in same transaction
         EVT-->>UI: Submission successful
-    else Fields missing or preferred date in the past
+    else Fields missing, date in the past, or date more than two years ahead
         EVT-->>UI: Return validation errors naming each missing field
+    end
+    Note over UI,EVT: No fixed minimum lead time; the Coordinator assesses feasibility (T-87)
+
+    opt Reuse a previous event (E02-S05)
+        EO->>UI: Choose one of my past requests
+        UI->>EVT: Copy event details and Session structure
+        EVT->>DB: Create a new draft with dates/times cleared
+        Note over EVT,DB: Do not copy bookings, equipment reservations or registrations under O-51
     end
 
     EO->>UI: Track request status
@@ -48,8 +61,8 @@ sequenceDiagram
         UI->>EVT: Record response
         EVT->>DB: Set status Under Review
     else Request approved
-        EVT->>DB: Read venue and equipment readiness
-        EVT-->>UI: Display planning or confirmed details
+        EVT->>DB: Read Session arrangements and Event-level support readiness
+        EVT-->>UI: Display planning details by Session
     end
 
     opt Post-approval change
@@ -74,7 +87,7 @@ sequenceDiagram
     participant NOT as Notification Dispatcher
 
     EC->>UI: Log in and open review queue
-    UI->>IAM: Validate session and Coordinator role
+    UI->>IAM: Validate session and Coordinator role grant
     UI->>EVT: Request assigned events
     EVT->>DB: Read events, assignments and statuses
     EVT-->>UI: Display review queue
@@ -97,33 +110,35 @@ sequenceDiagram
         EVT->>DB: Set status Approved, write deliveries
     end
 
-    par Venue planning
-        EVT->>VEN: Send event date, capacity, layout and accessibility needs
+    par Venue planning by Session
+        EVT->>VEN: Send Session date, capacity, layout and accessibility needs
         VEN->>DB: Read venues, blocks and existing bookings
-        VEN->>DB: Write booking request with status Pending
-        Note over VEN,DB: First request moves the event from Approved to Planning
+        VEN->>DB: Write Session-linked booking request with status Pending
+        Note over VEN,DB: First request moves the Event from Approved to Planning
         VEN-->>EVT: Return pending, confirmed, rejected or conflicting
     and Equipment planning
-        EVT->>EQ: Send event items, quantities and support needs
+        EVT->>EQ: Send Session items/quantities and Event-level support needs
         EQ->>DB: Read equipment, unavailability and reservations
-        EQ->>DB: Write reservations and staff assignments
+        EQ->>DB: Write Session-linked equipment reservations and Event-level staff assignments
         EQ-->>EVT: Return reserved, partial or shortfall
     end
 
-    EC->>UI: Attempt to confirm event
-    UI->>EVT: Check event readiness
-    EVT->>DB: Read booking and reservation state for the event
-    alt Event lacks a venue, has a partial reservation, or has an unstaffed support request
-        EVT-->>UI: Block confirmation and list outstanding items
+    EVT->>DB: Recheck all required Session arrangements and Event-level technical support
+    alt Any required arrangement remains incomplete
+        EVT-->>UI: Keep Event in Planning and show outstanding items by Session
     else Event fully arranged
-        EVT->>DB: Set status Confirmed, append audit entry, write deliveries
-        EVT-->>UI: Event confirmed
+        EVT->>DB: Create pending Safety Check; set Planning to Safety Review
+        EVT->>NOT: Notify Safety Officer and Organiser
+        EVT-->>UI: Show Safety Review; Coordinator does not submit it (C-132/T-82)
     end
 
     opt Revert, cancel or complete
         EC->>UI: Apply lifecycle action
         UI->>EVT: Record action with reason
         EVT->>DB: Update status, release or flag arrangements, write audit and deliveries
+        opt Event becomes Completed or Cancelled
+            EVT->>DB: Mark pending change requests Obsolete and retain history (T-88)
+        end
     end
 ```
 
@@ -132,6 +147,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     actor VS as Venue Staff
+    actor EC as Event Coordinator
     participant UI as React Web Application
     participant IAM as Access Control
     participant VEN as Venue Management
@@ -140,30 +156,51 @@ sequenceDiagram
     participant NOT as Notification Dispatcher
 
     VS->>UI: Log in
-    UI->>IAM: Validate session and Venue Staff role
+    UI->>IAM: Validate session and Venue Staff role grant
 
     VS->>UI: Maintain venue catalogue
     UI->>VEN: Save capacity, layouts, accessibility features and facilities
     VEN->>DB: Write venue, layouts and feature links, append audit entry
 
     opt Venue unavailable
-        VS->>UI: Record maintenance period
+        VS->>UI: Record a block with an optional end time
         UI->>VEN: Create venue block
         VEN->>DB: Write block
-        alt Block overlaps a confirmed booking
-            VEN-->>UI: Warn and require conflict to be resolved first
-        else No overlap
-            VEN->>DB: Write deliveries for affected Coordinators
+        Note over VEN,DB: An open-ended block remains active until lifted; buffers do not extend into the block (T-80)
+        alt Block makes a Confirmed Event's active booking unavailable
+            VEN->>DB: Mark booking Conflicting; return Event to Planning
+            VEN->>NOT: Immediately notify assigned Coordinator (T-81)
+        else Block affects pending arrangements only
+            VEN->>DB: Mark affected bookings and retain their history
+        end
+    end
+
+    opt Venue Staff edits or lifts a block (T-91)
+        VS->>UI: Edit range/reason or lift the block
+        UI->>VEN: Save edit/lift
+        VEN->>DB: Append prior/new snapshot, actor and time
+        alt Block lifted
+            VEN->>DB: Retain block row and restore only C-122 eligible conflicts
+            VEN->>NOT: Notify each affected Coordinator
         end
     end
 
     VS->>UI: Open a pending booking request
     UI->>VEN: Load event requirements and venue
-    VEN->>DB: Read event, requirements and venue state
+    VEN->>DB: Read Event, Session requirements and venue state
 
     VS->>UI: Review suitability and availability
     VEN->>DB: Read capacity, layouts, features, operating hours, blocks and bookings
     Note over VEN: Suitability is advisory; the decision remains with Venue Staff
+
+    opt Tentative hold configuration
+        VS->>UI: Set this hold's expiry
+        UI->>VEN: Save explicit expiry
+        VEN->>DB: Store expiry without applying a default
+        EC->>UI: Set this hold's warning interval
+        UI->>VEN: Save Coordinator warning interval
+        VEN->>DB: Store configured interval (T-84)
+    end
 
     alt Approve
         UI->>VEN: Approve booking request
@@ -255,28 +292,39 @@ sequenceDiagram
 
     AT->>UI: View a confirmed event
     UI->>REG: Request published information
-    REG->>DB: Read confirmed event, venue and accessibility details
+    REG->>DB: Read confirmed Event, Sessions, capacity and accessibility details
     Note over REG: Coordinator notes, booking decisions and internal planning are excluded
 
-    AT->>UI: Register for the event
-    UI->>REG: Submit registration
-    REG->>DB: Check event capacity and current registrations
-    alt Capacity available
-        REG->>DB: Create registration with status Registered
+    AT->>UI: Select one or more Sessions and register once for the Event
+    UI->>REG: Submit one event-level registration with session_ids[]
+    REG->>DB: Atomically check each selected Session and combined Event capacity
+    alt Both capacity limits have room
+        REG->>DB: Create registration and selected Session links as Registered
         REG->>DB: Write confirmation delivery
         REG-->>UI: Display successful registration
-    else Event is full
-        REG->>DB: Create registration with status Waitlisted
-        REG->>DB: Write waitlist delivery
-        REG-->>UI: Display waitlist status
+    else Combined Event capacity is full and Event waitlist is enabled
+        alt Attendee chooses the Event-level waitlist
+            REG->>DB: Create Event-level Waitlisted registration
+            REG->>DB: Write waitlist delivery
+            REG-->>UI: Display Event waitlist status
+        else Attendee submits for Organiser review
+            REG->>DB: Save registration as Pending
+            REG->>DB: Write Pending decision notification
+            REG-->>UI: Display Pending status, not an approved seat
+        end
+    else Selected Session is full or no Event waitlist is available
+        REG->>DB: Save registration as Pending for Organiser review
+        REG->>DB: Write Pending decision notification
+        REG-->>UI: Display Pending status, not an approved seat
     end
+    Note over REG: No independent per-Session waitlist is assumed while O-50 remains open
 
     opt Attendee withdraws
         AT->>UI: Withdraw registration
         UI->>REG: Submit withdrawal
-        REG->>DB: Set registration status Withdrawn
-        alt Waitlisted attendee can be promoted
-            REG->>DB: Promote next waitlisted registration
+        REG->>DB: Set registration status Withdrawn and release all selected Session places
+        alt Event-level waitlisted attendee can be promoted and both limits still allow
+            REG->>DB: Promote next eligible Event-level waitlisted registration
             REG->>DB: Write promotion delivery
             NOT-->>AT: Registration status updated
         end
@@ -324,11 +372,8 @@ sequenceDiagram
         UI->>EVT: Reassign
         EVT->>DB: Replace coordinator_id, set assigned_by, append audit entry
         EVT->>NOT: Notify outgoing and incoming Coordinators and the Organiser
-    else Coordinator asked the Lead (O-37)
-        EVT->>DB: Read reassignment requests addressed to the Lead
-        LD->>UI: Reassign or decline with a note
-        EVT->>NOT: Notify the requesting Coordinator
     end
+    Note over LD,EVT: The Lead owns assignment/reassignment; no Coordinator request or incoming acceptance workflow (T-83)
 
     LD->>UI: Open oversight view (E03-S10)
     UI->>EVT: Read every active event with its Coordinator or Unassigned
@@ -336,11 +381,10 @@ sequenceDiagram
     EVT-->>UI: Assignments, workload per Coordinator, filters
 ```
 
-## 14. Dynamic view - Safety Officer (Week 7, C-70)
+## 14. Dynamic view — automatic Safety Review (Week 9, C-132/C-134, T-82)
 
 ```mermaid
 sequenceDiagram
-    actor EC as Event Coordinator
     actor SO as Safety Officer
     participant UI as React Web Application
     participant IAM as Access Control
@@ -350,39 +394,40 @@ sequenceDiagram
     participant DB as PostgreSQL
     participant NOT as Notification Dispatcher
 
-    EC->>UI: Submit event for Operational Safety Check (E08-S03)
-    UI->>EVT: Check readiness
-    EVT->>VEN: Every venue booking Confirmed or withdrawn, at least one Confirmed
-    EVT->>EQ: Equipment fully reserved, technical support assigned
+    VEN->>EVT: Confirm the last required Session venue arrangement
+    EQ->>EVT: Confirm Session equipment and Event-level technical support
+    EVT->>VEN: Recheck required Session bookings
+    EVT->>EQ: Recheck equipment reservations and support assignment
     alt Readiness incomplete
-        EVT-->>UI: Blocked, outstanding items listed by venue and item
+        EVT->>DB: Keep Event in Planning; retain outstanding arrangement list
     else Ready
-        EVT->>DB: Status Planning to Safety Review, insert safety_checks row with submitted_at, append audit entry
+        EVT->>DB: Create pending safety_checks row; set Planning to Safety Review; append audit entry
         EVT->>NOT: Notify Safety Officer and Organiser
+        Note over EVT,DB: No Coordinator submit action; readiness triggers review automatically (C-132/T-82)
     end
 
     SO->>UI: Log in
     UI->>IAM: Validate session and Safety Officer role
     UI->>EVT: Open safety review queue (E08-S06)
-    EVT->>DB: Read events in Safety Review with venues, capacities, layouts, restrictions, attendance, accessibility, equipment
+    EVT->>DB: Read event, Sessions, venues, capacities, layouts, restrictions, attendance, accessibility and equipment
     EVT-->>UI: Queue, oldest first
 
-    SO->>UI: Record each of seven factors as satisfactory or not, with comments
+    SO->>UI: Record overall decision/comments and review each safety factor checklist
     alt Approve
         SO->>UI: Approve
-        UI->>EVT: Record decision approved
-        EVT->>DB: Write safety_check_factors, decision, status Safety Review to Confirmed, append audit entry
+        UI->>EVT: Record decision and comments
+        EVT->>DB: Write checklist, decision/comments; set Safety Review to Confirmed; append audit entry
         EVT->>NOT: Notify Organiser and Coordinator with confirmed details
-    else Request changes or reject (reason mandatory, O-41)
-        SO->>UI: Request changes or reject with reason
-        UI->>EVT: Record decision
-        EVT->>DB: Write factors, decision and reason, status Safety Review to Planning, flag affected arrangements, append audit entry
+    else Request changes or reject
+        SO->>UI: Record decision and comments describing outcome
+        UI->>EVT: Record decision and comments
+        EVT->>DB: Write checklist and decision/comments; set Safety Review to Planning; flag affected arrangements; append audit entry
         EVT->>NOT: Notify Coordinator and Organiser with the items
         Note over EVT,DB: The event is never cancelled by a safety decision; the Coordinator reworks and resubmits
     end
 ```
 
-## 15. Dynamic view - Tentative hold expiry (Week 7, C-68)
+## 15. Dynamic view — configured hold expiry and extensions (Week 9, C-99/C-124/C-125, T-84)
 
 ```mermaid
 sequenceDiagram
@@ -394,21 +439,29 @@ sequenceDiagram
     participant REL as Scheduler and Outbox Relay
     participant NOT as Notification Dispatcher
 
-    EC->>UI: Place tentative hold on a free venue (E06-S05)
-    UI->>VEN: Hold
-    VEN->>DB: Insert booking status Tentative, expires_at = now + 48h (O-31), occupancy_range buffered
+    EC->>UI: Place tentative hold for a Session
+    UI->>VEN: Hold with Session and venue period
+    VEN->>DB: Insert booking status Tentative with no system expiry default
     Note over VEN,DB: Exclusion constraint covers Tentative, so an overlapping hold or request is refused
 
-    opt Venue Staff extend the hold (Scenario 8)
-        VS->>UI: Set a later expiry
-        UI->>VEN: Extend
-        VEN->>DB: Update expires_at, append audit entry hold_extended
+    VS->>UI: Set the expiry for this hold
+    UI->>VEN: Configure expiry
+    VEN->>DB: Store explicit expires_at and audit the change
+    EC->>UI: Set this hold's warning interval
+    UI->>VEN: Configure warning timing
+    VEN->>DB: Store warning_before; do not apply a system default
+
+    opt Venue Staff extends an unexpired hold (at most twice)
+        VS->>UI: Enter a later expiry and required reason
+        UI->>VEN: Extend with reason
+        VEN->>DB: Lock hold; reject if expired or already extended twice
+        VEN->>DB: Append previous/new expiry, actor, reason and audit entry
     end
 
-    loop Each relay poll (ADR-006 amendment, T-69)
-        REL->>DB: UPDATE holds SET reminder_sent_at = now WHERE reminder_sent_at IS NULL AND expires_at <= now + 24h RETURNING
+    loop Each relay poll (ADR-006 amendment, T-84)
+        REL->>DB: Find configured warnings due at expires_at - warning_before
         REL->>NOT: Reminder to the Coordinator for each returned hold (Scenario 7)
-        REL->>DB: UPDATE holds SET status = Expired WHERE status = Tentative AND expires_at <= now RETURNING
+        REL->>DB: Expire only configured Tentative holds whose expires_at <= now
         REL->>DB: Append audit entry hold_expired per row, in the same transaction
         REL->>NOT: Expiry notice to the Coordinator (Scenario 6)
         Note over REL,DB: Status and reminder_sent_at are the idempotency guards; a crashed poll re-run sends nothing twice
@@ -417,7 +470,7 @@ sequenceDiagram
     alt Coordinator converts in time (Scenario 3)
         EC->>UI: Submit booking request for the held venue
         UI->>VEN: Convert hold
-        VEN->>DB: Status Tentative to Pending, expires_at cleared
+        VEN->>DB: Status Tentative to Pending; clear expiry and warning fields
     else Hold expired
         EC->>UI: Open the event
         UI->>VEN: Read bookings
