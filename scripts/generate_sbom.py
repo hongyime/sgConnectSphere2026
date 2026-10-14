@@ -1,6 +1,8 @@
 """Generate a Software Bill of Materials (SBOM) for this repository.
 
-Two SBOM files are produced side-by-side, both in CycloneDX 1.5 JSON format:
+Two CycloneDX JSON files are produced side-by-side. Their spec versions are
+reported by the generator because npm and the Python tooling can emit different
+CycloneDX versions:
 
 - `artifacts/sbom/npm.cdx.json` covers the npm workspace tree (frontend and
   backend) produced by npm's native `npm sbom` command (npm >= 10).
@@ -13,11 +15,10 @@ CycloneDX by default, and `cyclonedx-py` is the canonical CLI for the Python
 tooling side; using both means a single format across the two dependency trees
 without shelling out to a third-party tool for the npm side.
 
-The output is intentionally not committed. Regenerate on demand for release
-audits, dependency reviews, or supply-chain security work; see
-`docs/contributing/generating-sbom.md` for when and why. This mirrors the
-manual export convention used for the backlog and test-case workbooks in
-`docs/backlog/README.md`.
+The generated files are committed as the public dependency inventory for the
+current manifests and lockfiles. Regenerate and include both outputs in the
+same change when npm manifests or lockfiles, `tooling/requirements.txt`, or
+this generator changes. See `docs/contributing/generating-sbom.md` for details.
 """
 
 from __future__ import annotations
