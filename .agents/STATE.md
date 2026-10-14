@@ -14,7 +14,7 @@ The production migration record for 0013 is merged (#260). The production ledger
 
 GitHub status was refreshed on 2026-10-14. Check the live pull request before acting because head hashes, checks and review requirements can change.
 
-- **#259** is this owner-only STATE/JOURNAL refresh. Its remote head is 8029820; this branch is synced with main and the owner snapshot is refreshed. On Windows, python scripts/check.py at c2e80cc ran 128 tooling tests: 124 passed and 4 worktree-hygiene path tests failed. A T-65 tooling record is included in this PR. Linux CI must confirm the new head. Teammate approval is required; do not self-approve or merge around protection.
+- **#259** is this owner-only STATE/JOURNAL refresh. Its remote head is 8029820; this branch is synced with main and the owner snapshot is refreshed. Two Windows runs of python scripts/check.py at c2e80cc and 184989f each ran 128 tooling tests: 124 passed and the same 4 worktree-hygiene path tests failed. T-65 records are included in this PR. Linux CI must confirm the new head. Teammate approval is required; do not self-approve or merge around protection.
 - **#232** adds Coordinator Lead and Safety Officer roles. Xiang’s changes-requested review remains. The requested real PostgreSQL evidence is not complete. Do not create a T-65 record from the rejected Docker Desktop run or from an unsupported Supabase run.
 - **#217** needs peer review; required checks were passing at the last check. Its optional Vercel check failed.
 - **#230** has Xiang’s changes-requested review on an older head and is now marked conflicting with main; Xiang must review the current head after it is synced.
@@ -33,7 +33,7 @@ T-59 chose a test schema inside the existing Supabase database instead of provis
 
 The supported Supabase test is deactivation.integration.test.ts, which wraps its writes in a transaction and rolls back. Do not run db:reset, the general seed command, or any committing database suite against Supabase. In particular, do not bypass the reset guard. Other database suites require an isolated disposable loopback PostgreSQL database.
 
-For this task Bryan directed agents not to use Docker Desktop. GitHub Actions’ managed Postgres service container is CI infrastructure and does not imply that a teammate or agent should launch Docker Desktop locally. The current machine has no native psql command or PostgreSQL service. The requested #232 reset, migration, seed and sign-in evidence remains pending until an approved non-Docker isolated database path or a supported schema-scoped harness is available. Do not write to Supabase or claim T-65 evidence without that.
+AGENTS.md, docs/testing/supabase-test-schema.md, and docs/contributing/seed-data-convention.md now explicitly direct local contributors and agents not to start Docker Desktop. GitHub Actions managed PostgreSQL is CI infrastructure. This machine has no native psql command or PostgreSQL service. The requested #232 reset, migration, seed and sign-in evidence remains pending until an approved isolated database path or supported schema-scoped harness is available. Do not write to Supabase or claim T-65 database evidence without that.
 
 T-65 records are required only for runs cited as evidence in a pull request, story completion, or demo. Each record is a new immutable file under docs/testing/runs/; follow its README and template.
 
