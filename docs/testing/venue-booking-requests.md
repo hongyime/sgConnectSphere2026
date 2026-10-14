@@ -14,34 +14,29 @@ This is a partial implementation, not evidence that E06-S03 is Done.
   queries. Anonymous, inactive, locked and other-role users cannot read it.
   Another Coordinator receives 404 for an unassigned event. Responses are private
   and not cached. Other HTTP methods receive 405; there is no booking write API.
-- `prepareBookingRequest` validates an active venue, assigned Coordinator,
-  Approved/Planning event, booking period contained in the event, optional trimmed
-  purpose (80 characters) and optional positive integer headcount. Headcount
-  overrides event attendance for assessment criteria; layout, accessibility and
-  facilities use recorded event requirements. Client identity/status fields are
-  ignored. This helper neither reserves nor writes anything.
-- A controlled `VenueBookingRequestForm` is tested but deliberately not mounted.
-  It allows advisory assessment failures without disabling review. It does not
-  pretend to submit or persist a request.
+- Following Bl0oper's PR #256 review, unused preparation/validation helpers and
+  the unmounted request form were removed. They belong in the submission PR
+  alongside the workflow that actually uses them.
+- CI now runs `test:venue-booking-requests:db` explicitly in
+  `.github/workflows/application-checks.yml` using its disposable PostgreSQL service.
 
 The read path covers the status-display portion of TC_E06S03_05. It is an
 event-scoped list, not the workbook's all-events "My Booking Requests" journey.
-Existing submission scaffolds remain deferred. Preparation tests do not prove
-that Pending requests can actually be created.
+Existing submission scaffolds remain deferred. No Pending creation is implemented or claimed.
 
 ## Integration still required
 
 | Dependency | Remaining work |
 | --- | --- |
 | #231 / E05-S05 buffers, shared booking contract | Integrate buffered occupancy and blocks, then the agreed 0014 exclusion/booking-field migration. No migration is added here. |
-| #245 / E06-S05 holds | Shared direct-request/hold-conversion transaction, locking and expiry race tests. Holds-only migration 0013 is already merged through #246. |
+| E06-S05 holds (#245 merged) | Integrate the existing holds workflow with future submission and test conversion/expiry races. Preserve its merged code and tests. |
 | E06-S03 submission | Persist Pending request and requester/purpose/headcount; atomic Approved-to-Planning, audit and notification/outbox writes; repeat/concurrent submission tests. |
 | Venue-to-staff relationship / E06-S04 | Resolve actual responsible staff, deliver request notices and expose advisory assessment to the decision workflow. Do not substitute decided_by or broadcast to all staff. |
 | E06-S04 primary venue | First-confirmed primary selection and confirmed-only replacement follow the owning decision workflow. |
 
-The future submission service must call preparation inside its transaction,
+The future submission service must validate input inside its transaction,
 lock/revalidate the event, venue and hold, and perform final conflict protection.
-Preparation results are not authorization to commit. Raw request periods stay
+A read-only status result is not authorization to commit. Raw request periods stay
 inside the event; setup/turnaround occupancy may extend beyond it (T-78 and
 `docs/contracts/venue-bookings.md`). E06-S01/S02 matching logic is unchanged.
 
@@ -61,15 +56,13 @@ python scripts/check.py
 Database tests require `TEST_DATABASE_URL` pointing at a disposable local
 Postgres instance with pgcrypto/btree_gist installed. They create a unique schema
 in a transaction and roll it back; do not use the shared database. The focused
-test verifies SQL ownership, ordering, historical visibility and read-only
-preparation against base-schema fixtures. It does not exercise future buffer or
+test verifies SQL ownership, ordering, historical visibility against base-schema fixtures. It does not exercise future buffer or
 hold-conversion migrations. Browser tests intercept the API; they are not a real
 database submission journey or a human manual run.
 
-New backend service/handler and frontend API/screen/form have measured 100%
-unit statement, branch, function and line coverage. Existing dispatch and route
-wiring are typechecked/built and the frontend navigation is exercised; this does
-not claim 100% coverage of the entire existing API router or application.
+Historical test records describe the original foundation, including helpers
+subsequently removed in review. The 14 October review record describes the
+remaining read-only code and current checks. No human manual run is claimed.
 
 ## Source discrepancies
 

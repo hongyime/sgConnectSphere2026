@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { listBookingRequests, prepareBookingRequest, validateBookingRequestInput } from '../src/modules/venueBooking/bookingRequests.js';
+import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import { createBookingRequestsHandler } from '../src/modules/venueBooking/bookingRequestsHandler.js';
-import { assessEventVenue } from '../src/modules/venueBooking/suitability.js';
 import { AccessError, type Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { VercelResponse } from '../src/vercel.js';
@@ -22,28 +21,6 @@ function repository(overrides = {}, assigned = true) {
   return { query, calls };
 }
 
-test('booking validation normalizes dates, trims optional purpose and whitelists client input', () => {
-  const result = validateBookingRequestInput({ ...input, purpose: ' Breakout A ', headcount: 80, role: 'venue_staff', requested_by: 'forged', status: 'confirmed', is_primary: true });
-  assert.deepEqual(result.input, { ...input, starts_at: '2027-01-15T01:00:00.000Z', ends_at: '2027-01-15T10:00:00.000Z', purpose: 'Breakout A', headcount: 80 });
-  assert.equal(validateBookingRequestInput({ ...input, purpose: '  ' }).input?.purpose, null);
-  assert.equal(validateBookingRequestInput(input).input?.headcount, null);
-  assert.equal(validateBookingRequestInput({ ...input, purpose: 'a'.repeat(80), headcount: 2147483647 }).errors, undefined);
-});
-
-test('booking validation rejects malformed IDs, dates, reversed periods and non-integer headcounts', () => {
-  for (const body of [null, [], 'invalid', {}]) assert.ok(validateBookingRequestInput(body).errors);
-  for (const value of ['bad', 1, null]) assert.ok(validateBookingRequestInput({ ...input, event_id: value }).errors?.event_id);
-  assert.ok(validateBookingRequestInput({ ...input, venue_id: 'bad' }).errors?.venue_id);
-  for (const value of ['2027-01-15T09:00:00', '2027-02-30T09:00:00Z', '2027-13-01T09:00:00Z', '2027-01-15T24:00:00Z', '2027-01-15T09:00:00+99:00', 12]) {
-    assert.ok(validateBookingRequestInput({ ...input, starts_at: value }).errors?.starts_at);
-  }
-  assert.ok(validateBookingRequestInput({ ...input, ends_at: 'bad' }).errors?.ends_at);
-  for (const ends_at of [input.starts_at, '2027-01-15T08:59:59+08:00']) assert.ok(validateBookingRequestInput({ ...input, ends_at }).errors?.ends_at);
-  for (const headcount of [0, -1, 1.5, '80', true, {}, NaN, Infinity, 2147483648]) assert.ok(validateBookingRequestInput({ ...input, headcount }).errors?.headcount);
-  assert.ok(validateBookingRequestInput({ ...input, purpose: 5 }).errors?.purpose);
-  assert.ok(validateBookingRequestInput({ ...input, purpose: 'a'.repeat(81) }).errors?.purpose);
-});
-
 test('TC_E06S03_05: assigned Coordinator reads own booking statuses by event code without writes', async () => {
   const repo = repository();
   const result = await listBookingRequests(repo.query, actor, 'EVT-1');
@@ -53,70 +30,18 @@ test('TC_E06S03_05: assigned Coordinator reads own booking statuses by event cod
   assert.ok(repo.calls[1].includes('ORDER BY b.created_at DESC, b.id DESC'));
 });
 
-test('read and preparation reject anonymous, inactive, locked and wrong-role users', async () => {
+test('read reject anonymous, inactive, locked and wrong-role users', async () => {
   for (const user of [undefined, { ...actor, isActive: false }, { ...actor, failedLoginCount: 5 }, { ...actor, role: 'venue_staff' as const }]) {
     const query: Query = async () => { throw new Error('Must reject before database read'); };
     await assert.rejects(listBookingRequests(query, user, 'EVT-1'), { status: user ? 403 : 401 });
-    await assert.rejects(prepareBookingRequest(query, user, input), { status: user ? 403 : 401 });
   }
 });
 
-test('read/preparation refuse another Coordinator or unassigned event without loading bookings', async () => {
+test('read refuse another Coordinator or unassigned event without loading bookings', async () => {
   const repo = repository({}, false);
   await assert.rejects(listBookingRequests(repo.query, actor, 'EVT-OTHER'), { status: 404, message: 'Event not found.' });
-  await assert.rejects(prepareBookingRequest(repo.query, actor, { ...input, coordinator_id: actor.id }), { status: 404 });
-  assert.equal(repo.calls.length, 2);
+  assert.equal(repo.calls.length, 1);
   for (const identifier of ['', 'x'.repeat(161)]) await assert.rejects(listBookingRequests(repo.query, actor, identifier), { status: 400 });
-});
-
-test('preparation uses recorded requirements and optional booking headcount in Approved/Planning only', async () => {
-  for (const status of ['approved', 'planning']) {
-    const result = await prepareBookingRequest(repository({ status }).query, actor, { ...input, headcount: 80, attendance: 1, accessibility: [] });
-    assert.equal(result.requested_by, actor.id);
-    assert.equal(result.criteria?.attendance, 80);
-    assert.equal(result.criteria?.capacity, 80);
-    assert.deepEqual(result.criteria?.accessibility, ['ramp']);
-    assert.deepEqual(result.criteria?.facilities, ['wifi']);
-    assert.equal(result.criteria?.layout, 'theatre');
-  }
-  const fallback = await prepareBookingRequest(repository({ layout_id: null }).query, actor, input);
-  assert.equal(fallback.criteria?.attendance, 150);
-  assert.equal(fallback.criteria?.layout, '');
-  assert.equal(fallback.input?.headcount, null);
-  for (const status of ['draft', 'under_review', 'confirmed', 'completed', 'cancelled']) {
-    await assert.rejects(prepareBookingRequest(repository({ status }).query, actor, input), { status: 409 });
-  }
-});
-
-test('preparation validates contained windows including exact boundaries and missing event attendance', async () => {
-  assert.ok((await prepareBookingRequest(repository().query, actor, input)).input);
-  assert.ok((await prepareBookingRequest(repository().query, actor, { ...input, starts_at: '2027-01-15T14:00:00+08:00', ends_at: '2027-01-15T16:00:00+08:00' })).input);
-  for (const change of [{ starts_at: '2027-01-15T08:59:59+08:00' }, { ends_at: '2027-01-15T18:00:01+08:00' }]) {
-    assert.ok((await prepareBookingRequest(repository().query, actor, { ...input, ...change })).errors?.booking_range);
-  }
-  assert.ok((await prepareBookingRequest(repository().query, actor, {})).errors);
-  await assert.rejects(prepareBookingRequest(repository({ expected_attendance: 0 }).query, actor, input), { status: 409 });
-  for (const change of [{ starts_at: 'bad' }, { ends_at: 'bad' }, { ends_at: input.starts_at }]) {
-    await assert.rejects(prepareBookingRequest(repository(change).query, actor, input), { status: 409 });
-  }
-});
-
-test('preparation refuses missing or inactive venues', async () => {
-  const repo = repository();
-  const query: Query = (sql, values) => sql.includes('FROM venues WHERE') ? Promise.resolve({ rows: [] }) : repo.query(sql, values);
-  await assert.rejects(prepareBookingRequest(query, actor, input), { status: 404, message: 'Active venue not found.' });
-});
-
-test('prepared booking criteria can produce an advisory unsuitable assessment without creating a booking', async () => {
-  const repo = repository();
-  const prepared = await prepareBookingRequest(repo.query, actor, { ...input, headcount: 200 });
-  const assessment = assessEventVenue({ id: input.venue_id, name: 'Hall', location: 'Central', max_capacity: 500, available: true,
-    opens_at: '08:00', closes_at: '22:00', layouts: [{ id: 'theatre', label: 'Theatre', capacity: 100 }], accessibility: [], facilities: [] },
-  prepared.criteria!, { layouts: [], accessibility: [], facilities: [] });
-  assert.equal(assessment.suitable, false);
-  assert.equal(assessment.advisory, true);
-  assert.match(assessment.mismatches.join(' '), /required 200/);
-  assert.equal(repo.calls.length, 2);
 });
 
 test('booking-list HTTP handler authenticates, prevents caching, refuses writes and hides internal errors', async () => {

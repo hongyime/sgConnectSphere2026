@@ -24,3 +24,7 @@ Keep E06-S03 preparation separate from committing authorization: future callers 
 ## PR 256 conflict resolution - 13 October
 
 Merged main c9de13f (Week 9 decisions/catalogue). Only docs/testing/tc-coverage.md conflicted: regenerated from merged catalogue and branch tests, retaining both. No application or migration conflicts. PR #256 exists as a draft; user requested conflict resolution. Application code unchanged by this merge.
+
+## Bl0oper review - 14 October
+
+Merged main efd8e3b, preserving hold tests in package.json and regenerating coverage. Removed unused preparation/validation and form, including their tests; current scope is read-only booking status. Added explicit DB CI step. Holds #245 is merged. Earlier implementation/coverage notes are historical. Current checks: 4 backend (100% read modules coverage), 8 frontend, 4 browser, 1 local PostgreSQL, typecheck/build pass. Human manual verification remains pending. Postplan and refreshed PR evidence prepared.

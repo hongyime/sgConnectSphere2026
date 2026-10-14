@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client } from 'pg';
-import { listBookingRequests, prepareBookingRequest } from '../src/modules/venueBooking/bookingRequests.js';
+import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 
@@ -45,13 +45,6 @@ test('TC_E06S03_05: PostgreSQL request list isolates assigned events and preserv
     // Historical bookings remain visible after a venue retires.
     await client.query('UPDATE venues SET is_active=false WHERE id=$1', [venue]);
     assert.equal((await listBookingRequests(query, user, event)).bookings.length, 5);
-    const request = { event_id: event, venue_id: venue, starts_at: '2027-01-15T14:00:00+08:00', ends_at: '2027-01-15T16:00:00+08:00', headcount: 80 };
-    await assert.rejects(prepareBookingRequest(query, user, request), { status: 404 });
-    await client.query('UPDATE venues SET is_active=true WHERE id=$1', [venue]);
-    const prepared = await prepareBookingRequest(query, user, { event_id: event, venue_id: venue, starts_at: '2027-01-15T14:00:00+08:00', ends_at: '2027-01-15T16:00:00+08:00', headcount: 80 });
-    assert.equal(prepared.criteria?.attendance, 80);
-    assert.equal((await client.query('SELECT count(*)::int AS n FROM venue_bookings')).rows[0].n, 6);
-    assert.equal((await client.query('SELECT status FROM events WHERE id=$1', [event])).rows[0].status, 'approved');
     await client.query('UPDATE events SET coordinator_id=NULL WHERE id=$1', [event]);
     await assert.rejects(listBookingRequests(query, user, event), { status: 404 });
   } finally {

@@ -1,9 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
-import { useState } from 'react';
 import { VenueBookingRequests } from './VenueBookingRequests';
-import { VenueBookingRequestForm, type BookingRequestDraft } from './VenueBookingRequestForm';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const data = { event: { id: 'event', event_code: 'EVT-1', title: 'Assigned Event', status: 'planning' }, bookings: [
@@ -52,32 +50,4 @@ test('route change ignores a late response for the previous event', async () => 
   expect(await screen.findByText('New event')).toBeInTheDocument();
   await act(async () => resolve({ ok: true, json: async () => data }));
   expect(screen.queryByText('Main Hall')).not.toBeInTheDocument();
-});
-
-const draft: BookingRequestDraft = { starts_at: '2027-01-15T09:00', ends_at: '2027-01-15T18:00', purpose: '', headcount: '' };
-test('request form preserves optional fields, date edits and advisory failures when reviewed', () => {
-  const onReview = vi.fn();
-  function Form() {
-    const [value, onChange] = useState(draft);
-    return <VenueBookingRequestForm value={value} onChange={onChange} onReview={onReview} expectedAttendance={150} mismatches={['Capacity is too low.']} />;
-  }
-  render(<Form />);
-  expect(screen.getByText(/Leave blank to use the event attendance of 150/)).toBeInTheDocument();
-  expect(screen.getByText('Capacity is too low.')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Review request' })).toBeEnabled();
-  fireEvent.change(screen.getByLabelText('Purpose (optional)'), { target: { value: 'Breakout A' } });
-  fireEvent.change(screen.getByLabelText('Headcount (optional)'), { target: { value: '80' } });
-  fireEvent.change(screen.getByLabelText('Booking start (required)'), { target: { value: '2027-01-15T14:00' } });
-  fireEvent.change(screen.getByLabelText('Booking end (required)'), { target: { value: '2027-01-15T16:00' } });
-  fireEvent.submit(screen.getByRole('form'));
-  expect(onReview).toHaveBeenCalledWith({ starts_at: '2027-01-15T14:00', ends_at: '2027-01-15T16:00', purpose: 'Breakout A', headcount: '80' });
-});
-test('request form shows server validation and busy state prevents duplicate reviews', () => {
-  const onReview = vi.fn();
-  render(<VenueBookingRequestForm value={draft} onChange={vi.fn()} onReview={onReview} expectedAttendance={150} busy error="Review failed."
-    errors={{ starts_at: ['Bad start.'], ends_at: ['Bad end.'], purpose: ['Too long.'], headcount: ['Invalid count.'], booking_range: ['Outside event.'] }} />);
-  for (const text of ['Review failed.', 'Bad start.', 'Bad end.', 'Too long.', 'Invalid count.', 'Outside event.']) expect(screen.getByText(text)).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: /Reviewing request/ })).toBeDisabled();
-  fireEvent.submit(screen.getByRole('form'));
-  expect(onReview).not.toHaveBeenCalled();
 });
