@@ -6,8 +6,8 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 - `origin/main` remains `8f246ae`; this owner-only branch is `chore/agents-consolidate-week9-state` and PR #259 is open and mergeable. Required check and review status are on the live PR; teammate approval is required before merge.
 - Updated `.agents/STATE.md` and `.agents/JOURNAL.md` in the owner consolidation PR. The Sprint 3 audit now records 10 incomplete parent stories and 19 incomplete subtasks; the previous state snapshot undercounted one subtask group.
-- Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. Neither is a confirmed carryover before the Sprint 3 close on 17 October.
-- Jira now reflects SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
+- Live parent and subtask evidence confirms Bryan owns SCRUM-44 and SCRUM-176. SCRUM-176 is In Progress because linked PR #247 has changes requested; neither issue is a confirmed carryover before Sprint 3 closes on 17 October.
+- Jira now reflects SCRUM-176 In Progress (#247), SCRUM-177 In Review (#248), SCRUM-178 In Review (#217), SCRUM-179 In Progress (#230), and SCRUM-182 In Review (#258). SCRUM-176's status correction was noted in Jira without changing owner, estimate, sprint or scope. SCRUM-177's acceptance criteria were updated to explicitly preserve ignored user files/directories during cleanup except recognized dependency symlinks/junctions. SCRUM-141 was aligned with accepted T-69/ADR-006 and T-84; its exact cadence remains a product-owner decision. SCRUM-44 now blocks SCRUM-142 in Jira.
 - PR #217's Amareet review request to remove the already-merged #240 handoff is satisfied. Its duplicate task handoff was consolidated into the original task-start file; head `a6a8b48` has all required checks passing, no formal approval, and an optional Vercel failure.
 - PR #257 head `7609866` carries the Week 9 Jira reconciliation plus SCRUM-50/SCRUM-60 baseline corrections; all six checks pass and peer approval remains pending. The two assigned task branches now include type-only starter contracts; implementation waits on the dependencies and Sprint 3 scope recorded above.
 - PR descriptions #217, #230 and #248 report current heads/check status and remaining review blockers. PR #230 is at `9131d0c` with all six checks passing; its corrected case data/workbook are present, Xiang Ying's change request remains on `cb0406a`, and fresh peer review is still required. PR #248 is at `ddd3743` with all reported checks passing; it now guards ignored user files during cleanup, and Amareet's prior findings are fixed but still need re-review. PR #217 is green on required checks; its optional Vercel failure remains non-blocking. All three PRs still lack required teammate approval.
@@ -17,6 +17,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 ## Not done / next step
 
+- #247's requested coverage inventory refresh is present and all reported checks pass, but GitHub still records Bryan's CHANGES_REQUESTED review. A human owner re-review/approval is still required; do not self-approve via tooling.
 - Await the requested peer reviews on #217, #230 and #248; do not self-approve.
 - Resolve the product owner's exact SCRUM-141 cadence choice before changing scheduler configuration or deployment secrets.
 - Merge production run record PR #260 after teammate review; its required checks pass.
@@ -27,6 +28,7 @@ Goal: refresh the owner-maintained STATE and JOURNAL from merged Week 9 handoffs
 
 - `git fetch origin --prune` and `git pull --ff-only`: `origin/main` remained `8f246ae`.
 - `PATH=.venv-tools/bin:$PATH python scripts/check.py` — PASS at base `368196d`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-082536-bryanseah234-tooling.md`.
+- `PATH=.venv-tools/bin:$PATH python scripts/check.py` — PASS at base `60c35db`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-083105-bryanseah234-tooling.md`.
 - `PATH=.venv-tools/bin:$PATH python scripts/check.py` — PASS at base `d09797f`; repository hygiene and all 87 tooling tests passed. T-65 record: `docs/testing/runs/20261014-080822-bryanseah234-tooling.md`.
 - `python3 scripts/agent_handoffs.py` listed the current task handoffs.
 - Live Jira board parent data, Jira Subtask Sprint-field data, targeted issue records, and GitHub PR heads/reviews/checks were read-only and checked on 2026-10-14.

@@ -10,7 +10,7 @@ Current state refreshed on **2026-10-14** from `origin/main` at `8f246ae`, live 
 
 There are 21 parent-story issues: 11 Done and 10 incomplete. Board search omits subtasks, so the subtask inventory was checked separately against each issue's Sprint field.
 
-- Bryan: SCRUM-44 (E05-S05, In Review; former PR #231 closed, replacement #261 pending) and SCRUM-176 (E03-S11, To Do; PR #247 has changes requested).
+- Bryan: SCRUM-44 (E05-S05, In Review; former PR #231 closed, replacement #261 pending) and SCRUM-176 (E03-S11, In Progress; PR #247 has changes requested).
 - Ji Ning: SCRUM-46 (In Review), SCRUM-47 (In Progress), and SCRUM-75 (In Progress; carried from Sprint 2).
 - Le Xin: SCRUM-48 (In Progress) and SCRUM-50 (To Do).
 - Amareet: SCRUM-49 (In Progress).
@@ -32,7 +32,7 @@ SCRUM-142 is linked as blocked by SCRUM-44, whose replacement implementation PR 
 
 - Canonical Markdown was merged before downstream Jira reconciliation, following `docs/source-of-truth.md`.
 - Jira follow-up PR #257 records the Week 9 reconciliation. SCRUM-180 (E02-S07) and SCRUM-181 (E07-S08) are To Do outside Sprint 3, without points or assignees. Twelve Week 9 descriptions were refreshed, and SCRUM-50/SCRUM-60 were corrected to the already-merged Week 7 Sprint 3 baseline; status, owners, estimates and sprint assignments were preserved.
-- SCRUM-177 (PR #248) is In Review; SCRUM-178 (PR #217) is In Review; SCRUM-179 (PR #230) remains In Progress while its change request is open.
+- SCRUM-176 is now In Progress to match the open, changes-requested PR #247; Jira records the 2026-10-14 status correction. SCRUM-177 (PR #248) is In Review; its acceptance criteria now explicitly preserve ignored user files and directories during cleanup, except recognized dependency symlinks/junctions. SCRUM-178 (PR #217) is In Review; SCRUM-179 (PR #230) remains In Progress while its change request is open.
 - SCRUM-182 is a technical enabler for the migration CLI. It is In Review and implemented on PR #258, which adds the one-migration-at-a-time selector. Its no-selector behavior remains all-pending. The Jira description now reflects the verified production ledger: the selector was not needed to apply the sole pending 0013, but remains a future safety improvement.
 - SCRUM-141 was reconciled to the accepted existing outbox-relay decision in T-69/ADR-006; T-84 supplies per-hold warning timing. Jira's old GitHub Actions/15-minute wording was removed. The repository currently schedules the existing Vercel relay daily; the product owner has been asked to decide whether to retain that cadence or record a different one. No scheduler or deployment secret was added or changed.
 
@@ -66,7 +66,7 @@ All PRs below target main. “Required checks” means `repository-checks`, `pr-
 - #251 Dependabot Actions updates: mergeable; approved; required checks pass. #250 tooling updates: mergeable; approved; required checks pass.
 - #249 SCRUM-55 equipment unavailable: conflicting; review required; reported checks pass.
 - #248 SCRUM-177 worktree hygiene: mergeable at `ddd3743`; all reported checks pass and peer re-review is required. The branch fixes Amareet's review findings and now also refuses to remove ignored user files, with a regression test. Auto-merge is enabled but waits for approval.
-- #247 SCRUM-176 registration setup: mergeable; changes requested; reported checks pass.
+- #247 SCRUM-176 registration setup: mergeable; reported checks pass; the coverage inventory requested in Bryan's review was regenerated on the branch. GitHub still records CHANGES_REQUESTED, so owner re-review remains necessary before merge.
 - #245 SCRUM-138 tentative holds: open at 84ffaa2; conflict-free/mergeable against current main, all required checks pass, and fresh peer approval is required. The production dependency is satisfied.
 - #232 Coordinator Lead/Safety Officer roles: mergeable; changes requested; reported checks pass.
 - #231 SCRUM-44 venue buffers: closed after the source branch rename; its description points to replacement #261.
