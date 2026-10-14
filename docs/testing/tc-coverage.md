@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 351 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 354 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **164** (46.7%)
-  - Real-database (`.integration.test` / `.db.test`): **22**
+- Total test cases: **354**
+- Automated (explicit TC_ID in an active test title): **167** (47.2%)
+  - Real-database (`.integration.test` / `.db.test`): **25**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **141**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.5%)
-- No test yet (no test file mentions the TC_ID): **87** (24.8%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.2%)
+- No test yet (no test file mentions the TC_ID): **87** (24.6%)
 
 ## Coverage by epic
 
@@ -24,14 +24,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E04 | 5 | 0 | 0 | 5 |
 | E05 | 37 | 24 | 0 | 13 |
 | E06 | 38 | 15 | 16 | 7 |
-| E07 | 34 | 27 | 3 | 4 |
+| E07 | 37 | 30 | 3 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
 | E10 | 29 | 0 | 15 | 14 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **164** | **100** | **87** |
+| **Total** | **354** | **167** | **100** | **87** |
 
 ## Case-by-case status
 
@@ -296,6 +296,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ❌ none | — |
 | `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ❌ none | — |
 | `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ❌ none | — |
+| `TC_E07S09_01` | E07-S09 | Stock reduction includes overlapping withdrawals | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_01 stock 10 with 4 withdrawn and 5 reserved: reducing to 8 flags the reservation and notifies once |
+| `TC_E07S09_02` | E07-S09 | Withdrawal boundaries and peak demand are respected | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_02 catalogue stock reduction:  |
+| `TC_E07S09_03` | E07-S09 | Withdrawal-aware stock edit rolls back on outbox failure | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_03 withdrawal-aware stock edit rolls back stock, review flags and notifications when outbox persistence fails |
 
 ### E08
 
