@@ -272,3 +272,38 @@ Given Technical Support Staff are assigned to support an Event When Sessions are
 - Reserve equipment against the requested Session and check its period
 - Reject Session identifiers belonging to another Event
 - Keep technical-support staff assignment event-level
+
+## E07-S09 — Preserve reservation warnings when stock reductions overlap withdrawals
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-07, C-20
+- **Owner**:
+
+Follow-up to completed E07-S01 (#214), raised during E07-S05 integration review (#249). Keep SCRUM-51 Done. Planning, estimate and Jira creation remain team follow-ups after this canonical entry merges.
+
+### User story
+
+As a Technical Support Staff member, I want catalogue stock reductions to account for dated equipment withdrawals so that reservations which no longer fit are flagged and their Coordinators are notified.
+
+### Acceptance criteria
+
+#### Scenario 1 — Reduced usable stock flags reservations
+
+Given an item has total stock 10, four units withdrawn and five units reserved for the same future period When I reduce total stock to 8 Then the save succeeds, the reservation remains reserved but is marked for review, and its assigned active Coordinator receives one notification and an outbox record
+
+#### Scenario 2 — Only simultaneous remaining demand counts
+
+Given reservations and dated withdrawals have different or adjacent periods When I reduce total stock Then only simultaneous demand in each reservation's remaining period is compared against the new stock; a withdrawal starting midway through the reservation is included, non-overlapping withdrawal quantities are not summed, and exact fits are not flagged
+
+#### Scenario 3 — Notification failure rolls back the edit
+
+Given a stock reduction would flag a reservation because of a withdrawal When notification persistence fails Then the stock change, new review flag and notification all roll back
+
+### Checklist
+
+- Include dated withdrawals and their start boundaries in catalogue capacity checks
+- Preserve half-open adjacency and ignore ended demand
+- Keep reservations intact while flagging shortages
+- Notify each affected assigned active Coordinator once per stock edit
+- Roll back stock, flags and notification/outbox writes together on failure

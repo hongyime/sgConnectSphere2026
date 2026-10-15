@@ -11,7 +11,7 @@ TYPES = "feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert"
 TITLE = re.compile(rf"(?:{TYPES})(?:\([a-z0-9][a-z0-9-]*\))?!?: \S.*")
 BRANCH = re.compile(
     r"(?:feature|fix|chore|docs|test|refactor|ci)/"
-    r"(?:[a-z0-9]+(?:-[a-z0-9]+)*|[A-Z][A-Z0-9]+-\d+(?:-[a-z0-9]+)*)"
+    r"(?:[a-z0-9]+(?:-[a-z0-9]+)*|[A-Z][A-Z0-9]*-\d+(?:-[a-z0-9]+)*)"
 )
 
 # Sections required in a human-authored PR body, in the order the template

@@ -9,6 +9,7 @@ import type { VercelRequest, VercelResponse } from '../../vercel.js';
 import { currentUser, databasePool, query, respondWithResult } from '../eventVisibility/runtime.js';
 import { AccessError } from '../eventVisibility/service.js';
 import { getEquipment, listEquipment, retireEquipment, saveEquipment } from './catalogue.js';
+import { listUnavailability, markUnavailable, returnToService } from './unavailability.js';
 export function createEquipmentHandler(deps: {
   authenticate: (request: VercelRequest) => Promise<AuthenticatedUser>;
   query: Query; pool: () => Pool; allowedOrigin: typeof isAllowedOrigin;
@@ -27,7 +28,10 @@ export function createEquipmentHandler(deps: {
       }
       if (request.method === 'GET') {
         const id = new URL(request.url ?? '/', 'http://localhost').searchParams.get('id');
-        return { status: 200, body: id ? { equipment: await getEquipment(deps.query, user, id) } : { equipment: await listEquipment(deps.query, user) } };
+        if (!id) return { status: 200, body: { equipment: await listEquipment(deps.query, user) } };
+        // E07-S05: the item's current and future unavailable periods.
+        const equipment = await getEquipment(deps.query, user, id);
+        return { status: 200, body: { equipment: { ...equipment, unavailability: await listUnavailability(deps.query, id) } } };
       }
       if (!deps.allowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       const body = request.body as Record<string, unknown> | undefined;
@@ -36,7 +40,10 @@ export function createEquipmentHandler(deps: {
         if (typeof body.id !== 'string' || !body.id) throw new AccessError(400, 'An equipment id is required.');
         return body.action === 'retire' ? retireEquipment(deps.pool(), user, body.id) : saveEquipment(deps.pool(), user, body, body.id);
       }
-      throw new AccessError(400, 'Choose create, update or retire.');
+      // E07-S05 writers.
+      if (body?.action === 'markUnavailable') return markUnavailable(deps.pool(), user, body.id, body);
+      if (body?.action === 'returnToService') return returnToService(deps.pool(), user, body);
+      throw new AccessError(400, 'Choose create, update, retire, markUnavailable or returnToService.');
     });
   }
 

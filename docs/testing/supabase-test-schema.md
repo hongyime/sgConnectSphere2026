@@ -217,20 +217,11 @@ as it is, on purpose:
 The Supabase `test` schema exists to remove a local prerequisite for
 developers, not to replace CI's database.
 
-## On Docker
+## Local database runtime
 
-Docker is not configured anywhere in this repository, and
-`docs/contributing/seed-data-convention.md` says so explicitly. When a
-contributor or an AI agent reads "requires a disposable PostgreSQL 17 database
-on loopback" and reaches for a container, that is a reasonable reading of the
-instruction rather than a mistake — a container is one legitimate way to obtain
-loopback PostgreSQL. A native local install is another, and for
-`deactivation.integration.test.ts` the Supabase `test` schema is now a third.
+Docker Desktop is not part of the repository's local database-test workflow. Local database suites that need disposable data use a native PostgreSQL installation with a loopback TEST_DATABASE_URL. The existing Supabase test schema is a supported option only for deactivation.integration.test.ts, whose writes roll back in a transaction. It cannot safely replace a disposable database for reset, seed, or committing integration suites.
 
-Pick whichever suits your machine. What matters is that `TEST_DATABASE_URL`
-never points at a database whose loss would matter, and that no test writes to
-`public`.
-
+GitHub Actions provisions PostgreSQL service containers on its hosted runners. That CI service is managed by GitHub; local contributors and agents do not launch Docker Desktop for these tests. If native PostgreSQL is unavailable for a suite that requires a disposable database, arrange an approved isolated environment rather than writing to the shared Supabase database.
 ## References
 
 - `docs/bdr/B-team-decisions.md` — T-59, the original decision.
