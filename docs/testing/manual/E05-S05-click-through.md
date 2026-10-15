@@ -1,121 +1,96 @@
 # E05-S05 manual click-through: venue setup and turnaround buffers
 
-Manual acceptance script for SCRUM-161 / E05-S05 (venue setup and turnaround
-time buffers, under parent story SCRUM-44). Follows the format of
-[E06-S02](E06-S02-click-through.md) and the [T-65 recording rules](../runs/README.md).
-Source cases: [TC_E05S05_01–07](../cases/E05.md).
+Readiness and safe-environment notes for SCRUM-161 / E05-S05 (under parent
+story SCRUM-44). The canonical cases are
+[TC_E05S05_01–07](../cases/E05.md). This document is not evidence that those
+cases have been executed.
 
-This script verifies that venue buffers are stored, displayed, enforced in
-availability checks and calendar views, and that buffer changes that produce
-overlaps flag bookings without releasing them while notifying affected Coordinators.
+## Current readiness
 
----
+The current venue form does not expose setup-time or turnaround-time fields.
+Although the backend accepts and stores those fields, there is no supported
+browser interaction for changing them. The seeded database also does not
+contain the adjacent Orchid Hall bookings described in the cases; its seeded
+confirmed Orchid Hall booking is dated 6 October 2026. Do not claim the manual
+scenarios passed or improvise API/SQL changes as browser steps.
 
-## Prerequisites and Environment Setup
+Until the venue UI and suitable current booking fixtures exist, the following
+cases are blocked for this manual click-through:
 
-You can execute this script either on a local dev stack with a seeded database,
-or against the deployed preview/staging environment.
+| TC_ID | Manual status | Blocker |
+| --- | --- | --- |
+| TC_E05S05_01 | BLOCKED; not run | No venue-form controls to set or save either buffer. |
+| TC_E05S05_02 | BLOCKED; not run | No buffer controls and no suitable current confirmed booking fixture. |
+| TC_E05S05_03 | BLOCKED; not run | No buffer controls or seeded adjacent confirmed booking pair. |
+| TC_E05S05_04 | BLOCKED; not run | No supported browser flow to create the required prospective booking and set its buffer. |
+| TC_E05S05_05 | BLOCKED; not run | No supported browser flow for the required booking/block preconditions and buffer setting. |
+| TC_E05S05_06 | BLOCKED; not run | The venue form does not expose the values for this browser check. |
+| TC_E05S05_07 | BLOCKED; not run | No buffer controls and no suitable current booking fixture. |
 
-### Option A: Local Dev Stack (Recommended for reproducible test data)
+These statuses describe readiness only, not test outcomes. Do not create a
+manual T-65 run record for these cases unless a tester actually executes them.
+Do not change SCRUM-161's Done state; follow the team's rule for follow-up work
+on a Done story.
 
-1. **Terminal 1 (Backend API & Seeded DB)**:
-   ```bash
-   # Reset and seed the local database
-   npx tsx backend/src/database/cli.ts reset
-   # Start the local backend API
-   npm run dev --workspace backend
-   ```
-2. **Terminal 2 (Frontend UI)**:
-   ```bash
-   npm run dev --workspace frontend
-   ```
-   Open `http://127.0.0.1:5173` in your browser.
+## Safe local environment
 
-### Option B: Deployed Environment
-- Web Application: Use the live deployed URL or PR #261 Vercel preview:
-  `https://sgconnectsphere-jpggnmxnm-theprawnvercel.vercel.app`
-- Database: Ensure migrations `0011_venue_setup_turnaround_buffers.sql` and
-  `0016_venue_buffer_write_guard.sql` have been applied per
-  [`docs/ops/production-migrations.md`](../../ops/production-migrations.md).
+Do not use a live deployment, a production URL, or any database whose target is
+not positively identified as a local disposable database. A Vercel preview is
+not known to use a non-production database and is not an approved target for
+these scenarios.
 
-### Seeded Test Accounts (`backend/src/database/cli.ts`):
-- **Venue Staff A**: `venue_a@connectsphere.com` / `ValidPass123`
-- **Coordinator A**: `coord_a@connectsphere.com` / `ValidPass123`
-- **Coordinator B**: `coord_b@connectsphere.com` / `ValidPass123`
-- **Organiser A**: `organiser_a@clienta.com` / `ValidPass123`
+Use an already available native PostgreSQL service listening on loopback; do
+not start Docker Desktop for this workflow. In each backend terminal, set
+`LOCAL_DB` to that disposable database's connection URL. Before running a
+database command, verify that its hostname is `localhost`, `127.0.0.1`, or
+`::1` and that the database is dedicated to development/testing (for example,
+`connectsphere_dev_stack`). Do not reuse a shared or production `.env` value.
 
----
+The CLI `reset` command drops and recreates the `public` schema, then applies
+migrations and seeds data. It has a reset guard, but the guard also accepts a
+database name containing `dev` or `test`; independently verify the target host
+is loopback before running it. Never set `ALLOW_DATABASE_RESET` to bypass the
+guard. This documentation change did not run reset or seed any database.
 
-## Step-by-Step Test Procedure
+Only after the target is verified, initialize the disposable database and
+start the API and frontend in separate terminals:
 
-### Test 1: Record Buffers on a Venue (TC_E05S05_01, Scenario 1)
-1. Sign in as `venue_a@connectsphere.com`.
-2. Navigate to the **Venues** list and open **Orchid Hall**.
-3. Observe initial setup and turnaround values: defaults to `0` minutes and `0` minutes (TC_E05S05_06).
-4. Edit the venue: set **Setup time** to `30` minutes and **Turnaround time** to `45` minutes.
-5. Save the venue details.
-6. **Expected Outcome**:
-   - The venue detail shows Setup time `30 minutes` and Turnaround time `45 minutes`.
-   - Other unedited venues (e.g., Lotus Room) continue to show `0` and `0`.
+```bash
+# Terminal 1, from the repository root. Set LOCAL_DB in this terminal first.
+cd backend
+DATABASE_URL="$LOCAL_DB" npx tsx src/database/cli.ts reset
+# Keep this API process running in this terminal.
+DATABASE_URL="$LOCAL_DB" DATABASE_POOLER_URL='' APP_URL=http://127.0.0.1:5173 npx tsx src/dev.ts
+```
 
----
+```bash
+# Terminal 2, from the repository root.
+cd frontend
+npx vite --host 127.0.0.1 --port 5173 --strictPort
+```
 
-### Test 2: Calendar Shows Buffered Occupancy Window (TC_E05S05_02, Scenario 2 & 3)
-1. Sign in as `coord_a@connectsphere.com`.
-2. Ensure there is a Confirmed booking on Orchid Hall (e.g. from 10:00 to 12:00).
-3. Open the **Venue Calendar** for Orchid Hall on that date.
-4. **Expected Outcome**:
-   - The occupancy window spans from `09:30` to `12:45` (30m setup + 2h event + 45m turnaround).
-   - The `09:30–10:00` setup segment and `12:00–12:45` turnaround segment are visually distinguished from the core `10:00–12:00` event time.
-   - Status indicators (Free, Tentative, Confirmed, Blocked) remain distinct and clearly labeled.
+Open `http://127.0.0.1:5173`. If local setup or the disposable database cannot
+be verified, stop; do not substitute a deployed environment. Seeded account
+passwords are defined by `seedCredential` in
+`backend/src/database/cli.ts`; do not copy the literal credential into this
+guide.
 
----
+## Readiness required before manual execution
 
-### Test 3: Buffer Edit Creating Overlap Flags Booking Without Releasing (TC_E05S05_03, Scenario 4)
-1. Ensure Orchid Hall has two adjacent bookings:
-   - Booking A: 10:00–12:00 (Coordinator A).
-   - Booking B: 12:30–14:00 (Coordinator B).
-2. Sign in as `venue_a@connectsphere.com`.
-3. Increase Orchid Hall's Turnaround time from `0` to `45` minutes (so Booking A's buffered window now extends to `12:45`, overlapping Booking B's start at `12:30`).
-4. Save the venue.
-5. **Expected Outcome**:
-   - The save succeeds. The save feedback lists Booking A and Booking B as conflicting.
-   - Neither booking is cancelled or released from the venue.
-   - Booking B is flagged with `buffer_conflict` on the calendar.
-   - Coordinator B receives a notification indicating the venue buffer conflict.
+Before filling in case-specific browser steps, verify on the implementation
+branch that:
 
----
+1. The venue screen exposes supported controls for editing and saving both
+   buffer values.
+2. The local fixture or an approved browser flow supplies the required
+   confirmed bookings, event times and maintenance block, with the preconditions
+   matching the canonical cases.
+3. The specific test sequence states the starting value for every edit and
+   either restores state between cases or accounts for the value left by the
+   previous case. Do not assume a zero-minute starting value after another case
+   has set 45 minutes.
 
-### Test 4: Boundary & Adjacency Check (TC_E05S05_04, Scenario 6)
-1. With Orchid Hall set to 30m setup and 30m turnaround:
-   - Existing Booking: 10:00–12:00 (occupancy: 09:30–12:30).
-2. Attempt to create a prospective booking starting at `12:30` (with 30m setup, occupancy starts at 12:00 -> overlaps turnaround).
-3. Attempt to create a prospective booking whose buffered start is exactly at `12:30` (advertised start at `13:00` with 30m setup).
-4. **Expected Outcome**:
-   - Exact boundary touch (0-minute overlap) is accepted without conflict.
-   - Any overlap (even 1 minute) is blocked and flagged as conflicting.
-
----
-
-### Test 5: Maintenance Block Exemption (TC_E05S05_05, Scenario 5)
-1. Create a maintenance block on Orchid Hall from `08:00` to `10:00`.
-2. Request an event booking for `10:00` to `12:00` (setup time 30m starts at `09:30`, inside the block window).
-3. **Expected Outcome**:
-   - The booking is accepted; maintenance blocks compare against advertised event times rather than buffer windows.
-
----
-
-### Test 6: Search Availability Exclusion (TC_E05S05_07, Scenario 7)
-1. With Orchid Hall having a booking from 10:00 to 12:00 and turnaround 45m (occupied until 12:45):
-2. As Coordinator, search for venues available between `12:00` and `14:00`.
-3. **Expected Outcome**:
-   - Orchid Hall does not appear as available, because the prospective start at 12:00 clashes with the 12:45 turnaround completion.
-
----
-
-## Recording Evidence (T-65)
-
-After completing the manual run:
-1. Create an immutable session record under `docs/testing/runs/YYYYMMDD-HHmmss-<username>-frontend-e2e.md`.
-2. Follow `docs/testing/runs/TEMPLATE.md`.
-3. Record the observed outcomes, screenshots, and pass/fail status for each scenario.
+Once those prerequisites exist, record only observed results under T-65 using
+[`docs/testing/runs/README.md`](../runs/README.md) and the run-record template.
+For manual runs, include the actual result for every row. Do not mark this
+story complete or claim acceptance from this readiness document.
