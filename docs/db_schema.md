@@ -519,6 +519,31 @@ The ERD above describes the shared target schema. The checked-in migration 0001 
 - PR #232 proposes migration 0012_user_role_enum_additions.sql for the Week 7 roles. It is independent of booking-range persistence.
 - PR #245 merged migration 0013_tentative_venue_holds.sql (holds only). It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
 - Migration 0014, `0014_event_sessions.sql`, is assigned to SCRUM-183. It creates Sessions, backfills one Session per existing Event, and adds the `session_id` links and composite ownership foreign keys for venue bookings and equipment requests/reservations. E06 migrations consume these links and must not recreate them.
-- Migration 0015 is proposed as `0015_venue_bookings_contract.sql` (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, committed 0013, and 0014; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
+- Migration 0019 is proposed as `0019_venue_bookings_contract.sql` (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, committed 0013, and 0014; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
 
-Migration 0013 is merged; migration 0014 is the Session foundation; migration 0015 remains the shared venue contract proposal. Do not add a second E06-S03 migration for fields or constraints in 0015. Safety review and venue-block schema work remains with its owning stories; legacy Coordinator reassignment requests remain read-only history under T-83, with any removal/deprecation planned separately.
+Migration 0013 is merged; migration 0014 is the Session foundation; migration 0019 remains the shared venue contract proposal. Do not add a second E06-S03 migration for fields or constraints in 0019. Safety review and venue-block schema work remains with its owning stories; legacy Coordinator reassignment requests remain read-only history under T-83, with any removal/deprecation planned separately.
+
+### E05-S05 buffer review guard (PR #261)
+
+Migration `0016_venue_buffer_write_guard.sql` adds `venue_bookings.buffer_conflict` (boolean, default false) and an active-booking write trigger. The flag preserves lifecycle status; it does not release occupancy. The trigger serializes on the venue and checks buffered overlaps for insert/range/status/expiry changes, with advertised-time checks against maintenance blocks. Buffer-only flag updates remain allowed. The Session foundation uses 0014; 0019 remains reserved for the shared booking-contract migration. See `docs/contracts/venue-bookings.md` for the compatibility requirement when adding stored occupancy/exclusion rules.
+
+### E06-S03 Sprint 3 submission increment (15 October 2026)
+
+The working `0019_venue_bookings_contract.sql` adds nullable purpose, headcount,
+requester/time, submission key and JSONB submission payload/advisory snapshot,
+plus a default-false primary flag with confirmed-only and per-event uniqueness
+checks. Legacy rows remain valid. It does not add the target `occupancy_range`,
+layout confirmation or configured-hold columns, nor replace the 0016 guard.
+Occupancy continues to use current venue buffers via `occupied_window()`.
+The older 0012 dependency above is not required for this increment. Migration
+ownership still needs agreement with E06-S04; no production application is
+claimed. See the current contract addendum for event-based Sprint 3 compatibility
+and the staff-routing/decision integrations that remain pending.
+
+
+E06-S03 review update (15 October): the booking-columns migration is now **0019**,
+after reserved 0017 safety review and #271?s planned 0018 staff assignments.
+It also adds nullable `replaces_booking_id` (self-FK, delete restricted), a
+non-self check and a unique partial index allowing one replacement per rejection.
+The service enforces same-event Rejected provenance and the suggested venue.
+Original Rejected rows are preserved; successful switches create Pending rows.

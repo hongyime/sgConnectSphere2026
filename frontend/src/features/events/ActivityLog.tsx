@@ -16,6 +16,8 @@ export type ActivityEntry = {
 
 type Row = ActivityEntry & { key: string };
 
+const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
+
 const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
 
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit.
@@ -24,6 +26,14 @@ export function describeChange(entry: ActivityEntry) {
   if (entry.field_changed === 'status') {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
     return entry.old_value ? `${statusLabel(entry.old_value)} → ${to}` : to;
+  }
+  // E06-S05 holds store the expiry (or the booking id) as the value; show the
+  // expiry as a date and never the internal id.
+  if (entry.field_changed === 'venue_booking') {
+    const when = (value: string | null) => (value && ISO_TIME.test(value) ? formatDate(value, true) : null);
+    const before = when(entry.old_value), after = when(entry.new_value);
+    if (after) return before ? `Hold expiry: ${before} → ${after}` : `Hold expires ${after}`;
+    return 'Venue booking';
   }
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;

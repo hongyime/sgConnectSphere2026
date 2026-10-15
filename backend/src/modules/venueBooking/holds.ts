@@ -14,8 +14,7 @@
 // Data: venue_bookings rows with status 'tentative' and expires_at (0013).
 // "Live" means status = 'tentative' AND expires_at > now(), so a hold stops
 // counting the instant it expires, whether or not the job has run yet.
-// Scenario 5 (the venue's setup and turnaround buffer) follows once E05-S05's
-// occupied_window() lands (#231).
+// Scenario 5: all writes use the shared occupied_window() calculation (E05-S05).
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
@@ -23,6 +22,9 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { EXPIRED, holdsVenue, formatSgt } from './bookingShared.js';
+export { holdsVenue, formatSgt } from './bookingShared.js';
+import { submitBooking } from './bookingSubmission.js';
 
 export const DEFAULT_HOLD_HOURS = 48;
 const HOUR_MS = 60 * 60 * 1000;
@@ -31,15 +33,7 @@ export const MAX_EXPIRY_MS = 14 * 24 * HOUR_MS;
 const HOLDABLE_STATUSES = ['approved', 'planning'];
 const NOT_HOLDABLE = 'Venues can only be held while an approved event is being planned.';
 const NOT_FOUND = 'That tentative hold was not found.';
-const EXPIRED = "This hold has expired, so it can't be changed. Place a new hold if the venue is still needed.";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// SQL for "this booking holds the venue": pending or confirmed, or a hold
-// that hasn't expired. `now` is the SQL for the current time. 'tentative' is
-// compared as text so the check also runs in the transaction that added the
-// value (PostgreSQL refuses a new enum value there).
-export const holdsVenue = (alias: string, now: string) =>
-  `(${alias}.status IN ('pending', 'confirmed') OR (${alias}.status::text = 'tentative' AND ${alias}.expires_at > ${now}))`;
 
 type Event = { id: string; eventCode: string | null; title: string; status: string; coordinatorId: string | null; startsAt: Date; endsAt: Date };
 type Venue = { id: string; name: string };
@@ -48,10 +42,6 @@ export type Hold = {
   startsAt: string; endsAt: string; status: 'tentative' | 'expired' | 'pending' | 'released'; expiresAt: string | null;
 };
 
-const SGT = new Intl.DateTimeFormat('en-SG', {
-  timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
-});
-export const formatSgt = (value: Date) => SGT.format(value);
 const eventName = (event: { eventCode: string | null; title: string }) =>
   event.eventCode && !event.title.startsWith(event.eventCode) ? `${event.eventCode} ${event.title}` : event.title;
 
@@ -100,6 +90,7 @@ async function audited<T>(database: Pool, user: AuthenticatedUser, work: () => P
     return await work();
   } catch (error) {
     if (error instanceof AccessError && error.status === 403) await recordDenied(database.query.bind(database) as Query, user);
+    if ((error as { code?: string })?.code === '23P01') throw new AccessError(409, 'This venue is already occupied or blocked for that period, including setup and turnaround.');
     throw error;
   }
 }
@@ -144,9 +135,10 @@ function checkExpiry(expires: Date | undefined, now: Date) {
 async function findClash(client: PoolClient, venueId: string, startsAt: Date, endsAt: Date, now: Date, ignoreBookingId: string | null) {
   const booking = (await client.query<{ status: string; eventCode: string | null; title: string; startsAt: Date; endsAt: Date }>(`
     SELECT vb.status, e.event_code AS "eventCode", e.title, lower(vb.booking_range) AS "startsAt", upper(vb.booking_range) AS "endsAt"
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
+    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND ${holdsVenue('vb', '$4')}
-      AND vb.booking_range && tstzrange($2, $3, '[)') AND ($5::uuid IS NULL OR vb.id <> $5)
+      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)
+        && occupied_window(tstzrange($2, $3, '[)'), v.setup_time_minutes, v.turnaround_time_minutes) AND ($5::uuid IS NULL OR vb.id <> $5)
     ORDER BY lower(vb.booking_range) LIMIT 1`, [venueId, startsAt, endsAt, now, ignoreBookingId])).rows[0];
   if (booking) {
     const kind = booking.status === 'tentative' ? 'a tentative hold' : booking.status === 'pending' ? 'a pending booking request' : 'a confirmed booking';
@@ -193,14 +185,13 @@ async function databaseNow(client: PoolClient) {
 }
 
 type LockedHold = { id: string; eventId: string; venueId: string; venueName: string; status: string; expiresAt: Date | null; startsAt: Date; endsAt: Date };
-// Locks a hold (tentative or expired); any other booking is "not found"
-// unless `allow` names its status.
-async function lockHold(client: PoolClient, bookingId: string, allow: string[] = []) {
+// Locks a hold (tentative or expired); any other booking is "not found".
+async function lockHold(client: PoolClient, bookingId: string) {
   const hold = (await client.query<LockedHold>(`SELECT vb.id, vb.event_id AS "eventId", vb.venue_id AS "venueId", v.name AS "venueName",
       vb.status, vb.expires_at AS "expiresAt", lower(vb.booking_range) AS "startsAt", upper(vb.booking_range) AS "endsAt"
     FROM venue_bookings vb JOIN venues v ON v.id = vb.venue_id
     WHERE vb.id = $1 FOR UPDATE OF vb`, [bookingId])).rows[0];
-  if (!hold || !['tentative', 'expired', ...allow].includes(hold.status)) throw new AccessError(404, NOT_FOUND);
+  if (!hold || !['tentative', 'expired'].includes(hold.status)) throw new AccessError(404, NOT_FOUND);
   return hold;
 }
 const isLive = (hold: LockedHold, now: Date) => hold.status === 'tentative' && hold.expiresAt !== null && hold.expiresAt > now;
@@ -211,17 +202,8 @@ const isLive = (hold: LockedHold, now: Date) => hold.status === 'tentative' && h
 export async function convertHold(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
   const actor = await requireRole(database.query.bind(database) as Query, user, ['event_coordinator'], COORDINATOR_ONLY);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
-  const bookingId = uuid(data.booking_id, 'booking');
-  return audited(database, actor, () => inTransaction(database, async client => {
-    const event = await lockEvent(client, actor, { booking: bookingId });
-    const hold = await lockHold(client, bookingId, ['pending']);
-    if (hold.status === 'pending') return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
-    if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    if (!isLive(hold, await databaseNow(client))) throw new AccessError(409, EXPIRED);
-    await client.query(`UPDATE venue_bookings SET status = 'pending', expires_at = NULL WHERE id = $1`, [hold.id]);
-    await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} submitted as a booking request` });
-    return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
-  }));
+  uuid(data.booking_id, 'booking');
+  return audited(database, actor, () => submitBooking(database, actor, { ...data, action: 'convert_hold' }));
 }
 
 // Scenario 4: the period returns to Free.

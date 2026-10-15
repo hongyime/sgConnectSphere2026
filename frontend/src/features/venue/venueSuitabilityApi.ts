@@ -1,7 +1,7 @@
 import { apiCall } from '../../shared';
 
 export type Suitability = {
-  event: { id: string; title: string; start: string; end: string; accessibility_note?: string | null };
+  event: { id: string; title: string; status?: string; start: string; end: string; accessibility_note?: string | null };
   assessment: {
     id: string; name: string; location: string; suitable: boolean; available: boolean;
     advisory: true; mismatches: string[];
