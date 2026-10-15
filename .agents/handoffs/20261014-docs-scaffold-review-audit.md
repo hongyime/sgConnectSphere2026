@@ -1,28 +1,33 @@
 # Scaffold review audit handoff
 
-Goal: execute the Scaffold Review Audit in `artifacts/scaffold-review-plan-20261014.html`, record the full matrix in `docs/testing/scaffold-review-20261014.md`, run the repository check, commit the report and handoff on `docs/scaffold-review-audit`, then push to `origin` without creating a PR.
+Goal: resolve the confirmed #270 review blockers while keeping the scaffold audit report on its frozen source: remove the unrelated #267 artifact/ignore changes from this PR and resolve the duplicated public Jira browse URL finding without changing scanner policy.
 
-## Done so far
+## Audit context
 
-- Read the repository workflow, source-of-truth guidance, Definition of Done, grading guidance, T-65 format, and full audit plan. Ran `python3 scripts/agent_handoffs.py`; no branch handoff existed at task start.
-- Frozen source is `dac955f01254583597c14013c4785080f8df287a` on 2026-10-14.
-- Wrote the 354-row audit matrix and set lists. Counts: 169 active direct refs, 100 scaffold/skip-only, 85 without direct title reference, 0 code IDs missing, 0 duplicate catalogue IDs, 125 IDs with duplicate code declarations; proposed dispositions are 32 implement, 25 remove, 297 leave.
-- The latest dated workbook and legacy workbook are byte-identical. Full comparison against canonical Markdown found 50 generated `Expected Result` cells containing the next story heading; no workbook was edited.
-- Jira and GitHub were inspected read-only. The report records BDR scope changes, current story/PR state, historical T-65 evidence, and two follow-up stories for Done-story test gaps. No application tests or database tests were run.
+- The audit source remains frozen at `dac955f01254583597c14013c4785080f8df287a`, branch `docs/scaffold-review-audit`, audit date 2026-10-14.
+- The report contains a 354-row matrix: 169 active direct references, 100 scaffold/skip-only, 85 without direct title reference, 0 missing code IDs, 0 duplicate catalogue IDs, and 125 IDs with duplicate code declarations. Proposed dispositions: 32 implement, 25 remove, 297 leave.
+- Original report validation and repository check results are retained in the preceding review history. This follow-up does not change the frozen source or audit conclusions.
+
+## Review fixes in progress
+
+- Live PR head at task start was `c3638995418a072f096dce18ea1626a779bccbb9`.
+- Restored `.gitignore` and `artifacts/` to live `origin/main`, removing the 13 unrelated artifact additions from #270 while leaving the report and its prior audit handoff intact.
+- On report row `TC_E11S01_09`, retained the linked Jira issue in the scope column and replaced the duplicate Atlassian browse URL in status evidence with plain `SCRUM-75 In Progress`. The observed scanner finding is a duplicate public issue URL; no credential leak was identified.
 
 ## Next steps
 
-1. Commit the report and this handoff with a conventional docs-scoped message.
-2. Push `docs/scaffold-review-audit` to `origin`.
-3. Do not create a PR. Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`.
+1. Push the completed commits to the existing #270 branch without force.
+2. Inspect the new PR checks, especially TruffleHog, and review state; do not approve or merge.
 
 ## Verification
 
-- `python3 scripts/agent_handoffs.py` — completed at task start; no handoff for the branch existed then.
-- Report validation — 354 unique matrix rows, 8 columns each, disposition totals sum to 354, all relative links resolve.
-- `python3 scripts/check.py` — passed after the final report was staged: 261 test-run records validated; all configured hooks passed; `.env.template` matched; 128 repository-tooling tests passed. It emitted a warning for pre-existing secondary worktrees. Earlier runs stopped on pre-commit “files were modified” diagnostics while the report draft was being revised; isolated `detect-secrets` scans of the audit files and full tracked tree passed without modifying files.
+- `git diff origin/main...HEAD --name-only` after the fixes lists only this handoff and `docs/testing/scaffold-review-20261014.md`; the `artifacts/` additions and `.gitignore` change are absent from the PR diff.
+- Report line `TC_E11S01_09` retains a linked Jira reference in the scope column and uses plain `SCRUM-75 In Progress` in status evidence, removing the duplicate Atlassian browse hyperlink.
+- `python scripts/check.py` at `8752738` on 2026-10-16 07:56:00 +08:00 — PASS; 320 T-65 records validated, 140 repository-tooling tests passed, all configured pre-commit checks passed, and `.env.template` matched. The check reported the existing secondary worktree warning.
+- T-65 record: `docs/testing/runs/20261016-075600-bryanseah234-tooling.md`.
+- No application tests, database calls, production calls, approval, or merge.
 
 ## Constraints
 
-- No subagents, Docker Desktop, local database tests, or shared Supabase access.
-- No Jira updates or workbook edits. No T-65 record is needed for this audit; no story test execution was offered as DoD evidence.
+- Keep this work separate from #267. Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`.
+- No scanner/classifier changes, PR approval/merge, database or production calls, or force push.
