@@ -664,6 +664,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - direct denied access commits actor and attempted event before returning denial
 - organiser event detail includes current status date and status history
 - SCRUM-37: organiser detail exposes editable fields and full activity log contract
+- SCRUM-37: registration setup is listed as editable for the organiser before approval only
 - audit failure never returns event information or a false logged success
 - an organiser can post an accessible event comment and notify its coordinator
 - comment posting refuses an event outside the organiser organisation
@@ -672,6 +673,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - only the assigned coordinator can edit an approved event
 - assigned coordinator can edit approved event fields and every change is audited
 - organiser can update registration dates before approval
+- organiser can fill in registration setup before approval, but not after
 - organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
@@ -1066,12 +1068,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty optional field left empty is not sent
 - clearing a field that had a value is refused, as the server does
 - an end before the start is refused
+- registration setup is sent like the other text fields
 - changed dates are sent as ISO timestamps
 - toLocalInput round-trips through the browser time zone
 - date fields warn that a change notifies people and name the time zone
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
-- registration date inputs describe the validation error and hint after an invalid save
+- registration date inputs describe the validation error after an invalid save
+- the Organiser can fill in registration setup, shown with the dates under Registration
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
