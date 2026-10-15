@@ -69,7 +69,8 @@ export function EventReadiness() {
       eyebrow={readiness?.eventCode ?? 'Event readiness'}
       title={readiness ? `Readiness: ${readiness.title}` : 'Event readiness'}
       actions={readiness ? <StatusPill status={readiness.status} /> : undefined}
-      width="narrow"
+      // Wide, not the Decision template's narrow width: the three tables have
+      // up to five columns, which the narrow width clipped (F3 screenshots).
     >
       {result.state === 'loading' ? <LoadingState label="Loading readiness…" rows={4} /> : null}
       {result.state === 'error' ? (
