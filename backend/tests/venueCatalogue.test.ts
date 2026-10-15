@@ -382,3 +382,126 @@ test('searchVenues applies the layout and accessibility filters together', async
   );
   assert.deepEqual(matches.map(venue => venue.id), ['v-both']);
 });
+
+// --- E05-S05: setup/turnaround buffers (SCRUM-44) ---
+
+test('validateVenueInput accepts zero and positive whole-minute buffers, rejecting negatives and fractions', () => {
+  const ok = validateVenueInput({ ...validBody(), setup_time_minutes: 0, turnaround_time_minutes: 90 });
+  assert.equal(ok.errors, undefined);
+  assert.equal(ok.input!.setup_time_minutes, 0);
+  assert.equal(ok.input!.turnaround_time_minutes, 90);
+  assert.equal(validateVenueInput({ ...validBody(), setup_time_minutes: 2_147_483_647 }).errors, undefined);
+
+  assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: -1 }).errors?.setup_time_minutes);
+  assert.ok(validateVenueInput({ ...validBody(), turnaround_time_minutes: 1.5 }).errors?.turnaround_time_minutes);
+  assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: '30' }).errors?.setup_time_minutes);
+  for (const value of [3_000_000_000, Infinity, Number.MAX_SAFE_INTEGER]) {
+    assert.ok(validateVenueInput({ ...validBody(), setup_time_minutes: value }).errors?.setup_time_minutes);
+    assert.ok(validateVenueInput({ ...validBody(), turnaround_time_minutes: value }).errors?.turnaround_time_minutes);
+  }
+
+  const omitted = validateVenueInput(validBody());
+  assert.equal(omitted.errors, undefined);
+  assert.equal('setup_time_minutes' in omitted.input!, false);
+  assert.equal('turnaround_time_minutes' in omitted.input!, false);
+});
+
+type RecordedCall = { sql: string; values?: unknown[] };
+
+// A Pool whose transaction client answers every query by matching the SQL
+// text, recording each call. createVenue/updateVenue open their own
+// transaction via inTransaction(), so the pool only needs connect(); the
+// direct query() path is never exercised on the success path.
+function scriptedPool(answer: (sql: string, values: unknown[] | undefined) => { rows: unknown[] }): Pool & { calls: RecordedCall[] } {
+  const calls: RecordedCall[] = [];
+  const client = {
+    query: async (sql: string, values?: unknown[]) => {
+      calls.push({ sql, values });
+      return answer(sql, values);
+    },
+    release: () => {},
+  };
+  return { query: client.query, connect: async () => client, calls } as unknown as Pool & { calls: RecordedCall[] };
+}
+
+const venueInsertAnswer = (onInsert: (sql: string, values: unknown[]) => void) =>
+  (sql: string, values: unknown[] | undefined): { rows: unknown[] } => {
+    if (sql.includes('INSERT INTO venues')) {
+      onInsert(sql, values ?? []);
+      return { rows: [{ id: 'venue-1' }] };
+    }
+    if (sql.includes('INSERT INTO facilities') || sql.includes('INSERT INTO accessibility_features')
+      || sql.includes('INSERT INTO room_layouts')) {
+      return { rows: [{ id: 'lookup-1' }] };
+    }
+    if (sql.includes('FROM venue_facilities')) return { rows: [{ label: 'Stage' }] };
+    if (sql.includes('FROM venue_accessibility_features')) return { rows: [{ label: 'Wheelchair Access' }] };
+    if (sql.includes('FROM venue_supported_layouts')) return { rows: [{ label: 'Theatre', capacity: 280 }] };
+    return { rows: [] };
+  };
+
+test('createVenue persists the buffer fields on insert and returns them (E05-S05 Scenario 1)', async () => {
+  let insertSql = '';
+  let insertValues: unknown[] = [];
+  const pool = scriptedPool(venueInsertAnswer((sql, values) => { insertSql = sql; insertValues = values; }));
+
+  const result = await createVenue(pool, venueStaff, { ...validBody(), setup_time_minutes: 30, turnaround_time_minutes: 45 });
+  assert.equal(result.status, 201);
+  assert.match(insertSql, /setup_time_minutes/);
+  assert.match(insertSql, /turnaround_time_minutes/);
+  assert.deepEqual(insertValues.slice(-2), [30, 45]);
+  const venue = (result.body as { venue: Record<string, unknown> }).venue;
+  assert.equal(venue.setup_time_minutes, 30);
+  assert.equal(venue.turnaround_time_minutes, 45);
+});
+
+test('createVenue stores zero buffers when none are supplied', async () => {
+  let insertValues: unknown[] = [];
+  const pool = scriptedPool(venueInsertAnswer((_, values) => { insertValues = values; }));
+
+  const result = await createVenue(pool, venueStaff, validBody());
+  assert.equal(result.status, 201);
+  assert.deepEqual(insertValues.slice(-2), [0, 0]);
+  const venue = (result.body as { venue: Record<string, unknown> }).venue;
+  assert.equal(venue.setup_time_minutes, 0);
+  assert.equal(venue.turnaround_time_minutes, 0);
+});
+
+test('updateVenue returns the updated buffer values (E05-S05 Scenario 1)', async () => {
+  const existing = {
+    id: 'venue-1', name: 'Grand Ballroom', location: '123 Marina Blvd', max_capacity: 300,
+    opens_at: '08:00', closes_at: '22:00', is_active: true,
+    setup_time_minutes: 0, turnaround_time_minutes: 0,
+  };
+  const pool = scriptedPool((sql: string) => {
+    if (sql.includes('FROM venues v') && sql.includes('FOR UPDATE')) return { rows: [existing] };
+    if (sql.includes('SELECT setup_time_minutes, turnaround_time_minutes FROM venues')) {
+      return { rows: [{ setup_time_minutes: 0, turnaround_time_minutes: 0 }] };
+    }
+    if (sql.includes('FROM venue_bookings vb1')) return { rows: [] }; // no buffer conflicts
+    return venueInsertAnswer(() => {})(sql, undefined);
+  });
+
+  const result = await updateVenue(pool, venueStaff, 'venue-1', { ...validBody(), setup_time_minutes: 30, turnaround_time_minutes: 45 });
+  assert.equal(result.status, 200);
+  const body = result.body as { venue: Record<string, unknown>; bufferConflicts: unknown[] };
+  assert.equal(body.venue.setup_time_minutes, 30);
+  assert.equal(body.venue.turnaround_time_minutes, 45);
+  assert.deepEqual(body.bufferConflicts, []);
+});
+
+
+test('buffer overflow is a 400, other database errors survive, and every failed edit rolls back', async () => {
+  for (const code of ['22008','22015','XX000']) {
+    const existing = { id: 'venue-1', ...validBody(), is_active: true, setup_time_minutes: 0, turnaround_time_minutes: 0 };
+    const pool = scriptedPool((sql, values) => {
+      if (sql.includes('FROM venues v') && sql.includes('FOR UPDATE')) return { rows: [existing] };
+      if (sql.includes('WITH active')) throw Object.assign(new Error('database failure'), { code });
+      return venueInsertAnswer(() => {})(sql, values);
+    });
+    await assert.rejects(updateVenue(pool, venueStaff, 'venue-1', { setup_time_minutes: 30 }),
+      code === 'XX000' ? { code } : { status: 400 });
+    assert.ok(pool.calls.some(call => call.sql === 'ROLLBACK'));
+    assert.ok(!pool.calls.some(call => call.sql.includes('SELECT setup_time_minutes, turnaround_time_minutes FROM venues')));
+  }
+});

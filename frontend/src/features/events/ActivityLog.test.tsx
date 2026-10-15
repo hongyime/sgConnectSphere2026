@@ -128,3 +128,16 @@ test('a status change with no previous status shows only the new status', async 
   const row = within(await activityCard()).getAllByRole('row')[1]!;
   expect([...row.querySelectorAll('.status-pill')].map(pill => pill.textContent)).toEqual(['Submitted']);
 });
+
+// E06-S05 (SCRUM-144): hold entries show the expiry as a date and never the booking id.
+test('booking entries show hold expiry or a generic booking label without internal IDs', () => {
+  const hold = { occurred_at: '2026-10-13T02:00:00.000Z', action: 'Tentative hold placed on Cedar Auditorium', field_changed: 'venue_booking', old_value: null, new_value: '2026-10-15T02:00:00.000Z', actor_name: 'Coordinator A' };
+  expect(describeChange(hold)).toBe('Hold expires 15 Oct 2026, 10:00 am');
+  expect(describeChange({ ...hold, action: 'Tentative hold on Cedar Auditorium extended', old_value: '2026-10-15T02:00:00.000Z', new_value: '2026-10-16T02:00:00.000Z' }))
+    .toBe('Hold expiry: 15 Oct 2026, 10:00 am → 16 Oct 2026, 10:00 am');
+  expect(describeChange({ ...hold, action: 'Tentative hold on Cedar Auditorium released', new_value: '3f2a9c4e-0000-4000-8000-000000000001' })).toBe('Venue booking');
+  expect(describeChange({ ...hold, new_value: null })).toBe('Venue booking');
+  const request = { ...hold, action: 'Venue booking requested for Cedar Auditorium', new_value: 'internal-booking-id' };
+  expect(describeAction(request)).toBe('Venue booking requested for Cedar Auditorium');
+  expect(describeChange(request)).toBe('Venue booking');
+});

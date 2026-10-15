@@ -72,9 +72,8 @@ npm run test:notifications --workspace backend
 Each test creates a random UUID schema, runs migrations into it, executes
 assertions, and `DROP SCHEMA … CASCADE` on teardown. No cleanup is needed.
 
-## Docker
+## Local database runtime
 
-Docker is **not used** anywhere in this repository. The CI PostgreSQL and Redis
-services are provisioned by GitHub Actions service containers
-(`.github/workflows/application-checks.yml`). The team action item to
-"document why Docker is used" is closed as N/A — there is nothing to document.
+Docker Desktop is not part of the local database-test workflow. Local suites that need disposable data use a native PostgreSQL installation and a loopback TEST_DATABASE_URL. The existing Supabase test schema supports only the rollback-based deactivation test; see docs/testing/supabase-test-schema.md before using it. Never reset, seed, or run a database suite that commits writes against the shared Supabase project.
+
+GitHub Actions provisions its own PostgreSQL and Redis service containers in CI. No Docker Desktop setup is required on contributor machines.

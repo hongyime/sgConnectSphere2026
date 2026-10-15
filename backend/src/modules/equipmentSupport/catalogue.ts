@@ -82,18 +82,27 @@ export async function saveEquipment(database: Pool, user: AuthenticatedUser | un
       let affectedReservations: ReservationReview[] = [];
       if (previous && (input.total_quantity < previous.total_quantity || input.operational_status !== previous.operational_status)) {
         const capacity = input.operational_status === 'available' ? input.total_quantity : 0;
-        // Compare peak simultaneous demand within each reservation, not the sum
-        // across unrelated dates. Half-open ranges permit back-to-back events.
+        // Compare peak simultaneous reservations plus dated withdrawals within
+        // each remaining reservation period. Withdrawals may start halfway
+        // through it, so those boundaries must be checked too. Half-open
+        // ranges preserve back-to-back events and exclude ended withdrawals.
         affectedReservations = (await client.query<ReservationReview>(`
           WITH active AS (
             SELECT r.*, e.event_code, e.title FROM equipment_reservations r JOIN events e ON e.id=r.event_id
             WHERE r.equipment_id=$1 AND r.status IN ('reserved','partial') AND upper(r.reservation_range)>now()
+          ), withdrawals AS (
+            SELECT unavailable_range, quantity FROM equipment_unavailability
+            WHERE equipment_id=$1 AND upper(unavailable_range)>now()
           ), affected AS (
             SELECT a.id FROM active a WHERE EXISTS (
               SELECT 1 FROM (
                 SELECT greatest(lower(a.reservation_range), now()) AS point
-                UNION SELECT lower(b.reservation_range) FROM active b WHERE a.reservation_range @> lower(b.reservation_range)
-              ) points WHERE (SELECT coalesce(sum(c.quantity_reserved),0) FROM active c WHERE c.reservation_range @> points.point)>$2
+                UNION SELECT lower(b.reservation_range) FROM active b
+                  WHERE lower(b.reservation_range)>=now() AND a.reservation_range @> lower(b.reservation_range)
+                UNION SELECT lower(w.unavailable_range) FROM withdrawals w
+                  WHERE lower(w.unavailable_range)>=now() AND a.reservation_range @> lower(w.unavailable_range)
+              ) points WHERE (SELECT coalesce(sum(c.quantity_reserved),0) FROM active c WHERE c.reservation_range @> points.point)
+                + (SELECT coalesce(sum(w.quantity),0) FROM withdrawals w WHERE w.unavailable_range @> points.point)>$2
             )
           ), flagged AS (
             UPDATE equipment_reservations SET requires_reconfirmation=true WHERE id IN (SELECT id FROM affected) RETURNING id

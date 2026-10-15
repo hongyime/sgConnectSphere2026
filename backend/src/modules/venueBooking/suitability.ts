@@ -62,7 +62,7 @@ export async function venueSuitability(query: Query, user: AuthenticatedUser | u
   const hours = (await query<Hours>('SELECT opens_at::text, closes_at::text FROM venues WHERE id::text=$1 AND is_active', [venueId])).rows[0];
   if (!hours) throw new AccessError(404, 'Active venue not found.');
   return {
-    event: { id: search.defaults.id, title: search.defaults.title, start: search.criteria!.start, end: search.criteria!.end, accessibility_note: search.defaults.accessibility_note },
+    event: { id: search.defaults.id, title: search.defaults.title, status: search.defaults.status, start: search.criteria!.start, end: search.criteria!.end, accessibility_note: search.defaults.accessibility_note },
     assessment: assessEventVenue({ ...venue, ...hours }, search.criteria!, search.options),
   };
 }
