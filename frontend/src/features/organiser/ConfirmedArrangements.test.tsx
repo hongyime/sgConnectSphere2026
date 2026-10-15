@@ -73,6 +73,18 @@ test('TC_E08S03_05 - a confirmed event with none required, no support and no ven
   expect(card.getByText('No confirmed venue recorded.')).toBeInTheDocument();
   expect(card.getByText('None required')).toBeInTheDocument();
   expect(card.getByText('None recorded')).toBeInTheDocument();
+  cleanup(); vi.unstubAllGlobals();
+
+  // Free-text equipment with nothing reserved: no equipment to show.
+  stubApi({
+    'GET /api/events?mine=1&id=evt-run': { body: ownRead('confirmed', 'Two lecterns') },
+    'GET /api/events?id=EVT-RUN': { body: orgRead('confirmed', {
+      arrangements: { ...arrangements, equipment: [], support: [], equipmentNoneRequired: false },
+    }) },
+  });
+  renderRequestPage();
+  const other = within(await screen.findByRole('region', { name: 'Confirmed arrangements' }));
+  expect(other.getAllByText('None recorded').length).toBe(3);
 });
 
 test('SCRUM-60 fix (a) - equipment recorded as none required reads "None required", not the stored value', async () => {

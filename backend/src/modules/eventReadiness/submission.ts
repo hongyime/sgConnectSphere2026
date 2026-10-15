@@ -70,8 +70,9 @@ export async function getEventReadiness(database: Pool, user: AuthenticatedUser 
 async function notifySubmission(client: PoolClient, event: EventRow, coordinator: AuthenticatedUser, change: {
   auditId: string; occurredAt: Date;
 }) {
+  // The Coordinator's row exists: the event row is locked with them assigned.
   const name = (await client.query<{ full_name: string }>('SELECT full_name FROM users WHERE id = $1', [coordinator.id]))
-    .rows[0]?.full_name ?? coordinator.email;
+    .rows[0]!.full_name;
   const label = eventLabel(event);
   const notice = { eventId: event.id, changeId: change.auditId, occurredAt: change.occurredAt };
   await writeEventNotification(client, {

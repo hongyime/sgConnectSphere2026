@@ -81,12 +81,16 @@ test('TC_E08S03_08 and TC_E08S03_09: the readiness, submission and confirm route
       ['No venue booking is Confirmed yet.', 'Hall EVT-R02 — Pending']);
     assert.equal((await call('GET', '/api/events?readiness=1&id=EVT-R02', cookies.organiser)).status, 403);
     assert.equal((await call('GET', '/api/events?readiness=1&id=EVT-R02')).status, 401);
+    assert.equal((await call('GET', '/api/events?readiness=1', cookies.coordinator)).status, 400);
 
     const refused = await call('POST', '/api/events?safetyReview=1&id=EVT-R02', cookies.coordinator);
     assert.equal(refused.status, 409);
     assert.equal(refused.body.error, "This event can't be submitted for its safety check until every outstanding item is resolved.");
     assert.equal(refused.body.readiness.blockers.length, 2);
     assert.equal((await call('POST', '/api/events?safetyReview=1', cookies.coordinator)).status, 400);
+    const wrongRole = await call('POST', '/api/events?safetyReview=1&id=EVT-R02', cookies.organiser);
+    assert.equal(wrongRole.status, 403);
+    assert.equal(wrongRole.body.error, 'Only the assigned Coordinator can submit this event for its safety check.');
 
     const submitted = await call('POST', '/api/events?safetyReview=1&id=EVT-R01', cookies.coordinator);
     assert.equal(submitted.status, 200);
