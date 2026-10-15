@@ -7,7 +7,7 @@ import { inTransaction } from '../../database/pool.js';
 import { insertNotificationDelivery } from '../notificationDispatcher/postgres.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { accessibilityMatchCondition } from './matchAccessibility.js';
-import { holdsVenue } from './holds.js';
+import { holdsVenue } from './bookingShared.js';
 
 export type VenueLayoutInput = { label: string; capacity: number };
 export type VenueInput = {
