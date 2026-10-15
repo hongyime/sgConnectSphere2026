@@ -1,0 +1,81 @@
+# E06-S03 booking submission
+
+Implement the E06-S03 / SCRUM-47 Sprint 3 event-based booking submission increment on merged buffer, Session and hold foundations. The user subsequently authorized committing, pushing and creating a PR on 15 October after the guided manual run. Jira changes and production migrations remain outside this authorization.
+
+## Current work
+
+Started from main 5c22e26. Shared migration 0015 adds request metadata only, preserving the calculated buffer guard in 0016 and legacy bookings. Event-based requests require exactly one linked Session; a multi-Session event receives an explicit refusal rather than an arbitrary link. Direct submission and hold conversion share one transactional service. Assessment-screen form, list metadata, HTTP origin/auth gates, retry-safe payloads, advisory snapshot, atomic Planning/audit/outbox effects and hold expiry integration are implemented.
+
+## Coordination
+
+No competing submission or E06-S04 implementation PR found. Migration ownership is recommended for E06-S03 (first consumer), but has not been agreed with E06-S04's owner. Open staff-assignment PR #271 currently uses 0016, colliding with merged #261's guard; it must be renumbered by its owner. Do not overwrite it or duplicate #272's resolver. Venue Staff routing remains SCRUM-189 pending integration; the service supports the existing resolver interface and explicitly reports unresolved venues.
+
+## Verification
+
+Full backend units 387/387 and frontend units 388/388 passed; later changed-module runs passed 33 backend and 15 frontend cases. New service/handler and three changed frontend components have measured 100% lines/statements/functions/branches. Changed hold wrapper is exercised; whole existing modules/router are not claimed 100% branch coverage. SQL/migration behaviour requires real PostgreSQL evidence.
+
+24 affected PostgreSQL tests passed; a separate final submission session passed 8/8 including a request versus hold on different events, persisted inactive/locked user versus stale login, ambiguous Session refusal, legacy retries and unique/confirmed-only primary constraints. The earlier full database 102/103 failed overall on unchanged eventVisibility fixture missing venue_requirements; its count predates the two added tests. Full registration fixture ran after migrating only disposable local public. Used temporary portable native PostgreSQL on loopback, no Docker Desktop or Supabase writes.
+
+24 intercepted desktop/mobile browser tests passed, plus final 6 submission/screenshot checks. Visually compared desktop/mobile assessment form with the shared shell/cards/form patterns. These are automated synthetic screenshots, not a human manual run. Typechecks/build pass (existing chunk warning); compiled runtime 17/17 passes. Hygiene including new files, record validation and env generation passes; python scripts/check.py overall FAIL because 128 tooling tests include existing Windows worktree-path 3 failures/11 errors. Review worktrees are intentional and left untouched.
+
+Evidence: fresh 20261015 execution records under docs/testing/runs. Updated testing guide, architecture/contract implementation addenda, tc-coverage generation, and E06-S03 manual script. Do not claim story completion, staff routing, staff decision screen, automatic primary selection, actual provider receipt or production deployment. The canonical TC_E06S03_03 still has obsolete single-Pending wording; implementation follows Jira reconciliation and TC_E06S03_07 instead.
+
+Next: agree shared migration ownership with E06-S04; wait for the renumbered staff assignment/resolver PRs, then wire them through submission notification options. Apply compatible migrations before deploying these new column reads/writes. Human manual run and peer review remain required. No commit/push/PR/Jira change performed.
+
+## Guided manual run
+
+The human tester performed the browser steps and supplied screenshots on 15 October. New immutable record 20261015-014746-jininggg-frontend-e2e.md distinguishes observed UI, agent read-only DB verification and skipped dependencies. Pending creation, advisory failures, Planning, several requests, ordering, bounds, empty optional fields, Coordinator isolation, responsive form/list, hold conversion and calendar Tentative display passed. Buffer-only overlap, manual replay/expiry-worker run, staff presentation/routing, provider receipt and primary selection are not claimed. Save/link the human screenshots to PostPlan before PR evidence use. Local manual stack is still running for the user's inspection; do not reset it. Peer review and shared migration ownership remain pending.
+
+## Commit / PR preparation
+
+Origin/main remains 5c22e26 at the pre-commit fetch. Open a draft with the repository's four-section template and a hosted standalone PostPlan; do not check all-green boxes while Windows tooling/full-DB failures remain. Keep SCRUM-47 in references, not a closing clause, title or branch key: this partial increment must not repeat the accidental docs-only Jira completion. Commit/push hooks remain enabled. The user is preparing a Word document of manual screenshots for extraction into the PostPlan; label existing automated screenshot previews separately. No reviewer requests, approval, merge, Jira edit or Supabase deployment is authorized.
+
+## Published draft and latest-main reconciliation
+Implementation committed and pushed as 3481702; draft PR #274 is open. PostPlan: https://ygvotv93sndj.postplan.dev (all 24 manual screenshots extracted from the saved Word document; six linked manual pages, four separate automated-fixture pages). Original immutable run records retain their attachment status at recording time; PR/PostPlan now supply durable links. Main advanced to 961bf53 during PR creation; merge resolution preserves both test commands and regenerates TC coverage. Post-resolution typecheck passes; mandatory repository check retains existing Windows tooling failures. No Jira/Supabase changes, force push or hook bypass. Draft remains pending migration ownership, staff integration and human review.
+
+
+## Review fixes (15 October, latest)
+
+User authorised remaining review fixes and retains #245 coordination. E06-S03
+owns booking columns by agreement with E06-S04. Latest #271 comment reserves
+0017 for SCRUM-184 and requests 0018 for staff assignments, so this branch uses
+0019_venue_bookings_contract.sql. No production migration has been applied.
+
+Submission now calls applyEventStatusChange for Planning including timestamp,
+audit and notices. Suggested-venue switching prefills period/purpose/headcount
+and creates a new Pending row with replaces_booking_id; original remains
+Rejected. Same-event/matching-suggestion checks, event locking, a unique partial
+index and existing idempotency handling protect provenance and duplicate switches.
+
+Requested-venue notices reuse captureEventAudience through a trusted optional
+venue scope. This composes with the default resolver in still-open #272 without
+duplicating its implementation. Production default routing is therefore still
+pending that dependency. Human manual steps for these fixes remain unexecuted.
+
+Evidence: 20261015-114845-jininggg-full-regression.md. Backend units 394/394,
+affected real PostgreSQL 16/16, components 13/13 and intercepted browser 8/8.
+Scoped submission modules and two components reach 100% all four coverage metrics.
+Typecheck passes. Repository check retains Windows tooling 3 failures/11 errors.
+Native loopback PostgreSQL was restarted solely for tests and stopped afterward;
+no Docker, shared Supabase writes, Jira changes or #245-owner messages.
+
+
+## E06-S05 owner review fixes (15 October, latest)
+
+The owner confirmed shared submission ownership and Approved-to-Planning;
+#245 coordination is resolved. User requested fixing the remaining findings.
+Conversion of an existing hold by an unassigned Coordinator now returns 403,
+so convertHold audited() persists Access Denied outside the rollback. Direct
+request privacy and missing-hold 404 are preserved. Requests record the venue
+name in the activity action; ActivityLog uses Venue booking for non-date values.
+bookingShared.ts owns holdsVenue, formatSgt and EXPIRED. All helper consumers
+import it directly; holds retains compatibility re-exports. Removed lockHold
+allow parameter and reused the existing EXPIRED copy for conversion.
+
+Evidence: 20261015-153758-jininggg-full-regression.md. Backend units 395/395,
+real PostgreSQL 26/26, activity UI 9/9, runtime 17/17; typecheck/build pass.
+Scoped submission/shared helpers and ActivityLog measured 100% all four metrics.
+Existing Windows repository tooling remains 3 failures/11 errors. No new human
+manual evidence. Native PostgreSQL restarted for tests and shutdown requested.
+#272 production default routing still pending; no Jira/Supabase changes, reviewer
+messages, self-approval or merge. Update #274 and PostPlan with the new evidence.
