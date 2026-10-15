@@ -50,6 +50,19 @@ Two PRs, per `docs/ops/production-migrations.md`:
   `test:db` 116/118 before the new test (the two `main` failures), booking
   submission DB 10/10 with it. Not yet recorded under T-65.
 
+- 15 Oct (later): #271 squash-merged by Ji Ning; this PR now targets `main`
+  (handoff conflict resolved, migration identical to `main`). Jira sync had
+  moved SCRUM-189 to Done on #271's merge; moved back to In Progress with a
+  comment. Seed assignments added to the scaffold `SEED_DATA.md`.
+
+## Gaps
+
+- TC_E11S01_02 expects a venue move to notify old and new venue staff. No
+  venue-move workflow exists yet (E10-S05), so the manual run covers a
+  date/time change only; record the venue-move part as blocked.
+- TC_E11S01_13 pre-condition still says "no assignment adapter"; with #272 it
+  means "no assignment rows". The test still proves it.
+
 ## Next
 
 - Le Xin: manual run of TC_E11S01_02 on the seeded local stack. As `coord_a`
@@ -59,8 +72,8 @@ Two PRs, per `docs/ops/production-migrations.md`:
   (`venue_staff_1` -> `venue_a`/`venue_b`, `coordinator_1` -> `coord_a`).
 - Fresh T-65 records for backend unit and DB at the new head (the 14 Oct ones
   predate the merge).
-- Merge #271, deploy owner applies 0018 (#278 plans a separate ledger check),
-  retarget this PR to `main`, then merge it.
+- #271 merged. Deploy owner applies 0018 (#278 plans a separate ledger check),
+  then review and merge this PR.
 - Tell Ji Ning so TC_E06S03_01 "responsible staff receipt" can stop being SKIP.
 
 ## Open
