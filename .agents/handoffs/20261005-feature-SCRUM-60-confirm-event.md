@@ -1,20 +1,85 @@
 # feature/SCRUM-60-confirm-event
 
-Goal: prepare the SCRUM-60 (E08-S03, 5-point) branch for its current Jira owner to implement the event readiness and safety-review submission flow.
+Goal: E08-S03 "Confirm an event" (SCRUM-60, 5 points) as amended for Week 7
+(C-70, T-71): the assigned Coordinator submits a Planning event whose
+arrangements are complete for its Operational Safety Check, moving it to
+Safety Review; only the Safety Officer's approval (E08-S06) sets Confirmed.
 
-## Current state
+## Merge order (do not merge this branch early)
 
-- The Jira issue remains To Do in Sprint 3 with its existing assignee and estimate.
-- This branch was synced with the latest main snapshot 8f246ae.
-- Added type-only readiness and submission contracts at backend/src/modules/eventReadiness/types.ts; they contain no runtime behavior.
-- Sprint 3 scope follows T-71: the Coordinator submits when every required arrangement is ready, and the event enters Safety Review. Safety Officer approval is owned by E08-S06.
-- T-82's automatic trigger and safety-factor checklist are Week 9 follow-up work after Sprint 3 closes under T-73.
+1. `feature/SCRUM-184-safety-review-status` (migration 0017) merges first.
+2. 0017 is applied in production (`migrate --only`, run record in
+   `docs/ops/production-migration-runs/`).
+3. 0012 (#232, merged 2026-10-16) is applied in production by the deploy
+   owner.
+4. Only then this branch. It names `'safety_review'` in read filters, and
+   PostgreSQL rejects an unknown enum value, so merging first would break
+   existing equipment and support pages.
 
-## Next steps
+This branch has the SCRUM-184 branch merged in so it runs locally; when 0017
+lands on `main`, the identical file merges cleanly.
 
-Implement the readiness read, blocker details, authorization and transactional Safety Review submission; connect the coordinator readiness UI and notification/audit writes; then add unit/database coverage and the manual E2E run record for the full E08-S03 acceptance cases.
+## Done so far
 
-## Verification
+- Bryan's starter (`61d5bbd`): type-only contract in
+  `backend/src/modules/eventReadiness/types.ts`, extended for tentative holds,
+  buffer conflicts, flagged reservations and Planning only.
+- Backend (`bfcea4d`, `152690e`): `eventReadiness/readiness.ts` (the check,
+  pure and reusable for the Week 9 automatic trigger), `submission.ts`
+  (readiness read, submission under the event lock with the Organiser's and
+  every active Safety Officer's notices, a confirm action that refuses anyone
+  but a Safety Officer), `arrangements.ts` (Scenario 6 on the Organiser's
+  read). Routes on the existing `api/events.ts` (no new `api/` file). Status
+  rules in `eventLifecycle/status.ts`; the Safety Officer check in
+  `applyEventStatusChange`.
+- Frontend (`c60b5b2`, `b68a0a5`): live `/coordinator/events/:eventCode/readiness`
+  (the mock checklist and final confirmation are gone; `/confirm` redirects),
+  "Check readiness" on the Coordinator's event page, the Organiser's
+  "Confirmed arrangements" card, "Safety Review" in the status vocabulary.
+- Tests (`a4e529b`, `fbda0f8`): unit, database and route tests (wired into
+  `backend/package.json` and `application-checks.yml`), Vitest, Playwright;
+  E08 catalogue reworded per the story's decision D65 (_03, _04, _05 in place,
+  _08 trimmed, _10 added).
+- Run record with the click-through script:
+  `docs/plans/scrum-60-implementation-status.md`.
 
-- python scripts/check.py — PASS at base 13127e0; repository hygiene and 87 tooling tests. T-65 record: docs/testing/runs/20261014-080219-bryanseah234-tooling.md.
-- No application lint, application tests, build or deployment checks were run.
+## Not done / next step
+
+- Aaron's own click-through (F4) on the local stack, then the PR as a draft
+  with a "Do not merge until" checklist.
+- `tc-coverage.md` regenerated as the last commit before the PR.
+
+## Decisions taken without team sign-off
+
+- A Confirmed venue booking flagged `requires_reconfirmation` (capacity cut)
+  blocks submission, by the same reasoning as flagged equipment reservations.
+- A refused confirm by staff is written to the Activity log as "Confirmation
+  refused" (field `confirmation`, not `status`, so the log doesn't read it as
+  a status change); an Organiser's or Attendee's refusal stays an ordinary
+  access denial, which the log never shows (#161).
+- An event in Safety Review counts as "approved" for the Organiser's edit
+  rules (restricted fields need a change request), and its arrangements are
+  frozen: equipment, reservation, staffing and booking writes keep their
+  existing status lists.
+
+## Touches teammates' files
+
+- `eventLifecycle/status.ts`, `accessControl/deactivation.ts`,
+  `eventVisibility/service.ts` (shared status lists).
+- `equipmentSupport/requests.ts`, `staffAssignments.ts` (Xiang Ying's: read
+  lists only).
+- `Organiser.tsx`, `organiserRequestsApi.ts`, `CoordinatorWorkspace.tsx`,
+  `coordinatorApi.ts`, `TechnicalSupport.tsx`, `VenueHolds.tsx`,
+  `Coordinator.tsx` (Amareet's and others': status lists, fixes (a) and (b),
+  the mock pages removed).
+- `shared/format.ts`, `styles.css`, `UiKit.tsx` (skeleton: the "Safety Review"
+  label and pill colour from design.md section 7).
+
+## Learnings
+
+- `statusLabel` writes stored values in sentence case, but design.md names
+  the status "Safety Review"; a one-entry label map in `format.ts` covers it.
+- The Activity log treats any row with `field_changed = 'status'` as a status
+  change, so an audit row that isn't one must use another field name.
+- The Decision template's narrow width clips tables of five columns; check a
+  1280 px screenshot before settling on it.
