@@ -201,7 +201,15 @@ not retrofitted, whenever they merge.
 recorded before the cutoff, including a Done story, may add a **new** manual
 record with screenshots, run against the current code. This is optional. The
 old record stays unchanged (records are immutable) and the story stays Done
-(T-74): extra evidence is not a reopening and needs no new story.
+(T-74): extra evidence is not a fix or a change, so it needs no new story.
+
+- **Current sprint:** a run recorded before that sprint's Sprint Review counts
+  as the story's manual E2E evidence (Definition of Done).
+- **Earlier sprints:** the review has already happened, so a new run is later
+  re-run evidence only. It does not change what that sprint showed. Record the
+  real `date`; never backdate.
+- **If the run fails:** record `FAIL`. The fix is a new user story with what
+  went wrong documented (`CONTRIBUTING.md`); the original story stays Done.
 
 **Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
 check the `## Screenshots` section, one image per PASS/FAIL row, or that the

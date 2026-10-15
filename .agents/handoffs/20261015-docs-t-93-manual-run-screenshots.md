@@ -28,7 +28,9 @@ with their T-65 session record, and update the test-run rules to match.
   template example moved inside the comment; cropping/JPG guidance.
 
 - Clarified that a story tested before the cutoff, including a Done story,
-  may add a new manual record with screenshots; it stays Done (T-74).
+  may add a new manual record with screenshots; it stays Done (T-74). Counts
+  as DoD evidence only in the current sprint before its review; for earlier
+  sprints it is re-run evidence; a failing re-run means a new user story.
 
 ## Next
 
