@@ -211,6 +211,7 @@ do not count as manual evidence; record those runs as `automated`.
   they are not edited or replaced once merged.
 
 A postplan may show the same images, but the repository copy is the evidence.
+
 **Which records:** manual records whose frontmatter `date` is on or after
 `2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are
 not retrofitted, whenever they merge.
@@ -227,6 +228,14 @@ code before the Sprint 3 Review. This is a re-run, not a reopening:
   is not finished in time still stays Done; say so at the Sprint Review.
 - **If the re-run fails:** record `FAIL`. The fix is a new user story with
   what went wrong documented (`CONTRIBUTING.md`); the original stays Done.
+- Sprint 3 re-runs include screenshots whatever their `date`, even one
+  recorded before the cutoff.
+
+**A Sprint 3 Done story with no manual record at all** is a Definition of
+Done gap, not extra evidence. Its owner writes its test cases in
+`docs/testing/cases/` if they are missing and records its **first** manual
+run, with screenshots, before the Sprint 3 Review. On 16 October 2026 this
+applied to E03-S11 only.
 
 **Earlier sprints (1 and 2) are left as they are.** Their Sprint Reviews have
 happened, so a new run cannot change what those sprints showed. If one is

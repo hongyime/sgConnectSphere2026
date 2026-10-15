@@ -27,11 +27,27 @@ with their T-65 session record, and update the test-run rules to match.
   optional in the PR template; README says the rule is not enforced yet;
   template example moved inside the comment; cropping/JPG guidance.
 
-- Sprint 3 Done stories (10: E06-S05, E07-S01..S07, E14-S02, E03-S11) are
-  re-run by their owners with screenshots before the Sprint 3 Review, as new
-  records; they stay Done (T-74); a failing re-run means a new user story.
-  Sprint 1 and 2 stories are left as they are. Needs the team's agreement
-  in review, since it gives work to five people.
+- Sprint 3 Done stories are re-run by their owners with screenshots before
+  the Sprint 3 Review, as new records, whatever the record `date`; they stay
+  Done (T-74); a failing re-run means a new user story. Sprint 1 and 2
+  stories are left as they are.
+- Amareet's review (69d73a1): E03-S11 has no manual record and no
+  `TC_E03S11_*` cases, so it needs a first manual run, not a re-run.
+
+## Sprint 3 Done stories and owners (16 October 2026)
+
+| Story | Jira | Owner | Before the Sprint 3 Review |
+| --- | --- | --- | --- |
+| E06-S05 Hold a venue tentatively | SCRUM-49 | Amareet | Re-run with screenshots |
+| E07-S01 Maintain the equipment catalogue | SCRUM-51 | Xiang Ying | Re-run with screenshots |
+| E07-S02 Request equipment for an event | SCRUM-52 | Xiang Ying | Re-run with screenshots |
+| E07-S03 Check equipment availability | SCRUM-53 | Xiang Ying | Re-run with screenshots |
+| E07-S04 Reserve equipment for an event | SCRUM-54 | Aaron | Re-run with screenshots |
+| E07-S05 Mark equipment as unavailable | SCRUM-55 | Aaron | Re-run with screenshots |
+| E07-S06 Request technical support | SCRUM-56 | Amareet | Re-run with screenshots |
+| E07-S07 Assign and manage technical staff | SCRUM-57 | Amareet | Re-run with screenshots |
+| E14-S02 Record significant actions in an activity log | SCRUM-86 | Le Xin | Re-run with screenshots |
+| E03-S11 Organiser edits registration setup, date layout | SCRUM-176 | Le Xin (#247; Jira assignee still shows Bryan) | Write test cases, then first manual run with screenshots |
 
 ## Next
 
