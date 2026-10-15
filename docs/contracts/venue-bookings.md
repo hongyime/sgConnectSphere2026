@@ -145,7 +145,7 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 - Tentative → Released: Coordinator releases the hold.
 - Pending → Confirmed: Venue Staff approves.
 - Pending → Rejected: Venue Staff rejects.
-- Pending → Released: assigned Coordinator withdraws a Pending request only (T-93/T-94).
+- Pending → Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
 - Confirmed → Released: event workflow releases the booking.
 - E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
 - Pending or Confirmed → Conflicting: E05-S06 marks a booking affected by an unavailability; its resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
@@ -154,7 +154,7 @@ Every submission path uses one shared service and transaction. It authorizes the
 
 An Approved event becomes Planning in the same transaction as its first formal request. An event already in Planning stays there. A Confirmed event is not silently moved; the Coordinator first uses the existing event revert action (POST /api/events?revert=1&id=<event-id>), then submits.
 
-First-confirmed primary assignment and manual selection are separate from request creation: new Pending rows always have is_primary = false. T-93 records the Product Owner's future Confirmed-booking cancellation rule: clear a cancelled primary and prompt the Organiser to select another Confirmed venue; never automatically promote one. That cancellation flow is outside E06-S03/TC_E06S03_08. It does not change the current Coordinator primary-selection permission under T-78; future cancellation prompt/selection permissions must be implemented in that owning workflow.
+First-confirmed primary assignment and manual selection are separate from request creation: new Pending rows always have is_primary = false. T-94 records the Product Owner's future Confirmed-booking cancellation rule: clear a cancelled primary and prompt the Organiser to select another Confirmed venue; never automatically promote one. That cancellation flow is outside E06-S03/TC_E06S03_08. It does not change the current Coordinator primary-selection permission under T-78; future cancellation prompt/selection permissions must be implemented in that owning workflow.
 
 The expiry worker updates only rows still Tentative whose expires_at <= clock_timestamp(). Thus, if conversion wins the row lock, the worker sees Pending and skips it; if expiry wins, conversion sees Expired and fails. A converted Pending row is never expired.
 
@@ -248,7 +248,7 @@ A suggested-venue switch creates a new Pending row through the shared submission
 service. It carries `replaces_booking_id`; the referenced row must be Rejected,
 belong to the same assigned event and suggest the requested venue. The rejection
 remains unchanged. The merged 0019 unique index currently permits one replacement
-per rejection regardless of status; T-95 supersedes that target rule only for
+per rejection regardless of status; T-96 supersedes that target rule only for
 Released replacements and requires a new migration. Identical idempotent retries
 return the same row. Current eligibility, period,
 Session, venue activity, buffers, blocks and advisory suitability all rerun.
@@ -263,7 +263,7 @@ claim it verified. Coordination of hold-conversion semantics with #245 remains
 with the story owner.
 
 
-## Agreed withdrawal follow-up (15 October 2026; T-93 to T-95)
+## Agreed withdrawal follow-up (15 October 2026; T-94 to T-96)
 
 **Requirements recorded; not implemented by this documentation change.** E06-S03
 owns assigned-Coordinator withdrawal of Pending requests only. Reuse Released:
@@ -318,5 +318,5 @@ already shipped. No migration number is reserved by this documentation change.
 
 Source: Product Owner clarification relayed by the story owner, E06-S04 owner
 agreement, and the story owner's notification/retry/chain confirmations in the
-15 October working conversation. See T-93/T-94/T-95 for attribution. The code,
+15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
 database migration, staff-routing verification and human manual run remain pending.

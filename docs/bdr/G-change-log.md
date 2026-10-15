@@ -246,10 +246,10 @@ Applied Week 9 choices to eligible stories and recorded remaining assumptions. R
 
 ## 15 October 2026 — E06-S03 withdrawal and suggested-venue follow-up
 
-T-93 records the Product Owner's Pending-only withdrawal boundary and the future
+T-94 records the Product Owner's Pending-only withdrawal boundary and the future
 Confirmed-primary cancellation rule (clear primary, prompt Organiser, no automatic
-promotion). T-94 records the E06-S04 owner's Released/lock/audit agreement and the
-story owner's requested-venue staff notification confirmation. T-95 records the
+promotion). T-95 records the E06-S04 owner's Released/lock/audit agreement and the
+story owner's requested-venue staff notification confirmation. T-96 records the
 story owner's replacement retry and rejection-chain confirmation. Source is the
 clarifications relayed in the working conversation on 15 October; these are not
 new customer consultation quotes or proof of implementation.
@@ -261,3 +261,19 @@ new suggestion, if any, rather than retry its predecessor's suggestion. Preserve
 0019 and plan a separate index migration. The latest E06-S05 owner coordination
 is already resolved in #274; this follow-up does not reopen it or change Session
 scope, hold defaults, story estimates, sprint assignments or Jira statuses.
+
+
+## 16 October 2026 ? Withdrawal decision reference correction (#280 review)
+
+Renumber the withdrawal decisions from T-93/T-94/T-95 to **T-94/T-95/T-96**
+because earlier PR #279 reserves T-93 for hand-taken manual-run screenshots.
+This is a reference correction, not a change to the agreed withdrawal behaviour.
+The release/product backlog, cases, contract, schema note, BDR addendum and
+regenerated CAA 161026 derivatives use the corrected IDs. CAA 151026 exports
+and immutable execution records remain historical snapshots with their old IDs.
+
+New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata pending
+PO/Scrum Master planning confirmation. They remain unimplemented, not delivered;
+no new sprint commitment or carryover has been inferred from the date. #268's
+reported fixed 354-case tooling assertion is a dependency to watch when it merges;
+this catalogue correctly has 359 cases and no unrelated #268 test is changed here.

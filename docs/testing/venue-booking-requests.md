@@ -126,7 +126,7 @@ Occupancy/formatting/expiry-message helpers now live in `bookingShared.ts`,
 removing the workflow import cycle. Conversion reuses the same expired-hold copy.
 
 
-## Recorded withdrawal follow-up decisions (15 October; T-93 to T-95)
+## Recorded withdrawal follow-up decisions (15 October; T-94 to T-96)
 
 Pending-only withdrawal and replacement retry/chain rules are now recorded in
 the canonical backlog, BDR and booking contract. They remain **unimplemented**
@@ -145,3 +145,14 @@ decision races, staff notifications/rollback, withdrawal retry and rejection cha
 No passing execution evidence is claimed for these new requirements. Obtain peer
 review of the shared index/routing contract before implementation, and record
 fresh automated and human manual outcomes afterward. No Jira edits in this task.
+
+
+### Review planning note (16 October 2026)
+
+The five new cases retain Sprint 3 to match E06-S03's existing plan; this records
+acceptance obligations, not completed work. PO/Scrum Master confirmation of the
+remaining implementation's scheduling is pending. Do not silently move them to
+Sprint 4 or mark them delivered. References are now T-94/T-95/T-96 because #279
+reserved T-93 first; earlier dated exports and immutable run records retain the
+old references as history. Reconcile the fixed-count tooling assertion reported
+on #268 with the actual 359-case inventory if that PR lands.

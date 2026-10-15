@@ -4,11 +4,11 @@ Record the agreed E06-S03 withdrawal and replacement clarifications after merged
 
 ## Decisions and provenance
 
-T-93 records the Product Owner clarification relayed by the story owner: Pending-only withdrawal, separate Confirmed cancellation, and future cancelled-primary clearing/prompting the Organiser without automatic promotion. The existing Coordinator primary-selection permission is not changed by this docs task.
+T-94 records the Product Owner clarification relayed by the story owner: Pending-only withdrawal, separate Confirmed cancellation, and future cancelled-primary clearing/prompting the Organiser without automatic promotion. The existing Coordinator primary-selection permission is not changed by this docs task.
 
-T-94 records E06-S04 owner agreement on Released, venue-before-booking locks, status recheck/409 and booking-specific audit. The story owner confirmed requested-venue staff notifications. E06-S03 owns Pending withdrawal; E06-S05 retains Tentative release/expiry, with no hold resurrection after conversion/withdrawal.
+T-95 records E06-S04 owner agreement on Released, venue-before-booking locks, status recheck/409 and booking-specific audit. The story owner confirmed requested-venue staff notifications. E06-S03 owns Pending withdrawal; E06-S05 retains Tentative release/expiry, with no hold resurrection after conversion/withdrawal.
 
-T-95 records story-owner confirmation that Released replacements permit another fresh attempt; Rejected replacements still consume the predecessor's slot. Follow the immediately preceding rejection's own suggestion with no fixed two-attempt maximum. A rejection without a suggestion ends that chain, not the ordinary venue-search journey. The future index must exclude Released only, not all inactive statuses.
+T-96 records story-owner confirmation that Released replacements permit another fresh attempt; Rejected replacements still consume the predecessor's slot. Follow the immediately preceding rejection's own suggestion with no fixed two-attempt maximum. A rejection without a suggestion ends that chain, not the ordinary venue-search journey. The future index must exclude Released only, not all inactive statuses.
 
 ## Work completed
 
@@ -21,3 +21,25 @@ BDR decisions/change log/addendum, release/product E06-S03, booking contract, sc
 ## Next step
 
 Review these docs and coordinate the new replacement-index predicate and withdrawal notification routing with E06-S04 before implementation. Never rewrite applied 0019; add a separately coordinated migration. Implement Pending-to-Released withdrawal, service/UI/index parity and atomic requested-venue staff notices, then execute new automated and human manual cases with fresh records. Future Confirmed cancellation stays outside E06-S03. Keep docs-only branches free of SCRUM keys to avoid accidental Jira completion.
+
+
+## PR #280 review correction (16 October)
+
+User authorised reviewer fixes and push. Synced reviewed head b4725b6, which
+already includes main ef18a96; preserved those upstream changes. Both reviewers
+identified #279 as the earlier T-93 claimant. Renumbered our current requirements
+and task references to T-94/T-95/T-96, with dated change-log provenance. Historical
+immutable records and CAA 151026 exports retain the previous IDs. Regenerated
+CAA 161026 backlog, cases and BDR; refreshed legacy testcase input and inventory.
+
+The user asked who should decide case sprint labels; referred scheduling to PO
+and Scrum Master. Preserve current Sprint 3 labels and explicitly mark new cases
+unimplemented pending planning, rather than assigning Sprint 4/carryover. No new
+planning commitment made. #268's reported 354-case assertion is not merged here;
+watch integration and do not weaken the valid 359-case catalogue to satisfy it.
+
+Evidence: 20261016-010256-jininggg-tooling.md. All 359 cases match both workbooks;
+BDR IDs are unique with T-93 reserved for #279; corrected backlog references and
+all five unchanged sprint labels verified. Repository check: 140 tests, existing
+Windows worktree 3 failures/11 errors. No code, migrations, database or Jira edits.
+Update PR body/PostPlan after pushing the fixes. No reviewer messages or approvals.
