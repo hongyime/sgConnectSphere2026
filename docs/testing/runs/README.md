@@ -168,6 +168,31 @@ Example:
 | MULTIPLE | Backend unit suite | PASS | 23/23 passed — https://github.com/hongyime/sgConnectSphere2026/actions/runs/12345 |
 ```
 
+## Screenshots for manual runs (T-93)
+
+Every manual run (`run_type: manual`) keeps screenshots as evidence, taken by
+hand by the person running the test. Screenshots from an agent or Playwright
+do not count as manual evidence; record those runs as `automated`.
+
+- **Where:** `docs/testing/runs/evidence/<record filename without .md>/`, so
+  each run's images sit together and never collide with another run's.
+- **Name:** the TC_ID the image shows, for example `TC_E11S01_02.png`. For
+  several images of one test case, add a number: `TC_E11S01_02-1.png`,
+  `TC_E11S01_02-2.png`. For a `MULTIPLE` row, use `MULTIPLE-<short-label>.png`.
+- **What:** at least one screenshot for every `PASS` or `FAIL` row, showing
+  the result written in `Remarks` (the message, status or notification).
+  `SKIP` and `N/A` rows need none.
+- **Format:** PNG or JPG under 1000 KB each (the pre-commit large-file limit).
+  Crop to the part of the screen that matters.
+- **Never show** passwords, tokens, connection strings or real personal data.
+  Seeded test accounts are fine.
+- **Link** them from the record in a `## Screenshots` section under the results
+  table, and commit them in the same commit as the record. Like the record,
+  they are not edited or replaced once merged.
+
+A postplan may show the same images, but the repository copy is the evidence.
+Records merged before 15 October 2026 are not retrofitted.
+
 ## Design decisions
 
 ### Records are immutable once merged
@@ -205,7 +230,9 @@ is needed.
 5. Copy the frontmatter template from `TEMPLATE.md` and fill in every required
    field. Set `pr` only if this run is tied to an open PR; otherwise omit it.
 6. Add one row to the results table for each test case you ran. Use `MULTIPLE`
-   if only aggregate counts are available.
+   if only aggregate counts are available. For a manual run, save your
+   screenshots under `evidence/<record filename without .md>/`, named by
+   TC_ID, and link them in a `## Screenshots` section (T-93).
 7. Save the file. Run `python scripts/check.py`. Commit the record in the same
    PR as the code it covers, or as a standalone commit if it is a standalone
    verification run.
@@ -238,6 +265,11 @@ After a test run that is used as evidence, create exactly one session record fil
 - Use `MULTIPLE` for any suite where the runner does not emit per-test TC_IDs.
 - For a manual run, fill `Remarks` on every row with the actual result
   observed, including passing rows (see "Results table").
+- For a manual run, use only screenshots the human tester took and supplied
+  (T-93). Never take or substitute your own screenshots as manual evidence.
+  Save each one under `evidence/<record filename without .md>/` named by TC_ID,
+  check it shows no secrets or real personal data, and link it in the
+  record's `## Screenshots` section.
 - Do not edit existing session files.
 
 ## Relationship to the per-story implementation logs

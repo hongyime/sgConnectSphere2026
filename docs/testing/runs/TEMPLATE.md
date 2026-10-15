@@ -13,3 +13,10 @@ commit: 0000000                    # 7-character SHA from: git rev-parse --short
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
 | TC_EXXSXX_XX | Paste the test name from the workbook | PASS | Manual runs: what you actually saw, even on a PASS |
+
+## Screenshots
+
+<!-- Manual runs only (T-93): hand-taken, one or more per PASS/FAIL row, saved in
+     evidence/<this filename without .md>/ and named by TC_ID. Delete this section
+     for automated runs. -->
+- [TC_EXXSXX_XX](evidence/YYYYMMDD-HHMMSS-runner-scope/TC_EXXSXX_XX.png): what it shows
