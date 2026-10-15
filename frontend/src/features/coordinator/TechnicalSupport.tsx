@@ -20,7 +20,7 @@ import './coordinator.css';
 
 // Support can be arranged while approved or planning; afterwards the card
 // still shows what was arranged.
-export const SUPPORT_VISIBLE = ['approved', 'planning', 'confirmed', 'completed'];
+export const SUPPORT_VISIBLE = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'];
 
 const eventPath = (eventCode: string) => `/coordinator/events/${encodeURIComponent(eventCode)}`;
 

@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import {
-  Alert, Button, ConfirmPanel, DataTable, ErrorState, FactList, FilterChips, FormField, apiCall, formatDate, formatDateRange, useLoad,
-  type ApiResult,
+  Alert, Button, ConfirmPanel, DataTable, ErrorState, FactList, FilterChips, FormField, StatusPill, apiCall, formatDate, formatDateRange,
+  statusLabel, useLoad, type ApiResult,
 } from '.';
 import { UiKit } from '../app/UiKit';
 
@@ -26,6 +26,17 @@ describe('formatDate', () => {
   test('says when a date is missing', () => {
     expect(formatDate(null)).toBe('Not recorded');
     expect(formatDate('not a date')).toBe('Not recorded');
+  });
+});
+
+describe('statusLabel', () => {
+  test('writes stored statuses in sentence case, and Safety Review as design.md section 7 names it', () => {
+    expect(statusLabel('under_review')).toBe('Under review');
+    expect(statusLabel('planning')).toBe('Planning');
+    // E08-S03 (SCRUM-60): the only label that isn't the stored value in sentence case.
+    expect(statusLabel('safety_review')).toBe('Safety Review');
+    render(<StatusPill status="safety_review" />);
+    expect(screen.getByText('Safety Review')).toHaveClass('status-pill', 'status-safety-review');
   });
 });
 
