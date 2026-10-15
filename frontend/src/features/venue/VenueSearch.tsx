@@ -68,6 +68,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
   }
 
   return <>
+    {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-bookings`}>View venue booking requests</ButtonLink>}
     {d.title && <Card title={d.title}><p>Search criteria are filled from this event. Changing them here does not update the event.</p></Card>}
     <Card title="Search criteria">
       <p>Times use your local timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}). Suitability is advisory; unavailable venues cannot be treated as free.</p>
@@ -114,6 +115,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode }: { setup
             ['Accessibility', v.accessibility.map(f => f.label).join(', ') || 'None'],
           ]} />
           {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/suitability`}>Check recorded event requirements</ButtonLink>}
+          {eventCode && v.available && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/hold`}>Hold this venue</ButtonLink>}
           {v.mismatches.length > 0 && <div><strong>Unmet requirements</strong><ul>{v.mismatches.map(m => <li key={m}>{m}</li>)}</ul></div>}
         </Card>)}
       </>}

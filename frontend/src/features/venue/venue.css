@@ -184,3 +184,8 @@
 .venue-search-form, .venue-search-results { display: grid; gap: var(--space-5); }
 .venue-search-form .field-checkbox { min-height: 40px; }
 .venue-search-results { min-width: 0; overflow-wrap: anywhere; }
+
+/* E06-S05 tentative holds for Venue Staff (TentativeHolds.tsx). */
+.venue-subtle { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+.tentative-holds { display: grid; gap: var(--space-4); }
+.hold-extend-form { display: grid; gap: var(--space-3); }

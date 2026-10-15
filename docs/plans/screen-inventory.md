@@ -4,8 +4,10 @@
 - **Owner**: Amareet (SCRUM-118)
 - **Audited against**: `frontend/src/app/routes.tsx` and its rendered components at main commit `139217e`, plus `docs/backlog/release-1/`
 - **Date**: 2026-10-02
+- **E06-S03 branch refresh**: 2026-10-12, assigned-event booking-status list only; submission remains deferred and other rows/counts were not re-audited.
 - **E07-S03 branch refresh**: 2026-10-07, SCRUM-53 equipment availability routes; other rows were not re-audited.
 - **E07-S04 branch refresh**: 2026-10-08, SCRUM-54 reservation routes; other rows and the counts were not re-audited.
+- **E07-S05 branch refresh**: 2026-10-12, SCRUM-55 unavailability route; the E07-S05 row and the stories-with-no-route count were updated, other rows and the route totals were not re-audited.
 - **Focused refresh**: E05-S04 route status checked against main commit `1c1be82` after PR #185 merged on 2026-10-03; other rows were not re-audited.
 
 This file maps every Release 1 story (47 in total, per the backlog README's
@@ -58,7 +60,7 @@ in the second table below.
 | E05-S04 | Block a venue for maintenance | Venue Staff member | Sprint 2 | `/venue/blockout` | live | Form, List | The live `VenueBlockout` form and block list are in merged PR #185 (SCRUM-120; merge `9584c77`). Route status does not imply the story Definition of Done is met. |
 | E06-S01 | Search for suitable venues | Event Coordinator | Sprint 2 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Catalogue search with suitability filters. |
 | E06-S02 | Check venue suitability against event requirements | Event Coordinator | Sprint 3 | `/coordinator/venues`, `/coordinator/events/:eventCode/venues` | live | List | Suitability flags surface on the search results (same screens as E06-S01). This remains a Sprint 3 story; its owner must verify all acceptance criteria before treating it as done. |
-| E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | — | none | Form | Expected to live under `/coordinator/events/:eventCode/venues` or the planning workspace. |
+| E06-S03 | Request a venue booking | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/venue-bookings` | live | List | Assigned-event booking status only, linked from event venue search. Submission is not available; its form is deferred to the submission PR. See `docs/testing/venue-booking-requests.md`. |
 | E06-S04 | Decide on a venue booking request | Venue Staff member | Sprint 3 | `/venue/bookings`, `/venue/bookings/:bookingId`, `/venue/bookings/:bookingId/decide` | live | List, Detail, Decision | `BookingRequests`, `BookingDetail` and `BookingDecision` on the shared blocks (SCRUM-48). The buffered-window check and the Coordinator's switch to a suggested venue are still to come. Route status does not imply the story Definition of Done is met. |
 | E06-S05 | Hold a venue tentatively | Event Coordinator | Sprint 3 | — | none | Decision | Expected to surface inside the planning workspace or venue search. |
 | E06-S06 | Prevent double-booking of a venue | Venue Staff member | Sprint 3 | — | none | Other | Backend rule; conflicts surface in `/venue/bookings/:bookingId` and the Coordinator venue calendar. |
@@ -66,7 +68,7 @@ in the second table below.
 | E07-S02 | Request equipment for an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/plan` | mock | Other | Planning workspace covers equipment, venue and support in one view. |
 | E07-S03 | Check equipment availability | Technical Support Staff member | Sprint 3 | `/support/availability`, `/support/conflicts` | live | List, Form | Read-only period check shows total, simultaneous commitments and minimum free quantity; location is informational. |
 | E07-S04 | Reserve equipment for an event | Technical Support Staff member | Sprint 3 | `/support/events/:eventCode/equipment`, `/support/events/:eventCode/equipment/:requestId/reserve`, `/support/queue`, `/support/requests/:requestId` | live, live, redirect, redirect | List, Form | Reserve, change and release per request line on E07-S02's event equipment page, plus a reserve form; the old mock queue and reservation detail go to `/support/equipment-requests`. Route status does not imply the story Definition of Done is met. |
-| E07-S05 | Mark equipment as unavailable | Technical Support Staff member | Sprint 3 | — | none | Form | Expected to surface inside `/support/catalogue` as an item action. |
+| E07-S05 | Mark equipment as unavailable | Technical Support Staff member | Sprint 3 | `/support/catalogue/:equipmentId/unavailable` | live | Form | Reached from "Mark unavailable" on the equipment detail page (`/support/catalogue/:equipmentId`, E07-S01), which also lists current and future unavailable periods with "Return to service…". Route status does not imply the story Definition of Done is met. |
 | E07-S06 | Request technical support for an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/plan` | mock | Other | Part of the planning workspace (same screen as E07-S02). |
 | E07-S07 | Assign and manage technical staff for an event | Technical Support Staff member | Sprint 3 | `/support/technicians` | mock | List | Technician assignment list. |
 | E08-S03 | Confirm an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/readiness`, `/coordinator/events/:eventCode/confirm` | mock | Other, Decision | Readiness checklist then final confirmation. |
@@ -117,11 +119,11 @@ as a viewer prototype; listing a prototype does not authorise its role or API.
 | `/search` | mock | Design-review mock for a generic search surface. |
 | `/ui-states` | mock | Design-review mock showing empty, error and loading states. |
 
-## Counts
+## Baseline counts (before focused branch refreshes)
 
 - Release 1 stories: 47.
 - Routes with a primary Release 1 story tag: live 32, mock 17, coming-soon 3, redirect 1 (53 total).
-- Release 1 stories with no current route (`none`): 11, counted from the story table. These are E06-S03/S05/S06, E07-S05, E08-S04/S05, E09-S02/S03/S06/S07 and E10-S02. A proposed future surface in the Notes column is not counted as a current route.
+- Release 1 stories with no current route (`none`): 10, counted from the story table. These are E06-S03/S05/S06, E08-S04/S05, E09-S02/S03/S06/S07 and E10-S02. A proposed future surface in the Notes column is not counted as a current route.
 - Routes with no primary story tag: 22 (listed above). Together with the 53 tagged routes, this accounts for all 75 entries in `routes.tsx` at `139217e`.
 - Route counts count each registered path once. Story rows may share a route, so route totals and story totals measure different things.
 

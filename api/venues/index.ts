@@ -3,6 +3,7 @@ import { supportHandler } from '../../backend/src/modules/equipmentSupport/suppo
 import { staffingHandler } from '../../backend/src/modules/equipmentSupport/staffingHandler.js';
 import { HOLD_ACTIONS, holdsHandler } from '../../backend/src/modules/venueBooking/holdsHandler.js';
 import { venueSuitability } from '../../backend/src/modules/venueBooking/suitability.js';
+import { bookingRequestsHandler } from '../../backend/src/modules/venueBooking/bookingRequestsHandler.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
@@ -23,6 +24,9 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (new URL(request.url || '/', 'http://localhost').searchParams.get('mode') === 'booking_requests') {
+    await bookingRequestsHandler(request, response); return;
+  }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('task') === 'equipment') {
     await equipmentHandler(request, response); return;
   }

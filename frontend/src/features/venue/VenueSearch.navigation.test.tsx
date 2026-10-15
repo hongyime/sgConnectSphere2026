@@ -86,3 +86,23 @@ test.each([
   expect(screen.queryByText('Search for event A failed')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Search venues' })).toBeEnabled();
 });
+
+// E06-S05 (SCRUM-143): from an event's search, an available venue offers
+// "Hold this venue"; an unavailable one doesn't.
+test('event-scoped results offer Hold this venue only for an available venue', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    const url = new URL(input, 'http://localhost');
+    const isSearch = url.searchParams.get('search') === '1';
+    const body = isSearch ? { venues: [
+      { ...results('A').venues[0], id: 'v-free', name: 'Free Hall' },
+      { ...results('A').venues[0], id: 'v-busy', name: 'Busy Hall', available: false, suitable: false, mismatches: ['Unavailable during the requested period.'] },
+    ] } : defaults('A');
+    return { ok: true, status: 200, json: async () => body } as Response;
+  }));
+  renderEventA();
+  fireEvent.click(await screen.findByRole('button', { name: 'Search venues' }));
+  const free = (await screen.findByRole('heading', { name: 'Free Hall' })).closest('section')!;
+  const busy = screen.getByRole('heading', { name: 'Busy Hall' }).closest('section')!;
+  expect(free.querySelector('a[href="/coordinator/events/A/venues/v-free/hold"]')?.textContent).toBe('Hold this venue');
+  expect(busy.querySelector('a[href$="/hold"]')).toBeNull();
+});

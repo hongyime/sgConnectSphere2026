@@ -14,8 +14,7 @@
 // Data: venue_bookings rows with status 'tentative' and expires_at (0013).
 // "Live" means status = 'tentative' AND expires_at > now(), so a hold stops
 // counting the instant it expires, whether or not the job has run yet.
-// Scenario 5 (the venue's setup and turnaround buffer) follows once E05-S05's
-// occupied_window() lands (#231).
+// Scenario 5: all writes use the shared occupied_window() calculation (E05-S05).
 import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
@@ -100,6 +99,7 @@ async function audited<T>(database: Pool, user: AuthenticatedUser, work: () => P
     return await work();
   } catch (error) {
     if (error instanceof AccessError && error.status === 403) await recordDenied(database.query.bind(database) as Query, user);
+    if ((error as { code?: string })?.code === '23P01') throw new AccessError(409, 'This venue is already occupied or blocked for that period, including setup and turnaround.');
     throw error;
   }
 }
@@ -144,9 +144,10 @@ function checkExpiry(expires: Date | undefined, now: Date) {
 async function findClash(client: PoolClient, venueId: string, startsAt: Date, endsAt: Date, now: Date, ignoreBookingId: string | null) {
   const booking = (await client.query<{ status: string; eventCode: string | null; title: string; startsAt: Date; endsAt: Date }>(`
     SELECT vb.status, e.event_code AS "eventCode", e.title, lower(vb.booking_range) AS "startsAt", upper(vb.booking_range) AS "endsAt"
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
+    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND ${holdsVenue('vb', '$4')}
-      AND vb.booking_range && tstzrange($2, $3, '[)') AND ($5::uuid IS NULL OR vb.id <> $5)
+      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)
+        && occupied_window(tstzrange($2, $3, '[)'), v.setup_time_minutes, v.turnaround_time_minutes) AND ($5::uuid IS NULL OR vb.id <> $5)
     ORDER BY lower(vb.booking_range) LIMIT 1`, [venueId, startsAt, endsAt, now, ignoreBookingId])).rows[0];
   if (booking) {
     const kind = booking.status === 'tentative' ? 'a tentative hold' : booking.status === 'pending' ? 'a pending booking request' : 'a confirmed booking';
@@ -214,10 +215,14 @@ export async function convertHold(database: Pool, user: AuthenticatedUser | unde
   const bookingId = uuid(data.booking_id, 'booking');
   return audited(database, actor, () => inTransaction(database, async client => {
     const event = await lockEvent(client, actor, { booking: bookingId });
+    await client.query(`SELECT v.id FROM venues v JOIN venue_bookings vb ON vb.venue_id = v.id WHERE vb.id = $1 FOR NO KEY UPDATE OF v`, [bookingId]);
     const hold = await lockHold(client, bookingId, ['pending']);
     if (hold.status === 'pending') return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
-    if (!isLive(hold, await databaseNow(client))) throw new AccessError(409, EXPIRED);
+    const now = await databaseNow(client);
+    if (!isLive(hold, now)) throw new AccessError(409, EXPIRED);
+    const clash = await findClash(client, hold.venueId, hold.startsAt, hold.endsAt, now, hold.id);
+    if (clash) return { status: 409, body: { error: clash } };
     await client.query(`UPDATE venue_bookings SET status = 'pending', expires_at = NULL WHERE id = $1`, [hold.id]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: hold.id, action: `Tentative hold on ${hold.venueName} submitted as a booking request` });
     return { status: 200, body: { booking: { id: hold.id, status: 'pending' } } };
