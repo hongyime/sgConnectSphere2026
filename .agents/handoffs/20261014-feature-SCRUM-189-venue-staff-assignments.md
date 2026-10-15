@@ -11,19 +11,21 @@ at Sprint 4 planning.
 Two PRs, per `docs/ops/production-migrations.md`:
 
 1. Migration-only PR (branch `feature/SCRUM-189-venue-staff-migration`):
-   `0016_venue_staff_assignments.sql` creates `venue_staff_assignments`
+   `0018_venue_staff_assignments.sql` creates `venue_staff_assignments`
    (venue_id, staff_id, active_from, active_until). New table only, so the
    deployed application is unaffected. Apply it in production after merge.
 2. Code PR (this branch, stacked on 1): seed assignments, a table-backed
    default resolver in `captureEventAudience`, tests. Merge only after the
-   production ledger check for 0016 passes.
+   production ledger check for 0018 passes.
 
 ## Decisions
 
 - No roster screen (T-89). Rows are setup data.
 - Never infer assignment from `decided_by` (T-64); TC_E11S01_13 keeps proving it.
 - Resolved IDs are still filtered to active `venue_staff` users, as before.
-- Migration number 0016: 0011/0015 (#261), 0012 (#232), 0014 (#263) are taken.
+- Migration number 0018 (renamed from 0016 on 15 Oct): 0016 is #261's write
+  guard, 0017 is reserved for SCRUM-184 (Bl0oper), 0019 is the booking
+  contract. Agreed in the #271 review comments and `docs/db_schema.md`.
 
 ## Done
 

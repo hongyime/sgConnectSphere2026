@@ -100,7 +100,7 @@ test('TC_E03S03_11 - an edit from a tab opened before the rejection is refused, 
     'GET /api/events?id=EVT-GALA': { body: orgRead({
       status: 'under_review', decision: null, canEdit: true,
       editableFields: ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements',
-        'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationDates'],
+        'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'],
     }) },
     'PATCH /api/events?edit=1&id=evt-gala': { status: 409, body: { error: READ_ONLY } },
   });

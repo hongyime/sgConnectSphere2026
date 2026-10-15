@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 351 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 354 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **351**
-- Automated (explicit TC_ID in an active test title): **164** (46.7%)
-  - Real-database (`.integration.test` / `.db.test`): **22**
+- Total test cases: **354**
+- Automated (explicit TC_ID in an active test title): **183** (51.7%)
+  - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **141**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (28.5%)
-- No test yet (no test file mentions the TC_ID): **87** (24.8%)
+  - Live-assertion (other active tests): **146**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **93** (26.3%)
+- No test yet (no test file mentions the TC_ID): **78** (22.0%)
 
 ## Coverage by epic
 
@@ -21,17 +21,17 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 25 | 11 | 2 |
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 52 | 39 | 3 | 10 |
-| E04 | 5 | 0 | 0 | 5 |
-| E05 | 37 | 24 | 0 | 13 |
-| E06 | 38 | 15 | 16 | 7 |
-| E07 | 34 | 27 | 3 | 4 |
+| E04 | 5 | 2 | 0 | 3 |
+| E05 | 37 | 29 | 0 | 8 |
+| E06 | 38 | 21 | 12 | 5 |
+| E07 | 37 | 33 | 0 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
 | E10 | 29 | 0 | 15 | 14 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **351** | **164** | **100** | **87** |
+| **Total** | **354** | **183** | **93** | **78** |
 
 ## Case-by-case status
 
@@ -167,8 +167,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ❌ none | — |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ❌ none | — |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
 | `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
 | `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
 | `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
@@ -201,11 +201,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
-| `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ❌ none | — |
-| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ❌ none | — |
-| `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ❌ none | — |
-| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ❌ none | — |
-| `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ❌ none | — |
+| `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail |
+| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertised search windows |
+| `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_03: a buffer edit flags the later of two newly-overlapping bookings, notifies once, keeps both |
+| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers |
+| `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ❌ none | — |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ❌ none | — |
 | `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ❌ none | — |
@@ -226,15 +226,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
-| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S02_04 - Verify that submitting a booking request for a venue marked unsuitable should still be accepted, with the unsuitability shown to Venue Staff |
+| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
 | `TC_E06S02_05` | E06-S02 | Verify operating hours are an advisory suitability criterion only in E06-S02 | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
-| `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_01 - Verify that submitting a booking request for a event with no existing pending request should create it as Pending and notify Venue Staff |
-| `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_02 - Verify that submitting the first booking request for an Approved event should move its status to Planning |
+| `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
+| `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
 | `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request ide |
-| `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_04 - Verify that submitting a request for a venue already Pending or Confirmed for another event over the same period should be blocked with the co |
+| `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
 | `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
-| `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ❌ none | — |
-| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ❌ none | — |
+| `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates |
+| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox |
 | `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ❌ none | — |
 | `TC_E06S04_01` | E06-S04 | Verify that approving a pending request for a venue that is free for the period  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_01 - Verify that approving a pending request for a venue that is free for the period should confirm the booking, update the calendar, and notify th |
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_02 - Verify that rejecting a request with a recorded reason and a suggested alternative venue should notify the Coordinator with both, allowing the |
@@ -246,7 +246,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ❌ none | — |
 | `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
+| `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S05_04 conversion preserves row and stops expiry; concurrent retry and expiry cannot undo Pending; backend/tests/bookingS |
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
@@ -280,9 +280,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S04_05` | E07-S04 | Verify that requesting one fewer than the free quantity produces a full reservat | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
 | `TC_E07S04_06` | E07-S04 | Verify that requesting exactly the free quantity produces a full reservation and | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_05 TC_E07S04_06 reserving one fewer than free leaves one free and reserving exactly the free quantity leaves none |
 | `TC_E07S04_07` | E07-S04 | Verify that requesting one more than the free quantity produces a partial reserv | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S04_02 TC_E07S04_07 a partial reservation records Partial and notifies the Coordinator of the shortfall and outstandi |
-| `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_01 - Verify that marking an item with no reservations in the period unavailable, with a reason and a period, should exclude it from availability ch |
-| `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_02 - Verify that marking an item unavailable while it is reserved for an upcoming event should flag the affected event and notify its Coordinator |
-| `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ⚠️ scaffold | tests/e2e/e07.spec.ts: TC_E07S05_03 - Verify that returning an item to service should restore it to availability checks |
+| `TC_E07S05_01` | E07-S05 | Verify that marking an item with no reservations in the period unavailable, with | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_01 marking an item with no reservations unavailable for a period with a reason excludes it from availability fo |
+| `TC_E07S05_02` | E07-S05 | Verify that marking an item unavailable while it is reserved for an upcoming eve | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_02 marking a reserved item unavailable flags the affected event and notifies its Coordinator once; tests/e2e/eq |
+| `TC_E07S05_03` | E07-S05 | Verify that returning an item to service should restore it to availability check | ✅ active | backend/tests/equipmentUnavailability.integration.test.ts: TC_E07S05_03 returning an item to service deletes the period restores availability and is audited; tests/e2e/equipmentUna |
 | `TC_E07S06_01` | E07-S06 | Verify that submitting a technical support request describing the support needed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_02` | E07-S06 | Verify that submitting a technical support request before the venue is confirmed | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
 | `TC_E07S06_03` | E07-S06 | Verify that marking a event as needing no technical support should create no req | ✅ active | backend/tests/supportRequests.integration.test.ts: TC_E07S06_01 TC_E07S06_02 TC_E07S06_03 technical support requests against PostgreSQL; backend/tests/supportRequests.test.ts: TC_E |
@@ -296,6 +296,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ❌ none | — |
 | `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ❌ none | — |
 | `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ❌ none | — |
+| `TC_E07S09_01` | E07-S09 | Stock reduction includes overlapping withdrawals | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_01 stock 10 with 4 withdrawn and 5 reserved: reducing to 8 flags the reservation and notifies once |
+| `TC_E07S09_02` | E07-S09 | Withdrawal boundaries and peak demand are respected | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_02 catalogue stock reduction:  |
+| `TC_E07S09_03` | E07-S09 | Withdrawal-aware stock edit rolls back on outbox failure | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_03 withdrawal-aware stock edit rolls back stock, review flags and notifications when outbox persistence fails |
 
 ### E08
 
@@ -466,6 +469,28 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
 
+### `backend/tests/bookingSubmission.integration.test.ts`
+
+- notification failure rolls back request, status, audit and deliveries together
+- concurrent direct submissions and retries create only one request and one set of effects
+- a direct request and a hold for different events cannot both occupy the same venue
+- stale login and ambiguous Session data cannot authorize a new request
+- migration preserves legacy rows and enforces optional headcount and confirmed-only primary
+- suggested venue replacement keeps rejection, validates links and serializes duplicate switches
+
+### `backend/tests/bookingSubmission.test.ts`
+
+- booking input normalizes instants and optional fields, rejects invalid types/bounds
+- authentication/input refusals happen before a transaction
+- transactional gates refuse assignment/account/status/session/venue/block/conflicts
+- direct retry returns stored request without effects; changed payload is rejected
+- expired/missing/non-hold conversion rolls back and reads clock after the hold lock
+- write failures roll back; database conflict maps to 409
+- request notices target selected venue only; actor excluded; outbox shares transaction
+- submission handler enforces method/origin and hides server errors
+- replacement input validates rejected provenance and rejects duplicate switches before persistence
+- unassigned hold conversion remains forbidden while direct requests conceal event assignment
+
 ### `backend/tests/clarification.test.ts`
 
 - SCRUM-33: at most 20 questions can be sent at once
@@ -570,6 +595,26 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 invalid input is answered with field errors and no transaction once the caller is Technical Support
 - E07-S04 the equipment request route sends reserve changeReservation and releaseReservation to the reservation writers
 
+### `backend/tests/equipmentUnavailability.integration.test.ts`
+
+- E07-S05 D54 only reservations that no longer fit are flagged, and a partial reservation counts
+- E07-S05 D53 returning to service clears no flags and sends no notice
+- E07-S05 D51 overlapping withdrawals add up but never past the stock, exactly the units in service is accepted
+- E07-S05 retired and unknown items are refused, items under maintenance can still be marked, and an ended period cannot be returned
+- E07-S05 only Technical Support Staff mark or return and every refusal is audited with nothing changed
+- E07-S05 two withdrawals saved at the same moment cannot take out more units than exist
+- E07-S05 no notice is sent when the event has no assigned Coordinator or the Coordinator account changed role
+- E07-S05 a one-unit withdrawal says 1 unit, and a return that waited while the period was removed is refused
+
+### `backend/tests/equipmentUnavailability.test.ts`
+
+- E07-S05 D51 a withdrawal is whole Singapore days with a trimmed reason, stored as a half-open range
+- E07-S05 D51 invalid dates quantities and reasons are refused with field errors
+- E07-S05 days and in-service sentences read the way the screens write them
+- E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
+- E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
+- E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
+
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
 - SCRUM-110: migration 0005 free-text fields survive a real PostgreSQL roundtrip
@@ -619,6 +664,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - direct denied access commits actor and attempted event before returning denial
 - organiser event detail includes current status date and status history
 - SCRUM-37: organiser detail exposes editable fields and full activity log contract
+- SCRUM-37: registration setup is listed as editable for the organiser before approval only
 - audit failure never returns event information or a false logged success
 - an organiser can post an accessible event comment and notify its coordinator
 - comment posting refuses an event outside the organiser organisation
@@ -627,6 +673,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - only the assigned coordinator can edit an approved event
 - assigned coordinator can edit approved event fields and every change is audited
 - organiser can update registration dates before approval
+- organiser can fill in registration setup before approval, but not after
 - organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
@@ -790,12 +837,21 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - block changes require a signed-in Venue Staff member
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
+- createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window
 
 ### `backend/tests/venueBookingRequests.test.ts`
 
 - read reject anonymous, inactive, locked and wrong-role users
 - read refuse another Coordinator or unassigned event without loading bookings
 - booking-list HTTP handler authenticates, prevents caching, refuses writes and hides internal errors
+
+### `backend/tests/venueBufferConflicts.integration.test.ts`
+
+- buffer conflicts preserve occupancy and confirmed priority, include live holds and exclude history
+- new hold and conversion enforce buffered clashes; flags remain visible without private event disclosure
+- a retained conflict chain flags every real pair without releasing or flagging the highest-priority booking
+- concurrent raw booking writes cannot bypass buffers
+- buffer notifications skip missing Coordinators, and clearing flags preserves capacity review
 
 ### `backend/tests/venueCalendar.test.ts`
 
@@ -834,6 +890,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - searchVenues excludes a venue missing even one requested accessibility feature
 - searchVenues with no accessibility ids requested applies no accessibility filter
 - searchVenues applies the layout and accessibility filters together
+- validateVenueInput accepts zero and positive whole-minute buffers, rejecting negatives and fractions
+- createVenue persists the buffer fields on insert and returns them (E05-S05 Scenario 1)
+- createVenue stores zero buffers when none are supplied
+- updateVenue returns the updated buffer values (E05-S05 Scenario 1)
+- buffer overflow is a 400, other database errors survive, and every failed edit rolls back
 
 ### `backend/tests/venueHolds.integration.test.ts`
 
@@ -850,8 +911,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateHoldInput reports each bad field, including an expiry outside 1 hour to 14 days
 - T-78 (O-29): a hold must lie within the event period
 - a hold is refused for another Coordinator\
-- an expired, missing or non-hold booking cannot be converted; nor one on an unplanned event
-- converting again after success returns the same pending booking with no second write or audit entry
 - Scenario 4: the Coordinator releases a hold and the period is Free again
 - expiry is judged at database time read after the locks, not when the request arrived
 - an extension locks the venue before the hold, like placing a hold does
@@ -863,6 +922,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Venue Staff list every live hold, soonest expiry first
 - handler: methods, origin and actions
 - handler: GET routes to the event or staff list; POST to hold, convert, release or extend
+- database buffer-guard refusals become 409 and rollback a hold creation
 
 ### `backend/tests/venueSearch.test.ts`
 
@@ -978,6 +1038,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
 
+### `frontend/src/features/coordinator/VenueHolds.test.tsx`
+
+- the card lists live and expired holds with their expiry, and links to venue search
+- with no holds the card explains the 48-hour hold; an event that cannot hold says so and has no link
+- a failed or malformed load shows an error with a retry, and the rest of the page still renders
+- Scenario 4: release asks first; Keep cancels, Release hold releases
+- a refused action shows the server sentence and leaves the list as it was
+- a chosen expiry is checked against 1 hour to 14 days and sent when valid
+- a changed period outside the event is caught before sending
+- a refused release shows the server sentence
+- server field errors land next to their fields
+- an event that can no longer hold venues shows why, and a failed load offers a retry
+- validateHold and expiryProblem enforce the period, the event window and the expiry limits
+
 ### `frontend/src/features/events/ActivityLog.test.tsx`
 
 - an event with no recorded activity says so
@@ -985,6 +1059,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an entry whose actor account was removed still shows, without a name
 - stored actions are shown in plain words, and other actions as written
 - a status change with no previous status shows only the new status
+- booking entries show hold expiry or a generic booking label without internal IDs
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
@@ -993,12 +1068,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty optional field left empty is not sent
 - clearing a field that had a value is refused, as the server does
 - an end before the start is refused
+- registration setup is sent like the other text fields
 - changed dates are sent as ISO timestamps
 - toLocalInput round-trips through the browser time zone
 - date fields warn that a change notifies people and name the time zone
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
-- registration date inputs describe the validation error and hint after an invalid save
+- registration date inputs describe the validation error after an invalid save
+- the Organiser can fill in registration setup, shown with the dates under Registration
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
@@ -1119,6 +1196,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case
 - E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve
 
+### `frontend/src/features/support/EquipmentUnavailability.test.tsx`
+
+- E07-S05 D51 the form checks dates, units and reason before sending anything
+- E07-S05 D51 the units default to those in service for the chosen dates until the user types a number
+- E07-S05 a server refusal is shown word for word, next to its field
+- E07-S05 Coordinators see the periods without actions and are refused the form; retired items have no actions
+- E07-S05 a refused return is shown in the panel, and Cancel closes it
+- E07-S05 the saved message says which Coordinators were told when some events have none
+- E07-S05 the helpers count the peak of overlapping periods and write dates the way the screens do
+- E07-S05 one unit reads
+- E07-S05 a second submit while saving sends nothing more, and a reply after leaving the page is ignored
+- E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored
+- E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form
+
 ### `frontend/src/features/support/TechnicianStaffing.test.tsx`
 
 - the queue shows requests needing a technician first, with filters for staffed and all
@@ -1130,17 +1221,36 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
 
+### `frontend/src/features/venue/TentativeHolds.test.tsx`
+
+- with nothing held the page says so; a failed load offers a retry
+- Scenario 8: a later expiry is saved, confirmed and the list reloads
+- an earlier or too-distant expiry is refused before sending; Cancel closes the form
+- a server refusal or field error is shown on the hold
+- validateExtension checks a missing value, the 1-hour floor and the current expiry
+
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
 - removing a block goes through ConfirmPanel and reloads the list on success
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
+### `frontend/src/features/venue/VenueBookingForm.test.tsx`
+
+- network retry retains the key; changing the payload rotates it
+- blank optional values use event attendance; suitable result has no failure list
+- invalid dates, reversed/outside periods, purpose and headcount prevent submission
+- server field errors and conflict messages remain visible and recoverable
+- submission disables controls while waiting and cannot double submit
+
 ### `frontend/src/features/venue/VenueBookingRequests.test.tsx`
 
 - empty list, error retry and missing route parameter use shared states
 - refused access shows no private event details
 - route change ignores a late response for the previous event
+- suggested venue switch prefills a new request and retains the rejected card
+- existing replacement or ineligible event suppresses the suggested-venue action
+- legacy rejected booking prefills blank metadata and uses current event bounds
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1164,15 +1274,21 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - shows a failed load and retries on request
 - does not present a plain venue record as an empty calendar
 - two blocks clipped to the same start get separate rows and keys
+- buffer segments and review flags are labelled without changing booking state
 
 ### `frontend/src/features/venue/VenueForm.navigation.test.tsx`
 
 - venue A\
 
+### `frontend/src/features/venue/VenueSearch.navigation.test.tsx`
+
+- event-scoped results offer Hold this venue only for an available venue
+
 ### `frontend/src/features/venue/VenueSuitability.test.tsx`
 
 - shows every failing criterion, comparisons and advisory guidance
 - suitable result has no failure section or empty notes alert
+- request form is available only for Approved or Planning assessments
 - shows server error and retry recovers
 - route change discards a late result for the previous venue
 
@@ -1306,6 +1422,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - booking list shows an empty state and a safe refusal without event details
 
+### `tests/e2e/venue-booking-submission.spec.ts`
+
+- conflict refusal keeps form available; invalid period prevents a POST
+- Confirmed event assessment provides no booking submission controls
+- rejected booking switches through a prefilled new Pending request
+
 ### `tests/e2e/venue-search.spec.ts`
 
 - search access denial shows safe error and no criteria form
@@ -1323,6 +1445,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - pressing Enter in the layout inputs adds the layout instead of submitting the form
 - availability calendar loads the selected venue from the API
 - pending booking detail confirms a booking
+
+### `tests/e2e/venueHolds.spec.ts`
+
+- the hold list and form fit the screen without sideways scrolling
 
 ### `tests/notifications/postgres.test.ts`
 

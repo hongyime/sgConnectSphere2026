@@ -5,8 +5,10 @@
 -- stand-in for it. T-89 keeps this as setup data with no Release 1
 -- roster-management screen. docs/db_schema.md: VENUE_STAFF_ASSIGNMENTS.
 --
--- Migration order: 0011 and 0015 are E05-S05 (venue buffers, #261), 0012 the
--- T-72 roles (#232), 0013 holds, 0014 event Sessions (#263), 0016 this one.
+-- Migration order: 0016 is the venue buffer write guard (#261), 0017 is
+-- reserved for the safety_review status (SCRUM-184), 0019 the shared booking
+-- contract (docs/db_schema.md), 0018 this one. A new table only, so it does
+-- not depend on 0017 or 0019 and can be applied in either order.
 --
 -- A new table only, so the currently deployed application is unaffected
 -- (docs/ops/production-migrations.md). The Venue Staff role and active status

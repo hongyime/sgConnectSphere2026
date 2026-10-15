@@ -433,31 +433,10 @@ test.describe("E06-S04", () => {
 
 });
 
-test.describe("E06-S05", () => {
-
-  /**
-   * TC_E06S05_01
-   * AC:      E06-S05 - Scenario 2 (Slot already held or booked)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall has an active tentative hold for 2026-12-01 09:00 to 11:00 against event EVT-1005. Coordinator coord_b@connectsphere.com is planning event EVT-1006
-   *
-   * Test data:
-   *   Existing hold: EVT-1005, 09:00-11:00 - Requested: EVT-1006, same period
-   *
-   * Expected result:
-   *   The hold is refused and the existing hold against EVT-1005 is identified. The calendar continues to show the period as Tentative for one event only
-   */
-  test.fixme("TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Sign in as coord_b@connectsphere.com
-    // 2. Open the venue calendar for Orchid Hall on 2026-12-01
-    // 3. Attempt to place a tentative hold for 09:00-11:00 against EVT-1006
-    void page;
-  });
-
-});
+// E06-S05 (SCRUM-49): the hold screens are covered live in
+// tests/e2e/venueHolds.spec.ts (TC_E06S05_01, _03, _04, _07) and the rules
+// against PostgreSQL in backend/tests/venueHolds.integration.test.ts. The
+// TC_E06S05_01 placeholder that stood here was replaced by those.
 
 test.describe("E06-S06", () => {
 
