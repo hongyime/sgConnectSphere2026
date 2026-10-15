@@ -29,7 +29,7 @@ Two PRs, per `docs/ops/production-migrations.md`:
 
 ## Done
 
-- `6373955` migration 0016 (migration branch). `0dfcd68` default resolver in
+- `6373955` migration (then 0016, renamed 0018 in `2f0e8e4`). `0dfcd68` default resolver in
   `captureEventAudience`, seed assignments (Venue Staff A: Orchid Hall, Lotus
   Room, Maple Room; Venue Staff B: Jasmine Hall, Cedar Auditorium), two new
   real-database tests. `tc-coverage.md` regenerated.
@@ -38,6 +38,18 @@ Two PRs, per `docs/ops/production-migrations.md`:
   `test:db` 76/78, the two failures identical on `main`. Records
   `docs/testing/runs/20261014-135516-*` and `20261014-135525-*`.
 
+- 15 Oct: merged the updated migration branch (latest `main`, 0018). #274
+  (E06-S03 booking requests) now on `main` passes a requested-venue scope to
+  `captureEventAudience`; it combines cleanly with the default resolver. New
+  DB test in `bookingSubmission.integration.test.ts`: a request with no
+  injected resolver notifies only the requested venue's assigned staff, and an
+  unassigned venue is returned in `unresolved_venue_ids`. Docs updated:
+  `e11-notification-hooks.md`, `testing/event-notifications.md`,
+  `testing/venue-booking-requests.md`, `contracts/venue-bookings.md`,
+  `testing/manual/E06-S03-click-through.md`. Backend unit 397/397; full
+  `test:db` 116/118 before the new test (the two `main` failures), booking
+  submission DB 10/10 with it. Not yet recorded under T-65.
+
 ## Next
 
 - Le Xin: manual run of TC_E11S01_02 on the seeded local stack. As `coord_a`
@@ -45,7 +57,11 @@ Two PRs, per `docs/ops/production-migrations.md`:
   (Jasmine Hall, Venue Staff B); the venue's own staff get an "Event update",
   the other Venue Staff do not. Record seed substitutions
   (`venue_staff_1` -> `venue_a`/`venue_b`, `coordinator_1` -> `coord_a`).
-- Merge the migration PR, deploy owner applies 0016, then merge the code PR.
+- Fresh T-65 records for backend unit and DB at the new head (the 14 Oct ones
+  predate the merge).
+- Merge #271, deploy owner applies 0018 (#278 plans a separate ledger check),
+  retarget this PR to `main`, then merge it.
+- Tell Ji Ning so TC_E06S03_01 "responsible staff receipt" can stop being SKIP.
 
 ## Open
 
