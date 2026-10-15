@@ -27,10 +27,11 @@ with their T-65 session record, and update the test-run rules to match.
   optional in the PR template; README says the rule is not enforced yet;
   template example moved inside the comment; cropping/JPG guidance.
 
-- Clarified that a story tested before the cutoff, including a Done story,
-  may add a new manual record with screenshots; it stays Done (T-74). Counts
-  as DoD evidence only in the current sprint before its review; for earlier
-  sprints it is re-run evidence; a failing re-run means a new user story.
+- Sprint 3 Done stories (10: E06-S05, E07-S01..S07, E14-S02, E03-S11) are
+  re-run by their owners with screenshots before the Sprint 3 Review, as new
+  records; they stay Done (T-74); a failing re-run means a new user story.
+  Sprint 1 and 2 stories are left as they are. Needs the team's agreement
+  in review, since it gives work to five people.
 
 ## Next
 

@@ -250,6 +250,6 @@ T-93 makes hand-taken screenshots part of every manual test run. The tester
 names each image after the TC_ID it shows and commits it next to the session
 record under `docs/testing/runs/evidence/`. A postplan may reuse the images.
 It applies to manual records dated on or after `2026-10-16T00:00:00+08:00`; earlier records stay
-as they are. A story tested earlier, Done or not, may add a new manual record
-with screenshots as extra evidence without being reopened; for an earlier,
-already reviewed sprint it is later re-run evidence only.
+as they are. Sprint 3 Done stories are re-run with screenshots before the
+Sprint 3 Review as new records, without being reopened; Sprint 1 and 2 stories
+are left as they are.

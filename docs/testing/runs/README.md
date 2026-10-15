@@ -197,19 +197,23 @@ A postplan may show the same images, but the repository copy is the evidence.
 `2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are
 not retrofitted, whenever they merge.
 
-**Stronger evidence for earlier stories:** a story whose manual run was
-recorded before the cutoff, including a Done story, may add a **new** manual
-record with screenshots, run against the current code. This is optional. The
-old record stays unchanged (records are immutable) and the story stays Done
-(T-74): extra evidence is not a fix or a change, so it needs no new story.
+**Sprint 3 Done stories are re-run with screenshots.** Every story marked
+Done in Sprint 3 whose manual run was recorded before the cutoff gets a
+**new** manual record with screenshots, run by its owner against the current
+code before the Sprint 3 Review. This is a re-run, not a reopening:
 
-- **Current sprint:** a run recorded before that sprint's Sprint Review counts
-  as the story's manual E2E evidence (Definition of Done).
-- **Earlier sprints:** the review has already happened, so a new run is later
-  re-run evidence only. It does not change what that sprint showed. Record the
-  real `date`; never backdate.
-- **If the run fails:** record `FAIL`. The fix is a new user story with what
-  went wrong documented (`CONTRIBUTING.md`); the original story stays Done.
+- The story stays Done (T-74), and its old record stays unchanged (records
+  are immutable). Adding evidence is not a fix or a change, so it needs no
+  new user story.
+- The old record already met the Definition of Done, so a story whose re-run
+  is not finished in time still stays Done; say so at the Sprint Review.
+- **If the re-run fails:** record `FAIL`. The fix is a new user story with
+  what went wrong documented (`CONTRIBUTING.md`); the original stays Done.
+
+**Earlier sprints (1 and 2) are left as they are.** Their Sprint Reviews have
+happened, so a new run cannot change what those sprints showed. If one is
+re-run for another reason (for example a release regression), record the real
+`date`, never backdate, and follow the same failure rule.
 
 **Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
 check the `## Screenshots` section, one image per PASS/FAIL row, or that the
