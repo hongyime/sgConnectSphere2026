@@ -17,3 +17,9 @@ TC_E07S01_02-3 original human image stored; opened correct event/item stock-revi
 Retired projector/history screenshot stored under supplied TC_E07S01_03-3.png name; two past rows retained. Availability absence not yet shown.
 
 Human availability screenshot stored unchanged as TC_E07S01_03-4.png; retired projector absent. TC_E07S01_03 now PASS. Current-main cases 02/03 complete, earlier add/edit images remain older-commit evidence. No full current-main rerun claim.
+
+PR #281 draft opened at 3b457e0, PostPlan https://vyv0bz8ojg8u.postplan.dev/v/1. New current-main add/edit session 20261016-014025-xiangyingg-frontend-e2e: first human screenshot copied, save and stock 10 visible, Type actually item name. Details/refresh/availability/edit pending. Latest changes not yet pushed.
+
+Supplied TC_E07S01_01-5.png actually shows original microphone details stock 4 / Needs review, not Final Check availability. Stored unchanged with explicit annotation; no add-case verdict changed.
+
+Latest: corrected Final Check edit screenshot TC_E07S01_04-3.png supports current-main TC_E07S01_04 PASS with human completion report. TC_E07S01_01 current-main availability/details still deferred. User requested push/merge PR #281; preserve remaining gap explicitly, publish evidence for review without declaring full T-93 completion.
