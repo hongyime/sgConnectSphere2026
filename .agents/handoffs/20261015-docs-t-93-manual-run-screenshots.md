@@ -1,6 +1,6 @@
 # docs/t-93-manual-run-screenshots
 
-Goal: record the product owner's 15 October decision (T-93) that manual test
+Goal: record the team's 15 October decision (T-93), agreed by the product owner, that manual test
 runs keep hand-taken screenshots in the repository, named by TC_ID and stored
 with their T-65 session record, and update the test-run rules to match.
 
