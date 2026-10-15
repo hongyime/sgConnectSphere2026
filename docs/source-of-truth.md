@@ -8,12 +8,12 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 141026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 151026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 141026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 151026.docx` |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 141026.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 151026.xlsx` |
 | Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Shared venue booking interface | `docs/contracts/venue-bookings.md` | Shared schema, API, lifecycle and migration ownership for E06-S03/S04/S05/S06 |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
@@ -78,6 +78,11 @@ refreshes the compatibility input. It retains TC_E14S02_03/_06/_07 as retired
 history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
 retired catalogue rows as scaffold/skip; its row total is a strict inventory,
 not a count of current acceptance obligations.
+
+The 15 October E06-S03 withdrawal clarification adds TC_E06S03_09 to _13 and
+refines _08. Its regenerated CAA 151026 testcase workbook also refreshes the
+legacy compatibility input, so the generated inventory includes these unexecuted
+cases. This records requirements and traceability, not passing test evidence.
 
 ## Requirement changes flow downstream
 

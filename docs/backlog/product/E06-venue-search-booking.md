@@ -93,7 +93,7 @@ within hours. This is event-based; T-21's sessions wording is withdrawn by T-48.
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, T-78, O-27, O-29, O-30
+- **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, T-78, O-27, O-29, O-30, T-93, T-94, T-95
 - **Owner**:
 
 ### User story
@@ -130,6 +130,35 @@ Given an event has more than one Confirmed venue booking When I view the event T
 
 Given I am the assigned Event Coordinator and the event is Approved or Planning When I submit a valid booking request Then submission is permitted. Other actors or event statuses are refused. A Confirmed event needing a replacement must first return to Planning through the authorised reversion workflow.
 
+#### Scenario 3e — Withdraw a Pending request only (T-93, T-94)
+
+Given I am the assigned Event Coordinator and one venue request is Pending When
+I withdraw it Then only that booking becomes Released, its occupancy is freed,
+the event stays in its current status, other bookings are unchanged, the action
+is recorded, and the requested venue's currently assigned active Venue Staff are
+notified in-app and through the email outbox. A converted hold is not restored.
+Confirmed bookings cannot be withdrawn here; they use a separate cancellation
+flow and are outside TC_E06S03_08.
+
+Given a withdrawal and a staff approval or rejection race for the same Pending
+booking When the venue row and then the booking row are locked and its status is
+rechecked Then only the first valid transition succeeds; the losing action
+returns 409 and its user refreshes without overwriting the winning transition.
+
+#### Scenario 3f — Retry withdrawn replacements and follow rejection chains (T-95)
+
+Given a Rejected booking suggests another venue When I follow the suggestion
+Then a new Pending request references that rejection and all submission checks
+rerun; the original remains Rejected. At most one non-Released replacement may
+reference a rejection, and an identical submission retry returns its existing row.
+
+Given that replacement is withdrawn to Released When I try the same suggestion
+again Then a new request may reference the same rejection, all checks rerun and
+the Released history remains. If the replacement was Rejected instead, I cannot
+reuse the older rejection's suggestion. I may follow a new suggestion on that
+latest rejection, linking to it; there is no fixed two-attempt limit. A rejection
+without a suggestion ends that suggestion chain.
+
 #### Scenario 4 — Venue taken by another event blocked
 
 Given a venue is already Pending or Confirmed for another event over the same period When I submit a request for it Then submission is blocked and the conflict is explained
@@ -137,6 +166,11 @@ Given a venue is already Pending or Confirmed for another event over the same pe
 #### Scenario 5 — Request conflicts through the buffer
 
 Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround time of 45 minutes When I submit a request for 12:30 to 14:00 Then submission is blocked and the conflict names the other event's buffered window, 09:30 to 12:45 (C-65, T-66)
+
+Confirmed-primary cancellation is a future separate flow: clear primary and
+prompt the Organiser to select another Confirmed venue, with no automatic
+promotion (T-93). This does not implement that flow or change the existing
+Coordinator selection permission in Scenario 3c.
 
 ### Checklist
 
@@ -147,6 +181,9 @@ Given a venue is Confirmed for another event 10:00 to 12:00 and has a turnaround
 - Hold several venue bookings, Pending or Confirmed, for one event, each with an optional purpose and headcount, and mark one as primary (C-67; confirmed O-27 and O-30, T-78)
 - Be blocked from requesting a venue already Pending or Confirmed for another event in that period, counting that venue's setup and turnaround time (C-65)
 - View the status of each of my booking requests
+- Withdraw only a Pending request to Released, preserving other bookings and the event status; notify the requested venue's assigned staff (T-93, T-94)
+- Serialize withdrawal against approval/rejection and retain the booking-specific audit history (T-94)
+- Allow a new replacement after withdrawal; after rejection follow only the latest rejection's own suggestion (T-95)
 
 ## E06-S04 — Decide on a venue booking request
 

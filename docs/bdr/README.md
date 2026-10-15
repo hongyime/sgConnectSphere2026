@@ -6,9 +6,17 @@ Version 9  ·  13 October 2026
 
 ## Purpose
 
-This document holds every decision behind the backlog and the evidence for it. The backlogs themselves are canonical Markdown under `docs/backlog/`; generated workbook `CONNECTSPHERE BACKLOGS CAA 131026.xlsx` contains story data, with each story carrying a Backlog Decision Reference pointing back to the entries here.
+This document holds every decision behind the backlog and the evidence for it. The backlogs themselves are canonical Markdown under `docs/backlog/`; generated workbook `CONNECTSPHERE BACKLOGS CAA 151026.xlsx` contains story data, with each story carrying a Backlog Decision Reference pointing back to the entries here.
 
 It exists to answer one question for any story or acceptance criterion: why is this here, and who decided it. Entries are separated into what the customer told us and what the team chose, because those carry different weight. Where the team chose, the entry says so plainly rather than presenting an assumption as a requirement.
+
+## 15 October 2026 clarification addendum
+
+T-93 to T-95 record the agreed E06-S03 Pending withdrawal, staff notification,
+decision-race and suggested-venue retry/chain rules. These are requirements for a
+follow-up to merged #274, not delivered functionality. The Product Owner's future
+Confirmed-primary cancellation clarification is explicitly outside E06-S03.
+See [team decisions](B-team-decisions.md) and [change log](G-change-log.md).
 
 ## What changed in version 9
 

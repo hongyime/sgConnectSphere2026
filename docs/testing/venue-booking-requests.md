@@ -124,3 +124,24 @@ requests remain 404. Booking activity names the requested venue and uses a
 ?Venue booking? fallback label; expiry changes still show their dates.
 Occupancy/formatting/expiry-message helpers now live in `bookingShared.ts`,
 removing the workflow import cycle. Conversion reuses the same expired-hold copy.
+
+
+## Recorded withdrawal follow-up decisions (15 October; T-93 to T-95)
+
+Pending-only withdrawal and replacement retry/chain rules are now recorded in
+the canonical backlog, BDR and booking contract. They remain **unimplemented**
+by this documentation change. Confirmed cancellation is excluded. Reuse Released,
+preserve other bookings and event status, lock venue before booking, and persist
+the booking-specific audit and requested-venue staff inbox/email outbox atomically.
+Withdrawal of a converted hold never recreates that hold.
+
+Follow-up work must add the staff withdrawal routing (not Coordinator-only
+booking_decided released), revise the replacement index in a new migration to
+exclude Released rows only, and align service duplicate checks and switch UI.
+Rejected replacements still block their predecessor's slot; a new suggestion on
+that latest rejection starts the next link without a fixed two-attempt limit.
+TC_E06S03_08 is clarified; new cases TC_E06S03_09 to _13 cover Pending-only access,
+decision races, staff notifications/rollback, withdrawal retry and rejection chains.
+No passing execution evidence is claimed for these new requirements. Obtain peer
+review of the shared index/routing contract before implementation, and record
+fresh automated and human manual outcomes afterward. No Jira edits in this task.

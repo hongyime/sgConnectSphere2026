@@ -243,3 +243,21 @@ sources. Jira changes remain downstream of the merged canonical backlog.
 ## Version 8 to version 9
 
 Applied Week 9 choices to eligible stories and recorded remaining assumptions. Restored E04-S02 and added E02-S05 to Release 1; added E02-S07 for the two-year date horizon and E07-S08 for Session-linked equipment behavior. Updated Sprint 4 registration, arrangement-change, safety-reversion, rescheduling and cancellation criteria while leaving Sprint 3 stories untouched until close under T-73. Added O-50 for Session waitlist behavior and O-51 for copied Session/arrangement data; both remain explicit assumptions for review.
+
+## 15 October 2026 — E06-S03 withdrawal and suggested-venue follow-up
+
+T-93 records the Product Owner's Pending-only withdrawal boundary and the future
+Confirmed-primary cancellation rule (clear primary, prompt Organiser, no automatic
+promotion). T-94 records the E06-S04 owner's Released/lock/audit agreement and the
+story owner's requested-venue staff notification confirmation. T-95 records the
+story owner's replacement retry and rejection-chain confirmation. Source is the
+clarifications relayed in the working conversation on 15 October; these are not
+new customer consultation quotes or proof of implementation.
+
+Reconcile E06-S03's release/product criteria and canonical cases with the shared
+contract. Reuse Released; no new status. Only Released replacements stop consuming
+their predecessor's replacement slot. A Rejected replacement must follow its own
+new suggestion, if any, rather than retry its predecessor's suggestion. Preserve
+0019 and plan a separate index migration. The latest E06-S05 owner coordination
+is already resolved in #274; this follow-up does not reopen it or change Session
+scope, hold defaults, story estimates, sprint assignments or Jira statuses.
