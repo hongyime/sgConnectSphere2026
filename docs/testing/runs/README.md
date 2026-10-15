@@ -197,6 +197,12 @@ A postplan may show the same images, but the repository copy is the evidence.
 `2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are
 not retrofitted, whenever they merge.
 
+**Stronger evidence for earlier stories:** a story whose manual run was
+recorded before the cutoff, including a Done story, may add a **new** manual
+record with screenshots, run against the current code. This is optional. The
+old record stays unchanged (records are immutable) and the story stays Done
+(T-74): extra evidence is not a reopening and needs no new story.
+
 **Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
 check the `## Screenshots` section, one image per PASS/FAIL row, or that the
 linked files exist, and the 1000 KB limit runs only in local pre-commit, not

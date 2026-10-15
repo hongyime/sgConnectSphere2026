@@ -27,6 +27,9 @@ with their T-65 session record, and update the test-run rules to match.
   optional in the PR template; README says the rule is not enforced yet;
   template example moved inside the comment; cropping/JPG guidance.
 
+- Clarified that a story tested before the cutoff, including a Done story,
+  may add a new manual record with screenshots; it stays Done (T-74).
+
 ## Next
 
 - Follow-up: extend `scripts/check_test_run_records.py` to require the
