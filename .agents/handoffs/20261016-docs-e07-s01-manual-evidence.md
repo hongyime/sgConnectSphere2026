@@ -23,3 +23,5 @@ PR #281 draft opened at 3b457e0, PostPlan https://vyv0bz8ojg8u.postplan.dev/v/1.
 Supplied TC_E07S01_01-5.png actually shows original microphone details stock 4 / Needs review, not Final Check availability. Stored unchanged with explicit annotation; no add-case verdict changed.
 
 Latest: corrected Final Check edit screenshot TC_E07S01_04-3.png supports current-main TC_E07S01_04 PASS with human completion report. TC_E07S01_01 current-main availability/details still deferred. User requested push/merge PR #281; preserve remaining gap explicitly, publish evidence for review without declaring full T-93 completion.
+
+Final new-item availability original PNG stored, 10 free; details observed in human chat attachment but no original 01-6 file available. Add case PASS with explicit role adaptation/refresh limits. All four current-main cases have results; update PR and PostPlan, check, push.
