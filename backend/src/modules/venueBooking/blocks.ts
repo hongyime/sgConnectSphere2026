@@ -4,7 +4,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { requireCatalogueViewer, requireVenueStaff, type VenueErrors } from './catalogue.js';
-import { holdsVenue } from './holds.js';
+import { holdsVenue } from './bookingShared.js';
 
 // E05-S04 "Block a venue for maintenance". A block is a venue_blocks row; venue
 // search (E06-S01) and the availability calendar (E05-S03) already read that

@@ -37,6 +37,15 @@ test('suitable result has no failure section or empty notes alert', async () => 
   expect(screen.queryByText('Unmet requirements')).not.toBeInTheDocument();
   expect(screen.queryByText('Accessibility notes for manual review')).not.toBeInTheDocument();
 });
+
+test('request form is available only for Approved or Planning assessments', async () => {
+  for (const status of ['approved','planning','confirmed']) {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...result(true), event: { ...result(true).event, status } }) }));
+    renderPage(); await screen.findByText('Suitable');
+    expect(screen.queryByRole('button', { name: 'Submit booking request' }) !== null).toBe(status !== 'confirmed');
+    cleanup();
+  }
+});
 test('shows server error and retry recovers', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({ ok: false, status: 503, json: async () => ({ error: 'Service unavailable.' }) })
     .mockResolvedValue({ ok: true, status: 200, json: async () => result(true) }));
