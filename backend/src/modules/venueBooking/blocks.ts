@@ -4,7 +4,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { requireCatalogueViewer, requireVenueStaff, type VenueErrors } from './catalogue.js';
-import { holdsVenue } from './holds.js';
+import { holdsVenue } from './bookingShared.js';
 
 // E05-S04 "Block a venue for maintenance". A block is a venue_blocks row; venue
 // search (E06-S01) and the availability calendar (E05-S03) already read that
@@ -134,11 +134,15 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
     const venue = await lockVenue(client, venueId);
 
     // Scenario 2: a confirmed booking must be resolved first, so the block is
-    // refused and every conflicting booking is named.
+    // refused and every conflicting booking is named. Scenario 5: venue
+    // setup/turnaround buffers do NOT apply against maintenance blocks, so
+    // this check uses the raw advertised booking_range.
     const conflicts = await client.query<{ event_code: string | null; title: string; starts_at: Date; ends_at: Date }>(`
       SELECT e.event_code, e.title, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
-      FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-      WHERE vb.venue_id = $1 AND vb.status = 'confirmed' AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+      FROM venue_bookings vb
+        JOIN events e ON e.id = vb.event_id
+      WHERE vb.venue_id = $1 AND vb.status = 'confirmed'
+        AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(vb.booking_range)`, [venue.id, start, end]);
     if (conflicts.rows.length) {
       return { status: 409, body: {
@@ -183,7 +187,9 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
 // state) that has not ended, on an event that has not ended. An event with no assigned Coordinator has nobody to tell
 // yet; assignment (E03-S01) notifies the Coordinator it later picks.
 // The notification ID is derived from the block ID, so a retried save never
-// sends the same Coordinator a second copy.
+// sends the same Coordinator a second copy. Scenario 5: like the conflict
+// check above, this matches the raw advertised booking_range — a booking
+// whose setup/turnaround buffer merely touches the block is not affected.
 async function notifyAffectedCoordinators(client: PoolClient, venueName: string, block: VenueBlock, occurredAt: Date) {
   const affected = await client.query<{ event_id: string; title: string; coordinator_id: string }>(`
     SELECT DISTINCT e.id AS event_id, e.title, e.coordinator_id
