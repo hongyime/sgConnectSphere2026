@@ -8,6 +8,7 @@
 - **E07-S03 branch refresh**: 2026-10-07, SCRUM-53 equipment availability routes; other rows were not re-audited.
 - **E07-S04 branch refresh**: 2026-10-08, SCRUM-54 reservation routes; other rows and the counts were not re-audited.
 - **E07-S05 branch refresh**: 2026-10-12, SCRUM-55 unavailability route; the E07-S05 row and the stories-with-no-route count were updated, other rows and the route totals were not re-audited.
+- **E08-S03 branch refresh**: 2026-10-16, SCRUM-60 readiness and confirm routes; only the E08-S03 row was updated, other rows and the route totals were not re-audited.
 - **Focused refresh**: E05-S04 route status checked against main commit `1c1be82` after PR #185 merged on 2026-10-03; other rows were not re-audited.
 
 This file maps every Release 1 story (47 in total, per the backlog README's
@@ -71,7 +72,7 @@ in the second table below.
 | E07-S05 | Mark equipment as unavailable | Technical Support Staff member | Sprint 3 | `/support/catalogue/:equipmentId/unavailable` | live | Form | Reached from "Mark unavailable" on the equipment detail page (`/support/catalogue/:equipmentId`, E07-S01), which also lists current and future unavailable periods with "Return to service…". Route status does not imply the story Definition of Done is met. |
 | E07-S06 | Request technical support for an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/plan` | mock | Other | Part of the planning workspace (same screen as E07-S02). |
 | E07-S07 | Assign and manage technical staff for an event | Technical Support Staff member | Sprint 3 | `/support/technicians` | mock | List | Technician assignment list. |
-| E08-S03 | Confirm an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/readiness`, `/coordinator/events/:eventCode/confirm` | mock | Other, Decision | Readiness checklist then final confirmation. |
+| E08-S03 | Confirm an event | Event Coordinator | Sprint 3 | `/coordinator/events/:eventCode/readiness`, `/coordinator/events/:eventCode/confirm` | live (readiness); redirect (confirm) | Decision | Readiness of venue, equipment and support, then "Submit for safety check…" (T-71: Planning → Safety Review). `/confirm` redirects to readiness, since only the Safety Officer's approval (E08-S06) sets Confirmed. The Organiser's confirmed arrangements show on `/organiser/requests/:eventCode`. |
 | E08-S04 | Revert a confirmed event to planning | Event Coordinator | Sprint 4 | — | none | Decision | Expected to surface as an action on `/coordinator/events/:eventCode/confirm`. |
 | E08-S05 | Complete an event | Event Coordinator | Sprint 4 | — | none | Decision | Expected to surface as an action on the Coordinator request detail. |
 | E09-S01 | Register for an event | Attendee | Sprint 4 | `/attendee/discover`, `/attendee/discover/:eventCode`, `/attendee/register/:eventCode` | mock | List, Detail, Form | Discovery, event detail and registration form. |
