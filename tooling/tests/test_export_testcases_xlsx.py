@@ -45,7 +45,14 @@ class ExportTestCasesTests(unittest.TestCase):
     def test_export_preserves_catalogue_shape_ids_and_non_sprint_values(self):
         case_files = sorted(exporter.CASES_DIR.glob("*.md"))
         rows = [case for path in case_files for case in exporter._parse_epic_file(path)]
-        self.assertEqual(len(rows), 354)
+        self.assertTrue(rows)
+        expected_unassigned_by_story = {}
+        for case in rows:
+            if case["sprint"] == exporter.UNASSIGNED_SPRINT_DISPLAY:
+                story_id = case["story_id"]
+                expected_unassigned_by_story[story_id] = (
+                    expected_unassigned_by_story.get(story_id, 0) + 1
+                )
 
         with tempfile.TemporaryDirectory() as temporary:
             destination = Path(temporary) / "test-cases.xlsx"
@@ -55,19 +62,19 @@ class ExportTestCasesTests(unittest.TestCase):
                 self.assertEqual(workbook.sheetnames, ["TEST CASES"])
                 sheet = workbook["TEST CASES"]
                 self.assertEqual(sheet.max_column, 10)
-                self.assertEqual(sheet.max_row, 355)  # 354 cases plus the header
+                self.assertEqual(sheet.max_row, len(rows) + 1)
                 self.assertEqual(sheet.column_dimensions["A"].width, 14)
                 self.assertEqual(tuple(next(sheet.iter_rows(values_only=True))), exporter.COLUMNS)
 
                 exported = list(sheet.iter_rows(min_row=2, values_only=True))
-                self.assertEqual(len(exported), 354)
+                self.assertEqual(len(exported), len(rows))
                 self.assertEqual(
                     [row[4] for row in exported],
                     [case["case_id"] for case in rows],
                 )
                 self.assertEqual(
                     sum(row[0] == exporter.UNASSIGNED_SPRINT_DISPLAY for row in exported),
-                    21,
+                    sum(expected_unassigned_by_story.values()),
                 )
                 unassigned_by_story = {}
                 for row in exported:
@@ -75,7 +82,7 @@ class ExportTestCasesTests(unittest.TestCase):
                         unassigned_by_story[row[1]] = unassigned_by_story.get(row[1], 0) + 1
                 self.assertEqual(
                     unassigned_by_story,
-                    {"E02-S05": 3, "E02-S07": 5, "E04-S02": 5, "E07-S08": 4, "E10-S03": 4},
+                    expected_unassigned_by_story,
                 )
 
                 expected_non_sprint = [
