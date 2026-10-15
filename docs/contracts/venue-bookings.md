@@ -24,7 +24,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | Column | Shape | Meaning |
 |---|---|---|
 | id | uuid primary key | Stable identity; hold conversion reuses this id. |
-| venue_id, event_id, session_id | uuid foreign keys, required | Venue, Event and owning Session. Keep the composite `(session_id, event_id)` FK so they cannot disagree. |
+| venue_id, event_id, session_id | uuid foreign keys; Session link required for active/new bookings | Venue, Event and owning Session. Keep the composite `(session_id, event_id)` FK so they cannot disagree. When a Session is deleted, only a Rejected, Released, or Expired booking may have its `session_id` set to null. |
 | layout_id | uuid foreign key, required for a confirmed booking | Session layout for this venue; used to derive approved Session capacity. |
 | booking_range | tstzrange, required | Advertised interval inside the linked Session interval. |
 | occupancy_range | tstzrange, required | Application-maintained booking_range widened by venue buffers; not a generated column because buffer values live on venues. |
@@ -38,16 +38,21 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | expires_at | timestamptz, nullable for legacy rows | Explicit Venue Staff setting per hold, with no system default. A new hold cannot enter the expiry worker until configured; conversion clears it and Expired preserves it. |
 | warning_before | interval, nullable for legacy rows | Coordinator-configured warning interval for this hold. It replaces a fixed 24-hour warning. |
 | reminder_sent_at | timestamptz, nullable | Idempotency marker for the configured warning. Reset if the expiry or warning interval is changed. |
-| requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state. |
+| buffer_conflict | boolean, default false (0015) | E05-S05 reason-specific review flag. Preserve the original booking status and occupancy. |
+| requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state; capacity review remains separate from the buffer flag. |
 | created_at | timestamptz, required | Row creation time; remains the hold creation time after conversion. |
 
 Database invariants: is_primary implies status = Confirmed; at most one primary row exists per event; headcount is null or positive; the occupancy exclusion covers only Tentative, Pending, and Confirmed rows. A booking's Session must belong to its Event, and its range must be within the Session period. The requester and timestamps may be null on legacy/unsubmitted records, while the application requires requester and request time on every newly submitted request.
 
 At PR #231 head on 9 October ([PR #231](https://github.com/hongyime/sgConnectSphere2026/pull/231)), 0011_venue_setup_turnaround_buffers.sql adds venues.setup_time_minutes, venues.turnaround_time_minutes, and the occupied_window(range, setup, turnaround) function. That migration does **not** yet add booking columns or change the booking exclusion constraint. Keep those buffer additions in PR #231; the shared contract migration consumes them and must not recreate or overwrite them.
 
-**Migration ownership:** Migration 0013, `0013_tentative_venue_holds.sql` (merged in PR #245), is holds-only: it adds `tentative` and `expired` to `booking_status`, adds `expires_at`, and creates an expiry lookup index that does not refer to either new enum value. It does not add any constraint or index predicate that uses those new values. The remaining shared booking columns and constraints belong in the next migration, proposed as `0014_venue_bookings_contract.sql`. Migration 0014 is sequenced after PR #231 merges because it depends on `occupied_window()`; it is owned by whichever story requires the shared columns first (E06-S03 or E06-S04). E06-S03 owns the request service/API contract; E06-S04/S06 use its booking and conflict invariants. No parallel migration should add overlapping columns or constraints.
+**Migration ownership:** Migration 0013, `0013_tentative_venue_holds.sql` (merged in PR #245), is holds-only: it adds `tentative` and `expired` to `booking_status`, adds `expires_at`, and creates an expiry lookup index that does not refer to either new enum value. It does not add any constraint or index predicate that uses those new values.
 
-Migration 0014 should:
+The Session foundation is migration `0014_event_sessions.sql` in SCRUM-183. It creates one Session per existing Event and owns the `session_id` columns, backfills, indexes, and `(session_id, event_id)` ownership foreign keys on venue bookings and equipment requests/reservations. A venue booking must retain its Session link while active; the migration only permits the link to become null for Rejected, Released, or Expired rows when a Session is deleted. The E06 booking contract consumes these Session links and must not add them again.
+
+The remaining shared venue booking columns and constraints belong in the next migration, proposed as `0015_venue_bookings_contract.sql`. Migration 0015 depends on migrations 0011 (`occupied_window()`), 0012, committed 0013, and the Session table and links from 0014. It is owned by whichever story requires the shared booking columns first (E06-S03 or E06-S04). E06-S03 owns the request service/API contract; E06-S04/S06 use its booking and conflict invariants. No parallel migration should add overlapping columns or constraints.
+
+Migration 0015 should:
 
 - Add nullable purpose text (maximum 80 characters) and headcount integer (positive when present). Store null when omitted; use the linked Session's expected attendance as the suitability fallback rather than copying it into the booking field.
 - Add requested_by uuid REFERENCES users(id) and requested_at timestamptz. They are required by the application for every new Pending request; nullable storage preserves legacy rows that cannot be safely attributed. For a converted hold, these record the Coordinator who formally submitted it.
@@ -55,7 +60,7 @@ Migration 0014 should:
 - Add application-maintained occupancy_range tstzrange, backfill it with occupied_window(booking_range, setup_time_minutes, turnaround_time_minutes), and refresh it whenever the booking period, venue, or relevant buffer changes.
 - Add status-dependent constraints now that migration 0013 has committed: Tentative rows require an expiry (`expires_at IS NOT NULL`); Pending rows have no active expiry; conversion clears `expires_at`; Expired rows retain the expiry timestamp as history (T-79).
 - Add submission_key uuid for direct-request retry safety, with a partial unique index on (requested_by, submission_key) when the key is present.
-- Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is `tentative`, `pending`, or `confirmed`. Keep the existing constraint name if practical so the database error mapper has one stable target. This predicate uses the new `tentative` value, so create it only in migration 0014, after 0013 commits.
+- Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is `tentative`, `pending`, or `confirmed`. Keep the existing constraint name if practical so the database error mapper has one stable target. This predicate uses the new `tentative` value, so create it only in migration 0015, after 0013 commits.
 
 The occupancy exclusion is per venue, not per event: one event may reserve multiple venues at the same time. Two active reservations for the same venue may not overlap after buffers are applied. The half-open occupancy interval is [booking start − setup, booking end + turnaround).
 
@@ -142,7 +147,8 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 - Pending → Rejected: Venue Staff rejects.
 - Pending → Released: Coordinator withdraws.
 - Confirmed → Released: event workflow releases the booking.
-- Pending or Confirmed → Conflicting: E05-S05/E05-S06 marks a booking affected by a buffer/block change; their resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
+- E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
+- Pending or Confirmed → Conflicting: E05-S06 marks a booking affected by an unavailability; its resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
 
 Every submission path uses one shared service and transaction. It authorizes the assigned Coordinator; locks the event and (for conversion) the hold; checks event status, range containment, venue block, suitability inputs, and expiry; writes the booking and any Approved-to-Planning transition; then persists audit and notification/outbox records. Any failure rolls the transaction back. The database exclusion constraint remains the final guard against concurrent occupancy conflicts. **Proposal:** Booking/block writes serialize on the venue so a concurrent block cannot slip past the block check. Hold creation follows the same block and occupancy checks; the event-status submission gate is checked again when a hold is converted.
 
@@ -191,3 +197,11 @@ check. Registration capacity, automatic Safety Review, role cardinality, and
 terminal change-request state are specified in `docs/db_schema.md`, the Week 9
 API addendum, and their owning backlog stories; they are not folded into the
 venue-booking endpoint.
+
+## Buffer write guard (PR #261 review follow-up)
+
+Migration 0016 adds `buffer_conflict` and a database trigger that checks all new active bookings and changes to their venue, range, status or expiry using `occupied_window()`. The trigger locks the venue and includes Pending, Confirmed and unexpired Tentative rows. Maintenance blocks use advertised times. Pure flag edits are allowed, so changing buffers can identify existing conflicts without releasing bookings or refusing the venue edit. Shared-contract migration 0015 remains owned by the booking implementation; it must preserve this guard and allow existing flagged conflicts instead of attempting an exclusion backfill that rejects them.
+
+For a newly conflicting pair, Confirmed has review priority over Pending, then Tentative; equal-status later bookings are flagged. Both affected events' Coordinators are notified once per buffer edit. This is an implementation choice for peer confirmation, not a new customer decision. All actual overlaps in a retained chain remain conflicts because no participant is released.
+
+Calendar entries split setup, advertised event and turnaround into positive, clipped periods with the original booking state and a visible buffer-conflict label. Free intervals describe advertised booking windows after allowing the prospective booking's own setup/turnaround, matching search. Other Coordinators receive only Unavailable periods, without event details or conflict reasons. Buffer inputs are bounded by the existing integer storage range; timestamp/interval overflow rolls back with a 400.

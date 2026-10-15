@@ -125,7 +125,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
 
   return (
     <PageLayout eyebrow={audience === 'venue' ? 'Venue staff' : 'Event coordinator'} title="Availability calendar">
-      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time.</p>
+      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time. Free periods allow for setup and turnaround; booking segments label those buffers separately.</p>
 
       <Card label="Calendar controls">
         {options.result.state === 'error' && !selectedId ? (
@@ -210,7 +210,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
                                   type="button" className="calendar-event-toggle" aria-expanded={expanded === key}
                                   aria-controls={detailsId} onClick={() => setExpanded(current => (current === key ? null : key))}
                                 >
-                                  {entry.event.title}
+                                  {entry.event.title}{entry.reason ? ` · ${entry.reason}` : ''}{entry.bufferConflict ? ' · Buffer conflict — needs review' : ''}
                                 </button>
                                 {expanded === key ? (
                                   <dl id={detailsId} className="calendar-details">
