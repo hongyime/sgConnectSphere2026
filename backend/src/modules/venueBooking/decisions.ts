@@ -6,17 +6,18 @@ import { inTransaction } from '../../database/pool.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { formatEventDates } from '../equipmentSupport/reservations.js';
 import type { VenueErrors } from './catalogue.js';
+import { holdsVenue } from './holds.js';
 
 // E06-S04 "Decide on a venue booking request" (SCRUM-48). Venue Staff approve
 // or reject a Pending booking (Scenarios 1 to 3). Each decision is recorded in
 // the audit log with the actor, the booking and its event, in the same
 // transaction as the decision (Scenario 5, T-76), and the event's assigned
-// Coordinator is notified (Scenarios 1 and 2).
+// Coordinator is notified (Scenarios 1 and 2). Approval is blocked when the
+// booking's buffered window overlaps another active booking on the venue, or
+// a maintenance block (Scenario 4, C-65, T-66), naming what it clashes with.
 //
-// Not here yet: the buffered-window check on approval (Scenario 4) waits for
-// PR #231's occupied_window() and the shared 0013 booking migration (#244,
-// #245); the Coordinator's "amend to the suggested venue" step of Scenario 2
-// belongs with E06-S03's request flow.
+// The Coordinator's "amend to the suggested venue" step of Scenario 2 belongs
+// with E06-S03's request flow.
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const REASON_MAX = 2000;
@@ -142,6 +143,54 @@ async function lockBooking(client: PoolClient, bookingId: string) {
   return result.rows[0];
 }
 
+type Clash = { id: string; status: string; event_code: string | null; event_title: string; starts_at: Date; ends_at: Date };
+
+// Scenario 4: setup and turnaround time count, so two bookings whose advertised
+// times don't overlap can still clash. Since the 0016 guard, this only arises
+// when Venue Staff lengthen a venue's buffers after both were requested
+// (buffer_conflict). The guard refuses the write anyway; checking first lets
+// Venue Staff see which booking or block is in the way.
+async function approvalClash(client: PoolClient, row: BookingRow) {
+  const booking = (await client.query<Clash>(`SELECT vb.id, vb.status, e.event_code, e.title AS event_title,
+      lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
+    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
+    WHERE vb.venue_id = $1 AND vb.id <> $2 AND ${holdsVenue('vb', 'clock_timestamp()')}
+      AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)
+        && occupied_window(tstzrange($3, $4, '[)'), v.setup_time_minutes, v.turnaround_time_minutes)
+    ORDER BY vb.status = 'confirmed' DESC, lower(vb.booking_range), vb.id LIMIT 1`,
+  [row.venue_id, row.id, row.starts_at, row.ends_at])).rows[0];
+  if (booking) {
+    const name = booking.event_code && !booking.event_title.startsWith(booking.event_code)
+      ? `${booking.event_code} ${booking.event_title}` : booking.event_title;
+    const state = booking.status === 'confirmed' ? 'confirmed' : booking.status === 'pending' ? 'pending' : 'held';
+    return {
+      error: `This can't be approved: with setup and turnaround time it overlaps the ${state} booking for "${name}" `
+        + `(${formatEventDates(booking.starts_at, booking.ends_at)}) at ${row.venue_name}.`,
+      conflict: {
+        bookingId: booking.id, status: booking.status, eventCode: booking.event_code, eventTitle: booking.event_title,
+        startsAt: booking.starts_at.toISOString(), endsAt: booking.ends_at.toISOString(),
+      },
+    };
+  }
+  // Maintenance blocks use the advertised times, as the 0016 guard does.
+  const block = (await client.query<{ reason: string; starts_at: Date; ends_at: Date }>(`SELECT reason,
+      lower(block_range) AS starts_at, upper(block_range) AS ends_at
+    FROM venue_blocks WHERE venue_id = $1 AND block_range && tstzrange($2, $3, '[)')
+    ORDER BY lower(block_range) LIMIT 1`, [row.venue_id, row.starts_at, row.ends_at])).rows[0];
+  if (block) {
+    return {
+      error: `This can't be approved: ${row.venue_name} is blocked for "${block.reason}" `
+        + `(${formatEventDates(block.starts_at, block.ends_at)}).`,
+      conflict: { block: { reason: block.reason, startsAt: block.starts_at.toISOString(), endsAt: block.ends_at.toISOString() } },
+    };
+  }
+  return null;
+}
+
+// Another Venue Staff member's approval that commits first is still refused
+// by the 0016 guard (23P01); say so instead of failing with a server error.
+const VENUE_JUST_TAKEN = 'This venue was just taken for an overlapping time. Reload the request to see what is now in the way.';
+
 function decisionMessage(staffName: string, row: BookingRow, decision: BookingDecision, suggestedName: string | null) {
   const when = formatEventDates(row.starts_at, row.ends_at);
   const subject = `your request for ${row.venue_name} for "${row.event_title}" (${when})`;
@@ -167,10 +216,19 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
   const decision = validated.decision;
 
   return inTransaction(database, async client => {
+    // Lock the venue before the booking, the order hold, request and buffer
+    // writes use, so concurrent approvals on one venue queue rather than deadlock.
+    const venue = (await client.query<{ venue_id: string }>('SELECT venue_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
+    if (!venue) return { status: 404, body: { error: 'Booking not found.' } };
+    await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [venue.venue_id]);
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };
     if (row.status !== 'pending') {
       return { status: 409, body: { error: NOT_DECIDABLE[row.status] ?? NOT_DECIDABLE.confirmed } };
+    }
+    if (decision.decision === 'approve') {
+      const clash = await approvalClash(client, row);
+      if (clash) return { status: 409, body: clash };
     }
 
     let suggestedName: string | null = null;
@@ -187,13 +245,18 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     }
 
     const newStatus = decision.decision === 'approve' ? 'confirmed' : 'rejected';
-    await client.query(`UPDATE venue_bookings
-      SET status = $2::booking_status, decided_by = $3, decided_at = now(),
-          decision_reason = $4, suggested_venue_id = $5
-      WHERE id = $1`,
-    [row.id, newStatus, staff.id,
-      decision.decision === 'reject' ? decision.reason : null,
-      decision.decision === 'reject' ? decision.suggestedVenueId : null]);
+    try {
+      await client.query(`UPDATE venue_bookings
+        SET status = $2::booking_status, decided_by = $3, decided_at = now(),
+            decision_reason = $4, suggested_venue_id = $5
+        WHERE id = $1`,
+      [row.id, newStatus, staff.id,
+        decision.decision === 'reject' ? decision.reason : null,
+        decision.decision === 'reject' ? decision.suggestedVenueId : null]);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23P01') throw new AccessError(409, VENUE_JUST_TAKEN);
+      throw error;
+    }
 
     // Scenario 5: actor, action, affected booking and event, and time.
     const audit = await client.query<{ id: string; occurred_at: Date }>(`INSERT INTO audit_logs

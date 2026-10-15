@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **354**
-- Automated (explicit TC_ID in an active test title): **182** (51.4%)
-  - Real-database (`.integration.test` / `.db.test`): **33**
+- Automated (explicit TC_ID in an active test title): **183** (51.7%)
+  - Real-database (`.integration.test` / `.db.test`): **32**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **148**
+  - Live-assertion (other active tests): **150**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **92** (26.0%)
-- No test yet (no test file mentions the TC_ID): **80** (22.6%)
+- No test yet (no test file mentions the TC_ID): **79** (22.3%)
 
 ## Coverage by epic
 
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 52 | 39 | 3 | 10 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 0 | 8 |
-| E06 | 38 | 20 | 11 | 7 |
+| E06 | 38 | 21 | 11 | 6 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 27 | 0 | 15 | 12 |
 | E09 | 44 | 5 | 30 | 9 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **354** | **182** | **92** | **80** |
+| **Total** | **354** | **183** | **92** | **79** |
 
 ## Case-by-case status
 
@@ -239,9 +239,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_01` | E06-S04 | Verify that approving a pending request for a venue that is free for the period  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_01: approving a pending request confirms it, updates the calendar and notifies the Coordinator once; backend/test |
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_02: rejecting with a reason and an alternative venue tells the Coordinator both; backend/tests/venueBookingDecisi |
 | `TC_E06S04_03` | E06-S04 | Verify that attempting to reject a request without recording a reason should be  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_03: a rejection without a reason is blocked and nothing changes; backend/tests/venueBookingDecisions.test.ts: TC_ |
-| `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ❌ none | — |
-| `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_05: an approval is recorded with the actor, action, booking, event and time; tests/e2e/e06.spec.ts: TC_E06S04_05  |
-| `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_06: a rejection is recorded with the actor, action, booking, event and time; tests/e2e/e06.spec.ts: TC_E06S04_06  |
+| `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_04: approval is blocked when the buffered windows overlap a confirmed booking, which is named; backend/tests/venu |
+| `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_05: an approval is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
+| `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_06: a rejection is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
 | `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ❌ none | — |
@@ -823,6 +823,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the suggested venue must be a different, active venue
 - an unknown booking is not found
 - Venue Staff see pending requests, soonest first, and each booking with its decision
+- Scenario 4: approval over a maintenance block on the venue is blocked and names the block
+- Scenario 4: two clashing requests approved at the same moment, at most one is confirmed
 
 ### `backend/tests/venueBookingDecisions.test.ts`
 
@@ -840,6 +842,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the pending list reads only pending bookings, soonest first
 - the booking detail returns one booking
 - a rejection without a suggested venue says nothing about an alternative
+- a clash names a pending booking or a hold, with or without an event code
+- an approval over a maintenance block is blocked and names the block
+- a rejection is not checked for clashes
+- a clash committed by someone else first is refused as
+- a booking that disappears before its venue is locked is not found
 
 ### `backend/tests/venueBookingRequests.test.ts`
 

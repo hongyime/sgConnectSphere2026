@@ -230,6 +230,22 @@ test('a request someone else has just decided shows the server refusal, and canc
   expect(screen.queryByRole('alert')).toBeNull();
 });
 
+// Scenario 4 (C-65, T-66): the API refuses an approval whose buffered window
+// clashes, naming the booking in the way; the request stays undecided.
+test('TC_E06S04_04: an approval blocked by a buffered clash shows which booking is in the way', async () => {
+  const clash = `This can't be approved: with setup and turnaround time it overlaps the confirmed booking for "EVT-2001 Confirmed Registration Event" (25 Oct 2026, 2:00 pm – 4:00 pm) at Orchid Hall.`;
+  stubApi({
+    'GET /api/venues?booking=b-1': { body: { booking: booking() } },
+    'POST /api/venues': { status: 409, body: { error: clash, conflict: { bookingId: 'b-2', status: 'confirmed', eventCode: 'EVT-2001' } } },
+  }, { role: 'venue_staff' });
+  renderAt('/venue/bookings/b-1/decide');
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Approve request' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(clash);
+  expect(screen.queryByText(/^Approved\./)).toBeNull();
+  expect(screen.getByRole('button', { name: 'Approve request' })).toBeEnabled();
+});
+
 test('a decision on an event with no Coordinator says nobody was notified', async () => {
   stubApi({
     'GET /api/venues?booking=b-1': { body: { booking: booking() } },

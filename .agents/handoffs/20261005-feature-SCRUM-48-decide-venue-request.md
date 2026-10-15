@@ -42,14 +42,34 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
   `eventVisibility.integration` and `registration.db` fail identically on clean
   `main` 03e7644 (missing `venue_requirements` / `public.users`), unrelated.
 
+- 2026-10-15: merged `origin/main` again (#256, #261, #263, holds Activity
+  log display). Conflicts additive: test lists, screen-inventory row (main's
+  E06-S03 row kept, E06-S04 now `live`), both Activity log test sets.
+- 2026-10-15 Scenario 4 (TC_E06S04_04). Merged 0016 guard refuses any
+  overlapping active booking incl. buffers, so a clash at approval only arises
+  after Venue Staff lengthen buffers (`buffer_conflict`). `decideBooking` now
+  locks the venue before the booking (hold/request/buffer lock order), checks
+  buffered clashes and maintenance blocks, returns 409 naming the booking or
+  block (`conflict` object), and maps a guard `23P01` race to "venue was just
+  taken". Unit tests 23/23, `decisions.ts` 100%. Three new real-DB tests
+  (buffer clash then OK after shortening, block, simultaneous approvals) are
+  written but NOT yet run: Docker was closed.
+- 2026-10-15 browser: `tests/e2e/venueBookingDecisions.spec.ts` covers
+  TC_E06S04_01-_06 live (desktop + mobile 12/12, intercepted API); the e06.spec
+  placeholders were replaced by a pointer, TC_07 kept. Decide screen already
+  shows the 409 message; Vitest test added. `tc-coverage.md` regenerated.
+
 ## Still to do
 
-- Scenario 4 buffered-window check: after #231 (occupied_window) and #245 (shared
-  0013 migration, #244 contract) merge. #244 also says the first Confirmed booking
-  becomes primary when the event has none; `is_primary` arrives with 0013.
-- Scenario 2 Coordinator "amend to suggested venue": with Ji Ning's E06-S03.
-- TC_E06S04_04 seed fixture, manual run of TC_01-_06 (TC_07 blocked on E10-S04),
-  T-65 records, PR.
+- Run the real-DB suite (`venueBookingDecisions.integration.test.ts`, then
+  full `test:db`) with Docker; record T-65 runs.
+- First Confirmed booking becomes primary (T-78, contract): needs
+  `is_primary` from Ji Ning's booking migration (#274, number to agree).
+- Scenario 2 Coordinator switch: Ji Ning (E06-S03). Proposed: new Pending
+  request via submission with `replaces_booking_id`; original stays Rejected.
+- Manual run of TC_01-_06 on the seeded stack by Le Xin (TC_04: raise a venue's
+  turnaround so a pending request clashes); TC_07 blocked on E10-S04.
+- Then T-65 records, PR, human review of code and test cases.
 - Running locally: export only `DATABASE_URL` (the venues API prefers
   `DATABASE_POOLER_URL`, the shared Supabase).
 

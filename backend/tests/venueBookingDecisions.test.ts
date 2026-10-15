@@ -43,6 +43,8 @@ function fakeDatabase(script: Script) {
       if (sql.includes('INSERT INTO audit_logs') && sql.includes('RETURNING')) rows = [{ id: '00000000-0000-4000-8000-0000000000d1', occurred_at: new Date('2027-01-02T00:00:00Z') }];
       else if (sql.includes('INSERT INTO notifications')) rows = [{ id: String(values?.[4]) }];
       else if (sql.includes('INSERT INTO notification_deliveries')) rows = [{ id: '00000000-0000-4000-8000-0000000000d2' }];
+      // decideBooking first finds the booking's venue to lock it (Scenario 4).
+      else if (sql.startsWith('SELECT venue_id FROM venue_bookings')) rows = [{ venue_id: venueId }];
       else if (sql.includes('SELECT d.delivery_status')) rows = [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null, email: 'recipient@example.test', title: 'Venue notice', message: 'Synthetic notice' }];
       else rows = [];
     }
@@ -213,4 +215,84 @@ test('a rejection without a suggested venue says nothing about an alternative', 
   assert.equal(has(calls, 'FROM venues WHERE id = $1 AND is_active'), false);
   const message = String(calls.find(call => call.sql.includes('INSERT INTO notifications'))!.values?.[3]);
   assert.match(message, /Reason: Too small$/);
+});
+
+// Scenario 4 (C-65, T-66): approval checks the buffered window and maintenance blocks.
+const clashRow = (overrides: Record<string, unknown> = {}) => ({
+  id: '00000000-0000-4000-8000-0000000000b2', status: 'confirmed', event_code: 'EVT-5002', event_title: 'Board Dinner',
+  starts_at: new Date('2027-01-15T04:00:00Z'), ends_at: new Date('2027-01-15T06:00:00Z'), ...overrides,
+});
+
+test('TC_E06S04_04: an approval whose buffered window overlaps another booking is blocked and names it', async () => {
+  const { pool, calls } = fakeDatabase(sql => {
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
+    if (sql.includes('occupied_window')) return [clashRow()];
+    return undefined;
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  const body = result.body as { error: string; conflict: Record<string, unknown> };
+  assert.match(body.error, /with setup and turnaround time it overlaps the confirmed booking for "EVT-5002 Board Dinner" \(15 Jan 2027, .*\) at Small Room\./);
+  assert.deepEqual(body.conflict, {
+    bookingId: '00000000-0000-4000-8000-0000000000b2', status: 'confirmed', eventCode: 'EVT-5002', eventTitle: 'Board Dinner',
+    startsAt: '2027-01-15T04:00:00.000Z', endsAt: '2027-01-15T06:00:00.000Z',
+  });
+  // The venue is locked before the booking, and nothing is written.
+  const venueLock = calls.findIndex(call => call.sql.includes('FROM venues WHERE id = $1 FOR NO KEY UPDATE'));
+  assert.ok(venueLock >= 0 && venueLock < calls.findIndex(call => call.sql.includes('FOR UPDATE OF vb')));
+  assert.deepEqual(calls.find(call => call.sql.includes('occupied_window'))!.values,
+    [venueId, bookingId, new Date('2027-01-15T02:00:00Z'), new Date('2027-01-15T04:00:00Z')]);
+  assert.equal(has(calls, 'UPDATE venue_bookings'), false);
+  assert.equal(has(calls, 'INSERT INTO audit_logs'), false);
+});
+
+test('a clash names a pending booking or a hold, with or without an event code', async () => {
+  for (const [row, expected] of [
+    [clashRow({ status: 'pending', event_code: null }), 'the pending booking for "Board Dinner"'],
+    [clashRow({ status: 'tentative', event_title: 'EVT-5002 Board Dinner' }), 'the held booking for "EVT-5002 Board Dinner"'],
+  ] as const) {
+    const { pool } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : sql.includes('occupied_window') ? [row] : undefined));
+    const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+    assert.equal(result.status, 409);
+    assert.ok((result.body as { error: string }).error.includes(expected), expected);
+  }
+});
+
+test('an approval over a maintenance block is blocked and names the block', async () => {
+  const { pool, calls } = fakeDatabase(sql => {
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
+    if (sql.includes('FROM venue_blocks')) return [{ reason: 'Scheduled HVAC maintenance', starts_at: new Date('2027-01-14T16:00:00Z'), ends_at: new Date('2027-01-16T16:00:00Z') }];
+    return undefined;
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  const body = result.body as { error: string; conflict: { block: Record<string, string> } };
+  assert.match(body.error, /^This can't be approved: Small Room is blocked for "Scheduled HVAC maintenance" \(/);
+  assert.deepEqual(body.conflict.block, { reason: 'Scheduled HVAC maintenance', startsAt: '2027-01-14T16:00:00.000Z', endsAt: '2027-01-16T16:00:00.000Z' });
+  assert.equal(has(calls, 'UPDATE venue_bookings'), false);
+});
+
+test('a rejection is not checked for clashes', async () => {
+  const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : sql.includes('occupied_window') ? [clashRow()] : undefined));
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'reject', reason: 'Too small' });
+  assert.equal(result.status, 200);
+  assert.equal(has(calls, 'occupied_window'), false);
+});
+
+test('a clash committed by someone else first is refused as "just taken"; other errors are not hidden', async () => {
+  for (const [code, expected] of [['23P01', { status: 409, message: /This venue was just taken/ }], ['XX000', { message: /boom/ }]] as const) {
+    const { pool } = fakeDatabase(sql => {
+      if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
+      if (sql.includes('UPDATE venue_bookings')) throw Object.assign(new Error('boom'), { code });
+      return undefined;
+    });
+    await assert.rejects(decideBooking(pool, staff, bookingId, { decision: 'approve' }), expected);
+  }
+});
+
+test('a booking that disappears before its venue is locked is not found', async () => {
+  const { pool, calls } = fakeDatabase(sql => (sql.startsWith('SELECT venue_id FROM venue_bookings') ? [] : undefined));
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 404);
+  assert.equal(has(calls, 'FOR NO KEY UPDATE'), false);
 });

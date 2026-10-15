@@ -55,10 +55,10 @@ async function fixture() {
   const query: Query = (sql, values) => f.pool.query(sql, values);
 
   // A Planning event with a Pending request for Small Room, 10:00-12:00 SGT on the given day.
-  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15') {
+  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15', from = '10:00', to = '12:00') {
     const eventId = randomUUID();
     const bookingId = randomUUID();
-    const range = `[${day}T10:00:00+08:00,${day}T12:00:00+08:00)`;
+    const range = `[${day}T${from}:00+08:00,${day}T${to}:00+08:00)`;
     await f.pool.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
       VALUES ($1, $2, $3, $4, $5, 'Product Expo 2026', 'planning', $6::tstzrange, 150)`,
     [eventId, code, ids.organiser, ids.coordinator, ids.org, range]);
@@ -273,4 +273,54 @@ test('Venue Staff see pending requests, soonest first, and each booking with its
   const { booking } = await getBooking(f.query, f.staff, decided.bookingId);
   assert.deepEqual([booking.status, booking.decisionReason, booking.suggestedVenue?.name, booking.decidedBy],
     ['rejected', REASON, 'Riverside Hall', 'Venue Staff A']);
+}));
+
+// Scenario 4 (C-65, T-66). Since the 0016 guard no two active bookings can be
+// requested with overlapping buffered windows, so a clash at approval arises
+// when Venue Staff lengthen the venue's buffers after both were requested.
+test('TC_E06S04_04: approval is blocked when the buffered windows overlap a confirmed booking, which is named', () => withFixture(async f => {
+  const { bookingId: confirmedId } = await f.pendingRequest('EVT-5101', '2027-02-01');
+  await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [confirmedId]);
+  // 10:00-12:00 confirmed and 12:30-14:00 pending on the same day: the advertised times don't overlap.
+  const { eventId, bookingId: pendingId } = await f.pendingRequest('EVT-5102', '2027-02-01', '12:30', '14:00');
+  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 60 WHERE id = $1', [f.ids.venue]);
+
+  const result = await decideBooking(f.pool, f.staff, pendingId, { decision: 'approve' });
+
+  assert.equal(result.status, 409);
+  const body = result.body as { error: string; conflict: { bookingId: string; status: string; eventCode: string } };
+  assert.match(body.error, /with setup and turnaround time it overlaps the confirmed booking for "EVT-5101 Product Expo 2026" \(1 Feb 2027, 10:00 am – 12:00 pm\) at Small Room\./);
+  assert.deepEqual([body.conflict.bookingId, body.conflict.status, body.conflict.eventCode], [confirmedId, 'confirmed', 'EVT-5101']);
+  assert.equal((await f.row(pendingId)).status, 'pending');
+  assert.deepEqual(await f.audits(pendingId), []);
+  assert.deepEqual(await f.notices(eventId), []);
+
+  // Once the buffers are short enough again, the same request can be approved.
+  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 15 WHERE id = $1', [f.ids.venue]);
+  assert.equal((await decideBooking(f.pool, f.staff, pendingId, { decision: 'approve' })).status, 200);
+}));
+
+test('Scenario 4: approval over a maintenance block on the venue is blocked and names the block', () => withFixture(async f => {
+  const { bookingId } = await f.pendingRequest('EVT-5103', '2027-02-03');
+  await f.pool.query(`INSERT INTO venue_blocks (venue_id, block_range, reason, created_by)
+    VALUES ($1, '[2027-02-03T11:00:00+08:00,2027-02-03T15:00:00+08:00)', 'Annual fire safety inspection', $2)`, [f.ids.venue, f.ids.staff]);
+  const result = await decideBooking(f.pool, f.staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  assert.match((result.body as { error: string }).error, /Small Room is blocked for "Annual fire safety inspection"/);
+  assert.equal((await f.row(bookingId)).status, 'pending');
+}));
+
+test('Scenario 4: two clashing requests approved at the same moment, at most one is confirmed', () => withFixture(async f => {
+  const { bookingId: a } = await f.pendingRequest('EVT-5104', '2027-02-04');
+  const { bookingId: b } = await f.pendingRequest('EVT-5105', '2027-02-04', '12:30', '14:00');
+  await f.pool.query('UPDATE venues SET setup_time_minutes = 60 WHERE id = $1', [f.ids.venue]);
+
+  const results = await Promise.allSettled([
+    decideBooking(f.pool, f.staff, a, { decision: 'approve' }),
+    decideBooking(f.pool, f.staffB, b, { decision: 'approve' }),
+  ]);
+  const statuses = results.map(r => (r.status === 'fulfilled' ? r.value.status : (r.reason as { status?: number }).status));
+  assert.deepEqual([...statuses].sort(), [200, 409]);
+  const confirmed = (await f.pool.query(`SELECT count(*)::int AS n FROM venue_bookings WHERE id = ANY($1) AND status = 'confirmed'`, [[a, b]])).rows[0].n;
+  assert.equal(confirmed, 1);
 }));
