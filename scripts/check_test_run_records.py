@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover - the tooling environment installs PyYAM
 ROOT = Path(__file__).resolve().parents[1]
 RUNS_DIR = ROOT / "docs" / "testing" / "runs"
 DATABASE_FIELD_CUTOFF = datetime.fromisoformat("2026-10-03T12:19:39+08:00")
+MANUAL_REMARKS_CUTOFF = datetime.fromisoformat("2026-10-07T15:09:10+08:00")
 
 # Legacy filenames from PR #214 that violate the convention but are immutably merged (T-65).
 # These used "ci-regression" in the filename when the scope values were "frontend/e2e"
@@ -101,7 +102,11 @@ def _table_cells(line: str) -> list[str] | None:
     return [cell.strip() for cell in stripped[1:-1].split("|")]
 
 
-def _validate_table(body: str, line_offset: int = 0) -> list[str]:
+def _validate_table(
+    body: str,
+    line_offset: int = 0,
+    require_manual_remarks: bool = False,
+) -> list[str]:
     errors: list[str] = []
     lines = body.splitlines()
     start = next(
@@ -148,6 +153,17 @@ def _validate_table(body: str, line_offset: int = 0) -> list[str]:
             errors.append(f"line {line_number}: Test Name must not be empty")
         if cells[2] not in OUTCOMES:
             errors.append(f"line {line_number}: Outcome must be PASS, FAIL, SKIP, or N/A")
+        if require_manual_remarks and (
+            not cells[3].strip()
+            or (
+                cells[2] in OUTCOMES
+                and cells[3].casefold() == cells[2].casefold()
+            )
+        ):
+            errors.append(
+                f"line {line_number}: manual Remarks must contain an observed result, "
+                "not be blank or only the Outcome token"
+            )
     return errors
 
 
@@ -244,7 +260,22 @@ def _validate_record(path: Path) -> list[str]:
                 if path.name not in LEGACY_FILENAME_EXCEPTIONS:
                     errors.append("filename runner and scope must match the frontmatter")
 
-    errors.extend(_validate_table(text[match.end() :], text[: match.end()].count("\n")))
+    singapore_timestamp = (
+        record_date is not None
+        and record_date.utcoffset() == timedelta(hours=8)
+    )
+    require_manual_remarks = (
+        singapore_timestamp
+        and record_date >= MANUAL_REMARKS_CUTOFF
+        and data.get("run_type") == "manual"
+    )
+    errors.extend(
+        _validate_table(
+            text[match.end() :],
+            text[: match.end()].count("\n"),
+            require_manual_remarks=require_manual_remarks,
+        )
+    )
     return errors
 
 

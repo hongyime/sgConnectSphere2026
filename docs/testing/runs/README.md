@@ -129,16 +129,34 @@ test title in code. `Outcome` must be one of the four values below.
 
 For a manual run (`run_type: manual`), write the **actual result** in
 `Remarks` on every row, including rows that pass: what you saw on screen, the
-status it changed to, who was notified, or the exact message shown. "PASS"
-alone records the verdict but not the evidence. The course test-case template
-(IS212 Week 4, slide 22) keeps "Actual Result" separate from "Pass/Fail";
-`Remarks` carries it here so the column order the exporter relies on stays
-unchanged. Automated runs may leave `Remarks` blank, because the command and
-its output are the evidence.
+status it changed to, who was notified, or the exact message shown. The
+validator's effective timestamp and exact rule are documented below. The course
+test-case template (IS212 Week 4, slide 22) keeps "Actual Result" separate from
+"Pass/Fail"; `Remarks` carries it here so the column order the exporter relies
+on stays unchanged. Automated runs may leave `Remarks` blank, because the
+command and its output are the evidence.
 
 ```markdown
 | TC_E03S02_01 | Coordinator sends two questions | PASS | Status changed to Awaiting clarification; organiser_c got one notice listing both questions |
 ```
+
+### Manual Remarks validation
+
+The validator applies this rule to records with `run_type: manual` and a
+timezone-aware frontmatter `date` at or after **2026-10-07T15:09:10+08:00**
+(Singapore time). This is the merge time of PR #223, commit `d1c4e9b`, recorded
+as `2026-10-07T07:09:10Z` and converted to Singapore time. The filename date
+continues to be checked against the frontmatter date; it is not used for the
+policy decision.
+
+Every result row, including `TC_ID = MULTIPLE`, must have at least one
+non-whitespace character in `Remarks`. A cell containing only that row's
+`Outcome` token is invalid, case-insensitively: `PASS`, `FAIL`, `SKIP`, or `N/A`
+alone is not an observed result. There is no minimum character count or required
+format; human review still determines whether the text describes what was
+observed. Automated records may leave `Remarks` blank, and `regression` records
+retain their existing validation. Earlier manual records remain grandfathered
+and must not be edited to satisfy this rule.
 
 ### `Outcome` values
 
