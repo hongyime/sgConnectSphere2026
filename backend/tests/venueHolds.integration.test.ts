@@ -129,8 +129,10 @@ test('TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, conver
     assert.equal(replaced.status, 201);
     // Converting twice returns the same booking; only one audit entry is written.
     const again = await convertHold(f.pool, f.coordB, { booking_id: holdId(replaced) });
-    assert.deepEqual(await convertHold(f.pool, f.coordB, { booking_id: holdId(replaced) }), again);
-    assert.equal((await f.q(`SELECT 1 FROM audit_logs WHERE new_value = $1 AND action LIKE '%submitted as a booking request'`, [holdId(replaced)])).rowCount, 1);
+    const replay = await convertHold(f.pool, f.coordB, { booking_id: holdId(replaced) });
+    assert.deepEqual(replay.body.booking, again.body.booking);
+    assert.equal(replay.body.replayed, true);
+    assert.equal((await f.q(`SELECT 1 FROM audit_logs WHERE new_value = $1 AND action = 'Venue booking requested for Riverside Hall'`, [holdId(replaced)])).rowCount, 1);
   } finally {
     await f.close();
   }

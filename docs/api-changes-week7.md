@@ -55,6 +55,23 @@ ADR-009).
 | `POST /api/venues` `action: release` | Coordinator | Existing release now also accepts a Tentative booking. | E06-S05 | E06-S05 Scenario 4 (no dedicated case) |
 | `GET /api/cron/outbox-relay` | scheduler (Vercel cron, bearer secret) | Each run expires configured holds whose `expires_at <= now()` (status `expired`, audit `hold_expired`, notification to the Coordinator) and sends the configured warning; no default expiry or warning interval is used (T-84). | E06-S05 | TC_E06S05_05 |
 
+**Sprint 3 implementation (SCRUM-49).** The rows above are the T-84 target, planned
+for Sprint 4. What #245 and #252 shipped follows T-92, as the E06-S05 backlog story
+does:
+
+- `action: hold` defaults to an expiry 48 hours ahead, or takes a chosen expiry from
+  1 hour to 14 days ahead.
+- `action: extend_hold` moves an unexpired hold's expiry later. It needs no reason, has
+  no limit on how many times, and logs each extension with who made it.
+- There is no warning before expiry. The Coordinator gets one in-app and email notice
+  when the hold expires.
+- The expiry run is `GET /api/cron/outbox-relay?task=holds` (`expireHolds`). The audit
+  action is "Tentative hold on <venue> expired", not `hold_expired`. A hold stops
+  holding its venue the moment `expires_at` passes, whether or not the run has
+  happened.
+- `action: convert_hold` changes the same row to Pending and clears its expiry. Moving
+  conversion onto the shared submission service is E06-S03 work (#274).
+
 ### Change 5 — Event Coordinator Lead and the unassigned queue (C-69, E03-S08 to E03-S10, E01-S12, E01-S13)
 
 | Method and path | Role | Change | Story | Cases |

@@ -169,3 +169,11 @@ and advisory suitability behaviour are unchanged.
 
 Post-review PostgreSQL regression: [execution record](runs/20261011-004023-jininggg-backend-db.md).
 Passed on disposable local PostgreSQL after correcting the event-code fixture.
+
+## E06-S03 integration increment (15 October 2026)
+
+The booking submission service now persists an unsuitable Pending request and
+its advisory assessment snapshot on disposable native PostgreSQL. This supplies
+the submission half of TC_E06S02_04; presentation of those failures to Venue
+Staff still depends on E06-S04. E06-S01 operating hours remain display-only.
+See [booking request evidence and limitations](venue-booking-requests.md).

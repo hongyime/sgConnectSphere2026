@@ -33,7 +33,7 @@ export function describeChange(entry: ActivityEntry) {
     const when = (value: string | null) => (value && ISO_TIME.test(value) ? formatDate(value, true) : null);
     const before = when(entry.old_value), after = when(entry.new_value);
     if (after) return before ? `Hold expiry: ${before} → ${after}` : `Hold expires ${after}`;
-    return 'Venue hold';
+    return 'Venue booking';
   }
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;
