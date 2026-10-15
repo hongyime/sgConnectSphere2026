@@ -1,38 +1,28 @@
 # SCRUM-161 / E05-S05 venue setup and turnaround verification and handoff
 
-Provide the manual click-through script for SCRUM-161 / E05-S05 (venue setup and turnaround buffers), review the migration application runbook for migrations 0011 and 0016, and prepare the acceptance testing handoff for Xiang Ying.
+Repair PR #273's E05-S05 manual guide so it does not direct testers to an unverified deployment or claim unsupported UI steps; keep the follow-up explicitly documentation-only and do not reopen SCRUM-161.
 
-## Done so far
+## Verified implementation limits
 
-- PR #261 (`feat(e05): venue setup and turnaround buffers (SCRUM-161)`) was approved by Lexin Phun and merged to `main` at commit `5c22e26`.
-- Additive migrations included in the merge:
-  - `backend/database/migrations/0011_venue_setup_turnaround_buffers.sql` (adds `setup_time_minutes`, `turnaround_time_minutes`, and `occupied_window()`).
-  - `backend/database/migrations/0016_venue_buffer_write_guard.sql` (adds `buffer_conflict` column and `guard_venue_buffer_overlap()` trigger on `venue_bookings`).
-- Created manual click-through test script in `docs/testing/manual/E05-S05-click-through.md` covering all 7 canonical test cases (`TC_E05S05_01` to `TC_E05S05_07`).
-- Identified that production Vercel deployment hit daily free rate limit (`api-deployments-free-per-day`), while PR #261 Vercel preview remains active at `https://sgconnectsphere-jpggnmxnm-theprawnvercel.vercel.app`.
+- PR #261 was merged to `main` at `5c22e26`; migrations 0011 and 0016 add database support for setup/turnaround buffers and buffer conflict marking.
+- `frontend/src/features/venue/VenueForm.tsx` has no setup-time or turnaround-time fields. The backend accepts the fields, but the guide cannot describe a browser interaction that does not exist.
+- The database seed has a confirmed Orchid Hall booking on 6 October 2026, not the adjacent current bookings required by E05-S05 scenarios 2–5 and 7.
+- The guide now identifies all seven manual cases as blocked/not run until UI controls and correct fixtures exist. Those are readiness statuses, not execution outcomes.
 
-## Production Migration Application Steps (for Deploy Owner)
+## Safety and scope
 
-Per `docs/ops/production-migrations.md`:
-1. Use a shell where `DATABASE_URL` is securely set to the production Supabase database.
-2. Check current ledger:
-   ```sql
-   SELECT name, applied_at FROM public._connectsphere_migrations ORDER BY name;
-   ```
-3. Apply migration 0011:
-   ```bash
-   npx tsx src/database/cli.ts migrate --only 0011_venue_setup_turnaround_buffers.sql
-   ```
-4. Apply migration 0016:
-   ```bash
-   npx tsx src/database/cli.ts migrate --only 0016_venue_buffer_write_guard.sql
-   ```
-5. Confirm post-run ledger check passes and log migration run record in `docs/ops/production-migration-runs/`.
+- Removed the deployed/preview option. The preview database's production status is unknown; the guide directs manual work only to a positively verified loopback disposable database.
+- Documented the reset guard's behavior and its limit: a `dev`/`test` database name also passes the CLI check, so the operator must independently verify loopback. No reset, seed, database connection, or migration was run for this documentation correction.
+- Removed the literal seed password and refer to `seedCredential` in `backend/src/database/cli.ts`.
+- This handoff contains no machine-specific paths, credential values, or instructions to apply production migrations.
 
-## Next steps for Xiang Ying (Manual Click-Through)
+## Verification and next steps
 
-1. Follow `docs/testing/manual/E05-S05-click-through.md` using either:
-   - Local dev stack: `npx tsx backend/src/database/cli.ts reset` then `npm run dev`.
-   - Or deployed environment once migrations 0011 and 0016 are applied.
-2. Execute Scenarios 1–7 (buffer editing, calendar display, buffer conflict preservation, boundary testing, maintenance blocks, search exclusion).
-3. Record the manual test run evidence in `docs/testing/runs/` following T-65.
+1. `python scripts/check.py` passed on PR head `cba68a7`: repository hygiene passed, 140 tooling tests passed and 320 existing run records validated. The checker warned about existing secondary worktrees; none were removed.
+2. The run is recorded in `docs/testing/runs/20261016-075211-bryanseah234-tooling.md` under T-65. This is repository-tooling evidence only, not E05-S05 manual execution evidence.
+3. No E05-S05 case was executed. Commit and push only to `docs/SCRUM-161-venue-buffer-verification`, without force-push. Do not mark any E05-S05 case run or accepted, and do not change the Done status of SCRUM-161.
+
+## Learnings
+
+- An API/database field does not make a browser acceptance step executable; verify the actual screen and fixture state before writing click-through instructions.
+- A reset guard that permits any database name containing `dev` or `test` is not, by itself, proof of a local target; documentation must require independent loopback verification.
