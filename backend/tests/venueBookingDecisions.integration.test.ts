@@ -310,17 +310,24 @@ test('Scenario 4: approval over a maintenance block on the venue is blocked and 
   assert.equal((await f.row(bookingId)).status, 'pending');
 }));
 
-test('Scenario 4: two clashing requests approved at the same moment, at most one is confirmed', () => withFixture(async f => {
+test('Scenario 4: two pending requests that clash after a buffer change cannot both be confirmed; rejecting one frees the other', () => withFixture(async f => {
   const { bookingId: a } = await f.pendingRequest('EVT-5104', '2027-02-04');
   const { bookingId: b } = await f.pendingRequest('EVT-5105', '2027-02-04', '12:30', '14:00');
   await f.pool.query('UPDATE venues SET setup_time_minutes = 60 WHERE id = $1', [f.ids.venue]);
 
-  const results = await Promise.allSettled([
+  // The 0016 guard counts Pending as occupying, so while both are active
+  // neither can be confirmed, even when approved at the same moment.
+  const results = await Promise.all([
     decideBooking(f.pool, f.staff, a, { decision: 'approve' }),
     decideBooking(f.pool, f.staffB, b, { decision: 'approve' }),
   ]);
-  const statuses = results.map(r => (r.status === 'fulfilled' ? r.value.status : (r.reason as { status?: number }).status));
-  assert.deepEqual([...statuses].sort(), [200, 409]);
-  const confirmed = (await f.pool.query(`SELECT count(*)::int AS n FROM venue_bookings WHERE id = ANY($1) AND status = 'confirmed'`, [[a, b]])).rows[0].n;
-  assert.equal(confirmed, 1);
+  assert.deepEqual(results.map(r => r.status), [409, 409]);
+  assert.match((results[0].body as { error: string }).error, /overlaps the pending booking for "EVT-5105 Product Expo 2026"/);
+  assert.match((results[1].body as { error: string }).error, /overlaps the pending booking for "EVT-5104 Product Expo 2026"/);
+  assert.deepEqual([(await f.row(a)).status, (await f.row(b)).status], ['pending', 'pending']);
+
+  // Venue Staff resolve it by rejecting one; the other can then be confirmed.
+  assert.equal((await decideBooking(f.pool, f.staff, a, { decision: 'reject', reason: 'Clashes with another request after the setup time changed' })).status, 200);
+  assert.equal((await decideBooking(f.pool, f.staffB, b, { decision: 'approve' })).status, 200);
+  assert.equal((await f.row(b)).status, 'confirmed');
 }));
