@@ -41,7 +41,7 @@ venue behaviour and a human manual run are not claimed complete.
 owns the mutation HTTP boundary; `VenueBookingForm.tsx` composes shared UI. Existing
 list, assessment, action router and hold conversion modules are extended.
 
-Migration `0015_venue_bookings_contract.sql` adds nullable request metadata,
+Migration `0019_venue_bookings_contract.sql` adds nullable request metadata,
 retry payload and advisory snapshot, plus confirmed-only/unique-primary checks.
 Legacy rows remain valid. It preserves the merged `0016` buffer guard and computes
 occupancy from current buffers rather than persisting a stale copy.
@@ -97,3 +97,17 @@ Read-only local DB checks corroborated metadata, cleared expiry, audits and queu
 status-notice delivery. Buffer-only overlap, retries/expiry races and actual
 staff/provider receipt are not claimed as manual results. Screenshot files still
 need saving/linking through the team's PostPlan convention before PR evidence use.
+
+
+## Review follow-up verification
+
+Migration is now `0019_venue_bookings_contract.sql`: 0017 is reserved for SCRUM-184
+and #271 is coordinating 0018. E06-S03 owns the shared booking columns.
+Suggested-venue switches use a new Pending request with `replaces_booking_id`;
+unit/component, browser and real PostgreSQL regressions cover prefilling, retained
+rejection, retries, invalid provenance and duplicate-switch serialization.
+Approved ? Planning uses the shared lifecycle status path and updates
+`status_changed_at`. Targeted staff audience lookup reuses the shared notification
+service; production default routing still depends on unmerged #272. The owner will
+coordinate #245 separately. Earlier manual screenshots do not evidence these new
+review fixes; repeat the added manual steps before claiming human verification.

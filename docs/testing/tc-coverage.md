@@ -476,6 +476,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a direct request and a hold for different events cannot both occupy the same venue
 - stale login and ambiguous Session data cannot authorize a new request
 - migration preserves legacy rows and enforces optional headcount and confirmed-only primary
+- suggested venue replacement keeps rejection, validates links and serializes duplicate switches
 
 ### `backend/tests/bookingSubmission.test.ts`
 
@@ -487,6 +488,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - write failures roll back; database conflict maps to 409
 - request notices target selected venue only; actor excluded; outbox shares transaction
 - submission handler enforces method/origin and hides server errors
+- replacement input validates rejected provenance and rejects duplicate switches before persistence
 
 ### `backend/tests/clarification.test.ts`
 
@@ -1241,6 +1243,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - empty list, error retry and missing route parameter use shared states
 - refused access shows no private event details
 - route change ignores a late response for the previous event
+- suggested venue switch prefills a new request and retains the rejected card
+- existing replacement or ineligible event suppresses the suggested-venue action
+- legacy rejected booking prefills blank metadata and uses current event bounds
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1416,6 +1421,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - conflict refusal keeps form available; invalid period prevents a POST
 - Confirmed event assessment provides no booking submission controls
+- rejected booking switches through a prefilled new Pending request
 
 ### `tests/e2e/venue-search.spec.ts`
 

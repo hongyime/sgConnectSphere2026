@@ -5,12 +5,13 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
+import { applyEventStatusChange } from '../eventLifecycle/repository.js';
 import { holdsVenue, formatSgt } from './holds.js';
 import { venueSearch } from './search.js';
 import { assessEventVenue } from './suitability.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type BookingInput = { event_id: string; venue_id: string; starts_at: string; ends_at: string; purpose: string | null; headcount: number | null };
+type BookingInput = { event_id: string; venue_id: string; starts_at: string; ends_at: string; purpose: string | null; headcount: number | null; replaces_booking_id?: string };
 export function validateBookingInput(body: Record<string, unknown>) {
   const errors: Record<string, string[]> = {};
   const identifier = typeof body.event_id === 'string' ? body.event_id.trim() : '';
@@ -31,15 +32,17 @@ export function validateBookingInput(body: Record<string, unknown>) {
     if (typeof body.purpose !== 'string' || body.purpose.trim().length > 80) errors.purpose = ['Purpose must be at most 80 characters.'];
     else purpose = body.purpose.trim() || null;
   }
+  const replacement = body.replaces_booking_id;
+  if (replacement !== undefined && (typeof replacement !== 'string' || !UUID.test(replacement))) errors.replaces_booking_id = ['Select a rejected booking to replace.'];
   const headcount = body.headcount === undefined || body.headcount === null ? null : body.headcount;
   if (headcount !== null && (typeof headcount !== 'number' || !Number.isInteger(headcount) || headcount <= 0 || headcount > 2147483647)) errors.headcount = ['Enter a whole number greater than zero.'];
-  return Object.keys(errors).length ? { errors } : { input: { event_id: identifier, venue_id: venue, starts_at: start, ends_at: end, purpose, headcount: headcount as number | null } satisfies BookingInput };
+  return Object.keys(errors).length ? { errors } : { input: { event_id: identifier, venue_id: venue, starts_at: start, ends_at: end, purpose, headcount: headcount as number | null, ...(replacement === undefined ? {} : { replaces_booking_id: replacement as string }) } satisfies BookingInput };
 }
 
 type EventRow = { id: string; status: 'approved' | 'planning'; coordinator_id: string | null; starts_at: Date; ends_at: Date };
 type HoldRow = { id: string; event_id: string; venue_id: string; status: string; expires_at: Date | null; starts_at: Date; ends_at: Date; purpose: string | null; headcount: number | null; requested_by: string | null };
 async function returnedBooking(client: PoolClient, id: string) {
-  return (await client.query(`SELECT id,event_id,venue_id,session_id,status,purpose,headcount,requested_by,requested_at,is_primary,
+  return (await client.query(`SELECT id,event_id,venue_id,session_id,status,purpose,headcount,requested_by,requested_at,is_primary,replaces_booking_id,
     lower(booking_range) AS starts_at,upper(booking_range) AS ends_at,suitability_snapshot AS suitability
     FROM venue_bookings WHERE id=$1`, [id])).rows[0];
 }
@@ -94,6 +97,14 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
           return { status: 200, body: { booking, suitability: booking.suitability, event_status: event.status, replayed: true } };
         }
       }
+      if (input!.replaces_booking_id) {
+        const rejected = (await client.query<{ status: string; event_id: string; suggested_venue_id: string | null }>(
+          'SELECT status,event_id,suggested_venue_id FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
+        if (!rejected || rejected.event_id !== event.id || rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)
+          throw new AccessError(409, 'This rejected booking has no matching suggested venue.');
+        if ((await client.query('SELECT id FROM venue_bookings WHERE replaces_booking_id=$1', [input!.replaces_booking_id])).rows.length)
+          throw new AccessError(409, 'A replacement request already exists for this rejection.');
+      }
       if (!['approved', 'planning'].includes(event.status)) throw new AccessError(409, 'Booking requests require an Approved or Planning event.');
       if (new Date(input!.starts_at) < event.starts_at || new Date(input!.ends_at) > event.ends_at) throw new AccessError(400, 'The booking period must fall within the event.');
       const sessions = (await client.query<{ id: string; starts_at: Date; ends_at: Date }>(
@@ -120,30 +131,20 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       // A converting hold is its own availability reservation, already excluded
       // from the conflict gate above. Suitability must not fail on its own hold.
       const suitability = assessEventVenue({ ...candidate, ...venue, available: true }, search.criteria, search.options);
-      const before = await captureEventAudience(client, event.id, options);
       const id = hold?.id ?? randomUUID();
       if (hold) await client.query(`UPDATE venue_bookings SET status='pending',expires_at=NULL,requested_by=$2,requested_at=clock_timestamp(),
         suitability_snapshot=$3 WHERE id=$1`, [id,user.id,JSON.stringify(suitability)]);
-      else await client.query(`INSERT INTO venue_bookings(id,event_id,session_id,venue_id,booking_range,status,purpose,headcount,requested_by,requested_at,submission_key,submission_payload,suitability_snapshot)
-        VALUES($1,$2,$3,$4,tstzrange($5,$6,'[)'),'pending',$7,$8,$9,clock_timestamp(),$10,$11,$12)`,
-      [id,event.id,sessions[0]!.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability)]);
-      if (event.status === 'approved') await client.query("UPDATE events SET status='planning' WHERE id=$1", [event.id]);
+      else await client.query(`INSERT INTO venue_bookings(id,event_id,session_id,venue_id,booking_range,status,purpose,headcount,requested_by,requested_at,submission_key,submission_payload,suitability_snapshot,replaces_booking_id)
+        VALUES($1,$2,$3,$4,tstzrange($5,$6,'[)'),'pending',$7,$8,$9,clock_timestamp(),$10,$11,$12,$13)`,
+      [id,event.id,sessions[0]!.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability),input!.replaces_booking_id ?? null]);
+      if (event.status === 'approved') await applyEventStatusChange(client, event.id, 'planning', user.id, { notificationOptions: options });
       const auditId = randomUUID();
       await client.query(`INSERT INTO audit_logs(id,actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
         VALUES($1,$2,'event',$3,$3,'Venue booking requested','venue_booking',$4,$5)`, [auditId,user.id,event.id,hold ? 'tentative' : null,id]);
-      const after = await captureEventAudience(client, event.id, options);
       const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
-      if (event.status === 'approved') {
-        await client.query(`INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
-          VALUES($1,'event',$2,$2,'Event moved to Planning','status','approved','planning')`, [user.id,event.id]);
-        await notifyEventChange(client, { changeId: auditId + ':status', occurredAt, actorId: user.id, before, after, change: { kind: 'status', from: 'approved', to: 'planning' } });
-      }
-      // Notify only staff responsible for THIS requested venue, never other
-      // venues already booked for the event. Resolver integration is SCRUM-189.
-      const assignedStaff = options.resolveVenueStaff ? await options.resolveVenueStaff(client, [input!.venue_id]) : [];
-      const staff = assignedStaff.length ? (await client.query<{ id: string }>(
-        "SELECT id FROM users WHERE id=ANY($1::uuid[]) AND is_active AND role='venue_staff'", [assignedStaff])).rows.map(row => row.id) : [];
-      const requestedAudience = { ...after, venueStaff: staff, unresolvedVenueIds: options.resolveVenueStaff ? [] : [input!.venue_id] };
+      // Reuse the shared audience resolver, scoped to the requested venue.
+      // #272 supplies its default resolveAssignedVenueStaff lookup after merge.
+      const requestedAudience = await captureEventAudience(client, event.id, options, [input!.venue_id]);
       const notice = await notifyEventChange(client, { changeId: auditId, occurredAt, actorId: user.id, before: requestedAudience, after: requestedAudience, change: { kind: 'booking_requested' } });
       return { status: hold ? 200 : 201, body: { booking: await returnedBooking(client, id), event_status: 'planning', suitability, unresolved_venue_ids: notice.unresolvedVenueIds } };
     });

@@ -49,3 +49,21 @@ test('Confirmed event assessment provides no booking submission controls',async(
   await expect(page.getByRole('heading',{name:'Central Hall'})).toBeVisible();
   await expect(page.getByRole('button',{name:'Submit booking request'})).toHaveCount(0);
 });
+
+
+test('rejected booking switches through a prefilled new Pending request',async({page})=>{
+  await page.route('**/api/venues?*',route=>route.fulfill({json:{event:{id:'event',event_code:'EVT-1',title:'Synthetic Conference',status:'planning',starts_at:'2027-01-15T01:00:00Z',ends_at:'2027-01-15T10:00:00Z'},bookings:[{id:'rejected',venue_id:'old',venue_name:'Original Hall',location:'Campus',status:'rejected',starts_at:'2027-01-15T02:00:00Z',ends_at:'2027-01-15T03:00:00Z',purpose:'Breakout',headcount:40,decision_reason:'Try another room',suggested_venue_id:'new',suggested_venue_name:'Suggested Hall',has_replacement:false}]}}));
+  await page.route('**/api/venues',route=>{
+    expect(route.request().postDataJSON()).toMatchObject({venue_id:'new',replaces_booking_id:'rejected',purpose:'Breakout',headcount:40});
+    return route.fulfill({status:201,json:{booking:{id:'replacement'},suitability:{mismatches:[]}}});
+  });
+  await page.goto('/coordinator/events/EVT-1/venue-bookings');
+  await page.getByRole('button',{name:'Request suggested venue',exact:true}).click();
+  await expect(page.getByLabel('Purpose (optional)')).toHaveValue('Breakout');
+  await expect(page.getByLabel('Headcount (optional)')).toHaveValue('40');
+  await expect(page.getByText('Rejected',{exact:true})).toBeVisible();
+  await page.screenshot({path:test.info().outputPath('suggested-venue-prefill.png'),fullPage:true});
+  await page.getByRole('button',{name:'Submit booking request'}).click();
+  await expect(page.getByRole('heading',{name:'Booking request submitted'})).toBeVisible();
+  await expect(page.getByText('Rejected',{exact:true})).toBeVisible();
+});

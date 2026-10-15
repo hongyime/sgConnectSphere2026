@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ButtonLink, Card, EmptyState, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDateRange, useLoad } from '../../shared';
+import { Button, ButtonLink, Card, EmptyState, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDateRange, useLoad } from '../../shared';
+import { VenueBookingForm } from './VenueBookingForm';
 import { getVenueBookingRequests } from './venueBookingRequestsApi';
 
 export function VenueBookingRequests() {
   const { eventCode = '' } = useParams();
+  const [switching, setSwitching] = useState<string | null>(null);
   const { result, reload } = useLoad(signal => getVenueBookingRequests(eventCode, signal), [eventCode]);
   const backTo = `/coordinator/events/${encodeURIComponent(eventCode)}/venues`;
   return <PageLayout eyebrow="Coordinator workspace" title="Venue booking requests">
@@ -23,6 +26,13 @@ export function VenueBookingRequests() {
         {booking.headcount != null && <p><strong>Booking headcount:</strong> {booking.headcount}</p>}
         {booking.is_primary && <p>Primary venue</p>}
         {!!booking.suitability_snapshot?.mismatches.length && <div><h3>Advisory unmet requirements at submission</h3><ul>{booking.suitability_snapshot.mismatches.map(message => <li key={message}>{message}</li>)}</ul></div>}
+        {booking.suggested_venue_name && <p><strong>Suggested venue:</strong> {booking.suggested_venue_name}</p>}
+        {booking.status === 'rejected' && booking.suggested_venue_id && !booking.has_replacement && ['approved', 'planning'].includes(result.data.event.status) && <>
+          <Button onClick={() => setSwitching(booking.id)}>Request suggested venue</Button>
+          {switching === booking.id && <VenueBookingForm key={booking.id} eventId={result.data.event.id} eventCode={eventCode} venueId={booking.suggested_venue_id}
+            start={result.data.event.starts_at ?? booking.starts_at} end={result.data.event.ends_at ?? booking.ends_at} replacement={{ id: booking.id, starts_at: booking.starts_at, ends_at: booking.ends_at, purpose: booking.purpose ?? '', headcount: booking.headcount ?? null }} />}
+        </>}
+        {booking.has_replacement && <p>A replacement request has already been submitted.</p>}
         {booking.decision_reason && <p><strong>Decision reason:</strong> {booking.decision_reason}</p>}
       </Card>)}
     </>}

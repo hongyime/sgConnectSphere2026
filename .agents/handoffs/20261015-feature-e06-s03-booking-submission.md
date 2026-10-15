@@ -32,3 +32,29 @@ Origin/main remains 5c22e26 at the pre-commit fetch. Open a draft with the repos
 
 ## Published draft and latest-main reconciliation
 Implementation committed and pushed as 3481702; draft PR #274 is open. PostPlan: https://ygvotv93sndj.postplan.dev (all 24 manual screenshots extracted from the saved Word document; six linked manual pages, four separate automated-fixture pages). Original immutable run records retain their attachment status at recording time; PR/PostPlan now supply durable links. Main advanced to 961bf53 during PR creation; merge resolution preserves both test commands and regenerates TC coverage. Post-resolution typecheck passes; mandatory repository check retains existing Windows tooling failures. No Jira/Supabase changes, force push or hook bypass. Draft remains pending migration ownership, staff integration and human review.
+
+
+## Review fixes (15 October, latest)
+
+User authorised remaining review fixes and retains #245 coordination. E06-S03
+owns booking columns by agreement with E06-S04. Latest #271 comment reserves
+0017 for SCRUM-184 and requests 0018 for staff assignments, so this branch uses
+0019_venue_bookings_contract.sql. No production migration has been applied.
+
+Submission now calls applyEventStatusChange for Planning including timestamp,
+audit and notices. Suggested-venue switching prefills period/purpose/headcount
+and creates a new Pending row with replaces_booking_id; original remains
+Rejected. Same-event/matching-suggestion checks, event locking, a unique partial
+index and existing idempotency handling protect provenance and duplicate switches.
+
+Requested-venue notices reuse captureEventAudience through a trusted optional
+venue scope. This composes with the default resolver in still-open #272 without
+duplicating its implementation. Production default routing is therefore still
+pending that dependency. Human manual steps for these fixes remain unexecuted.
+
+Evidence: 20261015-114845-jininggg-full-regression.md. Backend units 394/394,
+affected real PostgreSQL 16/16, components 13/13 and intercepted browser 8/8.
+Scoped submission modules and two components reach 100% all four coverage metrics.
+Typecheck passes. Repository check retains Windows tooling 3 failures/11 errors.
+Native loopback PostgreSQL was restarted solely for tests and stopped afterward;
+no Docker, shared Supabase writes, Jira changes or #245-owner messages.

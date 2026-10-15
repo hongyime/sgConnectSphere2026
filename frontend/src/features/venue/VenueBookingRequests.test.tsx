@@ -56,3 +56,32 @@ test('route change ignores a late response for the previous event', async () => 
   await act(async () => resolve({ ok: true, json: async () => data }));
   expect(screen.queryByText('Main Hall')).not.toBeInTheDocument();
 });
+
+
+test('suggested venue switch prefills a new request and retains the rejected card', async () => {
+  const rejected={...data.bookings[0],status:'rejected',decision_reason:'Use another room',suggested_venue_id:'suggested',suggested_venue_name:'Suggested Hall'};
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[rejected]})})
+    .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'new'},suitability:{mismatches:[]}})});
+  vi.stubGlobal('fetch',fetcher);mount();
+  fireEvent.click(await screen.findByRole('button',{name:'Request suggested venue'}));
+  expect(screen.getByLabelText('Purpose (optional)')).toHaveValue('Main programme');
+  expect(screen.getByLabelText('Headcount (optional)')).toHaveValue(120);
+  expect(screen.getByText('Rejected',{exact:true})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Submit booking request'}));
+  expect(await screen.findByText('Booking request submitted')).toBeInTheDocument();
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({venue_id:'suggested',replaces_booking_id:'one',purpose:'Main programme',headcount:120});
+});
+
+test('existing replacement or ineligible event suppresses the suggested-venue action', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({...data,event:{...data.event,status:'confirmed'},bookings:[{...data.bookings[0],status:'rejected',suggested_venue_id:'suggested',has_replacement:true}]})}));
+  mount();expect(await screen.findByText('A replacement request has already been submitted.')).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Request suggested venue'})).not.toBeInTheDocument();
+});
+
+
+test('legacy rejected booking prefills blank metadata and uses current event bounds', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({...data,event:{...data.event,starts_at:'2027-01-15T00:00:00Z',ends_at:'2027-01-15T10:00:00Z'},bookings:[{...data.bookings[0],purpose:null,headcount:null,status:'rejected',suggested_venue_id:'suggested'}]})}));
+  mount();fireEvent.click(await screen.findByRole('button',{name:'Request suggested venue'}));
+  expect(screen.getByLabelText('Purpose (optional)')).toHaveValue('');
+  expect(screen.getByLabelText('Headcount (optional)')).toHaveValue(null);
+});

@@ -31,6 +31,7 @@ async function fixture() {
 test('TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox', async () => {
   const f = await fixture();
   try {
+    await f.q("UPDATE events SET status_changed_at='2020-01-01T00:00:00Z' WHERE id=$1", [f.event]);
     const key = randomUUID();
     const first = await submitBooking(f.pool,f.actor,{ ...f.input,purpose:'Main programme' },key,f.options);
     assert.equal(first.status,201); assert.equal(first.body.event_status,'planning');
@@ -41,6 +42,7 @@ test('TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessmen
     assert.equal(saved.status,'pending'); assert.equal(saved.purpose,'Main programme'); assert.equal(saved.headcount,null);
     assert.equal(saved.requested_by,f.actor.id); assert.ok(saved.session_id); assert.equal(saved.is_primary,false);
     assert.equal((await f.q('SELECT status FROM events WHERE id=$1',[f.event])).rows[0].status,'planning');
+    assert.ok((await f.q('SELECT status_changed_at FROM events WHERE id=$1',[f.event])).rows[0].status_changed_at > new Date('2020-01-01'));
     const notices = (await f.q('SELECT user_id,message FROM notifications WHERE event_id=$1',[f.event])).rows;
     assert.deepEqual(new Set(notices.map(n=>n.user_id)),new Set([f.staff,f.organiser]));
     assert.equal(notices.length,2); assert.ok(!notices.some(n=>n.user_id===f.actor.id));
@@ -166,4 +168,33 @@ test('migration preserves legacy rows and enforces optional headcount and confir
     await f.q("INSERT INTO venue_bookings(venue_id,event_id,booking_range,status,is_primary) VALUES($1,$2,'[2027-01-15T09:00+08,2027-01-15T10:00+08)','confirmed',true)",[f.venues[0],f.event]);
     await assert.rejects(f.q("INSERT INTO venue_bookings(venue_id,event_id,booking_range,status,is_primary) VALUES($1,$2,'[2027-01-15T09:00+08,2027-01-15T10:00+08)','confirmed',true)",[f.venues[1],f.event]),{code:'23505'});
   } finally { await f.close(); }
+});
+
+
+test('suggested venue replacement keeps rejection, validates links and serializes duplicate switches', async () => {
+  const f = await fixture();
+  try {
+    const rejected = randomUUID();
+    await f.q(`INSERT INTO venue_bookings(id,event_id,session_id,venue_id,booking_range,status,decision_reason,suggested_venue_id)
+      SELECT $1,$2,s.id,$3,tstzrange($4,$5,'[)'),'rejected','Synthetic rejection',$6 FROM sessions s WHERE s.event_id=$2`,
+    [rejected,f.event,f.venues[0],f.input.starts_at,f.input.ends_at,f.venues[1]]);
+    const replacement = {...f.input,venue_id:f.venues[1],replaces_booking_id:rejected};
+    await assert.rejects(submitBooking(f.pool,f.actor,{...replacement,replaces_booking_id:randomUUID()},randomUUID(),f.options),{status:409});
+    await assert.rejects(submitBooking(f.pool,f.actor,{...replacement,venue_id:f.venues[0]},randomUUID(),f.options),{status:409});
+    const key = randomUUID();
+    const results = await Promise.allSettled([submitBooking(f.pool,f.actor,replacement,key,f.options),submitBooking(f.pool,f.actor,replacement,randomUUID(),f.options)]);
+    assert.equal(results.filter(r=>r.status==='fulfilled').length,1);
+    assert.equal(results.filter(r=>r.status==='rejected').length,1);
+    const saved = (await f.q('SELECT id,status,replaces_booking_id,submission_key FROM venue_bookings WHERE replaces_booking_id=$1',[rejected])).rows[0];
+    assert.equal(saved.status,'pending');
+    const retry = await submitBooking(f.pool,f.actor,replacement,saved.submission_key,f.options);
+    assert.equal(retry.body.booking.id,saved.id);assert.equal(retry.body.replayed,true);
+    assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[rejected])).rows[0].status,'rejected');
+    const list = await listBookingRequests(f.q,f.actor,f.event);
+    assert.equal(list.bookings.find(b=>b.id===rejected)?.has_replacement,true);
+    assert.equal(list.bookings.find(b=>b.id===rejected)?.suggested_venue_id,f.venues[1]);
+    // Database invariant protects against writers bypassing the service too.
+    await assert.rejects(f.q(`INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status,replaces_booking_id)
+      SELECT event_id,session_id,venue_id,booking_range,'rejected',replaces_booking_id FROM venue_bookings WHERE id=$1`,[saved.id]),{code:'23505'});
+  } finally {await f.close();}
 });

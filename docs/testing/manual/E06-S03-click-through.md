@@ -59,3 +59,22 @@ records the human screenshots/observations and read-only local DB checks.
 The actual run used Lotus for blank optional fields and EVT-3003 Cedar for
 conversion. Buffer-only overlap and repeated conversion/expiry-worker behaviour
 were not manually exercised; their automated evidence is distinct.
+
+
+## Review follow-up: suggested venue and status timestamp
+
+1. With E06-S04?s owner, prepare a Rejected booking with a reason and an active
+   suggested venue. Use an assigned Approved or Planning event.
+2. Open the event?s booking requests. Confirm the reason and suggested venue appear.
+   Click **Request suggested venue** and check that period, purpose and headcount
+   match the rejected booking. Submit; expect a new Pending request, with the
+   original still Rejected. Refresh: another switch must not be offered.
+3. Repeat submission through a network retry: expect the same replacement, with
+   no repeated notifications. An overlapping or blocked suggestion must be refused.
+4. On an Approved event?s first submission, verify Planning and a fresh
+   `status_changed_at` through an authorised read-only local DB check.
+5. After #271/#272 merge and assignments are provisioned in the disposable local
+   database, verify only current active Venue Staff for the suggested venue receive
+   the request notice. Do not claim this production default integration before then.
+
+These steps are pending human execution; the earlier screenshots predate the fixes.

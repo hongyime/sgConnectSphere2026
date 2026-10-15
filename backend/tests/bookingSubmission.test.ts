@@ -12,13 +12,18 @@ const eventId = randomUUID(), venueId = randomUUID(), holdId = randomUUID();
 const start = new Date('2027-01-15T01:00:00Z'), end = new Date('2027-01-15T10:00:00Z');
 const input = { event_id: eventId, venue_id: venueId, starts_at: start.toISOString(), ends_at: end.toISOString() };
 const audience = { id: eventId, title: 'Synthetic Event', public_name: null, status: 'approved', starts_at: start, ends_at: end, organiser_id: null, coordinator_id: actor.id };
-type State = { assigned?: boolean; active?: boolean; locked?: boolean; role?: string; status?: string; sessions?: number; sessionOutside?: boolean; venue?: boolean; candidate?: boolean; clash?: boolean; block?: boolean; requirements?: boolean; hold?: string; expiry?: Date | null; previous?: Record<string, unknown>; failure?: Error; staff?: string[] };
+type State = { assigned?: boolean; active?: boolean; locked?: boolean; role?: string; status?: string; sessions?: number; sessionOutside?: boolean; venue?: boolean; candidate?: boolean; clash?: boolean; block?: boolean; requirements?: boolean; hold?: string; expiry?: Date | null; previous?: Record<string, unknown>; failure?: Error; staff?: string[]; rejection?: string; replacement?: boolean };
 function database(state: State = {}) {
   const calls: { sql: string; values?: unknown[] }[] = [];
   const answer = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
     let rows: unknown[] = [];
     if (sql.includes('FROM events WHERE')) rows = state.assigned === false ? [] : [{ id: eventId, status: state.status ?? 'approved', coordinator_id: actor.id, starts_at: start, ends_at: end }];
+    else if (sql.includes('SELECT status,event_id,suggested_venue_id')) rows = state.rejection === 'missing' ? [] : [{ status: state.rejection ?? 'rejected', event_id: eventId, suggested_venue_id: venueId }];
+    else if (sql.includes('WHERE replaces_booking_id=$1')) rows = state.replacement ? [{ id: randomUUID() }] : [];
+    else if (sql.includes('SELECT status FROM events')) rows = [{ status: state.status ?? 'approved' }];
+    else if (sql.includes('UPDATE events') && sql.includes('status_changed_at')) rows = [{ ...audience, status: 'planning', status_changed_at: new Date() }];
+    else if (sql.includes('INSERT INTO audit_logs')) rows = [{ id: randomUUID(), occurred_at: new Date() }];
     else if (sql.includes('SELECT is_active,role')) rows = [{ is_active: state.active !== false, role: state.role ?? actor.role, locked_until: state.locked ? new Date(Date.now() + 60000) : null }];
     else if (sql.includes('SELECT id,submission_payload')) rows = state.previous ? [state.previous] : [];
     else if (sql.includes('SELECT id,event_id,venue_id,status,expires_at')) rows = state.hold === 'missing' ? [] : [{ id: holdId, event_id: eventId, venue_id: venueId, status: state.hold ?? 'tentative', expires_at: state.expiry === undefined ? new Date(Date.now() + 60000) : state.expiry, starts_at: start, ends_at: end, purpose: null, headcount: null, requested_by: actor.id }];
@@ -66,7 +71,7 @@ test('TC_E06S03_01 TC_E06S03_02 advisory failure does not block Pending; status 
   assert.equal(result.body.event_status, 'planning');
   assert.equal(result.body.suitability?.suitable, false);
   assert.match(JSON.stringify(result.body.suitability), /Capacity 100/);
-  assert.ok(db.calls.some(c => c.sql.includes("UPDATE events SET status='planning'")));
+  assert.ok(db.calls.some(c => c.sql.includes('status_changed_at = CASE')));
   assert.equal(db.calls.filter(c => c.sql.includes('INSERT INTO audit_logs')).length, 2);
   assert.equal(db.calls.at(-1)?.sql, 'COMMIT');
 });
@@ -141,4 +146,13 @@ test('submission handler enforces method/origin and hides server errors', async 
   await handler({ method: 'POST', headers: { origin: 'https://app.example.test', 'idempotency-key': randomUUID() }, body: input }, response); assert.equal(status,201); assert.equal(headers['Cache-Control'],'private, no-store');
   const failed = createBookingSubmissionHandler({ authenticate: async () => { throw new Error('PRIVATE SQL'); }, pool: () => database().pool, allowedOrigin: () => true });
   await failed({ method: 'POST', headers: {} }, response); assert.equal(status,503); assert.ok(!JSON.stringify(body).includes('PRIVATE'));
+});
+
+
+test('replacement input validates rejected provenance and rejects duplicate switches before persistence', async () => {
+  assert.ok(validateBookingInput({...input,replaces_booking_id:'bad'}).errors?.replaces_booking_id);
+  const replacement={...input,replaces_booking_id:randomUUID()};
+  for (const state of [{rejection:'missing'},{rejection:'pending'},{replacement:true}])
+    await assert.rejects(submitBooking(database(state).pool,actor,replacement,randomUUID()),{status:409});
+  assert.equal((await submitBooking(database().pool,actor,replacement,randomUUID())).status,201);
 });
