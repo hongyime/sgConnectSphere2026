@@ -249,4 +249,5 @@ Applied Week 9 choices to eligible stories and recorded remaining assumptions. R
 T-93 makes hand-taken screenshots part of every manual test run. The tester
 names each image after the TC_ID it shows and commits it next to the session
 record under `docs/testing/runs/evidence/`. A postplan may reuse the images.
-Earlier records stay as they are.
+It applies to manual records dated on or after `2026-10-16T00:00:00+08:00`; earlier records stay
+as they are.

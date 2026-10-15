@@ -18,5 +18,6 @@ commit: 0000000                    # 7-character SHA from: git rev-parse --short
 
 <!-- Manual runs only (T-93): hand-taken, one or more per PASS/FAIL row, saved in
      evidence/<this filename without .md>/ and named by TC_ID. Delete this section
-     for automated runs. -->
+     for automated runs. Replace this comment with one line per image, e.g.
 - [TC_EXXSXX_XX](evidence/YYYYMMDD-HHMMSS-runner-scope/TC_EXXSXX_XX.png): what it shows
+-->

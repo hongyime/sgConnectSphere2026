@@ -183,7 +183,9 @@ do not count as manual evidence; record those runs as `automated`.
   the result written in `Remarks` (the message, status or notification).
   `SKIP` and `N/A` rows need none.
 - **Format:** PNG or JPG under 1000 KB each (the pre-commit large-file limit).
-  Crop to the part of the screen that matters.
+  Crop to the part of the screen that matters, and use JPG for full-page
+  shots. Images stay in git history for good, even if deleted later, so keep
+  each one as small as it can be while still readable.
 - **Never show** passwords, tokens, connection strings or real personal data.
   Seeded test accounts are fine.
 - **Link** them from the record in a `## Screenshots` section under the results
@@ -191,7 +193,15 @@ do not count as manual evidence; record those runs as `automated`.
   they are not edited or replaced once merged.
 
 A postplan may show the same images, but the repository copy is the evidence.
-Records merged before 15 October 2026 are not retrofitted.
+**Which records:** manual records whose frontmatter `date` is on or after
+`2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are
+not retrofitted, whenever they merge.
+
+**Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
+check the `## Screenshots` section, one image per PASS/FAIL row, or that the
+linked files exist, and the 1000 KB limit runs only in local pre-commit, not
+in CI, so an image uploaded through the GitHub web UI skips it. Reviewers
+check these by hand until the checker is extended.
 
 ## Design decisions
 

@@ -22,6 +22,14 @@ with their T-65 session record, and update the test-run rules to match.
   as manual evidence.
 - Not retroactive: merged records are immutable.
 
+- 15 Oct, Amareet's review: one cutoff keyed on the record `date`
+  (2026-10-16T00:00:00+08:00, like #269 and `DATABASE_FIELD_CUTOFF`); PostPlan
+  optional in the PR template; README says the rule is not enforced yet;
+  template example moved inside the comment; cropping/JPG guidance.
+
 ## Next
 
+- Follow-up: extend `scripts/check_test_run_records.py` to require the
+  `## Screenshots` section and existing linked images for manual records
+  dated on or after the cutoff, and add a CI image-size check.
 - First use: Le Xin's SCRUM-189 manual run (TC_E11S01_02) on #272.

@@ -23,7 +23,7 @@ The CI gate rejects a checked box whose evidence placeholder is still blank.
 - [ ] `python scripts/check.py` passes — _CI run:_ `____`
 - [ ] Application tests pass (`npm test` / Playwright) — _command, commit, outcome, environment:_ `____` — _mocked or real database:_ `____` — _execution record in `docs/testing/runs/`:_ `____` or N/A
 - [ ] Regression tests added where needed — _test file(s):_ `____` or N/A
-- [ ] Manual verification done — _screenshot folder in `docs/testing/runs/evidence/` (T-93) and PostPlan link:_ `____`
+- [ ] Manual verification done — _screenshot folder in `docs/testing/runs/evidence/` (T-93), and PostPlan link if any:_ `____`
 - [ ] Branch up to date with `main`, no conflicts, required checks green — _last commit SHA:_ `____`
 - [ ] Documentation/architecture updated if affected — _file:_ `____` or N/A
 - [ ] TC_IDs traced from story → test title — _TC_IDs:_ `____` or N/A
