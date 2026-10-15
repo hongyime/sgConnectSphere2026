@@ -150,3 +150,12 @@ test('compiled send handler reports unavailable storage without exposing configu
   assert.equal(result.status, 503);
   assert.deepEqual(result.body, { error: 'notification_storage_unavailable' });
 });
+
+test('compiled venue booking submission rejects origin and anonymous actors before database access', () => {
+  const environment = { APP_URL: 'https://app.example.test' };
+  const denied = invoke('api/venues/index.js', 'POST', { headers: { origin: 'https://other.example.test' }, body: { action: 'request_booking' } }, environment);
+  assert.equal(denied.status, 403);
+  const anonymous = invoke('api/venues/index.js', 'POST', { headers: { origin: 'https://app.example.test' }, body: { action: 'request_booking' } }, environment);
+  assert.equal(anonymous.status, 401);
+  assert.equal(anonymous.body.error, 'Sign in to continue.');
+});

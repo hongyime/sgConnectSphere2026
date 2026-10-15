@@ -34,7 +34,7 @@ export type EventChange =
 // Capture BEFORE cancellation releases bookings/assignments/registrations.
 // Capture again after a venue move and pass both snapshots to notifyEventChange.
 export async function captureEventAudience(
-  client: PoolClient, eventId: string, options: NotificationOptions = {},
+  client: PoolClient, eventId: string, options: NotificationOptions = {}, requestedVenueIds?: readonly string[],
 ): Promise<EventAudience> {
   const { rows } = await client.query<{
     id: string; title: string; public_name: string | null; status: EventStatus;
@@ -54,7 +54,8 @@ export async function captureEventAudience(
   const technicalStaff = (await client.query<{ staff_id: string }>(
     `SELECT DISTINCT a.staff_id FROM tech_staff_assignments a JOIN users u ON u.id=a.staff_id
      WHERE a.event_id=$1 AND a.status='assigned' AND u.is_active AND u.role='technical_support_staff'`, [eventId])).rows.map(r => r.staff_id);
-  const venueIds = (await client.query<{ venue_id: string }>(
+  // Trusted workflow scope: booking requests notify only the requested venue.
+  const venueIds = requestedVenueIds ? [...requestedVenueIds] : (await client.query<{ venue_id: string }>(
     `SELECT DISTINCT venue_id FROM venue_bookings WHERE event_id=$1 AND status IN ('pending','confirmed')`, [eventId])).rows.map(r => r.venue_id);
   let venueStaff: string[] = [];
   if (options.resolveVenueStaff && venueIds.length) {

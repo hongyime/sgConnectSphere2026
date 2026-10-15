@@ -265,7 +265,7 @@ test('new hold and conversion enforce buffered clashes; flags remain visible wit
     await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:45});
     const refused = await placeHold(f.pool,f.coordinator,{event_id:event,venue_id:f.ids.venue,starts_at:'2027-06-01T13:14:00+08:00',ends_at:'2027-06-01T14:00:00+08:00'});
     assert.equal(refused.status,409);
-    assert.equal((await convertHold(f.pool,f.coordinator,{booking_id:id})).status,409);
+    await assert.rejects(convertHold(f.pool,f.coordinator,{booking_id:id}), { status: 409 });
     assert.equal(await bookingStatus(f,original),'confirmed');
     const query: Query = (sql, values) => f.pool.query(sql, values);
     const own = await getVenueCalendar(query,f.coordinator,f.ids.venue,'2027-06-01','2027-06-01');
