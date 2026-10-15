@@ -55,6 +55,12 @@ Two PRs, per `docs/ops/production-migrations.md`:
   moved SCRUM-189 to Done on #271's merge; moved back to In Progress with a
   comment. Seed assignments added to the scaffold `SEED_DATA.md`.
 
+- 16 Oct: Le Xin's manual run, record
+  `docs/testing/runs/20261016-001813-lexinphun2024-debug-frontend-e2e.md` with
+  12 hand-taken screenshots (T-93): TC_E11S01_02 PASS (date/time; venue move
+  SKIP), TC_E11S01_03 PASS, TC_E06S03_01 Venue Staff part PASS. Findings
+  outside SCRUM-189: raw UTC times in the Activity log and notification text.
+
 ## Gaps
 
 - TC_E11S01_02 expects a venue move to notify old and new venue staff. No
@@ -65,7 +71,7 @@ Two PRs, per `docs/ops/production-migrations.md`:
 
 ## Next
 
-- Le Xin: manual run of TC_E11S01_02 on the seeded local stack. As `coord_a`
+- Done 16 Oct (see above): manual run of TC_E11S01_02 on the seeded local stack. As `coord_a`
   change the end time of EVT-3003 (Orchid Hall, Venue Staff A) and EVT-3001
   (Jasmine Hall, Venue Staff B); the venue's own staff get an "Event update",
   the other Venue Staff do not. Record seed substitutions
