@@ -11,8 +11,15 @@ Goal: resolve the confirmed #267 review finding by keeping scratch and test-gene
 
 ## Next steps
 
-1. Verify ignore behavior, run `python scripts/check.py`, and record that observed run under T-65.
-2. Update this handoff with actual results, commit on #267, and push without force.
+1. Push the completed commits to the existing #267 branch without force.
+2. Inspect the new PR checks and review state; do not approve or merge.
+
+## Verification
+
+- `git check-ignore -v artifacts/equipment-form-desktop.png artifacts/scrum53-desktop.png` — both test-generated screenshots remain ignored by `artifacts/*`.
+- `python scripts/check.py` at `033f1f7` on 2026-10-16 07:55:14 +08:00 — PASS; 320 T-65 records validated, 140 repository-tooling tests passed, all configured pre-commit checks passed, and `.env.template` matched. The check reported the existing secondary worktree warning.
+- T-65 record: `docs/testing/runs/20261016-075514-bryanseah234-tooling.md`.
+- No application tests, database calls, production calls, approval, or merge.
 
 ## Constraints
 
