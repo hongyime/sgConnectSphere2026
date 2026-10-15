@@ -139,15 +139,21 @@ test('TC_E06S05_04 conversion preserves row and stops expiry; concurrent retry a
   try {
     const hold = await placeHold(f.pool,f.actor,f.input);
     const id = (hold.body.hold as {id:string}).id;
+    await assert.rejects(convertHold(f.pool,{...f.actor,id:f.other},{booking_id:id}),{status:403});
+    const denied = (await f.q("SELECT actor_id,event_id,new_value FROM audit_logs WHERE action='Access Denied'")).rows;
+    assert.equal(denied.length,1); assert.equal(denied[0].actor_id,f.other);
+    assert.equal(denied[0].event_id,null); assert.equal(denied[0].new_value,'venue_holds');
+    assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[id])).rows[0].status,'tentative');
     const results = await Promise.all([convertHold(f.pool,f.actor,{booking_id:id}),convertHold(f.pool,f.actor,{booking_id:id})]);
     assert.equal(results[0].body.booking.id,id); assert.equal(results[1].body.booking.id,id);
     assert.equal((await expireHolds(f.pool,new Date(Date.now()+7*86400000))).holdsExpired,0);
     const row = (await f.q('SELECT status,expires_at,requested_by FROM venue_bookings WHERE id=$1',[id])).rows[0];
     assert.equal(row.status,'pending'); assert.equal(row.expires_at,null); assert.equal(row.requested_by,f.actor.id);
-    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Venue booking requested'")).rows.length,1);
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action LIKE 'Venue booking requested for %'")).rows.length,1);
     const second = await placeHold(f.pool,f.actor,{...f.input,venue_id:f.venues[1]});
     const secondId = (second.body.hold as {id:string}).id;
     await f.q("UPDATE venue_bookings SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[secondId]);
+    await assert.rejects(convertHold(f.pool,f.actor,{booking_id:secondId}),{status:409,message:"This hold has expired, so it can't be changed. Place a new hold if the venue is still needed."});
     const race = await Promise.allSettled([convertHold(f.pool,f.actor,{booking_id:secondId}),expireHolds(f.pool)]);
     assert.equal(race[0].status,'rejected');
     assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[secondId])).rows[0].status,'expired');

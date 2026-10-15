@@ -58,3 +58,24 @@ Scoped submission modules and two components reach 100% all four coverage metric
 Typecheck passes. Repository check retains Windows tooling 3 failures/11 errors.
 Native loopback PostgreSQL was restarted solely for tests and stopped afterward;
 no Docker, shared Supabase writes, Jira changes or #245-owner messages.
+
+
+## E06-S05 owner review fixes (15 October, latest)
+
+The owner confirmed shared submission ownership and Approved-to-Planning;
+#245 coordination is resolved. User requested fixing the remaining findings.
+Conversion of an existing hold by an unassigned Coordinator now returns 403,
+so convertHold audited() persists Access Denied outside the rollback. Direct
+request privacy and missing-hold 404 are preserved. Requests record the venue
+name in the activity action; ActivityLog uses Venue booking for non-date values.
+bookingShared.ts owns holdsVenue, formatSgt and EXPIRED. All helper consumers
+import it directly; holds retains compatibility re-exports. Removed lockHold
+allow parameter and reused the existing EXPIRED copy for conversion.
+
+Evidence: 20261015-153758-jininggg-full-regression.md. Backend units 395/395,
+real PostgreSQL 26/26, activity UI 9/9, runtime 17/17; typecheck/build pass.
+Scoped submission/shared helpers and ActivityLog measured 100% all four metrics.
+Existing Windows repository tooling remains 3 failures/11 errors. No new human
+manual evidence. Native PostgreSQL restarted for tests and shutdown requested.
+#272 production default routing still pending; no Jira/Supabase changes, reviewer
+messages, self-approval or merge. Update #274 and PostPlan with the new evidence.

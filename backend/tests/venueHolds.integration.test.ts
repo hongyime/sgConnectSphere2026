@@ -132,7 +132,7 @@ test('TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, conver
     const replay = await convertHold(f.pool, f.coordB, { booking_id: holdId(replaced) });
     assert.deepEqual(replay.body.booking, again.body.booking);
     assert.equal(replay.body.replayed, true);
-    assert.equal((await f.q(`SELECT 1 FROM audit_logs WHERE new_value = $1 AND action = 'Venue booking requested'`, [holdId(replaced)])).rowCount, 1);
+    assert.equal((await f.q(`SELECT 1 FROM audit_logs WHERE new_value = $1 AND action = 'Venue booking requested for Riverside Hall'`, [holdId(replaced)])).rowCount, 1);
   } finally {
     await f.close();
   }

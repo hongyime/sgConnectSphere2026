@@ -6,7 +6,7 @@ import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
 import { applyEventStatusChange } from '../eventLifecycle/repository.js';
-import { holdsVenue, formatSgt } from './holds.js';
+import { EXPIRED, holdsVenue, formatSgt } from './bookingShared.js';
 import { venueSearch } from './search.js';
 import { assessEventVenue } from './suitability.js';
 
@@ -64,7 +64,8 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       const event = (await client.query<EventRow>(`SELECT id,status,coordinator_id,lower(event_range) AS starts_at,upper(event_range) AS ends_at
         FROM events WHERE ${converting ? 'id=(SELECT event_id FROM venue_bookings WHERE id=$1)' : '(id::text=$1 OR event_code=$1)'} FOR NO KEY UPDATE`,
       [converting ? data.booking_id : validated!.input!.event_id])).rows[0];
-      if (!event || event.coordinator_id !== user.id) throw new AccessError(404, 'Assigned event not found.');
+      if (!event) throw new AccessError(404, 'Assigned event not found.');
+      if (event.coordinator_id !== user.id) throw new AccessError(converting ? 403 : 404, converting ? 'Access denied. This event is not assigned to you.' : 'Assigned event not found.');
       // Recheck account under lock: a request cannot outlive deactivation/locking.
       const account = (await client.query<{ is_active: boolean; role: string; locked_until: Date | null; failed_login_count: number }>(
         'SELECT is_active,role,locked_until,failed_login_count FROM users WHERE id=$1 FOR SHARE', [user.id])).rows[0];
@@ -84,7 +85,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
           return { status: 200, body: { booking, suitability: booking.suitability, event_status: event.status, replayed: true } };
         }
         const now = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
-        if (hold.status !== 'tentative' || !hold.expires_at || hold.expires_at <= now) throw new AccessError(409, 'This hold has expired or is no longer available for conversion.');
+        if (hold.status !== 'tentative' || !hold.expires_at || hold.expires_at <= now) throw new AccessError(409, EXPIRED);
         input = { event_id: event.id, venue_id: hold.venue_id, starts_at: hold.starts_at.toISOString(), ends_at: hold.ends_at.toISOString(), purpose: hold.purpose, headcount: hold.headcount };
       } else {
         // Normalize the event identifier before comparing a replay payload.
@@ -140,7 +141,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       if (event.status === 'approved') await applyEventStatusChange(client, event.id, 'planning', user.id, { notificationOptions: options });
       const auditId = randomUUID();
       await client.query(`INSERT INTO audit_logs(id,actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
-        VALUES($1,$2,'event',$3,$3,'Venue booking requested','venue_booking',$4,$5)`, [auditId,user.id,event.id,hold ? 'tentative' : null,id]);
+        VALUES($1,$2,'event',$3,$3,$4,'venue_booking',$5,$6)`, [auditId,user.id,event.id,`Venue booking requested for ${candidate.name}`,hold ? 'tentative' : null,id]);
       const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
       // Reuse the shared audience resolver, scoped to the requested venue.
       // #272 supplies its default resolveAssignedVenueStaff lookup after merge.

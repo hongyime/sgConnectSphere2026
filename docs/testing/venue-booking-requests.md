@@ -111,3 +111,16 @@ Approved ? Planning uses the shared lifecycle status path and updates
 service; production default routing still depends on unmerged #272. The owner will
 coordinate #245 separately. Earlier manual screenshots do not evidence these new
 review fixes; repeat the added manual steps before claiming human verification.
+
+
+### Hold-owner review follow-up
+
+The E06-S05 owner confirmed that E06-S03 owns conversion?s Pending state,
+expiry clearing, Approved ? Planning, shared checks, audit and notices; E06-S05
+owns hold creation/release/extension/expiry. An unassigned Coordinator receives
+403 on conversion, preserving the existing out-of-transaction Access Denied
+log through `convertHold`?s audited wrapper. Missing holds and direct unassigned
+requests remain 404. Booking activity names the requested venue and uses a
+?Venue booking? fallback label; expiry changes still show their dates.
+Occupancy/formatting/expiry-message helpers now live in `bookingShared.ts`,
+removing the workflow import cycle. Conversion reuses the same expired-hold copy.

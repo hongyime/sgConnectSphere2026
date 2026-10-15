@@ -489,6 +489,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request notices target selected venue only; actor excluded; outbox shares transaction
 - submission handler enforces method/origin and hides server errors
 - replacement input validates rejected provenance and rejects duplicate switches before persistence
+- unassigned hold conversion remains forbidden while direct requests conceal event assignment
 
 ### `backend/tests/clarification.test.ts`
 
@@ -1056,7 +1057,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an entry whose actor account was removed still shows, without a name
 - stored actions are shown in plain words, and other actions as written
 - a status change with no previous status shows only the new status
-- hold entries read as an expiry, an expiry change, or simply a venue hold
+- booking entries show hold expiry or a generic booking label without internal IDs
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 

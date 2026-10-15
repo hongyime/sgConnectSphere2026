@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
-import { holdsVenue } from './holds.js';
+import { holdsVenue } from './bookingShared.js';
 
 import { assessVenue, type Criteria, type Option, type Candidate } from './assessment.js';
 export { assessVenue, type Criteria, type Option, type Candidate } from './assessment.js';

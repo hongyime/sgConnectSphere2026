@@ -12,13 +12,13 @@ const eventId = randomUUID(), venueId = randomUUID(), holdId = randomUUID();
 const start = new Date('2027-01-15T01:00:00Z'), end = new Date('2027-01-15T10:00:00Z');
 const input = { event_id: eventId, venue_id: venueId, starts_at: start.toISOString(), ends_at: end.toISOString() };
 const audience = { id: eventId, title: 'Synthetic Event', public_name: null, status: 'approved', starts_at: start, ends_at: end, organiser_id: null, coordinator_id: actor.id };
-type State = { assigned?: boolean; active?: boolean; locked?: boolean; role?: string; status?: string; sessions?: number; sessionOutside?: boolean; venue?: boolean; candidate?: boolean; clash?: boolean; block?: boolean; requirements?: boolean; hold?: string; expiry?: Date | null; previous?: Record<string, unknown>; failure?: Error; staff?: string[]; rejection?: string; replacement?: boolean };
+type State = { assigned?: boolean; wrongCoordinator?: boolean; active?: boolean; locked?: boolean; role?: string; status?: string; sessions?: number; sessionOutside?: boolean; venue?: boolean; candidate?: boolean; clash?: boolean; block?: boolean; requirements?: boolean; hold?: string; expiry?: Date | null; previous?: Record<string, unknown>; failure?: Error; staff?: string[]; rejection?: string; replacement?: boolean };
 function database(state: State = {}) {
   const calls: { sql: string; values?: unknown[] }[] = [];
   const answer = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
     let rows: unknown[] = [];
-    if (sql.includes('FROM events WHERE')) rows = state.assigned === false ? [] : [{ id: eventId, status: state.status ?? 'approved', coordinator_id: actor.id, starts_at: start, ends_at: end }];
+    if (sql.includes('FROM events WHERE')) rows = state.assigned === false ? [] : [{ id: eventId, status: state.status ?? 'approved', coordinator_id: state.wrongCoordinator ? randomUUID() : actor.id, starts_at: start, ends_at: end }];
     else if (sql.includes('SELECT status,event_id,suggested_venue_id')) rows = state.rejection === 'missing' ? [] : [{ status: state.rejection ?? 'rejected', event_id: eventId, suggested_venue_id: venueId }];
     else if (sql.includes('WHERE replaces_booking_id=$1')) rows = state.replacement ? [{ id: randomUUID() }] : [];
     else if (sql.includes('SELECT status FROM events')) rows = [{ status: state.status ?? 'approved' }];
@@ -73,6 +73,7 @@ test('TC_E06S03_01 TC_E06S03_02 advisory failure does not block Pending; status 
   assert.match(JSON.stringify(result.body.suitability), /Capacity 100/);
   assert.ok(db.calls.some(c => c.sql.includes('status_changed_at = CASE')));
   assert.equal(db.calls.filter(c => c.sql.includes('INSERT INTO audit_logs')).length, 2);
+  assert.ok(db.calls.some(c=>c.sql.includes('INSERT INTO audit_logs') && c.values?.includes('Venue booking requested for Small Hall')));
   assert.equal(db.calls.at(-1)?.sql, 'COMMIT');
 });
 
@@ -155,4 +156,11 @@ test('replacement input validates rejected provenance and rejects duplicate swit
   for (const state of [{rejection:'missing'},{rejection:'pending'},{replacement:true}])
     await assert.rejects(submitBooking(database(state).pool,actor,replacement,randomUUID()),{status:409});
   assert.equal((await submitBooking(database().pool,actor,replacement,randomUUID())).status,201);
+});
+
+
+test('unassigned hold conversion remains forbidden while direct requests conceal event assignment', async () => {
+  await assert.rejects(submitBooking(database({wrongCoordinator:true}).pool,actor,{action:'convert_hold',booking_id:holdId}),{status:403});
+  await assert.rejects(submitBooking(database({wrongCoordinator:true}).pool,actor,input,randomUUID()),{status:404});
+  await assert.rejects(submitBooking(database({assigned:false}).pool,actor,{action:'convert_hold',booking_id:holdId}),{status:404});
 });
