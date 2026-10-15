@@ -17,6 +17,7 @@ export type CalendarEntry = {
   end: string;
   event?: { id: string; code: string | null; title: string };
   reason?: string;
+  bufferConflict?: boolean;
 };
 
 export type VenueCalendar = {

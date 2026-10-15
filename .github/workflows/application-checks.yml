@@ -166,6 +166,12 @@ jobs:
         run: npx tsx --test tests/equipmentReservations.integration.test.ts
         working-directory: backend
 
+      - name: SCRUM-55 equipment unavailability PostgreSQL acceptance tests
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/equipmentUnavailability.integration.test.ts
+        working-directory: backend
+
       - name: Technical support request and technician staffing PostgreSQL acceptance tests
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
@@ -176,6 +182,12 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
         run: npx tsx --test tests/venueHolds.integration.test.ts
+        working-directory: backend
+
+      - name: SCRUM-161 venue buffer PostgreSQL regressions
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/venueBufferConflicts.integration.test.ts tests/venueSearch.integration.test.ts
         working-directory: backend
 
       - name: Build

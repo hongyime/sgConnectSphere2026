@@ -5,6 +5,7 @@ import {
   FormSection, LoadingState, PageLayout, StatusPill, useLoad, useSession, type ApiResult, formatDateRange,
 } from '../../shared';
 import { getEquipment, listEquipment, retireEquipment, saveEquipment, type Equipment, type EquipmentInput, type ReservationReview } from './equipmentApi';
+import { UnavailabilityOutcome, UnavailablePeriods } from './EquipmentUnavailability';
 
 const blank: EquipmentInput = {name:'',category:'',description:'',total_quantity:0,home_location:'',operational_status:'available'};
 export function EquipmentCatalogue() {
@@ -110,6 +111,7 @@ export function EquipmentDetail() {
   const session = useSession();
   const {result,reload} = useLoad(signal=>getEquipment(equipmentId,signal),[equipmentId]);
   return <PageLayout eyebrow="Technical support" title="Equipment details" width="narrow">
+    <UnavailabilityOutcome />
     {result.state === 'loading' ? <LoadingState label="Loading equipment…" />
       : result.state === 'error' ? <ErrorState failure={result.failure} context="this equipment" onRetry={reload} />
       : <Card title={result.data.name} actions={<StatusPill status={!result.data.is_active?'neutral':result.data.operational_status==='available'?'success':'warning'} label={!result.data.is_active?'Retired':result.data.operational_status==='available'?'Working':'Under maintenance'} />}>
@@ -128,6 +130,7 @@ export function EquipmentDetail() {
         </section>
         {result.data.is_active && session.status==='signed-in' && session.user.role==='technical_support_staff' && <ButtonLink to={`/support/catalogue/${equipmentId}/edit`}>Edit equipment</ButtonLink>}
       </Card>}
+    {result.state === 'ready' && <UnavailablePeriods equipment={result.data} onChanged={reload} />}
     <ButtonLink to="/support/catalogue">Back to catalogue</ButtonLink>
   </PageLayout>;
 }
