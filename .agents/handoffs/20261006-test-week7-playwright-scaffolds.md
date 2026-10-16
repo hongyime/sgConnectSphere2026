@@ -1,25 +1,22 @@
 # test/week7-playwright-scaffolds
 
-Goal: Add traceable Playwright `test.fixme` scaffolds for the 58 acceptance cases introduced by PR #205, regenerate the coverage inventory, and keep the scaffolds honest about behavior that is not implemented.
+Goal: Keep the 58 Week 7 acceptance-case Playwright scaffolds aligned with current `main` for PR #217 (SCRUM-178), regenerate the derived coverage inventory, and preserve live tests without duplicate or misleading fixme declarations.
 
 ## Current state
 
-- PR #217 is based on current `main` at `8f246ae`; the branch is mergeable and its required checks currently pass.
-- The coverage report was regenerated against current canonical tests and workbook: 351 catalogue cases, 153 automated tests, 160 scaffolds, and 38 cases without a test reference.
-- Kept the four existing email-verification tests but removed their incorrect E01-S12 labels; those IDs now describe Coordinator cases.
-- Amareet's request to remove the already-merged #240 handoff is satisfied. This task uses the original handoff dated when the branch work started; the duplicate 20261009 handoff was removed.
-- SCRUM-178 tracks this cross-epic test tooling under E00 (`SCRUM-127`) and remains In Review. PR #217 body contains `Closes SCRUM-178`.
-- Repository check at base `5cf492a`: PASS, 87 repository-tooling tests; T-65 record: `docs/testing/runs/20261014-015537-bryanseah234-tooling.md`.
-- PostPlan: https://kvwc99kdmfsx.postplan.dev. No Playwright scaffold suite was run locally; `test.fixme` entries are not behavior verification.
+- The branch fast-forwarded to hosted PR head `45113b9`, then normally merged current `main` (`0379cb2`). The only content conflict was generated `docs/testing/tc-coverage.md`; it was regenerated from source rather than hand-resolved.
+- Retained live assertions that main added for E01, E06, E09 and other cases. Removed only duplicate `test.fixme` declarations for TC_IDs already present in live tests; a static inventory found 283 test-title TC_ID declarations with zero duplicates. Unimplemented cases remain fixme scaffolds.
+- Regenerated coverage: 354 catalogue cases; 179 automated (36 real-DB, 1 mock-backed, 142 live assertion), 139 scaffold, 36 with no test reference.
+- Repository check at `45113b9`: PASS, 140 tooling tests. T-65 record: `docs/testing/runs/20261016-075459-bryanseah234-tooling.md`.
+- `git diff --check` passed. `npm run test:e2e:scaffold -- --list` could not start because this checkout has no installed JS dependencies (`playwright: not found`). No browser/application suite was run, and scaffolds are not acceptance evidence. TypeScript LSP is unavailable; no dependency install was authorized.
+- Review feedback was read from all PR reviews, inline comments, and issue comments. Reviewers approved the scaffold intent subject to current-main integration and regeneration; no approval has been granted for the new head. Peer review and required CI remain outstanding. The optional Vercel check was previously failing and is not test evidence.
 
 ## Remaining work
 
-- A teammate must approve the current PR head before it can merge. Do not self-approve or contact reviewers without authorization.
-- After merge, replace each `test.fixme` with acceptance assertions alongside the relevant story implementation; the remaining 38 cases are outside this PR.
+- Push the merge and evidence commits normally (no force). Refresh PR checks/review state and await teammate approval; do not self-approve or merge.
+- Do not claim acceptance behavior from fixme scaffolds or from repository hygiene checks.
 
 ## Decisions without team sign-off
 
-- Kept the four existing email-verification browser tests, removing only their incorrect E01-S12 case IDs. The canonical case catalogue has no matching email-verification cases under those new IDs.
-- Used canonical case titles and Markdown sources for the placeholders; no acceptance behavior was invented in the test bodies.
-
-Do not edit `.agents/STATE.md`, `.agents/JOURNAL.md`, or the already-merged #240 handoff in this PR.
+- When current main already has a live test title carrying the same TC_ID as a fixme stub, the live test is canonical for that case; remove the duplicate stub while preserving unrelated fixme cases. No executable test was downgraded and no product behavior was changed.
+- `.agents/STATE.md` and `.agents/JOURNAL.md` match current main in the merge result; this PR does not add a net change to either protected file.
