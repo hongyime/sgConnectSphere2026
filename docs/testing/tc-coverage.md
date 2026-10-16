@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 370 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 375 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **370**
-- Automated (explicit TC_ID in an active test title): **179** (48.4%)
+- Total test cases: **375**
+- Automated (explicit TC_ID in an active test title): **179** (47.7%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **142**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (37.6%)
-- No test yet (no test file mentions the TC_ID): **52** (14.1%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (37.1%)
+- No test yet (no test file mentions the TC_ID): **57** (15.2%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
-| E03 | 57 | 39 | 13 | 5 |
+| E03 | 62 | 39 | 13 | 10 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **370** | **179** | **139** | **52** |
+| **Total** | **375** | **179** | **139** | **57** |
 
 ## Case-by-case status
 
@@ -162,6 +162,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S09_03` | E03-S09 | Verify that a Coordinator should be able to ask the Lead to reassign an event an | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
 | `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with w |
 | `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged |
+| `TC_E03S11_01` | E03-S11 | Verify that the Organiser should be able to add the registration setup before ap | ❌ none | — |
+| `TC_E03S11_02` | E03-S11 | Verify that clearing the registration setup should be blocked and leave the reco | ❌ none | — |
+| `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ❌ none | — |
+| `TC_E03S11_04` | E03-S11 | Verify that the assigned Coordinator should be able to edit the registration set | ❌ none | — |
+| `TC_E03S11_05` | E03-S11 | Verify that the registration dates should be shown as two separate labelled fiel | ❌ none | — |
 | `TC_E03S12_01` | E03-S12 | Organiser sees the shared success Alert after an allowed edit | ❌ none | — |
 | `TC_E03S12_02` | E03-S12 | Saved edit persists and its audit entry is not duplicated by feedback | ❌ none | — |
 | `TC_E03S12_03` | E03-S12 | Invalid input retains validation feedback without success | ❌ none | — |
@@ -261,11 +266,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
-| `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
+| `TC_E06S06_02` | E06-S06 | Verify that a buffer change flags a retained Pending request and blocks its appr | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that a buffer change flags a retained Pending request and blocks its approval without releasing either booking |
 | `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |
 | `TC_E06S06_04` | E06-S06 | Verify that a booking beginning exactly when another ends is not treated as a co | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - Verify that a booking beginning exactly when another ends is not treated as a conflict |
 | `TC_E06S06_05` | E06-S06 | Verify that a booking overlapping an existing one by a single minute is blocked | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - Verify that a booking overlapping an existing one by a single minute is blocked |
-| `TC_E06S06_06` | E06-S06 | Verify that two approvals whose advertised times do not overlap but whose buffer | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at |
+| `TC_E06S06_06` | E06-S06 | Verify that simultaneous submissions with overlapping buffered occupancy create  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — Verify that simultaneous submissions with overlapping buffered occupancy create at most one Pending request and return a safe conflict to the  |
 | `TC_E06S06_07` | E06-S06 | Verify that approving two requests from the same event on two different venues o | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_07 — Verify that approving two requests from the same event on two different venues over the same period should confirm both |
 
 ### E07
