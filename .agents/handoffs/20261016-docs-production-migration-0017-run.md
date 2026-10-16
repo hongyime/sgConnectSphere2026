@@ -12,10 +12,11 @@ Apply only the exact merged migration 0017 from PR #282 after fresh production g
 - Public production `GET /api/health` returned HTTP 200 and readiness true. No application rows were queried or written; no reset, seed, other migration, deployment, or application configuration change was performed.
 - Added the sanitized production run record in the first branch commit.
 - `python scripts/check.py` passed once: 146 tooling tests passed, 341 test-run records validated, hooks and `.env.template` check passed. It emitted a non-blocking warning for existing secondary worktrees. The successful run is recorded in `docs/testing/runs/20261016-102210-bryanseah234-tooling.md` (HEAD `9b76662`).
+- PR #288 is open on `docs/production-migration-0017-run`; the production record was committed as `9b76662` before the tooling evidence commit `c6cc872`. The draft tooling record's catalogue metadata was corrected to `141026`, the newest calendar-dated snapshot present on the tested branch. Its observed date, commit and outcome are unchanged.
 
 ## Next
 
-- Commit the T-65 evidence and this handoff update, push normally, open a focused PR with all four required sections and traceability to #282/SCRUM-184, and request human review only if the latest checks are passing or queued.
+- Confirm checks on the final pushed head, publish the review PostPlan without browser inspection as requested, and request teammate review. Do not self-approve or bypass merge protection.
 - Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`; do not rerun any migration.
 
 ## Notes
