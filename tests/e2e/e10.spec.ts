@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E10 - 15 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E10 - 20 cases. Source: docs/testing/cases/E10.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E10-S01", () => {
@@ -349,6 +349,39 @@ test.describe("E10-S04", () => {
     // 2. Open event "Community Meetup"
     // 3. Click "Cancel Event"
     // 4. Enter a reason and submit
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E10.md.
+
+test.describe("E10-S02 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E10S02_07 — Verify that increasing expected attendance on a multi-venue event should flag only the venue bookings whose governing headcount now exceeds capacity", async ({ page }) => {
+    // Implement from docs/testing/cases/E10.md (TC_E10S02_07).
+    void page;
+  });
+
+});
+
+test.describe("E10-S05 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator's event should be flagged with the booking shown as Conflicting while status and other arrangements stay unchanged", async ({ page }) => {
+    // Implement from docs/testing/cases/E10.md (TC_E10S05_01).
+    void page;
+  });
+
+  test.fixme("TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue search for the same event", async ({ page }) => {
+    // Implement from docs/testing/cases/E10.md (TC_E10S05_02).
+    void page;
+  });
+
+  test.fixme("TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking, which the Coordinator cancels explicitly afterwards", async ({ page }) => {
+    // Implement from docs/testing/cases/E10.md (TC_E10S05_03).
+    void page;
+  });
+
+  test.fixme("TC_E10S05_04 — Verify that the Organiser and registered Attendees should be notified of the venue change only when the replacement is confirmed, not when the original venue is lost", async ({ page }) => {
+    // Implement from docs/testing/cases/E10.md (TC_E10S05_04).
     void page;
   });
 
