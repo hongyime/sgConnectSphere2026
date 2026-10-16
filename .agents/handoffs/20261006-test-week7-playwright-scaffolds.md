@@ -9,11 +9,12 @@ Goal: Keep the 58 Week 7 acceptance-case Playwright scaffolds aligned with curre
 - Regenerated coverage: 354 catalogue cases; 179 automated (36 real-DB, 1 mock-backed, 142 live assertion), 139 scaffold, 36 with no test reference.
 - Repository check at `45113b9`: PASS, 140 tooling tests. T-65 record: `docs/testing/runs/20261016-075459-bryanseah234-tooling.md`.
 - `git diff --check` passed. `npm run test:e2e:scaffold -- --list` could not start because this checkout has no installed JS dependencies (`playwright: not found`). No browser/application suite was run, and scaffolds are not acceptance evidence. TypeScript LSP is unavailable; no dependency install was authorized.
-- Review feedback was read from all PR reviews, inline comments, and issue comments. Reviewers approved the scaffold intent subject to current-main integration and regeneration; no approval has been granted for the new head. Peer review and required CI remain outstanding. The optional Vercel check was previously failing and is not test evidence.
+- Merge commit `3b16db4` and evidence commit `556d0ad` were pushed normally. GitHub reports `MERGEABLE`; all checks shown by `gh pr checks 217` passed on `556d0ad`, including Vercel.
+- Review feedback was read from all PR reviews, inline comments, and issue comments. Reviewers approved the scaffold intent subject to current-main integration and regeneration; no approval has been granted for the latest head. Teammate approval remains outstanding.
 
 ## Remaining work
 
-- Push the merge and evidence commits normally (no force). Refresh PR checks/review state and await teammate approval; do not self-approve or merge.
+- Await teammate approval on the latest head; do not self-approve or merge.
 - Do not claim acceptance behavior from fixme scaffolds or from repository hygiene checks.
 
 ## Decisions without team sign-off
