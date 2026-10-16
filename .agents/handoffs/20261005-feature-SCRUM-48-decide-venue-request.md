@@ -84,9 +84,18 @@ lands and logs `Booking Released`; (C) leave it and carry E06-S04 to
 Sprint 4. Le Xin will message Bryan; do not mark SCRUM-48 Done before the
 answer.
 
+- 2026-10-16 manual run by Le Xin: TC_01 to _06 PASS, TC_07 N/A
+  (`20261016-185304-lexinphun2024-debug-frontend-e2e.md`, 18 screenshots).
+  PR evidence at `7a9f13c`: backend unit 425/425 (`decisions.ts` 100%),
+  Vitest 431/431 (changed files 100%), `test:db` 136/138 (2 failures also on
+  clean `main` 37cbb77), Playwright 12/12. PR opened; see its body.
+
 ## Still to do
 
-- Full `test:db` with `TEST_DATABASE_URL` only; record T-65 runs.
+- Bryan's TC_07 answer (above) before merge. The branch name carries
+  SCRUM-48, so `jira-sync` moves it to Done on merge.
+- Follow-up candidate: the rejection notice's line breaks show as spaces in
+  the notifications page.
 - Scenario 2 Coordinator switch: DONE 2026-10-16. Real-DB test drives
   `decideBooking` reject -> `submitBooking` with `replaces_booking_id` ->
   approve (original stays Rejected, replacement becomes primary); 19/19.
