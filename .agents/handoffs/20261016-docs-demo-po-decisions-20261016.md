@@ -56,7 +56,23 @@ authorised or performed by this task.
   or PostPlan HTML/browser work was performed. Markdown LSP diagnostics are not
   available in this environment.
 
-Next: make the planned conventional commits, push normally, open a PR with all
-four required template sections, and request human review when checks are queued
-or pass. Record exact commit SHAs, PR URL and check/review status below. Never
-self-approve or merge. No PostPlan HTML/browser artifact is part of this lane.
+## Publication status
+
+- Five focused conventional commits were pushed normally:
+  `79f353a` handoff, `9822f95` runbook, `d5f31be` canonical BDR,
+  `922be65` BDR export/pointer, and `f748c61` T-65 run record.
+- PR #293: https://github.com/hongyime/sgConnectSphere2026/pull/293
+  (`docs(bdr): record 16 October Product Owner approvals`), based on
+  `origin/main` `8599ad2`.
+- On head `f748c61`, GitHub checks `repository-checks`, `pr-conventions`,
+  `application-checks` (skip, docs-only), `dependency-review`, `lfs-guard`,
+  and `trufflehog` passed. Human review is requested from team collaborators;
+  PR remains open and unmerged.
+- No production account/database operation, application test/build, deployment,
+  or PostPlan HTML/browser task was performed. The coordinating lane owns the
+  later PostPlan upload. Existing secondary worktrees and the untracked local
+  `.omo/` and `.playwright-mcp/` folders were left untouched.
+
+Do not self-approve or merge. Wait for teammate review, then address findings
+without changing the stated scope. Link the SCRUM-75 roster subtask only after
+its separate lane supplies the actual Jira key.
