@@ -355,6 +355,53 @@ Given I am an Event Coordinator When I navigate to the oversight view Then acces
 - Confirm the view covers every assignment, not a subset
 - Be refused as a Coordinator
 
+## E03-S11 — Let the Organiser edit registration setup and fix the date layout
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-52, T-16, T-74
+- **Owner**:
+
+Fix story for completed E03-S07 (#175, #148), created by the Product Owner on 12 October 2026 (Jira SCRUM-176) after the E14-S02 manual run (#240) found two gaps. Keep SCRUM-37 Done (T-74). Delivered in #247.
+
+**What went wrong:** "Registration setup" was left off the edit form's list of editable fields, and no test compared the edit form's fields with the create form's. A shared style rule also caught the nested registration-date legend and pushed "Opens" outside its box, and the screen was not checked by eye in review.
+
+**How the team prevents it:** compare the edit form's fields with the create form's, and check screenshots at desktop and phone width during review. Manual runs now keep hand-taken screenshots in the repository (T-93).
+
+### User story
+
+As an Event Organiser, I want to fill in and correct the registration setup on my event request, and read the registration dates clearly, so that a request that left the registration setup blank can still be completed for approval.
+
+### Acceptance criteria
+
+#### Scenario 1 — Organiser edits registration setup before approval
+
+Given my event has not yet been approved When I edit its registration setup Then the change is saved against the event and recorded in the activity log
+
+#### Scenario 2 — Registration setup cannot be cleared
+
+Given my event has a registration setup When I try to save it empty Then the save is blocked and the recorded registration setup is unchanged
+
+#### Scenario 3 — Registration setup restricted for the Organiser after approval
+
+Given my event has been approved When I open its edit form Then the registration setup is read-only and I am directed to raise a change request (E10-S01)
+
+#### Scenario 4 — Coordinator edits registration setup after approval
+
+Given an event has been approved When I edit its registration setup as the assigned Coordinator Then the change is saved and recorded in the activity log
+
+#### Scenario 5 — Registration dates laid out clearly
+
+Given I am editing an event When I view the Registration section Then "Registration opens" and "Registration closes" are shown as two separate labelled fields, each label with its own input, with no sideways scrolling at phone width
+
+### Checklist
+
+- Edit the registration setup as the Organiser before approval, with the edit recorded in the activity log
+- Be blocked when saving an empty registration setup
+- See the registration setup read-only after approval, with a link to request a change
+- Edit the registration setup as the assigned Coordinator after approval, with the edit recorded in the activity log
+- See "Registration opens" and "Registration closes" as two labelled fields at desktop and phone width
+
 ## E03-S12 — Show consistent Organiser save success status
 
 - **Sprint**: Sprint 3
@@ -366,7 +413,7 @@ Given I am an Event Coordinator When I navigate to the oversight view Then acces
 
 Selected by the Product Owner on 16 October 2026: "new E14S03/E03S12 ... put in Sprint 3". This is an unestimated mid-sprint scope addition, pending team estimation, not delivered work or a rewrite of the original Sprint 3 commitment. Le Xin offered "I will add/fix" and authored the source evidence in PR #292.
 
-E03-S07 and E03-S11 / SCRUM-176 stay Done with their historical criteria and points unchanged, following CONTRIBUTING.md's Definition of Done. E03-S11's canonical definition and TC_E03S11_01 to _05 are separately owned by open PR #292; main currently ends at S10, so S12 is reserved without inventing an S11 entry here.
+E03-S07 and E03-S11 / SCRUM-176 stay Done with their historical criteria and points unchanged, following CONTRIBUTING.md's Definition of Done. E03-S11's canonical definition and TC_E03S11_01 to _05 were added separately by #292 (merged 16 October 2026); S12 follows it.
 
 What went wrong: PR #292's first manual record (20261016-143425-lexinphun2024-debug-frontend-e2e.md, lines 29-42 at 415d17e) found the Organiser's saved message rendered as plain text, unlike the Coordinator's green success alert. ClientEvents.tsx already renders that message in a paragraph with role="status" and supplies field-specific saved text. The fix is consistency with design.md sections 4, 5, 6 and 9 through the existing shared Alert, not a missing save message or missing announcement. Prevention: review both role views and the success/error paths against the shared feedback pattern before accepting this follow-up; record future manual evidence under T-65/T-93.
 

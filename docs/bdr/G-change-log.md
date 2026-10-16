@@ -301,3 +301,11 @@ Resolve generated coverage by regeneration, preserving both main's scaffold
 changes and this PR's five new unimplemented cases. The reported hard-coded
 354-case assertion has been repaired in #268 per the PO's review comment; do not
 change the correct 359-case catalogue to satisfy the obsolete assertion.
+
+## 16 October 2026: E03-S11 added to the backlog
+
+E03-S11 (SCRUM-176), created in Jira by the Product Owner on 12 October 2026
+and delivered in #247, is now in the release and product backlogs with five
+scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
+which stays Done (T-74): the Organiser could not edit the registration setup,
+and the registration date labels were laid out wrongly.
