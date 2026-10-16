@@ -12,7 +12,7 @@ Provision only the already-approved demo Safety Officer seed profile in the exis
 
 ## Not done / next step
 
-- Push this branch normally and open a focused operations PR using the repository's four required PR body sections. Keep the PR open for human review; do not self-approve or merge.
+- PR #295 is open as a draft: https://github.com/hongyime/sgConnectSphere2026/pull/295. After this handoff update is committed and pushed, take one current-head check snapshot; keep the PR draft if required checks are still running. Human review and approval remain required; do not self-approve or merge.
 
 ## Evidence and commits
 
@@ -22,6 +22,7 @@ Provision only the already-approved demo Safety Officer seed profile in the exis
 - `15f40ff` records a repository check in `docs/testing/runs/20261016-162938-bryanseah234-tooling.md`.
 - The cited repository check was run at `ae94c8c`: 146 tooling tests passed, hygiene/secrets and `.env.template` checks passed, 357 run records validated, and the existing secondary worktrees produced a warning only. This is repository tooling evidence, not application tests/build/deployment.
 - PR #283 received the pre-write coordination/scope note at https://github.com/hongyime/sgConnectSphere2026/pull/283#issuecomment-6211200863.
+- Initial PR #295 snapshot at head `c0cfcd6`: `application-checks` (docs-only skip), `dependency-review`, `lfs-guard`, `pr-conventions`, and `trufflehog` passed; `repository-checks` was in progress; review was required. This snapshot predates the final handoff update commit and does not establish checks for the later head.
 
 ## Scope and safety
 
