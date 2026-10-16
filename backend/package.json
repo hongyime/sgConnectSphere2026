@@ -9,6 +9,7 @@
     "db:reset": "tsx src/database/cli.ts reset",
     "db:seed:test": "tsx src/database/cli.ts seed",
     "db:validate": "tsx src/database/cli.ts validate",
+    "db:verify-t72-role-signins": "tsx src/database/verifyT72RoleSignins.ts",
     "notifications:inspect-legacy": "tsx src/database/inspectLegacyNotifications.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/dev.ts",

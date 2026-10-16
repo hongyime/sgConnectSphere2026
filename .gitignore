@@ -47,7 +47,8 @@ Desktop.ini
 *.db
 
 # Postplan review artifacts. Ignore scratch and test-generated output by default;
-# allow only explicitly selected durable review deliverables.
+# allow only explicitly selected durable review deliverables and public SBOMs.
+!artifacts/
 artifacts/*
 !artifacts/agents-consolidation-20261014.html
 !artifacts/manual-remarks-validator-plan-20261014.html
@@ -62,3 +63,7 @@ artifacts/*
 !artifacts/scrum-182-one-migration-selector.html
 !artifacts/scrum-182-one-migration-selector.png
 !artifacts/unassigned-sprint-display-plan-20261014.html
+!artifacts/sbom/
+artifacts/sbom/*
+!artifacts/sbom/npm.cdx.json
+!artifacts/sbom/python-tooling.cdx.json

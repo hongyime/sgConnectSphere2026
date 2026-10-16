@@ -1,6 +1,8 @@
 """Generate a Software Bill of Materials (SBOM) for this repository.
 
-Two SBOM files are produced side-by-side, both in CycloneDX 1.5 JSON format:
+Two CycloneDX JSON files are produced side-by-side. Their spec versions are
+reported by the generator because npm and the Python tooling can emit different
+CycloneDX versions:
 
 - `artifacts/sbom/npm.cdx.json` covers the npm workspace tree (frontend and
   backend) produced by npm's native `npm sbom` command (npm >= 10).
@@ -13,11 +15,10 @@ CycloneDX by default, and `cyclonedx-py` is the canonical CLI for the Python
 tooling side; using both means a single format across the two dependency trees
 without shelling out to a third-party tool for the npm side.
 
-The output is intentionally not committed. Regenerate on demand for release
-audits, dependency reviews, or supply-chain security work; see
-`docs/contributing/generating-sbom.md` for when and why. This mirrors the
-manual export convention used for the backlog and test-case workbooks in
-`docs/backlog/README.md`.
+The generated files are committed as the public dependency inventory for the
+current manifests and lockfiles. Regenerate and include both outputs in the
+same change when npm manifests or lockfiles, `tooling/requirements.txt`, or
+this generator changes. See `docs/contributing/generating-sbom.md` for details.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+from typing import NotRequired, TypedDict
 
 from tooling_env import python_path
 
@@ -34,6 +36,46 @@ OUTPUT_DIR = ROOT / "artifacts" / "sbom"
 NPM_OUTPUT = OUTPUT_DIR / "npm.cdx.json"
 PYTHON_OUTPUT = OUTPUT_DIR / "python-tooling.cdx.json"
 PYTHON_REQUIREMENTS = ROOT / "tooling" / "requirements.txt"
+PACKAGE_LOCK = ROOT / "package-lock.json"
+
+
+BomComponent = TypedDict(
+    "BomComponent", {"name": str, "bom-ref": str},
+)
+
+
+class BomDependency(TypedDict):
+    ref: str
+    dependsOn: NotRequired[list[str]]
+
+
+class BomMetadataComponent(TypedDict, total=False):
+    name: str
+
+
+class BomMetadata(TypedDict):
+    component: BomMetadataComponent
+
+
+class NpmBom(TypedDict):
+    components: list[BomComponent]
+    dependencies: list[BomDependency]
+    metadata: BomMetadata
+
+
+class PackageManifest(TypedDict):
+    name: str
+
+
+class LockPackage(TypedDict, total=False):
+    dependencies: dict[str, str]
+    devDependencies: dict[str, str]
+    optionalDependencies: dict[str, str]
+    peerDependencies: dict[str, str]
+
+
+class PackageLock(TypedDict):
+    packages: dict[str, LockPackage]
 
 
 def _resolve_npm() -> str:
@@ -46,23 +88,78 @@ def _resolve_npm() -> str:
 
 
 def _generate_npm_sbom() -> int:
-    """Invoke `npm sbom` and write CycloneDX JSON to NPM_OUTPUT."""
     npm = _resolve_npm()
     print(f"Generating npm SBOM into {NPM_OUTPUT.relative_to(ROOT)}...")
-    result = subprocess.run(
-        [
-            npm, "sbom",
-            "--sbom-format", "cyclonedx",
-            "--package-lock-only",
-            "--workspaces",
-            "--include-workspace-root",
-        ],
+    command = [npm, "sbom", "--sbom-format", "cyclonedx", "--package-lock-only"]
+    workspace_result = subprocess.run(
+        [*command, "--workspaces", "--include-workspace-root"],
         cwd=ROOT, capture_output=True, text=True, check=False,
     )
-    if result.returncode:
-        print(result.stderr)
-        return result.returncode
-    NPM_OUTPUT.write_text(result.stdout, encoding="utf-8")
+    if workspace_result.returncode:
+        print(workspace_result.stderr)
+        return workspace_result.returncode
+    root_result = subprocess.run(
+        command, cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    if root_result.returncode:
+        print(root_result.stderr)
+        return root_result.returncode
+    workspace_bom: NpmBom = json.loads(workspace_result.stdout)
+    root_bom: NpmBom = json.loads(root_result.stdout)
+    package_manifest: PackageManifest = json.loads(
+        (ROOT / "package.json").read_text(encoding="utf-8"),
+    )
+    NPM_OUTPUT.write_text(
+        json.dumps(
+            _merge_npm_boms(workspace_bom, root_bom, package_manifest["name"]),
+            indent=2,
+        ) + "\n",
+        encoding="utf-8",
+    )
+    return 0
+
+
+def _merge_npm_boms(
+    workspace_bom: NpmBom, root_bom: NpmBom, root_name: str,
+) -> NpmBom:
+    components = {
+        component["bom-ref"]: component
+        for component in [*workspace_bom["components"], *root_bom["components"]]
+    }
+    dependency_edges: dict[str, set[str]] = {}
+    for dependency in [*workspace_bom["dependencies"], *root_bom["dependencies"]]:
+        refs = dependency_edges.setdefault(dependency["ref"], set())
+        refs.update(dependency.get("dependsOn", []))
+
+    workspace_bom["components"] = [components[key] for key in sorted(components)]
+    workspace_bom["dependencies"] = [
+        {"ref": ref, "dependsOn": sorted(dependency_edges[ref])}
+        for ref in sorted(dependency_edges)
+    ]
+    workspace_bom["metadata"]["component"]["name"] = root_name
+    return workspace_bom
+
+
+def _missing_root_dependencies(bom: NpmBom, package_lock: PackageLock) -> list[str]:
+    root_package = package_lock["packages"][""]
+    declared = set().union(
+        root_package.get("dependencies", {}),
+        root_package.get("devDependencies", {}),
+        root_package.get("optionalDependencies", {}),
+        root_package.get("peerDependencies", {}),
+    )
+    included = {component["name"] for component in bom["components"]}
+    return sorted(declared - included)
+
+
+def _check_root_dependency_completeness() -> int:
+    bom: NpmBom = json.loads(NPM_OUTPUT.read_text(encoding="utf-8"))
+    package_lock: PackageLock = json.loads(PACKAGE_LOCK.read_text(encoding="utf-8"))
+    missing = _missing_root_dependencies(bom, package_lock)
+    if missing:
+        print(f"FAIL: npm.cdx.json is missing root dependencies: {', '.join(missing)}")
+        return 1
+    print("PASS: npm.cdx.json includes every root package-lock dependency.")
     return 0
 
 
@@ -83,6 +180,11 @@ def _generate_python_sbom() -> int:
         ],
         cwd=ROOT, check=False,
     )
+    if result.returncode:
+        return result.returncode
+    python_output = PYTHON_OUTPUT.read_text(encoding="utf-8")
+    if not python_output.endswith("\n"):
+        PYTHON_OUTPUT.write_text(python_output + "\n", encoding="utf-8")
     return result.returncode
 
 
@@ -115,6 +217,8 @@ def main() -> int:
     if exit_code:
         return exit_code
     if _sanity_check(NPM_OUTPUT, minimum_components=10):
+        return 1
+    if _check_root_dependency_completeness():
         return 1
     if _sanity_check(PYTHON_OUTPUT, minimum_components=1):
         return 1
