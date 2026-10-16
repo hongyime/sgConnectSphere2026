@@ -1,27 +1,28 @@
 # PR #267 artifact scope handoff
 
-Goal: resolve the confirmed #267 review finding by keeping scratch and test-generated artifacts ignored, narrowly allow the 13 named durable plans/screenshots already carried by #270, and align the postplan guide.
+Goal: resolve the confirmed #267 review finding by keeping scratch and test-generated artifacts ignored, narrowly allow the 13 named durable plans/screenshots already carried by #270 plus the two public SBOM snapshots from #266, and keep the postplan guide consistent.
 
 ## Done so far
 
 - Read the required repository workflow, Definition of Done, grading guidance, T-65 schema, and the live #267 review. Reviewer requested scratch output stay ignored and the postplan guide stop claiming all local HTML is ignored.
-- Current PR head was `1a6be4cdd5c4c716ced9af916c52954ccb596cf1`; the repository check and current `main` state will be refreshed before commit.
-- Updated `.gitignore` with an artifacts-by-default ignore and exact exceptions for the 13 named durable outputs from #270. Test-generated `equipment-*` and `scrum53-*` screenshots remain ignored.
-- Updated `docs/contributing/creating-a-postplan.md` to distinguish explicitly allowed deliverables from scratch/test output.
+- Merged fresh `origin/main` at `7cd49c2` normally; merge commit is `1ec9782`.
+- Resolved `.gitignore` by keeping `artifacts/` traversable, ignoring all children by default, and retaining exactly the 13 named durable review artifacts plus `artifacts/sbom/npm.cdx.json` and `artifacts/sbom/python-tooling.cdx.json`.
+- Kept the #266 SBOM generator, JSON snapshots, and public guide unchanged. The existing postplan guide update distinguishes named deliverables from scratch/test output.
+- `git check-ignore --no-index` verified all 15 allowlisted artifacts are tracked and not ignored; `artifacts/equipment-form-desktop.png`, `artifacts/scrum53-desktop.png`, `artifacts/arbitrary-output.txt`, and `artifacts/sbom/arbitrary.json` remain ignored.
 
 ## Next steps
 
-1. Push the completed commits to the existing #267 branch without force.
-2. Inspect the new PR checks and review state; do not approve or merge.
+1. Push the merge and evidence commits to the existing #267 branch without force.
+2. Snapshot #267 CI status after the push and leave it awaiting teammate review; do not approve or merge.
 
 ## Verification
 
-- `git check-ignore -v artifacts/equipment-form-desktop.png artifacts/scrum53-desktop.png` — both test-generated screenshots remain ignored by `artifacts/*`.
-- `python scripts/check.py` at `033f1f7` on 2026-10-16 07:55:14 +08:00 — PASS; 320 T-65 records validated, 140 repository-tooling tests passed, all configured pre-commit checks passed, and `.env.template` matched. The check reported the existing secondary worktree warning.
-- T-65 record: `docs/testing/runs/20261016-075514-bryanseah234-tooling.md`.
+- `python scripts/check.py` at `1ec9782` on 2026-10-16 09:37:49 +08:00 — PASS; 341 T-65 records validated, 146 repository-tooling tests passed, all configured pre-commit checks passed, and `.env.template` matched. The check reported existing secondary worktrees.
+- Boundary probe — all 15 named artifacts remain trackable; the two requested screenshot patterns and arbitrary files under both artifact directories remain ignored.
+- T-65 record: `docs/testing/runs/20261016-093749-bryanseah234-tooling.md`.
 - No application tests, database calls, production calls, approval, or merge.
 
 ## Constraints
 
-- Keep this task separate from #270; do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`.
+- Keep this task separate from #266 and #270; do not edit `.agents/STATE.md`, `.agents/JOURNAL.md`, or other handoffs.
 - No scanner changes, PR approval/merge, database or production calls, or force push.
