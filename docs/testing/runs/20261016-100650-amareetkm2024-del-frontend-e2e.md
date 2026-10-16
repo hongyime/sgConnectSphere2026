@@ -29,6 +29,17 @@ The code under test is `main` at `0379cb2`. Claude set up the stack, checked
 each screenshot as it arrived and checked the database afterwards; the
 database facts below come from that check. Every step matched the script.
 
+Timing: the frontmatter `date` and the filename are the run's start, the
+first recorded database action (the EVT-3003 support request, 10:06:50). The
+run finished at the last screenshot (`TC_E07S07_02-2.png`, saved 10:51:33,
+Singapore time); the last recorded database action was 10:39:54. Both times
+come from the saved screenshot files and the database rows listed below.
+
+Scope: the 7/7 below covers the click-through script only. TC_E07S07_05's
+"replacement also blocked" variant needs a third technician, which the seed
+does not have, so it stays with `tests/auth-e2e/technicalSupport.spec.ts` and
+was not re-run here.
+
 Database check after the run (times Singapore):
 
 - 10:06:50 — EVT-3003 support request "1 AV technician for the full event",
