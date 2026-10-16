@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 364 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 375 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **364**
-- Automated (explicit TC_ID in an active test title): **190** (52.2%)
+- Total test cases: **375**
+- Automated (explicit TC_ID in an active test title): **190** (50.7%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **154**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (36.5%)
-- No test yet (no test file mentions the TC_ID): **41** (11.3%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.5%)
+- No test yet (no test file mentions the TC_ID): **52** (13.9%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
-| E03 | 57 | 44 | 13 | 0 |
+| E03 | 62 | 44 | 13 | 5 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 43 | 27 | 11 | 5 |
@@ -29,9 +29,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 44 | 5 | 31 | 8 |
 | E10 | 29 | 0 | 20 | 9 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 8 | 5 | 3 | 0 |
+| E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **364** | **190** | **133** | **41** |
+| **Total** | **375** | **190** | **133** | **52** |
 
 ## Case-by-case status
 
@@ -167,6 +167,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_03: organiser cannot change registration setup after approval and nothing is written; frontend/src/features/events/EventEditForm.te |
 | `TC_E03S11_04` | E03-S11 | Verify that the assigned Coordinator should be able to edit the registration set | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_04: assigned coordinator can edit registration setup after approval and the edit is audited |
 | `TC_E03S11_05` | E03-S11 | Verify that the registration dates should be shown as two separate labelled fiel | ✅ active | frontend/src/features/events/EventEditForm.test.tsx: TC_E03S11_05 - the Organiser can fill in registration setup, shown with the two labelled dates under Registration |
+| `TC_E03S12_01` | E03-S12 | Organiser sees the shared success Alert after an allowed edit | ❌ none | — |
+| `TC_E03S12_02` | E03-S12 | Saved edit persists and its audit entry is not duplicated by feedback | ❌ none | — |
+| `TC_E03S12_03` | E03-S12 | Invalid input retains validation feedback without success | ❌ none | — |
+| `TC_E03S12_04` | E03-S12 | Failed request after a prior success cannot leave a false confirmation | ❌ none | — |
+| `TC_E03S12_05` | E03-S12 | Cancellation and post-approval restrictions remain unchanged | ❌ none | — |
 
 ### E04
 
@@ -457,14 +462,20 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_08` | E14-S02 | Verify that access-denial entries should not be shown in the event Activity log  | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_08: access-denial entries and the refused users are not shown in the Coordinator Activity log; tests/e2e/e14.spec.ts: TC_E1 |
+| `TC_E14S03_01` | E14-S03 | Organiser reads an edited date/time value in Singapore time | ❌ none | — |
+| `TC_E14S03_02` | E14-S03 | Assigned Coordinator reads existing before/after date/time values in Singapore t | ❌ none | — |
+| `TC_E14S03_03` | E14-S03 | Both views convert the calendar date across Singapore midnight | ❌ none | — |
+| `TC_E14S03_04` | E14-S03 | Invalid and missing date/time values retain existing helper and omission behavio | ❌ none | — |
+| `TC_E14S03_05` | E14-S03 | Text, status badges and venue hold expiry are preserved | ❌ none | — |
+| `TC_E14S03_06` | E14-S03 | Formatting preserves immutable UTC evidence and existing reader access | ❌ none | — |
 
 ### EXX
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_PERF_01` | Definition of Done | Verify a venue search returns within the 3-second target on a realistic catalogu | ❌ none | — |
-| `TC_PERF_02` | Definition of Done | Verify the venue availability calendar loads within the 3-second target for a bu | ❌ none | — |
-| `TC_PERF_03` | Definition of Done | Verify a registration submission completes within the 3-second target near capac | ❌ none | — |
+| `TC_PERF_01` |  | Verify a venue search returns within the 3-second target on a realistic catalogu | ❌ none | — |
+| `TC_PERF_02` |  | Verify the venue availability calendar loads within the 3-second target for a bu | ❌ none | — |
+| `TC_PERF_03` |  | Verify a registration submission completes within the 3-second target near capac | ❌ none | — |
 
 ## Active tests that cover behaviour without an explicit TC reference
 
