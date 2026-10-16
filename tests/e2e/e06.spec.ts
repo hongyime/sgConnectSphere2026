@@ -56,23 +56,23 @@ test.describe("E06-S03", () => {
 
   /**
    * TC_E06S03_03
-   * AC:      E06-S03 - Scenario 3 (Second request for same event blocked)
+   * AC:      E06-S03 - Scenario 3 (Several venue bookings for one event); T-68/T-79 supersede the earlier rejection wording
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   The event for "Charity Run" already has a pending booking request for "Riverside Hall"
+   *   "EVT-3003 Planning Phase Gala" is a Planning event assigned to coord_a@connectsphere.com. It has a Pending Orchid Hall booking on 25/10/2026 18:00-22:00 and one compatibility Session spanning the event period
    *
    * Test data:
-   *   Existing pending request: Riverside Hall | New attempted request: Grand Ballroom
+   *   Existing booking: Orchid Hall (Pending) | New request: Cedar Auditorium (same event, Session and period)
    *
    * Expected result:
-   *   Submission is blocked; the message identifies the existing pending request for "Riverside Hall" as the reason
+   *   The Cedar Auditorium request is created as Pending independently of the existing Orchid Hall request; both remain linked to "EVT-3003 Planning Phase Gala" and the same Session
    */
-  test.fixme("TC_E06S03_03 - Verify that submitting a second booking request for a event that already has a pending request should be blocked with the existing request identified", async ({ page }) => {
+  test.fixme("TC_E06S03_03 - Verify that submitting another venue booking request for an event with a pending request creates an independent second booking", async ({ page }) => {
     // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the same event of "Charity Run"
-    // 3. Attempt to submit a second booking request for a different venue, "Grand Ballroom"
+    // 1. Log in as coord_a@connectsphere.com
+    // 2. Open "EVT-3003 Planning Phase Gala"
+    // 3. Submit a second booking request for Cedar Auditorium for the same Session and 25/10/2026 18:00-22:00
     void page;
   });
 
