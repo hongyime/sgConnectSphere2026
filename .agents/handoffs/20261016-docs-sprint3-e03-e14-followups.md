@@ -34,3 +34,13 @@ Both PRs update same-day backlog/test exports and coverage inventory. Whichever 
 ## Learnings
 
 Use the existing shared feedback and Singapore formatter contracts to define narrow follow-ups. Preserve Done history and separate pending-PR ownership; generated inventory is not execution coverage.
+
+## Exporter boundary regression follow-up
+
+- PR #296's testcase exporter had a reproduced defect: `_parse_epic_file` split only at `###` case headings, so a following `## E03-S12` story heading and planning note flowed into the prior case's Expected Result. Added literal regressions in `tooling/tests/test_testcase_story_boundaries.py`; two boundary tests failed before the fix and all three pass after it.
+- The parser now splits at actual level-two story IDs and case headings. It preserves order, ten workbook columns, current case IDs and canonical criteria, and retains level-four content. The six testcase Markdown source files from the original PR were not changed.
+- Re-generated the CAA 161026 testcase catalogue from Markdown, copied the generated workbook to the legacy audit input, and regenerated `tc-coverage.md`. Count remains 370 = base 359 + 11 planned cases; the 11 new IDs remain `none`.
+- Compared all 10 fields against the previous CAA workbook: 52 Expected Result cells lose only trailing story headings/notes; the three EXX `TC_PERF_*` Story IDs change from `Definition of Done` to blank because that is not a story. No other rows or fields changed. Legacy workbook bytes match the dated generated workbook.
+- `python scripts/check.py` passed repository hygiene and 149/149 tooling tests, including the three new regressions; record: `docs/testing/runs/20261016-170937-bryanseah234-tooling.md` (HEAD `3809a36`, local, catalogue 161026). Secondary-worktree warnings were informational.
+- Python LSP was unavailable (`basedpyright` not installed; installation previously declined). The programming no-excuse audit surfaced only the pre-existing `object` type annotation in `_parse_case_block`; no unrelated refactor was made. No app build/tests, browser, production or manual acceptance cases ran.
+- Do not modify testcase story definitions, canonical acceptance text, BDR/source-of-truth, seed refs, ops/data/env files, STATE or JOURNAL. After PR #292 and #296 merge in either order, regenerate catalogue, legacy input and coverage from the combined canonical source; never resolve by selecting a binary that omits the other PR's cases.
