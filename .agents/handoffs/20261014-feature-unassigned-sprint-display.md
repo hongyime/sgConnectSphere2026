@@ -16,10 +16,10 @@ PR #268 updates the test-case workbook's display for blank Sprint metadata to `U
 
 ## Next step
 
-Review and commit the three scoped updates, then push normally to `feature/unassigned-sprint-display`. PR #268 already exists; do not open a duplicate or bypass hooks.
+PR #268 is already open and the pushed branch is up to date. Confirm hosted checks on the latest head, then await teammate review; do not ping reviewers before those checks finish.
 
 ## Decisions and evidence
 
 - `Unassigned` is an export-only display value; canonical case and backlog Sprint metadata remain blank until the team assigns a sprint.
 - The catalogue regression should derive expected rows and blank-Sprint distribution from parsed Markdown rather than pinning live counts; controlled parse tests continue to lock the blank, whitespace-only and missing-field display contract.
-- T-65 evidence for the successful focused suite and full repository check is recorded in `docs/testing/runs/20261016-074644-bryanseah234-tooling.md`; no generated derivatives were edited.
+- T-65 evidence for the successful focused suite and full repository check is recorded in `docs/testing/runs/20261016-074644-bryanseah234-tooling.md`. This PR268 follow-up changed no generated workbook or coverage derivatives.
