@@ -95,8 +95,9 @@ period refusals, blank values, Coordinator isolation, mobile presentation,
 hold conversion and Tentative calendar display were observed by the human tester.
 Read-only local DB checks corroborated metadata, cleared expiry, audits and queued
 status-notice delivery. Buffer-only overlap, retries/expiry races and actual
-staff/provider receipt are not claimed as manual results. Screenshot files still
-need saving/linking through the team's PostPlan convention before PR evidence use.
+staff/provider receipt are not claimed as manual results. The [archived human screenshots](runs/evidence/20261015-014746-jininggg-frontend-e2e/README.md)
+now retain all 24 saved images in the repository. The immutable pre-cutoff run
+record is unchanged; these are historical attachments, not a current rerun.
 
 
 ## Review follow-up verification
