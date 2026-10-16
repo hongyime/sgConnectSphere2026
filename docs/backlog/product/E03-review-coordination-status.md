@@ -362,11 +362,15 @@ Given I am an Event Coordinator When I navigate to the oversight view Then acces
 - **BDR references**: C-52, T-16, T-74
 - **Owner**:
 
+Fix story for completed E03-S07 (#175, #148), created by the Product Owner on 12 October 2026 (Jira SCRUM-176) after the E14-S02 manual run (#240) found two gaps. Keep SCRUM-37 Done (T-74). Delivered in #247.
+
+**What went wrong:** "Registration setup" was left off the edit form's list of editable fields, and no test compared the edit form's fields with the create form's. A shared style rule also caught the nested registration-date legend and pushed "Opens" outside its box, and the screen was not checked by eye in review.
+
+**How the team prevents it:** compare the edit form's fields with the create form's, and check screenshots at desktop and phone width during review.
+
 ### User story
 
 As an Event Organiser, I want to fill in and correct the registration setup on my event request, and read the registration dates clearly, so that a request that left the registration setup blank can still be completed for approval.
-
-Fix story created by the Product Owner on 12 October 2026 (Jira SCRUM-176) for two gaps found in E03-S07, which stays Done (T-74): the Organiser's edit form had no registration setup field, and the registration date labels were laid out wrongly. Delivered in #247.
 
 ### Acceptance criteria
 
