@@ -468,9 +468,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_PERF_01` | Definition of Done | Verify a venue search returns within the 3-second target on a realistic catalogu | ❌ none | — |
-| `TC_PERF_02` | Definition of Done | Verify the venue availability calendar loads within the 3-second target for a bu | ❌ none | — |
-| `TC_PERF_03` | Definition of Done | Verify a registration submission completes within the 3-second target near capac | ❌ none | — |
+| `TC_PERF_01` |  | Verify a venue search returns within the 3-second target on a realistic catalogu | ❌ none | — |
+| `TC_PERF_02` |  | Verify the venue availability calendar loads within the 3-second target for a bu | ❌ none | — |
+| `TC_PERF_03` |  | Verify a registration submission completes within the 3-second target near capac | ❌ none | — |
 
 ## Active tests that cover behaviour without an explicit TC reference
 
