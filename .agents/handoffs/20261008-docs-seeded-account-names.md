@@ -1,0 +1,31 @@
+Finish PR #230's six fixture-consistency gate findings on `docs/seeded-account-names`, regenerate the canonical test-case export, record the verified repository check, and push the reviewed corrections without changing story scope.
+
+## Current state
+
+- Corrected the six gate findings in `docs/testing/cases/E03.md`, `E05.md`, `E06.md`, and `E09.md`: the E03 dependent status-history case follows "Team Offsite 2"; the four-state Lotus calendar fixture assigns its events to the viewing Coordinator only for that case; the January buffer/conflict cases explicitly prepare eligible event status, correct Coordinator ownership, and matching Event/Session periods; the suitability negatives explicitly remove Orchid Hall's seeded wheelchair-access feature only for those cases and the adjacent positive case uses the actual Theatre capacity; the buffered search searches Orchid Hall; and the cross-client negatives consistently use seeded `organiser_c@clientb.com`.
+- Re-checked seed ownership, statuses, dates, capacities, layouts, and accessibility features in `backend/src/database/cli.ts`; accepted E06-S03 eligibility remains Approved/Planning per the release backlog. No story requirements or application files changed.
+- Regenerated `docs/testing/PROJECT TEST CASES CAA 161026.xlsx` from canonical Markdown and updated `docs/source-of-truth.md` to that export. Generator reported 354 cases across 13 epic files.
+- Targeted audit passed for the 24 reviewer-listed remaps (24 unique IDs, no stale fixture-name hits before or after this correction), all six finding groups, and workbook-to-Markdown parity across all 354 rows and 10 columns. `TC_E05S01_01` is byte-identical to the starting branch; `TC_E06S03_03` (T-68/T-79) and `TC_E08S05_04`/`TC_E10S04_01`/`TC_E10S04_04` cancellation fixtures are unchanged.
+- `python scripts/check.py` passed on 2026-10-16 at 08:17:20 +08:00, HEAD `47b071a`: 128 repository-tooling tests passed, 321 test-run records validated, hygiene checks passed. It emitted the expected secondary-worktree warning. T-65 record: `docs/testing/runs/20261016-081720-bryanseah234-tooling.md`.
+- The four fixture/export/evidence commits were pushed normally (no force push), ending at `4b76859`. A read-only PR #230 snapshot at that head was `MERGEABLE`, `CHANGES_REQUESTED`, with `application-checks`, `repository-checks`, `dependency-review`, `lfs-guard`, `trufflehog`, and `pr-conventions` all `IN_PROGRESS`. Recheck the live head/checks after this handoff update is pushed; a teammate re-review is still needed.
+- Markdown diagnostics are unavailable because no `.md` LSP is configured. No app, database, browser, or story acceptance suite was run; these are canonical fixture-document corrections only.
+- `.agents/STATE.md` and `.agents/JOURNAL.md` were not edited. No database operation, remote PR body/comment edit, review approval, merge, or Jira update was performed.
+
+## Fresh Oracle gate corrections (16 October)
+
+- Applied only the three specified fresh Oracle findings. `TC_E05S05_04` now runs both requests independently from the same prepared baseline, removes only Request A before the second run, preserves EVT-101's Confirmed booking, and expects the conflict to name EVT-101 (not Charity Run). No future withdrawal flow is assumed.
+- `TC_E06S02_02` now records Theatre layout, Wheelchair Access and 150 capacity as event requirements, distinguishing Orchid Hall's overall 200 capacity from its seeded Theatre capacity of 120. `TC_E06S03_06` now prepares both Setup time 30 and Turnaround time 45 to establish the 09:30-12:45 buffered conflict window.
+- Regenerated only the existing `PROJECT TEST CASES CAA 161026.xlsx` from the canonical Markdown. Audit verified 354 data rows, all 10 columns equal to the generator's parsed Markdown output, only the three intended case blocks changed, and the five expressly protected cases remain identical. Existing fixture remaps and cancellation cases were not edited.
+- T-65 record `20261016-102042-bryanseah234-tooling.md` records the observed local check on HEAD `b052e44`; `python scripts/check.py` passed all 128 tooling tests and repository hygiene at 10:20:42 +08:00. It emitted the expected secondary-worktree warning and validated 322 pre-existing run records. A second pre-commit run after adding the record also passed and validated all 323 run records.
+- The previous audit established 24 unique fixture remap targets with no stale fixture-name hits. This correction changed no case blocks outside the three specified IDs, verified against the starting HEAD; therefore those remaps remain unchanged. `TC_E05S01_01`, T-68/T-79 `TC_E06S03_03`, and cancellation cases `TC_E08S05_04`, `TC_E10S04_01`, and `TC_E10S04_04` are unchanged.
+- Corrections, generated workbook and T-65 evidence were committed separately as `5fc72d3`, `1e2b518`, `80bc069`, and `47489a3`, followed by handoff-only commits. They were pushed normally, not force-pushed; the first correction push reached `c7e7b60` with a clean local/upstream status. Its immediate read-only GitHub snapshot showed all six checks `QUEUED`, merge state `BLOCKED`, and Xiang's existing `CHANGES_REQUESTED` review. That snapshot predates the final handoff-only push, so refresh status against the actual current PR head rather than waiting on those earlier queued checks. No app/database operation, `.agents/STATE.md`/`.agents/JOURNAL.md` edit, PR body/comment change, approval, merge, Jira change, or force push was performed.
+
+## Remaining work
+
+- Wait for the latest required checks and teammate re-review. Do not self-approve, edit PR body/comments, or merge; main will ping the team after this gate.
+- Keep SCRUM-179 In Progress until PR #230 merges.
+
+## Decisions
+
+- Seed facts are sourced from `backend/src/database/cli.ts`; case-local feature/status/ownership/date preparations are stated explicitly so the intended acceptance checks can be reached without mutating the shared seed or weakening requirements.
+- This remains a documentation/workbook change only. Repository hygiene/tooling verification and data audits passed; no application behavior or story acceptance execution is claimed.
