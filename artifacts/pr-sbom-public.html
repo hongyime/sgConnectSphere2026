@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="visual-explainer-version" content="1.0.0">
+<title>Public SBOM snapshots — ConnectSphere</title>
+<style>
+:root{--background:#101418;--surface:#171D23;--raised:#202830;--border:#36434F;--text:#E8EDF2;--muted:#A8B5C2;--accent:#67D4E8;--accent-soft:#182D34;--radius:12px;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--background);color:var(--text);font-size:17px;line-height:1.65}a{color:var(--accent);text-underline-offset:4px}a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}svg{display:block;max-width:100%;height:auto}svg text{font-family:"Segoe UI",system-ui,sans-serif}p{margin:0 0 16px}h1,h2,h3{line-height:1.15;letter-spacing:-.025em}h1{font-size:clamp(32px,5vw,52px);font-weight:650;max-width:820px;margin:20px 0}h2{font-size:27px;font-weight:600;margin:0 0 12px}h3{font-size:19px;font-weight:600;margin:0 0 10px}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em;color:var(--accent)}.page{width:min(1080px,calc(100% - 80px));margin:auto}.masthead{padding:28px 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);gap:16px}.brand{font-size:14px;font-weight:650;letter-spacing:.035em}.brand::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:10px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}.intro{padding:48px 0 30px}.lead{font-size:19px;color:var(--muted);max-width:780px}.toc{display:flex;gap:26px;padding:0 0 26px;border-bottom:1px solid var(--border);flex-wrap:wrap}.toc a{font-size:14px;color:var(--muted);text-decoration:none}.toc span{color:var(--accent);margin-right:7px}.section{padding:38px 0;border-bottom:1px solid var(--border)}.section-heading{display:flex;gap:18px;align-items:baseline;margin-bottom:18px}.number{font-size:13px;color:var(--accent);font-family:ui-monospace,Consolas,monospace}.section-description{max-width:780px;color:var(--muted)}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}.diagram-frame{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}.diagram-frame svg{min-width:780px;width:100%}.caption{font-size:14px;color:var(--muted);margin:14px 0 0;max-width:850px}.node{fill:var(--raised);stroke:var(--border);stroke-width:1.5}.node-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}.edge{fill:none;stroke:var(--muted);stroke-width:1.7}.svg-text{fill:var(--text);font-size:17px}.svg-sub{fill:var(--muted);font-size:13px}.reading-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:44px}.reading-grid p{color:var(--muted);font-size:16px}.rule{border-left:2px solid var(--accent);padding-left:18px;margin:22px 0}.rule p{color:var(--text);margin:0}.table-wrap{overflow-x:auto;margin-top:20px}table{width:100%;border-collapse:collapse;font-size:15px}th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:top}th{color:var(--text);font-weight:600}td{color:var(--muted)}.next{list-style:none;counter-reset:actions;padding:0;margin:0}.next li{counter-increment:actions;display:grid;grid-template-columns:32px 1fr;gap:14px;padding:18px 0;border-top:1px solid var(--border)}.next li:first-child{border-top:0;padding-top:0}.next li::before{content:counter(actions,decimal-leading-zero);font-size:13px;color:var(--accent);padding-top:3px;font-family:ui-monospace,Consolas,monospace}.next strong{font-weight:600}.next p{color:var(--muted);font-size:15px;margin:4px 0 0}.footer{padding:24px 0 40px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:20px}
+@media(max-width:700px){.page{width:calc(100% - 40px)}.masthead{padding:20px 0}.intro{padding:34px 0 24px}.lead{font-size:17px}.section{padding:30px 0}.reading-grid{grid-template-columns:1fr;gap:20px}.panel{padding:18px}.diagram-frame{padding:16px}.footer{flex-direction:column;gap:6px}.toc{gap:18px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root{--background:#fff;--surface:#fff;--raised:#f2f4f5;--border:#67727d;--text:#111820;--muted:#344350;--accent:#075a6b;--accent-soft:#e8f0f2;color-scheme:light}body{font-size:11pt}.page{width:100%}.intro,.section{padding:20px 0}.diagram-frame{overflow:visible}.diagram-frame svg{min-width:0}.reading-grid{display:block}a{color:var(--accent)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead"><div class="brand">ConnectSphere · Supply chain</div><div class="eyebrow">PR review · 14 Oct 2026</div></header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Public dependency inventory</div>
+      <h1>The SBOMs were ignored by a scratch-output rule; this change makes the current snapshots durable and public.</h1>
+      <p class="lead">The repository already generated both inventories from its public lockfiles and pinned tooling. This PR tracks those two files while keeping other local artifacts ignored.</p>
+    </div>
+    <nav class="toc" aria-label="Document sections"><a href="#overview"><span>01</span>Overview</a><a href="#details"><span>02</span>Details</a><a href="#next-steps"><span>03</span>Next steps</a></nav>
+
+    <section class="section" id="overview" aria-labelledby="overview-title">
+      <div class="section-heading"><span class="number">01</span><h2 id="overview-title">From lockfiles to public snapshots</h2></div>
+      <p class="section-description">The SBOM generator reads dependency sources, then writes two version-controlled CycloneDX inventories for readers of the public repository.</p>
+      <figure>
+        <div class="diagram-frame" tabindex="0" role="region" aria-label="SBOM publishing flow; scroll horizontally on narrow screens">
+          <svg viewBox="0 0 1000 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="sbom-title sbom-desc">
+            <title id="sbom-title">ConnectSphere SBOM publishing flow</title>
+            <desc id="sbom-desc">The committed npm lockfile and Python tooling requirements feed the existing generator. It emits two CycloneDX files that are tracked in Git and available to public repository readers. Other local artifacts remain ignored.</desc>
+            <defs><marker id="sbom-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#A8B5C2"/></marker></defs>
+            <rect x="18" y="72" width="210" height="102" rx="10" class="node"/>
+            <text x="123" y="105" text-anchor="middle" class="svg-text">Dependency sources</text>
+            <text x="123" y="132" text-anchor="middle" class="svg-sub">package-lock.json</text>
+            <text x="123" y="153" text-anchor="middle" class="svg-sub">tooling/requirements.txt</text>
+            <rect x="285" y="72" width="195" height="102" rx="10" class="node"/>
+            <text x="382" y="111" text-anchor="middle" class="svg-text">Existing generator</text>
+            <text x="382" y="140" text-anchor="middle" class="svg-sub">npm run sbom</text>
+            <rect x="535" y="54" width="230" height="138" rx="10" class="node-accent"/>
+            <text x="650" y="88" text-anchor="middle" class="svg-text">Tracked snapshots</text>
+            <text x="650" y="119" text-anchor="middle" class="svg-sub">npm.cdx.json</text>
+            <text x="650" y="142" text-anchor="middle" class="svg-sub">python-tooling.cdx.json</text>
+            <text x="650" y="168" text-anchor="middle" class="svg-sub">only these files are unignored</text>
+            <rect x="820" y="72" width="160" height="102" rx="10" class="node"/>
+            <text x="900" y="111" text-anchor="middle" class="svg-text">Public readers</text>
+            <text x="900" y="140" text-anchor="middle" class="svg-sub">GitHub source</text>
+            <path d="M228 123 H285" class="edge" marker-end="url(#sbom-arrow)"/><text x="256" y="103" text-anchor="middle" class="svg-sub">reads</text>
+            <path d="M480 123 H535" class="edge" marker-end="url(#sbom-arrow)"/><text x="507" y="103" text-anchor="middle" class="svg-sub">emits</text>
+            <path d="M765 123 H820" class="edge" marker-end="url(#sbom-arrow)"/><text x="792" y="103" text-anchor="middle" class="svg-sub">publishes</text>
+            <text x="500" y="225" text-anchor="middle" class="svg-sub">Post-merge, the snapshots remain available in source history; no artifact-retention window applies.</text>
+          </svg>
+        </div>
+        <figcaption class="caption">The public inventory follows the committed dependency sources; `artifacts/` remains a scratch area except for the two named SBOM files.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="details" aria-labelledby="details-title">
+      <div class="section-heading"><span class="number">02</span><h2 id="details-title">Why they were ignored, and why that changed</h2></div>
+      <div class="reading-grid">
+        <div>
+          <h3>The original rule was about generated output.</h3>
+          <p>The repository-wide <code>artifacts/</code> rule keeps local PostPlans, renders, reports, and scratch files out of Git. When the generator was added in <a href="https://github.com/hongyime/sgConnectSphere2026/pull/125">PR #125</a>, the SBOMs shared that path and were intentionally left untracked. The PR chose on-demand generation to avoid generated diffs; it did not cite a privacy or security restriction.</p>
+          <div class="rule"><p>Now the two SBOMs are version-controlled deliverables. Their component names and versions are derived from the public package lockfile and pinned Python requirements.</p></div>
+          <p>The secret detector flags the npm BOM's package integrity digests as high-entropy strings. Its hook skips only these generated files; it continues scanning the source manifests, lockfile, and Python requirements.</p>
+        </div>
+        <div class="panel">
+          <h3>Current snapshot</h3>
+          <p><code>npm.cdx.json</code>: 280 components, CycloneDX 1.5.</p>
+          <p><code>python-tooling.cdx.json</code>: 47 components, CycloneDX 1.6.</p>
+          <p>Generation passed using <code>python3 scripts/generate_sbom.py</code>. The generator checks that both files parse as CycloneDX JSON and contain components.</p>
+          <p>Full review: <a href="https://github.com/hongyime/sgConnectSphere2026/blob/75f4a1d/docs/contributing/generating-sbom.md">generating-sbom.md</a> · <a href="https://github.com/hongyime/sgConnectSphere2026/blob/75f4a1d/.gitignore">.gitignore</a> · <a href="https://github.com/hongyime/sgConnectSphere2026/blob/75f4a1d/.pre-commit-config.yaml">secret-scan configuration</a>.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Publication option</th><th>Fit for this repository</th><th>Decision</th></tr></thead>
+          <tbody>
+            <tr><td>Track snapshots in Git</td><td>Durable and directly readable; current project already versions generated documentation exports.</td><td>Chosen</td></tr>
+            <tr><td>Actions artifacts</td><td>Would need a new workflow and would be temporary.</td><td>Deferred</td></tr>
+            <tr><td>Release attachments</td><td>There is no adopted tagged-release publishing process yet.</td><td>Deferred</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="caption">The tradeoff is generated JSON churn. Regenerate and review both files in the same change as dependency sources, generator changes, or SBOM tool-version changes.</p>
+      <p class="caption">Local repository check: PASS at rebased working-tree commit <code>a511a00</code>; 128 tooling tests passed. T-65 record: <a href="https://github.com/hongyime/sgConnectSphere2026/blob/75f4a1d/docs/testing/runs/20261014-182314-bryanseah234-tooling.md">20261014-182314-bryanseah234-tooling.md</a>. The post-record check validated 263 records. Application build and application tests were not run; no application code changed.</p>
+    </section>
+
+    <section class="section" id="next-steps" aria-labelledby="next-title">
+      <div class="section-heading"><span class="number">03</span><h2 id="next-title">Next steps</h2></div>
+      <ol class="next">
+        <li><div><strong>Review the file-policy change.</strong><p>Confirm that only the two generated SBOM files bypass the broad artifacts ignore and secret-scan exclusion.</p></div></li>
+        <li><div><strong>Merge through the protected workflow.</strong><p>After teammate approval and merge-queue checks, both snapshots will be available from the default branch.</p></div></li>
+        <li><div><strong>Keep the snapshots current.</strong><p>Regenerate them with dependency, generator, or SBOM-producing tool updates and review the component diff in that change.</p></div></li>
+      </ol>
+    </section>
+  </main>
+  <footer class="footer"><span>ConnectSphere · SBOM publication review</span><span>Source: PR #125, docs/contributing/generating-sbom.md, commit 75f4a1d</span></footer>
+</div>
+</body>
+</html>

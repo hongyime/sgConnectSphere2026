@@ -106,8 +106,9 @@ Common check failures:
 ## Naming and location
 
 - Save the HTML at `artifacts/<slug>.html` inside this repo. The
-  `artifacts/` directory is gitignored on purpose: the hosted postplan
-  URL is the durable artefact, not the local file.
+  `artifacts/` directory ignores scratch and test-generated output by default.
+  Only named, durable review deliverables explicitly allowed in `.gitignore`
+  are tracked; do not broadly unignore the directory or test screenshots.
 - Use a `<slug>` that identifies the PR or milestone. For example:
   - `pr-56-review.html`
   - `sprint1-wrapup.html`
