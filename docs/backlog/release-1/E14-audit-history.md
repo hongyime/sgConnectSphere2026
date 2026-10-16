@@ -68,10 +68,12 @@ in place (T-74), and TC_E14S02_08 verifies it.
 
 - **Sprint**: Sprint 3
 - **Points**:
-- **BDR references**: T-93
+- **BDR references**: T-97
 - **Owner**: Le Xin
 
 ### Planning and provenance
+
+The Product Owner approval source is T-97 in PR #293, which is currently open, not merged.
 
 Selected by the Product Owner on 16 October 2026: "new E14S03/E03S12 ... put in Sprint 3"; the Product Owner explicitly confirmed both existing Organiser and assigned Coordinator Activity log views, readable Singapore time, with audit data and access unchanged. This is an unestimated mid-sprint scope addition pending team estimation, not delivery or a rewrite of the original commitment. Le Xin offered "I will add/fix"; PR #292 by Le Xin records this separate raw-UTC follow-up.
 
