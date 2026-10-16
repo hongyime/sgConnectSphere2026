@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="visual-explainer-version" content="1.0.0">
+<title>Plan: validate manual T-65 Remarks</title>
+<style>
+:root{--background:#101418;--surface:#171D23;--raised:#202830;--border:#36434F;--text:#E8EDF2;--muted:#A8B5C2;--accent:#67D4E8;--accent-soft:#182D34;--radius:12px;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--background);color:var(--text);font-size:16px;line-height:1.65}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.9em;color:var(--accent)}p{margin:0 0 14px}h1,h2,h3{line-height:1.15;letter-spacing:-.025em}h1{font-size:clamp(32px,5vw,50px);font-weight:650;max-width:850px;margin:18px 0}h2{font-size:26px;font-weight:600;margin:0 0 14px}h3{font-size:18px;font-weight:600;margin:0 0 8px}.page{width:min(1040px,calc(100% - 48px));margin:auto}.masthead{padding:24px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:16px}.brand{font-size:14px;font-weight:650}.brand:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:10px}.eyebrow,.muted,small{color:var(--muted)}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}.intro{padding:44px 0 28px}.lead{font-size:19px;color:var(--muted);max-width:800px}.toc{display:flex;gap:24px;flex-wrap:wrap;padding:0 0 24px;border-bottom:1px solid var(--border)}.toc a{font-size:14px;color:var(--muted);text-decoration:none}.toc a:hover{color:var(--accent)}.toc span,.number{color:var(--accent);font-family:ui-monospace,monospace}.toc span{margin-right:7px}.section{padding:36px 0;border-bottom:1px solid var(--border)}.section-heading{display:flex;gap:14px;align-items:baseline;margin-bottom:18px}.number{font-size:13px}.section-description{max-width:820px;color:var(--muted);margin-bottom:20px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}.diagram-frame{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}.diagram-frame svg{display:block;width:100%;min-width:700px;height:auto}.caption{font-size:14px;color:var(--muted);margin-top:12px}.svg-node{fill:var(--raised);stroke:var(--border);stroke-width:1.5}.svg-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}.svg-edge{fill:none;stroke:var(--muted);stroke-width:1.7}.svg-text{fill:var(--text);font-size:17px;font-family:"Segoe UI",system-ui,sans-serif}.svg-sub{fill:var(--muted);font-size:13px;font-family:"Segoe UI",system-ui,sans-serif}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}.card p,.card li{color:var(--muted)}ul,ol{padding-left:22px;margin:8px 0 0}li{padding:3px 0}.rule{border-left:2px solid var(--accent);padding:3px 0 3px 17px;margin:18px 0}.rule p{margin:0;color:var(--text)}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--border)}th{color:var(--accent);font-weight:600}td{color:var(--muted)}details{border-top:1px solid var(--border);padding:15px 0}details:last-child{border-bottom:1px solid var(--border)}summary{cursor:pointer;font-weight:600}details p{margin:12px 0 0;color:var(--muted)}.next{list-style:none;counter-reset:step;padding:0}.next li{counter-increment:step;display:grid;grid-template-columns:34px 1fr;gap:12px;padding:15px 0;border-top:1px solid var(--border)}.next li:before{content:counter(step,decimal-leading-zero);color:var(--accent);font:13px ui-monospace,monospace;padding-top:3px}.next p{color:var(--muted);margin:4px 0 0}.footer{padding:22px 0 36px;font-size:12px;color:var(--muted)}
+@media(max-width:700px){.page{width:calc(100% - 32px)}.masthead{padding:18px 0}.intro{padding:32px 0 22px}.lead{font-size:17px}.section{padding:28px 0}.grid{grid-template-columns:1fr}.panel,.card{padding:18px}.toc{gap:16px}.diagram-frame{padding:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root{--background:#fff;--surface:#fff;--raised:#f2f4f5;--border:#67727d;--text:#111820;--muted:#344350;--accent:#075a6b;--accent-soft:#e8f0f2;color-scheme:light}body{font-size:11pt}.page{width:100%}.section{padding:18px 0}.diagram-frame{overflow:visible}.diagram-frame svg{min-width:0}a{color:var(--accent)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead"><div class="brand">ConnectSphere · T-65</div><div class="eyebrow">Implementation plan · 14 October 2026</div></header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Plan only · no implementation started</div>
+      <h1>Validate manual Remarks on post-policy run records</h1>
+      <p class="lead">Make the T-65 validator require an observed result for each row in a new manual run, while grandfathering pre-policy records and keeping automated records unchanged.</p>
+    </div>
+    <nav class="toc" aria-label="Document sections"><a href="#overview"><span>01</span>Rule overview</a><a href="#details"><span>02</span>Implementation details</a><a href="#next-steps"><span>03</span>Tests and rollout</a></nav>
+
+    <section class="section" id="overview" aria-labelledby="overview-title">
+      <div class="section-heading"><span class="number">01</span><h2 id="overview-title">Rule overview</h2></div>
+      <p class="section-description">Use the frontmatter run timestamp as the policy boundary. Existing validation already requires Singapore time and checks that the filename date matches that timestamp's calendar date.</p>
+      <p class="caption">On a narrow screen, swipe or scroll the diagram horizontally to follow the full flow.</p>
+      <div class="diagram-frame" tabindex="0" role="region" aria-label="Validation decision flow; scroll horizontally on narrow screens">
+        <svg viewBox="0 0 960 370" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flow-title flow-desc">
+          <title id="flow-title">Proposed manual Remarks validation flow</title>
+          <desc id="flow-desc">The validator parses the frontmatter date and run type. Automated, regression, and pre-cutoff records keep existing behavior. For manual records on or after the cutoff, each result row must contain Remarks beyond a bare outcome token. Multiple rows are checked the same way.</desc>
+          <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#A8B5C2"/></marker></defs>
+          <rect x="22" y="132" width="200" height="88" rx="10" class="svg-accent"/><text x="122" y="167" text-anchor="middle" class="svg-text">Read run record</text><text x="122" y="192" text-anchor="middle" class="svg-sub">frontmatter + result rows</text>
+          <rect x="300" y="35" width="250" height="88" rx="10" class="svg-node"/><text x="425" y="70" text-anchor="middle" class="svg-text">Not a post-cutoff manual run</text><text x="425" y="95" text-anchor="middle" class="svg-sub">preserve current validation</text>
+          <rect x="300" y="245" width="250" height="88" rx="10" class="svg-accent"/><text x="425" y="280" text-anchor="middle" class="svg-text">Manual + date ≥ cutoff</text><text x="425" y="305" text-anchor="middle" class="svg-sub">2026-10-07 15:09:10 +08:00</text>
+          <rect x="635" y="245" width="300" height="88" rx="10" class="svg-node"/><text x="785" y="280" text-anchor="middle" class="svg-text">Check every row's Remarks</text><text x="785" y="305" text-anchor="middle" class="svg-sub">including TC_ID = MULTIPLE</text>
+          <path d="M222 155 H260 V79 H300" class="svg-edge" marker-end="url(#arrow)"/><text x="290" y="57" text-anchor="end" class="svg-sub">pre-cutoff / non-manual</text>
+          <path d="M222 197 H260 V289 H300" class="svg-edge" marker-end="url(#arrow)"/><text x="262" y="226" class="svg-sub">manual</text>
+          <path d="M550 289 H635" class="svg-edge" marker-end="url(#arrow)"/>
+          <text x="786" y="356" text-anchor="middle" class="svg-sub">non-empty actual result; reject a bare outcome token</text>
+        </svg>
+      </div>
+      <p class="caption">Cutoff source: merged commit <code>d1c4e9b</code> for PR #223 at 2026-10-07T07:09:10Z, which is 2026-10-07T15:09:10+08:00. Compare the frontmatter <code>date</code>; use the filename date only as the existing consistency check.</p>
+    </section>
+
+    <section class="section" id="details" aria-labelledby="details-title">
+      <div class="section-heading"><span class="number">02</span><h2 id="details-title">Implementation details</h2></div>
+      <div class="grid">
+        <article class="card"><h3>Files in the implementation PR</h3>
+          <ul>
+            <li><code>scripts/check_test_run_records.py</code> — cutoff constant and per-row validation context.</li>
+            <li><code>tooling/tests/test_run_records.py</code> — boundary, remarks, and run-type coverage.</li>
+            <li><code>docs/testing/runs/README.md</code> — exact effective timestamp and validity rule.</li>
+            <li><code>docs/testing/README.md</code> — keep the high-level catalogue/execution explanation aligned and link to the detailed rule.</li>
+          </ul>
+          <div class="rule"><p>Do not edit existing files in <code>docs/testing/runs/</code>, including the 14 blank manual rows in the two 2 October records.</p></div>
+        </article>
+        <article class="card"><h3>Remarks validity</h3>
+          <ul>
+            <li>Require at least one non-whitespace character.</li>
+            <li>Reject a cell whose entire content is only the matching outcome token, case-insensitively; “PASS” alone is not actual-result evidence.</li>
+            <li>Do not impose a character count or rigid format. A validator cannot establish whether free text truthfully describes what the tester observed; human review still checks that.</li>
+          </ul>
+        </article>
+        <article class="card"><h3>Scope and edge cases</h3>
+          <ul>
+            <li>Apply only when <code>run_type: manual</code> and frontmatter <code>date</code> is at or after the cutoff.</li>
+            <li>Check every valid result row. A manual <code>MULTIPLE</code> row also needs a substantive remark, such as the aggregate count and evidence link.</li>
+            <li>Automated rows may still have blank Remarks. Do not infer manual status from <code>environment</code> or <code>scope</code>.</li>
+            <li><code>regression</code> remains unchanged because the schema treats it as a separate run_type; broadening this needs a policy decision.</li>
+            <li>Malformed or missing dates already fail current validation. Do not fall back to the filename for the policy decision.</li>
+          </ul>
+        </article>
+        <article class="card"><h3>Validator shape</h3>
+          <p>Pass a boolean or record context into <code>_validate_table</code> indicating that manual Remarks are required. Keep Markdown parsing and current structural checks in the same path; add the Remarks error only after a row has the expected four cells.</p>
+          <p class="muted">Use the parsed timezone-aware frontmatter timestamp, after its Singapore offset is validated. The filename date continues to be checked against that timestamp's date.</p>
+        </article>
+      </div>
+      <p class="caption">Sources: <a href="../docs/testing/runs/README.md">T-65 record schema</a>, <a href="../docs/testing/README.md">testing documentation</a>, and <a href="../docs/source-of-truth.md">source-of-truth policy</a>.</p>
+    </section>
+
+    <section class="section" id="next-steps" aria-labelledby="rollout-title">
+      <div class="section-heading"><span class="number">03</span><h2 id="rollout-title">Tests and rollout</h2></div>
+      <div class="grid">
+        <article class="card"><h3>Tests to add</h3>
+          <ol>
+            <li>Manual blank Remarks one second before cutoff is accepted; at the cutoff it fails.</li>
+            <li>Manual whitespace-only Remarks and outcome-only Remarks fail after cutoff.</li>
+            <li>Manual Remarks with observed-result text pass after cutoff.</li>
+            <li>Pre-cutoff manual blank Remarks pass, including an October 2-shaped fixture.</li>
+            <li>Post-cutoff automated blank Remarks remain accepted.</li>
+            <li>Manual <code>MULTIPLE</code> is checked; a populated aggregate result passes.</li>
+            <li>Existing outcome, column-count, and filename-date validation continues to fail on malformed input.</li>
+          </ol>
+        </article>
+        <article class="card"><h3>Safe rollout</h3>
+          <ol>
+            <li>Before enabling the rule, inventory all manual rows around the cutoff and confirm no post-cutoff manual row is blank. Current audit found the 14 blanks only in the two October 2 records.</li>
+            <li>Add the cutoff-based check and synthetic unit cases. Leave all existing run files byte-for-byte unchanged.</li>
+            <li>Run the focused tooling tests and <code>python scripts/check.py</code>; the latter runs the validator and repository-tooling tests, not application/database suites.</li>
+            <li>Record any verification run used as PR evidence as one new T-65 session file. Do not rewrite an existing session file.</li>
+            <li>Let CI run the same repository check. No Docker Desktop, Supabase access, reset, or database writes are needed.</li>
+          </ol>
+        </article>
+      </div>
+      <details><summary>Known limits</summary><p>This is a presence and low-effort placeholder check, not semantic verification. A short but real result may be valid; reviewers remain responsible for confirming that Remarks state what was observed. The cutoff applies to the session timestamp, not the later Git commit date of a backfilled record.</p></details>
+      <p class="caption">The 7 October policy was added by PR #223, which explicitly says the rule applies to new runs and leaves prior records untouched. No tests were run for this plan.</p>
+    </section>
+  </main>
+  <footer class="footer">Standalone local plan · No external scripts, stylesheets, or hosted copy</footer>
+</div>
+</body>
+</html>
