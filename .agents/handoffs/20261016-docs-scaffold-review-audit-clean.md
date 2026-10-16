@@ -25,5 +25,8 @@ Publish the corrected frozen scaffold review report from PR #270 on a clean bran
 
 ## Verification evidence
 
-- The original #270 check results had TruffleHog failing while repository checks, application-checks, PR conventions, LFS guard, and dependency review passed; do not transfer those results to this branch.
+- `python scripts/check.py` passed on report commit `37cf723`, validating 330 test-run records, passing all pre-commit checks, confirming `.env.template` matches its generator, and passing 146 repository tooling tests. The later T-65 record commit also passed the pre-commit hook suite.
+- The check emitted a warning listing existing secondary worktrees; none were created or removed for this task. The known tracked report blob SHA matches the verified #270 source exactly.
+- Markdown LSP diagnostics are unavailable in this environment. `python scripts/check.py` and commit hooks validate the new Markdown files.
+- The local TruffleHog executable is unavailable. The original #270 check results had TruffleHog failing while repository checks, application-checks, PR conventions, LFS guard, and dependency review passed; do not transfer those results to this branch. Wait for the new PR's own scanner result.
 - No production database, Jira write, deployment, or application test is in scope.
