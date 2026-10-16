@@ -118,6 +118,37 @@ test('E11-S01: real PostgreSQL recipient selection and atomic business changes',
         assert.deepEqual(audience.unresolvedVenueIds,[ids.venue]);
       });
     });
+    await t.test('TC_E11S01_10 TC_E11S01_13: SCRUM-189 assigned Venue Staff come from venue_staff_assignments only', async () => {
+      const {ids} = await fixture();
+      const [ended, otherVenue] = [randomUUID(), randomUUID()];
+      await pool.query(`INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic user','venue_staff')`,[ended,`${ended}@example.test`]);
+      await pool.query(`INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,$2,'Other',50,'08:00','22:00')`,[otherVenue,`Venue ${otherVenue}`]);
+      // Current assignment; an ended one; an inactive account and a non-Venue Staff account wrongly assigned;
+      // Venue Staff assigned only to another venue; and stranger, who decided the booking, is not assigned.
+      await pool.query(`INSERT INTO venue_staff_assignments(venue_id,staff_id,active_from,active_until) VALUES
+        ($1,$2,now()-interval '1 day',NULL), ($1,$3,now()-interval '2 days',now()-interval '1 day'),
+        ($1,$4,now()-interval '1 day',NULL), ($1,$5,now()-interval '1 day',NULL), ($6,$7,now()-interval '1 day',NULL)`,
+      [ids.venue, ids.v, ended, ids.inactive, ids.t, otherVenue, ids.stranger]);
+      await inTransaction(pool,async client=>{
+        const audience = await captureEventAudience(client,ids.event);
+        assert.deepEqual(audience.venueStaff,[ids.v]);
+        assert.deepEqual(audience.unresolvedVenueIds,[]);
+        const result = await notifyEventChange(client,{changeId:randomUUID(),occurredAt:new Date(),before:audience,after:audience,change:{kind:'booking_requested'}});
+        assert.deepEqual(result.unresolvedVenueIds,[]);
+      });
+      assert.deepEqual((await notifications(ids.event)).map(r=>r.user_id),[ids.v]);
+    });
+    await t.test('TC_E11S01_13: SCRUM-189 a venue whose only assignment has ended or is inactive stays unresolved', async () => {
+      const {ids} = await fixture();
+      await pool.query(`INSERT INTO venue_staff_assignments(venue_id,staff_id,active_from,active_until) VALUES
+        ($1,$2,now()-interval '2 days',now()-interval '1 day'), ($1,$3,now()+interval '1 day',NULL), ($1,$4,now()-interval '1 day',NULL)`,
+      [ids.venue, ids.v, ids.stranger, ids.inactive]);
+      await inTransaction(pool,async client=>{
+        const audience = await captureEventAudience(client,ids.event);
+        assert.deepEqual(audience.venueStaff,[]);
+        assert.deepEqual(audience.unresolvedVenueIds,[ids.venue]);
+      });
+    });
     await t.test('TC_E11S01_16: uncommitted messages are invisible and rollback leaves no jobs', async () => {
       const {ids,options} = await fixture();
       await assert.rejects(inTransaction(pool,async client=>{

@@ -231,8 +231,8 @@ or extension changes early. `convert_hold` and direct requests share a service.
 Requests return 201 (new direct request) or 200 (conversion/retry), including
 `booking`, `event_status` and `suitability`. An identical direct retry returns the
 same saved assessment and does not repeat effects. Booking-request notifications
-resolve staff for the requested venue only. SCRUM-189/#271/#272 production
-resolver integration remains pending; unresolved routing is reported explicitly.
+resolve staff for the requested venue only, from `venue_staff_assignments`
+(SCRUM-189, #271/#272); a venue with no current assignment is reported explicitly.
 Primary confirmation/selection and staff assessment presentation remain E06-S04.
 
 
