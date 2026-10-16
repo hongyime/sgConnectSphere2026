@@ -29,7 +29,10 @@ Both PRs update same-day backlog/test exports and coverage inventory. Whichever 
 - Verified all nine backlog export fields and all ten testcase fields against the Markdown parsers, release/product new-story equality, blank points, Sprint 3 / Le Xin ownership, unique new IDs and all eleven inventory entries marked none. All six existing Markdown files are preserved byte-for-byte as prefixes, including historical stories/cases.
 - `python scripts/check.py` passed repository hygiene and all 146 tooling tests at 8599ad2 with the planning working tree; secondary-worktree warnings only. The one tooling session record is docs/testing/runs/20261016-164109-bryanseah234-tooling.md. This is not application lint, tests, build or deployment evidence.
 - Markdown LSP diagnostics are unavailable because no .md language server is configured. No browser, screenshots, app build/test run or manual PASS record is part of this planning task. PostPlan publication is handled separately by the main task owner.
-- Existing exporter behavior appends the next story heading to the preceding case's final Expected result cell. The source case text itself is unchanged; no exporter fix is mixed into this task. The inventory's pre-existing rubric prose is generic and not execution evidence; use its per-case none status for the new IDs.
+- Initial export validation exposed story-heading leakage into Expected Result;
+  the bounded regression fix below corrects the catalogue without rewriting
+  canonical case text. Inventory rubric prose is not execution evidence; the
+  eleven new cases remain unimplemented entries with status `none`.
 
 ## Learnings
 
@@ -44,3 +47,19 @@ Use the existing shared feedback and Singapore formatter contracts to define nar
 - `python scripts/check.py` passed repository hygiene and 149/149 tooling tests, including the three new regressions; record: `docs/testing/runs/20261016-170937-bryanseah234-tooling.md` (HEAD `3809a36`, local, catalogue 161026). Secondary-worktree warnings were informational.
 - Python LSP was unavailable (`basedpyright` not installed; installation previously declined). The programming no-excuse audit surfaced only the pre-existing `object` type annotation in `_parse_case_block`; no unrelated refactor was made. No app build/tests, browser, production or manual acceptance cases ran.
 - Do not modify testcase story definitions, canonical acceptance text, BDR/source-of-truth, seed refs, ops/data/env files, STATE or JOURNAL. After PR #292 and #296 merge in either order, regenerate catalogue, legacy input and coverage from the combined canonical source; never resolve by selecting a binary that omits the other PR's cases.
+
+## Final empty-block guard
+
+- Two further literal tests reproduced crashes on an empty epic and a document
+  beginning directly with a story heading. Skipping empty split chunks restores
+  those supported inputs without changing canonical output.
+- All five boundary fixtures pass. The final candidate `python scripts/check.py`
+  run passed 151 tooling tests and validated 358 existing records at HEAD
+  `4fd67f0` with the guard present. Evidence:
+  `docs/testing/runs/20261016-174342-bryanseah234-tooling.md`.
+- Regenerated catalogues retain 370 unique cases with all ten fields matching
+  canonical input; every cell matches the prior corrected `4fd67f0` catalogue.
+  Legacy bytes match the dated workbook, and the inventory is regenerated.
+- This remains planning plus repository-tooling work, not UI implementation or
+  manual acceptance. Restore review readiness only after the final pushed
+  head's checks are green or queued, then obtain fresh human approval.
