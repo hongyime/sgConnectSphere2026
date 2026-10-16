@@ -16,3 +16,6 @@ Intentional integration worktree artifacts/e06s02-staff-integration remains for 
 
 ## Evidence PR preparation (17 October)
 User authorised commit/push/PR. Final repo hygiene and env checks passed;153 tooling tests retain3 failures/11 errors. Final tooling record20261017-011108. PostPlan https://oq4rfb1omu0x.postplan.dev. Two human records and six original screenshots included; no application changes. Dependency PR298 runtime pinned a4b2cf9; keep story open pending reviewed integration. No production writes or dependency merge.
+
+## TC_E06S02_04 traceability cleanup
+Removed duplicate empty e06.spec.ts fixme; references real submission test, dependency PR298 staff tests and pinned human evidence. Regenerated coverage; Playwright list collects46 tests (not an execution claim). Repo hygiene/env pass,153 Windows tooling tests retain3 failures/11 errors. Updating PR300, no dependency merge or story Done.
