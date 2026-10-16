@@ -32,18 +32,28 @@ test.describe("E11-S01", () => {
    * Sprint:  2.0
    *
    * Pre-conditions:
-   *   Event "Annual Tech Summit" the event has organiser_a@clienta.com, venue_staff_1@connectsphere.com, and tech_support_1@connectsphere.com assigned, and attendee_a@example.com registered
+   *   Approved isolated fixture based on "EVT-3001 Approved Annual Conference", owned by organiser_a@clienta.com and assigned to Coordinator coord_a@connectsphere.com.
+   *   Confirmed booking at Jasmine Hall; active responsible Venue Staff venue_b@connectsphere.com (backend/src/database/cli.ts). Keep venue and staff assignments unchanged; venue_a@connectsphere.com is unaffected.
+   *   Explicitly prepare and verify active assigned tech_a@connectsphere.com, attendee_a@example.com registered, attendee_b@example.com waitlisted, and a published attendee-visible snapshot for this event; seeded EVT-3001 alone does not establish these prerequisites.
+   *   Capture account notification baselines to distinguish setup notices from the tested change.
+   *   Seed date 15 October 2026 is historical. Record D as the earliest date on/after execution date in +08:00 plus 30 calendar days satisfying current date/lead-time policy, booking buffers and staff availability for both 09:00-17:00 and 09:00-17:30 at Jasmine Hall.
+   *   Prepare baseline D 09:00-17:00+08:00 with coherent owning event, any related session records, Confirmed booking and published snapshot. Block if prerequisites cannot be prepared in an approved isolated fixture environment; do not reset/reseed the shared Supabase test schema or change actual seed code.
    *
    * Test data:
-   *   Changed field: Venue
+   *   Fixture: EVT-3001 Approved Annual Conference (isolated, prepared as above) | Date: recorded D relative to execution | End time: 17:00 -> 17:30+08:00 | Start: 09:00+08:00 | Venue: Jasmine Hall (unchanged)
    *
    * Expected result:
-   *   All 4 users (organiser_a@clienta.com, venue_staff_1@connectsphere.com, tech_support_1@connectsphere.com, attendee_a@example.com) receive a notification of the venue change
+   *   Organiser, assigned venue_b@connectsphere.com, assigned tech_a@connectsphere.com, registered Attendee and waitlisted Attendee receive the effective time-change notice; Attendee notices use the published snapshot.
+   *   Acting Coordinator receives no self-notification; unaffected venue_a@connectsphere.com receives none.
+   *   Approved matrix retained: assigned Coordinator is included for another authorized actor/system change, with actor self-exclusion where applicable; venue moves include responsible staff at both old and new venues.
+   *   Venue-move branch is not executable until owning E10-S05 venue-replacement workflow is available. This time-edit path does not certify venue moves or the full matrix; backend resolver fixtures do not prove the venue-assignment workflow is implemented.
+   *   Remains test.fixme; this correction records no execution or PASS result.
    */
-  test.fixme("TC_E11S01_02 - Verify that a change to a event's date, time or venue should notify the Organiser, assigned Venue Staff, assigned Technical Support Staff, and registered Attendees", async ({ page }) => {
+  test.fixme("TC_E11S01_02 - Verify that effective date, time or venue changes follow the approved recipient matrix", async ({ page }) => {
     // Steps from the specification:
-    // 1. As coordinator_1@connectsphere.com, change the event's venue
-    // 2. Check notifications for organiser_a@clienta.com, venue_staff_1@connectsphere.com, tech_support_1@connectsphere.com, and attendee_a@example.com
+    // 1. As assigned Coordinator coord_a@connectsphere.com, use the permitted event edit to change only D's end time from 17:00 to 17:30+08:00; retain 09:00 start, Jasmine Hall and existing staff assignments.
+    // 2. Check new notifications against baselines for organiser_a@clienta.com, venue_b@connectsphere.com, tech_a@connectsphere.com, attendee_a@example.com and attendee_b@example.com.
+    // 3. Check actor coord_a@connectsphere.com receives no self-notification and unaffected venue_a@connectsphere.com receives no notice for this change.
     void page;
   });
 

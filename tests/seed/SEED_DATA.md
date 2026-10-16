@@ -50,6 +50,8 @@ that an Organiser sees only their own organisation's events.
 expects rather than driving them through the UI, otherwise a failure in an early story cascades into
 unrelated failures elsewhere.
 
+TC_E11S01_02 fixture mapping: `backend/src/database/cli.ts` seeds `EVT-3001 Approved Annual Conference` with a Confirmed booking at `Jasmine Hall`, assigned to active `venue_b@connectsphere.com`, not `venue_a@connectsphere.com`. Its code and 15 October 2026 date do not guarantee a future-valid fixture. The case separately requires an approved isolated fixture with a current-policy-valid execution-relative date, coherent event/related session/booking/publication data, assigned `tech_a@connectsphere.com`, registered `attendee_a@example.com` and waitlisted `attendee_b@example.com`; prepare and verify these prerequisites rather than assuming the seed provides them. This note changes no seed code and authorizes no reset/reseed of the shared Supabase test schema.
+
 ## Reset contract
 
 `global-setup.ts` must, before every run: truncate all tables, reapply migrations, insert the rows
