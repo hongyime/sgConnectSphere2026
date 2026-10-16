@@ -66,3 +66,23 @@ coverage inventory 179 automated / 139 scaffold / 41 none. New cases still
 unimplemented. Required repository check: 146 tests, existing Windows 3 failures
 and 11 errors. No local application tests claimed; no new application source,
 database or Jira changes. Commit/push and update #280/PostPlan with latest head.
+
+
+## T-93 ordering conflict resolution (16 October, latest)
+
+User explicitly requested resolving conflicts and keeping T-93 before T-94.
+Synced remote f9e9792 first to preserve the teammate's #272 merge; then merged
+main 0a86b8d, including #279's T-93. The initial clean merge attempt was aborted
+before hand edits solely to fast-forward the newer remote branch safely.
+Resolved B-team-decisions.md by preserving main's T-93 and ours T-94/T-95/T-96,
+with exact numeric order T-01 through T-96 in one continuous table. Both G-change-log
+entries retained, with T-93's 15 October entry before the withdrawal addendum.
+Regenerated BDR CAA 161026 and verified all last five IDs share one Word table.
+Regenerated combined workbooks/coverage; semantically identical workbooks retain
+their committed bytes. Preserved T-93 policy, human evidence and PO Sprint 3 plan.
+
+Evidence: 20261016-134929-jininggg-tooling.md. All 359 cases match; unique ordered
+IDs and export table verified. Coverage 179 automated/139 scaffold/41 none;
+existing Windows repository check remains 3 failures/11 errors among 146 tests.
+No manual run, application implementation/test claim, database or Jira edits.
+Push normally after commit; do not force-push or merge/approve the PR.
