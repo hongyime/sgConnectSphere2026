@@ -13,5 +13,6 @@ evidence/
 
 PNG or JPG (JPG for full-page shots), under 1000 KB each, cropped to what matters, with no passwords,
 tokens, connection strings or real personal data. Commit them with the record
-and link them from its `## Screenshots` section. The full rules are in
+and link them from its `## Screenshots` section. Showing them in the PR's
+postplan too is recommended. The full rules are in
 `docs/testing/runs/README.md` under "Screenshots for manual runs (T-93)".

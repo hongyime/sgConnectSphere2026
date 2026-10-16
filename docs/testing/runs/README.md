@@ -210,7 +210,10 @@ do not count as manual evidence; record those runs as `automated`.
   table, and commit them in the same commit as the record. Like the record,
   they are not edited or replaced once merged.
 
-A postplan may show the same images, but the repository copy is the evidence.
+**Recommended:** also show the screenshots in the PR's postplan (every PR gets
+one, `CONTRIBUTING.md`), so reviewers see them on one page. This is best
+practice, not required; the repository copy remains the evidence, and a
+postplan is a public link, so leave out anything sensitive.
 
 **Which records:** manual records whose frontmatter `date` is on or after
 `2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are

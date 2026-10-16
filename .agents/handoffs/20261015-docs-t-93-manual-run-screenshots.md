@@ -34,6 +34,12 @@ with their T-65 session record, and update the test-run rules to match.
 - Amareet's review (69d73a1): E03-S11 has no manual record and no
   `TC_E03S11_*` cases, so it needs a first manual run, not a re-run.
 
+- 16 Oct: showing the screenshots in the PR's postplan is now "recommended
+  best practice, not required" (team discussion after Amareet's question;
+  every PR gets a postplan under `CONTRIBUTING.md` anyway). Bryan's audit of
+  1e46410: cited tooling runs need a T-65 record; Windows `check.py` must be
+  described with its failures. Fresh run recorded.
+
 ## Sprint 3 Done stories and owners (16 October 2026)
 
 | Story | Jira | Owner | Before the Sprint 3 Review |
