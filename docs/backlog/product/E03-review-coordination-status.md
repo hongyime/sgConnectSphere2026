@@ -401,3 +401,47 @@ Given I am editing an event When I view the Registration section Then "Registrat
 - See the registration setup read-only after approval, with a link to request a change
 - Edit the registration setup as the assigned Coordinator after approval, with the edit recorded in the activity log
 - See "Registration opens" and "Registration closes" as two labelled fields at desktop and phone width
+
+## E03-S12 — Show consistent Organiser save success status
+
+- **Sprint**: Sprint 3
+- **Points**:
+- **BDR references**: T-93
+- **Owner**: Le Xin
+
+### Planning and provenance
+
+Selected by the Product Owner on 16 October 2026: "new E14S03/E03S12 ... put in Sprint 3". This is an unestimated mid-sprint scope addition, pending team estimation, not delivered work or a rewrite of the original Sprint 3 commitment. Le Xin offered "I will add/fix" and authored the source evidence in PR #292.
+
+E03-S07 and E03-S11 / SCRUM-176 stay Done with their historical criteria and points unchanged, following CONTRIBUTING.md's Definition of Done. E03-S11's canonical definition and TC_E03S11_01 to _05 were added separately by #292 (merged 16 October 2026); S12 follows it.
+
+What went wrong: PR #292's first manual record (20261016-143425-lexinphun2024-debug-frontend-e2e.md, lines 29-42 at 415d17e) found the Organiser's saved message rendered as plain text, unlike the Coordinator's green success alert. ClientEvents.tsx already renders that message in a paragraph with role="status" and supplies field-specific saved text. The fix is consistency with design.md sections 4, 5, 6 and 9 through the existing shared Alert, not a missing save message or missing announcement. Prevention: review both role views and the success/error paths against the shared feedback pattern before accepting this follow-up; record future manual evidence under T-65/T-93.
+
+### User story
+
+As an Event Organiser, I want confirmation of a saved event edit to use the shared success Alert so that I can recognise the same clear save outcome used on the Coordinator's event page.
+
+### Acceptance criteria
+
+#### Scenario 1 — Shared success Alert after a saved edit
+
+Given I may edit an event When a changed field saves successfully Then the event detail shows the existing field-specific saved message through the shared Alert with tone="success", retaining role="status" rather than replacing it with an urgent alert or plain paragraph.
+
+#### Scenario 2 — Saved data and audit survive reload
+
+Given an allowed event edit succeeds When the record reloads and I reopen it Then the changed value is retained and its existing activity-log entry remains available, with no extra save or audit write caused by rendering the confirmation.
+
+#### Scenario 3 — Failure cannot report success
+
+Given a new edit is invalid or its save request fails When I attempt to save Then the existing validation or error feedback remains and no success Alert claims that attempt was saved; starting a new edit clears the previous save confirmation.
+
+#### Scenario 4 — Cancellation and permissions unchanged
+
+Given I cancel an edit or attempt a field I cannot edit under the current event status and access rules When the attempt ends Then cancellation produces no save confirmation or mutation, and existing restrictions and change-request routing remain in force.
+
+### Checklist
+
+- Reuse frontend/src/shared/feedback.tsx Alert in frontend/src/features/organiser/ClientEvents.tsx; preserve field-specific text and polite status semantics
+- Cover successful save/reload/audit, invalid input, failed request after a prior success, cancellation and restricted fields with TC_E03S12_01 to _05
+- Leave the Coordinator save flow, all other Organiser workflows, permissions and notifications unchanged; no redesign or new notification
+- Obtain human review of code and test cases and future manual evidence before claiming delivery; this definition does not execute those cases

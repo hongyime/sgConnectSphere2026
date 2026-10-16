@@ -86,10 +86,13 @@ class ExportTestCasesTests(unittest.TestCase):
                 )
 
                 expected_non_sprint = [
-                    (
-                        case["story_id"], case["ac_reference"], case["step_type"],
-                        case["case_id"], case["scenario"], case["preconditions"],
-                        case["steps"], case["test_data"], case["expected"],
+                    tuple(
+                        None if value == "" else value
+                        for value in (
+                            case["story_id"], case["ac_reference"], case["step_type"],
+                            case["case_id"], case["scenario"], case["preconditions"],
+                            case["steps"], case["test_data"], case["expected"],
+                        )
                     )
                     for case in rows
                 ]

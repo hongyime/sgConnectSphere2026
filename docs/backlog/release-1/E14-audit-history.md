@@ -63,3 +63,50 @@ database only (TC_E14S02_02). This keeps the #161 data-isolation fix in place
 when the log is opened to Coordinators. Added at the story owner's request
 from the post-merge review of #192; the story is not Done, so it is updated
 in place (T-74), and TC_E14S02_08 verifies it.
+
+## E14-S03 — Read edited Activity log dates and times in Singapore time
+
+- **Sprint**: Sprint 3
+- **Points**:
+- **BDR references**: T-93
+- **Owner**: Le Xin
+
+### Planning and provenance
+
+Selected by the Product Owner on 16 October 2026: "new E14S03/E03S12 ... put in Sprint 3"; the Product Owner explicitly confirmed both existing Organiser and assigned Coordinator Activity log views, readable Singapore time, with audit data and access unchanged. This is an unestimated mid-sprint scope addition pending team estimation, not delivery or a rewrite of the original commitment. Le Xin offered "I will add/fix"; PR #292 by Le Xin records this separate raw-UTC follow-up.
+
+E14-S02 stays Done; its historical acceptance criteria and estimate remain unchanged (CONTRIBUTING.md). What went wrong: the existing Organiser Activity log interpolates new_value verbatim, and the Coordinator ActivityLog.tsx interpolates general old_value/new_value verbatim even though its When column and venue hold expiry already use shared formatDate. Edited date/time values can therefore expose raw UTC ISO strings. Prevention: test both existing views with same-day and midnight-boundary timestamps and compare stored audit values before and after display. Apply design.md's Singapore-time formatting through frontend/src/shared/format.ts, without changing its contract.
+
+### User story
+
+As an Event Organiser or the assigned Event Coordinator, I want edited date/time values in my existing event Activity log to be readable in Singapore time so that I can understand the recorded edit without interpreting raw UTC strings.
+
+### Acceptance criteria
+
+#### Scenario 1 — Both existing readers see Singapore time
+
+Given an authorised Organiser or assigned Coordinator opens the existing event Activity log When an entry displays an edited date/time field value Then each date/time value already displayed by that view uses the existing shared Singapore formatter, including both old and new values where already shown, independently of the browser timezone; 2026-10-15T09:30:00Z represents 15 October 2026 at 17:30 Singapore time, not 16 October. Existing field keys are startAt, endAt and registrationDates; registrationDates stores "opensAt to closesAt", so both endpoints are formatted for display without changing that stored string.
+
+#### Scenario 2 — Singapore calendar rollover
+
+Given an edited date/time value is 2026-10-15T18:30:00Z When either view displays it Then it represents 16 October 2026 at 02:30 Singapore time; the calendar date as well as the hour is converted correctly.
+
+#### Scenario 3 — Missing and invalid values keep the existing contract
+
+Given a date/time value is missing or invalid When formatting is needed Then formatDate retains its existing "Not recorded" result; each view retains its existing omission/label-only behavior for absent change values, without throwing, inventing a date or introducing a new fallback.
+
+#### Scenario 4 — Other values and existing display paths unchanged
+
+Given an entry contains ordinary text, a status change or a venue hold expiry When either view renders it Then ordinary text remains text, existing status labels/badges remain unchanged, and existing hold-expiry formatting and behavior are preserved; the correction is field-aware, not conversion of every date-looking string.
+
+#### Scenario 5 — Audit evidence and access unchanged
+
+Given the existing event access rules apply When either permitted reader views or reloads the formatted log Then stored UTC old_value/new_value and occurred_at, actor and action remain unchanged and immutable; unauthorised readers remain refused and access-denial entries remain hidden from event logs, with no new audit viewer or permissions.
+
+### Checklist
+
+- Scope implementation to the edited date/time value rendering in frontend/src/features/organiser/ClientEvents.tsx and frontend/src/features/events/ActivityLog.tsx using shared formatDate
+- Cover both views, same-day and rollover boundaries, missing/invalid inputs, other values and immutable/access-preserving reads with TC_E14S03_01 to _06
+- Do not add before/after history to a view that does not already show it; wider E14-S01 history remains separate
+- Exclude notification "Changed at ...Z" text, unrelated action/field labels, global viewers, new notifications and changes to stored audit data or hold-expiry behavior
+- Obtain human code/test review and future T-65/T-93 manual evidence; these planned cases are not execution evidence
