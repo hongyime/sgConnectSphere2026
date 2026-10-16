@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCRUM-182 · one migration per production run</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111c2e;--line:#25364b;--text:#e7eef8;--muted:#a6b5c8;--accent:#5eead4;--blue:#93c5fd;--gold:#fcd34d;--green:#86efac}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 12% 0%,#162b3a 0%,var(--bg) 48%);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}main{max-width:1040px;margin:auto;padding:48px 24px 64px}header{border-bottom:1px solid var(--line);padding-bottom:24px;margin-bottom:28px}.eyebrow{color:var(--accent);font-size:.78rem;font-weight:750;letter-spacing:.13em;text-transform:uppercase}h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.08;margin:.45rem 0 .7rem;letter-spacing:-.035em}header p{color:var(--muted);max-width:760px;margin:0}.panel{background:linear-gradient(145deg,rgba(17,28,46,.97),rgba(13,22,37,.96));border:1px solid var(--line);border-radius:18px;padding:24px;margin:18px 0;box-shadow:0 18px 50px #03071255}h2{margin:0 0 14px;font-size:1.3rem;letter-spacing:-.02em}.lead{font-size:1.12rem;max-width:850px;margin:0 0 22px}figure{margin:0}svg{width:100%;height:auto;display:block}.mobile-flow{display:none}.caption{color:var(--muted);font-size:.9rem;margin:10px 0 0}.node{fill:#13263b;stroke:#3c536b;stroke-width:1.5}.node-source{stroke:var(--blue)}.node-update{stroke:var(--accent)}.node-new{stroke:var(--green)}.node-hold{stroke:var(--gold)}.svg-title{fill:var(--text);font:700 17px system-ui,sans-serif}.svg-sub{fill:var(--muted);font:13px system-ui,sans-serif}.arrow{fill:none;stroke:#8ca2ba;stroke-width:2;marker-end:url(#arrow)}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:660px}th,td{text-align:left;vertical-align:top;padding:12px 10px;border-bottom:1px solid var(--line)}th{font-size:.78rem;color:var(--accent);letter-spacing:.08em;text-transform:uppercase}td{color:#d9e4f1}td:first-child{font-weight:650;color:var(--text)}.tag{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--muted);font-size:.78rem;white-space:nowrap}.tag.good{color:var(--green);border-color:#315e49}.tag.hold{color:var(--gold);border-color:#685933}.callout{border-left:3px solid var(--gold);padding:9px 14px;background:#fcd34d0a;border-radius:0 10px 10px 0;color:#d9e4f1}.muted{color:var(--muted)}ol{padding-left:22px;margin:8px 0}@media(max-width:640px){main{padding:28px 15px 48px}.panel{padding:18px 15px}.flow-diagram{display:none}.mobile-flow{display:grid;grid-template-columns:1fr;gap:8px;list-style:none;padding:0;margin:0}.mobile-flow li{border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:10px 12px;background:#13263b}.mobile-flow strong{display:block;color:var(--text)}.mobile-flow span{display:block;color:var(--muted);font-size:.88rem}}
+</style>
+</head>
+<body><main>
+<header><div class="eyebrow">ConnectSphere · SCRUM-182 · 14 October 2026</div><h1>One migration per production run</h1><p>The database CLI now supports an exact-file selector so the deploy owner can catch up safely, one migration and one ledger check at a time.</p></header>
+<section id="overview" class="panel">
+<h2>The operator controls each step</h2>
+<p class="lead">`migrate --only <filename>` applies at most one pending SQL file. The existing no-selector behavior remains available for local and test workflows.</p>
+<figure><svg class="flow-diagram" viewBox="0 0 920 300" role="img" aria-labelledby="flow-title flow-desc">
+<title id="flow-title">One-at-a-time production migration flow</title><desc id="flow-desc">The deploy owner reads the migration ledger, selects one pending dependency-ready file, applies only that file, verifies the ledger, records the run, then repeats for another file.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#8ca2ba"/></marker></defs>
+<rect class="node node-source" x="20" y="88" rx="14" width="170" height="112"/><text class="svg-title" x="42" y="124">Read ledger</text><text class="svg-sub" x="42" y="151">read-only precheck</text><text class="svg-sub" x="42" y="172">stop if unclear</text>
+<path class="arrow" d="M190 144 H232"/>
+<rect class="node node-update" x="240" y="88" rx="14" width="185" height="112"/><text class="svg-title" x="262" y="124">Select one file</text><text class="svg-sub" x="262" y="151">pending + dependencies</text><text class="svg-sub" x="262" y="172">`--only filename.sql`</text>
+<path class="arrow" d="M425 144 H467"/>
+<rect class="node node-new" x="475" y="88" rx="14" width="185" height="112"/><text class="svg-title" x="497" y="124">Apply one</text><text class="svg-sub" x="497" y="151">transaction + ledger row</text><text class="svg-sub" x="497" y="172">one command only</text>
+<path class="arrow" d="M660 144 H702"/>
+<rect class="node node-hold" x="710" y="88" rx="14" width="190" height="112"/><text class="svg-title" x="732" y="124">Verify + record</text><text class="svg-sub" x="732" y="151">read-only postcheck</text><text class="svg-sub" x="732" y="172">then repeat if needed</text>
+</svg><ol class="mobile-flow"><li><strong>1. Read ledger</strong><span>Read-only precheck; stop if unclear.</span></li><li><strong>2. Select one file</strong><span>Choose a pending migration whose dependencies are satisfied.</span></li><li><strong>3. Apply one</strong><span>Use `--only filename.sql`; each invocation handles one file.</span></li><li><strong>4. Verify and record</strong><span>Read the ledger again and record the run before continuing.</span></li></ol><figcaption class="caption">Each migration has its own precheck, apply, postcheck and run record. No production ledger access or migration was performed from this machine.</figcaption></figure>
+</section>
+<section id="details" class="panel">
+<h2>Implementation and evidence</h2>
+<div class="table-wrap"><table><thead><tr><th>Area</th><th>Change</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>CLI behavior</td><td>Accepts one exact repository filename; rejects malformed or unknown selections before opening a database connection; reports already-applied selections as no-ops.</td><td><code>backend/src/database/cli.ts</code><br><code>backend/src/database/migrationSelection.ts</code><br><code>docs/testing/runs/20261014-012212-bryanseah234-backend-unit.md</code></td></tr>
+<tr><td>Compatibility</td><td>No selector still applies every pending migration for existing local and test workflows. Each selected migration is committed and entered in the ledger in one transaction.</td><td><code>backend/tests/migrationSelection.test.ts</code></td></tr>
+<tr><td>Operations</td><td>Runbook requires read-only pre/post ledger checks, one command per migration, dependency review and a separate run record for each attempt. Decision 0015 records the selected one-at-a-time policy.</td><td><code>docs/ops/production-migrations.md</code><br><code>docs/decisions/0015-one-at-a-time-production-migrations.md</code></td></tr>
+<tr><td>Unit suite</td><td><span class="tag good">PASS · 344/344</span> Backend unit suite. Selector module: 11/11 tests and 100% statements, branches, functions and lines.</td><td><code>docs/testing/runs/20261014-011243-bryanseah234-backend-unit.md</code></td></tr>
+<tr><td>Repository check</td><td><span class="tag good">PASS · 87 tooling tests</span> Repository hygiene and tooling only; not application lint or deployment evidence.</td><td><code>docs/testing/runs/20261014-011444-bryanseah234-tooling.md</code></td></tr>
+</tbody></table></div>
+<p class="callout">The T14/3410 machine was not mounted here. The production ledger remains unverified, and this PR does not authorize or perform a production write.</p>
+</section>
+<section id="next-steps" class="panel"><h2>Next steps</h2><ol>
+<li>Review and merge SCRUM-182 through the normal peer-review and CI gates.</li>
+<li>On T14/3410, inspect the production ledger read-only and compare it with merged migration files.</li>
+<li>For each pending, dependency-ready file, apply exactly one selector command, verify the ledger, and commit its run record before proceeding.</li>
+<li>Once migration 0013 is verified in production, re-review #245 and #252 under their existing approval requirements.</li>
+</ol><p class="muted">Source files and verification records are named in the table above. No production migration outcome is claimed.</p></section>
+</main></body></html>

@@ -13,6 +13,14 @@ first, then update/promote the matching runnable tests. Regenerate dated XLSX
 exports with `scripts/export_testcases_xlsx.py`. The coverage auditor still reads
 the legacy undated workbook; catalogue changes must reconcile that input too.
 
+## Sprint Number display
+
+In dated workbook exports, an empty, missing, or whitespace-only `Sprint`
+metadata field is displayed as `Unassigned`. This is a presentation value only:
+leave the canonical case metadata blank until a sprint is assigned, and do not
+treat the label as a planning decision. Assigned sprint values retain their
+existing numeric or text representation.
+
 Original scaffold snapshot (historical, not current execution results):
 
 - 11 Playwright spec files.
