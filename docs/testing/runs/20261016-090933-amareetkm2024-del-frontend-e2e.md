@@ -33,6 +33,18 @@ the past (at Amareet's request), checked each screenshot as it was saved, and
 checked the database afterwards; the database facts below come from that
 check.
 
+Timing: the frontmatter `date` and the filename are the run's start, the
+first screenshot (`TC_E06S05_03-1.png`, saved 09:09:33). The run finished at
+the last screenshot (`TC_E06S05_05.png`, saved 09:59:27, Singapore time); the
+last recorded database action was 09:57:01. Both times come from the saved
+screenshot files and the database audit rows listed below.
+
+Scope: the 6/6 below covers the click-through script only, not every canonical
+E06-S05 test case. The cases the script leaves to the automated tests (a
+different Coordinator refused, the calendar view, the expiry job and its notice,
+the deadline races) were not re-run here. The hold rules under test are the
+Sprint 3 rules in T-92; the Sprint 4 rules in T-84 do not apply to this run.
+
 Two differences from the script, neither a failure:
 
 - **Two extensions instead of one (steps 9–10).** Venue Staff first saved an
