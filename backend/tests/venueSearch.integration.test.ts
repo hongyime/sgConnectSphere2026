@@ -21,8 +21,13 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   await client.query(`SET LOCAL search_path=${schema},public`);
   const extensions=await client.query("SELECT count(*)::int AS n FROM pg_extension WHERE extname IN ('pgcrypto','btree_gist')");
   assert.equal(extensions.rows[0].n,2,'Extensions must already be provisioned');
-  // 0013 adds tentative holds, which venue search treats as taken (E06-S05).
-  for (const migration of ['0001_connectsphere_schema.sql','0013_tentative_venue_holds.sql']) await client.query(await readFile(new URL(`../database/migrations/${migration}`,import.meta.url),'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql',import.meta.url),'utf8'));
+  // 0011 adds the venue buffer columns and occupied_window() that the E05-S05
+  // availability check in search.ts depends on.
+  await client.query(await readFile(new URL('../database/migrations/0011_venue_setup_turnaround_buffers.sql',import.meta.url),'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/0013_tentative_venue_holds.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/0016_venue_buffer_write_guard.sql', import.meta.url), 'utf8'));
+
   const query: Query=(sql,values)=>client.query(sql,values);
   const org=(await client.query("INSERT INTO client_organisations(name) VALUES('Synthetic Org') RETURNING id")).rows[0].id;
   const uid=(await client.query("INSERT INTO users(full_name,email,password_hash,role) VALUES('Synthetic Coordinator','coordinator@example.test','fixture','event_coordinator') RETURNING id")).rows[0].id;
@@ -43,14 +48,22 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   }
   for(const [name,status,period] of [['Pending','pending',range],['Confirmed','confirmed',range],['Adjacent','confirmed','[2026-11-10T11:00:00Z,2026-11-10T12:00:00Z)'],['Released','released',range]]) await client.query('INSERT INTO venue_bookings(venue_id,event_id,status,booking_range) VALUES($1,$2,$3,$4)',[ids[name],event,status,period]);
   await client.query("INSERT INTO venue_blocks(venue_id,block_range,reason) VALUES($1,$2,'Private maintenance detail')",[ids.Blocked,range]);
+
+  // E05-S05 / TC_E06S05_02: venue with setup 30 and turnaround 45 to verify searched period setup buffer
+  const bufferedId = (await client.query("INSERT INTO venues(name,location,max_capacity,opens_at,closes_at,is_active,setup_time_minutes,turnaround_time_minutes) VALUES('Buffered','Central',200,'00:00','23:59',true,30,45) RETURNING id")).rows[0].id;
+  await client.query("INSERT INTO venue_supported_layouts VALUES($1,$2,100)", [bufferedId, layout]);
+  // Existing booking 10:00-12:00 UTC (occupies 09:30-12:45 UTC with 30m setup and 45m turnaround)
+  await client.query("INSERT INTO venue_bookings(venue_id,event_id,status,booking_range) VALUES($1,$2,'confirmed','[2026-11-10T10:00:00Z,2026-11-10T12:00:00Z)')", [bufferedId, event]);
+
   const params=new URLSearchParams({event_id:event,search:'1',location:'central'});
   const result=await venueSearch(query,user,params); assert.ok(result.venues);
   const byName=Object.fromEntries(result.venues.map(v=>[v.name,v]));
-  assert.equal(result.venues.length,8); assert.equal(byName.Full.suitable,true); assert.equal(byName.Adjacent.suitable,true); assert.equal(byName.Released.suitable,true);
-  for(const name of ['Pending','Confirmed','Blocked']) { assert.equal(byName[name].available,false); assert.equal(byName[name].suitable,false); }
+  assert.equal(result.venues.length,9); assert.equal(byName.Full.suitable,true); assert.equal(byName.Adjacent.suitable,true); assert.equal(byName.Released.suitable,true);
+  for(const name of ['Pending','Confirmed','Blocked','Buffered']) { assert.equal(byName[name].available,false); assert.equal(byName[name].suitable,false); }
   assert.equal(byName.Small.suitable,false); assert.equal(byName.Small.effective_capacity,50);
   for(const word of ['layout','Loop','Projector']) assert.ok(byName.Missing.mismatches.some(m=>m.includes(word)));
   assert.ok(!JSON.stringify(result.venues).includes('Private maintenance detail')); assert.ok(!JSON.stringify(result.venues).includes(event));
+  const bookingsBeforeAssessment = (await client.query('SELECT count(*)::int AS count FROM venue_bookings')).rows[0].count;
   // E06-S02 reads the same persisted requirements but applies its own hours rule.
   await client.query("UPDATE venues SET opens_at='08:00', closes_at='22:00' WHERE id=$1", [ids.Full]);
   const assessParams = new URLSearchParams({ event_id:event, venue_id:ids.Full, attendance:'1' });
@@ -83,10 +96,24 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   }
   assessParams.set('venue_id',ids.Inactive);
   await assert.rejects(venueSuitability(query,user,assessParams),{status:404});
-  assert.equal((await client.query('SELECT count(*)::int AS count FROM venue_bookings')).rows[0].count,4);
+  assert.equal((await client.query('SELECT count(*)::int AS count FROM venue_bookings')).rows[0].count,bookingsBeforeAssessment);
   params.set('attendance','300'); const near=await venueSearch(query,user,params); assert.ok(near.venues?.length); assert.ok(near.venues?.every(v=>!v.suitable && v.mismatches.length));
   params.set('q','Full'); assert.equal((await venueSearch(query,user,params)).venues?.length,1);
   params.delete('q'); params.set('attendance','80'); params.set('start','2026-11-10T19:00:00+08:00'); params.set('end','2026-11-10T20:00:00+08:00');
   const shifted=await venueSearch(query,user,params); assert.equal(shifted.venues?.find(v=>v.name==='Confirmed')?.available,true); assert.equal(shifted.venues?.find(v=>v.name==='Adjacent')?.available,false);
+
+  // TC_E06S05_02 / E05-S05 search buffer boundary test:
+  // With existing booking 10:00-12:00 (turnaround ends 12:45), a search for 13:00-14:00 needs 30m setup starting at 12:30 -> overlaps -> unavailable
+  params.set('q', 'Buffered');
+  params.set('start', '2026-11-10T13:00:00Z');
+  params.set('end', '2026-11-10T14:00:00Z');
+  const bufferOverlap = await venueSearch(query, user, params);
+  assert.equal(bufferOverlap.venues?.find(v => v.id === bufferedId)?.available, false);
+
+  // A search for 13:15-14:00 needs 30m setup starting at 12:45 -> touches 12:45 boundary without overlap -> available
+  params.set('start', '2026-11-10T13:15:00Z');
+  params.set('end', '2026-11-10T14:00:00Z');
+  const bufferAdjacent = await venueSearch(query, user, params);
+  assert.equal(bufferAdjacent.venues?.find(v => v.id === bufferedId)?.available, true);
  } finally {await client.query('ROLLBACK');await client.end();}
 });

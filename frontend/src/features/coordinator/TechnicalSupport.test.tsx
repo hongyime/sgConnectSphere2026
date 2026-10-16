@@ -14,6 +14,8 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 const EVENT = 'GET /api/events?assigned=1&id=EVT-TECH';
 const SUPPORT = 'GET /api/venues?task=support&event=EVT-TECH';
 const POST = 'POST /api/venues?task=support';
+// The event page also shows the Venue holds card (E06-S05); give it an empty list.
+const NO_HOLDS = { 'GET /api/venues?task=holds': { body: { event: {}, holds: [], canHold: true } } };
 
 function detail(status = 'planning') {
   return { event: {
@@ -56,7 +58,7 @@ const send = () => fireEvent.click(screen.getByRole('button', { name: 'Send requ
 
 test('TC_E07S06_01 - a request with a description and times is sent, Technical Support is notified, and it shows on the event', async () => {
   let sent = false;
-  const calls = stubApi({
+  const calls = stubApi({ ...NO_HOLDS,
     [EVENT]: { body: detail() },
     [SUPPORT]: () => ({ body: overview(sent ? { requests: [request] } : {}) }),
     [POST]: () => { sent = true; return { status: 201, body: { request, notified: 2 } }; },
@@ -88,7 +90,7 @@ test('TC_E07S06_01 - a request with a description and times is sent, Technical S
 });
 
 test('TC_E07S06_02 - an approved event with no confirmed venue can still request support', async () => {
-  const calls = stubApi({
+  const calls = stubApi({ ...NO_HOLDS,
     [EVENT]: { body: detail('approved') },
     [SUPPORT]: { body: overview({ event: { id: 'evt-1', eventCode: 'EVT-TECH', title: 'Tech Conference 2026', status: 'approved' } }) },
     [POST]: { status: 201, body: { request, notified: 1 } },
@@ -101,13 +103,14 @@ test('TC_E07S06_02 - an approved event with no confirmed venue can still request
 
   expect(await screen.findByText('1 Technical Support Staff member has been notified.')).toBeInTheDocument();
   expect(posts(calls)).toHaveLength(1);
-  // No venue endpoint was consulted along the way.
-  expect(calls.some(call => call.url.pathname === '/api/venues' && call.url.searchParams.get('task') !== 'support')).toBe(false);
+  // No venue endpoint was consulted along the way (the event page's own Venue
+  // holds card, E06-S05, is a separate card and not part of the request).
+  expect(calls.some(call => call.url.pathname === '/api/venues' && !['support', 'holds'].includes(call.url.searchParams.get('task') ?? ''))).toBe(false);
 });
 
 test('TC_E07S06_03 - marking the event as needing no support records it, notifies nobody and creates no request', async () => {
   let declared = false;
-  const calls = stubApi({
+  const calls = stubApi({ ...NO_HOLDS,
     [EVENT]: { body: detail() },
     [SUPPORT]: () => ({ body: overview({ noSupportRequired: declared }) }),
     [POST]: () => { declared = true; return { body: { noSupportRequired: true } }; },
@@ -126,7 +129,7 @@ test('TC_E07S06_03 - marking the event as needing no support records it, notifie
 });
 
 test('a blank, too long or reversed request is caught before sending, with the server\'s sentences', async () => {
-  const calls = stubApi({ [EVENT]: { body: detail() } }, { role: 'event_coordinator' });
+  const calls = stubApi({ ...NO_HOLDS, [EVENT]: { body: detail() } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH/support');
 
   await description();
@@ -160,7 +163,7 @@ test('validation boundaries: exactly 2000 characters is accepted, missing times 
 
 test('server field errors land on their fields, and a refusal is shown as sent', async () => {
   let reply: { status: number; body: unknown } = { status: 400, body: { error: 'validation_failed', errors: { description: ['Describe the technical support the event needs.'] } } };
-  const calls = stubApi({ [EVENT]: { body: detail() }, [POST]: () => reply }, { role: 'event_coordinator' });
+  const calls = stubApi({ ...NO_HOLDS, [EVENT]: { body: detail() }, [POST]: () => reply }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH/support');
 
   fireEvent.change(await description(), { target: { value: 'AV' } });
@@ -175,7 +178,7 @@ test('server field errors land on their fields, and a refusal is shown as sent',
 });
 
 test('after confirmation the card is read-only, and the form page explains why instead of showing a form', async () => {
-  stubApi({
+  stubApi({ ...NO_HOLDS,
     [EVENT]: { body: detail('confirmed') },
     [SUPPORT]: { body: overview({ canEdit: false, requests: [{ ...request, status: 'staffed' }] }) },
   }, { role: 'event_coordinator' });
@@ -196,7 +199,7 @@ test('after confirmation the card is read-only, and the form page explains why i
 
 test('a failed load can be retried, and a refused "none" shows the server\'s sentence', async () => {
   let failing = true;
-  stubApi({
+  stubApi({ ...NO_HOLDS,
     [EVENT]: { body: detail() },
     [SUPPORT]: () => (failing ? { status: 500, body: {} } : { body: overview() }),
     [POST]: { status: 409, body: { error: 'This event already has a technical support request, so it cannot be marked as needing none.' } },
@@ -211,14 +214,14 @@ test('a failed load can be retried, and a refused "none" shows the server\'s sen
 });
 
 test('an unexpected reply is shown as a failed load instead of breaking the event page', async () => {
-  stubApi({ [EVENT]: { body: detail() }, [SUPPORT]: { body: { event: {} } } }, { role: 'event_coordinator' });
+  stubApi({ ...NO_HOLDS, [EVENT]: { body: detail() }, [SUPPORT]: { body: { event: {} } } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH');
   expect(await (await card()).findByText('Technical support could not be loaded.')).toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Request details' })).toBeInTheDocument();
 });
 
 test('the card is not shown before approval, so no support request is loaded', async () => {
-  const calls = stubApi({ [EVENT]: { body: detail('under_review') } }, { role: 'event_coordinator' });
+  const calls = stubApi({ ...NO_HOLDS, [EVENT]: { body: detail('under_review') } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH');
   expect(await screen.findByRole('heading', { name: 'Tech Conference 2026' })).toBeInTheDocument();
   await waitFor(() => expect(screen.queryByRole('heading', { name: 'Technical support' })).not.toBeInTheDocument());
@@ -226,7 +229,7 @@ test('the card is not shown before approval, so no support request is loaded', a
 });
 
 test('moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal', async () => {
-  const calls = stubApi({ [EVENT]: { body: detail() } }, { role: 'event_coordinator' });
+  const calls = stubApi({ ...NO_HOLDS, [EVENT]: { body: detail() } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH/support');
   fireEvent.change(await description(), { target: { value: '1 AV technician' } });
   const ends = (screen.getByLabelText('Support ends') as HTMLInputElement).value;
@@ -236,7 +239,7 @@ test('moving the start after the end is caught, and an event the Coordinator can
   expect(posts(calls)).toHaveLength(0);
 
   cleanup();
-  stubApi({ [EVENT]: { status: 403, body: { error: 'Access denied. This event is not assigned to you.' } } }, { role: 'event_coordinator' });
+  stubApi({ ...NO_HOLDS, [EVENT]: { status: 403, body: { error: 'Access denied. This event is not assigned to you.' } } }, { role: 'event_coordinator' });
   renderAt('/coordinator/events/EVT-TECH/support');
   expect(await screen.findByText('Access denied. This event is not assigned to you.')).toBeInTheDocument();
   expect(screen.queryByLabelText('What support is needed')).not.toBeInTheDocument();

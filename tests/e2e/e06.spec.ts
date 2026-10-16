@@ -3,159 +3,7 @@ import { test } from '@playwright/test';
 // E06 - 37 cases. Source: docs/testing/cases/E06.md; T-76 transfers three booking-log specifications.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
-test.describe("E06-S01", () => {
-
-  /**
-   * TC_E06S01_01
-   * AC:      E06-S01 - Scenario 1 (Matching venues listed)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   Venue "Grand Ballroom" is available on 15/11/2026, capacity 300, supports Theatre layout, has Wheelchair Access, and has no other confirmed/blocked booking for that date
-   *
-   * Test data:
-   *   Date: 15/11/2026 | Attendance: 250 | Layout: Theatre | Accessibility: Wheelchair Access
-   *
-   * Expected result:
-   *   "Grand Ballroom" appears in the results, listed with its capacity (300), supported layouts, and facilities
-   */
-  test.fixme("TC_E06S01_01 - Verify that running a search where multiple criteria match an available venue should list it with its capacity, layouts and facilities", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as an Event Coordinator
-    // 2. Search venues with Date: 15/11/2026, Expected Attendance: 250, Layout: Theatre, Accessibility: Wheelchair Access
-    void page;
-  });
-
-  /**
-   * TC_E06S01_02
-   * AC:      E06-S01 - Scenario 2 (Near matches show failing criteria)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   No venue fully meets Date: 15/11/2026, Attendance: 250, Accessibility: Hearing Loop (no venue currently has a hearing loop)
-   *
-   * Test data:
-   *   Date: 15/11/2026 | Attendance: 250 | Accessibility: Hearing Loop (no exact match exists)
-   *
-   * Expected result:
-   *   The search returns near-matching venues (e.g. "Grand Ballroom" without a hearing loop) rather than an empty list, with the failing criterion (Hearing Loop) indicated for each
-   */
-  test.fixme("TC_E06S01_02 - Verify that when no venue matches every criterion, near matches should be returned instead of an empty result", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as an Event Coordinator
-    // 2. Search venues with Date: 15/11/2026, Attendance: 250, Accessibility: Hearing Loop
-    void page;
-  });
-
-  /**
-   * TC_E06S01_03
-   * AC:      E06-S01 - Scenario 3 (Undersized venue marked unsuitable)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   Venue "Small Room" (capacity 50) is available on 15/11/2026; the event's expected attendance is 100
-   *
-   * Test data:
-   *   Small Room capacity: 50 | Required attendance: 100
-   *
-   * Expected result:
-   *   "Small Room" is excluded from the results or clearly marked unsuitable due to insufficient capacity
-   */
-  test.fixme("TC_E06S01_03 - Verify that a venue available but with capacity below the event's expected attendance should be excluded or marked unsuitable", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as an Event Coordinator
-    // 2. Search venues with Date: 15/11/2026, Expected Attendance: 100
-    void page;
-  });
-
-  /**
-   * TC_E06S01_04
-   * AC:      E06-S01 - Scenario 4 (Blocked or booked venues excluded)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   Venue "Grand Ballroom" is Confirmed for another event on 15/11/2026
-   *
-   * Test data:
-   *   Date: 15/11/2026 | Grand Ballroom status: Confirmed (for another event)
-   *
-   * Expected result:
-   *   "Grand Ballroom" does not appear as available in the results for 15/11/2026
-   */
-  test.fixme("TC_E06S01_04 - Verify that a venue that is blocked or already confirmed for the requested period should not appear as available", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as an Event Coordinator
-    // 2. Search venues with Date: 15/11/2026
-    void page;
-  });
-
-});
-
 test.describe("E06-S02", () => {
-
-  /**
-   * TC_E06S02_01
-   * AC:      E06-S02 - Scenario 1 (Suitability shown for the event)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   A event of "Tech Conference 2026" has recorded requirements: Theatre layout, Wheelchair Access, 100 attendees
-   *
-   * Test data:
-   *   Event requirements: Theatre layout, Wheelchair Access, 100 attendees
-   *
-   * Expected result:
-   *   A suitability status (Suitable or Unsuitable) is shown for "Riverside Hall" specifically against this event's requirements
-   */
-  test.fixme("TC_E06S02_01 - Verify that viewing a venue in the context of a event with recorded requirements should show a suitability status for that event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open venue "Riverside Hall" in the context of this event
-    // 3. Check the suitability status shown
-    void page;
-  });
-
-  /**
-   * TC_E06S02_02
-   * AC:      E06-S02 - Scenario 2 (Failing requirements named)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   The event requires Wheelchair Access and a capacity of 150; "Riverside Hall" has no wheelchair access and a capacity of 120
-   *
-   * Test data:
-   *   Event requires: Wheelchair Access, 150 capacity | Riverside Hall: no wheelchair access, 120 capacity
-   *
-   * Expected result:
-   *   "Riverside Hall" is marked "Unsuitable", with both failing requirements named: "No wheelchair access" and "Capacity below 150"
-   */
-  test.fixme("TC_E06S02_02 - Verify that a venue failing one or more recorded requirements should be marked unsuitable with every failing requirement named", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. View "Riverside Hall" in the context of this event
-    void page;
-  });
-
-  /**
-   * TC_E06S02_03
-   * AC:      E06-S02 - Scenario 3 (All requirements met)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   The event requires Theatre layout and a capacity of 100; "Riverside Hall" supports Theatre layout with capacity 150
-   *
-   * Test data:
-   *   Event requires: Theatre layout, 100 capacity | Riverside Hall: Theatre layout, 150 capacity
-   *
-   * Expected result:
-   *   "Riverside Hall" is marked "Suitable"
-   */
-  test.fixme("TC_E06S02_03 - Verify that a venue meeting all recorded requirements for the event should be marked suitable", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. View "Riverside Hall" in the context of this event
-    void page;
-  });
 
   /**
    * TC_E06S02_04
@@ -182,30 +30,6 @@ test.describe("E06-S02", () => {
 });
 
 test.describe("E06-S03", () => {
-
-  /**
-   * TC_E06S03_01
-   * AC:      E06-S03 - Scenario 1 (Request created as Pending)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Request "Charity Run" has status "Approved"; its event has recorded requirements and no pending booking request
-   *
-   * Test data:
-   *   Event: Charity Run | Venue: Riverside Hall
-   *
-   * Expected result:
-   *   The booking request is created with status "Pending"; "Riverside Hall"'s calendar shows the requested period as Pending; venue_staff_1@connectsphere.com is notified
-   */
-  test.fixme("TC_E06S03_01 - Verify that submitting a booking request for a event with no existing pending request should create it as Pending and notify Venue Staff", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Charity Run"
-    // 3. Submit a booking request for venue "Riverside Hall"
-    // 4. Check the request status and "Riverside Hall"'s calendar
-    // 5. Check venue_staff_1@connectsphere.com's notifications
-    void page;
-  });
 
   /**
    * TC_E06S03_02
@@ -270,27 +94,6 @@ test.describe("E06-S03", () => {
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Attempt to submit a booking request for "Riverside Hall" for a different event also on 15/01/2027
-    void page;
-  });
-
-  /**
-   * TC_E06S03_05
-   * AC:      E06-S03 (checklist: view status of own booking requests)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   coordinator_1@connectsphere.com has 2 booking requests: Riverside Hall (Pending) and Grand Ballroom (Confirmed)
-   *
-   * Test data:
-   *   Requests: Riverside Hall (Pending), Grand Ballroom (Confirmed)
-   *
-   * Expected result:
-   *   Both requests are listed with their correct current status: Riverside Hall = Pending, Grand Ballroom = Confirmed
-   */
-  test.fixme("TC_E06S03_05 - Verify that an Event Coordinator should be able to view the status of each of their own booking requests", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Navigate to "My Booking Requests"
     void page;
   });
 
@@ -433,31 +236,10 @@ test.describe("E06-S04", () => {
 
 });
 
-test.describe("E06-S05", () => {
-
-  /**
-   * TC_E06S05_01
-   * AC:      E06-S05 - Scenario 2 (Slot already held or booked)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall has an active tentative hold for 2026-12-01 09:00 to 11:00 against event EVT-1005. Coordinator coord_b@connectsphere.com is planning event EVT-1006
-   *
-   * Test data:
-   *   Existing hold: EVT-1005, 09:00-11:00 - Requested: EVT-1006, same period
-   *
-   * Expected result:
-   *   The hold is refused and the existing hold against EVT-1005 is identified. The calendar continues to show the period as Tentative for one event only
-   */
-  test.fixme("TC_E06S05_01 - Verify that a second tentative hold on the same venue and period is refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Sign in as coord_b@connectsphere.com
-    // 2. Open the venue calendar for Orchid Hall on 2026-12-01
-    // 3. Attempt to place a tentative hold for 09:00-11:00 against EVT-1006
-    void page;
-  });
-
-});
+// E06-S05 (SCRUM-49): the hold screens are covered live in
+// tests/e2e/venueHolds.spec.ts (TC_E06S05_01, _03, _04, _07) and the rules
+// against PostgreSQL in backend/tests/venueHolds.integration.test.ts. The
+// TC_E06S05_01 placeholder that stood here was replaced by those.
 
 test.describe("E06-S06", () => {
 
@@ -606,16 +388,6 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
     void page;
   });
 
-  test.fixme("TC_E06S05_03 — Verify that a new tentative hold should carry an expiry 48 hours after creation that Venue Staff can change", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S05_03).
-    void page;
-  });
-
-  test.fixme("TC_E06S05_04 — Verify that submitting a booking request for a held venue should complete the hold so that it no longer expires", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S05_04).
-    void page;
-  });
-
   test.fixme("TC_E06S05_05 — Verify that an unconverted hold should become Expired when its expiry passes, freeing the venue and never counting as a booking", async ({ page }) => {
     // Implement from docs/testing/cases/E06.md (TC_E06S05_05).
     void page;
@@ -623,11 +395,6 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
 
   test.fixme("TC_E06S05_06 — Verify that the Coordinator should receive a reminder 24 hours before a hold expires and a notice when it expires", async ({ page }) => {
     // Implement from docs/testing/cases/E06.md (TC_E06S05_06).
-    void page;
-  });
-
-  test.fixme("TC_E06S05_07 — Verify that Venue Staff should be able to extend an unexpired hold but not an expired one", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S05_07).
     void page;
   });
 

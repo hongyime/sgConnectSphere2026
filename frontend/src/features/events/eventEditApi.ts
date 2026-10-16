@@ -9,7 +9,7 @@ import { apiCall, jsonRequest, type ApiFailure } from '../../shared';
 
 export type EditableField =
   | 'title' | 'description' | 'purpose' | 'startAt' | 'endAt' | 'expectedAttendance'
-  | 'venueRequirements' | 'accessibilityNote' | 'equipmentRequirements' | 'layoutPreference' | 'registrationDates';
+  | 'venueRequirements' | 'accessibilityNote' | 'equipmentRequirements' | 'layoutPreference' | 'registrationSetup' | 'registrationDates';
 
 export type EventPatch = Partial<Record<Exclude<EditableField, 'expectedAttendance' | 'registrationDates'>, string> & {
   expectedAttendance: number;

@@ -22,6 +22,7 @@ import {
   type AssignedEventDetail, type AssignedEventSummary, type Colleague, type Reassignment,
 } from './coordinatorApi';
 import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
+import { HOLDS_VISIBLE, VenueHoldsCard } from './VenueHolds';
 import './coordinator.css';
 
 // A refused read sends the Coordinator back to their dashboard.
@@ -235,6 +236,7 @@ export function RequestDetail() {
           </section>
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
           {/* E07-S06 (SCRUM-146): request technical support, or mark the event as needing none. */}
+          {HOLDS_VISIBLE.includes(event.status) ? <VenueHoldsCard key={`holds-${event.id}`} eventCode={eventRef(event)} /> : null}
           {SUPPORT_VISIBLE.includes(event.status) ? <TechnicalSupportCard key={`support-${event.id}`} eventCode={eventRef(event)} /> : null}
           {/* E14-S02 (SCRUM-86, T-75): read-only, so no edit or delete controls. */}
           <ActivityLog entries={event.activityLog ?? []} />
@@ -250,7 +252,7 @@ export function RequestDetail() {
 const EDITABLE_AFTER_APPROVAL = ['approved', 'planning', 'confirmed', 'completed'];
 const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>([
   'title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance',
-  'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference',
+  'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup',
 ]);
 
 function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onSaved: () => void }) {

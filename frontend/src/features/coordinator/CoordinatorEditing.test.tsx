@@ -29,6 +29,8 @@ function stub(options: { event?: Record<string, unknown>; patchReply?: { status:
     else if (url.pathname === '/api/notifications') reply = { status: 200, body: { notifications: [] } };
     // The Technical support card (E07-S06) on approved events.
     else if (url.searchParams.get('task') === 'support') reply = { status: 200, body: { event: {}, requests: [], noSupportRequired: false, canEdit: true } };
+    // The Venue holds card (E06-S05) on approved and planning events.
+    else if (url.searchParams.get('task') === 'holds') reply = { status: 200, body: { event: {}, holds: [], canHold: true } };
     else if (init?.method === 'PATCH') {
       const body = JSON.parse(String(init.body)) as Record<string, unknown>;
       patches.push({ url, body });

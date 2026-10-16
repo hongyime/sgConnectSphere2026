@@ -6,29 +6,6 @@ import { test } from '@playwright/test';
 test.describe("E09-S01", () => {
 
   /**
-   * TC_E09S01_01
-   * AC:      E09-S01 - Scenario 1 (Place reserved in an open event)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Community Meetup" is Confirmed, registration is open, and 3 of 5 places remain in its event
-   *
-   * Test data:
-   *   Name: Casey Tan | Email: attendee_c@example.com
-   *
-   * Expected result:
-   *   attendee_c@example.com's place is reserved, and they receive a confirmation containing the event's details (date, time, venue)
-   */
-  test.fixme("TC_E09S01_01 - Verify that submitting the required registration information for an open event with places remaining should reserve a place and provide a confirmation", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Open event "Community Meetup"
-    // 3. Enter Name: "Casey Tan", Email: attendee_c@example.com
-    // 4. Submit registration
-    void page;
-  });
-
-  /**
    * TC_E09S01_02
    * AC:      E09-S01 (checklist: choose events to attend in a multi-event event)
    * Sprint:  4.0
@@ -120,49 +97,6 @@ test.describe("E09-S01", () => {
 });
 
 test.describe("E09-S02", () => {
-
-  /**
-   * TC_E09S02_01
-   * AC:      E09-S02 (checklist: set a registration limit)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in; event "Community Meetup"'s event has no registration limit set yet
-   *
-   * Test data:
-   *   Registration Limit: 5
-   *
-   * Expected result:
-   *   The event's registration limit is saved as 5
-   */
-  test.fixme("TC_E09S02_01 - Verify that an Event Organiser should be able to set a registration limit for a event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event "Community Meetup"
-    // 2. Set the Registration Limit for its event to 5
-    // 3. Save
-    void page;
-  });
-
-  /**
-   * TC_E09S02_02
-   * AC:      E09-S02 - Scenario 1 (Venue capacity enforced)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s event has an Organiser-set limit of 5 and a booked venue capacity of 8 (the limit is the lower value); 5 Attendees are already registered
-   *
-   * Test data:
-   *   Registered so far: 5 (effective limit) | Venue capacity: 8
-   *
-   * Expected result:
-   *   Registration is refused since the event has reached its effective capacity of 5
-   */
-  test.fixme("TC_E09S02_02 - Verify that registration should stop once the event reaches the lower of the Organiser's limit and the booked venue's capacity", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_f@example.com
-    // 2. Attempt to register for "Community Meetup"
-    void page;
-  });
 
   /**
    * TC_E09S02_03
@@ -548,28 +482,6 @@ test.describe("E09-S04", () => {
 test.describe("E09-S05", () => {
 
   /**
-   * TC_E09S05_01
-   * AC:      E09-S05 - Scenario 1 (Registration withdrawn)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   attendee_d@example.com is registered for both the event and the event of "Tech Conference 2026"; the withdrawal deadline has not passed
-   *
-   * Test data:
-   *   Withdrawing from: the event only
-   *
-   * Expected result:
-   *   The the event registration is cancelled and its place becomes available again; attendee_d@example.com remains registered for the event
-   */
-  test.fixme("TC_E09S05_01 - Verify that withdrawing from a single event before the withdrawal deadline should cancel that registration and release the place, leaving other events unaffected", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_d@example.com
-    // 2. Open "My Registrations"
-    // 3. Withdraw from the event only
-    void page;
-  });
-
-  /**
    * TC_E09S05_03
    * AC:      E09-S05 - Scenario 2 (Withdrawal after deadline refused)
    * Sprint:  4.0
@@ -615,28 +527,6 @@ test.describe("E09-S05", () => {
 });
 
 test.describe("E09-S06", () => {
-
-  /**
-   * TC_E09S06_01
-   * AC:      E09-S06 - Scenario 1 (Attendance marked after completion)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Charity Run" has status "Completed" (per TC_E08S05_01); attendee_a@example.com is registered for its event
-   *
-   * Test data:
-   *   Attendee: attendee_a@example.com
-   *
-   * Expected result:
-   *   attendee_a@example.com's record shows "Attended"; the total registration figure for the event remains unchanged
-   */
-  test.fixme("TC_E09S06_01 - Verify that marking a registered Attendee as attended for a event after the event is Completed should update their record without changing the registration figure", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the completed event "Charity Run"
-    // 3. Mark attendee_a@example.com as "Attended"
-    void page;
-  });
 
   /**
    * TC_E09S06_02

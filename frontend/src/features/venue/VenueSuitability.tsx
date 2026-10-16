@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { Alert, ButtonLink, Card, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDateRange, useLoad } from '../../shared';
 import { getVenueSuitability } from './venueSuitabilityApi';
+import { VenueBookingForm } from './VenueBookingForm';
 
 export function VenueSuitability() {
   const { eventCode = '', venueId = '' } = useParams();
@@ -20,6 +21,7 @@ export function VenueSuitability() {
         {data.assessment.suitable && <p>This venue meets all recorded requirements.</p>}
       </Card>
       {data.event.accessibility_note && <Alert tone="info" title="Accessibility notes for manual review">{data.event.accessibility_note}</Alert>}
+      {['approved', 'planning'].includes(data.event.status ?? '') && <VenueBookingForm key={`${eventCode}:${venueId}`} eventId={data.event.id} eventCode={eventCode} venueId={venueId} start={data.event.start} end={data.event.end} />}
       {data.assessment.comparisons.map(item => <Card key={item.criterion} title={item.criterion}>
         <FactList columns={2} items={[
           ['Event requirement', item.criterion === 'Operating hours (Singapore time)' ? formatDateRange(data.event.start, data.event.end) : item.required],

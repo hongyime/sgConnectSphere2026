@@ -151,6 +151,20 @@ const users: SeedUser[] = [
     contactNumber: '+65 9400 0002',
   },
   {
+    key: 'coordLead',
+    email: 'coord_lead@connectsphere.com',
+    role: 'event_coordinator_lead',
+    fullName: 'Coordinator Lead',
+    contactNumber: '+65 9200 0003',
+  },
+  {
+    key: 'safetyOfficer',
+    email: 'safety_officer@connectsphere.com',
+    role: 'safety_officer',
+    fullName: 'Safety Officer',
+    contactNumber: '+65 9200 0004',
+  },
+  {
     key: 'attendeeA',
     email: 'attendee_a@example.com',
     role: 'attendee',
@@ -543,8 +557,8 @@ async function seed(client: Client) {
     for (const venue of venues) {
       await client.query(
         `
-          INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at, is_active)
-          VALUES ($1, $2, $3, $4, $5, $6, true)
+          INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at, is_active, setup_time_minutes, turnaround_time_minutes)
+          VALUES ($1, $2, $3, $4, $5, $6, true, 0, 0)
         `,
         [
           venueIds.get(venue.key),
