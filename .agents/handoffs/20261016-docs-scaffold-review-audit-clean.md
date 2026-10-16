@@ -17,9 +17,9 @@ Publish the corrected frozen scaffold review report from PR #270 on a clean bran
 
 ## Not done / next steps
 
-1. Push this focused branch and open a PR with all four required body headers and explicit “Replacement for #270” traceability.
-2. Let GitHub run TruffleHog and required checks against the new branch history; do not claim green before observing results.
-3. After the new PR exists, add a cross-link comment to #270 without closing or editing its source branch. Notify `@amareetkm2024-del` and `@Bl0oper` only when checks are green or queued on the latest head.
+1. Wait for PR #285 checks, including TruffleHog, to report against its latest head; do not claim green before observing results.
+2. Add `@amareetkm2024-del` and `@Bl0oper` as requested reviewers only when checks are green or queued on that latest head.
+3. The required PostPlan visualization was not generated per task instruction; the primary thread may handle it if required.
 
 ## Verification evidence
 
@@ -27,6 +27,8 @@ Publish the corrected frozen scaffold review report from PR #270 on a clean bran
 - An earlier check's interim T-65 file was removed after its branch commit reference became unreachable in the local-only base refresh; it is not included or cited. The report, handoff and one fresh final-run record are the only intended file changes.
 - The branch is based on `7cd49c2`; no history from #270 was transferred.
 - The check emitted a warning listing existing secondary worktrees; none were created or removed for this task. The known tracked report blob SHA matches the verified #270 source exactly.
+- Opened replacement PR [#285](https://github.com/hongyime/sgConnectSphere2026/pull/285) as a draft. Added cross-link comment [#270 comment](https://github.com/hongyime/sgConnectSphere2026/pull/270#issuecomment-6205677588); #270 remains open, and no branch, title, or body changes were made there.
+- PR #285 checks are pending; reviewers have not yet been requested or pinged.
 - Markdown LSP diagnostics are unavailable in this environment. `python scripts/check.py` and commit hooks validate the new Markdown files.
 - The local TruffleHog executable is unavailable. The original #270 check results had TruffleHog failing while repository checks, application-checks, PR conventions, LFS guard, and dependency review passed; do not transfer those results to this branch. Wait for the new PR's own scanner result.
 - No production database, Jira write, deployment, or application test is in scope.
