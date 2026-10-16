@@ -56,7 +56,7 @@ with the merged guard; its owner must renumber it. No production migration was r
 | Pending, calendar and Planning transition | Unit, real PostgreSQL and intercepted browser coverage. Responsible staff routing is still needed to finish Scenario 1. |
 | Multiple requests, purpose/headcount, periods, assignment/status gates | Implemented; database tests cover retries, simultaneous submissions and refusals. |
 | Advisory suitability (TC_E06S02_04) | A real unsuitable Pending request and failing criteria are persisted; staff presentation remains E06-S04. |
-| Responsible staff notifications | SCRUM-189 / #271 and #272. Inject `NotificationOptions.resolveVenueStaff`; only this requested venue's active staff receive notices. Current production wiring reports unresolved venue ids rather than broadcasting or inferring `decided_by`. |
+| Responsible staff notifications | SCRUM-189 / #271 and #272. With no injected resolver, notices go to the requested venue's staff in `venue_staff_assignments`; a venue with no current assignment is reported in `unresolved_venue_ids` rather than broadcasting or inferring `decided_by`. Production also needs the real assignment rows after migration 0018. |
 | Staff decisions and primary venue | E06-S04. Schema invariants exist; confirmation and primary selection are not implemented here. |
 | Session selection | Post-Sprint-3 follow-up under T-73/T-79; no Session UI here. |
 | Human manual E2E | Follow [the script](manual/E06-S03-click-through.md), then create a fresh T-65 record. Automated screenshots are not a manual run. |
