@@ -90,9 +90,23 @@ answer.
   Vitest 431/431 (changed files 100%), `test:db` 136/138 (2 failures also on
   clean `main` 37cbb77), Playwright 12/12. PR opened; see its body.
 
+- 2026-10-17: Ji Ning's E06-S02 review on #298 (TC_E06S02_04): the staff API
+  now returns `advisoryMismatches` from E06-S03's `suitability_snapshot`
+  (null when none was recorded) and both staff pages show "Advisory unmet
+  requirements at submission", never blocking approval (contract line 236
+  gives staff assessment presentation to E06-S04). `f097571`: unit 431/431,
+  Vitest 436/436 (one intermittent unrelated VenueBlockout failure, then two
+  clean runs), test:db 138/140, Playwright 12/12. Ji Ning owns the E06-S02
+  manual run and the `test.fixme` TC_E06S02_04 in `tests/e2e/e06.spec.ts`.
+- Agreed on #298 with Ji Ning: explicit primary reselection (`set_primary`)
+  and the withdrawal-vs-decision race test belong to her #299.
+- Local env note: `python` on PATH may resolve to the Windows Store stub; run
+  hooks and `check.py` with `.venv-tools/Scripts` first on PATH.
+
 ## Still to do
 
-- Bryan's TC_07 answer (above) before merge. The branch name carries
+- Bryan's TC_07 answer (above) before merge.
+- Review Ji Ning's #299 (race test against the real `decideBooking`). The branch name carries
   SCRUM-48, so `jira-sync` moves it to Done on merge.
 - Follow-up candidate: the rejection notice's line breaks show as spaces in
   the notifications page.
