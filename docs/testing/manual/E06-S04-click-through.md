@@ -34,9 +34,10 @@ Every seeded account uses the seed password, `seedCredential` in
 ## Set up first (about 5 minutes)
 
 **Prerequisites:** Node.js 22 or newer, dependencies installed once with
-`npm install` at the repo root, and a **local** PostgreSQL 17 server on your
-own machine (native install; Docker is not needed). Never use the shared
-database: the run resets the database.
+`npm install` at the repo root, and a **local** PostgreSQL 17 server listening
+only on your own machine (a native install, or an existing local container such
+as `connectsphere-db`). Never use the shared database: the run resets the
+database.
 
 You need three Git Bash terminals at the repo root. Each keeps its own
 variables, so set `LOCAL_DB` in terminals 1 and 2, to the same value.
