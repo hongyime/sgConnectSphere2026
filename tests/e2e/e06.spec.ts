@@ -267,23 +267,23 @@ test.describe("E06-S06", () => {
 
   /**
    * TC_E06S06_02
-   * AC:      E06-S06 - Scenario 2 (Competing request flagged)
+   * AC:      E06-S06 - Scenario 2 (Buffer change flags a retained request conflict)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Two pending requests exist for "Riverside Hall" on 20/01/2027, both 09:00-12:00: Request A ("Tech Conference 2026") and Request B ("Product Expo 2026")
+   *   "Riverside Hall" has zero setup and turnaround buffers when A ("Tech Conference 2026", 20/01/2027 10:00-12:00) is created and confirmed and B ("Product Expo 2026", same day 12:30-14:00) is created as Pending. Neither is initially buffer-conflicted. No other booking or maintenance block affects these periods. Venue Staff can edit buffers and decide B; migration 0016 is applied. Times are Singapore time (+08:00).
    *
    * Test data:
-   *   Request A: Tech Conference 2026 (approved) | Request B: Product Expo 2026 (same venue, overlapping time)
+   *   A: Confirmed 10:00-12:00 | B: Pending 12:30-14:00 | Buffers at creation: 0/0; later setup/turnaround: 30/45 minutes | Half-open occupancy [start - setup, end + turnaround): A [09:30,12:45), B [12:00,14:45); overlap [12:00,12:45).
    *
    * Expected result:
-   *   Request B is now flagged as conflicting and cannot be approved until the conflict is resolved
+   *   The buffer edit succeeds and B has buffer_conflict = true, not lifecycle status Conflicting. Approval of B is blocked with A identified. A remains Confirmed and B remains Pending; both retain buffered occupancy without release. Migration 0016 permits flag-only edits but guards the attempted status change.
    */
-  test.fixme("TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting", async ({ page }) => {
+  test.fixme("TC_E06S06_02 - Verify that a buffer change flags a retained Pending request and blocks its approval without releasing either booking", async ({ page }) => {
     // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Approve Request A ("Tech Conference 2026")
-    // 3. Open Request B ("Product Expo 2026")
+    // 1. Sign in as Venue Staff and save setup 30 minutes and turnaround 45 minutes for "Riverside Hall".
+    // 2. Open B and inspect its buffer-conflict flag and both bookings' lifecycle statuses and occupied windows.
+    // 3. As Venue Staff, attempt to approve B and inspect the conflict response and retained bookings.
     void page;
   });
 
@@ -401,7 +401,7 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
 });
 
 test.describe("E06-S06 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at the same moment", async ({ page }) => {
+  test.fixme("TC_E06S06_06 — Verify that simultaneous submissions with overlapping buffered occupancy create at most one Pending request and return a safe conflict to the loser", async ({ page }) => {
     // Implement from docs/testing/cases/E06.md (TC_E06S06_06).
     void page;
   });

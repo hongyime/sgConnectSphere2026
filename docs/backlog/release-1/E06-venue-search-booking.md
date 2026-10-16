@@ -327,17 +327,17 @@ As a Venue Staff member, I want to be blocked from approving a booking that over
 
 Given a venue has a confirmed booking When I attempt to approve another request overlapping that period Then approval is blocked and the conflicting booking is identified
 
-#### Scenario 2 — Competing request flagged
+#### Scenario 2 — Buffer change flags a retained request conflict
 
-Given two pending requests cover the same venue and overlapping times When I approve one of them Then the other is flagged as conflicting and cannot be approved until the conflict is resolved
+Given booking A for 10:00-12:00 is Confirmed and request B for 12:30-14:00 is Pending on the same venue and day, both created with zero setup and turnaround buffers When Venue Staff change setup to 30 minutes and turnaround to 45 minutes Then their half-open occupied windows `[start - setup, end + turnaround)` become A `[09:30,12:45)` and B `[12:00,14:45)`, B is flagged `buffer_conflict` without changing its lifecycle status to Conflicting, and a Venue Staff attempt to approve B is blocked with A identified as the conflict; A remains Confirmed, B remains Pending, and both retain occupancy until the conflict is resolved
 
 #### Scenario 3 — Simultaneous approval fails safely
 
 Given another Venue Staff member approves a conflicting request moments before me When my approval is processed Then it fails and I am told the venue has just been taken
 
-#### Scenario 4 — Buffered windows are what must not overlap
+#### Scenario 4 — Simultaneous submissions enforce buffered occupancy
 
-Given two pending requests on one venue whose advertised times do not overlap but whose buffered occupancy windows do When both are approved at the same moment Then at most one approval succeeds and the other fails safely, because the database-level conflict check operates on the buffered window (C-65, T-66, ADR-003)
+Given a free venue has setup 30 minutes and turnaround 45 minutes and assigned Coordinators prepare requests for 10:00-12:00 and 12:30-14:00 on the same day When both requests are submitted simultaneously Then at most one Pending row is created and the losing submission fails safely with a conflict, because the half-open occupied windows `[start - setup, end + turnaround)` are `[09:30,12:45)` and `[12:00,14:45)` and overlap; the database guard checks buffered occupancy at submission, and no approval is performed (C-65, T-66, ADR-003)
 
 #### Scenario 5 — Conflicts are per venue, not per event
 
@@ -347,7 +347,8 @@ Given one event has Pending requests on two different venues over the same perio
 
 - Be blocked from approving a request overlapping an existing confirmed booking
 - See which existing booking is causing the conflict
-- Confirm a competing pending request is flagged as conflicting once one is approved
+- Confirm a buffer edit flags B with `buffer_conflict`, blocks its approval with A identified, and retains A as Confirmed and B as Pending with both still occupying
+- Confirm simultaneous submissions with overlapping buffered windows create at most one Pending row and return a safe conflict to the loser without approving either
 - Confirm a simultaneous approval by another Venue Staff member fails safely
 - Be told the venue has been taken when a simultaneous approval wins
 - Confirm no venue ever holds two confirmed bookings over the same period
