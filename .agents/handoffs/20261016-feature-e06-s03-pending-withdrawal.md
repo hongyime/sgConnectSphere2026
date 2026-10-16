@@ -56,3 +56,6 @@ Human completed primary confirmation/cancel, initial selection, switching Orchid
 ## Le Xin review fixes (17 October)
 
 Primary activity formatter now handles primary_venue before status/hold formatting and preserves actual venue names; regression covers previous primary, no previous primary and absent new value. Ten activity tests pass with100% component coverage; four withdrawal units pass with exact revised busy409 message mentioning staff decision or event/account update and refresh/retry. Frontend typecheck passes; inventory regeneration has no diff. Fresh immutable records20261017-004600 and004601. E06-S02 work remains safely stashed on its separate test branch. Do not conflate these mocked tests with a new combined database or human run. User authorised PR299 review fixes; no #298 merge.
+
+## Main conflict resolution (17 October)
+Merged current origin/main into PR299; sole conflict tc-coverage.md regenerated from combined source (190/364 active). Targeted frontend30/backend22 tests passed. Repo hygiene passed;153 Windows tooling tests retain3 failures/11 errors. Record20261017-005012-jininggg-full-regression.md. E06-S02 stash untouched. No #298 merge.

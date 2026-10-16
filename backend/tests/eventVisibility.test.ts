@@ -194,26 +194,49 @@ test('organiser can update registration dates before approval', async () => {
   assert.match(calls.find(call => call.sql.startsWith('UPDATE events SET'))!.sql, /registration_opens_at/);
 });
 
-// E03-S07 Scenario 1 ("any field"): registration setup is editable before
-// approval, like the other requirement fields, and restricted after it.
-test('organiser can fill in registration setup before approval, but not after', async () => {
+// E03-S11 (fix to E03-S07 Scenario 1, "any field"): registration setup is
+// editable before approval, like the other requirement fields, and restricted
+// for the Organiser after it.
+function registrationSetupQuery(status: string, organiserId = user.id) {
   const calls: { sql: string; values?: unknown[] }[] = [];
-  let status = 'under_review';
   const query: Query = async (sql, values) => {
     calls.push({ sql, values });
-    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status, organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
+    if (sql.includes('SELECT id, status')) return { rows: [{ id: 'event-a', status, organiser_id: organiserId, coordinator_id: 'coord-a', client_org_id: 'client-a' }] };
     return { rows: [] };
   };
+  return { calls, query };
+}
+
+test('TC_E03S11_01: organiser can fill in registration setup before approval and the edit is audited', async () => {
+  const { calls, query } = registrationSetupQuery('under_review');
   const result = await updateEventInformation(query, user, 'EVT-A01', { registrationSetup: '  Free registration  ' });
   assert.deepEqual(result.fields, ['registrationSetup']);
   const update = calls.find(call => call.sql.startsWith('UPDATE events SET'))!;
   assert.match(update.sql, /registration_setup = \$1/);
   assert.deepEqual(update.values, ['Free registration', 'event-a']);
   assert.deepEqual(calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!.values, [user.id, 'event-a', 'registrationSetup', 'Free registration']);
-  await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { registrationSetup: '   ' }), { status: 400 });
+});
 
-  status = 'approved';
+test('TC_E03S11_02: clearing registration setup is refused and nothing is written', async () => {
+  const { calls, query } = registrationSetupQuery('under_review');
+  await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { registrationSetup: '   ' }), { status: 400 });
+  assert.equal(calls.some(call => call.sql.startsWith('UPDATE events SET') || call.sql.includes('INSERT INTO audit_logs')), false);
+});
+
+test('TC_E03S11_03: organiser cannot change registration setup after approval and nothing is written', async () => {
+  const { calls, query } = registrationSetupQuery('approved');
   await assert.rejects(updateEventInformation(query, user, 'EVT-A01', { registrationSetup: 'Paid tickets' }), { status: 409 });
+  assert.equal(calls.some(call => call.sql.startsWith('UPDATE events SET') || call.sql.includes('INSERT INTO audit_logs')), false);
+});
+
+test('TC_E03S11_04: assigned coordinator can edit registration setup after approval and the edit is audited', async () => {
+  const coordinator = { ...user, id: 'coord-a', role: 'event_coordinator' as const, clientOrgId: undefined };
+  const { calls, query } = registrationSetupQuery('approved', 'organiser-a');
+  const result = await updateEventInformation(query, coordinator, 'EVT-A01', { registrationSetup: 'Paid registration, opens six weeks before' });
+  assert.deepEqual(result.fields, ['registrationSetup']);
+  assert.deepEqual(calls.find(call => call.sql.startsWith('UPDATE events SET'))!.values, ['Paid registration, opens six weeks before', 'event-a']);
+  assert.deepEqual(calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!.values,
+    ['coord-a', 'event-a', 'registrationSetup', 'Paid registration, opens six weeks before']);
 });
 
 test('organiser post-approval unrestricted edits are audited', async () => {
