@@ -59,16 +59,39 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
   placeholders were replaced by a pointer, TC_07 kept. Decide screen already
   shows the 409 message; Vitest test added. `tc-coverage.md` regenerated.
 
+- 2026-10-16: merged `origin/main` (27 commits incl. #274 booking submission,
+  #272 staff routing). Conflicts: `backend/package.json` test lists (kept both
+  sides) and generated `tc-coverage.md` (regenerated). Unit 422/422, Vitest
+  431/431, both typechecks clean.
+- 2026-10-16 primary venue (O-30, contract "Decide a booking request"): an
+  approval sets `is_primary` when the event has none. `decideBooking` now locks
+  event -> venue -> booking, the order submission and holds use, so racing
+  approvals for one event serialise. Unit 26/26, `decisions.ts` 100%. Real-DB
+  `venueBookingDecisions.integration.test.ts` 18/18 on local loopback
+  PostgreSQL (`TEST_DATABASE_URL` only), incl. the three Scenario 4 tests
+  first run today and three primary tests (first wins, rejection then
+  approval, simultaneous approvals leave exactly one primary). Exploratory;
+  T-65 records come with the PR runs.
+
+## Open question for Bryan (PO), not yet sent
+
+TC_E06S04_07 (release logged) is Sprint 3 but its steps need E10-S04
+cancellation (SCRUM-73, Sprint 4). Under the DoD, Scenario 5 is not met
+without it, and Done cannot be undone. Options: (A, recommended, matches
+T-76) move TC_07 to E10-S04 so E06-S04 closes on TC_05/_06; (B) verify
+release through Ji Ning's Pending withdrawal (T-94/T-95, Sprint 3) if it
+lands and logs `Booking Released`; (C) leave it and carry E06-S04 to
+Sprint 4. Le Xin will message Bryan; do not mark SCRUM-48 Done before the
+answer.
+
 ## Still to do
 
-- Run the real-DB suite (`venueBookingDecisions.integration.test.ts`, then
-  full `test:db`) with Docker; record T-65 runs.
-- First Confirmed booking becomes primary (T-78, contract): needs
-  `is_primary` from Ji Ning's booking migration (#274, number to agree).
-- Scenario 2 Coordinator switch: Ji Ning (E06-S03). Proposed: new Pending
-  request via submission with `replaces_booking_id`; original stays Rejected.
+- Full `test:db` with `TEST_DATABASE_URL` only; record T-65 runs.
+- Scenario 2 Coordinator switch: check the reject + suggestion end to end
+  with Ji Ning's merged replacement flow (`replaces_booking_id`, #274,
+  `VenueBookingForm.tsx`); original stays Rejected (T-96).
 - Manual run of TC_01-_06 on the seeded stack by Le Xin (TC_04: raise a venue's
-  turnaround so a pending request clashes); TC_07 blocked on E10-S04.
+  turnaround so a pending request clashes); TC_07 per Bryan's answer above.
 - Then T-65 records, PR, human review of code and test cases.
 - Running locally: export only `DATABASE_URL` (the venues API prefers
   `DATABASE_POOLER_URL`, the shared Supabase).

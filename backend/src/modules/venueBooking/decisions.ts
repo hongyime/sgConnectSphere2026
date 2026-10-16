@@ -15,6 +15,8 @@ import { holdsVenue } from './holds.js';
 // Coordinator is notified (Scenarios 1 and 2). Approval is blocked when the
 // booking's buffered window overlaps another active booking on the venue, or
 // a maintenance block (Scenario 4, C-65, T-66), naming what it clashes with.
+// The event's first Confirmed booking becomes its primary venue (O-30,
+// docs/contracts/venue-bookings.md).
 //
 // The Coordinator's "amend to the suggested venue" step of Scenario 2 belongs
 // with E06-S03's request flow.
@@ -32,7 +34,7 @@ type BookingRow = {
   event_id: string; event_code: string | null; event_title: string; expected_attendance: number | null;
   coordinator_id: string | null; coordinator_name: string | null;
   decision_reason: string | null; suggested_venue_id: string | null; suggested_venue_name: string | null;
-  decided_by_name: string | null; decided_at: Date | null; created_at: Date;
+  decided_by_name: string | null; decided_at: Date | null; created_at: Date; is_primary: boolean;
 };
 
 // Why a booking that isn't Pending can't be decided, worded for Venue Staff.
@@ -51,7 +53,7 @@ const BOOKING_SELECT = `SELECT vb.id, vb.status, lower(vb.booking_range) AS star
     e.id AS event_id, e.event_code, e.title AS event_title, e.expected_attendance,
     e.coordinator_id, c.full_name AS coordinator_name,
     vb.decision_reason, vb.suggested_venue_id, sv.name AS suggested_venue_name,
-    d.full_name AS decided_by_name, vb.decided_at, vb.created_at
+    d.full_name AS decided_by_name, vb.decided_at, vb.created_at, vb.is_primary
   FROM venue_bookings vb
   JOIN venues v ON v.id = vb.venue_id
   JOIN events e ON e.id = vb.event_id
@@ -73,6 +75,7 @@ export function toBooking(row: BookingRow) {
     decidedBy: row.decided_by_name,
     decidedAt: row.decided_at ? row.decided_at.toISOString() : null,
     requestedAt: row.created_at.toISOString(),
+    isPrimary: row.is_primary,
   };
 }
 
@@ -216,11 +219,14 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
   const decision = validated.decision;
 
   return inTransaction(database, async client => {
-    // Lock the venue before the booking, the order hold, request and buffer
-    // writes use, so concurrent approvals on one venue queue rather than deadlock.
-    const venue = (await client.query<{ venue_id: string }>('SELECT venue_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
-    if (!venue) return { status: 404, body: { error: 'Booking not found.' } };
-    await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [venue.venue_id]);
+    // Lock the event, then the venue, then the booking: the order hold and
+    // request writes use, so concurrent writers queue rather than deadlock.
+    // The event lock also serialises two approvals racing to become primary.
+    const target = (await client.query<{ venue_id: string; event_id: string }>(
+      'SELECT venue_id, event_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
+    if (!target) return { status: 404, body: { error: 'Booking not found.' } };
+    await client.query('SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id]);
+    await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [target.venue_id]);
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };
     if (row.status !== 'pending') {
@@ -256,6 +262,13 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     } catch (error) {
       if ((error as { code?: string }).code === '23P01') throw new AccessError(409, VENUE_JUST_TAKEN);
       throw error;
+    }
+    // O-30: the first Confirmed booking becomes primary if the event has none.
+    // A later one stays secondary until the Coordinator selects it.
+    if (decision.decision === 'approve') {
+      await client.query(`UPDATE venue_bookings SET is_primary = true
+        WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM venue_bookings WHERE event_id = $2 AND is_primary)`,
+      [row.id, row.event_id]);
     }
 
     // Scenario 5: actor, action, affected booking and event, and time.

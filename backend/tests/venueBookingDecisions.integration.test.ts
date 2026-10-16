@@ -239,6 +239,57 @@ test('two Venue Staff deciding the same request at once: one decision wins, the 
   assert.equal((await f.notices(eventId)).length, 1);
 }));
 
+// O-30 (docs/contracts/venue-bookings.md): the first Confirmed booking becomes
+// the event's primary venue. An event may hold several venues (C-67, T-68).
+async function secondVenueRequest(f: Fixture, eventId: string, day: string) {
+  const bookingId = randomUUID();
+  await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status)
+    VALUES ($1, $2, $3, $4::tstzrange, 'pending')`,
+  [bookingId, f.ids.alternative, eventId, `[${day}T10:00:00+08:00,${day}T12:00:00+08:00)`]);
+  return bookingId;
+}
+
+const primaries = async (f: Fixture, eventId: string) => (await f.pool.query<{ id: string }>(
+  'SELECT id FROM venue_bookings WHERE event_id = $1 AND is_primary', [eventId])).rows.map(r => r.id);
+
+test('the first approved booking becomes the primary venue; a second Confirmed venue does not', () => withFixture(async f => {
+  const { eventId, bookingId: first } = await f.pendingRequest('EVT-5201', '2027-02-05');
+  const second = await secondVenueRequest(f, eventId, '2027-02-05');
+
+  const a = await decideBooking(f.pool, f.staff, first, { decision: 'approve' });
+  const b = await decideBooking(f.pool, f.staff, second, { decision: 'approve' });
+
+  assert.deepEqual([a.status, b.status], [200, 200]);
+  assert.equal((a.body as { booking: { isPrimary: boolean } }).booking.isPrimary, true);
+  assert.equal((b.body as { booking: { isPrimary: boolean } }).booking.isPrimary, false);
+  assert.deepEqual(await primaries(f, eventId), [first]);
+}));
+
+test('a rejection leaves the event without a primary venue, and the next approval takes it', () => withFixture(async f => {
+  const { eventId, bookingId: first } = await f.pendingRequest('EVT-5202', '2027-02-06');
+  const second = await secondVenueRequest(f, eventId, '2027-02-06');
+  await decideBooking(f.pool, f.staff, first, { decision: 'reject', reason: REASON });
+  assert.deepEqual(await primaries(f, eventId), []);
+  await decideBooking(f.pool, f.staff, second, { decision: 'approve' });
+  assert.deepEqual(await primaries(f, eventId), [second]);
+}));
+
+test('two approvals for one event at the same moment both confirm, with exactly one primary', () => withFixture(async f => {
+  const { eventId, bookingId: first } = await f.pendingRequest('EVT-5203', '2027-02-07');
+  const second = await secondVenueRequest(f, eventId, '2027-02-07');
+
+  const results = await Promise.all([
+    decideBooking(f.pool, f.staff, first, { decision: 'approve' }),
+    decideBooking(f.pool, f.staffB, second, { decision: 'approve' }),
+  ]);
+
+  assert.deepEqual(results.map(result => result.status), [200, 200]);
+  assert.deepEqual([(await f.row(first)).status, (await f.row(second)).status], ['confirmed', 'confirmed']);
+  const primary = await primaries(f, eventId);
+  assert.equal(primary.length, 1);
+  assert.ok([first, second].includes(primary[0]!));
+}));
+
 test('the suggested venue must be a different, active venue', () => withFixture(async f => {
   const { bookingId } = await f.pendingRequest();
   for (const [suggested, message] of [

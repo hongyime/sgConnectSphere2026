@@ -27,7 +27,7 @@ function bookingRow(overrides: Record<string, unknown> = {}) {
     venue_id: venueId, venue_name: 'Small Room', event_id: '00000000-0000-4000-8000-0000000000e1', event_code: 'EVT-5001',
     event_title: 'Product Expo 2026', expected_attendance: 150, coordinator_id: coordinator.id, coordinator_name: 'Coordinator A',
     decision_reason: null, suggested_venue_id: null, suggested_venue_name: null, decided_by_name: null, decided_at: null,
-    created_at: new Date('2027-01-01T00:00:00Z'), ...overrides,
+    created_at: new Date('2027-01-01T00:00:00Z'), is_primary: false, ...overrides,
   };
 }
 
@@ -43,8 +43,8 @@ function fakeDatabase(script: Script) {
       if (sql.includes('INSERT INTO audit_logs') && sql.includes('RETURNING')) rows = [{ id: '00000000-0000-4000-8000-0000000000d1', occurred_at: new Date('2027-01-02T00:00:00Z') }];
       else if (sql.includes('INSERT INTO notifications')) rows = [{ id: String(values?.[4]) }];
       else if (sql.includes('INSERT INTO notification_deliveries')) rows = [{ id: '00000000-0000-4000-8000-0000000000d2' }];
-      // decideBooking first finds the booking's venue to lock it (Scenario 4).
-      else if (sql.startsWith('SELECT venue_id FROM venue_bookings')) rows = [{ venue_id: venueId }];
+      // decideBooking first finds the booking's event and venue to lock them.
+      else if (sql.startsWith('SELECT venue_id, event_id FROM venue_bookings')) rows = [{ venue_id: venueId, event_id: bookingRow().event_id }];
       else if (sql.includes('SELECT d.delivery_status')) rows = [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null, email: 'recipient@example.test', title: 'Venue notice', message: 'Synthetic notice' }];
       else rows = [];
     }
@@ -171,6 +171,41 @@ test('TC_E06S04_01: an approval updates the booking, audits it and notifies the 
   assert.equal(notice.values?.[2], 'Venue booking approved');
 });
 
+// O-30 (docs/contracts/venue-bookings.md): the first Confirmed booking becomes primary.
+const PRIMARY = 'SET is_primary = true';
+
+test('an approval makes the booking primary only when its event has no primary yet', async () => {
+  // The booking reads back as Confirmed and primary once both updates have run.
+  const { pool, calls } = fakeDatabase(sql => {
+    if (!sql.includes('FOR UPDATE OF vb')) return undefined;
+    const decided = calls.some(call => call.sql.includes(PRIMARY));
+    return [bookingRow(decided ? { status: 'confirmed', is_primary: true } : {})];
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal((result.body as { booking: { isPrimary: boolean } }).booking.isPrimary, true);
+  const primary = calls.find(call => call.sql.includes(PRIMARY))!;
+  assert.match(primary.sql, /NOT EXISTS \(SELECT 1 FROM venue_bookings WHERE event_id = \$2 AND is_primary\)/);
+  assert.deepEqual(primary.values, [bookingId, bookingRow().event_id]);
+  // It runs after the status change, since only a Confirmed booking may be primary.
+  assert.ok(calls.findIndex(call => call.sql.includes(PRIMARY)) > calls.findIndex(call => call.sql.includes('SET status = $2::booking_status')));
+});
+
+test('a rejection never makes the booking primary', async () => {
+  const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined));
+  await decideBooking(pool, staff, bookingId, { decision: 'reject', reason: 'Too small' });
+  assert.equal(has(calls, PRIMARY), false);
+});
+
+test('a decision locks the event, then the venue, then the booking', async () => {
+  const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined));
+  await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  const at = (fragment: string) => calls.findIndex(call => call.sql.includes(fragment));
+  assert.deepEqual(calls[at('FROM events WHERE id = $1 FOR NO KEY UPDATE')]!.values, [bookingRow().event_id]);
+  assert.deepEqual(calls[at('FROM venues WHERE id = $1 FOR NO KEY UPDATE')]!.values, [venueId]);
+  assert.ok(at('FROM events WHERE id = $1 FOR NO KEY UPDATE') < at('FROM venues WHERE id = $1 FOR NO KEY UPDATE'));
+  assert.ok(at('FROM venues WHERE id = $1 FOR NO KEY UPDATE') < at('FOR UPDATE OF vb'));
+});
+
 test('TC_E06S04_02: a rejection stores the reason and the suggested venue and names both in the notice', async () => {
   const { pool, calls } = fakeDatabase(sql => {
     if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
@@ -291,7 +326,7 @@ test('a clash committed by someone else first is refused as "just taken"; other 
 });
 
 test('a booking that disappears before its venue is locked is not found', async () => {
-  const { pool, calls } = fakeDatabase(sql => (sql.startsWith('SELECT venue_id FROM venue_bookings') ? [] : undefined));
+  const { pool, calls } = fakeDatabase(sql => (sql.startsWith('SELECT venue_id, event_id FROM venue_bookings') ? [] : undefined));
   const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
   assert.equal(result.status, 404);
   assert.equal(has(calls, 'FOR NO KEY UPDATE'), false);

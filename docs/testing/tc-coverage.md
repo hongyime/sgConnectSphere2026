@@ -849,6 +849,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - only Venue Staff can decide; a refusal is audited and leaves the request pending
 - a decided request cannot be decided again
 - two Venue Staff deciding the same request at once: one decision wins, the other is refused
+- the first approved booking becomes the primary venue; a second Confirmed venue does not
+- a rejection leaves the event without a primary venue, and the next approval takes it
+- two approvals for one event at the same moment both confirm, with exactly one primary
 - the suggested venue must be a different, active venue
 - an unknown booking is not found
 - Venue Staff see pending requests, soonest first, and each booking with its decision
@@ -867,6 +870,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unknown booking is not found, and the transaction is left without changes
 - a booking that is no longer pending cannot be decided, with a reason for each status
 - the suggested venue must differ from the requested one and be active
+- an approval makes the booking primary only when its event has no primary yet
+- a rejection never makes the booking primary
+- a decision locks the event, then the venue, then the booking
 - an event with no assigned Coordinator is decided without a notice
 - the pending list reads only pending bookings, soonest first
 - the booking detail returns one booking
