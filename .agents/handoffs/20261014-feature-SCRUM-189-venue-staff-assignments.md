@@ -61,6 +61,12 @@ Two PRs, per `docs/ops/production-migrations.md`:
   SKIP), TC_E11S01_03 PASS, TC_E06S03_01 Venue Staff part PASS. Findings
   outside SCRUM-189: raw UTC times in the Activity log and notification text.
 
+- 16 Oct: Bryan applied 0018 in production (02:03, `migrate --only`, ledger
+  18 -> 19), recorded in #287. No production assignment rows were created;
+  an approved roster source is still to be identified. This PR may merge once
+  approved. Branch updated with `main` (`d4159b7`): backend unit 399/399,
+  typecheck clean.
+
 ## Gaps
 
 - TC_E11S01_02 expects a venue move to notify old and new venue staff. No
@@ -78,8 +84,8 @@ Two PRs, per `docs/ops/production-migrations.md`:
   (`venue_staff_1` -> `venue_a`/`venue_b`, `coordinator_1` -> `coord_a`).
 - Fresh T-65 records for backend unit and DB at the new head (the 14 Oct ones
   predate the merge).
-- #271 merged. Deploy owner applies 0018 (#278 plans a separate ledger check),
-  then review and merge this PR.
+- #271 merged; 0018 applied in production (#287). Review and merge this PR.
+- Roster source for production assignment rows: owner to identify (Bryan, #287).
 - Tell Ji Ning so TC_E06S03_01 "responsible staff receipt" can stop being SKIP.
 
 ## Open
