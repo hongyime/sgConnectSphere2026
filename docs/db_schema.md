@@ -548,3 +548,15 @@ It also adds nullable `replaces_booking_id` (self-FK, delete restricted), a
 non-self check and a unique partial index allowing one replacement per rejection.
 The service enforces same-event Rejected provenance and the suggested venue.
 Original Rejected rows are preserved; successful switches create Pending rows.
+
+
+### Planned Pending-withdrawal index follow-up (T-94 to T-96)
+
+Reuse booking status Released for Pending withdrawal; no new status is required.
+Merged 0019 retains its all-status unique index on `replaces_booking_id` today.
+A future coordinated migration must narrow that index to non-Released rows so
+Released replacement history permits another attempt while Rejected replacements
+still consume their predecessor's slot. Preserve the self-FK, non-self check,
+idempotency index and all historical rows. Do not edit 0019 in place or use an
+active-only predicate. No migration or database change is made here; see the
+[agreed contract](contracts/venue-bookings.md#agreed-withdrawal-follow-up-15-october-2026-t-94-to-t-96).

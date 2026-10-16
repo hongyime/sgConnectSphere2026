@@ -40,6 +40,7 @@ const managedTables = [
   'venue_accessibility_features',
   'accessibility_features',
   'venue_supported_layouts',
+  'venue_staff_assignments',
   'venues',
   'room_layouts',
   'password_reset_tokens',
@@ -716,6 +717,21 @@ async function seed(client: Client) {
         'INSERT INTO facilities (id, code, label) VALUES ($1, $2, $3)',
         [id, fac.code, fac.label],
       );
+    }
+
+    // SCRUM-189 (T-64, T-89): which Venue Staff look after which venue, so
+    // booking and venue-change notices reach them. Setup data, no roster screen.
+    const venueStaffAssignments = [
+      { staffKey: 'venueA', venueKeys: ['orchidHall', 'lotusRoom', 'mapleRoom'] },
+      { staffKey: 'venueB', venueKeys: ['jasmineHall', 'cedarAuditorium'] },
+    ];
+    for (const assignment of venueStaffAssignments) {
+      for (const venueKey of assignment.venueKeys) {
+        await client.query(
+          'INSERT INTO venue_staff_assignments (venue_id, staff_id) VALUES ($1, $2)',
+          [venueIds.get(venueKey), userIds.get(assignment.staffKey)],
+        );
+      }
     }
 
     // Link accessibility features to venues
