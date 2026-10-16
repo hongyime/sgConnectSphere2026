@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 359 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 370 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **359**
-- Automated (explicit TC_ID in an active test title): **179** (49.9%)
+- Total test cases: **370**
+- Automated (explicit TC_ID in an active test title): **179** (48.4%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **142**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (38.7%)
-- No test yet (no test file mentions the TC_ID): **41** (11.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (37.6%)
+- No test yet (no test file mentions the TC_ID): **52** (14.1%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
-| E03 | 52 | 39 | 13 | 0 |
+| E03 | 57 | 39 | 13 | 5 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
@@ -29,9 +29,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 44 | 5 | 31 | 8 |
 | E10 | 29 | 0 | 20 | 9 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 8 | 5 | 3 | 0 |
+| E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **359** | **179** | **139** | **41** |
+| **Total** | **370** | **179** | **139** | **52** |
 
 ## Case-by-case status
 
@@ -162,6 +162,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S09_03` | E03-S09 | Verify that a Coordinator should be able to ask the Lead to reassign an event an | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
 | `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with w |
 | `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged |
+| `TC_E03S12_01` | E03-S12 | Organiser sees the shared success Alert after an allowed edit | ❌ none | — |
+| `TC_E03S12_02` | E03-S12 | Saved edit persists and its audit entry is not duplicated by feedback | ❌ none | — |
+| `TC_E03S12_03` | E03-S12 | Invalid input retains validation feedback without success | ❌ none | — |
+| `TC_E03S12_04` | E03-S12 | Failed request after a prior success cannot leave a false confirmation | ❌ none | — |
+| `TC_E03S12_05` | E03-S12 | Cancellation and post-approval restrictions remain unchanged | ❌ none | — |
 
 ### E04
 
@@ -452,6 +457,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_08` | E14-S02 | Verify that access-denial entries should not be shown in the event Activity log  | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_08: access-denial entries and the refused users are not shown in the Coordinator Activity log; tests/e2e/e14.spec.ts: TC_E1 |
+| `TC_E14S03_01` | E14-S03 | Organiser reads an edited date/time value in Singapore time | ❌ none | — |
+| `TC_E14S03_02` | E14-S03 | Assigned Coordinator reads existing before/after date/time values in Singapore t | ❌ none | — |
+| `TC_E14S03_03` | E14-S03 | Both views convert the calendar date across Singapore midnight | ❌ none | — |
+| `TC_E14S03_04` | E14-S03 | Invalid and missing date/time values retain existing helper and omission behavio | ❌ none | — |
+| `TC_E14S03_05` | E14-S03 | Text, status badges and venue hold expiry are preserved | ❌ none | — |
+| `TC_E14S03_06` | E14-S03 | Formatting preserves immutable UTC evidence and existing reader access | ❌ none | — |
 
 ### EXX
 
