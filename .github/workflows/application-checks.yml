@@ -216,3 +216,10 @@ jobs:
 
       - name: Playwright scaffold
         run: npm run test:e2e:scaffold
+
+      - name: T-72 reset, seed, and verify new-role sign-ins on disposable PostgreSQL
+        env:
+          DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: |
+          npm run db:reset --workspace backend
+          npm run db:verify-t72-role-signins --workspace backend
