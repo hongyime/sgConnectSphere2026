@@ -13,15 +13,17 @@ Create a fresh review PR from the latest `origin/main` with the frozen audit rep
 ## Progress
 
 - Read required repository guidance, source-of-truth and grading guidance; reviewed the prior handoff, report, scanner workflow, and run-record schema.
-- Verified the source report blob matches the approved prior report and created this branch from freshly fetched `origin/main`.
-- The report correction is staged in the worktree. Before the first report commit, verify the exact approved scanner pattern has no matches and compare all matrix rows after normalizing Markdown links against the source report.
+- Verified the source report blob matches the approved prior report and created this branch from freshly fetched `origin/main` at `62916a9`.
+- Before committing the report, verified the exact approved scanner pattern had zero matches and all 354 matrix rows were identical after Markdown-link normalization. The frozen summary facts and all other report content also matched the source.
+- Committed this handoff as `38bee88` and the report as `a4f1eca`; neither commit includes prior PR history.
+- Pinned TruffleHog 3.97.9 Git-mode preflight on those tracked commits exited 0 with 0 findings and 0 scan errors. `python scripts/check.py` passed on `a4f1eca`: 341 records validated, pre-commit checks passed, `.env.template` matched its generator, and 146 repository tooling tests passed. The check reported existing secondary worktrees as a warning; none were removed.
+- Created the one new T-65 tooling record for that observed verification session; it is not committed yet.
 
 ## Remaining
 
-1. Run the pinned full Git-mode scanner against only the tracked new-commit range, with verification disabled as in the existing workflow. Stop before publication if it reports any finding or scan error.
-2. Run `python scripts/check.py`; record only observed outcomes in one new T-65 file.
-3. Commit the report, handoff, and run record on this clean branch. Push normally and open a new PR with the required four sections.
-4. After the new PR exists, cross-link it from #270 and #285 without closing or editing their branches. Check current PR checks once; request the two specified teammate reviews only when checks are green or queued.
+1. Commit the new T-65 record, then run the pinned full Git-mode scanner against the final tracked new-commit range with verification disabled as in the existing workflow. Stop before publication if it reports any finding or scan error.
+2. Push normally and open a new PR with the required four sections and frozen-report context.
+3. After the new PR exists, cross-link it from #270 and #285 without closing or editing their branches. Check current PR checks once; request the two specified teammate reviews only when checks are green or queued.
 
 ## Verification boundaries
 
