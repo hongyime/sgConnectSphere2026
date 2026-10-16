@@ -12,7 +12,16 @@ Provision only the already-approved demo Safety Officer seed profile in the exis
 
 ## Not done / next step
 
-- Create the sanitized immutable ops record at `docs/ops/production-account-runs/20261016-0822-safety-officer-demo.md` and one T-65 API run record from the observed smoke. Run `python scripts/check.py`, commit, push normally, and open a focused PR with honest verification and follow-ups.
+- Push this branch normally and open a focused operations PR using the repository's four required PR body sections. Keep the PR open for human review; do not self-approve or merge.
+
+## Evidence and commits
+
+- `06f0125` adds this handoff as the first branch commit.
+- `d026d13` records the single inserted account at `docs/ops/production-account-runs/20261016-0822-safety-officer-demo.md`.
+- `ae94c8c` records the API-only auth smoke in `docs/testing/runs/20261016-162203-bryanseah234-backend-api.md`.
+- `15f40ff` records a repository check in `docs/testing/runs/20261016-162938-bryanseah234-tooling.md`.
+- The cited repository check was run at `ae94c8c`: 146 tooling tests passed, hygiene/secrets and `.env.template` checks passed, 357 run records validated, and the existing secondary worktrees produced a warning only. This is repository tooling evidence, not application tests/build/deployment.
+- PR #283 received the pre-write coordination/scope note at https://github.com/hongyime/sgConnectSphere2026/pull/283#issuecomment-6211200863.
 
 ## Scope and safety
 
