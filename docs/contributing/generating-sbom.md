@@ -66,11 +66,16 @@ python3 scripts/generate_sbom.py
 ```
 
 The generator reads `package-lock.json` without installing npm dependencies and
-reads the pinned Python requirements. It validates that both outputs parse as
-CycloneDX JSON and contain components. Include both updated files in the same
-change when npm manifests or the lockfile, `tooling/requirements.txt`, the
-generator, or its SBOM-producing tool versions change. Review component and
-version changes alongside the source dependency diff.
+reads the pinned Python requirements. npm's workspace SBOM omits dependencies
+used only by the repository root, so the generator unions the root-only npm
+inventory with the workspace inventory and merges their CycloneDX references.
+The combined npm inventory uses the root package name from `package.json` for
+its CycloneDX metadata rather than the working-directory name. It checks that
+every root dependency declared in the lockfile is represented before reporting
+success. Include both updated files in the same change when npm manifests or
+the lockfile, `tooling/requirements.txt`, the generator, or its SBOM-producing
+tool versions change. Review component and version changes alongside the source
+dependency diff.
 
 The generated files are inventories only. They do not scan for known
 vulnerabilities or establish license compliance; run the team's chosen review
