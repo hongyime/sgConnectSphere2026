@@ -43,7 +43,7 @@ export async function withdrawBooking(database: Pool, user: AuthenticatedUser | 
       before: audience, after: audience, change: { kind: 'booking_withdrawn' } });
     return { status: 200, body: { booking: { ...booking, status: 'released' }, unresolved_venue_ids: notice.unresolvedVenueIds } };
   }); } catch (error) {
-    if ((error as { code?: string }).code === '55P03') throw new AccessError(409, 'The event or account is being updated. Refresh the booking list and try again.');
+    if ((error as { code?: string }).code === '55P03') throw new AccessError(409, 'A Venue Staff decision or an event or account update may be in progress. Refresh the booking list and try again.');
     throw error;
   }
 }

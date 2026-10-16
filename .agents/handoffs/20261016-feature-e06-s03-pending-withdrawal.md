@@ -51,3 +51,8 @@ Six new records20261016-215604-jininggg-backend-unit.md through215609-jininggg-t
 ## Manual primary run and PR preparation (16 October, 22:20 onward)
 
 Human completed primary confirmation/cancel, initial selection, switching Orchid to Cedar, refresh persistence and absence of controls on Pending/Rejected/Released. Nine original images are in evidence/20261016-221852-jininggg-frontend-e2e; matching immutable record discloses initial stale-API failure and retry. API restarted with current code using the same guarded disposable local database; synthetic Confirmed Cedar added for switching. No staff approval UI claim. User subsequently authorised final checks, commit, push and draft PR. Migration0020 remains available on fetched main; final repository hygiene passed, Windows tooling still146 tests/3 failures/11 errors. No production migration or #298 merge authorised. Hosted PostPlan: https://yn2ouq6ojr23.postplan.dev. Scratch artifacts must not be staged wholesale. Le Xin human review and required CI remain pending.
+
+
+## Le Xin review fixes (17 October)
+
+Primary activity formatter now handles primary_venue before status/hold formatting and preserves actual venue names; regression covers previous primary, no previous primary and absent new value. Ten activity tests pass with100% component coverage; four withdrawal units pass with exact revised busy409 message mentioning staff decision or event/account update and refresh/retry. Frontend typecheck passes; inventory regeneration has no diff. Fresh immutable records20261017-004600 and004601. E06-S02 work remains safely stashed on its separate test branch. Do not conflate these mocked tests with a new combined database or human run. User authorised PR299 review fixes; no #298 merge.

@@ -48,7 +48,10 @@ test('TC_E06S03_09 withdrawal rejects missing identity, stale accounts and other
     assert.ok(!denied.calls.some(c => c.sql.startsWith('UPDATE')));
   }
   const busy = database({ busy: true });
-  await assert.rejects(withdrawBooking(busy.pool, actor, { booking_id: id }), { status: 409 });
+  await assert.rejects(withdrawBooking(busy.pool, actor, { booking_id: id }), {
+    status: 409,
+    message: 'A Venue Staff decision or an event or account update may be in progress. Refresh the booking list and try again.',
+  });
   assert.equal(busy.calls.at(-1)?.sql, 'ROLLBACK');
 });
 
