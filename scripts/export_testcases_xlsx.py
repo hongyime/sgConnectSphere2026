@@ -113,44 +113,24 @@ def _parse_epic_file(path: Path) -> list[dict]:
     text = path.read_text(encoding="utf-8")
     cases: list[dict] = []
     current_story = ""
-    story_pattern = re.compile(r"^##\s+(.+?)\s*$")
+    story_pattern = re.compile(r"^##\s+(E\d+-S\d+)\s*$")
     case_pattern = re.compile(r"^###\s+")
-    blocks = re.split(r"^(?=###\s)", text, flags=re.MULTILINE)
+    blocks = re.split(r"^(?=##\s+E\d+-S\d+\s*$|###\s)", text, flags=re.MULTILINE)
 
-    header_lines = blocks[0].splitlines() if blocks else []
-    for line in header_lines:
-        match = story_pattern.match(line)
-        if match:
-            current_story = match.group(1).strip()
-
-    for block in blocks[1:]:
-        first_line = block.splitlines()[0]
-        if not case_pattern.match(first_line):
+    for block in blocks:
+        if not block.strip():
             continue
-        preceding = block.split("##", 1)
-        parsed = _parse_case_block(block, current_story)
-        if not parsed:
-            continue
-        cases.append(parsed)
-
-    # Re-scan to attach the correct story-id context per case block.
-    # Case blocks appear under ## <story-id> level-two headings.
-    ordered_cases: list[dict] = []
-    current_story = ""
-    for line in text.splitlines():
-        story_match = story_pattern.match(line)
+        story_match = story_pattern.match(block.splitlines()[0])
         if story_match:
-            current_story = story_match.group(1).strip()
-        case_match = re.match(r"^###\s+(TC_[^\s]+|[A-Z0-9_]+)\s+[-\u2013\u2014]\s+", line)
-        if case_match and cases:
-            case_id = case_match.group(1)
-            for candidate in cases:
-                if candidate["case_id"] == case_id and not any(existing["case_id"] == case_id for existing in ordered_cases):
-                    candidate["story_id"] = current_story if current_story else candidate["story_id"]
-                    ordered_cases.append(candidate)
-                    break
+            current_story = story_match.group(1)
+            continue
+        if not case_pattern.match(block):
+            continue
+        parsed = _parse_case_block(block, current_story)
+        if parsed and not any(case["case_id"] == parsed["case_id"] for case in cases):
+            cases.append(parsed)
 
-    return ordered_cases or cases
+    return cases
 
 
 def _write_workbook(rows: list[dict], destination: Path) -> None:
