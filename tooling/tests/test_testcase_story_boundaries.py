@@ -10,6 +10,34 @@ SPEC.loader.exec_module(exporter)
 
 
 class TestcaseStoryBoundaryTests(unittest.TestCase):
+    def test_empty_epic_has_no_cases(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "E03.md"
+            path.write_text("", encoding="utf-8")
+
+            rows = exporter._parse_epic_file(path)
+
+        self.assertEqual(rows, [])
+
+    def test_story_heading_can_start_the_document(self):
+        markdown = """## E03-S12
+
+### TC_E03S12_01 — Case without an epic heading
+
+#### Expected result
+Saved.
+"""
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "E03.md"
+            path.write_text(markdown, encoding="utf-8")
+
+            rows = exporter._parse_epic_file(path)
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["story_id"], "E03-S12")
+        self.assertEqual(rows[0]["case_id"], "TC_E03S12_01")
+        self.assertEqual(rows[0]["expected"], "Saved.")
+
     def test_story_boundary_preserves_literal_case_fields_and_story_ids(self):
         markdown = """# E03 test cases
 

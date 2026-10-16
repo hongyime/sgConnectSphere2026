@@ -116,6 +116,8 @@ def _parse_epic_file(path: Path) -> list[dict]:
     blocks = re.split(r"^(?=##\s+E\d+-S\d+\s*$|###\s)", text, flags=re.MULTILINE)
 
     for block in blocks:
+        if not block.strip():
+            continue
         story_match = story_pattern.match(block.splitlines()[0])
         if story_match:
             current_story = story_match.group(1)
