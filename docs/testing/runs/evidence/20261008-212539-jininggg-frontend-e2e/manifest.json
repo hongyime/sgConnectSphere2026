@@ -1,0 +1,183 @@
+{
+  "record": "20261008-212539-jininggg-frontend-e2e.md",
+  "source_document": "screenshots.docx",
+  "archive_date": "2026-10-16",
+  "images": [
+    {
+      "source_image": 1,
+      "source_caption": "suitable venue check",
+      "file": "TC_E06S02_01-1.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Search criteria and available venue context before assessment.",
+      "bytes": 96778
+    },
+    {
+      "source_image": 2,
+      "source_caption": "suitable venue check",
+      "file": "TC_E06S02_01-2.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Cedar search result before opening recorded requirements.",
+      "bytes": 81380
+    },
+    {
+      "source_image": 3,
+      "source_caption": "suitable venue check",
+      "file": "TC_E06S02_03-1.png",
+      "tc_id": "TC_E06S02_03",
+      "scope_note": "Suitable assessment for the recorded event requirements.",
+      "bytes": 86643
+    },
+    {
+      "source_image": 4,
+      "source_caption": "suitable venue check",
+      "file": "TC_E06S02_03-2.png",
+      "tc_id": "TC_E06S02_03",
+      "scope_note": "Capacity, layout and accessibility comparisons.",
+      "bytes": 67953
+    },
+    {
+      "source_image": 5,
+      "source_caption": "suitable venue check",
+      "file": "TC_E06S02_03-3.png",
+      "tc_id": "TC_E06S02_03",
+      "scope_note": "Facilities, operating hours and availability comparisons.",
+      "bytes": 79000
+    },
+    {
+      "source_image": 6,
+      "source_caption": "check that search filters cannot override the recorded event requirements",
+      "file": "TC_E06S02_01-3.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Search attendance override; recorded event requirements must stay unchanged.",
+      "bytes": 91246
+    },
+    {
+      "source_image": 7,
+      "source_caption": "check that search filters cannot override the recorded event requirements",
+      "file": "TC_E06S02_01-4.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Near-match search result after attendance override.",
+      "bytes": 129727
+    },
+    {
+      "source_image": 8,
+      "source_caption": "check that search filters cannot override the recorded event requirements",
+      "file": "TC_E06S02_01-5.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Assessment still uses recorded attendance rather than the search override.",
+      "bytes": 97675
+    },
+    {
+      "source_image": 9,
+      "source_caption": "test the capacity failure",
+      "file": "TC_E06S02_02-1.png",
+      "tc_id": "TC_E06S02_02",
+      "scope_note": "Orchid search result with layout-capacity failure; partial fixture coverage only.",
+      "bytes": 84852
+    },
+    {
+      "source_image": 10,
+      "source_caption": "test the capacity failure",
+      "file": "TC_E06S02_02-2.png",
+      "tc_id": "TC_E06S02_02",
+      "scope_note": "Assessment names the capacity failure; missing-accessibility combination was not tested.",
+      "bytes": 111680
+    },
+    {
+      "source_image": 11,
+      "source_caption": "test operating hours using Cedar Auditorium",
+      "file": "TC_E06S02_05-1.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Period fully within the venue hours.",
+      "bytes": 106191
+    },
+    {
+      "source_image": 12,
+      "source_caption": "test operating hours using Cedar Auditorium",
+      "file": "TC_E06S02_05-2.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Operating-hours comparison for the within-hours period.",
+      "bytes": 30131
+    },
+    {
+      "source_image": 13,
+      "source_caption": "test the exact opening and closing boundaries",
+      "file": "TC_E06S02_05-3.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Exact opening and closing boundaries accepted.",
+      "bytes": 103903
+    },
+    {
+      "source_image": 14,
+      "source_caption": "test the exact opening and closing boundaries",
+      "file": "TC_E06S02_05-4.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Operating-hours comparison at exact boundaries.",
+      "bytes": 30786
+    },
+    {
+      "source_image": 15,
+      "source_caption": "test one second before opening",
+      "file": "TC_E06S02_05-5.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "One-second-before-opening fixture produces an advisory failure; displayed time omits seconds.",
+      "bytes": 109833
+    },
+    {
+      "source_image": 16,
+      "source_caption": "verify E06-S01 search remains unchanged",
+      "file": "TC_E06S02_05-6.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "E06-S01 search regression: early-start search criteria.",
+      "bytes": 89741
+    },
+    {
+      "source_image": 17,
+      "source_caption": "verify E06-S01 search remains unchanged",
+      "file": "TC_E06S02_05-7.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "E06-S01 search regression: search still shows Suitable while assessment reports hours failure.",
+      "bytes": 94149
+    },
+    {
+      "source_image": 18,
+      "source_caption": "test one second after closing",
+      "file": "TC_E06S02_05-8.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "One-second-after-closing fixture produces an advisory failure; displayed time omits seconds.",
+      "bytes": 110127
+    },
+    {
+      "source_image": 19,
+      "source_caption": "test an event crossing midnight",
+      "file": "TC_E06S02_05-9.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Cross-midnight event produces an advisory operating-hours failure.",
+      "bytes": 111879
+    },
+    {
+      "source_image": 20,
+      "source_caption": "check the mobile layout while the failure is visible",
+      "file": "TC_E06S02_05-10.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Supplemental mobile presentation of the operating-hours failure.",
+      "bytes": 76110
+    },
+    {
+      "source_image": 21,
+      "source_caption": "check the mobile layout while the failure is visible",
+      "file": "TC_E06S02_05-11.png",
+      "tc_id": "TC_E06S02_05",
+      "scope_note": "Supplemental mobile comparisons and return link.",
+      "bytes": 61887
+    },
+    {
+      "source_image": 22,
+      "source_caption": "Open an Incognito/InPrivate window, without signing in, and paste that URL",
+      "file": "TC_E06S02_01-6.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Supplemental signed-out assessment refusal; this is not a new full test-case execution.",
+      "bytes": 64346
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="visual-explainer-version" content="1.0.0">
+<title>Plan: display unassigned sprint cells</title>
+<style>
+:root{--background:#101418;--surface:#171D23;--raised:#202830;--border:#36434F;--text:#E8EDF2;--muted:#A8B5C2;--accent:#67D4E8;--accent-soft:#182D34;--radius:12px;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:24px}body{margin:0;background:var(--background);color:var(--text);font-size:16px;line-height:1.65}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}code{font-size:.9em;color:var(--accent)}p{margin:0 0 14px}h1,h2,h3{line-height:1.15;letter-spacing:-.025em}h1{font-size:clamp(32px,5vw,50px);font-weight:650;max-width:850px;margin:18px 0}h2{font-size:26px;font-weight:600;margin:0 0 14px}h3{font-size:18px;font-weight:600;margin:0 0 8px}.page{width:min(1080px,calc(100% - 48px));margin:auto}.masthead{padding:24px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);gap:16px}.brand{font-size:14px;font-weight:650}.brand:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:10px}.eyebrow,.muted,small{color:var(--muted)}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}.intro{padding:44px 0 28px}.lead{font-size:19px;color:var(--muted);max-width:860px}.toc{display:flex;gap:24px;flex-wrap:wrap;padding:0 0 24px;border-bottom:1px solid var(--border)}.toc a{font-size:14px;color:var(--muted);text-decoration:none}.toc a:hover{color:var(--accent)}.toc span,.number{color:var(--accent);font-family:ui-monospace,monospace}.toc span{margin-right:7px}.section{padding:36px 0;border-bottom:1px solid var(--border)}.section-heading{display:flex;gap:14px;align-items:baseline;margin-bottom:18px}.number{font-size:13px}.section-description{max-width:900px;color:var(--muted);margin-bottom:20px}.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}.diagram-frame{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}.diagram-frame svg{display:block;width:100%;min-width:760px;height:auto}.caption{font-size:14px;color:var(--muted);margin-top:12px}.svg-node{fill:var(--raised);stroke:var(--border);stroke-width:1.5}.svg-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}.svg-edge{fill:none;stroke:var(--muted);stroke-width:1.7}.svg-text{fill:var(--text);font-size:17px;font-family:"Segoe UI",system-ui,sans-serif}.svg-sub{fill:var(--muted);font-size:13px;font-family:"Segoe UI",system-ui,sans-serif}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}.card p,.card li{color:var(--muted)}ul,ol{padding-left:22px;margin:8px 0 0}li{padding:3px 0}.rule{border-left:2px solid var(--accent);padding:3px 0 3px 17px;margin:18px 0}.rule p{margin:0;color:var(--text)}table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;vertical-align:top;padding:12px;border-bottom:1px solid var(--border)}th{color:var(--accent);font-weight:600}td{color:var(--muted)}.table-frame{overflow:auto;border:1px solid var(--border);border-radius:var(--radius);margin:18px 0}.table-frame table{min-width:780px}.recommended{color:var(--text)}.recommended strong{color:var(--accent)}details{border-top:1px solid var(--border);padding:15px 0}details:last-child{border-bottom:1px solid var(--border)}summary{cursor:pointer;font-weight:600}details p{margin:12px 0 0;color:var(--muted)}.next{list-style:none;counter-reset:step;padding:0}.next li{counter-increment:step;display:grid;grid-template-columns:34px 1fr;gap:12px;padding:15px 0;border-top:1px solid var(--border)}.next li:before{content:counter(step,decimal-leading-zero);color:var(--accent);font:13px ui-monospace,monospace;padding-top:3px}.next p{color:var(--muted);margin:4px 0 0}.footer{padding:22px 0 36px;font-size:12px;color:var(--muted)}
+@media(max-width:700px){.page{width:calc(100% - 32px)}.masthead{padding:18px 0}.intro{padding:32px 0 22px}.lead{font-size:17px}.section{padding:28px 0}.grid{grid-template-columns:1fr}.panel,.card{padding:18px}.toc{gap:16px}.diagram-frame{padding:12px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root{--background:#fff;--surface:#fff;--raised:#f2f4f5;--border:#67727d;--text:#111820;--muted:#344350;--accent:#075a6b;--accent-soft:#e8f0f2;color-scheme:light}body{font-size:11pt}.page{width:100%}.section{padding:18px 0}.diagram-frame,.table-frame{overflow:visible}.diagram-frame svg{min-width:0}.table-frame table{min-width:0}a{color:var(--accent)}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead"><div class="brand">ConnectSphere · Testing catalogue</div><div class="eyebrow">Implementation plan · 14 October 2026</div></header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Plan only · no implementation or sprint assignment changes</div>
+      <h1>Give unassigned sprint cells a clear label</h1>
+      <p class="lead">Recommend displaying <strong>Unassigned</strong> when a canonical case has no sprint number, documenting the rule beside the testing catalogue, and generating every workbook from Markdown after team approval.</p>
+    </div>
+    <nav class="toc" aria-label="Sections"><a href="#overview"><span>01</span>Data flow</a><a href="#details"><span>02</span>Options and implementation</a><a href="#next-steps"><span>03</span>Approval and delivery</a></nav>
+
+    <section class="section" id="overview" aria-labelledby="overview-title">
+      <div class="section-heading"><span class="number">01</span><h2 id="overview-title">Data flow and current baseline</h2></div>
+      <p class="section-description">Keep the planning decision in the backlog and render its empty state only in the generated workbook.</p>
+      <figure>
+        <p class="caption">Proposed export flow · an empty sprint stays empty in the source and becomes the approved display value only in the workbook. Scroll horizontally on narrow screens.</p>
+        <div class="diagram-frame" tabindex="0" role="region" aria-label="Workbook sprint display flow; scroll horizontally on narrow screens">
+          <svg viewBox="0 0 1020 365" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flow-title flow-desc">
+            <title id="flow-title">Sprint assignment to workbook display</title>
+            <desc id="flow-desc">The canonical backlog records sprint planning. Test case Markdown mirrors the sprint number. The export script preserves assigned numeric sprint values and maps an empty value to the approved label. A separate planning change updates the backlog first and then synchronizes case metadata.</desc>
+            <defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#A8B5C2"/></marker><marker id="arrow-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#67D4E8"/></marker></defs>
+            <rect x="20" y="55" width="205" height="92" rx="10" class="svg-node"/><text x="122" y="88" text-anchor="middle" class="svg-text">Canonical backlog</text><text x="122" y="116" text-anchor="middle" class="svg-sub">Sprint planning state</text>
+            <rect x="285" y="55" width="205" height="92" rx="10" class="svg-node"/><text x="387" y="88" text-anchor="middle" class="svg-text">Case Markdown</text><text x="387" y="116" text-anchor="middle" class="svg-sub">Sprint metadata mirror</text>
+            <rect x="550" y="55" width="205" height="92" rx="10" class="svg-accent"/><text x="652" y="88" text-anchor="middle" class="svg-text">Export script</text><text x="652" y="116" text-anchor="middle" class="svg-sub">blank → “Unassigned”</text>
+            <rect x="815" y="55" width="185" height="92" rx="10" class="svg-node"/><text x="907" y="88" text-anchor="middle" class="svg-text">Dated workbook</text><text x="907" y="116" text-anchor="middle" class="svg-sub">clear, filterable value</text>
+            <path d="M225 101 H285" class="svg-edge" marker-end="url(#arrow)"/><text x="255" y="83" text-anchor="middle" class="svg-sub">sync assignment</text>
+            <path d="M490 101 H550" class="svg-edge" marker-end="url(#arrow)"/><text x="520" y="83" text-anchor="middle" class="svg-sub">read source</text>
+            <path d="M755 101 H815" class="svg-edge" marker-end="url(#arrow-accent)"/><text x="785" y="83" text-anchor="middle" class="svg-sub">render cell</text>
+            <rect x="195" y="235" width="250" height="74" rx="10" class="svg-node"/><text x="320" y="265" text-anchor="middle" class="svg-text">Team changes a sprint</text><text x="320" y="289" text-anchor="middle" class="svg-sub">Product Owner confirms plan</text>
+            <rect x="590" y="235" width="260" height="74" rx="10" class="svg-node"/><text x="720" y="265" text-anchor="middle" class="svg-text">Update sources, then export</text><text x="720" y="289" text-anchor="middle" class="svg-sub">backlog → cases → workbook</text>
+            <path d="M320 147 V193 H320 V235" class="svg-edge" marker-end="url(#arrow)"/><text x="338" y="202" class="svg-sub">planning decision</text>
+            <path d="M445 272 H590" class="svg-edge" marker-end="url(#arrow)"/><text x="517" y="253" text-anchor="middle" class="svg-sub">synchronize</text>
+            <path d="M720 235 V187 H652 V147" class="svg-edge" marker-end="url(#arrow)"/><text x="737" y="206" class="svg-sub">regenerate</text>
+          </svg>
+        </div>
+        <figcaption class="caption">The display convention does not assign work. If planning changes, update authoritative backlog metadata through the team’s planning process before regenerating the workbook.</figcaption>
+      </figure>
+      <div class="rule"><p><strong>Observed baseline:</strong> <code>PROJECT TEST CASES CAA 141026.xlsx</code> has 354 cases and 21 blank Sprint Number cells: E02-S05 (3), E02-S07 (5), E04-S02 (5), E07-S08 (4), and E10-S03 (4). The corresponding canonical story Sprint fields are blank in the current backlog; verify them again at implementation time.</p></div>
+      <p class="section-description">The current blanks in the case files are in <code>docs/testing/cases/E02.md</code>, <code>E04.md</code>, <code>E07.md</code>, and <code>E10.md</code>. The export reads their <code>Sprint</code> fields directly.</p>
+    </section>
+
+    <section class="section" id="details" aria-labelledby="details-title">
+      <div class="section-heading"><span class="number">02</span><h2 id="details-title">Display choices and proposed rule</h2></div>
+      <p class="section-description">Select wording that says only what the backlog establishes: no sprint number is currently assigned. Do not imply that an assignment is approved or inevitable.</p>
+      <div class="table-frame" role="region" tabindex="0" aria-label="Display choices and tradeoffs; scroll horizontally on narrow screens">
+        <table><thead><tr><th>Display</th><th>Pros</th><th>Cons</th><th>Assessment</th></tr></thead><tbody>
+          <tr class="recommended"><td><strong>Unassigned</strong></td><td>States the current planning status directly; easy to search, filter, and understand outside the repository.</td><td>Uses more column width and repeats across several rows.</td><td><strong>Recommended.</strong> Accurate without promising a future assignment.</td></tr>
+          <tr><td>— (em dash)</td><td>Compact and visually distinct from an accidental empty cell.</td><td>Can mean “not applicable,” “not provided,” or “not yet decided”; readers need a nearby legend.</td><td>Acceptable only with an explicit legend.</td></tr>
+          <tr><td>TBD</td><td>Familiar shorthand and compact.</td><td>Implies a decision is pending; a story may simply be outside current sprint planning.</td><td>Not recommended; overstates intent.</td></tr>
+          <tr><td>Blank + note</td><td>Preserves the current workbook values and numeric-only column.</td><td>Blank cells remain ambiguous after a sheet is copied or separated from its note; filtering blanks can look like missing data.</td><td>Lowest-change fallback, with weaker clarity.</td></tr>
+          <tr><td>Not scheduled</td><td>Clear to many readers and fits a planning report.</td><td>Can sound like an explicit decision to exclude the story, which differs from “no sprint assigned.”</td><td>Use only if the Product Owner confirms that meaning.</td></tr>
+        </tbody></table>
+      </div>
+      <div class="grid">
+        <article class="card"><h3>Where to document the rule</h3>
+          <ul>
+            <li><strong>Primary explanation:</strong> add a concise “Sprint Number display” note to <code>docs/testing/README.md</code>, beside the dated workbook and Markdown authority guidance. State that empty Sprint metadata is displayed as <code>Unassigned</code>, and that this is not a new planning decision.</li>
+            <li><strong>Implementation source:</strong> define one named display constant and a short comment in <code>scripts/export_testcases_xlsx.py</code>; do not duplicate the literal across branches.</li>
+            <li><strong>Workbook context:</strong> the cell text itself should be self-explanatory. If users routinely receive the workbook without its README, optionally generate a comment on the “Sprint Number” header. Do not add a note row or hand-edit the export; keep the ten-column table shape intact.</li>
+            <li><strong>Decision record:</strong> a display-only convention can live in the testing README and its reviewed PR. If the team changes actual sprint assignments or the meaning of a blank, record that planning decision in BDR Markdown and update backlog/Jira through the normal workflow.</li>
+          </ul>
+        </article>
+        <article class="card"><h3>Generator change</h3>
+          <ol>
+            <li>In <code>_parse_case_block</code>, continue reading <code>Sprint</code> metadata. For empty or whitespace-only metadata, return the approved display constant instead of <code>""</code>.</li>
+            <li>Keep assigned sprint values as they are today: numeric values stay numeric; non-numeric values keep current parsing behavior.</li>
+            <li>Increase column A width from 10 to about 14 so <code>Unassigned</code> is not clipped.</li>
+            <li>If the team selects a blank-plus-note option instead, keep blank cell output and generate the agreed header comment or legend through the script.</li>
+          </ol>
+          <div class="rule"><p>Do not put the word <code>Unassigned</code> into the canonical test-case Sprint metadata. The label is an export presentation value; planning data remains blank until a sprint is assigned.</p></div>
+        </article>
+        <article class="card"><h3>Planned files</h3>
+          <ul>
+            <li><code>docs/testing/README.md</code> — document semantics and source-of-truth boundaries.</li>
+            <li><code>scripts/export_testcases_xlsx.py</code> — map blank sprint metadata to the approved display and adjust width.</li>
+            <li><code>tooling/tests/test_export_testcases_xlsx.py</code> — add unit tests for blank, whitespace-only, and assigned sprint values, plus generated-cell output.</li>
+            <li>New dated workbook under <code>docs/testing/PROJECT TEST CASES CAA &lt;DDMMYY&gt;.xlsx</code> — regenerate from Markdown; never edit cells by hand.</li>
+          </ul>
+        </article>
+        <article class="card"><h3>Updating existing blanks</h3>
+          <ul>
+            <li>First re-check canonical backlog Sprint fields at implementation time. Do not make a sprint planning decision as part of a formatting change.</li>
+            <li>With “Unassigned” approved and the five assignments still blank, rerun the export so the 21 current cells display the label.</li>
+            <li>If any story has since been assigned, synchronize the case metadata from the canonical backlog and let the export show its numeric sprint value.</li>
+            <li>If the team chooses blank-with-note, keep the 21 cells blank and generate the note/legend; document that the blank is intentional.</li>
+          </ul>
+        </article>
+      </div>
+      <details><summary>Verification criteria for a later implementation</summary>
+        <p>Add unit cases for empty and whitespace-only Sprint metadata mapping to the approved display; numeric Sprint values remaining numeric; missing Sprint metadata following the documented rule; and an exported workbook retaining the same sheet, ten columns, 354 current rows, case IDs, and non-sprint values. If a generated header comment is approved, verify it is present.</p>
+        <p>Regenerate the dated workbook from Markdown and compare row counts, case IDs, and all non-Sprint columns. A display-only change does not alter test cases or test declarations, so it should not require regenerating <code>tc-coverage.md</code>. Run the targeted tooling tests and <code>python scripts/check.py</code>; describe the latter only as a repository-tooling check. Record a test run under T-65 only if it is cited as PR, Definition-of-Done, or demo evidence. No database access is needed.</p>
+      </details>
+      <p class="caption">Sources: <a href="../docs/source-of-truth.md">source-of-truth rules</a>, <a href="../docs/testing/README.md">testing catalogue guidance</a>, <a href="../scripts/export_testcases_xlsx.py">test-case exporter</a>, and the five story sections in <code>docs/backlog/</code>.</p>
+    </section>
+
+    <section class="section" id="next-steps" aria-labelledby="next-title">
+      <div class="section-heading"><span class="number">03</span><h2 id="next-title">Agreement and delivery sequence</h2></div>
+      <ol class="next">
+        <li><div><strong>Confirm the meaning.</strong><p>The Product Owner or current backlog planning lead confirms that an empty Sprint means “no sprint assignment recorded.” Keep display choice separate from assigning the stories.</p></div></li>
+        <li><div><strong>Agree the label with catalogue owners.</strong><p>Review the options in the team’s backlog/refinement discussion with the test-case or workbook maintainer and the script maintainer. Recommend “Unassigned.” The team records its choice in the PR; a teammate reviews the code, tests, and generated workbook under the Definition of Done.</p></div></li>
+        <li><div><strong>Document and implement the approved convention.</strong><p>Update <code>docs/testing/README.md</code>, the export script, and focused tooling tests. If agreement changes sprint planning itself, handle that as a separate BDR/backlog/Jira update first.</p></div></li>
+        <li><div><strong>Regenerate and inspect the workbook.</strong><p>Use <code>scripts/export_testcases_xlsx.py</code> with the run date. Keep older dated exports as history; same-day regeneration may replace that date’s workbook. Confirm every empty source sprint is displayed consistently.</p></div></li>
+        <li><div><strong>Run repository checks and prepare review evidence.</strong><p>Run the focused exporter tests and <code>python scripts/check.py</code>, then have another teammate review. If verification is cited as PR, story-completion, or demo evidence, create one new T-65 run record; do not edit existing run records.</p></div></li>
+      </ol>
+      <div class="rule"><p><strong>Approval owners:</strong> Product Owner/planning lead for the meaning of assignment state; test-case/workbook maintainer for course-export usability; engineering maintainer for generator behavior; one teammate reviewer for the resulting code and tests. No specific person is assigned by this plan.</p></div>
+    </section>
+  </main>
+  <footer class="footer"><span>ConnectSphere · Unassigned sprint display plan</span><span>Standalone HTML · local draft · no external dependencies</span></footer>
+</div>
+</body>
+</html>
