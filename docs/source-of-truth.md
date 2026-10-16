@@ -79,6 +79,12 @@ history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
 retired catalogue rows as scaffold/skip; its row total is a strict inventory,
 not a count of current acceptance obligations.
 
+The 15 October E06-S03 withdrawal clarification (T-94 to T-96, renumbered on
+16 October to reserve #279's earlier T-93) adds TC_E06S03_09 to _13 and
+refines _08. Its regenerated CAA 161026 testcase workbook also refreshes the
+legacy compatibility input, so the generated inventory includes these unexecuted
+cases. This records requirements and traceability, not passing test evidence.
+
 ## Requirement changes flow downstream
 
 1. Amend canonical backlog Markdown and record scope decisions in `docs/bdr/`.
