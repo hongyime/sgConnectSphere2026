@@ -23,9 +23,18 @@ Sprint 3 Review. No application code changes; the story stays Done (T-74).
   case; TC_E03S10_02 now carries `## E03-S11` like every other story's last
   case. Existing exporter behaviour, not changed here.
 
+- 16 Oct: the backlog entry records what went wrong and the prevention, as
+  `CONTRIBUTING.md` requires for fix stories. Merged `main` (T-93, #272).
+- Le Xin's first manual run: all five cases PASS, record
+  `docs/testing/runs/20261016-143425-lexinphun2024-debug-frontend-e2e.md`
+  with eight hand-taken screenshots. Findings outside E03-S11: plain-text
+  Organiser save confirmation; Organiser Activity log shows raw action and
+  field names. Jira SCRUM-176 is now assigned to Le Xin.
+
 ## Next
 
-- Le Xin's manual run of TC_E03S11_01 to _05 with screenshots, then the T-65
-  record and PR; Bryan (PO) to review the backlog entry.
-- Jira SCRUM-176 assignee still shows Bryan; ask him to set it to Le Xin.
+- Bryan (PO) reviews the backlog entry and test cases; merge.
+- Bryan agreed: a new story for the Activity log raw UTC date (E14-S02 Done),
+  and the plain-text Organiser confirmation fixed separately; its parent
+  ticket is still to be agreed (E03-S07 and E03-S11 are Done).
 - #280 also generates CAA 161026 exports: whichever merges second regenerates.
