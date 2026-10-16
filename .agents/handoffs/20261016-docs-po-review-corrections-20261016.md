@@ -140,3 +140,20 @@ Separate approval provenance from evidence policy. Booking conflicts apply when
 Pending occupancy is first created, not only when staff approve it. A later
 buffer edit can retain and flag a formerly valid conflict without releasing it;
 the flag is not the distinct `Conflicting` lifecycle status.
+
+## Local commit status
+
+- `79b0af7` docs(agents): record PO correction scope
+- `7f70c41` docs(backlog): integrate approved E03-S11
+- `536587e` docs(backlog): fix follow-up approval refs
+- `8a13094` docs(backlog): align E06 conflict scenarios
+- `610156b` docs(testing): correct E11 notice fixture
+- `5c16d03` chore(testing): refresh combined catalogues
+
+Local commit delivery only: no push or remote merge was performed. All six
+commits passed enabled pre-commit and commit-message hooks. The pre-delivery
+`python scripts/check.py` passed 158 tooling tests and validated 377 run
+records, with existing secondary-worktree warnings only. Combined-source
+evidence remains in
+`docs/testing/runs/20261016-205813-bryanseah234-tooling.md`; neither session
+record was edited. This status and that record form the seventh scoped commit.
