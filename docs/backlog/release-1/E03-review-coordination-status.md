@@ -366,7 +366,7 @@ Fix story for completed E03-S07 (#175, #148), created by the Product Owner on 12
 
 **What went wrong:** "Registration setup" was left off the edit form's list of editable fields, and no test compared the edit form's fields with the create form's. A shared style rule also caught the nested registration-date legend and pushed "Opens" outside its box, and the screen was not checked by eye in review.
 
-**How the team prevents it:** compare the edit form's fields with the create form's, and check screenshots at desktop and phone width during review.
+**How the team prevents it:** compare the edit form's fields with the create form's, and check screenshots at desktop and phone width during review. Manual runs now keep hand-taken screenshots in the repository (T-93).
 
 ### User story
 

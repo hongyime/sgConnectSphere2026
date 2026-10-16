@@ -77,6 +77,27 @@ test('TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks,
   } finally { await f.close(); }
 });
 
+// SCRUM-189: with no injected resolver, the request notifies the staff assigned
+// to the requested venue in venue_staff_assignments, and no one else.
+test('TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\'s assigned Venue Staff by default', async () => {
+  const f = await fixture();
+  try {
+    const elsewhere = randomUUID();
+    await f.q("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic User','venue_staff')", [elsewhere,`${elsewhere}@example.test`]);
+    await f.q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2),($3,$4)', [f.venues[0],f.staff,f.venues[1],elsewhere]);
+    const assigned = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    assert.deepEqual(assigned.body.unresolved_venue_ids,[]);
+    const notified = (await f.q('SELECT user_id FROM notifications WHERE event_id=$1',[f.event])).rows.map(n=>n.user_id);
+    assert.deepEqual(new Set(notified),new Set([f.staff,f.organiser]));
+
+    await f.q('DELETE FROM venue_staff_assignments WHERE venue_id=$1',[f.venues[1]]);
+    const unassigned = await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    assert.deepEqual(unassigned.body.unresolved_venue_ids,[f.venues[1]]);
+    const after = (await f.q('SELECT user_id FROM notifications WHERE event_id=$1',[f.event])).rows.map(n=>n.user_id);
+    assert.ok(!after.includes(elsewhere), 'staff of another venue are never notified');
+  } finally { await f.close(); }
+});
+
 test('notification failure rolls back request, status, audit and deliveries together', async () => {
   const f = await fixture();
   try {

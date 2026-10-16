@@ -244,6 +244,16 @@ sources. Jira changes remain downstream of the merged canonical backlog.
 
 Applied Week 9 choices to eligible stories and recorded remaining assumptions. Restored E04-S02 and added E02-S05 to Release 1; added E02-S07 for the two-year date horizon and E07-S08 for Session-linked equipment behavior. Updated Sprint 4 registration, arrangement-change, safety-reversion, rescheduling and cancellation criteria while leaving Sprint 3 stories untouched until close under T-73. Added O-50 for Session waitlist behavior and O-51 for copied Session/arrangement data; both remain explicit assumptions for review.
 
+## 15 October 2026: Manual-run screenshots (T-93)
+
+T-93 makes hand-taken screenshots part of every manual test run. The tester
+names each image after the TC_ID it shows and commits it next to the session
+record under `docs/testing/runs/evidence/`. Showing them in the PR's postplan as well is recommended.
+It applies to manual records dated on or after `2026-10-16T00:00:00+08:00`; earlier records stay
+as they are. Sprint 3 Done stories are re-run with screenshots before the
+Sprint 3 Review as new records, without being reopened; Sprint 1 and 2 stories
+are left as they are.
+
 ## 16 October 2026: E03-S11 added to the backlog
 
 E03-S11 (SCRUM-176), created in Jira by the Product Owner on 12 October 2026

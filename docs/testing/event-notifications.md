@@ -28,7 +28,7 @@ do not mark it Done merely because the inbox and reusable hooks pass tests.
 | Acceptance criterion | Current status | Remaining dependency |
 | --- | --- | --- |
 | Status change / booking decision notified | Existing status flows integrated; booking hooks tested, callers pending | E06-S03 SCRUM-47 and E06-S04 SCRUM-48 |
-| All affected parties notified for arrangements | Current date/time edit and shared old/new audience hooks tested; not complete for every workflow | Explicit Venue Staff assignment relationship: E05/E06 owners, no dedicated ticket identified; E07-S04..S07 SCRUM-54..57; E08-S03..S05 SCRUM-60..62; E10-S01..S05 SCRUM-70..74 |
+| All affected parties notified for arrangements | Current date/time edit and shared old/new audience hooks tested; not complete for every workflow | Real production Venue Staff assignment rows (table and default resolver are SCRUM-189, #271/#272); E07-S04..S07 SCRUM-54..57; E08-S03..S05 SCRUM-60..62; E10-S01..S05 SCRUM-70..74 |
 | Unaffected users not notified | Recipient selection enforced/tested for integrated flows; future callers must use the same hook | Same workflow integrations above; PR #141 assignment integration is now on main |
 | Delivered in-app and by email | In-app, durable email generation, provider success/failure handling implemented/tested | Authorized deployed relay/worker configuration and actual mailbox delivery verification remain deployment-owner work |
 | Newest-first list and unread distinction | Fully implemented and verified | None |
@@ -202,3 +202,15 @@ also passed. Provider tests do not prove deployed mailbox delivery.
 
 Publication refresh: main f0c4264 now includes font PR #182. The open-PR
 snapshot above predates that merge; only screen-inventory PR #183 remains open.
+
+## Venue Staff assignments (SCRUM-189, 2026-10-15)
+
+The dependency table above records 2 October. Since then SCRUM-189 adds the
+`venue_staff_assignments` table (#271, migration 0018) and the default
+`resolveAssignedVenueStaff` resolver (#272). PostgreSQL tests in
+`backend/tests/eventNotifications.integration.test.ts` prove that only current
+assignments to active Venue Staff count, and
+`backend/tests/bookingSubmission.integration.test.ts` proves that a booking
+request with no injected resolver notifies only the requested venue's staff
+and reports an unassigned venue as unresolved. Production still needs the
+real assignment rows once 0018 is applied.
