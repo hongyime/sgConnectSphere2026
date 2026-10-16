@@ -23,8 +23,8 @@ Publish the corrected frozen scaffold review report from PR #270 on a clean bran
 
 ## Verification evidence
 
-- `python scripts/check.py` passed on `7f43e52`, validating 341 test-run records, passing all pre-commit checks, confirming `.env.template` matches its generator, and passing 146 repository tooling tests. Fresh T-65 record: `docs/testing/runs/20261016-085824-bryanseah234-tooling.md` (automated, local, no database).
-- All four commits created for this replacement were regular new commits on the branch; after `origin/main` advanced, they were replayed onto `7cd49c2` before publication. No history from #270 was transferred.
+- An earlier check on the rebased local branch passed, but its T-65 record was removed because a later local-only base refresh made that record's commit reference unreachable. That interim run is not cited here; run and record the final check below.
+- The report, initial handoff, and handoff verification update are regular commits based on `7cd49c2`; no history from #270 was transferred.
 - The check emitted a warning listing existing secondary worktrees; none were created or removed for this task. The known tracked report blob SHA matches the verified #270 source exactly.
 - Markdown LSP diagnostics are unavailable in this environment. `python scripts/check.py` and commit hooks validate the new Markdown files.
 - The local TruffleHog executable is unavailable. The original #270 check results had TruffleHog failing while repository checks, application-checks, PR conventions, LFS guard, and dependency review passed; do not transfer those results to this branch. Wait for the new PR's own scanner result.
