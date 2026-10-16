@@ -286,6 +286,28 @@ New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata.
 The scheduling question recorded during review is resolved by the Product Owner's
 16 October confirmation below. They remain unimplemented, not delivered.
 
+## 16 October 2026: Product Owner approvals (T-97)
+
+Recorded the Product Owner's bounded demo-account risk acceptance and approved
+procedure for the single existing Safety Officer seed profile. The current seed
+already defines that account and the Coordinator Lead; this decision adds no
+seed code, account set, credential controls or claim of security safety. Any
+missing-account operation remains gated by a reviewed mechanism and read-only
+production precheck; it is not a migration and was not performed here.
+
+Approved E14-S03 and E03-S12 as new Sprint 3 follow-ups for separate refinement.
+E14-S02, E03-S07 and E03-S11 remain Done. T-97 supersedes T-74's historical
+reopening exception under the current Definition of Done and 6 October
+instructor guidance; T-74's historical record is retained. This is a planning
+approval, not a claim of story delivery.
+
+Recorded Bryan as accountable PO for the SCRUM-75 Venue Staff mapping follow-up.
+Only the deploy owner may apply an actual approved mapping with pre/post records,
+and Ji Ning verifies delivery. PR #272's merged routing code is independent of
+the mapping; no assignments are authorised until approval. T-89's no-roster-screen
+decision remains. The Jira subtask key will be linked when reported by its
+separate lane.
+
 ## 16 October 2026 ? PO Sprint 3 confirmation and current-main integration
 
 The Product Owner confirmed: keep the new cases under E06-S03's current Sprint 3

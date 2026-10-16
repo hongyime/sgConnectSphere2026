@@ -2,7 +2,7 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 9  ·  13 October 2026
+Version 10  ·  16 October 2026
 
 ## Purpose
 
@@ -20,6 +20,12 @@ The Product Owner confirmed on 16 October that the new withdrawal cases remain
 in E06-S03's current Sprint 3 plan, with remaining work to be completed and
 anything unfinished recorded honestly at sprint close. This does not claim delivery.
 See [team decisions](B-team-decisions.md) and [change log](G-change-log.md).
+
+## What changed in version 10
+
+Recorded the Product Owner's 16 October approvals as T-97. The existing public/shared `seedCredential` risk is accepted for DEMO ONLY accounts, with no security-safety claim, real-data approval, rotation/access restriction selection, or approval of DB/API/service/CI secrets. The current main seed already defines both new roles; the accompanying runbook permits only a targeted, reviewed Safety Officer account operation if a read-only precheck shows that profile is missing, otherwise it records a no-op. Two Sprint 3 follow-ups, E14-S03 and E03-S12, are approved for separate refinement; E14-S02, E03-S07 and E03-S11 stay Done under the current Definition of Done, superseding T-74's historical reopening exception without erasing it. This is planning approval, not delivery evidence. Bryan is accountable PO for the SCRUM-75 Venue Staff mapping follow-up; roster assignments still require an approved actual mapping, and T-89's no-screen decision stands. PR #272's merged routing code is not blocked by that future mapping.
+
+The canonical Markdown remains authoritative. BDR export `BACKLOG DECISION REVIEW CAA 161026.docx` is regenerated from these sources; the dated ADR export remains unchanged.
 
 ## What changed in version 9
 
@@ -83,11 +89,11 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 ## How to read the reference codes
 
-C-01 to C-70 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
+C-01 to C-136 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
 
-T-01 to T-91 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-97 — team decisions, each naming the clarification it follows from or the gap it closes.
 
-O-01 to O-49 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies.
+O-01 to O-51 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies; O-50/O-51 record Week 9 assumptions.
 
 B-01 to B-11 — boundary rulings from the story overlap audit and the test-case audit.
 
