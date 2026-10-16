@@ -243,3 +243,11 @@ sources. Jira changes remain downstream of the merged canonical backlog.
 ## Version 8 to version 9
 
 Applied Week 9 choices to eligible stories and recorded remaining assumptions. Restored E04-S02 and added E02-S05 to Release 1; added E02-S07 for the two-year date horizon and E07-S08 for Session-linked equipment behavior. Updated Sprint 4 registration, arrangement-change, safety-reversion, rescheduling and cancellation criteria while leaving Sprint 3 stories untouched until close under T-73. Added O-50 for Session waitlist behavior and O-51 for copied Session/arrangement data; both remain explicit assumptions for review.
+
+## 16 October 2026: E03-S11 added to the backlog
+
+E03-S11 (SCRUM-176), created in Jira by the Product Owner on 12 October 2026
+and delivered in #247, is now in the release and product backlogs with five
+scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
+which stays Done (T-74): the Organiser could not edit the registration setup,
+and the registration date labels were laid out wrongly.

@@ -354,3 +354,46 @@ Given I am an Event Coordinator When I navigate to the oversight view Then acces
 - See each Coordinator's active-event count and events
 - Confirm the view covers every assignment, not a subset
 - Be refused as a Coordinator
+
+## E03-S11 — Let the Organiser edit registration setup and fix the date layout
+
+- **Sprint**: Sprint 3
+- **Points**:
+- **BDR references**: C-52, T-16, T-74
+- **Owner**:
+
+### User story
+
+As an Event Organiser, I want to fill in and correct the registration setup on my event request, and read the registration dates clearly, so that a request that left the registration setup blank can still be completed for approval.
+
+Fix story created by the Product Owner on 12 October 2026 (Jira SCRUM-176) for two gaps found in E03-S07, which stays Done (T-74): the Organiser's edit form had no registration setup field, and the registration date labels were laid out wrongly. Delivered in #247.
+
+### Acceptance criteria
+
+#### Scenario 1 — Organiser edits registration setup before approval
+
+Given my event has not yet been approved When I edit its registration setup Then the change is saved against the event and recorded in the activity log
+
+#### Scenario 2 — Registration setup cannot be cleared
+
+Given my event has a registration setup When I try to save it empty Then the save is blocked and the recorded registration setup is unchanged
+
+#### Scenario 3 — Registration setup restricted for the Organiser after approval
+
+Given my event has been approved When I open its edit form Then the registration setup is read-only and I am directed to raise a change request (E10-S01)
+
+#### Scenario 4 — Coordinator edits registration setup after approval
+
+Given an event has been approved When I edit its registration setup as the assigned Coordinator Then the change is saved and recorded in the activity log
+
+#### Scenario 5 — Registration dates laid out clearly
+
+Given I am editing an event When I view the Registration section Then "Registration opens" and "Registration closes" are shown as two separate labelled fields, each label with its own input, with no sideways scrolling at phone width
+
+### Checklist
+
+- Edit the registration setup as the Organiser before approval, with the edit recorded in the activity log
+- Be blocked when saving an empty registration setup
+- See the registration setup read-only after approval, with a link to request a change
+- Edit the registration setup as the assigned Coordinator after approval, with the edit recorded in the activity log
+- See "Registration opens" and "Registration closes" as two labelled fields at desktop and phone width

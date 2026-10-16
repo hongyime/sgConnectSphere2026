@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 354 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 359 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **354**
-- Automated (explicit TC_ID in an active test title): **179** (50.6%)
+- Total test cases: **359**
+- Automated (explicit TC_ID in an active test title): **179** (49.9%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **142**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (39.3%)
-- No test yet (no test file mentions the TC_ID): **36** (10.2%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (38.7%)
+- No test yet (no test file mentions the TC_ID): **41** (11.4%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
-| E03 | 52 | 39 | 13 | 0 |
+| E03 | 57 | 39 | 13 | 5 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 38 | 21 | 17 | 0 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 8 | 5 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **354** | **179** | **139** | **36** |
+| **Total** | **359** | **179** | **139** | **41** |
 
 ## Case-by-case status
 
@@ -162,6 +162,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S09_03` | E03-S09 | Verify that a Coordinator should be able to ask the Lead to reassign an event an | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
 | `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with w |
 | `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged |
+| `TC_E03S11_01` | E03-S11 | Verify that the Organiser should be able to add the registration setup before ap | ❌ none | — |
+| `TC_E03S11_02` | E03-S11 | Verify that clearing the registration setup should be blocked and leave the reco | ❌ none | — |
+| `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ❌ none | — |
+| `TC_E03S11_04` | E03-S11 | Verify that the assigned Coordinator should be able to edit the registration set | ❌ none | — |
+| `TC_E03S11_05` | E03-S11 | Verify that the registration dates should be shown as two separate labelled fiel | ❌ none | — |
 
 ### E04
 
