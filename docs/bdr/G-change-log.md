@@ -253,3 +253,51 @@ It applies to manual records dated on or after `2026-10-16T00:00:00+08:00`; earl
 as they are. Sprint 3 Done stories are re-run with screenshots before the
 Sprint 3 Review as new records, without being reopened; Sprint 1 and 2 stories
 are left as they are.
+
+## 15 October 2026 — E06-S03 withdrawal and suggested-venue follow-up
+
+T-94 records the Product Owner's Pending-only withdrawal boundary and the future
+Confirmed-primary cancellation rule (clear primary, prompt Organiser, no automatic
+promotion). T-95 records the E06-S04 owner's Released/lock/audit agreement and the
+story owner's requested-venue staff notification confirmation. T-96 records the
+story owner's replacement retry and rejection-chain confirmation. Source is the
+clarifications relayed in the working conversation on 15 October; these are not
+new customer consultation quotes or proof of implementation.
+
+Reconcile E06-S03's release/product criteria and canonical cases with the shared
+contract. Reuse Released; no new status. Only Released replacements stop consuming
+their predecessor's replacement slot. A Rejected replacement must follow its own
+new suggestion, if any, rather than retry its predecessor's suggestion. Preserve
+0019 and plan a separate index migration. The latest E06-S05 owner coordination
+is already resolved in #274; this follow-up does not reopen it or change Session
+scope, hold defaults, story estimates, sprint assignments or Jira statuses.
+
+
+## 16 October 2026 ? Withdrawal decision reference correction (#280 review)
+
+Renumber the withdrawal decisions from T-93/T-94/T-95 to **T-94/T-95/T-96**
+because earlier PR #279 reserves T-93 for hand-taken manual-run screenshots.
+This is a reference correction, not a change to the agreed withdrawal behaviour.
+The release/product backlog, cases, contract, schema note, BDR addendum and
+regenerated CAA 161026 derivatives use the corrected IDs. CAA 151026 exports
+and immutable execution records remain historical snapshots with their old IDs.
+
+New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata.
+The scheduling question recorded during review is resolved by the Product Owner's
+16 October confirmation below. They remain unimplemented, not delivered.
+
+## 16 October 2026 ? PO Sprint 3 confirmation and current-main integration
+
+The Product Owner confirmed: keep the new cases under E06-S03's current Sprint 3
+plan and complete the remaining work; record anything unfinished honestly at
+sprint close. Do not label this a Sprint 4 allocation, inferred carryover or
+completed delivery. Update T-94 and downstream planning notes accordingly without
+changing case sprint values, estimates or ownership.
+
+Integrate current main (62916a9, including #217/#266/#273/#277) as requested in
+#280's review. Regenerate the backlog/test workbooks, legacy testcase compatibility
+input, BDR export and coverage inventory from the combined canonical sources.
+Resolve generated coverage by regeneration, preserving both main's scaffold
+changes and this PR's five new unimplemented cases. The reported hard-coded
+354-case assertion has been repaired in #268 per the PO's review comment; do not
+change the correct 359-case catalogue to satisfy the obsolete assertion.
