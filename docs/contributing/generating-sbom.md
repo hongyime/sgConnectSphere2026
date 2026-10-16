@@ -1,69 +1,93 @@
-# Generating an SBOM
+# Generating and publishing SBOMs
 
-A **Software Bill of Materials** (SBOM) is a machine-readable inventory of the
-third-party dependencies a project ships. It is the input to supply-chain
-security work: license review, CVE cross-referencing, and dependency
-provenance auditing.
+A **Software Bill of Materials (SBOM)** is a machine-readable inventory of a
+project's dependencies. It supports supply-chain review, including license
+review, vulnerability cross-referencing, and dependency provenance checks.
 
-This repository generates an SBOM manually, on demand. There is no CI job that
-publishes SBOMs as build artefacts, mirroring the manual export convention used
-for the backlog and test-case workbooks documented in
-`docs/backlog/README.md`. Regenerate when the dependency tree changes and you
-need a fresh snapshot for review; do not commit the output.
+## Why these files were ignored
 
-## What it produces
+The repository-wide `artifacts/` ignore rule keeps local review and scratch
+outputs out of Git, including rendered PostPlans, screenshots, and test
+reports. When the SBOM generator was added in
+[PR #125](https://github.com/hongyime/sgConnectSphere2026/pull/125), its output
+was put under that directory and intentionally left untracked. The PR chose
+manual generation and treated the files like temporary exports; it did not
+identify a security or privacy reason to keep them private.
 
-Two CycloneDX 1.5 JSON files under `artifacts/sbom/` (gitignored):
+That choice avoided generated-file diffs and stale snapshots, but also meant
+there was no durable, public SBOM to download. The current policy tracks the two
+SBOM files as the public dependency inventory. Their contents are derived from
+the repository's public manifests, lockfile, and pinned tooling requirements.
+The rest of `artifacts/` remains ignored for local scratch output.
 
-| File | Covers | Producer |
-| --- | --- | --- |
-| `npm.cdx.json` | npm workspace tree (root, `frontend/`, `backend/`) | `npm sbom` (built into npm >= 10) |
-| `python-tooling.cdx.json` | Python dependencies pinned in `tooling/requirements.txt` | `cyclonedx-py requirements` (from `cyclonedx-bom` in the tooling env) |
+CycloneDX includes package integrity hashes. The entropy-based secret scanner
+mistakes these generated digests for credentials, so its hook skips only the two
+SBOM files; the package manifests, npm lockfile, and Python requirements remain
+in the normal secret scan.
 
-CycloneDX was chosen over SPDX because `npm sbom` emits CycloneDX natively and
-`cyclonedx-py` is the canonical CLI for the Python side. Using both produces a
-single format across both dependency trees without introducing a third-party
-tool for the npm side.
+Committed snapshots give readers direct access from the repository and remain
+available with the source history. This repository has no tagged-release
+publishing process, so attaching release assets would add a release workflow
+that does not otherwise exist. CI artifacts would require a new workflow and
+would be temporary. The tracked files do create diffs when dependencies change;
+keep them current by regenerating them in the same change as dependency or
+generator updates.
 
-## Command
+## What the files cover
 
-From the repository root:
+Both files are generated under `artifacts/sbom/` and are tracked by Git:
+
+| File | Covers | Producer | Current format |
+| --- | --- | --- | --- |
+| `npm.cdx.json` | Root, frontend, and backend npm workspaces from the lockfile | npm's built-in `npm sbom` | CycloneDX 1.5 |
+| `python-tooling.cdx.json` | Python dependencies pinned in `tooling/requirements.txt` | `cyclonedx-py requirements` | CycloneDX 1.6 |
+
+The listed format versions are those emitted by the current generator run; npm
+or `cyclonedx-bom` upgrades may change them. These SBOMs describe the dependency
+manifests and lockfile, not an operating-system image, hosted runtime, or a
+container image. Generate a separate SBOM from a final image if the project
+starts shipping one.
+
+## Generate and update
+
+From the repository root, install the tooling as described in
+[repository setup](../repository-setup.md), then run:
 
 ```text
 npm run sbom
 ```
 
-Requirements: Node.js >= 22 (npm >= 10) and the repository tooling installed
-via `python scripts/setup.py` (which pins `cyclonedx-bom` in
-`tooling/requirements.txt`). The script uses the same
-`scripts/tooling_env.py` interpreter-resolution pattern as
-`scripts/check.py` and `scripts/coverage_tooling.py`, so it works
-identically on local clones and on the Windows network-share cache.
-
-The script fails loudly if either SBOM is empty or the JSON does not parse as
-CycloneDX. Expect roughly 250+ components in `npm.cdx.json` and 40+ components
-in `python-tooling.cdx.json` today.
-
-## When to regenerate
-
-- Before a release cut, alongside the backlog/test-case workbook exports.
-- After a dependency bump PR (`package-lock.json` or `tooling/requirements.txt`)
-  where you need to review the new transitive tree.
-- On demand when a supply-chain advisory (CVE, license issue, deprecation)
-  needs a fresh inventory.
-
-If a future team decision moves SBOM generation into CI as a scheduled artefact,
-record it in `docs/decisions/` and adjust this guide together with the workflow.
-
-## Inspecting the output
-
-The files are standard CycloneDX 1.5 JSON and open in any SBOM viewer. For a
-quick sanity check, filter the `components[].name` list:
+This needs Node.js 22 or newer (npm 10 or newer) and the repository tooling
+environment, which pins `cyclonedx-bom` in `tooling/requirements.txt`. On a
+Unix-like shell where `python` is not on `PATH`, run the same generator with:
 
 ```text
-python -c "import json; d=json.load(open('artifacts/sbom/npm.cdx.json')); print(len(d['components']), 'components')"
+python3 scripts/generate_sbom.py
 ```
 
-Feed either file into an external tool (Dependency-Track, `grype`, `osv-scanner`,
-GitHub's dependency review) when you need CVE cross-referencing; this repository
-does not embed one.
+The generator reads `package-lock.json` without installing npm dependencies and
+reads the pinned Python requirements. npm's workspace SBOM omits dependencies
+used only by the repository root, so the generator unions the root-only npm
+inventory with the workspace inventory and merges their CycloneDX references.
+The combined npm inventory uses the root package name from `package.json` for
+its CycloneDX metadata rather than the working-directory name. It checks that
+every root dependency declared in the lockfile is represented before reporting
+success. Include both updated files in the same change when npm manifests or
+the lockfile, `tooling/requirements.txt`, the generator, or its SBOM-producing
+tool versions change. Review component and version changes alongside the source
+dependency diff.
+
+The generated files are inventories only. They do not scan for known
+vulnerabilities or establish license compliance; run the team's chosen review
+tools separately when those checks are needed.
+
+## Inspecting an output
+
+For a quick count of npm components:
+
+```text
+python3 -c "import json; d=json.load(open('artifacts/sbom/npm.cdx.json')); print(len(d['components']), 'components')"
+```
+
+Either JSON file can be loaded by CycloneDX-compatible tools such as
+Dependency-Track, `grype`, or `osv-scanner` for further review.

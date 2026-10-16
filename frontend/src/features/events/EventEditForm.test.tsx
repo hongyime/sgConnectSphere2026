@@ -4,7 +4,7 @@ import { buildPatch, EventEditForm, toLocalInput } from './EventEditForm';
 
 const initial = {
   title: 'Charity Run', description: 'Annual fundraiser.', purpose: '', startAt: '2026-11-12T09:00', endAt: '2026-11-12T12:00',
-  expectedAttendance: '200', venueRequirements: 'Outdoor start line', accessibilityNote: '', equipmentRequirements: '', layoutPreference: '',
+  expectedAttendance: '200', venueRequirements: 'Outdoor start line', accessibilityNote: '', equipmentRequirements: '', layoutPreference: '', registrationSetup: '',
 };
 
 describe('buildPatch', () => {
@@ -32,6 +32,10 @@ describe('buildPatch', () => {
 
   test('an end before the start is refused', () => {
     expect(buildPatch(initial, { ...initial, endAt: '2026-11-12T08:00' }).errors).toEqual({ endAt: 'The event must end after it starts.' });
+  });
+
+  test('registration setup is sent like the other text fields', () => {
+    expect(buildPatch(initial, { ...initial, registrationSetup: '  Free, first come first served  ' }).patch).toEqual({ registrationSetup: 'Free, first come first served' });
   });
 
   test('changed dates are sent as ISO timestamps', () => {
@@ -79,8 +83,8 @@ test('registration date fields show existing ISO values in local input format', 
       onCancel={() => {}}
     />,
   );
-  expect(screen.getByLabelText('Opens')).toHaveValue(toLocalInput('2026-09-01T00:00:00.000Z'));
-  expect(screen.getByLabelText('Closes')).toHaveValue(toLocalInput('2026-10-09T00:00:00.000Z'));
+  expect(screen.getByLabelText('Registration opens')).toHaveValue(toLocalInput('2026-09-01T00:00:00.000Z'));
+  expect(screen.getByLabelText('Registration closes')).toHaveValue(toLocalInput('2026-10-09T00:00:00.000Z'));
   cleanup();
 });
 
@@ -90,34 +94,52 @@ test('locked registration dates with no values are left out, as on the Coordinat
   const { rerender } = render(
     <EventEditForm eventId="evt-1" values={values} editable={new Set(['title'])} onSaved={() => {}} onCancel={() => {}} />,
   );
-  expect(screen.queryByRole('group', { name: 'Registration' })).toBeNull();
-  expect(screen.queryByLabelText('Opens')).toBeNull();
+  // The Registration section stays for the setup text; only the empty locked dates go.
+  expect(screen.getByLabelText('Registration setup')).toHaveAttribute('readonly');
+  expect(screen.queryByLabelText('Registration opens')).toBeNull();
 
   // Still shown, read-only, when the dates exist.
   rerender(
     <EventEditForm eventId="evt-1" values={{ ...values, registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z' }}
       editable={new Set(['title'])} onSaved={() => {}} onCancel={() => {}} />,
   );
-  expect(screen.getByLabelText('Opens')).toHaveAttribute('readonly');
+  expect(screen.getByLabelText('Registration opens')).toHaveAttribute('readonly');
   cleanup();
 });
 
 
-test('registration date inputs describe the validation error and hint after an invalid save', () => {
+test('registration date inputs describe the validation error after an invalid save', () => {
   render(
     <EventEditForm eventId="evt-1"
       values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
         expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null }}
       editable={new Set(['registrationDates'])} onSaved={() => {}} onCancel={() => {}} />,
   );
-  fireEvent.change(screen.getByLabelText('Opens'), { target: { value: '2026-10-09T09:00' } });
-  fireEvent.change(screen.getByLabelText('Closes'), { target: { value: '2026-10-08T09:00' } });
+  fireEvent.change(screen.getByLabelText('Registration opens'), { target: { value: '2026-10-09T09:00' } });
+  fireEvent.change(screen.getByLabelText('Registration closes'), { target: { value: '2026-10-08T09:00' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
-  for (const label of ['Opens', 'Closes']) {
+  for (const label of ['Registration opens', 'Registration closes']) {
     expect(screen.getByLabelText(label)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(label)).toHaveAccessibleDescription(
-      'Enter a valid opening and closing date, with closing after opening. Enter when registration opens and closes.',
+      'Enter a valid opening and closing date, with closing after opening.',
     );
   }
+  cleanup();
+});
+
+test('the Organiser can fill in registration setup, shown with the dates under Registration', () => {
+  render(
+    <EventEditForm eventId="evt-1"
+      values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+        expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null,
+        registration_setup: 'Free registration', registration_opens_at: '2026-09-01T00:00:00.000Z', registration_closes_at: '2026-10-09T00:00:00.000Z' }}
+      editable={new Set(['registrationSetup', 'registrationDates'])} onSaved={() => {}} onCancel={() => {}} />,
+  );
+  const section = screen.getByRole('group', { name: 'Registration' });
+  const setup = screen.getByLabelText('Registration setup');
+  expect(section).toContainElement(setup);
+  expect(section).toContainElement(screen.getByLabelText('Registration opens'));
+  expect(setup).toHaveValue('Free registration');
+  expect(setup).not.toHaveAttribute('readonly');
   cleanup();
 });

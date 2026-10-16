@@ -3,10 +3,18 @@ import type { PoolClient } from 'pg';
 import type { EventStatus } from '../eventLifecycle/status.js';
 import { insertNotificationDelivery } from '../notificationDispatcher/postgres.js';
 
-// Trusted workflow adapter, never request-body recipient IDs. Venue management
-// must supply the real assignment relation; decided_by is not an assignment.
+// Trusted workflow adapter, never request-body recipient IDs. decided_by is
+// not an assignment (T-64).
 export type VenueStaffResolver = (client: PoolClient, venueIds: readonly string[]) => Promise<string[]>;
 export type NotificationOptions = { resolveVenueStaff?: VenueStaffResolver };
+
+// SCRUM-189 (T-64, T-89): the default resolver reads the venue_staff_assignments
+// setup data. Only assignments current right now count.
+export const resolveAssignedVenueStaff: VenueStaffResolver = async (client, venueIds) =>
+  (await client.query<{ staff_id: string }>(
+    `SELECT DISTINCT staff_id FROM venue_staff_assignments
+     WHERE venue_id = ANY($1::uuid[]) AND active_from <= now() AND (active_until IS NULL OR active_until > now())`,
+    [venueIds])).rows.map(r => r.staff_id);
 export type EventAudience = {
   eventId: string;
   title: string;
@@ -34,7 +42,7 @@ export type EventChange =
 // Capture BEFORE cancellation releases bookings/assignments/registrations.
 // Capture again after a venue move and pass both snapshots to notifyEventChange.
 export async function captureEventAudience(
-  client: PoolClient, eventId: string, options: NotificationOptions = {},
+  client: PoolClient, eventId: string, options: NotificationOptions = {}, requestedVenueIds?: readonly string[],
 ): Promise<EventAudience> {
   const { rows } = await client.query<{
     id: string; title: string; public_name: string | null; status: EventStatus;
@@ -54,13 +62,25 @@ export async function captureEventAudience(
   const technicalStaff = (await client.query<{ staff_id: string }>(
     `SELECT DISTINCT a.staff_id FROM tech_staff_assignments a JOIN users u ON u.id=a.staff_id
      WHERE a.event_id=$1 AND a.status='assigned' AND u.is_active AND u.role='technical_support_staff'`, [eventId])).rows.map(r => r.staff_id);
-  const venueIds = (await client.query<{ venue_id: string }>(
+  // Trusted workflow scope: booking requests notify only the requested venue.
+  const venueIds = requestedVenueIds ? [...requestedVenueIds] : (await client.query<{ venue_id: string }>(
     `SELECT DISTINCT venue_id FROM venue_bookings WHERE event_id=$1 AND status IN ('pending','confirmed')`, [eventId])).rows.map(r => r.venue_id);
   let venueStaff: string[] = [];
-  if (options.resolveVenueStaff && venueIds.length) {
-    const assignedIds = await options.resolveVenueStaff(client, venueIds);
+  let unresolvedVenueIds: string[] = [];
+  if (venueIds.length) {
+    const assignedIds = await (options.resolveVenueStaff ?? resolveAssignedVenueStaff)(client, venueIds);
     venueStaff = (await client.query<{ id: string }>(
       `SELECT id FROM users WHERE id=ANY($1::uuid[]) AND is_active AND role='venue_staff'`, [assignedIds])).rows.map(r => r.id);
+    // A venue with no current, active Venue Staff assignment stays an explicit
+    // gap in the setup data. A custom resolver answers for every venue it is given.
+    if (!options.resolveVenueStaff) {
+      unresolvedVenueIds = (await client.query<{ venue_id: string }>(
+        `SELECT v.venue_id FROM unnest($1::uuid[]) AS v(venue_id)
+         WHERE NOT EXISTS (SELECT 1 FROM venue_staff_assignments a JOIN users u ON u.id=a.staff_id
+           WHERE a.venue_id=v.venue_id AND u.is_active AND u.role='venue_staff'
+             AND a.active_from <= now() AND (a.active_until IS NULL OR a.active_until > now()))`,
+        [venueIds])).rows.map(r => r.venue_id);
+    }
   }
   return {
     eventId, title: event.title, publicName: event.public_name, status: event.status,
@@ -68,7 +88,7 @@ export async function captureEventAudience(
     organiser: event.organiser_id ? [event.organiser_id] : [], coordinator: event.coordinator_id ? [event.coordinator_id] : [],
     venueStaff, technicalStaff, registered: registrations.filter(r => r.status==='registered').map(r => r.attendee_id),
     waitlisted: registrations.filter(r => r.status==='waitlisted').map(r => r.attendee_id),
-    unresolvedVenueIds: options.resolveVenueStaff ? [] : venueIds,
+    unresolvedVenueIds,
   };
 }
 
@@ -166,9 +186,8 @@ export async function notifyEventChange(client: PoolClient, input: {
     const id = await writeEventNotification(client, {eventId:after.eventId,changeId,userId,occurredAt,title:'Event update',message});
     if (id) inserted.push(id);
   }
-  // Explicit unresolved integration signal; never infer assignments or fan out
-  // to every Venue Staff user. Existing business workflows continue for known
-  // recipients, but this is not full Venue Staff acceptance coverage.
+  // A venue with no assigned Venue Staff is a setup-data gap. Never infer
+  // assignments or fan out to every Venue Staff user.
   if (unresolvedVenueIds.length) console.warn('event_notification_venue_assignment_dependency', { eventId: after.eventId, venueIds: unresolvedVenueIds });
   return { notificationIds: inserted, unresolvedVenueIds };
 }

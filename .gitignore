@@ -46,8 +46,24 @@ Desktop.ini
 *.sqlite3
 *.db
 
-# Postplan review artifacts. Local HTML is a source for the hosted postplan
-# URL, not a durable deliverable. Keep intermediate renders and scratch
-# comment drafts out of git. Finished postplans live at their postplan.dev URL
-# and are linked from PR comments per docs/contributing/creating-a-postplan.md.
-artifacts/
+# Postplan review artifacts. Ignore scratch and test-generated output by default;
+# allow only explicitly selected durable review deliverables and public SBOMs.
+!artifacts/
+artifacts/*
+!artifacts/agents-consolidation-20261014.html
+!artifacts/manual-remarks-validator-plan-20261014.html
+!artifacts/pr-230-seeded-account-names.html
+!artifacts/pr-248-safe-worktree-cleanup.html
+!artifacts/pr-sbom-public.html
+!artifacts/pr-week9-jira-reconciliation.html
+!artifacts/scaffold-review-plan-20261014.html
+!artifacts/scaffold-review-plan-desktop.png
+!artifacts/scaffold-review-plan-mobile.png
+!artifacts/scrum-182-one-migration-selector-mobile.png
+!artifacts/scrum-182-one-migration-selector.html
+!artifacts/scrum-182-one-migration-selector.png
+!artifacts/unassigned-sprint-display-plan-20261014.html
+!artifacts/sbom/
+artifacts/sbom/*
+!artifacts/sbom/npm.cdx.json
+!artifacts/sbom/python-tooling.cdx.json

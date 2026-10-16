@@ -1,7 +1,7 @@
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { requireCatalogueViewer } from './catalogue.js';
-import { holdsVenue } from './holds.js';
+import { holdsVenue } from './bookingShared.js';
 
 // E05-S03 "View the venue availability calendar". Read-only: bookings come
 // from venue_bookings, maintenance blocks from venue_blocks, and Free is

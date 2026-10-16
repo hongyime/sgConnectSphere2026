@@ -1,0 +1,199 @@
+{
+  "record": "20261015-014746-jininggg-frontend-e2e.md",
+  "source_document": "e06-s03-manual-screenshots.docx",
+  "archive_date": "2026-10-16",
+  "images": [
+    {
+      "source_image": 1,
+      "source_caption": "Venue suitability and a Request this venue form",
+      "file": "TC_E06S03_01-1.png",
+      "tc_id": "TC_E06S03_01",
+      "scope_note": "Assessment and request form before submission; not evidence of staff notification receipt.",
+      "bytes": 81256
+    },
+    {
+      "source_image": 2,
+      "source_caption": "Cedar Auditorium booking request submitted, a Pending message, and a capacity failure because Cedar’s Theatre capacity is 450, below 500",
+      "file": "TC_E06S03_01-2.png",
+      "tc_id": "TC_E06S03_01",
+      "scope_note": "Cedar Pending submission with advisory capacity warning; staff receipt was skipped.",
+      "bytes": 60663
+    },
+    {
+      "source_image": 3,
+      "source_caption": "View venue booking requests",
+      "file": "TC_E06S03_02-1.png",
+      "tc_id": "TC_E06S03_02",
+      "scope_note": "Event list shows Planning after the first request.",
+      "bytes": 101430
+    },
+    {
+      "source_image": 4,
+      "source_caption": "Multiple bookings for the same event",
+      "file": "TC_E06S03_07-1.png",
+      "tc_id": "TC_E06S03_07",
+      "scope_note": "Orchid and Cedar retain independent Pending requests and metadata.",
+      "bytes": 78575
+    },
+    {
+      "source_image": 5,
+      "source_caption": "Test overlap prevention",
+      "file": "TC_E06S03_04-1.png",
+      "tc_id": "TC_E06S03_04",
+      "scope_note": "Partial conflict evidence: same-event duplicate overlap refused, not a different-event or buffer-only fixture.",
+      "bytes": 47389
+    },
+    {
+      "source_image": 6,
+      "source_caption": "Test period validation",
+      "file": "TC_E06S03_08-1.png",
+      "tc_id": "TC_E06S03_08",
+      "scope_note": "Period-validation evidence only: start before event; withdrawal was not implemented or tested.",
+      "bytes": 42281
+    },
+    {
+      "source_image": 7,
+      "source_caption": "Test a reversed period",
+      "file": "TC_E06S03_08-2.png",
+      "tc_id": "TC_E06S03_08",
+      "scope_note": "Period-validation evidence only: reversed period; no withdrawal evidence.",
+      "bytes": 59205
+    },
+    {
+      "source_image": 8,
+      "source_caption": "Check an end after the event",
+      "file": "TC_E06S03_08-3.png",
+      "tc_id": "TC_E06S03_08",
+      "scope_note": "Period-validation evidence only: end after event; no withdrawal evidence.",
+      "bytes": 58106
+    },
+    {
+      "source_image": 9,
+      "source_caption": "Test blank optional fields",
+      "file": "TC_E06S02_04-1.png",
+      "tc_id": "TC_E06S02_04",
+      "scope_note": "Lotus unsupported-layout search context before requesting an unsuitable venue.",
+      "bytes": 36672
+    },
+    {
+      "source_image": 10,
+      "source_caption": "Test blank optional fields",
+      "file": "TC_E06S02_04-2.png",
+      "tc_id": "TC_E06S02_04",
+      "scope_note": "Unsuitable assessment with blank optional request fields, before submission.",
+      "bytes": 83442
+    },
+    {
+      "source_image": 11,
+      "source_caption": "Keep 15 October, 9:00 am–5:00 pm, leave Purpose and Headcount blank",
+      "file": "TC_E06S02_04-3.png",
+      "tc_id": "TC_E06S02_04",
+      "scope_note": "Unsuitable Lotus accepted as Pending; Venue Staff decision-screen presentation was not tested.",
+      "bytes": 73914
+    },
+    {
+      "source_image": 12,
+      "source_caption": "Lotus appears above Orchid and Cedar",
+      "file": "TC_E06S03_07-2.png",
+      "tc_id": "TC_E06S03_07",
+      "scope_note": "All three Pending bookings remain in the event list.",
+      "bytes": 82162
+    },
+    {
+      "source_image": 13,
+      "source_caption": "Test another Coordinator’s access",
+      "file": "TC_E06S03_05-1.png",
+      "tc_id": "TC_E06S03_05",
+      "scope_note": "Supplemental isolation context: another Coordinator dashboard lacks the event.",
+      "bytes": 107020
+    },
+    {
+      "source_image": 14,
+      "source_caption": "Test another Coordinator’s access",
+      "file": "TC_E06S03_05-2.png",
+      "tc_id": "TC_E06S03_05",
+      "scope_note": "Another Coordinator cannot load the event booking list.",
+      "bytes": 50290
+    },
+    {
+      "source_image": 15,
+      "source_caption": "Test another Coordinator’s access",
+      "file": "TC_E06S02_01-1.png",
+      "tc_id": "TC_E06S02_01",
+      "scope_note": "Supplemental isolation check: another Coordinator cannot load the assessment.",
+      "bytes": 45727
+    },
+    {
+      "source_image": 16,
+      "source_caption": "Mobile check",
+      "file": "TC_E06S03_05-3.png",
+      "tc_id": "TC_E06S03_05",
+      "scope_note": "Supplemental mobile booking list: Lotus and Orchid.",
+      "bytes": 58610
+    },
+    {
+      "source_image": 17,
+      "source_caption": "Mobile check",
+      "file": "TC_E06S03_05-4.png",
+      "tc_id": "TC_E06S03_05",
+      "scope_note": "Supplemental mobile booking list: Orchid and Cedar.",
+      "bytes": 59507
+    },
+    {
+      "source_image": 18,
+      "source_caption": "Mobile check",
+      "file": "TC_E06S03_05-5.png",
+      "tc_id": "TC_E06S03_05",
+      "scope_note": "Supplemental mobile booking list: Cedar metadata and saved advisory failure.",
+      "bytes": 58439
+    },
+    {
+      "source_image": 19,
+      "source_caption": "Mobile check",
+      "file": "TC_E06S03_01-3.png",
+      "tc_id": "TC_E06S03_01",
+      "scope_note": "Supplemental mobile request form; not a new submission execution.",
+      "bytes": 63281
+    },
+    {
+      "source_image": 20,
+      "source_caption": "Test hold conversion",
+      "file": "TC_E06S05_04-1.png",
+      "tc_id": "TC_E06S05_04",
+      "scope_note": "Historical run ID retained: tentative hold form before conversion.",
+      "bytes": 90288
+    },
+    {
+      "source_image": 21,
+      "source_caption": "Test hold conversion",
+      "file": "TC_E06S05_04-2.png",
+      "tc_id": "TC_E06S05_04",
+      "scope_note": "Hold placed with expiry and conversion action.",
+      "bytes": 54968
+    },
+    {
+      "source_image": 22,
+      "source_caption": "Test hold conversion",
+      "file": "TC_E06S05_04-3.png",
+      "tc_id": "TC_E06S05_04",
+      "scope_note": "Conversion success reports that the hold no longer expires.",
+      "bytes": 33033
+    },
+    {
+      "source_image": 23,
+      "source_caption": "Test hold conversion",
+      "file": "TC_E06S05_04-4.png",
+      "tc_id": "TC_E06S05_04",
+      "scope_note": "Converted booking is Pending for the expected period; no pre-conversion UUID was captured manually.",
+      "bytes": 74644
+    },
+    {
+      "source_image": 24,
+      "source_caption": "Venue availability calendar",
+      "file": "TC_E06S03_01-4.png",
+      "tc_id": "TC_E06S03_01",
+      "scope_note": "Pending booking displayed as Tentative on the calendar; not notification-delivery evidence.",
+      "bytes": 31944
+    }
+  ]
+}

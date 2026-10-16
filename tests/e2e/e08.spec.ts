@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E08 - 15 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E08 - 26 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 test.describe("E08-S03", () => {
@@ -340,6 +340,72 @@ test.describe("E08-S05", () => {
     // 2. Record the event status
     // 3. Set the system clock to 2026-11-02 17:00:00 +08:00 and trigger it again
     // 4. Record the event status
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E08.md.
+
+test.describe("E08-S03 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S03_06 — Verify that confirming an event with several venue bookings should be blocked while any booking is still Pending or Conflicting, listing each outstanding booking by venue", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_06).
+    void page;
+  });
+
+  test.fixme("TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed venue", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_07).
+    void page;
+  });
+
+  test.fixme("TC_E08S03_08 — Verify that submitting a fully arranged event for its Operational Safety Check should move it to Safety Review and notify the Safety Officer and Organiser", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_08).
+    void page;
+  });
+
+  test.fixme("TC_E08S03_09 — Verify that submission for safety review should be blocked while a readiness item is outstanding and that no one but a Safety Officer can set Confirmed", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_09).
+    void page;
+  });
+
+});
+
+test.describe("E08-S04 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S04_05).
+    void page;
+  });
+
+});
+
+test.describe("E08-S06 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_01).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, and log the decision with the checklist", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_02).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from being Confirmed until resubmitted and approved", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_03).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_04 — Verify that rejecting the safety arrangement should return the event to Planning with a rejection flag without cancelling it", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_04).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_05 — Verify that reject and request changes should require a reason and that no role other than Safety Officer can decide", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_05).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_06 — Verify that events confirmed before the safety check existed should be untouched and that Safety Review should count as an active status for the tracker and for deactivation", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_06).
     void page;
   });
 
