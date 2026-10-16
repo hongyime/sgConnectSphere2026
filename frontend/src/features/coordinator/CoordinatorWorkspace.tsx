@@ -209,6 +209,7 @@ export function RequestDetail() {
             </>
           ) : null}
           {['approved','planning','confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          <ButtonLink to={`${eventLink(event)}/venue-bookings`}>Venue bookings</ButtonLink>
           <StatusPill status={event.status} />
         </>
       ) : undefined}

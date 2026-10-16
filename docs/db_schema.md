@@ -560,3 +560,15 @@ still consume their predecessor's slot. Preserve the self-FK, non-self check,
 idempotency index and all historical rows. Do not edit 0019 in place or use an
 active-only predicate. No migration or database change is made here; see the
 [agreed contract](contracts/venue-bookings.md#agreed-withdrawal-follow-up-15-october-2026-t-94-to-t-96).
+
+### E06-S03 withdrawal implementation branch (16 October 2026)
+
+`0020_released_booking_replacement_retry.sql` replaces only the index
+`venue_booking_replacement_idx` with a unique index on `replaces_booking_id`
+where that value is non-null **and status is not Released**. All history,
+0019's self-FK/non-self/primary/idempotency constraints and 0016's occupancy
+guard remain intact. It adds no status or columns and does not edit 0019.
+Released replacements permit a fresh attempt; Rejected replacements remain
+unique against their predecessor. Submission and list predicates match the
+index. Local disposable PostgreSQL tests apply the migration; no production
+application or deployment is claimed by this branch.
