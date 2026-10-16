@@ -16,9 +16,9 @@ Apply only the merged `0012_user_role_enum_additions.sql` migration after verify
 
 ## Remaining
 
-1. Commit this final handoff update.
-2. Publish the non-force-pushed docs branch, finalize the standalone PostPlan with branch links, and open a complete PR citing the production runbook, #232 and SCRUM-193 without closing a parent issue.
-3. Request team review under the repository CODEOWNERS and merge only through normal branch protection.
+1. PR #284 is open as a draft on `docs/production-migration-0012-run`, based on `main` `51ab016`; its created head was `08d25fe` and GitHub reported it mergeable. Required checks were pending at handoff update.
+2. The standalone PostPlan is published at https://22bmq2ghvwas.postplan.dev and linked in top-level PR comment https://github.com/hongyime/sgConnectSphere2026/pull/284#issuecomment-6205501765.
+3. Wait for required checks on the final branch head, request teammate review from CODEOWNERS, and mark the PR ready when the normal review gate is met. Do not apply another production migration from this task.
 
 ## Safety
 
