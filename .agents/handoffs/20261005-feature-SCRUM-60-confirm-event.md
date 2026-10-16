@@ -19,6 +19,11 @@ Safety Review; only the Safety Officer's approval (E08-S06) sets Confirmed.
 This branch has the SCRUM-184 branch merged in so it runs locally; when 0017
 lands on `main`, the identical file merges cleanly.
 
+Status on 2026-10-16: steps 1 to 3 are done. #282 merged (`62916a9`); the
+deploy owner applied 0012 (run record in #284) and 0017 (run record in #288),
+and rechecked the production ledger read-only. `main` was merged in at
+`5cebc1a`.
+
 ## Done so far
 
 - Bryan's starter (`61d5bbd`): type-only contract in
@@ -45,9 +50,15 @@ lands on `main`, the identical file merges cleanly.
 
 ## Not done / next step
 
-- Aaron's own click-through (F4) on the local stack, then the PR as a draft
-  with a "Do not merge until" checklist.
-- `tc-coverage.md` regenerated as the last commit before the PR.
+- Done: Aaron's click-through (F4, 24/24); PR #283 opened as a draft with a
+  "Do not merge until" checklist.
+- After merging `main` (`5cebc1a`): #217's `fixme` scaffolds for
+  TC_E08S03_08 and _09 were removed, since `eventReadiness.spec.ts` covers
+  them (`364a7d4`). Gates rerun on `364a7d4` (Run log in the run record).
+- Next: fill the checklist's run-record links, mark the PR ready, and get a
+  fresh approval.
+- Production has no Safety Officer account yet. Until one exists, a
+  submission notifies only the Organiser.
 
 ## Decisions taken without team sign-off
 
