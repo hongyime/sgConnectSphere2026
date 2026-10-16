@@ -38,6 +38,9 @@ repos:
       - id: detect-secrets
         stages: [pre-commit]
         args: [--no-verify]
+        # CycloneDX repeats public package integrity hashes, which the entropy
+        # detector mistakes for credentials. Their source lockfiles remain scanned.
+        exclude: ^artifacts/sbom/(npm|python-tooling)\.cdx\.json$
 
   - repo: local
     hooks:
