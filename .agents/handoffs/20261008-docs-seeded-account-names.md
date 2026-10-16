@@ -11,6 +11,15 @@ Finish PR #230's six fixture-consistency gate findings on `docs/seeded-account-n
 - Markdown diagnostics are unavailable because no `.md` LSP is configured. No app, database, browser, or story acceptance suite was run; these are canonical fixture-document corrections only.
 - `.agents/STATE.md` and `.agents/JOURNAL.md` were not edited. No database operation, remote PR body/comment edit, review approval, merge, or Jira update was performed.
 
+## Fresh Oracle gate corrections (16 October)
+
+- Applied only the three specified fresh Oracle findings. `TC_E05S05_04` now runs both requests independently from the same prepared baseline, removes only Request A before the second run, preserves EVT-101's Confirmed booking, and expects the conflict to name EVT-101 (not Charity Run). No future withdrawal flow is assumed.
+- `TC_E06S02_02` now records Theatre layout, Wheelchair Access and 150 capacity as event requirements, distinguishing Orchid Hall's overall 200 capacity from its seeded Theatre capacity of 120. `TC_E06S03_06` now prepares both Setup time 30 and Turnaround time 45 to establish the 09:30-12:45 buffered conflict window.
+- Regenerated only the existing `PROJECT TEST CASES CAA 161026.xlsx` from the canonical Markdown. Audit verified 354 data rows, all 10 columns equal to the generator's parsed Markdown output, only the three intended case blocks changed, and the five expressly protected cases remain identical. Existing fixture remaps and cancellation cases were not edited.
+- T-65 record `20261016-102042-bryanseah234-tooling.md` records the observed local check on HEAD `b052e44`; `python scripts/check.py` passed all 128 tooling tests and repository hygiene at 10:20:42 +08:00. It emitted the expected secondary-worktree warning and validated 322 pre-existing run records. A second pre-commit run after adding the record also passed and validated all 323 run records.
+- The previous audit established 24 unique fixture remap targets with no stale fixture-name hits. This correction changed no case blocks outside the three specified IDs, verified against the starting HEAD; therefore those remaps remain unchanged. `TC_E05S01_01`, T-68/T-79 `TC_E06S03_03`, and cancellation cases `TC_E08S05_04`, `TC_E10S04_01`, and `TC_E10S04_04` are unchanged.
+- Corrections, generated workbook and T-65 evidence are committed separately: `5fc72d3`, `1e2b518`, `80bc069`, and `47489a3`. A normal push is next; record the pushed head and current PR readiness here after publishing. No app/database operation, `.agents/STATE.md`/`.agents/JOURNAL.md` edit, PR body/comment change, approval, merge, Jira change, or force push was performed.
+
 ## Remaining work
 
 - Wait for the latest required checks and teammate re-review. Do not self-approve, edit PR body/comments, or merge; main will ping the team after this gate.
