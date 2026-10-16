@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E01 - 32 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E01 - 38 cases. Source: docs/testing/cases/E01.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
 // E01-S01 is active in tests/auth-e2e/loginRecovery.spec.ts.
@@ -27,73 +27,6 @@ test.describe("E01-S02", () => {
     // 1. Log in as organiser_a@clienta.com
     // 2. Navigate to the Event List page
     // 3. Review the list of events displayed
-    void page;
-  });
-
-  /**
-   * TC_E01S02_02
-   * AC:      E01-S02 - Scenario 2 (Direct access refused)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Organiser organiser_a@clienta.com is linked to Client A. Event EVT-B01 belongs to Client B
-   *
-   * Test data:
-   *   Username: organiser_a@clienta.com | Target Event ID: EVT-B01
-   *
-   * Expected result:
-   *   A "403 Forbidden" / "Access Denied" page is shown with no details of EVT-B01; the Activity Log records the denied attempt
-   */
-  test.fixme("TC_E01S02_02 - Verify that direct access to another client's event via URL/ID should be denied and recorded", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Enter the direct URL https://app.connectsphere.com/events/EVT-B01 in the browser address bar
-    // 3. Press Enter and observe the response
-    // 4. Log in as a System Administrator and check the Activity Log
-    void page;
-  });
-
-  /**
-   * TC_E01S02_03
-   * AC:      E01-S02 - Scenario 3 (Colleague's event visible)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Organisers organiser_a1@clienta.com and organiser_a2@clienta.com are both linked to Client A. organiser_a2@clienta.com has created event EVT-A02
-   *
-   * Test data:
-   *   Username: organiser_a1@clienta.com | Colleague-created event: EVT-A02 (created by organiser_a2@clienta.com)
-   *
-   * Expected result:
-   *   EVT-A02 appears in organiser_a1@clienta.com's event list, showing organiser_a2@clienta.com as the creator
-   */
-  test.fixme("TC_E01S02_03 - Verify that events created by colleagues within the same client organisation should still be visible", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a1@clienta.com
-    // 2. Navigate to the Event List page
-    // 3. Locate event EVT-A02
-    void page;
-  });
-
-  /**
-   * TC_E01S02_04
-   * AC:      E01-S02 - Scenario 1 (Own client's events only), extended to search
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Client A event EVT-A03 "Annual Gala" and Client B event EVT-B03 "Annual Gala" both exist with the same name
-   *
-   * Test data:
-   *   Search keyword: "Annual Gala" | Client A event: EVT-A03 | Client B event: EVT-B03
-   *
-   * Expected result:
-   *   Only EVT-A03 (Client A) appears in the search results; EVT-B03 (Client B) is excluded despite the exact name match
-   */
-  test.fixme("TC_E01S02_04 - Verify that search results should exclude events belonging to unrelated client organisations", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Type "Annual Gala" into the event search bar
-    // 3. Press Enter and review the results
     void page;
   });
 
@@ -144,124 +77,9 @@ test.describe("E01-S02", () => {
 
 });
 
-test.describe("E01-S03", () => {
-
-  /**
-   * TC_E01S03_01
-   * AC:      E01-S03 - Scenario 1 (Published details only)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Attendee attendee_a@example.com is registered for event "Keynote: AI in 2027" (event EVT-101). The event has a Coordinator note "Confirm AV setup with vendor", a booking decision, and an equipment reservation on file
-   *
-   * Test data:
-   *   Event: Keynote: AI in 2027 | Coordinator note (must stay hidden): "Confirm AV setup with vendor"
-   *
-   * Expected result:
-   *   The published name, date, time and venue are shown; no Coordinator notes, booking decisions, equipment reservations, or internal comments appear anywhere
-   */
-  test.fixme("TC_E01S03_01 - Verify that an Attendee viewing a registered event should see only published details, not internal planning notes", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_a@example.com
-    // 2. Open the registered event "Keynote: AI in 2027"
-    // 3. Review all information displayed on the page
-    void page;
-  });
-
-  /**
-   * TC_E01S03_02
-   * AC:      E01-S03 - Scenario 2 (Internal screen refused)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Attendee attendee_a@example.com is signed in
-   *
-   * Test data:
-   *   Target URL: /internal/planning/EVT-101
-   *
-   * Expected result:
-   *   Access is refused (e.g. "403 Forbidden"); the Activity Log records the denied attempt with attendee_a@example.com as the user
-   */
-  test.fixme("TC_E01S03_02 - Verify that an Attendee attempting to open an internal planning screen directly should be refused and the attempt logged", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_a@example.com
-    // 2. Enter the direct URL https://app.connectsphere.com/internal/planning/EVT-101
-    // 3. Press Enter
-    // 4. Log in as a System Administrator and check the Activity Log
-    void page;
-  });
-
-  /**
-   * TC_E01S03_03
-   * AC:      E01-S03 - Scenario 1 (Published details only), extended to unregistered events
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   attendee_a@example.com is registered for "Keynote: AI in 2027" only. Event "Workshop: Cloud Security" exists and attendee_a@example.com is NOT registered for it
-   *
-   * Test data:
-   *   Registered event: Keynote: AI in 2027 | Unregistered event: Workshop: Cloud Security
-   *
-   * Expected result:
-   *   Only "Keynote: AI in 2027" appears in the list; "Workshop: Cloud Security" does not appear anywhere
-   */
-  test.fixme("TC_E01S03_03 - Verify that an Attendee should not see events or events they are not registered for", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_a@example.com
-    // 2. Navigate to "My Events"
-    // 3. Review the list of events/events shown
-    void page;
-  });
-
-});
-
 test.describe("E01-S04", () => {
 
   // T-61: TC_E01S04_01 is covered by the live read-only organisation test in profile.spec.ts.
-
-  /**
-   * TC_E01S04_02
-   * AC:      E01-S04 - Scenario 2 (Malformed email rejected)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in and on "My Profile"
-   *
-   * Test data:
-   *   Invalid email: organiser_a_at_clienta.com
-   *
-   * Expected result:
-   *   The save is rejected; the Email field is highlighted with the message "Please enter a valid email address"
-   */
-  test.fixme("TC_E01S04_02 - Verify that saving a malformed email address should be rejected with the field identified", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Enter "organiser_a_at_clienta.com" (missing @) in the Email field
-    // 2. Click "Save"
-    void page;
-  });
-
-  /**
-   * TC_E01S04_03
-   * AC:      E01-S04 - Scenario 3 (Duplicate email rejected)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Account organiser_b@clienta.com already exists
-   *
-   * Test data:
-   *   Duplicate email: organiser_b@clienta.com
-   *
-   * Expected result:
-   *   The save is rejected with a message stating the email address is already in use
-   */
-  test.fixme("TC_E01S04_03 - Verify that saving an email already registered to another account should be rejected", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Navigate to "My Profile"
-    // 3. Enter "organiser_b@clienta.com" in the Email field
-    // 4. Click "Save"
-    void page;
-  });
 
   /**
    * TC_E01S04_04
@@ -285,119 +103,9 @@ test.describe("E01-S04", () => {
     void page;
   });
 
-  /**
-   * TC_E01S04_05
-   * AC:      E01-S04 (checklist: cannot change own role)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in with role "Event Organiser"
-   *
-   * Test data:
-   *   N/A
-   *
-   * Expected result:
-   *   No editable Role field/control is present; the role remains "Event Organiser" and cannot be changed from this screen
-   */
-  test.fixme("TC_E01S04_05 - Verify that a user should not be able to change their own role from the account details screen", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Navigate to "My Profile"
-    // 2. Look for a Role field or control on the page
-    void page;
-  });
-
 });
 
 test.describe("E01-S08", () => {
-
-  /**
-   * TC_E01S08_01
-   * AC:      E01-S08 - Scenario 1 (Account created)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   No account exists for newattendee@example.com
-   *
-   * Test data:
-   *   Email: newattendee@example.com | Password: <valid-signup-password>
-   *
-   * Expected result:
-   *   The account is created and sign-in with newattendee@example.com / <valid-signup-password> succeeds
-   */
-  test.fixme("TC_E01S08_01 - Verify that submitting valid sign-up details should create an Attendee account that can then sign in", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Navigate to the public sign-up form
-    // 2. Enter Name: "Jamie Lee", Email: newattendee@example.com, Password: "<valid-signup-password>"
-    // 3. Click "Create Account"
-    // 4. Attempt to sign in with the new credentials
-    void page;
-  });
-
-  /**
-   * TC_E01S08_02
-   * AC:      E01-S08 - Scenario 2 (Email already in use)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Account organiser_a@clienta.com already exists
-   *
-   * Test data:
-   *   Email: organiser_a@clienta.com (already registered)
-   *
-   * Expected result:
-   *   The message "This email address is already in use" is shown; no second account is created
-   */
-  test.fixme("TC_E01S08_02 - Verify that signing up with an already-registered email should be rejected without creating a duplicate", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Navigate to the sign-up form
-    // 2. Enter Email: organiser_a@clienta.com and complete the rest of the form
-    // 3. Click "Create Account"
-    void page;
-  });
-
-  /**
-   * TC_E01S08_03
-   * AC:      E01-S08 - Scenario 3 (Invalid submission corrected)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Sign-up form is open
-   *
-   * Test data:
-   *   Name: (blank) | Email: newattendee3@example.com | Password: <valid-signup-password>
-   *
-   * Expected result:
-   *   The account is not created; the Name field is highlighted with the message "Name is required"
-   */
-  test.fixme("TC_E01S08_03 - Verify that leaving a required sign-up field empty should block account creation and identify the missing field", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Leave the Name field empty
-    // 2. Enter Email: newattendee3@example.com and Password: "<valid-signup-password>" (meets policy)
-    // 3. Click "Create Account"
-    void page;
-  });
-
-  /**
-   * TC_E01S08_04
-   * AC:      E01-S08 - Scenario 4 (Attendee role only)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   newattendee2@example.com successfully completes sign-up
-   *
-   * Test data:
-   *   Email: newattendee2@example.com
-   *
-   * Expected result:
-   *   The account's role is "Attendee" and no other role is assigned
-   */
-  test.fixme("TC_E01S08_04 - Verify that an account created through the public sign-up form should hold the Attendee role only", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Complete sign-up with valid details
-    // 2. Log in as a System Administrator
-    // 3. Open the new account's profile and check its assigned role
-    void page;
-  });
 
   /**
    * TC_E01S08_05
@@ -554,6 +262,44 @@ test.describe("E01-S11", () => {
     // 1. Deactivate the account
     // 2. Log in as a System Administrator
     // 3. Open the Activity Log and search for organiser_a@clienta.com
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E01.md.
+
+test.describe("E01-S12 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E01S12_01 — Verify that a Coordinator's event list should contain only events assigned to them and exclude the unassigned queue", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_01).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_02 — Verify that a Coordinator opening or acting on a colleague's event directly should be refused with nothing revealed and the attempt logged", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_02).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_03 — Verify that a Coordinator should still see every venue's availability states with other events' details withheld", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_03).
+    void page;
+  });
+
+  test.fixme("TC_E01S12_04 — Verify that Organiser client isolation should be unchanged by Coordinator scoping", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S12_04).
+    void page;
+  });
+
+});
+
+test.describe("E01-S13 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E01S13_01 — Verify that a Lead and a Safety Officer should each land on their own workspace with only their role's navigation", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S13_01).
+    void page;
+  });
+
+  test.fixme("TC_E01S13_02 — Verify that new-role accounts should hold exactly one role and that the five existing roles should still land where they did", async ({ page }) => {
+    // Implement from docs/testing/cases/E01.md (TC_E01S13_02).
     void page;
   });
 

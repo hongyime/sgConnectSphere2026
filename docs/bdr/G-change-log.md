@@ -272,8 +272,22 @@ The release/product backlog, cases, contract, schema note, BDR addendum and
 regenerated CAA 161026 derivatives use the corrected IDs. CAA 151026 exports
 and immutable execution records remain historical snapshots with their old IDs.
 
-New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata pending
-PO/Scrum Master planning confirmation. They remain unimplemented, not delivered;
-no new sprint commitment or carryover has been inferred from the date. #268's
-reported fixed 354-case tooling assertion is a dependency to watch when it merges;
-this catalogue correctly has 359 cases and no unrelated #268 test is changed here.
+New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata.
+The scheduling question recorded during review is resolved by the Product Owner's
+16 October confirmation below. They remain unimplemented, not delivered.
+
+## 16 October 2026 ? PO Sprint 3 confirmation and current-main integration
+
+The Product Owner confirmed: keep the new cases under E06-S03's current Sprint 3
+plan and complete the remaining work; record anything unfinished honestly at
+sprint close. Do not label this a Sprint 4 allocation, inferred carryover or
+completed delivery. Update T-94 and downstream planning notes accordingly without
+changing case sprint values, estimates or ownership.
+
+Integrate current main (62916a9, including #217/#266/#273/#277) as requested in
+#280's review. Regenerate the backlog/test workbooks, legacy testcase compatibility
+input, BDR export and coverage inventory from the combined canonical sources.
+Resolve generated coverage by regeneration, preserving both main's scaffold
+changes and this PR's five new unimplemented cases. The reported hard-coded
+354-case assertion has been repaired in #268 per the PO's review comment; do not
+change the correct 359-case catalogue to satisfy the obsolete assertion.

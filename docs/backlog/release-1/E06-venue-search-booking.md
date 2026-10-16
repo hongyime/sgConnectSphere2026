@@ -96,6 +96,11 @@ within hours. This is event-based; T-21's sessions wording is withdrawn by T-48.
 - **BDR references**: C-01, C-16, C-17, C-37, C-46, C-60, T-20, T-49, C-65, T-66, C-67, T-68, T-78, O-27, O-29, O-30, T-94, T-95, T-96
 - **Owner**:
 
+**Planning clarification (PO, 16 October 2026):** TC_E06S03_09 to _13 stay
+under this current Sprint 3 plan. Complete the remaining implementation and
+verification; report anything unfinished honestly at sprint close. These cases
+are not delivered merely because their requirements are recorded (T-94).
+
 ### User story
 
 As an Event Coordinator, I want to submit a venue booking request for an event so that Venue Staff can review it and decide whether the venue can be provided.
@@ -184,6 +189,7 @@ Coordinator selection permission in Scenario 3c.
 - Withdraw only a Pending request to Released, preserving other bookings and the event status; notify the requested venue's assigned staff (T-94, T-95)
 - Serialize withdrawal against approval/rejection and retain the booking-specific audit history (T-95)
 - Allow a new replacement after withdrawal; after rejection follow only the latest rejection's own suggestion (T-96)
+- Complete TC_E06S03_09 to _13 under the current Sprint 3 plan; record anything unfinished honestly at sprint close (PO confirmation, 16 October; T-94)
 
 ## E06-S04 — Decide on a venue booking request
 

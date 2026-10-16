@@ -149,10 +149,15 @@ fresh automated and human manual outcomes afterward. No Jira edits in this task.
 
 ### Review planning note (16 October 2026)
 
-The five new cases retain Sprint 3 to match E06-S03's existing plan; this records
-acceptance obligations, not completed work. PO/Scrum Master confirmation of the
-remaining implementation's scheduling is pending. Do not silently move them to
-Sprint 4 or mark them delivered. References are now T-94/T-95/T-96 because #279
-reserved T-93 first; earlier dated exports and immutable run records retain the
-old references as history. Reconcile the fixed-count tooling assertion reported
-on #268 with the actual 359-case inventory if that PR lands.
+The Product Owner confirmed on 16 October that TC_E06S03_09 to _13 remain under
+E06-S03's current Sprint 3 plan and that the remaining work should be completed.
+Record anything unfinished honestly at sprint close. The cases remain
+unimplemented until actual code and verification evidence exist; this is not a
+Sprint 4 assignment, automatic carryover or completion claim. The prior request
+for PO/Scrum Master scheduling confirmation is resolved.
+
+References remain T-94/T-95/T-96 because #279 reserved T-93 first. Earlier dated
+exports and immutable run records retain their historical references. Current-main
+integration regenerates the 359-case workbook and coverage inventory; #268's
+fixed-354 assertion was repaired per the PO's review comment. No unrelated tooling
+test or story estimate is changed by this documentation correction.

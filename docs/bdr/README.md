@@ -16,6 +16,9 @@ T-94 to T-96 record the agreed E06-S03 Pending withdrawal, staff notification,
 decision-race and suggested-venue retry/chain rules. These are requirements for a
 follow-up to merged #274, not delivered functionality. The Product Owner's future
 Confirmed-primary cancellation clarification is explicitly outside E06-S03.
+The Product Owner confirmed on 16 October that the new withdrawal cases remain
+in E06-S03's current Sprint 3 plan, with remaining work to be completed and
+anything unfinished recorded honestly at sprint close. This does not claim delivery.
 See [team decisions](B-team-decisions.md) and [change log](G-change-log.md).
 
 ## What changed in version 9

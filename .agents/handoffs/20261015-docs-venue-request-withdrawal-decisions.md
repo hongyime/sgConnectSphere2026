@@ -43,3 +43,26 @@ BDR IDs are unique with T-93 reserved for #279; corrected backlog references and
 all five unchanged sprint labels verified. Repository check: 140 tests, existing
 Windows worktree 3 failures/11 errors. No code, migrations, database or Jira edits.
 Update PR body/PostPlan after pushing the fixes. No reviewer messages or approvals.
+
+
+## PO confirmation and current-main integration (16 October, latest)
+
+User relayed the PO's explicit instruction: keep the five cases in E06-S03's
+current Sprint 3 plan and complete the remaining work, recording anything
+unfinished honestly at sprint close. Scheduling is resolved; earlier pending
+planning notes above are historical. Recorded the confirmation in T-94, BDR
+addendum/change log, both backlog views (including exported checklist criteria)
+and testing guide. No delivery or inferred carryover claim.
+
+PO review on #280 required merging current main and regenerating derivatives.
+Merged main 62916a9; only conflict was generated tc-coverage.md. Regenerated
+backlog/test workbooks and BDR CAA 161026, refreshed compatibility input and
+regenerated coverage from combined sources, preserving main's scaffold changes.
+No hand-resolved generated contents. T-94/T-95/T-96 preserved. The PO reports
+#268's fixed-354 assertion repaired; no related catalogue/tooling change required.
+
+Evidence: 20261016-125227-jininggg-tooling.md. All 359 cases match workbooks;
+coverage inventory 179 automated / 139 scaffold / 41 none. New cases still
+unimplemented. Required repository check: 146 tests, existing Windows 3 failures
+and 11 errors. No local application tests claimed; no new application source,
+database or Jira changes. Commit/push and update #280/PostPlan with latest head.
