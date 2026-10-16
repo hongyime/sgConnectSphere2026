@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// E08 - 26 cases. Source: docs/testing/cases/E08.md.
+// E08 - 28 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 // TC_E08S03_03, _04 and _05 (with _08 to _10) are implemented in
 // eventReadiness.spec.ts (SCRUM-60).
@@ -292,16 +292,6 @@ test.describe("E08-S03 — Week 7 case scaffolds", () => {
 
   test.fixme("TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed venue", async ({ page }) => {
     // Implement from docs/testing/cases/E08.md (TC_E08S03_07).
-    void page;
-  });
-
-  test.fixme("TC_E08S03_08 — Verify that submitting a fully arranged event for its Operational Safety Check should move it to Safety Review and notify the Safety Officer and Organiser", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S03_08).
-    void page;
-  });
-
-  test.fixme("TC_E08S03_09 — Verify that submission for safety review should be blocked while a readiness item is outstanding and that no one but a Safety Officer can set Confirmed", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S03_09).
     void page;
   });
 
