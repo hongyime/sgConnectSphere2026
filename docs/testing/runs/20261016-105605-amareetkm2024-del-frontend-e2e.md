@@ -29,6 +29,18 @@ The code under test is `main` at `62916a9`. Claude set up the stack, checked
 each screenshot as it arrived and checked the database afterwards; the
 database facts below come from that check. Every step matched the script.
 
+Timing: the frontmatter `date` and the filename are the first recorded
+database action (EVT-3001 marked as needing no support, 10:56:05); the step 2
+screenshot just before it was saved at 10:55:46. The run finished at the last
+screenshot (`MULTIPLE-confirmed-2.png`, saved 11:05:32, Singapore time); the
+last recorded database action was the request at 11:00:58, and the notices
+were read in steps 11–12 after that. Times come from the saved screenshot files
+and the database rows listed below.
+
+Scope: the 5/5 below covers the click-through script only. The "doesn't block
+confirmation" part of TC_E07S06_03 depends on E08-S03, which isn't built, and
+was not tested.
+
 Database check after the run (times Singapore):
 
 - 10:56:05 — EVT-3001 marked as needing no technical support
