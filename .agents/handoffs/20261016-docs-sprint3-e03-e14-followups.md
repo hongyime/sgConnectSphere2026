@@ -63,3 +63,18 @@ Use the existing shared feedback and Singapore formatter contracts to define nar
 - This remains planning plus repository-tooling work, not UI implementation or
   manual acceptance. Restore review readiness only after the final pushed
   head's checks are green or queued, then obtain fresh human approval.
+
+## Combined-main round-trip integration
+
+- A normal merge of main `37cbb77` introduced the reviewed dynamic catalogue
+  round-trip tests from #268. The combined candidate exposed a representation
+  mismatch: canonical empty strings serialize as blank XLSX cells read as None.
+- Reproduced that failure, then normalized only empty expected strings in the
+  nine-field comparison. Actual cells and every nonempty/numeric value remain
+  compared unchanged; no Story ID or assertion is discarded.
+- All 12 focused exporter/boundary tests and 158 repository-tooling tests pass.
+  The observed candidate HEAD was `ce1d01d` plus the pending main merge and fix;
+  evidence is `docs/testing/runs/20261016-180648-bryanseah234-tooling.md`.
+- Regenerated catalogues also retain main's reviewed Unassigned Sprint display
+  and column width. Canonical sprint assignments are unchanged. Integration was
+  committed normally as `f853b92`, with no rebase or force push.
