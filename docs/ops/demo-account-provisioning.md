@@ -1,9 +1,11 @@
 # Demo account provisioning
 
-This procedure is limited to the one existing Safety Officer profile in the
-repository seed, identified as `safetyOfficer` (`safety_officer@connectsphere.com`).
-It is a targeted account-data operation, not a migration. It does not authorise
-resetting, reseeding, adding another account, or changing application code.
+This procedure permits provisioning only the one approved Safety Officer
+profile from the repository seed, identified as `safetyOfficer`
+(`safety_officer@connectsphere.com`), and only if a read-only precheck confirms
+it is missing. It is a targeted account-data operation, not a migration. It
+does not authorise resetting, reseeding, adding any other account, or changing
+application code.
 
 ## Scope and risk boundary
 
@@ -14,10 +16,10 @@ restrictions, or cover database, API, service or CI secrets. Do not include the
 credential's value or any password hash in notes or records.
 
 The main seed already defines both the Safety Officer and Coordinator Lead, as
-introduced by PR #232.
-Do not add or provision the Coordinator Lead or any other account under this
-procedure. A successful precheck showing the Safety Officer profile already
-exists is a no-op, not a reason to update it.
+introduced by PR #232. No seed-code change is needed. The Coordinator Lead is
+not in this procedure and must not be provisioned by it. A successful precheck
+showing the Safety Officer profile already exists is a no-op, not a reason to
+update it.
 
 ## Preconditions
 
@@ -27,8 +29,8 @@ exists is a no-op, not a reason to update it.
 3. Compare the current seed definition for `safetyOfficer` with the target
    account profile and verify the repository's approved password-hash helper
    and expected compatible hash format. Never copy a hash into the record.
-4. Coordinate the operation with Aaron, the previously announced writer. Do not
-   proceed while another writer may be changing the same account data.
+4. Coordinate the operation with the designated account writer. Do not proceed
+   while another writer may be changing the same account data.
 5. Perform a case-folded email and identifier precheck. Recheck immediately
    before the write using a race-safe mechanism. If an account with the target
    email or identifier exists with an incompatible profile, stop. Do not
@@ -41,8 +43,10 @@ If it is missing, obtain review of the exact one-account write mechanism before
 execution. In a single targeted transaction, insert zero or one row for the
 existing Safety Officer definition only. Do not update existing credentials,
 insert related/demo accounts, truncate tables, run a reset or seed command, or
-apply schema changes. If the precondition changes or the transaction cannot
-prove it inserted no more than this one profile, abort and investigate.
+apply schema changes. This is a narrow exception for this one named demo
+account, not general production seeding or permission to create other accounts.
+If the precondition changes or the transaction cannot prove it inserted no
+more than this one profile, abort and investigate.
 
 Afterward, verify the profile fields, account count delta (zero or one), and
 that any stored password hash is compatible with the approved helper. Never

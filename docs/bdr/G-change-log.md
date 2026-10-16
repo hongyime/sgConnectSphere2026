@@ -290,23 +290,33 @@ The scheduling question recorded during review is resolved by the Product Owner'
 
 Recorded the Product Owner's bounded demo-account risk acceptance and approved
 procedure for the single existing Safety Officer seed profile. The current seed
-already defines that account and the Coordinator Lead; this decision adds no
-seed code, account set, credential controls or claim of security safety. Any
-missing-account operation remains gated by a reviewed mechanism and read-only
-production precheck; it is not a migration and was not performed here.
+already defines that account and the Coordinator Lead; only this one approved
+missing profile may be provisioned after reviewed procedure and read-only
+precheck. No seed code change or other account creation is authorised. The
+existing public/shared credential has no selected rotation or access restriction;
+this is not a security-safety or real-data approval. No production account write
+was performed here.
 
-Approved E14-S03 and E03-S12 as new Sprint 3 follow-ups for separate refinement.
-E14-S02, E03-S07 and E03-S11 remain Done. T-97 supersedes T-74's historical
-reopening exception under the current Definition of Done and 6 October
-instructor guidance; T-74's historical record is retained. This is a planning
-approval, not a claim of story delivery.
+Selected E14-S03 and E03-S12 as Sprint 3 follow-ups, still unestimated and not
+Done, for separate refinement. E14-S03 addresses the confirmed display defect:
+the current Organiser and assigned Coordinator Activity logs expose raw UTC
+edited date/time values; the new story will show readable Singapore time.
+UTC storage, audit permissions and access
+remain unchanged; notifications, unrelated labels, global viewing and before/
+after history are excluded. E03-S12 replaces the current plain success paragraph
+with the shared success Alert, retaining its existing status semantics and
+field-specific messages while preserving error, save,
+persistence and permission behavior. E14-S02, E03-S07 and E03-S11 remain Done.
+T-97 supersedes T-74's historical reopening exception under the current
+Definition of Done and 6 October instructor guidance; T-74's history remains
+unchanged. This is planning approval, not a claim of story delivery.
 
 Recorded Bryan as accountable PO for the SCRUM-75 Venue Staff mapping follow-up.
-Only the deploy owner may apply an actual approved mapping with pre/post records,
-and Ji Ning verifies delivery. PR #272's merged routing code is independent of
-the mapping; no assignments are authorised until approval. T-89's no-roster-screen
-decision remains. The Jira subtask key will be linked when reported by its
-separate lane.
+The separate Jira subtask SCRUM-195 is assigned to Bryan as accountable PO.
+This decision approves no roster mapping or load. Only the deploy owner may apply an actual approved mapping
+with pre/post records, and Ji Ning verifies delivery. PR #272's merged routing
+code is independent of the mapping; no assignments are authorised until
+approval. T-89's no-roster-screen decision remains.
 
 ## 16 October 2026 ? PO Sprint 3 confirmation and current-main integration
 
