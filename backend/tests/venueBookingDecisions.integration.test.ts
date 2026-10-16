@@ -187,6 +187,39 @@ test('TC_E06S04_02: the Coordinator switches to the suggested venue in one step,
   assert.deepEqual([(await f.row(replacement.id)).status, (await primaries(f, eventId))], ['confirmed', [replacement.id]]);
 }));
 
+// TC_E06S02_04 across E06-S03 and E06-S04: an unsuitable venue may still be
+// requested; Venue Staff see the advisory result saved at submission when
+// deciding, and it never blocks approval.
+test('TC_E06S02_04: an unsuitable request is accepted, Venue Staff see its advisory unmet requirements, and can approve it', () => withFixture(async f => {
+  const { eventId } = await f.pendingRequest('EVT-5401', '2027-02-09');
+  const smallRoom = randomUUID();
+  await f.pool.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at, is_active)
+    VALUES ($1, 'Box Room', 'Test wing', 20, '08:00', '22:00', true)`, [smallRoom]);
+
+  const submitted = await submitBooking(f.pool, f.coordinator, {
+    event_id: eventId, venue_id: smallRoom, starts_at: '2027-02-09T10:00:00+08:00', ends_at: '2027-02-09T12:00:00+08:00',
+  }, randomUUID(), { resolveVenueStaff: async () => [f.ids.staff] });
+  assert.equal(submitted.status, 201);
+  const requestId = (submitted.body as { booking: { id: string } }).booking.id;
+
+  const listed = (await listPendingBookings(f.query, f.staff)).bookings.find(booking => booking.id === requestId)!;
+  const { booking } = await getBooking(f.query, f.staff, requestId);
+  for (const view of [listed, booking]) {
+    assert.ok(view.advisoryMismatches && view.advisoryMismatches.length > 0, 'the saved advisory result reaches Venue Staff');
+    assert.ok(view.advisoryMismatches.some(message => /Capacity 20/.test(message)), view.advisoryMismatches.join(' | '));
+  }
+
+  const approved = await decideBooking(f.pool, f.staff, requestId, { decision: 'approve' });
+  assert.equal(approved.status, 200);
+  assert.equal((await f.row(requestId)).status, 'confirmed');
+  assert.deepEqual((approved.body as { booking: { advisoryMismatches: string[] } }).booking.advisoryMismatches, booking.advisoryMismatches);
+}));
+
+test('a seeded request with no saved assessment reports no advisory result', () => withFixture(async f => {
+  const { bookingId } = await f.pendingRequest('EVT-5402', '2027-02-10');
+  assert.equal((await getBooking(f.query, f.staff, bookingId)).booking.advisoryMismatches, null);
+}));
+
 test('TC_E06S04_02: a rejection without a suggested venue says nothing about an alternative', () => withFixture(async f => {
   const { eventId, bookingId } = await f.pendingRequest();
   const result = await decideBooking(f.pool, f.staff, bookingId, { decision: 'reject', reason: REASON, suggested_venue_id: '' });

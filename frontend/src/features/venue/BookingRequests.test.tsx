@@ -72,6 +72,45 @@ test('a pending request shows its details and a way to decide', async () => {
   expect(screen.queryByRole('heading', { name: 'Decision' })).toBeNull();
 });
 
+// TC_E06S02_04: the advisory result saved at submission is shown, never blocking.
+const UNSUITABLE = ['Required room layout is not supported.', 'Capacity 50 is below the required 200 places.'];
+
+test('TC_E06S02_04: a request for an unsuitable venue shows its advisory unmet requirements', async () => {
+  stubApi({ 'GET /api/venues?booking=b-1': { body: { booking: booking({ advisoryMismatches: UNSUITABLE }) } } }, { role: 'venue_staff' });
+  renderAt('/venue/bookings/b-1');
+  const heading = await screen.findByRole('heading', { name: 'Advisory unmet requirements at submission' });
+  const card = heading.closest('section') ?? heading.parentElement!.parentElement!;
+  expect(within(card as HTMLElement).getAllByRole('listitem').map(item => item.textContent)).toEqual(UNSUITABLE);
+  expect(card).toHaveTextContent('This is advisory: you can still approve or reject the request.');
+  expect(screen.getByRole('link', { name: 'Decide on request' })).toBeInTheDocument();
+});
+
+test('a suitable request, or one with no saved assessment, shows no advisory section', async () => {
+  for (const advisoryMismatches of [[], null, undefined]) {
+    stubApi({ 'GET /api/venues?booking=b-1': { body: { booking: booking({ advisoryMismatches }) } } }, { role: 'venue_staff' });
+    renderAt('/venue/bookings/b-1');
+    expect(await screen.findByRole('heading', { name: 'Planning Phase Gala' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Advisory unmet requirements at submission' })).toBeNull();
+    cleanup();
+    vi.unstubAllGlobals();
+  }
+});
+
+test('TC_E06S02_04: the advisory section is shown while deciding, and approval still goes ahead', async () => {
+  let current = booking({ advisoryMismatches: UNSUITABLE });
+  const calls = stubApi({
+    'GET /api/venues?booking=b-1': () => ({ body: { booking: current } }),
+    'POST /api/venues': () => { current = booking({ status: 'confirmed', advisoryMismatches: UNSUITABLE }); return { body: { booking: current, coordinatorNotified: true } }; },
+  }, { role: 'venue_staff' });
+  renderAt('/venue/bookings/b-1/decide');
+  expect(await screen.findByRole('heading', { name: 'Advisory unmet requirements at submission' })).toBeInTheDocument();
+  expect(screen.getByText('Required room layout is not supported.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Approve…' }));
+  fireEvent.click(within(screen.getByRole('form', { name: 'Approve this booking request?' })).getByRole('button', { name: 'Approve request' }));
+  expect(await screen.findByText('Approved. The booking is confirmed. Coordinator A has been notified.')).toBeInTheDocument();
+  expect(calls.filter(call => call.method === 'POST')).toHaveLength(1);
+});
+
 test('a rejected request shows who decided, the reason and the suggested venue', async () => {
   stubApi({ 'GET /api/venues?booking=b-1': { body: { booking: booking({
     status: 'rejected', decisionReason: 'Capacity too small', suggestedVenue: { id: 'v-jasmine', name: 'Jasmine Hall' },

@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **364**
 - Automated (explicit TC_ID in an active test title): **190** (52.2%)
-  - Real-database (`.integration.test` / `.db.test`): **36**
+  - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **153**
+  - Live-assertion (other active tests): **154**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (36.5%)
 - No test yet (no test file mentions the TC_ID): **41** (11.3%)
 
@@ -231,7 +231,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
-| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
+| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; bac |
 | `TC_E06S02_05` | E06-S02 | Verify operating hours are an advisory suitability criterion only in E06-S02 | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
@@ -850,6 +850,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/venueBookingDecisions.integration.test.ts`
 
+- a seeded request with no saved assessment reports no advisory result
 - only Venue Staff can decide; a refusal is audited and leaves the request pending
 - a decided request cannot be decided again
 - two Venue Staff deciding the same request at once: one decision wins, the other is refused
@@ -869,6 +870,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateDecision keeps the reason within the limit, at the limit and just above
 - validateDecision trims the reason and reads an optional suggested venue
 - toBooking shows a decided booking with its reason, suggestion and decider
+- a booking with no saved assessment, or a malformed one, reports none
 - only Venue Staff reach the decision, the list and the detail; refusals are audited before any read
 - an invalid booking id or decision is refused before a transaction opens
 - an unknown booking is not found, and the transaction is left without changes
@@ -1274,6 +1276,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty queue says nothing is waiting
 - a refused queue shows the server message
 - a pending request shows its details and a way to decide
+- a suitable request, or one with no saved assessment, shows no advisory section
 - a rejected request shows who decided, the reason and the suggested venue
 - a rejected request with no reason or suggestion on record says so
 - a confirmed request shows its decision without a reason, and missing facts read as not recorded

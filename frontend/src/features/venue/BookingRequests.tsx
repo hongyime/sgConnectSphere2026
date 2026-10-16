@@ -84,6 +84,19 @@ function decisionFacts(booking: BookingRequest): [string, string][] {
   ];
 }
 
+// TC_E06S02_04 (E06-S02 Scenario 4): an unsuitable venue may still be
+// requested, and Venue Staff see why when deciding. Advisory only.
+function AdvisoryRequirements({ booking }: { booking: BookingRequest }) {
+  const mismatches = booking.advisoryMismatches ?? [];
+  if (mismatches.length === 0) return null;
+  return (
+    <Card title="Advisory unmet requirements at submission">
+      <Alert tone="info">The Coordinator was told this venue may not suit the event. This is advisory: you can still approve or reject the request.</Alert>
+      <ul>{mismatches.map(message => <li key={message}>{message}</li>)}</ul>
+    </Card>
+  );
+}
+
 export function BookingDetail() {
   const { bookingId = '' } = useParams();
   const { result, reload } = useLoad(signal => getBooking(bookingId, signal), [bookingId]);
@@ -106,6 +119,7 @@ export function BookingDetail() {
       {booking ? (
         <>
           <Card title="Request details"><FactList columns={2} items={requestFacts(booking)} /></Card>
+          <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? <Card title="Decision"><FactList columns={2} items={decisionFacts(booking)} /></Card> : null}
           <p><ButtonLink to={QUEUE}>Back to booking requests</ButtonLink></p>
         </>
@@ -168,6 +182,7 @@ export function BookingDecision() {
       {booking ? (
         <>
           <Card title="What you're deciding"><FactList items={requestFacts(booking)} /></Card>
+          <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? (
             done ? null : <Alert tone="info">This request is {booking.status}, so there's nothing to decide.</Alert>
           ) : choice ? (

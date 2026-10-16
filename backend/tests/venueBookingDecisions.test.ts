@@ -27,7 +27,7 @@ function bookingRow(overrides: Record<string, unknown> = {}) {
     venue_id: venueId, venue_name: 'Small Room', event_id: '00000000-0000-4000-8000-0000000000e1', event_code: 'EVT-5001',
     event_title: 'Product Expo 2026', expected_attendance: 150, coordinator_id: coordinator.id, coordinator_name: 'Coordinator A',
     decision_reason: null, suggested_venue_id: null, suggested_venue_name: null, decided_by_name: null, decided_at: null,
-    created_at: new Date('2027-01-01T00:00:00Z'), is_primary: false, ...overrides,
+    created_at: new Date('2027-01-01T00:00:00Z'), is_primary: false, suitability_snapshot: null, ...overrides,
   };
 }
 
@@ -101,6 +101,29 @@ test('toBooking shows a decided booking with its reason, suggestion and decider'
   assert.deepEqual(booking.suggestedVenue, { id: otherVenueId, name: 'Riverside Hall' });
   assert.equal(booking.decidedAt, '2027-01-03T00:00:00.000Z');
   assert.equal(booking.startsAt, '2027-01-15T02:00:00.000Z');
+});
+
+// TC_E06S02_04: Venue Staff see the advisory result saved when the request was
+// submitted (E06-S03 suitability_snapshot); it is never a reason to refuse.
+test('TC_E06S02_04: a booking carries the advisory unmet requirements saved at submission', () => {
+  const snapshot = { suitable: false, advisory: true, mismatches: ['Capacity 150 is below the required 200 places.', 'Event is outside operating hours.'] };
+  assert.deepEqual(toBooking(bookingRow({ suitability_snapshot: snapshot })).advisoryMismatches,
+    ['Capacity 150 is below the required 200 places.', 'Event is outside operating hours.']);
+  assert.deepEqual(toBooking(bookingRow({ suitability_snapshot: { suitable: true, mismatches: [] } })).advisoryMismatches, []);
+});
+
+test('a booking with no saved assessment, or a malformed one, reports none', () => {
+  for (const snapshot of [null, {}, { mismatches: 'not a list' }]) {
+    assert.equal(toBooking(bookingRow({ suitability_snapshot: snapshot })).advisoryMismatches, null);
+  }
+  assert.deepEqual(toBooking(bookingRow({ suitability_snapshot: { mismatches: ['Layout not supported.', 7, null] } })).advisoryMismatches,
+    ['Layout not supported.']);
+});
+
+test('TC_E06S02_04: an approval is not refused because the venue was unsuitable at submission', async () => {
+  const { pool } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb')
+    ? [bookingRow({ suitability_snapshot: { suitable: false, mismatches: ['Required room layout is not supported.'] } })] : undefined));
+  assert.equal((await decideBooking(pool, staff, bookingId, { decision: 'approve' })).status, 200);
 });
 
 test('only Venue Staff reach the decision, the list and the detail; refusals are audited before any read', async () => {

@@ -35,6 +35,7 @@ type BookingRow = {
   coordinator_id: string | null; coordinator_name: string | null;
   decision_reason: string | null; suggested_venue_id: string | null; suggested_venue_name: string | null;
   decided_by_name: string | null; decided_at: Date | null; created_at: Date; is_primary: boolean;
+  suitability_snapshot: unknown;
 };
 
 // Why a booking that isn't Pending can't be decided, worded for Venue Staff.
@@ -53,13 +54,21 @@ const BOOKING_SELECT = `SELECT vb.id, vb.status, lower(vb.booking_range) AS star
     e.id AS event_id, e.event_code, e.title AS event_title, e.expected_attendance,
     e.coordinator_id, c.full_name AS coordinator_name,
     vb.decision_reason, vb.suggested_venue_id, sv.name AS suggested_venue_name,
-    d.full_name AS decided_by_name, vb.decided_at, vb.created_at, vb.is_primary
+    d.full_name AS decided_by_name, vb.decided_at, vb.created_at, vb.is_primary, vb.suitability_snapshot
   FROM venue_bookings vb
   JOIN venues v ON v.id = vb.venue_id
   JOIN events e ON e.id = vb.event_id
   LEFT JOIN users c ON c.id = e.coordinator_id
   LEFT JOIN venues sv ON sv.id = vb.suggested_venue_id
   LEFT JOIN users d ON d.id = vb.decided_by`;
+
+// TC_E06S02_04: the advisory suitability result saved at submission (E06-S03),
+// shown to Venue Staff when deciding. Advisory only: it never blocks approval.
+// Null when no assessment was recorded, as for seeded or older requests.
+function advisoryMismatches(snapshot: unknown): string[] | null {
+  const mismatches = (snapshot as { mismatches?: unknown } | null)?.mismatches;
+  return Array.isArray(mismatches) ? mismatches.filter((item): item is string => typeof item === 'string') : null;
+}
 
 export function toBooking(row: BookingRow) {
   return {
@@ -76,6 +85,7 @@ export function toBooking(row: BookingRow) {
     decidedAt: row.decided_at ? row.decided_at.toISOString() : null,
     requestedAt: row.created_at.toISOString(),
     isPrimary: row.is_primary,
+    advisoryMismatches: advisoryMismatches(row.suitability_snapshot),
   };
 }
 
