@@ -11,11 +11,11 @@ Apply only the exact merged migration 0017 from PR #282 after fresh production g
 - Postcheck passed: ledger has 20 entries, 0017 appears once, 0012 and 0018 remain once each, and enum order is `planning`, `safety_review`, `confirmed`.
 - Public production `GET /api/health` returned HTTP 200 and readiness true. No application rows were queried or written; no reset, seed, other migration, deployment, or application configuration change was performed.
 - Added the sanitized production run record in the first branch commit.
+- `python scripts/check.py` passed once: 146 tooling tests passed, 341 test-run records validated, hooks and `.env.template` check passed. It emitted a non-blocking warning for existing secondary worktrees. The successful run is recorded in `docs/testing/runs/20261016-102210-bryanseah234-tooling.md` (HEAD `9b76662`).
 
 ## Next
 
-- Run `python scripts/check.py` once and record the observed result in one T-65 tooling session record.
-- Update this handoff, commit the T-65 evidence, push normally, open a focused PR with all four required sections and traceability to #282/SCRUM-184, and request human review only if the latest checks are passing or queued.
+- Commit the T-65 evidence and this handoff update, push normally, open a focused PR with all four required sections and traceability to #282/SCRUM-184, and request human review only if the latest checks are passing or queued.
 - Do not edit `.agents/STATE.md` or `.agents/JOURNAL.md`; do not rerun any migration.
 
 ## Notes
