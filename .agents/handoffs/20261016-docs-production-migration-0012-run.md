@@ -14,11 +14,18 @@ Apply only the merged `0012_user_role_enum_additions.sql` migration after verify
 - An unauthenticated public health GET returned HTTP 200 with JSON `ok: true`; its automated runtime record is `docs/testing/runs/20261016-083919-bryanseah234-runtime.md`.
 - `python scripts/check.py` passed repository hygiene and all 140 tooling tests and validated 326 test-run records. It warned about pre-existing secondary worktrees; none were removed. The final run record is `docs/testing/runs/20261016-084338-bryanseah234-tooling.md`; an earlier check is recorded in `docs/testing/runs/20261016-084013-bryanseah234-tooling.md`. These are repository/tooling results only, not application tests or a manual end-to-end run.
 
+## Review status
+
+- PR #284 is ready for review on `docs/production-migration-0012-run`, rebased onto `main` `51ab016`; GitHub reported it mergeable.
+- The standalone PostPlan is published at https://22bmq2ghvwas.postplan.dev and linked in top-level PR comment https://github.com/hongyime/sgConnectSphere2026/pull/284#issuecomment-6205501765.
+- All required PR checks passed on head `cf6568c` before this final handoff refresh. The handoff commit will trigger a new check run.
+- Review was requested from the other repository CODEOWNERS; teammate approval is pending. The PR has not been merged.
+
 ## Remaining
 
-1. PR #284 is open as a draft on `docs/production-migration-0012-run`, based on `main` `51ab016`; its created head was `08d25fe` and GitHub reported it mergeable. Required checks were pending at handoff update.
-2. The standalone PostPlan is published at https://22bmq2ghvwas.postplan.dev and linked in top-level PR comment https://github.com/hongyime/sgConnectSphere2026/pull/284#issuecomment-6205501765.
-3. Wait for required checks on the final branch head, request teammate review from CODEOWNERS, and mark the PR ready when the normal review gate is met. Do not apply another production migration from this task.
+1. Wait for required checks on the final branch head and resolve any failures without bypassing hooks or branch protection.
+2. Await teammate review and address findings through the normal PR process.
+3. Do not apply another production migration from this task.
 
 ## Safety
 
