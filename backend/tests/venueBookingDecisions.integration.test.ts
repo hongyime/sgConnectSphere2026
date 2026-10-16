@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { decideBooking, getBooking, listPendingBookings } from '../src/modules/venueBooking/decisions.js';
+import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js';
 import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
 import { getAssignedEvent } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
 import { listEventActivity, type Query } from '../src/modules/eventVisibility/service.js';
@@ -99,6 +100,19 @@ async function activityEntries(f: Fixture, eventId: string) {
   return { coordinatorView, organiserView };
 }
 
+// O-30 (docs/contracts/venue-bookings.md): the first Confirmed booking becomes
+// the event's primary venue. An event may hold several venues (C-67, T-68).
+async function secondVenueRequest(f: Fixture, eventId: string, day: string) {
+  const bookingId = randomUUID();
+  await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status)
+    VALUES ($1, $2, $3, $4::tstzrange, 'pending')`,
+  [bookingId, f.ids.alternative, eventId, `[${day}T10:00:00+08:00,${day}T12:00:00+08:00)`]);
+  return bookingId;
+}
+
+const primaries = async (f: Fixture, eventId: string) => (await f.pool.query<{ id: string }>(
+  'SELECT id FROM venue_bookings WHERE event_id = $1 AND is_primary', [eventId])).rows.map(r => r.id);
+
 function within(time: Date, from: Date, to: Date) {
   assert.ok(time >= from && time <= to, `${time.toISOString()} is outside ${from.toISOString()} to ${to.toISOString()}`);
 }
@@ -147,6 +161,30 @@ test('TC_E06S04_02: rejecting with a reason and an alternative venue tells the C
   assert.match(sent[0]!.message, /Venue Staff A rejected your request for Small Room/);
   assert.match(sent[0]!.message, new RegExp(`Reason: ${REASON}`));
   assert.match(sent[0]!.message, /Suggested alternative: Riverside Hall$/);
+}));
+
+// Scenario 2 across E06-S04 and E06-S03: the Coordinator follows the
+// suggestion through the shared submission service (replaces_booking_id,
+// #274) without a new search; the original stays Rejected (T-96).
+test('TC_E06S04_02: the Coordinator switches to the suggested venue in one step, and Venue Staff can approve it', () => withFixture(async f => {
+  const { eventId, bookingId } = await f.pendingRequest('EVT-5301', '2027-02-08');
+  await decideBooking(f.pool, f.staff, bookingId, { decision: 'reject', reason: REASON, suggested_venue_id: f.ids.alternative });
+
+  const switched = await submitBooking(f.pool, f.coordinator, {
+    event_id: eventId, venue_id: f.ids.alternative, replaces_booking_id: bookingId,
+    starts_at: '2027-02-08T10:00:00+08:00', ends_at: '2027-02-08T12:00:00+08:00',
+  }, randomUUID(), { resolveVenueStaff: async () => [f.ids.staff] });
+
+  assert.equal(switched.status, 201);
+  const replacement = (switched.body as { booking: { id: string; status: string; venue_id: string; replaces_booking_id: string } }).booking;
+  assert.deepEqual([replacement.status, replacement.venue_id, replacement.replaces_booking_id], ['pending', f.ids.alternative, bookingId]);
+  assert.equal((await f.row(bookingId)).status, 'rejected');
+  assert.deepEqual((await listPendingBookings(f.query, f.staff)).bookings.map(booking => [booking.id, booking.venue.name]),
+    [[replacement.id, 'Riverside Hall']]);
+
+  const approved = await decideBooking(f.pool, f.staff, replacement.id, { decision: 'approve' });
+  assert.equal(approved.status, 200);
+  assert.deepEqual([(await f.row(replacement.id)).status, (await primaries(f, eventId))], ['confirmed', [replacement.id]]);
 }));
 
 test('TC_E06S04_02: a rejection without a suggested venue says nothing about an alternative', () => withFixture(async f => {
@@ -238,19 +276,6 @@ test('two Venue Staff deciding the same request at once: one decision wins, the 
   assert.equal((await f.audits(bookingId)).length, 1);
   assert.equal((await f.notices(eventId)).length, 1);
 }));
-
-// O-30 (docs/contracts/venue-bookings.md): the first Confirmed booking becomes
-// the event's primary venue. An event may hold several venues (C-67, T-68).
-async function secondVenueRequest(f: Fixture, eventId: string, day: string) {
-  const bookingId = randomUUID();
-  await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status)
-    VALUES ($1, $2, $3, $4::tstzrange, 'pending')`,
-  [bookingId, f.ids.alternative, eventId, `[${day}T10:00:00+08:00,${day}T12:00:00+08:00)`]);
-  return bookingId;
-}
-
-const primaries = async (f: Fixture, eventId: string) => (await f.pool.query<{ id: string }>(
-  'SELECT id FROM venue_bookings WHERE event_id = $1 AND is_primary', [eventId])).rows.map(r => r.id);
 
 test('the first approved booking becomes the primary venue; a second Confirmed venue does not', () => withFixture(async f => {
   const { eventId, bookingId: first } = await f.pendingRequest('EVT-5201', '2027-02-05');

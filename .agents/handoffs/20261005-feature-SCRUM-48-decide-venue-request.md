@@ -87,9 +87,11 @@ answer.
 ## Still to do
 
 - Full `test:db` with `TEST_DATABASE_URL` only; record T-65 runs.
-- Scenario 2 Coordinator switch: check the reject + suggestion end to end
-  with Ji Ning's merged replacement flow (`replaces_booking_id`, #274,
-  `VenueBookingForm.tsx`); original stays Rejected (T-96).
+- Scenario 2 Coordinator switch: DONE 2026-10-16. Real-DB test drives
+  `decideBooking` reject -> `submitBooking` with `replaces_booking_id` ->
+  approve (original stays Rejected, replacement becomes primary); 19/19.
+  The Coordinator UI is Ji Ning's ("Request suggested venue" in
+  `VenueBookingRequests.tsx`); the manual TC_02 run should click through it.
 - Manual run of TC_01-_06 on the seeded stack by Le Xin (TC_04: raise a venue's
   turnaround so a pending request clashes); TC_07 per Bryan's answer above.
 - Then T-65 records, PR, human review of code and test cases.
