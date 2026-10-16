@@ -1,26 +1,22 @@
-Finish PR #230 by syncing the seeded-account acceptance cases with current `origin/main`, mapping the reviewer-listed E05/E06/E07/E10 scenarios to the CLI seed, regenerating the test-case workbook, and recording the remaining review follow-up.
+Finish PR #230's six fixture-consistency gate findings on `docs/seeded-account-names`, regenerate the canonical test-case export, record the verified repository check, and push the reviewed corrections without changing story scope.
 
 ## Current state
 
-- Merged `origin/main` normally in `2f7ac03`. The E06 and binary-workbook conflicts were resolved from canonical Markdown without rewriting published history.
-- Remapped all 24 listed cases across E05, E06, E07 and E10 to seeded venue/event/item names. Test-only preparation is stated where the pristine seed lacks a block, hold, required status, item location, second Session, equipment reservation, or staff routing. `TC_E05S01_01` was not edited.
-- Rewrote `TC_E06S03_03` to expect a second independent venue booking under T-68/T-79 and identify the older blocked-second-request assertion as superseded. Follow up in the PR/review with the story owner to confirm any remaining backlog/test inventory or implementation scaffolding that still asserts the obsolete behavior.
-- Consolidated the duplicate `TC_E10S04_01` Markdown entry into one Session-based seeded fixture. Updated `TC_E10S04_04` and the direct dependent `TC_E08S05_04` reference to use the same seeded cancelled event.
-- Resolved the E06 T-92 conflict using the accepted no-reminder/expiry notice and extension-history wording. No `.agents/STATE.md` or `.agents/JOURNAL.md` content was edited by this task; those paths are staged only because the normal `origin/main` merge brought them in.
-- Remap commits are `003332d` (E05), `97a9ae1` (E06 scenario preservation), `b2258d7` (E07), and `7eddbf4` (the linked E08/E10 cancellation fixture).
-- Regenerated `PROJECT TEST CASES CAA 141026.xlsx` from merged Markdown to resolve the binary conflict and generated `PROJECT TEST CASES CAA 151026.xlsx` (354 cases across 13 epic files). `docs/source-of-truth.md` points at `CAA 151026`.
-- The canonical Markdown audit found all 24 target IDs exactly once with none of the six stale fixture names; the generated `CAA 151026` workbook has the same 24 unique rows and no stale fixture names. `TC_E05S01_01` is byte-identical to the pre-edit branch version.
-- `python scripts/check.py` passed on the final content tree: 128 repository-tooling tests and hygiene checks passed; it warned about intentional secondary worktrees. Application lint, build, database and browser suites were not run. Markdown LSP diagnostics are unavailable because no `.md` server is configured.
-- PR #230 remains unmerged; teammate re-review is still required. No approval, review comment, PR edit or Jira update was made.
+- Corrected the six gate findings in `docs/testing/cases/E03.md`, `E05.md`, `E06.md`, and `E09.md`: the E03 dependent status-history case follows "Team Offsite 2"; the four-state Lotus calendar fixture assigns its events to the viewing Coordinator only for that case; the January buffer/conflict cases explicitly prepare eligible event status, correct Coordinator ownership, and matching Event/Session periods; the suitability negatives explicitly remove Orchid Hall's seeded wheelchair-access feature only for those cases and the adjacent positive case uses the actual Theatre capacity; the buffered search searches Orchid Hall; and the cross-client negatives consistently use seeded `organiser_c@clientb.com`.
+- Re-checked seed ownership, statuses, dates, capacities, layouts, and accessibility features in `backend/src/database/cli.ts`; accepted E06-S03 eligibility remains Approved/Planning per the release backlog. No story requirements or application files changed.
+- Regenerated `docs/testing/PROJECT TEST CASES CAA 161026.xlsx` from canonical Markdown and updated `docs/source-of-truth.md` to that export. Generator reported 354 cases across 13 epic files.
+- Targeted audit passed for the 24 reviewer-listed remaps (24 unique IDs, no stale fixture-name hits before or after this correction), all six finding groups, and workbook-to-Markdown parity across all 354 rows and 10 columns. `TC_E05S01_01` is byte-identical to the starting branch; `TC_E06S03_03` (T-68/T-79) and `TC_E08S05_04`/`TC_E10S04_01`/`TC_E10S04_04` cancellation fixtures are unchanged.
+- `python scripts/check.py` passed on 2026-10-16 at 08:17:20 +08:00, HEAD `47b071a`: 128 repository-tooling tests passed, 321 test-run records validated, hygiene checks passed. It emitted the expected secondary-worktree warning. T-65 record: `docs/testing/runs/20261016-081720-bryanseah234-tooling.md`.
+- The four fixture/export/evidence commits were pushed normally (no force push), ending at `4b76859`. A read-only PR #230 snapshot at that head was `MERGEABLE`, `CHANGES_REQUESTED`, with `application-checks`, `repository-checks`, `dependency-review`, `lfs-guard`, `trufflehog`, and `pr-conventions` all `IN_PROGRESS`. Recheck the live head/checks after this handoff update is pushed; a teammate re-review is still needed.
+- Markdown diagnostics are unavailable because no `.md` LSP is configured. No app, database, browser, or story acceptance suite was run; these are canonical fixture-document corrections only.
+- `.agents/STATE.md` and `.agents/JOURNAL.md` were not edited. No database operation, remote PR body/comment edit, review approval, merge, or Jira update was performed.
 
 ## Remaining work
 
-- Have a teammate re-review the latest test-case content and clear the outstanding change request. Explicitly discuss the E06-S03-03 assertion change against T-68/T-79.
-- Push the verified commits, refresh the PR body/PostPlan evidence, and re-check live required checks before requesting teammate re-review.
+- Wait for the latest required checks and teammate re-review. Do not self-approve, edit PR body/comments, or merge; main will ping the team after this gate.
 - Keep SCRUM-179 In Progress until PR #230 merges.
 
 ## Decisions
 
-- Seed facts come from `backend/src/database/cli.ts`: Orchid Hall confirmed/pending bookings and the Lotus Room event ownership/status pairs support the calendar, privacy, and booking cases; Jasmine Hall's confirmed EVT-3001 booking supports the permitted-details case; Maple Room and seeded layouts preserve their capacity inequalities.
-- For E06-S03-03, the current requirement permits multiple venue bookings for one event; the case now verifies independent creation rather than preserving the superseded second-request rejection.
-- This is a documentation/workbook change only. Repository hygiene/tooling verification passed, but no application behavior or story acceptance execution is claimed.
+- Seed facts are sourced from `backend/src/database/cli.ts`; case-local feature/status/ownership/date preparations are stated explicitly so the intended acceptance checks can be reached without mutating the shared seed or weakening requirements.
+- This remains a documentation/workbook change only. Repository hygiene/tooling verification and data audits passed; no application behavior or story acceptance execution is claimed.
