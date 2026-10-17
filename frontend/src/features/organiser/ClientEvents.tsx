@@ -4,6 +4,7 @@ import { PencilLine } from 'lucide-react';
 import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
 import { fieldList } from '../events/eventEditFields';
+import { formatEditedValue } from '../events/ActivityLog';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
@@ -138,7 +139,7 @@ export function ClientEvents() {
           {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
         </section>
         <section aria-labelledby="event-activity-heading"><h3 id="event-activity-heading">Activity log</h3>
-          {event.activityLog?.length ? <ol>{event.activityLog.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}><strong>{entry.action}</strong>{entry.field_changed ? ` · ${entry.field_changed}` : ''} — {plainDate(entry.occurred_at)}{entry.actor_name ? ` by ${entry.actor_name}` : ''}{entry.new_value ? ` (${entry.new_value})` : ''}</li>)}</ol> : <p>No activity recorded yet.</p>}
+          {event.activityLog?.length ? <ol>{event.activityLog.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}><strong>{entry.action}</strong>{entry.field_changed ? ` · ${entry.field_changed}` : ''} — {plainDate(entry.occurred_at)}{entry.actor_name ? ` by ${entry.actor_name}` : ''}{entry.new_value ? ` (${formatEditedValue(entry.field_changed, entry.new_value)})` : ''}</li>)}</ol> : <p>No activity recorded yet.</p>}
         </section>
         <section aria-labelledby="event-comments-heading"><h3 id="event-comments-heading">Comments</h3>
           {event.comments?.length ? <ol>{event.comments.map(item => <li key={item.id}><p>{item.body}</p><small>{item.author_name} · {new Date(item.created_at).toLocaleString()}</small></li>)}</ol> : <p>No comments yet.</p>}
