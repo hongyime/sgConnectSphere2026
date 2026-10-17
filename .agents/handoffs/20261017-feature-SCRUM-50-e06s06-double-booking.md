@@ -22,7 +22,9 @@ Implementation commit `fe5dfa8` checks confirmed/live occupancy through the exis
 
 Post-commit verification on `6a2e8b1`: backend unit `npm test` 435/435; `venueBooking/decisions.ts` 100% statements, branches, functions and lines; loopback PostgreSQL venue-decision integration 28/28 with TC_E06S06_01–07; Venue Staff UI Vitest 25/25; backend typecheck; frontend production build (passed with Vite's large-chunk advisory); `python scripts/check.py` passed its repository hygiene and 158 tooling tests. Latest T-65 records: `docs/testing/runs/20261017-225319-bryanseah234-backend-unit.md`, `docs/testing/runs/20261017-225319-bryanseah234-backend-db.md`, `docs/testing/runs/20261017-225319-bryanseah234-frontend-vitest.md`, and `docs/testing/runs/20261017-225434-bryanseah234-tooling.md`. Earlier records remain untouched and correspond to their recorded commit.
 
-Draft PR #308: https://github.com/hongyime/sgConnectSphere2026/pull/308, base `feature/SCRUM-48-decide-venue-request`; no merge. The postplan is https://z9wjs849lf87.postplan.dev; its draft version is updated with the final fixture caveat and records. A top-level PR comment links the postplan. Jira SCRUM-50 is linked to PR #308 by remote link only; status remains To Do, Sprint 3, 5 points.
+Draft PR #308: https://github.com/hongyime/sgConnectSphere2026/pull/308, base `feature/SCRUM-48-decide-venue-request`; no merge. Postplan draft v4 is https://z9wjs849lf87.postplan.dev and includes the final fixture caveat, local records, and current-head CI evidence. A top-level PR comment links the postplan. Jira SCRUM-50 is linked to PR #308 by remote link only; status remains To Do, Sprint 3, 5 points.
+
+Current-head GitHub Actions Application Checks passed on `0ec90bb` (run 39042942434; 33 primary steps, including typecheck, unit/component tests, disposable PostgreSQL and Redis acceptance suites, build, runtime checks, and browser tests). The T-65 CI record is `docs/testing/runs/20261017-230311-bryanseah234-full-regression.md`. The earlier failed Application Checks run was on the preceding docs commit `7aab3c4`; the latest code head passed.
 
 ## Acceptance still requiring a human
 
