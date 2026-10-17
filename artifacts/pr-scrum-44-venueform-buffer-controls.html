@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>SCRUM-44 · VenueForm buffer controls</title>
+<style>
+:root{--background:#101418;--surface:#171D23;--raised:#202830;--border:#36434F;--text:#E8EDF2;--muted:#A8B5C2;--accent:#67D4E8;--accent-soft:#182D34;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--background);color:var(--text);font-size:17px;line-height:1.65}a{color:var(--accent);text-underline-offset:4px}a:focus-visible{outline:2px solid var(--accent);outline-offset:4px}svg{display:block;max-width:100%;height:auto}svg text{font-family:"Segoe UI",system-ui,sans-serif}h1,h2,h3{line-height:1.15;letter-spacing:-.025em}h1{font-size:clamp(32px,5vw,50px);font-weight:650;max-width:850px;margin:20px 0}h2{font-size:27px;font-weight:600;margin:0 0 12px}h3{font-size:19px;font-weight:600;margin:0 0 10px}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em;color:var(--accent)}
+.page{width:min(1080px,calc(100% - 80px));margin:auto}.masthead{padding:26px 0;display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)}.brand{font-size:14px;font-weight:650}.brand::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:10px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}.intro{padding:44px 0 28px}.lead{font-size:19px;color:var(--muted);max-width:780px;margin:0}.toc{display:flex;gap:24px;padding:0 0 25px;border-bottom:1px solid var(--border);flex-wrap:wrap}.toc a{font-size:14px;color:var(--muted);text-decoration:none}.toc a:hover{color:var(--accent)}.toc span,.number{color:var(--accent);font-family:ui-monospace,Consolas,monospace}.toc span{margin-right:7px}.section{padding:38px 0;border-bottom:1px solid var(--border)}.section-heading{display:flex;gap:16px;align-items:baseline;margin-bottom:18px}.number{font-size:13px}.section-description{max-width:780px;color:var(--muted)}.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px}.diagram-frame{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px}.diagram-frame svg{min-width:760px;width:100%}.caption{font-size:14px;color:var(--muted);margin:14px 0 0;max-width:900px}.reading-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:40px}.muted{color:var(--muted)}.evidence{width:100%;border-collapse:collapse;font-size:15px}.evidence th,.evidence td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:top;text-align:left}.evidence th{color:var(--accent);font-weight:600}.evidence td{color:var(--muted)}.evidence code{white-space:nowrap}.callout{border-left:2px solid var(--accent);padding:2px 0 2px 18px;margin:22px 0}.callout p{margin:0}.next{list-style:none;counter-reset:actions;padding:0;margin:0}.next li{counter-increment:actions;display:grid;grid-template-columns:32px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--border)}.next li:first-child{border-top:0;padding-top:0}.next li::before{content:counter(actions,decimal-leading-zero);font-size:13px;color:var(--accent);padding-top:3px;font-family:ui-monospace,Consolas,monospace}.next p{color:var(--muted);font-size:15px;margin:4px 0 0}.footer{padding:22px 0 34px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:18px}.node{fill:var(--raised);stroke:var(--border);stroke-width:1.5}.node-accent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}.edge{fill:none;stroke:var(--muted);stroke-width:1.5}.edge-accent{fill:none;stroke:var(--accent);stroke-width:1.8}.svg-text{fill:var(--text);font-size:16px}.svg-sub{fill:var(--muted);font-size:13px}
+@media(max-width:700px){.page{width:calc(100% - 40px)}.masthead{padding:19px 0}.intro{padding:32px 0 22px}.lead{font-size:17px}.section{padding:28px 0}.reading-grid{grid-template-columns:1fr;gap:18px}.panel{padding:18px}.diagram-frame{padding:14px}.footer{flex-direction:column;gap:6px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+@media print{:root{--background:#fff;--surface:#fff;--raised:#f2f4f5;--border:#67727d;--text:#111820;--muted:#344350;--accent:#075a6b;--accent-soft:#e8f0f2;color-scheme:light}body{font-size:11pt}.page{width:100%}.intro,.section{padding:20px 0}.diagram-frame{overflow:visible}.diagram-frame svg{min-width:0}.reading-grid{display:block}.footer{padding-bottom:0}}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="masthead"><div class="brand">ConnectSphere · PR review</div><div class="eyebrow">SCRUM-44 · E05-S05</div></header>
+  <main>
+    <div class="intro">
+      <div class="eyebrow">Venue Staff · 17 October 2026</div>
+      <h1>Setup and turnaround buffers now flow through VenueForm.</h1>
+      <p class="lead">This frontend increment reuses the existing venue API: staff can enter whole-minute buffers, save them on create or edit, and see the saved values on the venue inventory detail.</p>
+    </div>
+    <nav class="toc" aria-label="Document sections"><a href="#overview"><span>01</span>Flow</a><a href="#details"><span>02</span>Evidence and limits</a><a href="#next-steps"><span>03</span>Next steps</a></nav>
+
+    <section class="section" id="overview" aria-labelledby="overview-title">
+      <div class="section-heading"><span class="number">01</span><h2 id="overview-title">Visual overview</h2></div>
+      <p class="section-description">The form carries the same two values from staff input through the existing persistence and back to the inventory card.</p>
+      <figure>
+        <div class="diagram-frame" tabindex="0" role="region" aria-label="Venue buffer save flow; scroll horizontally on narrow screens">
+          <svg viewBox="0 0 1080 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="flow-title flow-desc">
+            <title id="flow-title">Venue buffer save and display flow</title>
+            <desc id="flow-desc">Venue Staff enter setup and turnaround minutes in VenueForm. The frontend validates and sends both numeric values through the existing venue API. Existing backend persistence stores and returns the values, and the Venue Inventory card displays them in minutes.</desc>
+            <defs><marker id="buffer-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#67D4E8"/></marker></defs>
+            <rect x="18" y="56" width="220" height="132" rx="10" class="node"/>
+            <text x="128" y="88" text-anchor="middle" class="svg-text">Venue Staff</text>
+            <text x="128" y="118" text-anchor="middle" class="svg-sub">Setup: 0…2,147,483,647</text>
+            <text x="128" y="142" text-anchor="middle" class="svg-sub">Turnaround: whole minutes</text>
+            <text x="128" y="166" text-anchor="middle" class="svg-sub">Defaults: 0 / 0</text>
+
+            <rect x="304" y="56" width="220" height="132" rx="10" class="node-accent"/>
+            <text x="414" y="88" text-anchor="middle" class="svg-text">VenueForm</text>
+            <text x="414" y="118" text-anchor="middle" class="svg-sub">Create and edit</text>
+            <text x="414" y="142" text-anchor="middle" class="svg-sub">Validate whole minutes</text>
+            <text x="414" y="166" text-anchor="middle" class="svg-sub">Submit both values</text>
+
+            <rect x="590" y="56" width="220" height="132" rx="10" class="node"/>
+            <text x="700" y="88" text-anchor="middle" class="svg-text">Existing venue API</text>
+            <text x="700" y="118" text-anchor="middle" class="svg-sub">setup_time_minutes</text>
+            <text x="700" y="142" text-anchor="middle" class="svg-sub">turnaround_time_minutes</text>
+            <text x="700" y="166" text-anchor="middle" class="svg-sub">No backend changes</text>
+
+            <rect x="876" y="56" width="186" height="132" rx="10" class="node-accent"/>
+            <text x="969" y="88" text-anchor="middle" class="svg-text">Venue inventory</text>
+            <text x="969" y="118" text-anchor="middle" class="svg-sub">Setup time: 30 minutes</text>
+            <text x="969" y="142" text-anchor="middle" class="svg-sub">Turnaround: 45 minutes</text>
+            <text x="969" y="166" text-anchor="middle" class="svg-sub">Values from API response</text>
+
+            <path d="M238 122 H296" class="edge-accent" marker-end="url(#buffer-arrow)"/>
+            <text x="267" y="108" text-anchor="middle" class="svg-sub">enters</text>
+            <path d="M524 122 H582" class="edge-accent" marker-end="url(#buffer-arrow)"/>
+            <text x="553" y="108" text-anchor="middle" class="svg-sub">saves</text>
+            <path d="M810 122 H868" class="edge-accent" marker-end="url(#buffer-arrow)"/>
+            <text x="839" y="108" text-anchor="middle" class="svg-sub">reads</text>
+            <text x="540" y="228" text-anchor="middle" class="svg-sub">The form change ends at the existing API contract; SQL occupancy and conflict behavior remain in the backend.</text>
+          </svg>
+        </div>
+        <figcaption class="caption">On narrow screens, scroll the diagram horizontally to see the full flow. The UI makes existing buffer persistence configurable and visible; backend and SQL conflict rules remain unchanged.</figcaption>
+      </figure>
+    </section>
+
+    <section class="section" id="details" aria-labelledby="details-title">
+      <div class="section-heading"><span class="number">02</span><h2 id="details-title">Implementation evidence and limits</h2></div>
+      <div class="reading-grid">
+        <div>
+          <h3>What changed</h3>
+          <p class="muted"><code>VenueForm.tsx</code> now defaults new venues to zero buffers, loads values for edits, validates whole minutes from 0 through 2,147,483,647, and sends numeric fields through the existing create/update helpers. <code>Venue.tsx</code> displays both values on the inventory card. <code>venueApi.ts</code> types the values on venue responses and inputs.</p>
+          <p class="muted">The generated coverage inventory was refreshed from the active test titles. No backend or migration files changed. The task handoff records the starting branch and scope.</p>
+          <div class="callout"><p><strong>PR base:</strong> <code>docs/po-review-corrections-20261016</code>, the requested current branch. It is 21 commits ahead of <code>main</code>; this base keeps the review diff to the two SCRUM-44 commits.</p></div>
+        </div>
+        <div>
+          <h3>Verification</h3>
+          <table class="evidence">
+            <thead><tr><th>Check</th><th>Observed result</th></tr></thead>
+            <tbody>
+              <tr><td>Focused Vitest suite</td><td>10/10 passed on commit <code>11f0083</code>; mocked API create/edit, validation, defaults and display. Run record: <code>20261017-202113-bryanseah234-frontend-vitest.md</code>.</td></tr>
+              <tr><td>Frontend typecheck</td><td>Passed on <code>11f0083</code>.</td></tr>
+              <tr><td>Repository check</td><td><code>python scripts/check.py</code> passed hygiene and 158 tooling tests; existing secondary-worktree warning only.</td></tr>
+              <tr><td>PostgreSQL integration</td><td>Not run: no loopback test URL or local server was available. The configured database URL points to shared Supabase and was not used.</td></tr>
+              <tr><td>Manual T-65</td><td>Not run. All seven E05-S05 acceptance cases still need Venue Staff/Coordinator execution and human screenshots.</td></tr>
+            </tbody>
+          </table>
+          <p class="caption">Targeted file coverage includes existing venue paths outside this change; <code>VenueForm.tsx</code> reports 82.1% line coverage. The new buffer paths are covered by the focused form tests.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="next-steps" aria-labelledby="next-title">
+      <div class="section-heading"><span class="number">03</span><h2 id="next-title">Next steps</h2></div>
+      <ol class="next">
+        <li><div><strong>Review the UI increment and CI.</strong><p>Keep the PR open for teammate review. SCRUM-44 remains incomplete; this change does not alter Sprint assignment, estimates, dates or acceptance criteria.</p></div></li>
+        <li><div><strong>Run the backend integration suite on loopback PostgreSQL.</strong><p>Use a disposable local database for <code>venueBufferConflicts.integration.test.ts</code>; never point a write-capable suite at shared Supabase.</p></div></li>
+        <li><div><strong>Complete manual acceptance.</strong><p>Run TC_E05S05_01–07 through the supported application flow and record the outcomes with tester-taken screenshots under T-65/T-93.</p></div></li>
+      </ol>
+    </section>
+  </main>
+  <footer class="footer"><span>ConnectSphere · SCRUM-44 / E05-S05</span><span>Standalone review artifact · no external runtime dependencies</span></footer>
+</div>
+</body>
+</html>
