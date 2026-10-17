@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **201** (53.5%)
+- Automated (explicit TC_ID in an active test title): **207** (55.1%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **164**
+  - Live-assertion (other active tests): **170**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.4%)
-- No test yet (no test file mentions the TC_ID): **42** (11.2%)
+- No test yet (no test file mentions the TC_ID): **36** (9.6%)
 
 ## Coverage by epic
 
@@ -29,9 +29,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E09 | 44 | 5 | 31 | 8 |
 | E10 | 29 | 0 | 20 | 9 |
 | E11 | 15 | 12 | 3 | 0 |
-| E14 | 14 | 5 | 3 | 6 |
+| E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **201** | **133** | **42** |
+| **Total** | **376** | **207** | **133** | **36** |
 
 ## Case-by-case status
 
@@ -236,7 +236,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S02_01` | E06-S02 | Verify that viewing a venue in the context of a event with recorded requirements | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_02` | E06-S02 | Verify that a venue failing one or more recorded requirements should be marked u | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S02_03` | E06-S02 | Verify that a venue meeting all recorded requirements for the event should be ma | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
-| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
+| `TC_E06S02_04` | E06-S02 | Verify that submitting a booking request for a venue marked unsuitable should st | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates |
 | `TC_E06S02_05` | E06-S02 | Verify operating hours are an advisory suitability criterion only in E06-S02 | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
@@ -463,12 +463,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_08` | E14-S02 | Verify that access-denial entries should not be shown in the event Activity log  | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_08: access-denial entries and the refused users are not shown in the Coordinator Activity log; tests/e2e/e14.spec.ts: TC_E1 |
-| `TC_E14S03_01` | E14-S03 | Organiser reads an edited date/time value in Singapore time | ❌ none | — |
-| `TC_E14S03_02` | E14-S03 | Assigned Coordinator reads existing before/after date/time values in Singapore t | ❌ none | — |
-| `TC_E14S03_03` | E14-S03 | Both views convert the calendar date across Singapore midnight | ❌ none | — |
-| `TC_E14S03_04` | E14-S03 | Invalid and missing date/time values retain existing helper and omission behavio | ❌ none | — |
-| `TC_E14S03_05` | E14-S03 | Text, status badges and venue hold expiry are preserved | ❌ none | — |
-| `TC_E14S03_06` | E14-S03 | Formatting preserves immutable UTC evidence and existing reader access | ❌ none | — |
+| `TC_E14S03_01` | E14-S03 | Organiser reads an edited date/time value in Singapore time | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_01: the Organiser reads an edited start time in Singapore time, not raw UTC |
+| `TC_E14S03_02` | E14-S03 | Assigned Coordinator reads existing before/after date/time values in Singapore t | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_02: the assigned Coordinator reads before and after times in Singapore time |
+| `TC_E14S03_03` | E14-S03 | Both views convert the calendar date across Singapore midnight | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_03: both views move the calendar date across Singapore midnight, registration dates included |
+| `TC_E14S03_04` | E14-S03 | Invalid and missing date/time values retain existing helper and omission behavio | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_04: invalid and missing values keep the formatter\ |
+| `TC_E14S03_05` | E14-S03 | Text, status badges and venue hold expiry are preserved | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_05: title text, status changes and hold expiry display as before |
+| `TC_E14S03_06` | E14-S03 | Formatting preserves immutable UTC evidence and existing reader access | ✅ active | frontend/src/features/events/ActivityLog.singaporeTime.test.tsx: TC_E14S03_06: formatting changes only what is shown; the entries from the API are read, never rewritten |
 
 ### EXX
 

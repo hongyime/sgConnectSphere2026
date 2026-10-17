@@ -20,6 +20,18 @@ const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
 
+// E14-S03: edited event and registration times are stored as UTC ISO strings
+// ("opensAt to closesAt" for registration dates). Show them in Singapore time;
+// other values, even ones that look like a date, stay as written.
+export function formatEditedValue(field: string | null, value: string): string {
+  if (field === 'startAt' || field === 'endAt') return formatDate(value, true);
+  if (field === 'registrationDates') {
+    const [opens, closes] = value.split(' to ');
+    return closes === undefined ? formatDate(value, true) : `${formatDate(opens, true)} to ${formatDate(closes, true)}`;
+  }
+  return value;
+}
+
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit.
 export function describeChange(entry: ActivityEntry) {
   if (!entry.field_changed) return 'None recorded';
@@ -44,9 +56,10 @@ export function describeChange(entry: ActivityEntry) {
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;
   // Coordinator assignment and reassignment keep the previous Coordinator.
+  const after = formatEditedValue(entry.field_changed, entry.new_value);
   return entry.old_value && entry.old_value !== entry.new_value
-    ? `${label}: ${entry.old_value} → ${entry.new_value}`
-    : `${label}: ${entry.new_value}`;
+    ? `${label}: ${formatEditedValue(entry.field_changed, entry.old_value)} → ${after}`
+    : `${label}: ${after}`;
 }
 
 // The stored action is written for the database ("Status changed to
