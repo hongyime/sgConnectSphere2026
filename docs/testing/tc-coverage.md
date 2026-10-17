@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **375**
-- Automated (explicit TC_ID in an active test title): **184** (49.1%)
+- Automated (explicit TC_ID in an active test title): **189** (50.4%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **147**
+  - Live-assertion (other active tests): **152**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **139** (37.1%)
-- No test yet (no test file mentions the TC_ID): **52** (13.9%)
+- No test yet (no test file mentions the TC_ID): **47** (12.5%)
 
 ## Coverage by epic
 
@@ -20,7 +20,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
-| E03 | 62 | 44 | 13 | 5 |
+| E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **375** | **184** | **139** | **52** |
+| **Total** | **375** | **189** | **139** | **47** |
 
 ## Case-by-case status
 
@@ -167,11 +167,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_03: organiser cannot change registration setup after approval and nothing is written; frontend/src/features/events/EventEditForm.te |
 | `TC_E03S11_04` | E03-S11 | Verify that the assigned Coordinator should be able to edit the registration set | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_04: assigned coordinator can edit registration setup after approval and the edit is audited |
 | `TC_E03S11_05` | E03-S11 | Verify that the registration dates should be shown as two separate labelled fiel | ✅ active | frontend/src/features/events/EventEditForm.test.tsx: TC_E03S11_05 - the Organiser can fill in registration setup, shown with the two labelled dates under Registration |
-| `TC_E03S12_01` | E03-S12 | Organiser sees the shared success Alert after an allowed edit | ❌ none | — |
-| `TC_E03S12_02` | E03-S12 | Saved edit persists and its audit entry is not duplicated by feedback | ❌ none | — |
-| `TC_E03S12_03` | E03-S12 | Invalid input retains validation feedback without success | ❌ none | — |
-| `TC_E03S12_04` | E03-S12 | Failed request after a prior success cannot leave a false confirmation | ❌ none | — |
-| `TC_E03S12_05` | E03-S12 | Cancellation and post-approval restrictions remain unchanged | ❌ none | — |
+| `TC_E03S12_01` | E03-S12 | Organiser sees the shared success Alert after an allowed edit | ✅ active | frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx: TC_E03S12_01 - a saved edit is confirmed in the shared success Alert, not plain text |
+| `TC_E03S12_02` | E03-S12 | Saved edit persists and its audit entry is not duplicated by feedback | ✅ active | frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx: TC_E03S12_02 - the saved value survives a reload, and the confirmation causes no second write |
+| `TC_E03S12_03` | E03-S12 | Invalid input retains validation feedback without success | ✅ active | frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx: TC_E03S12_03 - an invalid edit keeps its validation feedback and shows no success |
+| `TC_E03S12_04` | E03-S12 | Failed request after a prior success cannot leave a false confirmation | ✅ active | frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx: TC_E03S12_04 - a failed save after a success leaves no stale or false confirmation |
+| `TC_E03S12_05` | E03-S12 | Cancellation and post-approval restrictions remain unchanged | ✅ active | frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx: TC_E03S12_05 - cancelling an approved event\ |
 
 ### E04
 
