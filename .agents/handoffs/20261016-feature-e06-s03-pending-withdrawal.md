@@ -62,3 +62,6 @@ Merged current origin/main into PR299; sole conflict tc-coverage.md regenerated 
 
 ## Second main conflict resolution (17 October)
 Merged origin/main d87081d; only tc-coverage conflict regenerated190/375 active. Merged export/story-boundary targeted tests12 pass;158 full tooling tests retain3 failures/11 errors with hygiene/env passing. Record20261017-011355-jininggg-tooling.md. No application conflict, no #298 merge; E06-S02 remains separate.
+
+## Completion-summary refresh (17 October)
+Updated venue-booking-requests.md to link completed human primary run and Le Xin's reviewer-reported48-test isolated integration; retained exact tested heads and source distinction from root CI. Current approval/dependency integration, migration0020 release-sequencing/application verification and SCRUM195 roster gates remain explicit. No application change or additional manual acceptance claim. Earlier pending-primary statements superseded.

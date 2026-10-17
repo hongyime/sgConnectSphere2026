@@ -244,7 +244,9 @@ Commit/push readiness is separate from satisfying the Definition of Done:
    E06-S04 when #298 is permitted to merge. Synthetic manual rejection fixtures
    still do not establish the staff UI integration. E06-S04 owns automatic
    first-confirmed primary assignment; E06-S03 owns explicit primary reselection.
-   Fresh human primary-reselection verification remains outstanding.
+   Human primary-reselection verification is now recorded in
+   [the later run](runs/20261016-221852-jininggg-frontend-e2e.md); see the
+   current completion summary below for review and dependency gates.
 3. Review the manual SKIPs and limited PASS scopes against the canonical cases.
    Direct API refusals, replay, buffer-only clashes, rollback and extended chains
    have automated evidence, but were not human-executed in this session. Record
@@ -297,8 +299,12 @@ columns, and no primary cancellation workflow are introduced.
 
 The shared UI exposes **Set as primary venue** only on Confirmed non-primary
 cards, with confirmation/cancel, busy/error controls and list refresh. Primary
-flags display after a successful selection. Previously recorded screenshots do
-not verify this newly added interaction; follow the new manual steps.
+flags display after a successful selection. The
+[16 October primary manual run](runs/20261016-221852-jininggg-frontend-e2e.md)
+records human confirmation/cancellation, selection, switching between two
+Confirmed bookings, refresh persistence and absence of primary controls on
+non-Confirmed cards. Its original screenshots and initial stale-API failure
+are retained; synthetic fixture preparation is distinguished from staff approval.
 
 ### Deterministic real E06-S04 integration tests
 
@@ -348,7 +354,38 @@ Observed coordination-follow-up records:
 - [Compiled API](runs/20261016-215608-jininggg-runtime.md): 19 passed.
 - [Build/repository](runs/20261016-215609-jininggg-tooling.md): build/typecheck pass; existing Windows worktree fixture3 failures/11 errors remain disclosed.
 
-The prior commit-readiness snapshot predates these changes. Fresh human
-primary-selection testing, Le Xin's review, actual dependency integration and
-required PR checks remain next gates. #298's TC_E06S04_07 Product Owner hold is
-unchanged; the local combined tests do not authorise merging it.
+### Completion status after PR #299 review (17 October)
+
+The earlier commit-readiness snapshot and pending-primary-test statements are
+historical. Primary-selection manual testing is recorded above. Le Xin's
+[integration review](https://github.com/hongyime/sgConnectSphere2026/pull/299#pullrequestreview-5550788308)
+reports 48/48 real PostgreSQL tests with zero skips using this branch at
+db6da30 combined with #298 at a4b2cf9, including all eight combined races.
+That is reviewer-reported isolated integration, not a fresh execution by this
+document update or root CI. Her activity-formatting and conflict-copy findings
+were fixed in 216b66b, with regression records
+[frontend](runs/20261017-004600-jininggg-frontend-vitest.md) and
+[backend](runs/20261017-004601-jininggg-backend-unit.md).
+Xiang Ying's
+[bounded static review](https://github.com/hongyime/sgConnectSphere2026/pull/299#issuecomment-6229087555)
+found no new blocking functional issue; it did not run application tests.
+
+Remaining gates are current-head human approval, required PR checks and reviewed
+merges. Integrate #298 through its own approval process, preserve both backend
+test lists if package.json conflicts, regenerate the coverage inventory, and
+verify the combined tests execute without dependency skips. Earlier isolated
+passes do not establish results against a later dependency head. This document
+does not authorise merging #298 or assume its product decisions are resolved.
+
+Migration 0020 is not production-applied or verified by these tests/reviews.
+The deploy owner must follow the
+[production migration runbook](../ops/production-migrations.md), including the
+migration-only/application release split or a reviewed deployment control,
+pre-run ledger check, exact-file application, post-run verification and a
+sanitized committed run record before dependent application deployment.
+
+Production Venue Staff routing also needs the PO-approved roster tracked by
+SCRUM-195 under SCRUM-75. Local fixture assignments and notification evidence
+do not establish production roster provisioning or live delivery. These
+operational gates and reviewed integration remain distinct from the completed
+human UI checks; no whole-story Done claim is made here.
