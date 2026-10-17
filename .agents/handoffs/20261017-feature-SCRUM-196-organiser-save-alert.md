@@ -25,8 +25,12 @@ plain `<p role="status">`. Scope: `docs/backlog/release-1/E03-review-coordinatio
 - Vitest 415/415, typecheck clean, `tc-coverage.md` regenerated. T-65 record:
   `docs/testing/runs/20261017-110014-lexinphun2024-debug-frontend-vitest.md`.
 
+- Manual run by Le Xin, 17 Oct: TC_E03S12_01 to _05 all PASS with
+  hand-taken screenshots, audit rows checked read-only:
+  `docs/testing/runs/20261017-120534-lexinphun2024-debug-frontend-e2e.md`.
+
 ## Still to do
 
-- Manual run of TC_E03S12_01 to _05 by Le Xin in a real browser with
-  hand-taken screenshots (T-93); TC_02 should also check the audit rows.
 - PR, human review of code and test cases.
+- Follow-up candidate (outside this story): the lock icon on restricted edit
+  fields sits on its own line under the label.
