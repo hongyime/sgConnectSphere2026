@@ -265,7 +265,9 @@ of these areas, it is outside what was tested:
   - **Whose code:** the narrow page is E07-S01's (`EquipmentCatalogue.tsx`),
     the 640 px minimum and the narrow width are the shared skeleton's, and
     the periods table on that page is this story's.
-  - The story is Done, so a fix is a new story; none raised yet.
+  - **Left as is (Aaron, 18 October 2026):** cosmetic, the button works, and
+    design.md is not part of the Definition of Done. A fix would be a new
+    story if the team wants one.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s scripts, and the database

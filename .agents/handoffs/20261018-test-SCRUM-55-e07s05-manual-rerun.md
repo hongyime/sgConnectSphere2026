@@ -32,8 +32,9 @@ update to the script's event and dates.
   desktop width (inner sideways scroll, "Return to service…" cut at the
   right edge). Recorded as a separate FAIL row (design.md checklist) and in
   Known limits with the measured cause: a 640 px minimum table width in a
-  narrow page's 604 px card. The story is Done, so a fix would be a new
-  story. Not raised yet.
+  narrow page's 604 px card. Left as is (Aaron, 18 October 2026): cosmetic,
+  the button works, and design.md is not part of the Definition of Done. A
+  fix would be a new story if the team wants one.
 - After 25 October 2026 the script needs an event with later dates; the seed
   has none.
 
