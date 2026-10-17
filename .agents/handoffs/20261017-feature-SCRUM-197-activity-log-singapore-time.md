@@ -25,11 +25,16 @@ TC_E14S03_01 to _06 in `docs/testing/cases/E14.md`.
   regenerated. T-65 record:
   `docs/testing/runs/20261017-114437-lexinphun2024-debug-frontend-vitest.md`.
 
+- Manual run by Le Xin, 17 Oct: TC_E14S03_01, _02, _03, _05, _06 PASS,
+  _04 N/A (needs malformed audit rows; automated). Displayed values compared
+  with stored audit rows read-only:
+  `docs/testing/runs/20261017-122515-lexinphun2024-debug-frontend-e2e.md`.
+- The edit writer stores only new values, so both views show the new value
+  alone; TC_02's test data allows this.
+
 ## Still to do
 
-- Manual run by Le Xin with hand-taken screenshots (T-93): edit an event's
-  start time and registration dates as the Organiser, then read both
-  Activity logs (Organiser and assigned Coordinator). TC_06 also needs a
-  read-only look at the stored audit row (still UTC) and an unrelated
-  Organiser being refused.
 - PR, human review of code and test cases.
+- Merge order with E03-S12 (#303): both add an import on the same line of
+  `ClientEvents.tsx`; whichever merges second keeps both and regenerates
+  `tc-coverage.md`. #298 also edits `describeChange` in `ActivityLog.tsx`.
