@@ -18,7 +18,10 @@ const bookingLink = (booking: BookingRequest) => `${QUEUE}/${encodeURIComponent(
 // Confirmed and Rejected are record statuses (design.md section 7); a booking
 // still waiting for Venue Staff has no record status of its own, so it uses
 // the warning tone with the backlog's word for it.
-export function BookingStatusPill({ status }: { status: BookingStatus }) {
+export function BookingStatusPill({ status, approvalConflict }: {
+  status: BookingStatus; approvalConflict?: BookingRequest['approvalConflict'];
+}) {
+  if (approvalConflict) return <StatusPill status="danger" label="Conflicting" />;
   return status === 'pending' ? <StatusPill status="warning" label="Pending" /> : <StatusPill status={status} />;
 }
 
@@ -35,13 +38,13 @@ export function BookingRequests() {
       {result.state === 'loading' ? <LoadingState label="Loading booking requests…" rows={4} /> : null}
       {result.state === 'error' ? <ErrorState failure={result.failure} context="booking requests" onRetry={reload} /> : null}
       {result.state === 'ready' && result.data.length === 0 ? (
-        <EmptyState title="No booking requests waiting">
-          When a Coordinator requests one of your venues, it appears here for you to approve or reject.
+        <EmptyState title="No booking requests">
+          When a Coordinator requests one of your venues, it appears here for you to review.
         </EmptyState>
       ) : null}
       {result.state === 'ready' && result.data.length > 0 ? (
         <DataTable<BookingRequest>
-          caption="Pending booking requests, soonest first"
+          caption="Pending and conflicting booking requests, soonest first"
           rows={result.data}
           rowKey={booking => booking.id}
           columns={[
@@ -51,6 +54,7 @@ export function BookingRequests() {
             },
             { header: 'Venue', cell: booking => booking.venue.name },
             { header: 'When', cell: booking => formatDateRange(booking.startsAt, booking.endsAt) },
+            { header: 'Status', cell: booking => <BookingStatusPill status={booking.status} approvalConflict={booking.approvalConflict} /> },
             { header: 'Coordinator', cell: booking => booking.event.coordinatorName ?? 'Not yet assigned' },
             { header: 'Requested', cell: booking => formatDate(booking.requestedAt) },
           ]}
@@ -107,8 +111,8 @@ export function BookingDetail() {
       title={booking?.event.title ?? (result.state === 'error' ? 'Booking request unavailable' : 'Loading booking request…')}
       actions={booking ? (
         <>
-          {booking.status === 'pending' ? <ButtonLink to={`${bookingLink(booking)}/decide`} variant="primary">Decide on request</ButtonLink> : null}
-          <BookingStatusPill status={booking.status} />
+          {booking.status === 'pending' && !booking.approvalConflict ? <ButtonLink to={`${bookingLink(booking)}/decide`} variant="primary">Decide on request</ButtonLink> : null}
+          <BookingStatusPill status={booking.status} approvalConflict={booking.approvalConflict} />
         </>
       ) : undefined}
     >
@@ -118,6 +122,16 @@ export function BookingDetail() {
       ) : null}
       {booking ? (
         <>
+          {booking.approvalConflict ? (
+            <Alert tone="warning" title="Request flagged as conflicting">
+              This pending request overlaps the confirmed booking{booking.approvalConflict.eventTitle
+                ? ` for “${booking.approvalConflict.eventTitle}”` : ''}. It cannot be approved while that booking occupies the venue.
+            </Alert>
+          ) : booking.status === 'conflicting' ? (
+            <Alert tone="warning" title="Request flagged as conflicting">
+              This booking conflicts with the current venue schedule and cannot be approved until the conflict is resolved.
+            </Alert>
+          ) : null}
           <Card title="Request details"><FactList columns={2} items={requestFacts(booking)} /></Card>
           <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? <Card title="Decision"><FactList columns={2} items={decisionFacts(booking)} /></Card> : null}
@@ -171,7 +185,7 @@ export function BookingDecision() {
     <PageLayout
       eyebrow={booking?.event.code ?? 'Booking request'}
       title={booking ? `Decide: ${booking.venue.name} for ${booking.event.title}` : 'Decide on a booking request'}
-      actions={booking ? <BookingStatusPill status={booking.status} /> : undefined}
+      actions={booking ? <BookingStatusPill status={booking.status} approvalConflict={booking.approvalConflict} /> : undefined}
       width="narrow"
     >
       {result.state === 'loading' ? <LoadingState label="Loading booking request…" rows={2} /> : null}
@@ -181,6 +195,12 @@ export function BookingDecision() {
       {done && booking ? <Alert tone="success" action={<ButtonLink to={bookingLink(booking)}>View request</ButtonLink>}>{done}</Alert> : null}
       {booking ? (
         <>
+          {booking.approvalConflict ? (
+            <Alert tone="warning" title="Request flagged as conflicting">
+              This pending request overlaps the confirmed booking{booking.approvalConflict.eventTitle
+                ? ` for “${booking.approvalConflict.eventTitle}”` : ''}. It cannot be approved while that booking occupies the venue.
+            </Alert>
+          ) : null}
           <Card title="What you're deciding"><FactList items={requestFacts(booking)} /></Card>
           <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? (
@@ -204,7 +224,9 @@ export function BookingDecision() {
           ) : (
             <Card title="Your decision">
               <div className="ui-actions">
-                <Button variant="primary" icon={<CheckCircle2 size={14} aria-hidden="true" />} onClick={() => setChoice('approve')}>Approve…</Button>
+                {!booking.approvalConflict ? (
+                  <Button variant="primary" icon={<CheckCircle2 size={14} aria-hidden="true" />} onClick={() => setChoice('approve')}>Approve…</Button>
+                ) : null}
                 <Button variant="danger" icon={<XCircle size={14} aria-hidden="true" />} onClick={() => setChoice('reject')}>Reject…</Button>
               </div>
             </Card>

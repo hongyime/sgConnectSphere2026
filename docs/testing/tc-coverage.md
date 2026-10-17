@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **375**
-- Automated (explicit TC_ID in an active test title): **195** (52.0%)
-  - Real-database (`.integration.test` / `.db.test`): **35**
+- Automated (explicit TC_ID in an active test title): **202** (53.9%)
+  - Real-database (`.integration.test` / `.db.test`): **40**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **159**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.5%)
+  - Live-assertion (other active tests): **161**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **126** (33.6%)
 - No test yet (no test file mentions the TC_ID): **47** (12.5%)
 
 ## Coverage by epic
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
-| E06 | 43 | 27 | 11 | 5 |
+| E06 | 43 | 34 | 4 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 27 | 0 | 26 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **375** | **195** | **133** | **47** |
+| **Total** | **375** | **202** | **126** | **47** |
 
 ## Case-by-case status
 
@@ -265,13 +265,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
-| `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
-| `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |
-| `TC_E06S06_04` | E06-S06 | Verify that a booking beginning exactly when another ends is not treated as a co | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - Verify that a booking beginning exactly when another ends is not treated as a conflict |
-| `TC_E06S06_05` | E06-S06 | Verify that a booking overlapping an existing one by a single minute is blocked | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - Verify that a booking overlapping an existing one by a single minute is blocked |
-| `TC_E06S06_06` | E06-S06 | Verify that two approvals whose advertised times do not overlap but whose buffer | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at |
-| `TC_E06S06_07` | E06-S06 | Verify that approving two requests from the same event on two different venues o | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_07 — Verify that approving two requests from the same event on two different venues over the same period should confirm both |
+| `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_01: a buffered-overlap approval is blocked with the confirmed booking identified; tests/e2e/e06.spec.ts: TC_E06S0 |
+| `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_02: approving one pending request flags the other and prevents its approval; backend/tests/venueBookingDecisions. |
+| `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_03: simultaneous overlapping approvals leave one confirmed and safely report venue just taken; backend/tests/venu |
+| `TC_E06S06_04` | E06-S06 | Verify that a booking beginning exactly when another ends is not treated as a co | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_04: exactly adjacent booking ranges are allowed; tests/e2e/e06.spec.ts: TC_E06S06_04 - Verify that a booking begi |
+| `TC_E06S06_05` | E06-S06 | Verify that a booking overlapping an existing one by a single minute is blocked | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_05: one minute of buffered overlap is blocked; tests/e2e/e06.spec.ts: TC_E06S06_05 - Verify that a booking overla |
+| `TC_E06S06_06` | E06-S06 | Verify that two approvals whose advertised times do not overlap but whose buffer | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_06: buffered concurrent approvals have at most one winner and leave the loser Pending; tests/e2e/e06.spec.ts: TC_ |
+| `TC_E06S06_07` | E06-S06 | Verify that approving two requests from the same event on two different venues o | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S06_07: two requests from the same event can both be confirmed at different venues; tests/e2e/e06.spec.ts: TC_E06S06_ |
 
 ### E07
 
@@ -872,7 +872,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unknown booking is not found
 - Venue Staff see pending requests, soonest first, and each booking with its decision
 - Scenario 4: approval over a maintenance block on the venue is blocked and names the block
-- Scenario 4: two pending requests that clash after a buffer change cannot both be confirmed; rejecting one frees the other
+- Scenario 4: a buffered clash flags the losing pending request; rejecting it frees the winner
 
 ### `backend/tests/venueBookingDecisions.test.ts`
 
@@ -881,6 +881,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateDecision keeps the reason within the limit, at the limit and just above
 - validateDecision trims the reason and reads an optional suggested venue
 - toBooking shows a decided booking with its reason, suggestion and decider
+- toBooking returns the active approval conflict and omits a stale conflict reference
 - a booking with no saved assessment, or a malformed one, reports none
 - only Venue Staff reach the decision, the list and the detail; refusals are audited before any read
 - an invalid booking id or decision is refused before a transaction opens
@@ -891,10 +892,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection never makes the booking primary
 - a decision locks the event, then the venue, then the booking
 - an event with no assigned Coordinator is decided without a notice
-- the pending list reads only pending bookings, soonest first
+- the request list includes pending and conflicting bookings, soonest first
 - the booking detail returns one booking
 - a rejection without a suggested venue says nothing about an alternative
-- a clash names a pending booking or a hold, with or without an event code
+- a live hold still blocks approval and is identified
+- a former approval conflict is cleared when its confirmed booking no longer occupies the venue
 - an approval over a maintenance block is blocked and names the block
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
@@ -1283,8 +1285,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/venue/BookingRequests.test.tsx`
 
-- Venue Staff see pending booking requests, each linking to its request
+- Venue Staff see pending and conflicting requests with status and a link to each
 - an empty queue says nothing is waiting
+- a conflicting pending request names its confirmed booking and cannot be approved from the decision screen
 - a refused queue shows the server message
 - a pending request shows its details and a way to decide
 - a suitable request, or one with no saved assessment, shows no advisory section
