@@ -6,9 +6,10 @@ This is a plan, not an application/verification run record.
 
 ## Migration-only review
 
-This branch adds only `0020_released_booking_replacement_retry.sql` and
-documentation/evidence. It contains no dependent application code or deployment
-configuration. SQL is identical to the version reviewed in #299: replace only
+This branch adds `0020_released_booking_replacement_retry.sql`, documentation/
+evidence and a test-only synchronization correction for main's Organiser
+save-alert component test (also fixed in #299). It contains no dependent
+application code or deployment configuration. SQL is identical to the version reviewed in #299: replace only
 `venue_booking_replacement_idx` with the unique index on `replaces_booking_id`
 where the reference is non-null and status is not Released. Applied 0019 is
 unchanged; no application rows are updated/deleted and no new status is added.

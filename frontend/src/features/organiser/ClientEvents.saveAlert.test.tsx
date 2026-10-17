@@ -50,6 +50,10 @@ test('TC_E03S12_01 - a saved edit is confirmed in the shared success Alert, not 
   renderEventPage();
   await editTitle('Updated planning event');
 
+  // Saving triggers a debounced event reload. The old page may briefly show
+  // the success text before loading hides it, so assert against the refreshed
+  // event instead of retaining a node from that transient render.
+  await screen.findByRole('heading', { name: 'Updated planning event' });
   const message = await screen.findByText(/^Saved your changes to the .+\. The activity log has been updated\.$/);
   const alert = successAlert();
   expect(alert).not.toBeNull();
