@@ -9,9 +9,12 @@ plain `<p role="status">`. Scope: `docs/backlog/release-1/E03-review-coordinatio
 
 ## Decisions
 
-- Product Owner (Bryan) on 17 Oct: create the Jira tickets (done: SCRUM-196,
-  SCRUM-197, SCRUM-198) and finish E03-S12 / E14-S03 in Sprint 3 rather than
-  carry them over.
+- Product Owner (Bryan), 17 Oct:
+  - "Should Le Xin create the Jira tickets for E03-S12 and E14-S03?" Yes.
+    Created SCRUM-196 (E03-S12), SCRUM-197 (E14-S03), SCRUM-198 (Frontend
+    subtask of SCRUM-196): owner Le Xin, Sprint 3, points blank.
+  - "Should E03-S12 and E14-S03 (and E06-S06) move to Sprint 4?" No:
+    "Complete them still got time." All three stay in Sprint 3.
 
 ## Done
 
