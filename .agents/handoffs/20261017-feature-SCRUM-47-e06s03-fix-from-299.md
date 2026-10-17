@@ -8,13 +8,15 @@ Correct PR #299's real-decision PostgreSQL race assertions against its current w
 - Read the E06-S03 recovery brief and SCRUM-47 classification, PR #299, and Step 3.6 commit `902ac79`.
 - Reproduced four failing approve/reject race assertions on real loopback PostgreSQL with PR #298's current `decisions.ts` overlaid in a disposable checkout: 23 passed, 4 failed, 0 skipped. All four failures were the stale busy-response wording; the E06-S03_09, _11, _12, and _13 database cases passed.
 - Updated the two stale assertion expectations to match `bookingWithdrawal.ts` on #299.
+- Commit `fc443e8` contains the assertion fix and this handoff.
+- T-65 record `docs/testing/runs/20261017-220616-bryanseah234-backend-db.md`: corrected combined database suite passed 27/27 with zero skips using the current actual PR #298 decision module from an isolated overlay checkout; loopback only.
+- `python scripts/check.py` passed with repository hygiene/tooling tests; it warned that other pre-existing secondary worktrees are present.
 
 ## Next
 
-1. Run the corrected combined database acceptance suite against loopback PostgreSQL with the current PR #298 decision service overlay; record the exact command and outcomes under T-65.
-2. Run `python scripts/check.py`, review the final diff, and commit.
-3. Open a draft PR with base `feature/e06-s03-pending-withdrawal`, then link that PR to SCRUM-47 without editing issue fields.
-4. Keep the PR and SCRUM-47 open; do not merge #299 or claim the story Done.
+1. Review the final diff and T-65 record, then commit the record.
+2. Open a draft PR with base `feature/e06-s03-pending-withdrawal`, then link that PR to SCRUM-47 without editing issue fields.
+3. Keep the PR and SCRUM-47 open; do not merge #299 or claim the story Done.
 
 ## Acceptance limits
 
