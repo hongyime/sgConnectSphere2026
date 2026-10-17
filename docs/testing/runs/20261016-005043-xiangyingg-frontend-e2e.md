@@ -18,7 +18,6 @@ This is a partial run. The first screenshot shows the catalogue save confirmatio
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
 | TC_E07S01_01 | Save a new equipment item and make it available for reservation | SKIP | Partially executed: human screenshot shows “S01 Manual Microphone 16Oct saved.” and the catalogue row with Audio, quantity 10, Main Storage and Working. Second human screenshot shows matching details, description “S01 Manual Microphone 16Oct” and No reservations yet. Third screenshot confirms Technical Support availability for 16 October 2026 00:55–22 October 2026 00:55: total 10, reserved 0, withdrawn 0, free 10. Explicit refresh/entered-description confirmation and the canonical Coordinator-side equipment-selection step remain unverified; full-case verdict is deferred. |
-
 | TC_E07S01_04 | Update equipment location and reopen the record | PASS | Human screenshot shows S01 Manual Microphone 16Oct with Annex Storage, quantity 10, Audio and Working. Tester explicitly confirmed the edited location remained after reopening and refreshing. Screenshot evidence and human action confirmation are distinguished. |
 
 ## Screenshots

@@ -27,3 +27,5 @@ Latest: corrected Final Check edit screenshot TC_E07S01_04-3.png supports curren
 Final new-item availability original PNG stored, 10 free; details observed in human chat attachment but no original 01-6 file available. Add case PASS with explicit role adaptation/refresh limits. All four current-main cases have results; update PR and PostPlan, check, push.
 
 Reviewer follow-up: new supplemental manual record 20261017-112428-xiangyingg-frontend-e2e, application d87081d. Two original human PNGs show Coordinator selected/saved Final Check item stock10 and retired projector excluded from complete dropdown. Clarifies earlier notification account and post-edit 01-7 timing without editing prior sessions. Extra synthetic requirement was saved, no reservation. Next check/push same PR281; no new PR.
+
+Review follow-up: removed exactly one blank line between result rows in each of the three unmerged 16 October manual records (005043, 011435, 014025), so both cases remain in the same parsed Markdown table. No outcomes, observations or images changed. Repository validation passed (`python3 scripts/check.py`); evidence: 20261017-204231-xiangyingg-tooling.md.

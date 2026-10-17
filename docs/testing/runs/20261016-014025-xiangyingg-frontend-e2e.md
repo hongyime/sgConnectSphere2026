@@ -17,7 +17,6 @@ Human screenshot supplied during manual re-run against ef18a96. Date is evidence
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
 | TC_E07S01_01 | Add equipment with full details and verify availability | PASS | Human creation screenshot shows S01 Final Check 16Oct saved, quantity 10, Main Storage and Working. Type is S01 Final Check 16Oct. Subsequent human details attachment shows description Final manual check, quantity 10, Annex Storage and Working. Final original PNG shows this exact new item available on 16 November 2026 09:00–12:00, total 10, reserved 0, withdrawn 0, free 10. Persisted fields reappear across catalogue/details/availability views. Separate refresh action was not explicitly confirmed and no Coordinator availability access is claimed; supported Technical Support reader was used. |
-
 | TC_E07S01_04 | Edit location on current main | PASS | Human supplied a corrected screenshot after following edit/save/reopen/refresh instructions and stated “ok i am done”. Final Check item changed from Main Storage in 01-4 to Annex Storage in 04-3; quantity stays 10 and Working stays visible. Human completion report supplies action confirmation; image itself shows catalogue rather than details. |
 
 ## Screenshots
