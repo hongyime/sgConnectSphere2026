@@ -73,16 +73,14 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
   approval, simultaneous approvals leave exactly one primary). Exploratory;
   T-65 records come with the PR runs.
 
-## Open question for Bryan (PO), not yet sent
+## PO decision on TC_07 (Bryan, 17 Oct 2026)
 
-TC_E06S04_07 (release logged) is Sprint 3 but its steps need E10-S04
-cancellation (SCRUM-73, Sprint 4). Under the DoD, Scenario 5 is not met
-without it, and Done cannot be undone. Options: (A, recommended, matches
-T-76) move TC_07 to E10-S04 so E06-S04 closes on TC_05/_06; (B) verify
-release through Ji Ning's Pending withdrawal (T-94/T-95, Sprint 3) if it
-lands and logs `Booking Released`; (C) leave it and carry E06-S04 to
-Sprint 4. Le Xin will message Bryan; do not mark SCRUM-48 Done before the
-answer.
+Question: should TC_E06S04_07 (a released booking is logged) move to E10-S04
+Cancel an event, since its steps need cancellation (SCRUM-73, Sprint 4, not
+built)? Answer: **No**. TC_07 stays in E06-S04, so E06-S04 carries to
+Sprint 4 and closes only after E10-S04 is built and TC_07 passes. Scenario 5
+is not met before then, and Done cannot be undone, so SCRUM-48 must not be
+marked Done in Sprint 3.
 
 - 2026-10-16 manual run by Le Xin: TC_01 to _06 PASS, TC_07 N/A
   (`20261016-185304-lexinphun2024-debug-frontend-e2e.md`, 18 screenshots).
@@ -105,9 +103,11 @@ answer.
 
 ## Still to do
 
-- Bryan's TC_07 answer (above) before merge.
-- Review Ji Ning's #299 (race test against the real `decideBooking`). The branch name carries
-  SCRUM-48, so `jira-sync` moves it to Done on merge.
+- TC_07 waits for E10-S04 (Sprint 4); see the PO decision above. The branch
+  name carries SCRUM-48, so `jira-sync` moves SCRUM-48 to Done when #298
+  merges. Agree with the team before merging whether #298 waits for E10-S04
+  or SCRUM-48 is kept open by hand after merge.
+- Ji Ning's #299 reviewed (comment review, 16 Oct).
 - Follow-up candidate: the rejection notice's line breaks show as spaces in
   the notifications page.
 - Scenario 2 Coordinator switch: DONE 2026-10-16. Real-DB test drives
@@ -116,7 +116,7 @@ answer.
   The Coordinator UI is Ji Ning's ("Request suggested venue" in
   `VenueBookingRequests.tsx`); the manual TC_02 run should click through it.
 - Manual run of TC_01-_06 on the seeded stack by Le Xin (TC_04: raise a venue's
-  turnaround so a pending request clashes); TC_07 per Bryan's answer above.
+  turnaround so a pending request clashes): DONE 16 Oct. TC_07 in Sprint 4 after E10-S04.
 - Then T-65 records, PR, human review of code and test cases.
 - Running locally: export only `DATABASE_URL` (the venues API prefers
   `DATABASE_POOLER_URL`, the shared Supabase).
