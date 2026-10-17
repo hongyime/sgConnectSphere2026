@@ -3,31 +3,19 @@ import { test } from '@playwright/test';
 // E06 - 37 cases. Source: docs/testing/cases/E06.md; T-76 transfers three booking-log specifications.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
 
-test.describe("E06-S02", () => {
-
-  /**
-   * TC_E06S02_04
-   * AC:      E06-S02 - Scenario 4 (Unsuitable venue may still be requested)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   "Riverside Hall" is marked "Unsuitable" for the event (missing Wheelchair Access)
-   *
-   * Test data:
-   *   Venue: Riverside Hall (marked Unsuitable)
-   *
-   * Expected result:
-   *   The booking request is accepted (not blocked); venue_staff_1@connectsphere.com sees the unsuitability flag on the request when deciding
-   */
-  test.fixme("TC_E06S02_04 - Verify that submitting a booking request for a venue marked unsuitable should still be accepted, with the unsuitability shown to Venue Staff", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Submit a booking request for "Riverside Hall" for this event anyway
-    // 3. Log in as venue_staff_1@connectsphere.com and open the request
-    void page;
-  });
-
-});
+// TC_E06S02_04 (E06-S02 Scenario 4) is implemented across the submission and
+// staff-decision suites rather than duplicated as an empty scaffold here:
+// - backend/tests/bookingSubmission.integration.test.ts: unsuitable requests
+//   persist as Pending with server-derived mismatches (real PostgreSQL).
+// - PR #298, backend/tests/venueBookingDecisions.integration.test.ts:
+//   saved advisory failures reach staff and do not block approval.
+// - PR #298, frontend/src/features/venue/BookingRequests.test.tsx and
+//   tests/e2e/venueBookingDecisions.spec.ts: staff detail/decision presentation
+//   (mocked component/intercepted browser coverage, not real DB evidence).
+// The PR #298 suites are a dependency until merged, not files supplied here.
+// Human browser-to-database evidence against clean #298 commit a4b2cf9:
+// docs/testing/runs/20261017-010257-jininggg-frontend-e2e.md.
+// The canonical specification remains in docs/testing/cases/E06.md.
 
 test.describe("E06-S03", () => {
 
