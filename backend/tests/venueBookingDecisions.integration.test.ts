@@ -56,13 +56,13 @@ async function fixture() {
   const query: Query = (sql, values) => f.pool.query(sql, values);
 
   // A Planning event with a Pending request for Small Room, 10:00-12:00 SGT on the given day.
-  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15', from = '10:00', to = '12:00') {
+  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15', from = '10:00', to = '12:00', title = 'Product Expo 2026') {
     const eventId = randomUUID();
     const bookingId = randomUUID();
     const range = `[${day}T${from}:00+08:00,${day}T${to}:00+08:00)`;
     await f.pool.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
-      VALUES ($1, $2, $3, $4, $5, 'Product Expo 2026', 'planning', $6::tstzrange, 150)`,
-    [eventId, code, ids.organiser, ids.coordinator, ids.org, range]);
+      VALUES ($1, $2, $3, $4, $5, $6, 'planning', $7::tstzrange, 150)`,
+    [eventId, code, ids.organiser, ids.coordinator, ids.org, title, range]);
     await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status) VALUES ($1, $2, $3, $4::tstzrange, 'pending')`,
       [bookingId, ids.venue, eventId, range]);
     return { eventId, bookingId };
@@ -89,6 +89,18 @@ type Fixture = Awaited<ReturnType<typeof fixture>>;
 async function withFixture(work: (f: Fixture) => Promise<void>) {
   const f = await fixture();
   try { await work(f); } finally { await f.close(); }
+}
+
+async function withRawOverlapFixture<T>(f: Fixture, work: () => Promise<T>): Promise<T> {
+  // Canonical TC_E06S06_01–03 and _05 describe raw overlaps, while the schema
+  // already rejects creating those active rows. Seed only the impossible
+  // precondition in this disposable schema, then restore the live buffered
+  // write guard before exercising approval. The exclusion is not restored
+  // because these deliberately overlapping rows remain until this schema drops.
+  await f.pool.query('ALTER TABLE venue_bookings DROP CONSTRAINT venue_bookings_no_active_overlap');
+  await f.pool.query('ALTER TABLE venue_bookings DISABLE TRIGGER venue_buffer_write_guard');
+  try { return await work(); }
+  finally { await f.pool.query('ALTER TABLE venue_bookings ENABLE TRIGGER venue_buffer_write_guard'); }
 }
 
 type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null };
@@ -311,36 +323,37 @@ test('two Venue Staff deciding the same request at once: one decision wins, the 
   assert.equal((await f.notices(eventId)).length, 1);
 }));
 
-test('TC_E06S06_01: a buffered-overlap approval is blocked with the confirmed booking identified', () => withFixture(async f => {
-  const confirmed = await f.pendingRequest('EVT-5601', '2027-02-01', '09:00', '17:00');
-  await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [confirmed.bookingId]);
-  const candidate = await f.pendingRequest('EVT-5602', '2027-02-01', '17:00', '18:00');
-  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 1 WHERE id = $1', [f.ids.venue]);
+test('TC_E06S06_01: an overlapping approval is blocked with the confirmed booking identified', () => withFixture(async f => {
+  const [confirmed, candidate] = await withRawOverlapFixture(f, async () => {
+    const first = await f.pendingRequest('EVT-5601', '2027-01-15', '09:00', '17:00', 'Charity Run');
+    const second = await f.pendingRequest('EVT-5602', '2027-01-15', '14:00', '18:00');
+    await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [first.bookingId]);
+    return [first, second] as const;
+  });
 
   const result = await decideBooking(f.pool, f.staff, candidate.bookingId, { decision: 'approve' });
 
   assert.equal(result.status, 409);
   const body = result.body as { error: string; conflict: { bookingId: string; eventTitle: string; status: string } };
-  assert.match(body.error, /confirmed booking for "EVT-5601 Product Expo 2026"/);
+  assert.match(body.error, /confirmed booking for "EVT-5601 Charity Run"/);
   assert.deepEqual([body.conflict.bookingId, body.conflict.eventTitle, body.conflict.status],
-    [confirmed.bookingId, 'Product Expo 2026', 'confirmed']);
+    [confirmed.bookingId, 'Charity Run', 'confirmed']);
   assert.equal((await f.row(candidate.bookingId)).status, 'pending');
   assert.deepEqual(await f.audits(candidate.bookingId), []);
 }));
 
 test('TC_E06S06_02: approving one pending request flags the other and prevents its approval', () => withFixture(async f => {
-  const winner = await f.pendingRequest('EVT-5611', '2027-02-03', '10:00', '12:00');
-  const other = await f.pendingRequest('EVT-5612', '2027-02-03', '12:00', '14:00');
-  // The advertised ranges are adjacent, but the venue's turnaround buffer
-  // makes the requests conflict after both have been submitted.
-  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 1 WHERE id = $1', [f.ids.venue]);
+  const [winner, other] = await withRawOverlapFixture(f, async () => [
+    await f.pendingRequest('EVT-5611', '2027-01-20', '09:00', '12:00', 'Tech Conference 2026'),
+    await f.pendingRequest('EVT-5612', '2027-01-20', '09:00', '12:00'),
+  ] as const);
 
   assert.equal((await decideBooking(f.pool, f.staff, winner.bookingId, { decision: 'approve' })).status, 200);
   const flagged = await f.row(other.bookingId);
   assert.equal(flagged.status, 'pending');
   assert.equal(flagged.approval_conflict_booking_id, winner.bookingId);
   const detail = await getBooking(f.query, f.staff, other.bookingId);
-  assert.deepEqual(detail.booking.approvalConflict, { bookingId: winner.bookingId, eventTitle: 'Product Expo 2026' });
+  assert.deepEqual(detail.booking.approvalConflict, { bookingId: winner.bookingId, eventTitle: 'Tech Conference 2026' });
   assert.ok((await listPendingBookings(f.query, f.staff)).bookings.some(booking => booking.id === other.bookingId && booking.approvalConflict));
 
   const secondAttempt = await decideBooking(f.pool, f.staffB, other.bookingId, { decision: 'approve' });
@@ -350,9 +363,10 @@ test('TC_E06S06_02: approving one pending request flags the other and prevents i
 }));
 
 test('TC_E06S06_03: simultaneous overlapping approvals leave one confirmed and safely report venue just taken', () => withFixture(async f => {
-  const a = await f.pendingRequest('EVT-5621', '2027-02-05', '10:00', '12:00');
-  const b = await f.pendingRequest('EVT-5622', '2027-02-05', '12:00', '14:00');
-  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 1 WHERE id = $1', [f.ids.venue]);
+  const [a, b] = await withRawOverlapFixture(f, async () => [
+    await f.pendingRequest('EVT-5621', '2027-01-25', '09:00', '12:00'),
+    await f.pendingRequest('EVT-5622', '2027-01-25', '09:00', '12:00'),
+  ] as const);
 
   const results = await Promise.all([
     decideBooking(f.pool, f.staff, a.bookingId, { decision: 'approve' }),
@@ -377,11 +391,13 @@ test('TC_E06S06_04: exactly adjacent booking ranges are allowed', () => withFixt
   assert.deepEqual([(await f.row(first.bookingId)).status, (await f.row(adjacent.bookingId)).status], ['confirmed', 'confirmed']);
 }));
 
-test('TC_E06S06_05: one minute of buffered overlap is blocked', () => withFixture(async f => {
-  const confirmed = await f.pendingRequest('EVT-5641', '2027-02-09', '09:00', '11:00');
-  await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [confirmed.bookingId]);
-  const candidate = await f.pendingRequest('EVT-5642', '2027-02-09', '11:00', '13:00');
-  await f.pool.query('UPDATE venues SET turnaround_time_minutes = 1 WHERE id = $1', [f.ids.venue]);
+test('TC_E06S06_05: one minute of raw overlap is blocked', () => withFixture(async f => {
+  const [confirmed, candidate] = await withRawOverlapFixture(f, async () => {
+    const first = await f.pendingRequest('EVT-5641', '2026-11-10', '09:00', '11:00');
+    const second = await f.pendingRequest('EVT-5642', '2026-11-10', '10:59', '13:00');
+    await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [first.bookingId]);
+    return [first, second] as const;
+  });
 
   const result = await decideBooking(f.pool, f.staff, candidate.bookingId, { decision: 'approve' });
   assert.equal(result.status, 409);
