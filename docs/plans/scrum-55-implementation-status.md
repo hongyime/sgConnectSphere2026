@@ -109,10 +109,17 @@ and how many rows it holds.
 
 What the customer sees, step by step, on the real frontend, real API and a
 freshly reset and seeded local database. Note pass or fail for each step; on a
-fail, copy the exact words seen. The run uses EVT-3001 (approved, 15 Oct
-2026, 9:00 am – 5:00 pm, Coordinator `coord_a`), so **run it on or before
-15 October 2026**; after that, the 15 October withdrawals in steps 9 to 11
-are refused as already ended.
+fail, copy the exact words seen. The run uses EVT-3003 (planning, 25 Oct
+2026, 6:00 pm – 10:00 pm, Coordinator `coord_a`), so **run it on or before
+25 October 2026**; after that, the 25 October withdrawals in steps 9 to 11
+are refused as already ended. EVT-3003 is the seed's last event that can
+take reservations (approved or planning), so a run after 25 October needs
+an event with later dates first.
+
+Until 17 October 2026 this script used EVT-3001 (approved, 15 Oct 2026,
+9:00 am – 5:00 pm), as in the 12 October click-through. Once 15 October had
+passed it could no longer be run, so the 18 October re-run (T-93) moved it
+to EVT-3003; nothing else changed.
 
 **Before you start:** the database is reset and seeded, the API runs on
 port 3001 and the frontend on http://localhost:5173. Every seeded account's
@@ -122,12 +129,12 @@ side by side.
 
 **Setting up a reservation to flag** (E07-S02 and E07-S04's screens):
 
-1. `coord_a`: **Equipment requests** → **EVT-3001** → **Add equipment
+1. `coord_a`: **Equipment requests** → **EVT-3003** → **Add equipment
    request** → Equipment item **Projector-HD**, Quantity requested **2** →
    **Save equipment request**. You see "Equipment request saved".
-2. `tech_a`: **Equipment requests** → **EVT-3001** → **Reserve Projector-HD**
-   → **Reserve equipment**. You see "Projector-HD × 2 reserved for EVT-3001
-   Approved Annual Conference, 15 Oct 2026, 9:00 am – 5:00 pm."
+2. `tech_a`: **Equipment requests** → **EVT-3003** → **Reserve Projector-HD**
+   → **Reserve equipment**. You see "Projector-HD × 2 reserved for EVT-3003
+   Planning Phase Gala, 25 Oct 2026, 6:00 pm – 10:00 pm."
 
 **TC_E07S05_01, an item with no reservations:**
 
@@ -157,31 +164,31 @@ side by side.
 **TC_E07S05_02, an item reserved for an event:**
 
 9. **Equipment catalogue** → **Projector-HD** → **Mark unavailable**. From
-   and To **15 Oct 2026**, Units **1**, Reason **Lamp check** → **Mark
-   unavailable**. Green: "Projector-HD × 1 out of service for 15 Oct 2026
+   and To **25 Oct 2026**, Units **1**, Reason **Lamp check** → **Mark
+   unavailable**. Green: "Projector-HD × 1 out of service for 25 Oct 2026
    (Lamp check). No reservations were affected." (9 are still in service and
-   EVT-3001 needs only 2, so it isn't flagged.) Under Reservation history,
-   EVT-3001's status still reads **reserved**.
-10. **Mark unavailable** again, From and To **15 Oct 2026**. In service for
+   EVT-3003 needs only 2, so it isn't flagged.) Under Reservation history,
+   EVT-3003's status still reads **reserved**.
+10. **Mark unavailable** again, From and To **25 Oct 2026**. In service for
     these dates now shows **9**, and Units to take out defaults to **9**. Type
     **10** → **Mark unavailable**. Under the field: "Only 9 units are in
     service for these dates." Nothing is saved.
 11. Units **8**, Reason **Lamp replacement** → **Mark unavailable**. Green:
-    "Projector-HD × 8 out of service for 15 Oct 2026 (Lamp replacement)."
+    "Projector-HD × 8 out of service for 25 Oct 2026 (Lamp replacement)."
     Below it, amber **Reservations need review**: "These reservations no
-    longer fit and are flagged for review:", "EVT-3001 Approved Annual
-    Conference: 2 reserved", "Its Coordinator has been notified." Reservation
-    history now reads **Needs review**. Unavailable periods lists two rows:
-    **15 Oct 2026 | 1 of 10 | Lamp check** and **15 Oct 2026 | 8 of 10 |
+    longer fit and are flagged for review:", "EVT-3003 Planning Phase Gala:
+    2 reserved", "Its Coordinator has been notified." Reservation history
+    now reads **Needs review**. Unavailable periods lists two rows:
+    **25 Oct 2026 | 1 of 10 | Lamp check** and **25 Oct 2026 | 8 of 10 |
     Lamp replacement**.
-12. `tech_a`: **Equipment requests** → **EVT-3001**. The Projector-HD line
+12. `tech_a`: **Equipment requests** → **EVT-3003**. The Projector-HD line
     shows the pills **Reserved** and **Needs review**.
 13. `coord_a`: the bell → **Equipment reservation needs review** (click the
-    title to open it). It reads: "EVT-3001 Approved Annual Conference, 15 Oct
-    2026, 9:00 am – 5:00 pm: Projector-HD is unavailable from 15 Oct 2026 to
-    15 Oct 2026 (Lamp replacement), 8 units out of service. The reservation
+    title to open it). It reads: "EVT-3003 Planning Phase Gala, 25 Oct 2026,
+    6:00 pm – 10:00 pm: Projector-HD is unavailable from 25 Oct 2026 to
+    25 Oct 2026 (Lamp replacement), 8 units out of service. The reservation
     of 2 needs review." There is only one such notice.
-14. `coord_a`: **Equipment requests** → **EVT-3001**. The Projector-HD line
+14. `coord_a`: **Equipment requests** → **EVT-3003**. The Projector-HD line
     shows **Reserved** and **Needs review**.
 
 **TC_E07S05_03, return to service:**
@@ -235,9 +242,32 @@ of these areas, it is outside what was tested:
   31, 42 and 105 and `equipmentApi.ts` line 25 have no test in the suites
   measured here; they are Xiang Ying's lines, unchanged. Every new or changed
   line and branch of this story is covered (Run log, gate 4).
-- **The click-through needs EVT-3001's date still ahead** (15 October 2026):
-  after it, the 15 October withdrawals in steps 9 to 11 are refused as
-  already ended, which is the rule working, not a fault.
+- **The click-through needs its event's date still ahead.** It used EVT-3001
+  (15 October 2026) until that date passed and EVT-3003 (25 October 2026)
+  from the 18 October re-run. After the event's date, the withdrawals in
+  steps 9 to 11 are refused as already ended, which is the rule working, not
+  a fault. The seed has no approved or planning event after 25 October.
+- **The Unavailable periods table can be wider than its card** (found in the
+  18 October re-run, `20261018-012126-Bl0oper-frontend-e2e.md`, recorded as
+  a FAIL row against design.md's screen checklist). At desktop width,
+  Microphone-Wireless's table scrolls sideways inside its card and the
+  "Return to service…" button is cut at the right edge; the button still
+  works, and at 393 px the rows stack into cards with nothing cut.
+  - **Cause, measured in Chromium at 1280 px:** the Equipment details page
+    uses the narrow layout (`PageLayout width="narrow"`, 704 px), leaving
+    604 px inside a card, but every shared `DataTable` is at least 640 px
+    wide (`.ui-table { min-width: 640px }` in `frontend/src/shared/shared.css`).
+    So the table overflows by 36 px.
+  - **Why Projector-HD's page looked fine:** its Reservation-history table,
+    also 640 px, widens both cards to 640 px, so the periods table fits.
+    That history table pushes past the page's inner width in the same way.
+    Microphone-Wireless had no reservations, so nothing widened the cards.
+  - **Whose code:** the narrow page is E07-S01's (`EquipmentCatalogue.tsx`),
+    the 640 px minimum and the narrow width are the shared skeleton's, and
+    the periods table on that page is this story's.
+  - **Left as is (Aaron, 18 October 2026):** cosmetic, the button works, and
+    design.md is not part of the Definition of Done. A fix would be a new
+    story if the team wants one.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s scripts, and the database
@@ -286,3 +316,4 @@ fix gets its own row.
 | 2026-10-14 ≈13:17 | `3e05237` + `main` `c0797ec`, merged (committed as `3fcf018`) | 1, 5 | — | `npm test` (backend); `npm run typecheck` (root); `python scripts/check.py` (root) | local | backend 375/375 and typecheck passed. **`check.py` failed: 14 failures and errors, all in `test_worktree_hygiene`** | "Lists differ: ['git', 'worktree', 'remove', '\\repo\\scratch'] != ['git', 'worktree', 'remove', '/repo/scratch']": #248's new tooling tests expect POSIX paths and fail on Windows. Not from this story: the files are identical to `main`, whose CI (Linux) passes. Re-run after merging `main` again (#258's test now shares the same `package.json` line); the PR's own diff is unchanged | Claude (for Aaron) |
 | 2026-10-14 14:21 | `4016c05` (Bryan's merge of `main` `979cc08`; application code as `a8281e2`) | 2, 3, 5 | _01–_03 | `application-checks` workflow, including `equipmentUnavailability.integration.test.ts` | ci, PostgreSQL service container: [run 38520944446](https://github.com/hongyime/sgConnectSphere2026/actions/runs/38520944446) | passed; every other PR check passed too | — | CI (for Aaron) |
 | 2026-10-15 00:52 | `4016c05` + `main` `5c22e26`, merged (committed as `783a109`) | 1, 5, F1 | _01–_03 | `npm test` (backend); `npm run typecheck` (root); `npx vitest run --no-file-parallelism` (whole frontend) | local | all passed: backend 386/386; typecheck clean; Vitest 396/396. Re-run after merging `main` (#263, #259, #265, #252, #261) to clear the conflicts in `backend/package.json` (kept `main`'s `venueBufferConflicts` and `eventSessionsMigration` tests and this PR's `equipmentUnavailability` tests) and `tc-coverage.md` (regenerated). The PR's own diff is unchanged. #265 now reads this story's withdrawals in `catalogue.ts` without changing the table; CI's `application-checks` covers both on PostgreSQL. `check.py` not re-run (the known Windows-only `test_worktree_hygiene` failures); database tests not re-run locally (Docker not running) | — | Claude (for Aaron) |
+| 2026-10-18 00:55 – 01:21 | `1b06812` | F4 (T-93 re-run) | _01–_03 | Aaron's own click-through, the 19-step script, by hand in Chrome, with screenshots; EVT-3003 and 25 Oct in place of EVT-3001 and 15 Oct (script updated) | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed; 1 FAIL row for a layout fault outside the script. Session record `20261018-012126-Bl0oper-frontend-e2e.md`, 24 screenshots in its evidence folder | Scripted steps as written. FAIL (design.md checklist, not scripted): Microphone-Wireless's Unavailable periods table scrolls sideways inside its card at desktop width and "Return to service…" is cut at the right edge; cause in Known limits | Aaron |
