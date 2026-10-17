@@ -65,3 +65,6 @@ Merged origin/main d87081d; only tc-coverage conflict regenerated190/375 active.
 
 ## Completion-summary refresh (17 October)
 Updated venue-booking-requests.md to link completed human primary run and Le Xin's reviewer-reported48-test isolated integration; retained exact tested heads and source distinction from root CI. Current approval/dependency integration, migration0020 release-sequencing/application verification and SCRUM195 roster gates remain explicit. No application change or additional manual acceptance claim. Earlier pending-primary statements superseded.
+
+## Main merge ea9d5e0 (17 October)
+Only coverage inventory conflict, regenerated195/375 active. Fifteen targeted activity/organiser-save-alert tests passed; repo hygiene/env checks pass, existing Windows tooling158 tests3 failures/11 errors. Records20261017-171609-frontend-vitest and171618-tooling. No dependency merge or application change in resolution.
