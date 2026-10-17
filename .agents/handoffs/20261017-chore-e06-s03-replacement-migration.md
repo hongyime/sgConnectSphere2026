@@ -8,3 +8,7 @@ Temporary release worktree holds only this task, with tooling junction to existi
 
 ## PR306 inherited CI test fix
 CI failed inherited Organiser save-alert race, same as #299. Applied test-only wait for refreshed heading with existing alert assertions unchanged. Full frontend430/430 pass across47 files; record20261017-211500. Repo hygiene/env pass,158 Windows tooling retain3failures11errors record211501. SQL unchanged; migration-only release contract preserved (no runtime/application configuration change). Updated release plan to disclose test-only stabilization. No production apply or deployment.
+
+## 18 October conflict resolution
+Merged origin/main1b06812. Sole conflict was duplicate Organiser save-alert stabilization; kept current main's reviewed version, eliminating frontend test diff from306. Focused save-alert5/5 pass. SQL0020 unchanged; production application gate and separate299/298 dependencies remain. E11 resumed work safely preserved in latest named stash; no website/production action.
+Repository check rerun: hygiene/env passed;158 tooling tests retain3 failures11 errors on Windows. Initial end-of-file hook adjustment restaged. Exact SQL parity with PR299 verified. No full repository pass claimed.
