@@ -55,10 +55,17 @@ and rechecked the production ledger read-only. `main` was merged in at
 - After merging `main` (`5cebc1a`): #217's `fixme` scaffolds for
   TC_E08S03_08 and _09 were removed, since `eventReadiness.spec.ts` covers
   them (`364a7d4`). Gates rerun on `364a7d4` (Run log in the run record).
-- Next: fill the checklist's run-record links, mark the PR ready, and get a
-  fresh approval.
-- Production has no Safety Officer account yet. Until one exists, a
-  submission notifies only the Organiser.
+- Done: checklist links filled and the PR marked ready (16 Oct).
+- Done (17 Oct): Aaron re-ran the click-through by hand with screenshots,
+  as T-93 requires (`20261017-191316-Bl0oper-frontend-e2e.md`, evidence
+  folder alongside). The submission notices name seeded events with the
+  code twice ("EVT-3003 EVT-3003 …") because the seed's titles already
+  start with the code; recorded PASS and noted in Known limits. `main`
+  merged again (`20fb06b`); the workbook is now `CAA 171026`, and `CAA
+  161026` is left as `main`'s copy (copy-forward).
+- Next: a fresh approval of the latest push from Amareet or Xiang Ying,
+  then the merge queue. Push nothing after the approval.
+- Production's Safety Officer account was added by Bryan on 16 Oct (#295).
 
 ## Decisions taken without team sign-off
 
