@@ -234,17 +234,18 @@ each step, and sign out between people in the same window.
 
 14. In the private window, sign out, sign in as `organiser_a@clienta.com`.
     Open the bell (or **Notifications**) and click **Awaiting safety check**:
-    "Coordinator A submitted EVT-3003 Planning Phase Gala for its safety check.
-    The event is now in Safety Review, and is confirmed only once the Safety
-    Officer approves it."
+    "Coordinator A submitted EVT-3003 EVT-3003 Planning Phase Gala for its
+    safety check. The event is now in Safety Review, and is confirmed only
+    once the Safety Officer approves it." (The code appears twice with the
+    seed's title; see Known limits.)
 15. Open **My requests**, then **EVT-3003 Planning Phase Gala**. The pill
     reads **Safety Review**, and a blue box says "Your event is awaiting its
     safety check. It is confirmed once the Safety Officer approves it."
 16. Sign out, sign in as `safety_officer@connectsphere.com`. The Safety
     Officer has no home page yet (E01-S13, Known limits), so go to
     http://localhost:5173/notifications. Click **Safety check needed**:
-    "Coordinator A submitted EVT-3003 Planning Phase Gala for its Operational
-    Safety Check. The event is now in Safety Review."
+    "Coordinator A submitted EVT-3003 EVT-3003 Planning Phase Gala for its
+    Operational Safety Check. The event is now in Safety Review."
 
 **Part E: nobody else can confirm (Scenario 7)**
 
@@ -319,6 +320,12 @@ of these areas, it is outside what was tested:
   _08 and _09.
 - **The cases' account and event names** (`coordinator_1@`, "Charity Run")
   aren't in the seed; the tests map them as above.
+- **The submission notices name the event as its code followed by its
+  title.** The seed's titles already start with the code ("EVT-3003 Planning
+  Phase Gala"), so on seeded data the code appears twice ("EVT-3003 EVT-3003
+  Planning Phase Gala"). An event whose title doesn't repeat its code shows it
+  once. Seen in the 17 Oct manual run; F4's record called these notices "as
+  scripted", but the script's wording was wrong.
 - **Emails are not actually sent.** Tests check the in-app notice and the
   email-outbox row, not delivery.
 - **Not tested on the deployed site.** All runs are local.
@@ -385,3 +392,4 @@ fix gets its own row.
 | 2026-10-16 13:37 | `364a7d4` | F2 | all | `npx playwright test` (full) | local, fake API | 328 passed, 0 failed, 342 skipped (52 more skipped than on `b68a0a5`: #217's new Week 7 `fixme` scaffolds) | — | Claude (for Aaron) |
 | 2026-10-16 13:40 | `364a7d4` | 10 | — | `python scripts/check.py` | local (Windows) | 348 run records valid; failed only `test_worktree_hygiene` (3 failures, 11 errors: symlink tests that fail on Windows since #248; CI on Linux runs them) | — | Claude (for Aaron) |
 | 2026-10-16 14:17 | `c315f86` (`main` at `8599ad2` merged in: #272's backend change, #280's cases; the conflicting generated workbooks and `tc-coverage.md` regenerated, 360 cases; no frontend change from `main`) | 5, 1, 2, 3 | all | `npm run typecheck`; `npm test --workspace backend`; `npm run test:db --workspace backend` | local, container `cs-scrum34-test` | typecheck passed; backend 412/412; `test:db` 131/132, failed E01-S02 only (as above) | — | Claude (for Aaron) |
+| 2026-10-17 18:30–19:13 | `1e33320` | F4 (re-run with screenshots, T-93) | _03, _04, _05, _08, _09 | Aaron's own click-through, the 24-step script, by hand in Chrome, with 19 screenshots | local real stack, `connectsphere_dev_stack` reset and seeded at ≈18:10 | 24/24 steps as scripted, apart from the notices' wording (recorded PASS). Session record `20261017-191316-Bl0oper-frontend-e2e.md`, screenshots in `docs/testing/runs/evidence/20261017-191316-Bl0oper-frontend-e2e/` | Both submission notices read "Coordinator A submitted EVT-3003 EVT-3003 Planning Phase Gala …": the seed's title already starts with the code (Known limits). The script's steps 14 and 16 corrected | Aaron |
