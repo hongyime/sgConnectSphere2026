@@ -50,7 +50,12 @@ save/display flow without changing backend persistence or scope history.
 - Manual T-65 acceptance for TC_E05S05_01–07 remains separate and requires the
   human Venue Staff/Coordinator flows and hand-taken T-93 screenshots.
 - Review PostPlan uploaded at https://cjfo5skyzgvv.postplan.dev (version 1).
-- Push/open a review PR and link it from SCRUM-44 as authorized by Bryan's
-  update. Do not merge the PR. Leave Sprint assignment, estimates, dates and
-  acceptance criteria unchanged; do not merge #298 or modify Jira beyond
-  linking this PR.
+- Draft review PR: https://github.com/hongyime/sgConnectSphere2026/pull/305,
+  based on `docs/po-review-corrections-20261016` to keep the unrelated 21
+  commits ahead of `main` out of this story diff. The PR is open and unmerged.
+- Linked PR #305 to SCRUM-44 using a Jira remote link. Readback shows the issue
+  remains In Review, in SCRUM Sprint 3, with the original 5-point estimate.
+  No Jira status, Sprint assignment or estimate fields were edited; historical
+  story dates and acceptance criteria were left untouched.
+- Do not merge #298 or claim SCRUM-44 Done. Manual TC_E05S05_01–07 and
+  loopback PostgreSQL integration remain outstanding.
