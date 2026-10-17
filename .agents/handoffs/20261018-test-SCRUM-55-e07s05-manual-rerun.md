@@ -28,10 +28,12 @@ update to the script's event and dates.
 
 ## Not done / next step
 
-- The Unavailable periods table overflows its card on a date-range row at
+- Microphone-Wireless's Unavailable periods table overflows its card at
   desktop width (inner sideways scroll, "Return to service…" cut at the
-  right edge). Recorded in Known limits; the story is Done, so a fix would be
-  a new story. Not raised yet.
+  right edge). Recorded as a separate FAIL row (design.md checklist) and in
+  Known limits with the measured cause: a 640 px minimum table width in a
+  narrow page's 604 px card. The story is Done, so a fix would be a new
+  story. Not raised yet.
 - After 25 October 2026 the script needs an event with later dates; the seed
   has none.
 

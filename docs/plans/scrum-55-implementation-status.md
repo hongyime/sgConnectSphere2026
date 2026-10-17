@@ -248,12 +248,24 @@ of these areas, it is outside what was tested:
   steps 9 to 11 are refused as already ended, which is the rule working, not
   a fault. The seed has no approved or planning event after 25 October.
 - **The Unavailable periods table can be wider than its card** (found in the
-  18 October re-run, `20261018-012126-Bl0oper-frontend-e2e.md`). On an
-  item's page at desktop width, a row with a date range ("1 Dec 2026 –
-  5 Dec 2026") makes the table scroll sideways inside the card, and the
-  "Return to service…" button is cut at the right edge; single-date rows fit,
-  and at 393 px the rows stack into cards. The button still works. The story
-  is Done, so a fix is a new story; none raised yet.
+  18 October re-run, `20261018-012126-Bl0oper-frontend-e2e.md`, recorded as
+  a FAIL row against design.md's screen checklist). At desktop width,
+  Microphone-Wireless's table scrolls sideways inside its card and the
+  "Return to service…" button is cut at the right edge; the button still
+  works, and at 393 px the rows stack into cards with nothing cut.
+  - **Cause, measured in Chromium at 1280 px:** the Equipment details page
+    uses the narrow layout (`PageLayout width="narrow"`, 704 px), leaving
+    604 px inside a card, but every shared `DataTable` is at least 640 px
+    wide (`.ui-table { min-width: 640px }` in `frontend/src/shared/shared.css`).
+    So the table overflows by 36 px.
+  - **Why Projector-HD's page looked fine:** its Reservation-history table,
+    also 640 px, widens both cards to 640 px, so the periods table fits.
+    That history table pushes past the page's inner width in the same way.
+    Microphone-Wireless had no reservations, so nothing widened the cards.
+  - **Whose code:** the narrow page is E07-S01's (`EquipmentCatalogue.tsx`),
+    the 640 px minimum and the narrow width are the shared skeleton's, and
+    the periods table on that page is this story's.
+  - The story is Done, so a fix is a new story; none raised yet.
 
 **So that these tests keep running after this story merges:** the backend
 test files are added to `backend/package.json`'s scripts, and the database
@@ -302,4 +314,4 @@ fix gets its own row.
 | 2026-10-14 ≈13:17 | `3e05237` + `main` `c0797ec`, merged (committed as `3fcf018`) | 1, 5 | — | `npm test` (backend); `npm run typecheck` (root); `python scripts/check.py` (root) | local | backend 375/375 and typecheck passed. **`check.py` failed: 14 failures and errors, all in `test_worktree_hygiene`** | "Lists differ: ['git', 'worktree', 'remove', '\\repo\\scratch'] != ['git', 'worktree', 'remove', '/repo/scratch']": #248's new tooling tests expect POSIX paths and fail on Windows. Not from this story: the files are identical to `main`, whose CI (Linux) passes. Re-run after merging `main` again (#258's test now shares the same `package.json` line); the PR's own diff is unchanged | Claude (for Aaron) |
 | 2026-10-14 14:21 | `4016c05` (Bryan's merge of `main` `979cc08`; application code as `a8281e2`) | 2, 3, 5 | _01–_03 | `application-checks` workflow, including `equipmentUnavailability.integration.test.ts` | ci, PostgreSQL service container: [run 38520944446](https://github.com/hongyime/sgConnectSphere2026/actions/runs/38520944446) | passed; every other PR check passed too | — | CI (for Aaron) |
 | 2026-10-15 00:52 | `4016c05` + `main` `5c22e26`, merged (committed as `783a109`) | 1, 5, F1 | _01–_03 | `npm test` (backend); `npm run typecheck` (root); `npx vitest run --no-file-parallelism` (whole frontend) | local | all passed: backend 386/386; typecheck clean; Vitest 396/396. Re-run after merging `main` (#263, #259, #265, #252, #261) to clear the conflicts in `backend/package.json` (kept `main`'s `venueBufferConflicts` and `eventSessionsMigration` tests and this PR's `equipmentUnavailability` tests) and `tc-coverage.md` (regenerated). The PR's own diff is unchanged. #265 now reads this story's withdrawals in `catalogue.ts` without changing the table; CI's `application-checks` covers both on PostgreSQL. `check.py` not re-run (the known Windows-only `test_worktree_hygiene` failures); database tests not re-run locally (Docker not running) | — | Claude (for Aaron) |
-| 2026-10-18 00:55 – 01:21 | `1b06812` | F4 (T-93 re-run) | _01–_03 | Aaron's own click-through, the 19-step script, by hand in Chrome, with screenshots; EVT-3003 and 25 Oct in place of EVT-3001 and 15 Oct (script updated) | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed. Session record `20261018-012126-Bl0oper-frontend-e2e.md`, 24 screenshots in its evidence folder | As scripted. Seen but not scripted: the Unavailable periods table overflows its card on a date-range row (inner sideways scroll, "Return to service…" cut at the right edge) | Aaron |
+| 2026-10-18 00:55 – 01:21 | `1b06812` | F4 (T-93 re-run) | _01–_03 | Aaron's own click-through, the 19-step script, by hand in Chrome, with screenshots; EVT-3003 and 25 Oct in place of EVT-3001 and 15 Oct (script updated) | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed; 1 FAIL row for a layout fault outside the script. Session record `20261018-012126-Bl0oper-frontend-e2e.md`, 24 screenshots in its evidence folder | Scripted steps as written. FAIL (design.md checklist, not scripted): Microphone-Wireless's Unavailable periods table scrolls sideways inside its card at desktop width and "Return to service…" is cut at the right edge; cause in Known limits | Aaron |
