@@ -4,7 +4,7 @@ import { AccessError } from '../eventVisibility/service.js';
 import type { AuthenticatedUser } from './types.js';
 
 export const DEACTIVATION_BLOCKING_STATUSES = [
-  'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'confirmed',
+  'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'safety_review', 'confirmed',
 ] as const;
 
 export class DeactivationBlockedError extends AccessError {

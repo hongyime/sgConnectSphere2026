@@ -46,7 +46,8 @@ import {
   Reassignments as CoordinatorReassignments,
 } from '../features/coordinator/CoordinatorWorkspace';
 import { SupportRequestForm } from '../features/coordinator/TechnicalSupport';
-import { PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
+import { PlanningWorkspace } from '../features/coordinator/Coordinator';
+import { ConfirmRedirect, EventReadiness } from '../features/coordinator/EventReadiness';
 import { DecisionPanel } from '../features/coordinator/DecisionPanel';
 import { VenueSuitability } from '../features/venue/VenueSuitability';
 import { VenueBookingRequests } from '../features/venue/VenueBookingRequests';
@@ -162,8 +163,8 @@ export const routes: AppRoute[] = [
   page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'live', 'E03-S03'),
   page('/coordinator/events/:eventCode/support', <SupportRequestForm />, 'live', 'E07-S06'),
   page('/coordinator/events/:eventCode/plan', <PlanningWorkspace />, 'mock', 'E07-S02'),
-  page('/coordinator/events/:eventCode/readiness', <ReadinessChecklist />, 'mock', 'E08-S03'),
-  page('/coordinator/events/:eventCode/confirm', <FinalConfirmation />, 'mock', 'E08-S03'),
+  page('/coordinator/events/:eventCode/readiness', <EventReadiness />, 'live', 'E08-S03'),
+  page('/coordinator/events/:eventCode/confirm', <ConfirmRedirect />, 'redirect', 'E08-S03'),
   page('/coordinator/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),
