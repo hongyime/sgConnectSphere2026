@@ -68,3 +68,6 @@ Updated venue-booking-requests.md to link completed human primary run and Le Xin
 
 ## Main merge ea9d5e0 (17 October)
 Only coverage inventory conflict, regenerated195/375 active. Fifteen targeted activity/organiser-save-alert tests passed; repo hygiene/env checks pass, existing Windows tooling158 tests3 failures/11 errors. Records20261017-171609-frontend-vitest and171618-tooling. No dependency merge or application change in resolution.
+
+## CI save-alert race fix (17 October)
+CI run39020544510 failed organiser save-alert TC_E03S12_01 from main: transient success text could resolve before reload hides its container. Test now waits for refreshed event heading before querying the final alert; product code/real assertions unchanged. Full frontend422/422 pass across45 files. Record20261017-203558. Repo hygiene/env pass;158 Windows tooling tests retain3 failures/11 errors (record203449). E11 uncommitted implementation preserved in task-specific stash before switching; do not drop or apply on this branch. User corrected accidental test execution denial; full run completed. Pushing focused CI test fix to PR299; no website restarted.
