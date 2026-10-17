@@ -54,6 +54,7 @@ artifacts/*
 !artifacts/manual-remarks-validator-plan-20261014.html
 !artifacts/pr-230-seeded-account-names.html
 !artifacts/pr-248-safe-worktree-cleanup.html
+!artifacts/pr-scrum-44-venueform-buffer-controls.html
 !artifacts/pr-sbom-public.html
 !artifacts/pr-week9-jira-reconciliation.html
 !artifacts/scaffold-review-plan-20261014.html

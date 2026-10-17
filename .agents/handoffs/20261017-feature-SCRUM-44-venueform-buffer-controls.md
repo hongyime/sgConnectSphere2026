@@ -49,6 +49,7 @@ save/display flow without changing backend persistence or scope history.
   run no database suite unless a loopback disposable target is configured.
 - Manual T-65 acceptance for TC_E05S05_01–07 remains separate and requires the
   human Venue Staff/Coordinator flows and hand-taken T-93 screenshots.
+- Review PostPlan uploaded at https://cjfo5skyzgvv.postplan.dev (version 1).
 - Push/open a review PR and link it from SCRUM-44 as authorized by Bryan's
   update. Do not merge the PR. Leave Sprint assignment, estimates, dates and
   acceptance criteria unchanged; do not merge #298 or modify Jira beyond
