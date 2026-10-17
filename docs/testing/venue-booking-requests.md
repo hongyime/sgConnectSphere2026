@@ -378,6 +378,12 @@ passes do not establish results against a later dependency head. This document
 does not authorise merging #298 or assume its product decisions are resolved.
 
 Migration 0020 is not production-applied or verified by these tests/reviews.
+The concrete migration-only prerequisite is
+[PR #306](https://github.com/hongyime/sgConnectSphere2026/pull/306), with the
+deploy-owner sequence in its `docs/ops/e06-s03-0020-release-plan.md`.
+Keep application PR #299 unqueued until that migration-only PR merges and the
+deploy owner's production application/verification record is committed. Then
+merge main into #299 so the already-merged SQL disappears from its diff.
 The deploy owner must follow the
 [production migration runbook](../ops/production-migrations.md), including the
 migration-only/application release split or a reviewed deployment control,

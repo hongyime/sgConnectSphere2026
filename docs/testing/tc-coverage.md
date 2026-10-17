@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 375 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 376 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **375**
-- Automated (explicit TC_ID in an active test title): **195** (52.0%)
+- Total test cases: **376**
+- Automated (explicit TC_ID in an active test title): **201** (53.5%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **158**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **138** (36.8%)
+  - Live-assertion (other active tests): **164**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.4%)
 - No test yet (no test file mentions the TC_ID): **42** (11.2%)
 
 ## Coverage by epic
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 37 | 29 | 8 | 0 |
 | E06 | 43 | 27 | 16 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 27 | 0 | 26 | 1 |
+| E08 | 28 | 6 | 21 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
 | E10 | 29 | 0 | 20 | 9 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **375** | **195** | **138** | **42** |
+| **Total** | **376** | **201** | **133** | **42** |
 
 ## Case-by-case status
 
@@ -321,13 +321,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E08S03_01` | E08-S03 | Verify that confirming an event where every event has a confirmed venue and full | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_01 - Verify that confirming an event where every event has a confirmed venue and full equipment reservation should set its status to Confirmed and  |
 | `TC_E08S03_02` | E08-S03 | Verify that attempting to confirm an event while a event is missing a confirmed  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_02 - Verify that attempting to confirm an event while a event is missing a confirmed venue should be blocked with the outstanding event named |
-| `TC_E08S03_03` | E08-S03 | Verify that attempting to confirm an event while a event has only a partial equi | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_03 - Verify that attempting to confirm an event while a event has only a partial equipment reservation should be blocked with the outstanding quant |
-| `TC_E08S03_04` | E08-S03 | Verify that attempting to confirm an event while a event's requested technical s | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_04 - Verify that attempting to confirm an event while a event |
-| `TC_E08S03_05` | E08-S03 | Verify that once an event is confirmed, the Organiser should see the confirmed v | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_05 - Verify that once an event is confirmed, the Organiser should see the confirmed venue, date, time and arrangements for every event |
+| `TC_E08S03_03` | E08-S03 | Verify that attempting to submit an event for its safety check while it has only | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_03: a partial equipment reservation blocks submission and shows the outstanding quantity; backend/tests/eventReadiness.t |
+| `TC_E08S03_04` | E08-S03 | Verify that attempting to submit an event for its safety check while its request | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_04: requested technical support with no staff assigned blocks submission; backend/tests/eventReadiness.test.ts: TC_E08S0 |
+| `TC_E08S03_05` | E08-S03 | Verify that once an event is confirmed, the Organiser should see every confirmed | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_05: the Organiser sees every confirmed venue with its purpose and period, and the arrangements, once the event is confir |
 | `TC_E08S03_06` | E08-S03 | Verify that confirming an event with several venue bookings should be blocked wh | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_06 — Verify that confirming an event with several venue bookings should be blocked while any booking is still Pending or Conflicting, listing each  |
 | `TC_E08S03_07` | E08-S03 | Verify that an event should be confirmable once every venue booking is Confirmed | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed ven |
-| `TC_E08S03_08` | E08-S03 | Verify that submitting a fully arranged event for its Operational Safety Check s | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_08 — Verify that submitting a fully arranged event for its Operational Safety Check should move it to Safety Review and notify the Safety Officer a |
-| `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_09 — Verify that submission for safety review should be blocked while a readiness item is outstanding and that no one but a Safety Officer can set  |
+| `TC_E08S03_08` | E08-S03 | Verify that submitting a fully arranged event for its Operational Safety Check s | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_08: submitting a fully arranged Planning event moves it to Safety Review and notifies the Organiser and every active Saf |
+| `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_09: submission is blocked while a venue booking is outstanding, each one listed by venue, and nothing changes; backend/t |
+| `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
 | `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_01 - Verify that reverting a Confirmed event to Planning with a recorded reason should update its status and notify the Organiser with the reason |
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_02 - Verify that reverting a Confirmed event with registered Attendees should notify them that arrangements are being revised |
 | `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead b |
@@ -680,6 +681,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventNotifications.integration.test.ts`
 
 - E11-S01: real PostgreSQL recipient selection and atomic business changes
+
+### `backend/tests/eventReadiness.integration.test.ts`
+
+- SCRUM-60: only the assigned Coordinator reads readiness or submits; other callers are refused and audited
+- SCRUM-60: an event in Safety Review stays in every read, counts as active, and its arrangements are frozen
+
+### `backend/tests/eventReadiness.test.ts`
+
+- SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted
+- SCRUM-60 D64: Safety Review counts as an active event for workload and deactivation (T-52)
+- SCRUM-60: a wrong-role submission is refused and audited without opening a transaction; signed-out and blank calls record nothing
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1047,6 +1059,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - opening a panel moves focus into it, and Cancel returns focus to the button that opened it
 - a late answer for the previous request never replaces the current one
 
+### `frontend/src/features/coordinator/EventReadiness.test.tsx`
+
+- SCRUM-60: an event in Safety Review, or not yet in Planning, offers nothing to submit
+- SCRUM-60: another Coordinator is refused with the server sentence, and the old confirm link opens the readiness page
+- SCRUM-60: a submission that fails for another reason shows that sentence and keeps the page
+- SCRUM-60: leaving the page while a submission is in flight drops its answer
+- SCRUM-60: a late answer for the previous event never replaces the current one
+- SCRUM-60: the event page links to readiness in Planning and Safety Review, and never shows a raw id as its eyebrow
+
 ### `frontend/src/features/coordinator/RequestClarification.test.tsx`
 
 - the event page offers Request clarification only while the request is Under Review
@@ -1119,6 +1140,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the send button is busy while the answers are on their way
 - a late answer for the previous request never replaces the current one
 - the reply is handled under StrictMode, as in development
+
+### `frontend/src/features/organiser/ConfirmedArrangements.test.tsx`
+
+- SCRUM-60 fix (a) - equipment recorded as none required reads
 
 ### `frontend/src/features/organiser/Organiser.test.tsx`
 
@@ -1331,6 +1356,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - shows Singapore time
 - decides
 - says when a date is missing
+- writes stored statuses in sentence case, and Safety Review as design.md section 7 names it
 - returns the data on success and sends the session cookie
 - uses the server
 - keeps field errors and conflict details, and swaps a machine code for the fallback
@@ -1398,7 +1424,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - coordinator dashboard shows live workload counts inside the shared header
 - review queue filters assigned events by status
 - request detail shows the assigned Coordinator and request details
-- final confirmation blocks until readiness is met
 
 ### `tests/e2e/deactivation.spec.ts`
 
@@ -1408,6 +1433,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/e03.spec.ts`
 
 - E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
+
+### `tests/e2e/eventReadiness.spec.ts`
+
+- SCRUM-60 - the old confirm link opens the readiness page, which offers no direct confirmation
 
 ### `tests/e2e/landing.spec.ts`
 

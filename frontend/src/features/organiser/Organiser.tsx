@@ -11,8 +11,9 @@
 // requests from the live API (organiserRequestsApi.ts) and are built on the
 // shared blocks in src/shared (ADR-017). Submitted Detail also shows the
 // E03-S02 (SCRUM-33) outstanding questions and links to the answer screen,
-// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify), and the
-// E03-S03 (SCRUM-34) rejection with its date and reason.
+// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify), the
+// E03-S03 (SCRUM-34) rejection with its date and reason, and the E08-S03
+// (SCRUM-60) confirmed arrangements.
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -26,8 +27,12 @@ import {
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
-  getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type RequestDetail, type StatusHistoryEntry,
+  getRequestDetail, listOwnRequests, type ConfirmedArrangements, type EventStatus, type OwnRequest, type RequestDetail,
+  type StatusHistoryEntry,
 } from './organiserRequestsApi';
+
+// The stored value for "none required" (E02-S01 Scenario 4).
+const NONE_REQUIRED = 'none_required';
 import './organiser.css';
 
 const mockStatusTone: Record<OrganiserStatus, string> = {
@@ -43,7 +48,7 @@ const mockStatusTone: Record<OrganiserStatus, string> = {
 };
 
 const awaitingStatuses: EventStatus[] = ['submitted', 'under_review', 'awaiting_clarification'];
-const approvedStatuses: EventStatus[] = ['approved', 'planning', 'confirmed'];
+const approvedStatuses: EventStatus[] = ['approved', 'planning', 'safety_review', 'confirmed'];
 const closedStatuses: EventStatus[] = ['draft', 'rejected', 'cancelled', 'completed'];
 
 // When the request is planned for. Missing dates read "Not set" (a draft may
@@ -242,7 +247,8 @@ export function SubmittedDetail() {
                   ...([
                     ['Venue needs', request.venueRequirements],
                     ['Accessibility', request.accessibilityNote],
-                    ['Equipment', request.equipmentRequirements],
+                    // E08-S03 fix (a): the stored sentinel reads as words.
+                    ['Equipment', request.equipmentRequirements === NONE_REQUIRED ? 'None required' : request.equipmentRequirements],
                     ['Layout', request.layoutPreference],
                   ] as [string, string | null | undefined][]).filter(([, value]) => value),
                 ]}
@@ -250,6 +256,10 @@ export function SubmittedDetail() {
             </Card>
             <Timeline history={[...request.statusHistory].reverse()} />
           </section>
+          {request.status === 'safety_review' ? (
+            <Alert tone="info">Your event is awaiting its safety check. It is confirmed once the Safety Officer approves it.</Alert>
+          ) : null}
+          {request.arrangements ? <ConfirmedArrangementsCard arrangements={request.arrangements} /> : null}
           <Card title={`Comments (${request.comments.length})`}>
             <p className="organiser-card-copy">
               <MessageSquareText size={16} aria-hidden="true" />
@@ -263,6 +273,37 @@ export function SubmittedDetail() {
     </PageLayout>
   );
 }
+
+// E08-S03 (SCRUM-60) Scenario 6, TC_E08S03_05: once the event is Confirmed,
+// every confirmed venue with its purpose and period, and what was arranged.
+// Technician names are internal, so support shows only what was asked for.
+function ConfirmedArrangementsCard({ arrangements }: { arrangements: ConfirmedArrangements }) {
+  const equipment = arrangements.equipment.length
+    ? arrangements.equipment.map(item => `${item.name} × ${item.quantity}`).join(', ')
+    : arrangements.equipmentNoneRequired ? 'None required' : null;
+  const support = arrangements.support.length
+    ? arrangements.support.map(item => `${item.description} (${formatDateRange(item.startsAt, item.endsAt)})`).join('; ')
+    : null;
+  return (
+    <Card title="Confirmed arrangements">
+      {arrangements.venues.length === 0 ? <p className="organiser-card-copy">No confirmed venue recorded.</p> : (
+        <DataTable
+          caption="Confirmed venues"
+          columns={venueColumns}
+          rows={arrangements.venues}
+          rowKey={venue => `${venue.venueName}-${venue.startsAt}`}
+        />
+      )}
+      <FactList items={[['Equipment reserved', equipment], ['Technical support staffed', support]]} />
+    </Card>
+  );
+}
+
+const venueColumns: Column<ConfirmedArrangements['venues'][number]>[] = [
+  { header: 'Venue', primary: true, cell: venue => venue.venueName },
+  { header: 'Purpose', cell: venue => venue.purpose ?? 'None recorded' },
+  { header: 'When', cell: venue => formatDateRange(venue.startsAt, venue.endsAt) },
+];
 
 // E03-S03 (SCRUM-34) Scenario 5, TC_E03S03_05: the decision in plain language.
 // A fact about the record, so an info alert (D34); the red pill carries the
