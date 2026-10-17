@@ -1,8 +1,11 @@
-// Typed fetch helpers for the venue catalogue API (E05-S01, E05-S02), on the
-// shared apiCall (session cookie, ADR-015; safe error messages).
+// Typed fetch helpers for the venue catalogue API (E05-S01, E05-S02, E05-S05),
+// on shared apiCall (session cookie, ADR-015; safe error messages).
 import { apiCall, jsonRequest, type ApiResult } from '../../shared';
 
 export type VenueLayout = { label: string; capacity: number };
+
+// Must fit the PostgreSQL integer columns used by the venue buffer migration.
+export const MAX_BUFFER_MINUTES = 2_147_483_647;
 
 export type Venue = {
   id: string;
@@ -14,6 +17,8 @@ export type Venue = {
   facilities: string[];
   accessibility_features: string[];
   supported_layouts: VenueLayout[];
+  setup_time_minutes: number;
+  turnaround_time_minutes: number;
 };
 
 export type VenueInput = {
@@ -25,6 +30,8 @@ export type VenueInput = {
   facilities: string[];
   accessibility_features: string[];
   supported_layouts: VenueLayout[];
+  setup_time_minutes: number;
+  turnaround_time_minutes: number;
 };
 
 // The 100-row cap on GET /api/venues: the inventory says when it is reached.
