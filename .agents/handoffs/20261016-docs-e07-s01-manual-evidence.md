@@ -25,3 +25,5 @@ Supplied TC_E07S01_01-5.png actually shows original microphone details stock 4 /
 Latest: corrected Final Check edit screenshot TC_E07S01_04-3.png supports current-main TC_E07S01_04 PASS with human completion report. TC_E07S01_01 current-main availability/details still deferred. User requested push/merge PR #281; preserve remaining gap explicitly, publish evidence for review without declaring full T-93 completion.
 
 Final new-item availability original PNG stored, 10 free; details observed in human chat attachment but no original 01-6 file available. Add case PASS with explicit role adaptation/refresh limits. All four current-main cases have results; update PR and PostPlan, check, push.
+
+Reviewer follow-up: new supplemental manual record 20261017-112428-xiangyingg-frontend-e2e, application d87081d. Two original human PNGs show Coordinator selected/saved Final Check item stock10 and retired projector excluded from complete dropdown. Clarifies earlier notification account and post-edit 01-7 timing without editing prior sessions. Extra synthetic requirement was saved, no reservation. Next check/push same PR281; no new PR.
