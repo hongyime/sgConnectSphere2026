@@ -62,12 +62,13 @@
         <tr><td>Approval</td><td>Confirmed bookings and live holds block with the conflict identified; competing Pending rows retain Pending status and carry the confirmed winner ID.</td><td><code>backend/src/modules/venueBooking/decisions.ts</code></td></tr>
         <tr><td>Database</td><td>Migration 0021 adds the conflict reference and permits only that flagged Pending row to coexist with its confirmed winner in the existing trigger guard.</td><td><code>backend/database/migrations/0021_venue_approval_conflict.sql</code>; ADR-003; migration 0016</td></tr>
         <tr><td>Venue Staff UI</td><td>Queue and request details show “Conflicting”, name the confirmed booking, and remove the approval action while the conflict remains.</td><td><code>frontend/src/features/venue/BookingRequests.tsx</code></td></tr>
-        <tr><td>Loopback PostgreSQL</td><td>TC_E06S06_01–07 pass; 28/28 venue decision integration tests pass, including buffered race arbitration and the database write guard.</td><td><code>docs/testing/runs/20261017-224533-bryanseah234-backend-db.md</code></td></tr>
-        <tr><td>Unit and UI</td><td>435/435 backend unit tests pass; decision module is at 100% statements, branches, functions, and lines. Venue request UI: 25/25 pass.</td><td><code>docs/testing/runs/20261017-224533-bryanseah234-backend-unit.md</code>; <code>docs/testing/runs/20261017-224533-bryanseah234-frontend-vitest.md</code></td></tr>
+        <tr><td>Loopback PostgreSQL</td><td>TC_E06S06_01–07 pass; 28/28 venue decision integration tests pass, including buffered race arbitration and the database write guard.</td><td><code>docs/testing/runs/20261017-225319-bryanseah234-backend-db.md</code></td></tr>
+        <tr><td>Unit and UI</td><td>435/435 backend unit tests pass; decision module is at 100% statements, branches, functions, and lines. Venue request UI: 25/25 pass.</td><td><code>docs/testing/runs/20261017-225319-bryanseah234-backend-unit.md</code>; <code>docs/testing/runs/20261017-225319-bryanseah234-frontend-vitest.md</code></td></tr>
+        <tr><td>Repository check</td><td>Repository hygiene and all 158 tooling tests pass.</td><td><code>docs/testing/runs/20261017-225434-bryanseah234-tooling.md</code></td></tr>
       </tbody>
     </table>
-    <p class="note">Verification used a disposable PostgreSQL database on 127.0.0.1. No Supabase writes, reset, or seeding were run. Frontend build passed with Vite's existing large-chunk advisory.</p>
-    <p>TC_E06S06_04 checks half-open adjacency. TC_E06S06_05 checks a one-minute buffered overlap. TC_E06S06_06 checks that the loser stays Pending and a direct bypass write still receives the ADR-003 exclusion error.</p>
+    <p class="note">Verification used a disposable PostgreSQL database on 127.0.0.1. No shared Supabase writes, resets, or seeds were run. The canonical raw-overlap preconditions in TC_E06S06_01–03 and _05 cannot be inserted through the existing production exclusion constraint, so tests seeded them only in isolated schemas with that constraint and the buffer trigger temporarily bypassed; the live trigger was restored before each approval. Frontend build passed with Vite's existing large-chunk advisory.</p>
+    <p>TC_E06S06_04 checks half-open adjacency. TC_E06S06_05 checks a one-minute raw overlap. TC_E06S06_06 checks that the loser stays Pending and a direct bypass write still receives the ADR-003 exclusion error.</p>
   </section>
 
   <section id="next-steps">
