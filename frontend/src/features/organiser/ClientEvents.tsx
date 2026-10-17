@@ -5,6 +5,7 @@ import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
 import { fieldList } from '../events/eventEditFields';
 import { formatEditedValue } from '../events/ActivityLog';
+import { Alert } from '../../shared/feedback';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
@@ -114,7 +115,7 @@ export function ClientEvents() {
         </section>
       </>}
       {!busy && !error && event && <article><div className="organiser-event-heading"><div><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p></div>{event.canEdit ? <button type="button" className="secondary-action" onClick={() => { setEditing(true); setSaved(null); }}><PencilLine size={14} aria-hidden="true" /> Edit event</button> : null}</div>
-        {saved ? <p role="status">{saved}</p> : null}
+        {saved ? <Alert tone="success">{saved}</Alert> : null}
         {editing ? <EventEditForm
           eventId={event.id}
           values={{ title: event.title, description: event.description, purpose: event.purpose ?? null, starts_at: event.starts_at, ends_at: event.ends_at ?? event.starts_at, expected_attendance: event.expected_attendance ?? 1, venue_requirements: event.venue_requirements ?? null, accessibility_note: event.accessibility_note ?? null, equipment_requirements: event.equipment_requirements ?? null, layout_preference: event.layout_preference ?? null, registration_setup: event.registration_setup ?? null, registration_opens_at: event.registration_opens_at ?? null, registration_closes_at: event.registration_closes_at ?? null }}
