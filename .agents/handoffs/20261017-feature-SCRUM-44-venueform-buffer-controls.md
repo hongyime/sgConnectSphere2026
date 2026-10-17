@@ -31,14 +31,25 @@ save/display flow without changing backend persistence or scope history.
 
 ## Verification and delivery
 
-- Focused frontend tests/typecheck and loopback PostgreSQL integration results
-  will be recorded after final code is committed.
+- On implementation commit `11f0083`, the focused VenueForm/navigation Vitest
+  suite passed 10/10, and frontend typecheck passed. The run is recorded in
+  `docs/testing/runs/20261017-202113-bryanseah234-frontend-vitest.md`.
+- Targeted whole-file coverage reported 82.1% line coverage for `VenueForm.tsx`;
+  the uncovered lines are existing tag/layout add/remove/error paths outside
+  this buffer-control change. The new buffer validation, create/edit payload,
+  zero-default and display paths are exercised by the focused tests.
+- `python scripts/check.py` passed repository hygiene and all 158 tooling
+  tests, with the existing secondary-worktree warning.
+- The buffered-availability PostgreSQL integration suite was not run. At task
+  start `TEST_DATABASE_URL` was unset, the `.env` `DATABASE_URL` targets shared
+  Supabase, and `127.0.0.1:5432` refused connections; no database write suite
+  was pointed at the shared host.
 - Do not use the `.env` `DATABASE_URL`: it points at shared Supabase. At task
   start `TEST_DATABASE_URL` was unset and `127.0.0.1:5432` refused connections;
   run no database suite unless a loopback disposable target is configured.
 - Manual T-65 acceptance for TC_E05S05_01–07 remains separate and requires the
   human Venue Staff/Coordinator flows and hand-taken T-93 screenshots.
-- After implementation and tests pass, push/open a review PR and link it from
-  SCRUM-44 as authorized by Bryan's update. Do not merge the PR. Leave Sprint
-  assignment, estimates, dates and acceptance criteria unchanged; do not merge
-  #298 or modify Jira beyond linking this PR.
+- Push/open a review PR and link it from SCRUM-44 as authorized by Bryan's
+  update. Do not merge the PR. Leave Sprint assignment, estimates, dates and
+  acceptance criteria unchanged; do not merge #298 or modify Jira beyond
+  linking this PR.
