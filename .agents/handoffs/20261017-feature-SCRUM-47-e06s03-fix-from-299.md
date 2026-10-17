@@ -12,11 +12,17 @@ Correct PR #299's real-decision PostgreSQL race assertions against its current w
 - T-65 record `docs/testing/runs/20261017-220616-bryanseah234-backend-db.md`: corrected combined database suite passed 27/27 with zero skips using the current actual PR #298 decision module from an isolated overlay checkout; loopback only.
 - `python scripts/check.py` passed with repository hygiene/tooling tests; it warned that other pre-existing secondary worktrees are present.
 
+## Draft PR and Jira link
+
+- Draft PR #307: https://github.com/hongyime/sgConnectSphere2026/pull/307, base `feature/e06-s03-pending-withdrawal`; no merge.
+- Postplan: https://7ztwhjac1qmk.postplan.dev. Structural check passed; the computer-use environment had no browser available for visual inspection.
+- Added a Jira remote link from SCRUM-47 to draft PR #307. Readback still showed In Progress, Sprint 3, 3 points; no Jira fields were edited.
+- PR #307 checks were still running after creation; review the current check status before any further action.
+
 ## Next
 
-1. Review the final diff and T-65 record, then commit the record.
-2. Open a draft PR with base `feature/e06-s03-pending-withdrawal`, then link that PR to SCRUM-47 without editing issue fields.
-3. Keep the PR and SCRUM-47 open; do not merge #299 or claim the story Done.
+1. Review the draft fix and current PR checks.
+2. Keep PR #307 and SCRUM-47 open; do not merge #299 or claim the story Done.
 
 ## Acceptance limits
 
