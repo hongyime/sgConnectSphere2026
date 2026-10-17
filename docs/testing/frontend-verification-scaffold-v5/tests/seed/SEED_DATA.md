@@ -15,8 +15,8 @@ results meaningless."* `globalSetup` must reset and reseed before every run.
 | `organiser_c@clientb.com` | Event Organiser | `ValidPass123` | `+65 9100 0003` | Client B | Different organisation, used for isolation tests |
 | `coord_a@connectsphere.com` | Event Coordinator | `ValidPass123` | `+65 9200 0001` | — | Assigned coordinator in most flows |
 | `coord_b@connectsphere.com` | Event Coordinator | `ValidPass123` | `+65 9200 0002` | — | Reassignment target, fewest-active-events tests |
-| `venue_a@connectsphere.com` | Venue Staff | `ValidPass123` | `+65 9300 0001` | — | Booking decisions |
-| `venue_b@connectsphere.com` | Venue Staff | `ValidPass123` | `+65 9300 0002` | — | Second approver for the concurrency case (E06-S06) |
+| `venue_a@connectsphere.com` | Venue Staff | `ValidPass123` | `+65 9300 0001` | — | Booking decisions; assigned to Orchid Hall, Lotus Room and Maple Room (SCRUM-189) |
+| `venue_b@connectsphere.com` | Venue Staff | `ValidPass123` | `+65 9300 0002` | — | Second approver for the concurrency case (E06-S06); assigned to Jasmine Hall and Cedar Auditorium (SCRUM-189) |
 | `tech_a@connectsphere.com` | Technical Support Staff | `ValidPass123` | `+65 9400 0001` | — | Equipment and assignments |
 | `tech_b@connectsphere.com` | Technical Support Staff | `ValidPass123` | `+65 9400 0002` | — | Overlapping-assignment conflict case (E07-S07) |
 | `attendee_a@example.com` | Attendee | `ValidPass123` | `+65 9500 0001` | — | Registration, withdrawal, attendance |
@@ -36,6 +36,18 @@ that an Organiser sees only their own organisation's events.
 |---|---|---|---|
 | `Orchid Hall` | 200 | Theatre 120, Banquet 80 | Used by the boundary cases; do not change capacities without updating TC_E05S01_05/06 and TC_E05S02_04/05 |
 | `Lotus Room` | 50 | Boardroom 40 | Small venue for unsuitability cases |
+
+The local seed (`backend/src/database/cli.ts`) also has Maple Room, Jasmine Hall and Cedar Auditorium.
+
+## Venue Staff assignments
+
+Setup data in `venue_staff_assignments` (SCRUM-189, T-89; no roster screen). Venue Staff notices for an
+event go only to the staff assigned to its booked venues.
+
+| Venue Staff | Venues |
+|---|---|
+| `venue_a@connectsphere.com` | Orchid Hall, Lotus Room, Maple Room |
+| `venue_b@connectsphere.com` | Jasmine Hall, Cedar Auditorium |
 
 ## Equipment
 

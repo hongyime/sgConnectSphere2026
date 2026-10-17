@@ -519,6 +519,7 @@ The ERD above describes the shared target schema. The checked-in migration 0001 
 - PR #232 proposes migration 0012_user_role_enum_additions.sql for the Week 7 roles. It is independent of booking-range persistence.
 - PR #245 merged migration 0013_tentative_venue_holds.sql (holds only). It adds the tentative and expired booking_status values and expires_at, plus an expiry lookup index that does not use the new enum values. No constraint or index predicate may use those values until migration 0013 commits.
 - Migration 0014, `0014_event_sessions.sql`, is assigned to SCRUM-183. It creates Sessions, backfills one Session per existing Event, and adds the `session_id` links and composite ownership foreign keys for venue bookings and equipment requests/reservations. E06 migrations consume these links and must not recreate them.
+- Migration 0017, `0017_event_safety_review_status.sql` (SCRUM-184, E08-S03), adds the `safety_review` event status between `planning` and `confirmed` (C-70, T-71). It adds the enum value only, in its own migration-only PR applied before the E08-S03 code that uses it, since PostgreSQL rejects the value in queries until it exists.
 - Migration 0019 is proposed as `0019_venue_bookings_contract.sql` (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, committed 0013, and 0014; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
 
 Migration 0013 is merged; migration 0014 is the Session foundation; migration 0019 remains the shared venue contract proposal. Do not add a second E06-S03 migration for fields or constraints in 0019. Safety review and venue-block schema work remains with its owning stories; legacy Coordinator reassignment requests remain read-only history under T-83, with any removal/deprecation planned separately.
@@ -547,3 +548,15 @@ It also adds nullable `replaces_booking_id` (self-FK, delete restricted), a
 non-self check and a unique partial index allowing one replacement per rejection.
 The service enforces same-event Rejected provenance and the suggested venue.
 Original Rejected rows are preserved; successful switches create Pending rows.
+
+
+### Planned Pending-withdrawal index follow-up (T-94 to T-96)
+
+Reuse booking status Released for Pending withdrawal; no new status is required.
+Merged 0019 retains its all-status unique index on `replaces_booking_id` today.
+A future coordinated migration must narrow that index to non-Released rows so
+Released replacement history permits another attempt while Rejected replacements
+still consume their predecessor's slot. Preserve the self-FK, non-self check,
+idempotency index and all historical rows. Do not edit 0019 in place or use an
+active-only predicate. No migration or database change is made here; see the
+[agreed contract](contracts/venue-bookings.md#agreed-withdrawal-follow-up-15-october-2026-t-94-to-t-96).

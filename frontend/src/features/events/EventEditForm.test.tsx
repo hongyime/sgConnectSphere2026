@@ -34,8 +34,15 @@ describe('buildPatch', () => {
     expect(buildPatch(initial, { ...initial, endAt: '2026-11-12T08:00' }).errors).toEqual({ endAt: 'The event must end after it starts.' });
   });
 
-  test('registration setup is sent like the other text fields', () => {
+  test('TC_E03S11_01 - registration setup is sent like the other text fields', () => {
     expect(buildPatch(initial, { ...initial, registrationSetup: '  Free, first come first served  ' }).patch).toEqual({ registrationSetup: 'Free, first come first served' });
+  });
+
+  test('TC_E03S11_02 - clearing a recorded registration setup is refused before anything is sent', () => {
+    const recorded = { ...initial, registrationSetup: 'Free registration' };
+    const { patch, errors } = buildPatch(recorded, { ...recorded, registrationSetup: '   ' });
+    expect(errors).toEqual({ registrationSetup: "Registration setup can't be left empty." });
+    expect(patch).not.toHaveProperty('registrationSetup');
   });
 
   test('changed dates are sent as ISO timestamps', () => {
@@ -127,7 +134,23 @@ test('registration date inputs describe the validation error after an invalid sa
   cleanup();
 });
 
-test('the Organiser can fill in registration setup, shown with the dates under Registration', () => {
+test('TC_E03S11_03 - a locked registration setup is read-only and explains how to request a change', () => {
+  render(
+    <EventEditForm eventId="evt-1"
+      values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+        expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null,
+        registration_setup: 'Free registration' }}
+      editable={new Set(['title'])} lockedNote="This field is restricted after approval. Request a change."
+      onSaved={() => {}} onCancel={() => {}} />,
+  );
+  const setup = screen.getByLabelText('Registration setup');
+  expect(setup).toHaveAttribute('readonly');
+  expect(setup).toHaveValue('Free registration');
+  expect(setup).toHaveAccessibleDescription('This field is restricted after approval. Request a change.');
+  cleanup();
+});
+
+test('TC_E03S11_05 - the Organiser can fill in registration setup, shown with the two labelled dates under Registration', () => {
   render(
     <EventEditForm eventId="evt-1"
       values={{ title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
@@ -139,6 +162,9 @@ test('the Organiser can fill in registration setup, shown with the dates under R
   const setup = screen.getByLabelText('Registration setup');
   expect(section).toContainElement(setup);
   expect(section).toContainElement(screen.getByLabelText('Registration opens'));
+  expect(section).toContainElement(screen.getByLabelText('Registration closes'));
+  // Each date is its own field with its own label, not a nested fieldset legend.
+  expect(section.querySelectorAll('fieldset')).toHaveLength(0);
   expect(setup).toHaveValue('Free registration');
   expect(setup).not.toHaveAttribute('readonly');
   cleanup();

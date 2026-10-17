@@ -90,7 +90,9 @@ as evidence, with `environment: ci`.
 Key rules for agents: derive `commit` from `git rev-parse --short HEAD`,
 derive `runner` from the GitHub login of the person on whose behalf the tests
 are being run, record only outcomes you observed, and never edit an existing
-session file.
+session file. For a manual run, keep the tester's hand-taken screenshots
+under `docs/testing/runs/evidence/<record filename without .md>/`, named by
+TC_ID, and never substitute your own screenshots (T-93).
 
 ## Pull-request hygiene (enforced in CI)
 
