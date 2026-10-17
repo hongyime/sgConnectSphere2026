@@ -27,7 +27,8 @@ function bookingRow(overrides: Record<string, unknown> = {}) {
     venue_id: venueId, venue_name: 'Small Room', event_id: '00000000-0000-4000-8000-0000000000e1', event_code: 'EVT-5001',
     event_title: 'Product Expo 2026', expected_attendance: 150, coordinator_id: coordinator.id, coordinator_name: 'Coordinator A',
     decision_reason: null, suggested_venue_id: null, suggested_venue_name: null, decided_by_name: null, decided_at: null,
-    created_at: new Date('2027-01-01T00:00:00Z'), is_primary: false, suitability_snapshot: null, ...overrides,
+    created_at: new Date('2027-01-01T00:00:00Z'), is_primary: false, suitability_snapshot: null,
+    approval_conflict_booking_id: null, approval_conflict_status: null, approval_conflict_event_title: null, ...overrides,
   };
 }
 
@@ -101,6 +102,18 @@ test('toBooking shows a decided booking with its reason, suggestion and decider'
   assert.deepEqual(booking.suggestedVenue, { id: otherVenueId, name: 'Riverside Hall' });
   assert.equal(booking.decidedAt, '2027-01-03T00:00:00.000Z');
   assert.equal(booking.startsAt, '2027-01-15T02:00:00.000Z');
+});
+
+test('toBooking returns the active approval conflict and omits a stale conflict reference', () => {
+  const active = toBooking(bookingRow({
+    approval_conflict_booking_id: otherVenueId, approval_conflict_status: 'confirmed',
+    approval_conflict_event_title: 'Charity Run',
+  }));
+  assert.deepEqual(active.approvalConflict, { bookingId: otherVenueId, eventTitle: 'Charity Run' });
+  assert.equal(toBooking(bookingRow({
+    approval_conflict_booking_id: otherVenueId, approval_conflict_status: 'released',
+    approval_conflict_event_title: 'Charity Run',
+  })).approvalConflict, null);
 });
 
 // TC_E06S02_04: Venue Staff see the advisory result saved when the request was
@@ -185,7 +198,7 @@ test('TC_E06S04_01: an approval updates the booking, audits it and notifies the 
   const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
   assert.equal(result.status, 200);
   assert.equal((result.body as { coordinatorNotified: boolean }).coordinatorNotified, true);
-  const update = calls.find(call => call.sql.includes('UPDATE venue_bookings'))!;
+  const update = calls.find(call => call.sql.includes('SET status = $2::booking_status'))!;
   assert.deepEqual(update.values, [bookingId, 'confirmed', staff.id, null, null]);
   const audit = calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!;
   assert.deepEqual(audit.values, [staff.id, bookingId, bookingRow().event_id, 'Booking Approved', 'confirmed']);
@@ -254,10 +267,11 @@ test('an event with no assigned Coordinator is decided without a notice', async 
   assert.ok(has(calls, 'INSERT INTO audit_logs'));
 });
 
-test('the pending list reads only pending bookings, soonest first', async () => {
-  const { query, calls } = fakeDatabase(sql => (sql.includes("vb.status = 'pending'") ? [bookingRow()] : undefined));
+test('the request list includes pending and conflicting bookings, soonest first', async () => {
+  const { query, calls } = fakeDatabase(sql => (sql.includes("vb.status IN ('pending', 'conflicting')") ? [bookingRow()] : undefined));
   const { bookings } = await listPendingBookings(query, staff);
   assert.deepEqual(bookings.map(booking => booking.event.code), ['EVT-5001']);
+  assert.match(calls.at(-1)!.sql, /vb.status IN \('pending', 'conflicting'\)/);
   assert.match(calls.at(-1)!.sql, /ORDER BY lower\(vb\.booking_range\), vb\.id/);
 });
 
@@ -304,16 +318,55 @@ test('TC_E06S04_04: an approval whose buffered window overlaps another booking i
   assert.equal(has(calls, 'INSERT INTO audit_logs'), false);
 });
 
-test('a clash names a pending booking or a hold, with or without an event code', async () => {
-  for (const [row, expected] of [
-    [clashRow({ status: 'pending', event_code: null }), 'the pending booking for "Board Dinner"'],
-    [clashRow({ status: 'tentative', event_title: 'EVT-5002 Board Dinner' }), 'the held booking for "EVT-5002 Board Dinner"'],
-  ] as const) {
-    const { pool } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : sql.includes('occupied_window') ? [row] : undefined));
-    const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
-    assert.equal(result.status, 409);
-    assert.ok((result.body as { error: string }).error.includes(expected), expected);
-  }
+test('a live hold still blocks approval and is identified', async () => {
+  const { pool } = fakeDatabase(sql => (
+    sql.includes('FOR UPDATE OF vb') ? [bookingRow()]
+      : sql.includes("vb.status = 'confirmed' OR") ? [clashRow({ status: 'tentative', event_title: 'EVT-5002 Board Dinner' })]
+        : undefined
+  ));
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  assert.match((result.body as { error: string }).error, /the held booking for "EVT-5002 Board Dinner"/);
+});
+
+test('TC_E06S06_02: approval flags overlapping pending requests without using event identity as the conflict key', async () => {
+  const competitorId = '00000000-0000-4000-8000-0000000000b3';
+  const { pool, calls } = fakeDatabase(sql => {
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
+    if (sql.includes('UPDATE venue_bookings competitor')) return [{ id: competitorId, event_id: '00000000-0000-4000-8000-0000000000e2' }];
+    return undefined;
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 200);
+  const flag = calls.find(call => call.sql.includes('UPDATE venue_bookings competitor'))!;
+  assert.deepEqual(flag.values, [venueId, bookingId, bookingRow().starts_at, bookingRow().ends_at]);
+  assert.match(flag.sql, /competitor\.venue_id = \$1/);
+  assert.doesNotMatch(flag.sql, /AND competitor\.event_id/);
+  assert.ok(has(calls, "'Booking Conflict Flagged'"));
+});
+
+test('TC_E06S06_03: a previously flagged request reports that the venue was just taken and identifies the winner', async () => {
+  const winnerId = '00000000-0000-4000-8000-0000000000b4';
+  const { pool } = fakeDatabase(sql => {
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow({ approval_conflict_booking_id: winnerId })];
+    if (sql.includes("vb.status = 'confirmed' OR")) return [clashRow({ id: winnerId })];
+    return undefined;
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  assert.match((result.body as { error: string }).error, /This venue was just taken/);
+  assert.equal((result.body as { conflict: { bookingId: string } }).conflict.bookingId, winnerId);
+});
+
+test('a former approval conflict is cleared when its confirmed booking no longer occupies the venue', async () => {
+  const winnerId = '00000000-0000-4000-8000-0000000000b5';
+  const { pool, calls } = fakeDatabase(sql => (
+    sql.includes('FOR UPDATE OF vb') ? [bookingRow({ approval_conflict_booking_id: winnerId, approval_conflict_status: 'released' })] : undefined
+  ));
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 200);
+  const clear = calls.find(call => call.sql.includes('SET approval_conflict_booking_id = NULL'))!;
+  assert.deepEqual(clear.values, [bookingId, winnerId]);
 });
 
 test('an approval over a maintenance block is blocked and names the block', async () => {
@@ -341,7 +394,7 @@ test('a clash committed by someone else first is refused as "just taken"; other 
   for (const [code, expected] of [['23P01', { status: 409, message: /This venue was just taken/ }], ['XX000', { message: /boom/ }]] as const) {
     const { pool } = fakeDatabase(sql => {
       if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
-      if (sql.includes('UPDATE venue_bookings')) throw Object.assign(new Error('boom'), { code });
+      if (sql.includes('SET status = $2::booking_status')) throw Object.assign(new Error('boom'), { code });
       return undefined;
     });
     await assert.rejects(decideBooking(pool, staff, bookingId, { decision: 'approve' }), expected);

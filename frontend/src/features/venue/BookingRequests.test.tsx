@@ -37,22 +37,39 @@ function renderAt(path: string) {
 
 // --- Queue ----------------------------------------------------------------
 
-test('Venue Staff see pending booking requests, each linking to its request', async () => {
-  stubApi({ 'GET /api/venues?bookings=pending': { body: { bookings: [booking(), booking({ id: 'b-2', event: { ...booking().event, code: null, title: 'Unassigned Expo', coordinatorName: null } })] } } }, { role: 'venue_staff' });
+test('Venue Staff see pending and conflicting requests with status and a link to each', async () => {
+  stubApi({ 'GET /api/venues?bookings=pending': { body: { bookings: [booking(), booking({
+    id: 'b-2', approvalConflict: { bookingId: 'b-1', eventTitle: 'Planning Phase Gala' },
+    event: { ...booking().event, code: null, title: 'Unassigned Expo', coordinatorName: null },
+  })] } } }, { role: 'venue_staff' });
   renderAt('/venue/bookings');
-  const table = await screen.findByRole('table', { name: 'Pending booking requests, soonest first' });
+  const table = await screen.findByRole('table', { name: 'Pending and conflicting booking requests, soonest first' });
   const rows = within(table).getAllByRole('row').slice(1);
   expect(rows[0]).toHaveTextContent('Orchid Hall');
   expect(rows[0]).toHaveTextContent('Coordinator A');
   expect(within(rows[0]!).getByRole('link', { name: 'Planning Phase Gala' })).toHaveAttribute('href', '/venue/bookings/b-1');
+  expect(within(rows[0]!).getByText('Pending')).toBeInTheDocument();
+  expect(rows[1]).toHaveTextContent('Conflicting');
   expect(rows[1]).toHaveTextContent('No code');
   expect(rows[1]).toHaveTextContent('Not yet assigned');
+  expect(within(rows[1]!).getByRole('link', { name: 'Unassigned Expo' })).toHaveAttribute('href', '/venue/bookings/b-2');
 });
 
 test('an empty queue says nothing is waiting', async () => {
   stubApi({ 'GET /api/venues?bookings=pending': { body: { bookings: [] } } }, { role: 'venue_staff' });
   renderAt('/venue/bookings');
-  expect(await screen.findByText('No booking requests waiting')).toBeInTheDocument();
+  expect(await screen.findByText('No booking requests')).toBeInTheDocument();
+});
+
+test('a conflicting pending request names its confirmed booking and cannot be approved from the decision screen', async () => {
+  stubApi({ 'GET /api/venues?booking=b-1': { body: { booking: booking({
+    approvalConflict: { bookingId: 'b-winner', eventTitle: 'Charity Run' },
+  }) } } }, { role: 'venue_staff' });
+  renderAt('/venue/bookings/b-1/decide');
+  expect(await screen.findByText(/overlaps the confirmed booking for “Charity Run”/)).toBeInTheDocument();
+  expect(screen.getByText('Conflicting')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Approve…' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Reject…' })).toBeInTheDocument();
 });
 
 test('a refused queue shows the server message', async () => {

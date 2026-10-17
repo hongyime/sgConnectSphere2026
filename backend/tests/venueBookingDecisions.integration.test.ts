@@ -56,13 +56,13 @@ async function fixture() {
   const query: Query = (sql, values) => f.pool.query(sql, values);
 
   // A Planning event with a Pending request for Small Room, 10:00-12:00 SGT on the given day.
-  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15', from = '10:00', to = '12:00') {
+  async function pendingRequest(code = 'EVT-5001', day = '2027-01-15', from = '10:00', to = '12:00', title = 'Product Expo 2026') {
     const eventId = randomUUID();
     const bookingId = randomUUID();
     const range = `[${day}T${from}:00+08:00,${day}T${to}:00+08:00)`;
     await f.pool.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
-      VALUES ($1, $2, $3, $4, $5, 'Product Expo 2026', 'planning', $6::tstzrange, 150)`,
-    [eventId, code, ids.organiser, ids.coordinator, ids.org, range]);
+      VALUES ($1, $2, $3, $4, $5, $6, 'planning', $7::tstzrange, 150)`,
+    [eventId, code, ids.organiser, ids.coordinator, ids.org, title, range]);
     await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status) VALUES ($1, $2, $3, $4::tstzrange, 'pending')`,
       [bookingId, ids.venue, eventId, range]);
     return { eventId, bookingId };
@@ -70,8 +70,9 @@ async function fixture() {
 
   const now = async () => (await f.pool.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
   const row = async (bookingId: string) => (await f.pool.query<{
-    status: string; decision_reason: string | null; suggested_venue_id: string | null; decided_by: string | null; decided_at: Date | null;
-  }>('SELECT status, decision_reason, suggested_venue_id, decided_by, decided_at FROM venue_bookings WHERE id = $1', [bookingId])).rows[0]!;
+    status: string; decision_reason: string | null; suggested_venue_id: string | null; decided_by: string | null;
+    decided_at: Date | null; approval_conflict_booking_id: string | null;
+  }>('SELECT status, decision_reason, suggested_venue_id, decided_by, decided_at, approval_conflict_booking_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0]!;
   const audits = async (bookingId: string) => (await f.pool.query<{
     actor_id: string; entity_type: string; event_id: string; action: string; old_value: string; new_value: string; occurred_at: Date;
   }>(`SELECT actor_id, entity_type, event_id, action, old_value, new_value, occurred_at FROM audit_logs
@@ -88,6 +89,18 @@ type Fixture = Awaited<ReturnType<typeof fixture>>;
 async function withFixture(work: (f: Fixture) => Promise<void>) {
   const f = await fixture();
   try { await work(f); } finally { await f.close(); }
+}
+
+async function withRawOverlapFixture<T>(f: Fixture, work: () => Promise<T>): Promise<T> {
+  // Canonical TC_E06S06_01–03 and _05 describe raw overlaps, while the schema
+  // already rejects creating those active rows. Seed only the impossible
+  // precondition in this disposable schema, then restore the live buffered
+  // write guard before exercising approval. The exclusion is not restored
+  // because these deliberately overlapping rows remain until this schema drops.
+  await f.pool.query('ALTER TABLE venue_bookings DROP CONSTRAINT venue_bookings_no_active_overlap');
+  await f.pool.query('ALTER TABLE venue_bookings DISABLE TRIGGER venue_buffer_write_guard');
+  try { return await work(); }
+  finally { await f.pool.query('ALTER TABLE venue_bookings ENABLE TRIGGER venue_buffer_write_guard'); }
 }
 
 type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null };
@@ -310,6 +323,131 @@ test('two Venue Staff deciding the same request at once: one decision wins, the 
   assert.equal((await f.notices(eventId)).length, 1);
 }));
 
+test('TC_E06S06_01: an overlapping approval is blocked with the confirmed booking identified', () => withFixture(async f => {
+  const [confirmed, candidate] = await withRawOverlapFixture(f, async () => {
+    const first = await f.pendingRequest('EVT-5601', '2027-01-15', '09:00', '17:00', 'Charity Run');
+    const second = await f.pendingRequest('EVT-5602', '2027-01-15', '14:00', '18:00');
+    await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [first.bookingId]);
+    return [first, second] as const;
+  });
+
+  const result = await decideBooking(f.pool, f.staff, candidate.bookingId, { decision: 'approve' });
+
+  assert.equal(result.status, 409);
+  const body = result.body as { error: string; conflict: { bookingId: string; eventTitle: string; status: string } };
+  assert.match(body.error, /confirmed booking for "EVT-5601 Charity Run"/);
+  assert.deepEqual([body.conflict.bookingId, body.conflict.eventTitle, body.conflict.status],
+    [confirmed.bookingId, 'Charity Run', 'confirmed']);
+  assert.equal((await f.row(candidate.bookingId)).status, 'pending');
+  assert.deepEqual(await f.audits(candidate.bookingId), []);
+}));
+
+test('TC_E06S06_02: approving one pending request flags the other and prevents its approval', () => withFixture(async f => {
+  const [winner, other] = await withRawOverlapFixture(f, async () => [
+    await f.pendingRequest('EVT-5611', '2027-01-20', '09:00', '12:00', 'Tech Conference 2026'),
+    await f.pendingRequest('EVT-5612', '2027-01-20', '09:00', '12:00'),
+  ] as const);
+
+  assert.equal((await decideBooking(f.pool, f.staff, winner.bookingId, { decision: 'approve' })).status, 200);
+  const flagged = await f.row(other.bookingId);
+  assert.equal(flagged.status, 'pending');
+  assert.equal(flagged.approval_conflict_booking_id, winner.bookingId);
+  const detail = await getBooking(f.query, f.staff, other.bookingId);
+  assert.deepEqual(detail.booking.approvalConflict, { bookingId: winner.bookingId, eventTitle: 'Tech Conference 2026' });
+  assert.ok((await listPendingBookings(f.query, f.staff)).bookings.some(booking => booking.id === other.bookingId && booking.approvalConflict));
+
+  const secondAttempt = await decideBooking(f.pool, f.staffB, other.bookingId, { decision: 'approve' });
+  assert.equal(secondAttempt.status, 409);
+  assert.match((secondAttempt.body as { error: string }).error, /This venue was just taken/);
+  assert.equal((await f.row(other.bookingId)).status, 'pending');
+}));
+
+test('TC_E06S06_03: simultaneous overlapping approvals leave one confirmed and safely report venue just taken', () => withFixture(async f => {
+  const [a, b] = await withRawOverlapFixture(f, async () => [
+    await f.pendingRequest('EVT-5621', '2027-01-25', '09:00', '12:00'),
+    await f.pendingRequest('EVT-5622', '2027-01-25', '09:00', '12:00'),
+  ] as const);
+
+  const results = await Promise.all([
+    decideBooking(f.pool, f.staff, a.bookingId, { decision: 'approve' }),
+    decideBooking(f.pool, f.staffB, b.bookingId, { decision: 'approve' }),
+  ]);
+
+  assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
+  const rows = [await f.row(a.bookingId), await f.row(b.bookingId)];
+  assert.equal(rows.filter(row => row.status === 'confirmed').length, 1);
+  const loser = rows.find(row => row.status === 'pending')!;
+  assert.ok(loser.approval_conflict_booking_id);
+  const refusal = results.find(result => result.status === 409)!;
+  assert.match((refusal.body as { error: string }).error, /This venue was just taken/);
+  assert.ok((refusal.body as { conflict?: unknown }).conflict);
+}));
+
+test('TC_E06S06_04: exactly adjacent booking ranges are allowed', () => withFixture(async f => {
+  const first = await f.pendingRequest('EVT-5631', '2027-02-07', '09:00', '11:00');
+  assert.equal((await decideBooking(f.pool, f.staff, first.bookingId, { decision: 'approve' })).status, 200);
+  const adjacent = await f.pendingRequest('EVT-5632', '2027-02-07', '11:00', '13:00');
+  assert.equal((await decideBooking(f.pool, f.staff, adjacent.bookingId, { decision: 'approve' })).status, 200);
+  assert.deepEqual([(await f.row(first.bookingId)).status, (await f.row(adjacent.bookingId)).status], ['confirmed', 'confirmed']);
+}));
+
+test('TC_E06S06_05: one minute of raw overlap is blocked', () => withFixture(async f => {
+  const [confirmed, candidate] = await withRawOverlapFixture(f, async () => {
+    const first = await f.pendingRequest('EVT-5641', '2026-11-10', '09:00', '11:00');
+    const second = await f.pendingRequest('EVT-5642', '2026-11-10', '10:59', '13:00');
+    await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [first.bookingId]);
+    return [first, second] as const;
+  });
+
+  const result = await decideBooking(f.pool, f.staff, candidate.bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  assert.match((result.body as { error: string }).error, /EVT-5641 Product Expo 2026/);
+  assert.equal((await f.row(confirmed.bookingId)).status, 'confirmed');
+  assert.equal((await f.row(candidate.bookingId)).status, 'pending');
+}));
+
+test('TC_E06S06_06: buffered concurrent approvals have at most one winner and leave the loser Pending', () => withFixture(async f => {
+  const winner = await f.pendingRequest('EVT-5651', '2027-02-11', '10:00', '12:00');
+  const loser = await f.pendingRequest('EVT-5652', '2027-02-11', '12:30', '14:00');
+  await f.pool.query('UPDATE venues SET setup_time_minutes = 30, turnaround_time_minutes = 45 WHERE id = $1', [f.ids.venue]);
+
+  const results = await Promise.all([
+    decideBooking(f.pool, f.staff, winner.bookingId, { decision: 'approve' }),
+    decideBooking(f.pool, f.staffB, loser.bookingId, { decision: 'approve' }),
+  ]);
+
+  assert.deepEqual(results.map(result => result.status).sort(), [200, 409]);
+  const persisted = [await f.row(winner.bookingId), await f.row(loser.bookingId)];
+  const pendingIndex = persisted.findIndex(row => row.status === 'pending');
+  assert.notEqual(pendingIndex, -1);
+  const pending = persisted[pendingIndex]!;
+  const pendingId = pendingIndex === 0 ? winner.bookingId : loser.bookingId;
+  const confirmedId = pendingIndex === 0 ? loser.bookingId : winner.bookingId;
+  assert.equal(pending.approval_conflict_booking_id, confirmedId);
+  assert.match((results.find(result => result.status === 409)!.body as { error: string }).error, /This venue was just taken/);
+
+  // ADR-003 remains the final write guard if a caller bypasses the service check.
+  await assert.rejects(
+    f.pool.query(`UPDATE venue_bookings SET status = 'confirmed' WHERE id = $1`, [pendingId]),
+    { code: '23P01' },
+  );
+  assert.equal((await f.row(pendingId)).status, 'pending');
+}));
+
+test('TC_E06S06_07: two requests from the same event can both be confirmed at different venues', () => withFixture(async f => {
+  const first = await f.pendingRequest('EVT-5661', '2027-02-13', '14:00', '16:00');
+  const secondId = randomUUID();
+  const range = '[2027-02-13T14:00:00+08:00,2027-02-13T16:00:00+08:00)';
+  await f.pool.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status)
+    VALUES ($1, $2, $3, $4::tstzrange, 'pending')`, [secondId, f.ids.alternative, first.eventId, range]);
+
+  assert.equal((await decideBooking(f.pool, f.staff, first.bookingId, { decision: 'approve' })).status, 200);
+  assert.equal((await decideBooking(f.pool, f.staffB, secondId, { decision: 'approve' })).status, 200);
+  assert.deepEqual([(await f.row(first.bookingId)).status,
+    (await f.pool.query<{ status: string }>('SELECT status FROM venue_bookings WHERE id = $1', [secondId])).rows[0]!.status],
+  ['confirmed', 'confirmed']);
+}));
+
 test('the first approved booking becomes the primary venue; a second Confirmed venue does not', () => withFixture(async f => {
   const { eventId, bookingId: first } = await f.pendingRequest('EVT-5201', '2027-02-05');
   const second = await secondVenueRequest(f, eventId, '2027-02-05');
@@ -419,24 +557,27 @@ test('Scenario 4: approval over a maintenance block on the venue is blocked and 
   assert.equal((await f.row(bookingId)).status, 'pending');
 }));
 
-test('Scenario 4: two pending requests that clash after a buffer change cannot both be confirmed; rejecting one frees the other', () => withFixture(async f => {
+test('Scenario 4: a buffered clash flags the losing pending request; rejecting it frees the winner', () => withFixture(async f => {
   const { bookingId: a } = await f.pendingRequest('EVT-5104', '2027-02-04');
   const { bookingId: b } = await f.pendingRequest('EVT-5105', '2027-02-04', '12:30', '14:00');
   await f.pool.query('UPDATE venues SET setup_time_minutes = 60 WHERE id = $1', [f.ids.venue]);
 
-  // The 0016 guard counts Pending as occupying, so while both are active
-  // neither can be confirmed, even when approved at the same moment.
+  // Both requests were valid when submitted. After the setup buffer changes,
+  // the decision flow lets one win and records which confirmed request blocks
+  // the other; the database guard then permits only that flagged loser.
   const results = await Promise.all([
     decideBooking(f.pool, f.staff, a, { decision: 'approve' }),
     decideBooking(f.pool, f.staffB, b, { decision: 'approve' }),
   ]);
-  assert.deepEqual(results.map(r => r.status), [409, 409]);
-  assert.match((results[0].body as { error: string }).error, /overlaps the pending booking for "EVT-5105 Product Expo 2026"/);
-  assert.match((results[1].body as { error: string }).error, /overlaps the pending booking for "EVT-5104 Product Expo 2026"/);
-  assert.deepEqual([(await f.row(a)).status, (await f.row(b)).status], ['pending', 'pending']);
+  assert.deepEqual(results.map(r => r.status).sort(), [200, 409]);
+  const rows = [await f.row(a), await f.row(b)];
+  assert.equal(rows.filter(row => row.status === 'confirmed').length, 1);
+  const loserId = rows[0]!.status === 'pending' ? a : b;
+  const loser = await f.row(loserId);
+  assert.ok(loser.approval_conflict_booking_id);
+  assert.match((results.find(r => r.status === 409)!.body as { error: string }).error, /This venue was just taken/);
 
-  // Venue Staff resolve it by rejecting one; the other can then be confirmed.
-  assert.equal((await decideBooking(f.pool, f.staff, a, { decision: 'reject', reason: 'Clashes with another request after the setup time changed' })).status, 200);
-  assert.equal((await decideBooking(f.pool, f.staffB, b, { decision: 'approve' })).status, 200);
-  assert.equal((await f.row(b)).status, 'confirmed');
+  // Rejecting the flagged pending request clears the conflict marker.
+  assert.equal((await decideBooking(f.pool, f.staff, loserId, { decision: 'reject', reason: 'Clashes with another request after the setup time changed' })).status, 200);
+  assert.equal((await f.row(loserId)).status, 'rejected');
 }));
