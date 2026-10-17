@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { VenueBookingRequests } from './VenueBookingRequests';
@@ -61,7 +61,8 @@ test('route change ignores a late response for the previous event', async () => 
 test('suggested venue switch prefills a new request and retains the rejected card', async () => {
   const rejected={...data.bookings[0],status:'rejected',decision_reason:'Use another room',suggested_venue_id:'suggested',suggested_venue_name:'Suggested Hall'};
   const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[rejected]})})
-    .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'new'},suitability:{mismatches:[]}})});
+    .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'new'},suitability:{mismatches:[]}})})
+    .mockResolvedValue({ok:true,json:async()=>({...data,bookings:[{...rejected,has_replacement:true},{...data.bookings[0],id:'new',venue_name:'Suggested Hall'}]})});
   vi.stubGlobal('fetch',fetcher);mount();
   fireEvent.click(await screen.findByRole('button',{name:'Request suggested venue'}));
   expect(screen.getByLabelText('Purpose (optional)')).toHaveValue('Main programme');
@@ -70,6 +71,11 @@ test('suggested venue switch prefills a new request and retains the rejected car
   fireEvent.click(screen.getByRole('button',{name:'Submit booking request'}));
   expect(await screen.findByText('Booking request submitted')).toBeInTheDocument();
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({venue_id:'suggested',replaces_booking_id:'one',purpose:'Main programme',headcount:120});
+  fireEvent.click(screen.getByRole('button',{name:'View venue booking requests'}));
+  expect(await screen.findByText('A replacement request has already been submitted.')).toBeInTheDocument();
+  expect(screen.getByRole('heading',{name:'Suggested Hall'})).toBeInTheDocument();
+  expect(screen.queryByText('Booking request submitted')).not.toBeInTheDocument();
+  expect(fetcher).toHaveBeenCalledTimes(3);
 });
 
 test('existing replacement or ineligible event suppresses the suggested-venue action', async () => {
@@ -84,4 +90,94 @@ test('legacy rejected booking prefills blank metadata and uses current event bou
   mount();fireEvent.click(await screen.findByRole('button',{name:'Request suggested venue'}));
   expect(screen.getByLabelText('Purpose (optional)')).toHaveValue('');
   expect(screen.getByLabelText('Headcount (optional)')).toHaveValue(null);
+});
+
+test('TC_E06S03_08 TC_E06S03_09 withdrawal confirms only Pending and refreshes the independent bookings', async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce({ok:true,json:async()=>data})
+    .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'one',status:'released'},unresolved_venue_ids:[]})})
+    .mockResolvedValue({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'released'},data.bookings[1]]})});
+  vi.stubGlobal('fetch',fetcher); mount();
+  const withdraw = await screen.findByRole('button',{name:'Withdraw request'});
+  expect(screen.getAllByRole('button',{name:'Withdraw request'})).toHaveLength(1);
+  fireEvent.click(withdraw);
+  fireEvent.click(screen.getByRole('button',{name:'Cancel'}));
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  fireEvent.click(withdraw);
+  fireEvent.click(screen.getByRole('button',{name:'Confirm withdrawal'}));
+  expect(await screen.findByText('Booking request withdrawn. Other bookings are unchanged.')).toBeInTheDocument();
+  expect(await screen.findByText('Released',{exact:true})).toBeInTheDocument();
+  expect(screen.getByText('Confirmed',{exact:true})).toBeInTheDocument();
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({action:'withdraw_booking',booking_id:'one'});
+});
+
+test('TC_E06S03_10 withdrawal conflict keeps the refusal visible and offers a refresh', async () => {
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>data})
+    .mockResolvedValueOnce({ok:false,status:409,json:async()=>({error:'Only Pending venue requests can be withdrawn. Refresh the booking list to see its current status.'})})
+    .mockResolvedValue({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'}]})});
+  vi.stubGlobal('fetch',fetcher);mount();
+  fireEvent.click(await screen.findByRole('button',{name:'Withdraw request'}));
+  fireEvent.click(screen.getByRole('button',{name:'Confirm withdrawal'}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Only Pending');
+  fireEvent.click(screen.getByRole('button',{name:'Refresh booking list'}));
+  await waitFor(() => expect(screen.queryByRole('button',{name:'Withdraw request'})).not.toBeInTheDocument());
+  expect(await screen.findByText('Confirmed',{exact:true})).toBeInTheDocument();
+});
+
+test('TC_E06S03_12 Released replacement history permits the suggestion control returned by the server', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({...data,bookings:[
+    {...data.bookings[0],status:'rejected',suggested_venue_id:'new',has_replacement:false},
+    {...data.bookings[1],status:'released',is_primary:false,replaces_booking_id:'one'},
+  ]})}));mount();
+  expect(await screen.findByRole('button',{name:'Request suggested venue'})).toBeInTheDocument();
+  expect(screen.getByText('Released',{exact:true})).toBeInTheDocument();
+});
+
+test('a withdrawal in flight disables controls and does not submit twice', async () => {
+  let finish!: (response: unknown) => void;
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>data})
+    .mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}))
+    .mockResolvedValue({ok:true,json:async()=>({...data,bookings:[]})});
+  vi.stubGlobal('fetch',fetcher);mount();
+  fireEvent.click(await screen.findByRole('button',{name:'Withdraw request'}));
+  fireEvent.click(screen.getByRole('button',{name:'Confirm withdrawal'}));
+  expect(screen.getByRole('button',{name:'Withdrawing...'})).toBeDisabled();
+  expect(screen.getByRole('button',{name:'Cancel'})).toBeDisabled();
+  fireEvent.submit(screen.getByRole('form',{name:'Withdraw request for Main Hall?'}));
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  await act(async()=>finish({ok:true,json:async()=>({booking:{id:'one',status:'released'},unresolved_venue_ids:[]})}));
+  expect(await screen.findByText('Booking request withdrawn. Other bookings are unchanged.')).toBeInTheDocument();
+});
+
+test('TC_E06S03_07 selects another Confirmed primary and retains booking statuses',async()=>{
+  const confirmed={...data.bookings[0],status:'confirmed',is_primary:false};
+  const initial={...data,bookings:[confirmed,data.bookings[1]]};
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>initial})
+    .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'one',status:'confirmed',is_primary:true},replayed:false})})
+    .mockResolvedValue({ok:true,json:async()=>({...data,bookings:[{...confirmed,is_primary:true},{...data.bookings[1],is_primary:false}]})});
+  vi.stubGlobal('fetch',fetcher);mount();
+  fireEvent.click(await screen.findByRole('button',{name:'Set as primary venue'}));
+  fireEvent.click(screen.getByRole('button',{name:'Cancel'}));expect(fetcher).toHaveBeenCalledTimes(1);
+  fireEvent.click(screen.getByRole('button',{name:'Set as primary venue'}));
+  fireEvent.click(screen.getByRole('button',{name:'Set primary venue'}));
+  expect(await screen.findByText('Primary venue updated. Booking statuses are unchanged.')).toBeInTheDocument();
+  await waitFor(()=>expect(screen.getByText('Primary venue',{exact:true}).closest('.card')).toHaveTextContent('Main Hall'));
+  expect(screen.getAllByText('Confirmed',{exact:true})).toHaveLength(2);
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({action:'set_primary',booking_id:'one'});
+});
+
+test('TC_E06S03_07 primary conflict refreshes and busy submission runs only once',async()=>{
+  let finish!:(response:unknown)=>void;
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'}]})})
+    .mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}))
+    .mockResolvedValue({ok:true,json:async()=>data});
+  vi.stubGlobal('fetch',fetcher);mount();
+  fireEvent.click(await screen.findByRole('button',{name:'Set as primary venue'}));
+  fireEvent.click(screen.getByRole('button',{name:'Set primary venue'}));
+  expect(screen.getByRole('button',{name:'Updating...'})).toBeDisabled();
+  fireEvent.submit(screen.getByRole('form',{name:'Make Main Hall the primary venue?'}));
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  await act(async()=>finish({ok:false,status:409,json:async()=>({error:'Only Confirmed bookings can be the primary venue. Refresh the booking list.'})}));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Only Confirmed');
+  fireEvent.click(screen.getByRole('button',{name:'Refresh booking list'}));
+  await waitFor(()=>expect(screen.queryByRole('button',{name:'Set as primary venue'})).not.toBeInTheDocument());
 });

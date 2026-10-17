@@ -210,6 +210,7 @@ export function RequestDetail() {
               <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
             </>
           ) : null}
+          <ButtonLink to={`${eventLink(event)}/venue-bookings`}>Venue bookings</ButtonLink>
           {['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
           {/* E08-S03 (SCRUM-60): navigation, so no ellipsis. */}
           {READINESS_VISIBLE.includes(event.status) ? (

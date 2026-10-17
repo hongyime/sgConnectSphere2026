@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **201** (53.5%)
+- Automated (explicit TC_ID in an active test title): **207** (55.1%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **164**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **134** (35.6%)
-- No test yet (no test file mentions the TC_ID): **41** (10.9%)
+  - Live-assertion (other active tests): **170**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.4%)
+- No test yet (no test file mentions the TC_ID): **36** (9.6%)
 
 ## Coverage by epic
 
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
-| E06 | 43 | 21 | 17 | 5 |
+| E06 | 43 | 27 | 16 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 6 | 21 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **201** | **134** | **41** |
+| **Total** | **376** | **207** | **133** | **36** |
 
 ## Case-by-case status
 
@@ -244,13 +244,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
 | `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
 | `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
-| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; tests/ |
-| `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_08 — Verify that withdrawing one of several venue bookings should leave the others untouched and that a booking outside the event |
-| `TC_E06S03_09` | E06-S03 | Refuse withdrawal of Confirmed bookings and requests assigned to another Coordin | ❌ none | — |
-| `TC_E06S03_10` | E06-S03 | Serialize Pending withdrawal against approval or rejection | ❌ none | — |
-| `TC_E06S03_11` | E06-S03 | Notify only the withdrawn request's current venue staff and retain conversion hi | ❌ none | — |
-| `TC_E06S03_12` | E06-S03 | Allow a fresh suggested-venue replacement after withdrawal while retaining histo | ❌ none | — |
-| `TC_E06S03_13` | E06-S03 | Follow the latest rejection's suggestion without reopening older rejected attemp | ❌ none | — |
+| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E06S03_07 primary selection validates actor, identifier and current assignment/account; backend/tests/bookingPrimary.test.ts: TC_E06S03_07  |
+| `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_09` | E06-S03 | Refuse withdrawal of Confirmed bookings and requests assigned to another Coordin | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_10` | E06-S03 | Serialize Pending withdrawal against approval or rejection | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_10 decision winning the venue lock prevents withdrawal from overwriting its result; backend/tests/bookingSubmission.i |
+| `TC_E06S03_11` | E06-S03 | Notify only the withdrawn request's current venue staff and retain conversion hi | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_12` | E06-S03 | Allow a fresh suggested-venue replacement after withdrawal while retaining histo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_12 TC_E06S03_13 Released replacement permits a fresh attempt; Rejected follows only its own suggestion; backend/tests |
+| `TC_E06S03_13` | E06-S03 | Follow the latest rejection's suggestion without reopening older rejected attemp | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_12 TC_E06S03_13 Released replacement permits a fresh attempt; Rejected follows only its own suggestion |
 | `TC_E06S04_01` | E06-S04 | Verify that approving a pending request for a venue that is free for the period  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_01 - Verify that approving a pending request for a venue that is free for the period should confirm the booking, update the calendar, and notify th |
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_02 - Verify that rejecting a request with a recorded reason and a suggested alternative venue should notify the Coordinator with both, allowing the |
 | `TC_E06S04_03` | E06-S04 | Verify that attempting to reject a request without recording a reason should be  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_03 - Verify that attempting to reject a request without recording a reason should be blocked |
@@ -491,6 +491,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
 
+### `backend/tests/bookingPrimary.test.ts`
+
+- primary selection shares origin/authentication HTTP boundary, without submission key
+
 ### `backend/tests/bookingSubmission.integration.test.ts`
 
 - notification failure rolls back request, status, audit and deliveries together
@@ -512,6 +516,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - submission handler enforces method/origin and hides server errors
 - replacement input validates rejected provenance and rejects duplicate switches before persistence
 - unassigned hold conversion remains forbidden while direct requests conceal event assignment
+
+### `backend/tests/bookingWithdrawal.test.ts`
+
+- withdrawal handler shares POST origin/authentication boundary and needs no submission key
 
 ### `backend/tests/clarification.test.ts`
 
@@ -1294,6 +1302,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - suggested venue switch prefills a new request and retains the rejected card
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
+- a withdrawal in flight disables controls and does not submit twice
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 

@@ -35,6 +35,12 @@ export function formatEditedValue(field: string | null, value: string): string {
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit.
 export function describeChange(entry: ActivityEntry) {
   if (!entry.field_changed) return 'None recorded';
+  if (entry.field_changed === 'primary_venue') {
+    if (!entry.new_value) return 'Primary venue';
+    return entry.old_value
+      ? `Primary venue: ${entry.old_value} → ${entry.new_value}`
+      : `Primary venue: ${entry.new_value}`;
+  }
   if (entry.field_changed === 'status') {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
     return entry.old_value ? `${statusLabel(entry.old_value)} → ${to}` : to;

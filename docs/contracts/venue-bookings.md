@@ -130,6 +130,20 @@ POST /api/venues:
 
 Only the assigned Coordinator may select a booking for the event, and the target must be Confirmed. In one transaction, clear the previous primary and set the target. A Pending booking returns 409. First confirmation automatically sets primary only when the event has no primary; concurrent confirmations serialize on the event row.
 
+E06-S03 owns this explicit selection service/API and the Coordinator booking-list
+control. E06-S04 owns automatic first-confirmed assignment. `set_primary` locks
+the event `FOR NO KEY UPDATE` first, then rechecks account/assignment and locks
+the selected/existing-primary bookings. It is permitted on assigned Confirmed
+events as well as Planning events; it is not a new booking submission. It clears
+the old flag before setting the target to preserve the immediate unique index.
+Booking statuses, periods, expiry and event status are unchanged. It writes a
+transactional `Primary Venue Changed` audit (`entity_type=venue_booking`,
+`field_changed=primary_venue`, previous/new venue names). Re-selecting the current
+primary is a successful no-op without another audit. No migration is required.
+Malformed UUID is 400, inaccessible booking is 404, invalid role/account is
+403, and non-Confirmed or busy-account conflict is 409. Returns 200
+`{ booking: { id, status, is_primary }, replayed }`.
+
 GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes purpose, headcount, is_primary, and both intervals. Attendee event views use the primary Confirmed booking as the displayed venue. Other Confirmed bookings may be exposed separately according to the E09-S01 response shape.
 
 ### Errors
@@ -233,7 +247,11 @@ Requests return 201 (new direct request) or 200 (conversion/retry), including
 same saved assessment and does not repeat effects. Booking-request notifications
 resolve staff for the requested venue only, from `venue_staff_assignments`
 (SCRUM-189, #271/#272); a venue with no current assignment is reported explicitly.
-Primary confirmation/selection and staff assessment presentation remain E06-S04.
+E06-S04 owns confirmation, automatic first-confirmed primary assignment and
+staff assessment presentation. E06-S03 owns explicit Coordinator selection of
+another Confirmed primary on the booking list (Scenario 3c / T-78), as agreed
+with E06-S04's owner on 16 October. Selection locks the event row first to
+serialize with automatic assignment in `decideBooking`.
 
 
 ### Review coordination update (15 October 2026)
@@ -320,3 +338,26 @@ Source: Product Owner clarification relayed by the story owner, E06-S04 owner
 agreement, and the story owner's notification/retry/chain confirmations in the
 15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
 database migration, staff-routing verification and human manual run remain pending.
+
+### Withdrawal implementation branch (16 October 2026)
+
+The E06-S03 withdrawal branch implements the preceding contract with
+`POST /api/venues`, `action: withdraw_booking`, UUID `booking_id`. The server
+rechecks assigned Coordinator/account authority and Pending status. Success
+returns the Released booking and `unresolved_venue_ids`; non-Pending/busy
+event or account returns 409, and inaccessible requests return 404.
+
+Venue is locked before Booking. Afterwards Event and account use
+`FOR SHARE NOWAIT` to protect authority without waiting on an event-first
+submission/reassignment transaction while holding Venue. A lock conflict rolls
+back and asks the caller to refresh/retry. No event status change occurs.
+The new `booking_withdrawn` category targets only the requested venue's current
+active staff, distinct from Coordinator-facing `booking_decided: released`.
+Audit, inbox and email outbox persistence share the withdrawal transaction.
+
+Migration `0020_released_booking_replacement_retry.sql` supersedes 0019's
+all-status replacement index with a non-Released predicate, retaining every
+historical row and the other constraints. Service/list predicates match it.
+This is local branch implementation, not a production migration, human
+acceptance result or whole-story Done claim. Full E06-S04 decision integration
+and human manual verification must still be observed against the merged flow.
