@@ -1,4 +1,4 @@
-﻿# E06-S03 migration-only release prerequisite
+# E06-S03 migration-only release prerequisite
 
 Split exact reviewed0020 SQL from application PR299 to follow production migration sequencing after Xiang Ying's review. Branch chore/e06-s03-replacement-migration from main c44c6af; only SQL and documentation/evidence. No application or deployment configuration changes.
 
