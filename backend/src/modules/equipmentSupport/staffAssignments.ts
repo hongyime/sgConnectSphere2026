@@ -25,6 +25,10 @@ import { writeEventNotification } from '../eventNotifications/service.js';
 // Support is staffed for events that are going ahead: approved, being
 // planned, or confirmed. Not for drafts, rejected, cancelled or past events.
 export const STAFFABLE_STATUSES = ['approved', 'planning', 'confirmed'];
+// E08-S03 (D64): an event in Safety Review stays in the queue so its staffed
+// requests don't vanish, but its arrangements are frozen until it returns to
+// Planning or is confirmed, so nobody can be assigned to it meanwhile.
+export const QUEUE_STATUSES = ['approved', 'planning', 'safety_review', 'confirmed'];
 const NOT_STAFFABLE = 'Technicians can only be assigned to approved, planning or confirmed events.';
 
 export type Conflict = { eventCode: string | null; title: string; startsAt: string; endsAt: string };
@@ -62,7 +66,7 @@ const QUEUE_SELECT = `SELECT r.id, r.event_id AS "eventId", e.event_code AS "eve
 export async function listQueue(query: Query, user: AuthenticatedUser | undefined) {
   await requireTechnician(query, user);
   const rows = (await query<QueueRow>(`${QUEUE_SELECT} AND e.status = ANY($1::event_status[])
-    ORDER BY (r.status = 'open') DESC, lower(r.support_range), r.created_at`, [STAFFABLE_STATUSES])).rows;
+    ORDER BY (r.status = 'open') DESC, lower(r.support_range), r.created_at`, [QUEUE_STATUSES])).rows;
   return { requests: rows };
 }
 
