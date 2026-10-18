@@ -145,4 +145,4 @@ The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and te
 
 The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
 
-The 18 October 2026 T-97/T-98 decision update regenerated the CAA 181026 backlog and test-case workbooks and the ADR/BDR Word exports. No test-case IDs changed, so the legacy coverage input and generated coverage inventory did not need refreshing.
+The 18 October 2026 T-98/T-99 decision update regenerated the CAA 181026 backlog and test-case workbooks and the ADR/BDR Word exports. No test-case IDs changed, so the legacy coverage input and generated coverage inventory did not need refreshing.

@@ -480,9 +480,9 @@ erDiagram
   records one or more attendee-selected Sessions. Approved registrations occupy
   one place in every selected Session and one place against combined Event
   capacity, derived from confirmed Session layout capacities. Over-capacity
-  submissions are `pending` for Organiser review; the current working assumption
-  has no per-Session waitlist (O-50). The existing Event-level waitlist remains for
-  combined Event capacity. This distinction is not a new customer answer.
+  submissions are `pending` for Organiser review; T-98 sets no per-Session waitlist.
+  The existing Event-level waitlist remains for combined Event capacity. This is
+  a team decision, not a new customer answer.
 - When required venue/equipment/support arrangements become complete, the system
   creates the safety review, moves the Event from Planning to Safety Review, and
   notifies the Safety Officer. The factor checklist and overall decision/comments

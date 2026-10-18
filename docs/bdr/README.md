@@ -16,7 +16,7 @@ It exists to answer one question for any story or acceptance criterion: why is t
 ## What changed in version 10
 
 On 18 October 2026, the team accepted the recorded defaults for O-50 and O-51
-as T-97 and T-98. No per-Session waitlist is added: a full selected Session
+as T-98 and T-99. No per-Session waitlist is added: a full selected Session
 follows the Pending decision path, while the Event-level list remains available
 when combined Event capacity is full. Copying an Event retains its requirements
 and Session structure, clears Event and Session dates/times, and excludes
@@ -99,7 +99,7 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 C-01 to C-70 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
 
-T-01 to T-98 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-99 — team decisions, each naming the clarification it follows from or the gap it closes.
 
 O-01 to O-49 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies.
 
