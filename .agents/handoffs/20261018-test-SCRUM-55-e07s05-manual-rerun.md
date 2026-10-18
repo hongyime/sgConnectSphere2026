@@ -20,6 +20,13 @@ update to the script's event and dates.
   Phase Gala (25 Oct 2026), the seed's only upcoming event that can take
   reservations; intro and Known limits say why and until when it works.
 - A Run-log row and a new Known-limits line (below).
+- After Xiang Ying's review (18 October 2026): the layout cause was
+  measured again with a Playwright script on the local real stack and
+  recorded as an automated session,
+  `docs/testing/runs/20261018-175131-Bl0oper-frontend-e2e.md`, with the
+  script and its output. The first measurement, about 01:30 the same day,
+  had no kept output, so it is not cited. The numbers matched it: 604 px
+  for a 640 px table on Microphone-Wireless's page.
 
 ## Decisions taken without team sign-off
 
@@ -43,3 +50,6 @@ update to the script's event and dates.
 - A click-through script tied to a seeded event's date stops working once
   that date passes. Check the dates in a script against today before a
   re-run.
+- A measurement cited as evidence needs its own session record, even a quick
+  diagnostic script (T-65). Keep its output when it runs, or it has to be run
+  again.

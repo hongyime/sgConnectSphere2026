@@ -253,11 +253,13 @@ of these areas, it is outside what was tested:
   Microphone-Wireless's table scrolls sideways inside its card and the
   "Return to service…" button is cut at the right edge; the button still
   works, and at 393 px the rows stack into cards with nothing cut.
-  - **Cause, measured in Chromium at 1280 px:** the Equipment details page
-    uses the narrow layout (`PageLayout width="narrow"`, 704 px), leaving
-    604 px inside a card, but every shared `DataTable` is at least 640 px
-    wide (`.ui-table { min-width: 640px }` in `frontend/src/shared/shared.css`).
-    So the table overflows by 36 px.
+  - **Cause, measured in Chromium at 1280 px** (recorded in
+    `20261018-175131-Bl0oper-frontend-e2e.md`, with its script): the
+    Equipment details page uses the narrow layout (`PageLayout
+    width="narrow"`, 704 px), leaving 604 px inside a card, but every shared
+    `DataTable` is at least 640 px wide (`.ui-table { min-width: 640px }` in
+    `frontend/src/shared/shared.css`). So the table overflows by 36 px, and
+    the "Return to service…" button ends 19 px past the card's edge.
   - **Why Projector-HD's page looked fine:** its Reservation-history table,
     also 640 px, widens both cards to 640 px, so the periods table fits.
     That history table pushes past the page's inner width in the same way.
@@ -317,3 +319,5 @@ fix gets its own row.
 | 2026-10-14 14:21 | `4016c05` (Bryan's merge of `main` `979cc08`; application code as `a8281e2`) | 2, 3, 5 | _01–_03 | `application-checks` workflow, including `equipmentUnavailability.integration.test.ts` | ci, PostgreSQL service container: [run 38520944446](https://github.com/hongyime/sgConnectSphere2026/actions/runs/38520944446) | passed; every other PR check passed too | — | CI (for Aaron) |
 | 2026-10-15 00:52 | `4016c05` + `main` `5c22e26`, merged (committed as `783a109`) | 1, 5, F1 | _01–_03 | `npm test` (backend); `npm run typecheck` (root); `npx vitest run --no-file-parallelism` (whole frontend) | local | all passed: backend 386/386; typecheck clean; Vitest 396/396. Re-run after merging `main` (#263, #259, #265, #252, #261) to clear the conflicts in `backend/package.json` (kept `main`'s `venueBufferConflicts` and `eventSessionsMigration` tests and this PR's `equipmentUnavailability` tests) and `tc-coverage.md` (regenerated). The PR's own diff is unchanged. #265 now reads this story's withdrawals in `catalogue.ts` without changing the table; CI's `application-checks` covers both on PostgreSQL. `check.py` not re-run (the known Windows-only `test_worktree_hygiene` failures); database tests not re-run locally (Docker not running) | — | Claude (for Aaron) |
 | 2026-10-18 00:55 – 01:21 | `1b06812` | F4 (T-93 re-run) | _01–_03 | Aaron's own click-through, the 19-step script, by hand in Chrome, with screenshots; EVT-3003 and 25 Oct in place of EVT-3001 and 15 Oct (script updated) | local real stack, freshly reset and seeded `connectsphere_dev_stack` | 19/19 steps passed; 1 FAIL row for a layout fault outside the script. Session record `20261018-012126-Bl0oper-frontend-e2e.md`, 24 screenshots in its evidence folder | Scripted steps as written. FAIL (design.md checklist, not scripted): Microphone-Wireless's Unavailable periods table scrolls sideways inside its card at desktop width and "Return to service…" is cut at the right edge; cause in Known limits | Aaron |
+| 2026-10-18 17:50 | `93e4f67` (application code as `main` `cb1e941`) | layout measurement | — | `node measure_periods.mjs` (Playwright, headless Chromium at 1280 × 900; script in the session record below) | local real stack, freshly reset and seeded `connectsphere_dev_stack` | **Stopped after Microphone-Wireless** (same numbers as the next row) | "Cannot read properties of undefined (reading 'getBoundingClientRect')" on Projector-HD: the script read the page before its buttons had rendered, and a fresh seed has no reservation. The script's own fault; it now waits and makes the step 1 and 2 reservation itself | Claude (for Aaron) |
+| 2026-10-18 17:51 | `93e4f67` | layout measurement | — | The same, after a fresh reset | local real stack | Measured both pages. Session record `20261018-175131-Bl0oper-frontend-e2e.md` | Microphone-Wireless: page 704 px, 604 px for a 640 px table, overflows by 36 px, button 19 px past the edge (FAIL). Projector-HD: 640 px for 640 px, fits, widened by its 640 px Reservation history table (PASS). No page-level sideways scroll on either | Claude (for Aaron) |
