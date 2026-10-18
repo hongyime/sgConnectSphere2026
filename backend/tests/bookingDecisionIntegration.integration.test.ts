@@ -105,7 +105,7 @@ for(const decision of ['approve','reject']) {
       const w=controlledPool(c.second,async()=>{});
       deciding=decideBooking(d.pool,f.decider,f.id,body);
       await hold.entered;
-      await assert.rejects(withdrawBooking(w.pool,f.actor,{booking_id:f.id}),{status:409,message:'The event or account is being updated. Refresh the booking list and try again.'});
+      await assert.rejects(withdrawBooking(w.pool,f.actor,{booking_id:f.id}),{status:409,message:'A Venue Staff decision or an event or account update may be in progress. Refresh the booking list and try again.'});
       assert.deepEqual(await effects(f.pool),before);
       assert.equal((await f.pool.query('SELECT status FROM venue_bookings WHERE id=$1',[f.id])).rows[0].status,'pending');
       hold.open();assert.equal((await deciding).status,200);
@@ -125,7 +125,7 @@ for(const decision of ['approve','reject']) {
       const pid=(await c.first.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
       await waitForBlocked(f.pool,pid);
       hold.open();const refusal=await withdrawing;
-      assert.equal(refusal.error.status,409);assert.match(refusal.error.message,/being updated/);
+      assert.equal(refusal.error.status,409);assert.equal(refusal.error.message,'A Venue Staff decision or an event or account update may be in progress. Refresh the booking list and try again.');
       assert.equal((await deciding).status,200);
       assert.deepEqual(await effects(f.pool),{decisions:before.decisions+1,withdrawals:before.withdrawals,notices:before.notices+1,deliveries:before.deliveries+1});
     } finally {hold.open();await Promise.allSettled([withdrawing,deciding]);await c.close();await f.close();}
