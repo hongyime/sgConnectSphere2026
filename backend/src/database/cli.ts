@@ -4,7 +4,12 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from 'pg';
-import { parseMigrationSelection, runMigrations } from './migrationSelection.js';
+import {
+  parseMigrationSelection,
+  runMigrations,
+  setGuardedMigrationSearchPath,
+} from './migrationSelection.js';
+import { productionDatabaseClientConfig } from './productionMigrationGuard.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -400,19 +405,37 @@ async function main() {
   }
 
   let selectedMigration: string | undefined;
+  let requireExistingLedger = false;
   if (command === 'migrate') {
     const files = await listMigrationFiles();
-    selectedMigration = parseMigrationSelection(commandArgs, files);
+    requireExistingLedger = commandArgs.includes('--require-existing-ledger');
+    if (commandArgs.filter((arg) => arg === '--require-existing-ledger').length > 1) {
+      throw new Error('The guarded-ledger option may only be supplied once.');
+    }
+    const selectionArgs = commandArgs.filter((arg) => arg !== '--require-existing-ledger');
+    selectedMigration = parseMigrationSelection(selectionArgs, files);
+    if (requireExistingLedger && selectedMigration === undefined) {
+      throw new Error('--require-existing-ledger requires --only <exact-migration-file.sql>.');
+    }
   } else if (commandArgs.length > 0) {
     throw new Error('Only the migrate command accepts migration options.');
   }
 
-  const client = new Client({ connectionString: requireDatabaseUrl() });
+  const databaseUrl = requireDatabaseUrl();
+  const client = new Client(
+    requireExistingLedger
+      ? productionDatabaseClientConfig(databaseUrl)
+      : { connectionString: databaseUrl },
+  );
   await client.connect();
 
   try {
+    if (requireExistingLedger) {
+      await setGuardedMigrationSearchPath(client);
+    }
+
     if (command === 'migrate') {
-      await migrate(client, selectedMigration);
+      await migrate(client, selectedMigration, requireExistingLedger);
     } else if (command === 'reset') {
       assertResetAllowed();
       await resetDatabase(client);
@@ -473,13 +496,19 @@ async function listMigrationFiles() {
     .sort((a, b) => a.localeCompare(b));
 }
 
-async function migrate(client: Client, selectedMigration?: string) {
+async function migrate(
+  client: Client,
+  selectedMigration?: string,
+  requireExistingLedger = false,
+) {
   const files = await listMigrationFiles();
   await runMigrations(
     client,
     files,
     selectedMigration,
     (file) => readFile(join(migrationsDir, file), 'utf8'),
+    console.log,
+    { requireExistingLedger },
   );
 }
 

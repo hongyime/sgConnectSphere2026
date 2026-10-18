@@ -15,6 +15,54 @@ The current automatic deployment workflow has no production hold and resume cont
 
 The database operation is manual. A code merge or Vercel deployment does not apply a migration.
 
+## Apply through the protected GitHub workflow
+
+The repository provides **Actions → Production Migration** for authorized
+teammates. It applies one migration after its migration-only PR has merged to
+`main`; it does not deploy application code. The workflow uses the `Production`
+GitHub Environment, which requires approval from an eligible repository
+collaborator other than the person who started the run. Administrators cannot
+bypass the approval, and the environment only permits runs from `main`.
+
+Before the first run, a repository administrator must rotate any exposed
+database password, update the application's production `DATABASE_URL` in
+Vercel if it uses that credential, and add the replacement connection string
+as the `DATABASE_URL` secret in the `Production` environment. Do not put it in
+`.env`, `.env.template`, repository secrets, workflow inputs, or run records.
+Teammates can request a run without seeing the secret; one eligible teammate
+approves the environment gate.
+
+To apply a migration:
+
+1. Confirm the migration-only PR is merged to `main` and is compatible with the
+   currently deployed application.
+2. Open **Actions → Production Migration**, choose **Run workflow** on `main`,
+   and enter the exact merged filename, such as
+   `0020_released_booking_replacement_retry.sql`.
+3. Have a different eligible teammate approve the pending `Production`
+   deployment.
+4. The workflow confirms the selected file exists on `main`, verifies the
+   approved `main` revision, fixes the database session search path to
+   `public, extensions`, verifies the production database endpoint, and reads
+   the migration ledger without changing it. It stops unless the ledger exists
+   and the selected file is the next unapplied migration in repository order.
+5. After approval and a successful precheck, the workflow runs the existing
+   CLI with `migrate --only <exact-filename> --require-existing-ledger`. Guarded
+   mode refuses to create a missing ledger. The workflow then reads the ledger
+   again and confirms exactly that migration was newly recorded.
+6. Commit the sanitized run record through a reviewed docs PR as described in
+   [Record each attempt](#record-each-attempt). A failed workflow must be
+   investigated using a read-only ledger query before any retry.
+
+The workflow never runs `reset`, seeding, or a database test suite. It serializes
+its own Actions runs so only one production migration workflow can apply at a
+time. The manual CLI procedure below is a separate path: verify that no
+`Production Migration` run is queued or in progress and coordinate one deploy
+owner before using it. Never overlap a manual production migration with a
+workflow run or another manual run. If the
+`DATABASE_URL` secret is absent, targets another database, or the ledger cannot
+be read, it stops before applying SQL.
+
 ## Apply one migration safely
 
 1. Review the merged migration-only PR and confirm the migration file on `main` is compatible with the deployed application. Use a shell where `DATABASE_URL` is securely set to the production database. Do not print or copy its value into a terminal transcript, PR, or run record.

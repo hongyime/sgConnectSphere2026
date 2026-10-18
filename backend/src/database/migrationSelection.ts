@@ -2,6 +2,20 @@ import type { Client } from 'pg';
 
 export type MigrationClient = Pick<Client, 'query'>;
 
+export type MigrationRunnerOptions = {
+  requireExistingLedger?: boolean;
+};
+
+export async function setGuardedMigrationSearchPath(client: MigrationClient) {
+  await client.query('SET search_path TO public, extensions');
+  const result = await client.query<{ schema: string | null }>(
+    'SELECT current_schema() AS schema',
+  );
+  if (result.rows[0]?.schema !== 'public') {
+    throw new Error('Guarded migration session is not using the public schema.');
+  }
+}
+
 export function parseMigrationSelection(args: string[], availableFiles: string[]) {
   if (args.length === 0) {
     return undefined;
@@ -41,21 +55,33 @@ export async function runMigrations(
   selectedFile: string | undefined,
   readMigration: (file: string) => Promise<string>,
   log: (message: string) => void = console.log,
+  options: MigrationRunnerOptions = {},
 ) {
   // Validate a selector before touching the database, even when this function
   // is called without the CLI argument parser.
   selectPendingMigrations(availableFiles, new Set(), selectedFile);
 
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS _connectsphere_migrations (
-      name text PRIMARY KEY,
-      applied_at timestamptz NOT NULL DEFAULT now()
-    )
-  `);
+  const ledgerTable = options.requireExistingLedger
+    ? 'public._connectsphere_migrations'
+    : '_connectsphere_migrations';
 
-  const applied = await client.query<{ name: string }>(
-    'SELECT name FROM _connectsphere_migrations',
-  );
+  if (options.requireExistingLedger) {
+    const ledger = await client.query<{ ledger: string | null }>(
+      "SELECT to_regclass('public._connectsphere_migrations')::text AS ledger",
+    );
+    if (!ledger.rows[0]?.ledger) {
+      throw new Error('The migration ledger is missing; refusing to create it in guarded mode.');
+    }
+  } else {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS _connectsphere_migrations (
+        name text PRIMARY KEY,
+        applied_at timestamptz NOT NULL DEFAULT now()
+      )
+    `);
+  }
+
+  const applied = await client.query<{ name: string }>(`SELECT name FROM ${ledgerTable}`);
   const appliedNames = new Set(applied.rows.map((row) => row.name));
   const pendingFiles = selectPendingMigrations(availableFiles, appliedNames, selectedFile);
 
@@ -69,7 +95,7 @@ export async function runMigrations(
     await client.query('BEGIN');
     try {
       await client.query(sql);
-      await client.query('INSERT INTO _connectsphere_migrations (name) VALUES ($1)', [file]);
+      await client.query(`INSERT INTO ${ledgerTable} (name) VALUES ($1)`, [file]);
       await client.query('COMMIT');
       log(`applied migration ${file}`);
     } catch (error) {

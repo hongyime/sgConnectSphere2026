@@ -1,0 +1,98 @@
+name: Production Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: Exact SQL filename already merged to main (for example 0021_add_index.sql)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  validate_request:
+    name: Validate migration request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      migration_file: ${{ steps.validate.outputs.migration_file }}
+    steps:
+      - name: Require dispatch from main and an exact migration filename
+        id: validate
+        env:
+          MIGRATION_FILE: ${{ inputs.migration_file }}
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Dispatch this workflow from main only." >&2
+            exit 1
+          fi
+          if [[ ! "$MIGRATION_FILE" =~ ^[0-9]{4}_[a-z0-9_]+\.sql$ ]]; then
+            echo "::error::Enter one exact migration filename." >&2
+            exit 1
+          fi
+          echo "migration_file=$MIGRATION_FILE" >> "$GITHUB_OUTPUT"
+
+  apply-one-migration:
+    name: Apply one production migration
+    needs: validate_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: production-database-migration
+      cancel-in-progress: false
+    environment:
+      name: Production
+    steps:
+      - name: Checkout the approved main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Confirm selected migration exists on main
+        env:
+          MIGRATION_FILE: ${{ needs.validate_request.outputs.migration_file }}
+        run: |
+          if [[ ! -f "backend/database/migrations/$MIGRATION_FILE" ]]; then
+            echo "::error::The selected migration is not present on main. Merge its migration-only PR first." >&2
+            exit 1
+          fi
+      - name: Read-only production ledger precheck
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATION_FILE: ${{ needs.validate_request.outputs.migration_file }}
+          MIGRATION_SNAPSHOT: ${{ runner.temp }}/production-migration-ledger-before.json
+        run: npx tsx src/database/productionMigrationGuardCli.ts pre "$MIGRATION_FILE" "$MIGRATION_SNAPSHOT"
+      - name: Apply only the selected migration
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATION_FILE: ${{ needs.validate_request.outputs.migration_file }}
+        run: npm run db:migrate --workspace backend -- --only "$MIGRATION_FILE" --require-existing-ledger
+      - name: Read-only production ledger postcheck
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MIGRATION_FILE: ${{ needs.validate_request.outputs.migration_file }}
+          MIGRATION_SNAPSHOT: ${{ runner.temp }}/production-migration-ledger-before.json
+        run: npx tsx src/database/productionMigrationGuardCli.ts post "$MIGRATION_FILE" "$MIGRATION_SNAPSHOT"
+      - name: Record sanitized runbook reminder
+        if: success()
+        env:
+          MIGRATION_FILE: ${{ needs.validate_request.outputs.migration_file }}
+        run: |
+          {
+            echo "## Production migration verified"
+            echo
+            echo "The read-only postcheck confirmed that exactly \`$MIGRATION_FILE\` was newly recorded. Commit the sanitized run record through a reviewed docs PR, as required by \`docs/ops/production-migrations.md\`."
+            echo "No credentials or database rows are included in this summary."
+          } >> "$GITHUB_STEP_SUMMARY"

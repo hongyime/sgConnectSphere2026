@@ -4,6 +4,7 @@ import {
   parseMigrationSelection,
   runMigrations,
   selectPendingMigrations,
+  setGuardedMigrationSearchPath,
   type MigrationClient,
 } from '../src/database/migrationSelection.js';
 
@@ -13,19 +14,30 @@ const files = [
   '0013_tentative_venue_holds.sql',
 ];
 
-function mockClient(appliedNames: string[] = [], failOnSql?: string) {
+function mockClient(
+  appliedNames: string[] = [],
+  failOnSql?: string,
+  ledgerExists = true,
+  currentSchema: string | null = 'public',
+) {
   const calls: Array<{ sql: string; values?: unknown[] }> = [];
   const applied = new Set(appliedNames);
   const client = {
     async query(sql: string, values?: unknown[]) {
       calls.push({ sql, values });
-      if (sql.includes('SELECT name FROM _connectsphere_migrations')) {
+      if (sql.includes("SELECT to_regclass('public._connectsphere_migrations')")) {
+        return { rows: [{ ledger: ledgerExists ? '_connectsphere_migrations' : null }] };
+      }
+      if (sql.includes('SELECT current_schema() AS schema')) {
+        return { rows: [{ schema: currentSchema }] };
+      }
+      if (sql.includes('SELECT name FROM') && sql.includes('_connectsphere_migrations')) {
         return { rows: [...applied].map((name) => ({ name })) };
       }
       if (sql === failOnSql) {
         throw new Error('migration query failed');
       }
-      if (sql.includes('INSERT INTO _connectsphere_migrations')) {
+      if (sql.includes('INSERT INTO') && sql.includes('_connectsphere_migrations')) {
         applied.add(String(values?.[0]));
       }
       return { rows: [] };
@@ -52,6 +64,21 @@ test('the migration selector rejects malformed arguments and unknown or path-lik
   ]) {
     assert.throws(() => parseMigrationSelection(args, files));
   }
+});
+
+test('guarded migration sessions pin and verify the public search path', async () => {
+  const validSession = mockClient();
+  await setGuardedMigrationSearchPath(validSession.client);
+  assert.deepEqual(
+    validSession.calls.map((call) => call.sql),
+    ['SET search_path TO public, extensions', 'SELECT current_schema() AS schema'],
+  );
+
+  const unexpectedSession = mockClient([], undefined, true, 'private');
+  await assert.rejects(
+    setGuardedMigrationSearchPath(unexpectedSession.client),
+    /not using the public schema/,
+  );
 });
 
 test('the default selection returns every pending file in filename order', () => {
@@ -97,6 +124,42 @@ test('the runner applies only the selected migration and records only that filen
     ['0013_tentative_venue_holds.sql'],
   );
   assert.deepEqual(logged, ['applied migration 0013_tentative_venue_holds.sql']);
+});
+
+test('guarded migration runner requires an existing ledger and never creates one', async () => {
+  const missingLedger = mockClient([], undefined, false);
+  await assert.rejects(
+    runMigrations(
+      missingLedger.client,
+      files,
+      '0009_keepalive_logs.sql',
+      async () => 'unexpected SQL',
+      () => {},
+      { requireExistingLedger: true },
+    ),
+    /refusing to create it in guarded mode/,
+  );
+  assert.equal(
+    missingLedger.calls.some((call) => call.sql.includes('CREATE TABLE IF NOT EXISTS')),
+    false,
+  );
+
+  const existingLedger = mockClient();
+  await runMigrations(
+    existingLedger.client,
+    files,
+    '0009_keepalive_logs.sql',
+    async (file) => `SQL for ${file}`,
+    () => {},
+    { requireExistingLedger: true },
+  );
+  assert.equal(
+    existingLedger.calls.some((call) => call.sql.includes('CREATE TABLE IF NOT EXISTS')),
+    false,
+  );
+  assert.ok(existingLedger.calls.some((call) => call.sql.includes("SELECT to_regclass('public._connectsphere_migrations')")));
+  assert.ok(existingLedger.calls.some((call) => call.sql.includes('SELECT name FROM public._connectsphere_migrations')));
+  assert.ok(existingLedger.calls.some((call) => call.sql.includes('INSERT INTO public._connectsphere_migrations')));
 });
 
 test('the runner preserves all-pending behavior without a selector', async () => {
