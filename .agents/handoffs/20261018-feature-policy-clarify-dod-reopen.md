@@ -12,7 +12,7 @@ Prepare a short, prospective policy proposal from the decisions settled on 18 Oc
 
 ## Not done / next step
 
-- Commit, push, and open a draft PR against `docs/po-review-corrections-20261016`; then verify its base/head/draft state and report the review link.
+- Draft PR [#312](https://github.com/hongyime/sgConnectSphere2026/pull/312) is open against `docs/po-review-corrections-20261016`; it is mergeable and CI is queued. Leave it unmerged and in draft until team/PO review.
 - Do not merge or change any existing DoD, T-65/T-74 record, Sprint 3 story, or Jira status/sprint/estimate/criteria.
 
 ## Decisions for review
