@@ -310,3 +310,21 @@ To produce high-fi Figma updates safely, the next input should be one of:
 
 The current page-root link is useful for orientation, but not enough for exact
 screen-by-screen refinement.
+
+## 18 October 2026 decision update (T-97 / T-98)
+
+The earlier Week 9 notes above recorded O-50 and O-51 as open team assumptions.
+The team has since adopted them as T-97 and T-98; they remain team decisions,
+not customer statements. The registration design should show no per-Session
+waitlist: a full selected Session follows the Pending Organiser decision path,
+and the Event-level waitlist remains available when combined Event capacity is
+full and the list is enabled. The copy-event design should retain requirements
+and Session structure, clear Event/Session dates and times, and omit bookings,
+equipment reservations and registrations.
+
+The actual Figma file still needs a frame-specific design pass. The shared link
+in this plan opens the file root, not a selected screen, and a previous connector
+write attempt returned `INVALID_ARGUMENT`; no live Figma frame was changed by
+this decision update. A design owner should select the target frames, update and
+review them, then export accepted screens and link those frames from the affected
+stories.

@@ -2,13 +2,24 @@
 
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
-Version 9  ·  13 October 2026
+Version 10  ·  18 October 2026
 
 ## Purpose
 
-This document holds every decision behind the backlog and the evidence for it. The backlogs themselves are canonical Markdown under `docs/backlog/`; generated workbook `CONNECTSPHERE BACKLOGS CAA 161026.xlsx` contains story data, with each story carrying a Backlog Decision Reference pointing back to the entries here.
+This document holds every decision behind the backlog and the evidence for it. The backlogs themselves are canonical Markdown under `docs/backlog/`; generated workbook `CONNECTSPHERE BACKLOGS CAA 181026.xlsx` contains story data, with each story carrying a Backlog Decision Reference pointing back to the entries here.
 
 It exists to answer one question for any story or acceptance criterion: why is this here, and who decided it. Entries are separated into what the customer told us and what the team chose, because those carry different weight. Where the team chose, the entry says so plainly rather than presenting an assumption as a requirement.
+
+## What changed in version 10
+
+On 18 October 2026, the team accepted the recorded defaults for O-50 and O-51
+as T-97 and T-98. No per-Session waitlist is added: a full selected Session
+follows the Pending decision path, while the Event-level list remains available
+when combined Event capacity is full. Copying an Event retains its requirements
+and Session structure, clears Event and Session dates/times, and excludes
+bookings, equipment reservations and registrations. These are team decisions,
+not customer statements. Six open items remain: O-08, O-11, O-12, O-13, O-18
+and O-19.
 
 ## 15 October 2026 clarification addendum (references corrected 16 October)
 

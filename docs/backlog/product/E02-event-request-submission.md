@@ -136,7 +136,7 @@ _No checklist recorded._
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-74, T-79, T-87, T-90, O-51
+- **BDR references**: C-74, T-79, T-87, T-90, T-98
 - **Owner**:
 
 ### User story
@@ -147,7 +147,7 @@ As an Event Organiser, I want to create a new request by copying a previous even
 
 #### Scenario 1 — Previous event copied
 
-Given I choose one of my own completed or past events When I copy it Then ConnectSphere creates a new draft with the event requirements and Session structure copied, all event and Session dates/times left blank, and no bookings, reservations, or registrations carried over (assumes O-51)
+Given I choose one of my own completed or past events When I copy it Then ConnectSphere creates a new draft with the event requirements and Session structure copied, all event and Session dates/times left blank, and no bookings, reservations, or registrations carried over (T-98)
 
 #### Scenario 2 — Missing reference flagged
 
@@ -161,7 +161,7 @@ Given I later submit the copied draft When I enter event and Session dates Then 
 
 - Copy one of my own completed or past events into a new draft
 - Confirm requirements and Session structure are copied while event and Session dates/times are blank
-- Confirm bookings, equipment reservations and registrations are not copied (assumes O-51)
+- Confirm bookings, equipment reservations and registrations are not copied (T-98)
 - See unavailable venue/equipment references flagged against the relevant Session
 - Submit a copied draft subject to the current date rules
 

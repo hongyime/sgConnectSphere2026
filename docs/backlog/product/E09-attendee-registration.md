@@ -46,7 +46,7 @@ Given a Confirmed Event has one or more confirmed venue bookings When I view reg
 
 - **Sprint**: Sprint 4
 - **Points**: 3
-- **BDR references**: C-05, C-58, C-78, C-98, T-30, T-31, T-50, T-85, B-11, O-50
+- **BDR references**: C-05, C-58, C-78, C-98, T-30, T-31, T-50, T-85, B-11, T-97
 - **Owner**:
 
 ### User story
@@ -73,7 +73,7 @@ Given one approved seat remains in a Session or in the combined Event capacity W
 
 #### Scenario 5 — Waiting list remains event-level
 
-Given the combined Event capacity is full When an Attendee opens registration Then the existing Event-level waiting-list option is offered where enabled; whether a full individual Session offers a separate waiting list is open under O-50
+Given the combined Event capacity is full When an Attendee opens registration Then the existing Event-level waiting-list option is offered where enabled; a full selected Session follows the Pending decision path and has no separate Session-level waiting list (T-97)
 
 #### Scenario 6 — Manual addition allowed within both limits
 
@@ -90,7 +90,7 @@ Given the selected Session or combined Event capacity is already full When the E
 - Keep an Attendee over-capacity submission Pending for Organiser review without counting it as an approved seat
 - Recheck both limits when the Organiser approves a Pending registration
 - Prevent concurrent requests from exceeding either limit
-- Offer the Event-level waiting list when combined Event capacity is full; apply O-50 for individual full Sessions
+- Offer the Event-level waiting list when combined Event capacity is full; keep a full selected Session on the Pending decision path with no Session-level waiting list (T-97)
 - Allow manual VIP additions only within both limits and block them at either limit
 
 ## E09-S03 — Control the registration period
@@ -135,7 +135,7 @@ Given I enable the waiting list for an Event When its combined Event capacity is
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-23, T-33, T-46, B-10, O-50
+- **BDR references**: C-23, T-33, T-46, B-10, T-97
 - **Owner**:
 
 ### User story
@@ -146,7 +146,7 @@ As an Attendee, I want to join the waiting list when an event is full so that I 
 
 #### Scenario 1 — Joined a full event's list
 
-Given the combined Event capacity is full and its Event-level waiting list is enabled When I join the waiting list Then I am added and told I will be notified when a place is released (Session-specific waiting-list behavior remains open under O-50)
+Given the combined Event capacity is full and its Event-level waiting list is enabled When I join the waiting list Then I am added to the Event-level list and told I will be notified when a place is released; no Session-level waiting list is created (T-97)
 
 #### Scenario 2 — Released place notified to all
 

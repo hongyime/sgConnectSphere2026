@@ -309,3 +309,15 @@ and delivered in #247, is now in the release and product backlogs with five
 scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
 which stays Done (T-74): the Organiser could not edit the registration setup,
 and the registration date labels were laid out wrongly.
+
+
+## 18 October 2026: O-50 and O-51 resolved as team decisions
+
+Recorded T-97 and T-98, closing O-50 and O-51. E09-S02/S04 now state that a
+full selected Session follows the Pending decision path and has no per-Session
+waitlist; the Event-level list remains available when combined Event capacity
+is full. E02-S05 now records the accepted copy behavior: retain requirements
+and Session structure, clear Event/Session dates and times, and do not copy
+bookings, equipment reservations or registrations. Updated the corresponding
+product/release backlog entries, canonical test case references, and the dated
+Figma handoff note. These remain team decisions, not customer statements.
