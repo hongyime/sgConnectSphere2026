@@ -730,11 +730,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - the migration selector is optional and accepts one exact available filename
 - the migration selector rejects malformed arguments and unknown or path-like filenames
+- guarded migration sessions pin and verify the public search path
 - the default selection returns every pending file in filename order
 - an explicit selection returns only that pending migration
 - an explicit selection already in the ledger returns an empty list
 - an explicit filename outside the migration directory is rejected
 - the runner applies only the selected migration and records only that filename
+- guarded migration runner requires an existing ledger and never creates one
 - the runner preserves all-pending behavior without a selector
 - an already-applied selected migration reports a no-op without opening a transaction
 - an unknown selected filename is rejected before any database query
@@ -772,6 +774,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - ADDITIONAL_ALLOWED_ORIGINS accepts comma-separated local dev hosts and ignores blanks
 - the allowed set deduplicates identical origins from multiple env vars
 - does not accept an origin that only matches a superstring of an allowed value
+
+### `backend/tests/productionMigrationGuard.test.ts`
+
+- production URL guard accepts the configured PostgreSQL target and rejects other targets
+- guarded database config ignores URL parameters and forces verified TLS
+- precheck accepts only the next pending migration in repository order
+- postcheck requires only the selected migration to be newly recorded
 
 ### `backend/tests/profile.integration.test.ts`
 

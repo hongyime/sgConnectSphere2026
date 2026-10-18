@@ -12,8 +12,9 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Added `--require-existing-ledger` to the existing migration CLI so guarded runs cannot create a missing production ledger, plus unit tests.
 - Guarded runs construct node-postgres config from validated URL components (ignoring connection-string overrides), require verified TLS, pin the session search path to `public, extensions`, and qualify the ledger table. The workflow checks out the immutable dispatch SHA. The runbook says manual migrations must not overlap a queued or active workflow run.
 - Updated `docs/ops/production-migrations.md` with the protected workflow and secret setup instructions.
+- Regenerated `docs/testing/tc-coverage.md` after hosted CI identified drift from the newly added test blocks.
 - Focused migration-selection/guard unit tests passed 17/17 both before and after the implementation commit; latest evidence is `docs/testing/runs/20261018-123027-bryanseah234-backend-unit.md`. Backend TypeScript build passed on commit `261ec6e`; workflow YAML validation passed. No database connection was made.
-- The latest `python scripts/check.py` run passed: 158 repository tooling tests, 428 test-run records validated, secret scan passed, and `.env.template` remained current. It warned only about existing secondary worktrees. Latest evidence is `docs/testing/runs/20261018-123111-bryanseah234-tooling.md`.
+- The latest `python scripts/check.py` run passed after coverage regeneration: 158 repository tooling tests, 429 test-run records validated, secret scan passed, and `.env.template` remained current. It warned only about existing secondary worktrees. Latest evidence is `docs/testing/runs/20261018-123428-bryanseah234-tooling.md`.
 
 ## Next
 
