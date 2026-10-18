@@ -20,6 +20,11 @@ import { updateEventInformationWithNotifications } from '../backend/src/modules/
 // decision on the Organiser's event read. Its rejected-request check runs
 // inside the information edit's transaction. The rules are in decision.ts.
 //
+// SCRUM-60 (E08-S03) adds the readiness read, the submission for Safety
+// Review, the Safety Officer-only confirm refusal, and the confirmed
+// arrangements on the Organiser's event read. The rules are in
+// backend/src/modules/eventReadiness/.
+//
 // Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
 // consolidation removed the Supabase Auth bearer-token path that used to
 // cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
@@ -46,6 +51,13 @@ import {
   withDecision,
 } from '../backend/src/modules/eventLifecycle/decision.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
+import { withArrangements } from '../backend/src/modules/eventReadiness/arrangements.js';
+import {
+  confirmEvent,
+  getEventReadiness,
+  ReadinessBlockedError,
+  submitForSafetyReview,
+} from '../backend/src/modules/eventReadiness/submission.js';
 import {
   createEventRequest,
   deleteEventRequest,
@@ -93,6 +105,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('decide') === '1') {
       await handleDecisionPost(request, response, params);
+      return;
+    }
+    if (params.get('safetyReview') === '1' || params.get('confirm') === '1') {
+      await handleSafetyReviewPost(request, response, params);
       return;
     }
     await handlePost(request, response);
@@ -205,6 +221,32 @@ async function handleDecisionPost(request: VercelRequest, response: VercelRespon
   });
 }
 
+// SCRUM-60 (E08-S03) Scenarios 1 to 5 and 7; every rule is enforced in
+// eventReadiness/submission.ts.
+//   POST /api/events?safetyReview=1&id=<event id or code>
+//     -> 200 { submission }
+//     -> 409 { error, readiness } when an arrangement is outstanding
+//   POST /api/events?confirm=1&id=<event id or code>
+//     -> 403 for anyone but a Safety Officer, recorded in the Activity log
+//     -> 409 for a Safety Officer: approval is E08-S06's (D60)
+async function handleSafetyReviewPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    if (params.get('confirm') === '1') return await confirmEvent(getDatabasePool(), user, eventId.slice(0, 240));
+    try {
+      const submission = await submitForSafetyReview(getDatabasePool(), user, eventId.slice(0, 240));
+      return { status: 200, body: { submission } };
+    } catch (error) {
+      if (error instanceof ReadinessBlockedError) {
+        return { status: error.status, body: { error: error.message, readiness: error.readiness } };
+      }
+      throw error;
+    }
+  });
+}
+
 async function handleCommentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   try {
     const user = await currentUser(request);
@@ -272,7 +314,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -282,7 +324,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
     await requireOrganiser(query, user, 'events');
-    if (id) return { event: await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240)))) };
+    if (id) return { event: await withArrangements(query, await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240))))) };
     return {
       events: await listEvents(query, user, params.get('q') || ''),
       notifications: await listNotifications(query, user),
@@ -298,10 +340,12 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
 //                                                    and outstandingQuestions (SCRUM-33)
 //   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
 //   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
+//   GET /api/events?readiness=1&id=<id or code>   -> { readiness } (SCRUM-60, E08-S03)
 async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   await respond(response, async () => {
     const user = await currentUser(request);
     const database = getDatabasePool();
+    if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');

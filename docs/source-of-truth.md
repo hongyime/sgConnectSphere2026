@@ -139,6 +139,8 @@ flag contradictions with a source reference rather than silently deleting them.
 
 The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and test-case exports and refreshes the legacy coverage input from that generated test-case workbook. Completed E07-S01/SCRUM-51 is retained; Jira creation and planning for the new canonical follow-up happen after merge.
 
+The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
+
 The 16 October Product Owner approvals in T-97 update the canonical BDR and
 `docs/ops/demo-account-provisioning.md`. Regenerate only the BDR Word export for
 the new decision; the architecture sources did not change, so the dated ADR

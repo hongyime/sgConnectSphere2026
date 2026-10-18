@@ -1,5 +1,11 @@
 # E06-S02 manual click-through: advisory venue suitability
 
+Follow-up evidence: [combined capacity/accessibility run](../runs/20261017-000020-jininggg-frontend-e2e.md)
+and [unsuitable submission to Venue Staff display](../runs/20261017-010257-jininggg-frontend-e2e.md).
+The latter used clean PR #298 commit a4b2cf9, not this documentation branch's
+runtime. Earlier dependency statements below describe the original partial run;
+the follow-up records document the newer observed coverage and its limits.
+
 Partial acceptance check for SCRUM-46, following the format of
 [E07-S06](E07-S06-click-through.md) and the
 [T-65 recording rules](../runs/README.md). Source cases:
@@ -12,51 +18,24 @@ names in the cases. Here, coord_a and EVT-3001 provide the real seeded fixtures.
 Do not claim full TC_E06S02_04: booking submission and staff presentation await
 E06-S03/S04. Checking advisory copy alone does not prove booking acceptance.
 
-## Set up first (Windows PowerShell)
+## Set up first (native loopback PostgreSQL)
 
-Open Docker Desktop and wait for its engine to be running. Use three terminals
-at the repository root. These commands create a dedicated disposable database;
-do not load `.env`, use the shared Supabase URL, or set `ALLOW_DATABASE_RESET`.
-Replace `<local-password>` with a local-only password suitable for a URL.
-Do not put its value in the committed run record.
+Use a disposable native loopback PostgreSQL database following
+[database safety guidance](../supabase-test-schema.md) and the
+[seed convention](../../contributing/seed-data-convention.md). Do not start
+Docker Desktop or reset/seed shared Supabase. The old Docker instructions are
+superseded. Configure the local API with the disposable database and browser
+origin, then start the API and Vite on port 5173. If code changed while the API
+was running, restart the API before testing; preserve the database.
 
-### Terminal 1: local database
+Sign in as the seeded Coordinator A. Obtain the synthetic account credential
+from the seed implementation; never include it or a connection string in a
+committed record. For a fresh full run use the seeded EVT-3001 fixtures below.
+If reusing a populated local database, inspect its current data and record
+fixture differences instead of assuming defaults or resetting earlier evidence.
 
-```powershell
-docker info --format '{{.ServerVersion}}'
-docker run -d --name connectsphere-e06s02-pg -e POSTGRES_PASSWORD=<local-password> -p 127.0.0.1:55434:5432 postgres:17
-docker exec connectsphere-e06s02-pg pg_isready -U postgres
-docker exec connectsphere-e06s02-pg psql -U postgres -c "CREATE DATABASE connectsphere_e06s02_manual"
-$env:DATABASE_URL = 'postgres://postgres:<local-password>@127.0.0.1:55434/connectsphere_e06s02_manual'
-npx.cmd tsx backend/src/database/cli.ts reset
-```
-
-Wait for `pg_isready` to report accepting connections before creating the DB.
-If this dedicated container/database already exists, start it with
-`docker start connectsphere-e06s02-pg`, then run the URL assignment and reset
-again. Reset destroys data in this dedicated database only. Check the URL
-points to `127.0.0.1:55434/connectsphere_e06s02_manual` before executing it.
-
-### Terminal 2: API
-
-```powershell
-$env:DATABASE_URL = 'postgres://postgres:<local-password>@127.0.0.1:55434/connectsphere_e06s02_manual'
-$env:ADDITIONAL_ALLOWED_ORIGINS = 'http://127.0.0.1:5173'
-npx.cmd tsx backend/src/dev.ts
-```
-
-Wait for `Local API ready`. Keep this terminal open.
-
-### Terminal 3: frontend
-
-```powershell
-npm.cmd exec --workspace frontend -- vite --host 127.0.0.1 --port 5173 --strictPort
-```
-
-Use a browser in Singapore timezone. Sign in at
-http://127.0.0.1:5173/login as `coord_a@connectsphere.com`, using
-`seedCredential` from `backend/src/database/cli.ts`. Do not record the password.
-Keep API and browser console errors if a step fails, with secrets removed.
+For the combined-failure follow-up, use section E below. It uses a separate
+synthetic event/venue and leaves earlier booking fixtures intact.
 
 ## A. Recorded requirements and a full match (TC_E06S02_01, 03)
 
@@ -86,28 +65,24 @@ Keep API and browser console errors if a step fails, with secrets removed.
    capacity is 120 despite the venue maximum being 200.
 8. Confirm the advisory paragraph begins **Suitability is advisory. An
    unsuitable venue may still be requested for Venue Staff to review.**
-   There is no implemented booking submission to exercise on this screen.
+   Booking submission is available through E06-S03; this assessment-only check does not prove the staff presentation.
    This case verifies capacity naming, not the canonical case's additional
    missing-wheelchair fixture. Record that limitation, not a full-case claim.
 
 ## C. Hours boundaries and E06-S01 regression (TC_E06S02_05)
 
-Use Cedar, which otherwise satisfies EVT-3001. In terminal 1 define this
-local fixture helper. It targets the named Docker container directly; it does
-not use `.env`. These SQL edits arrange test data, not an event-edit UI test.
+Use Cedar, which otherwise satisfies EVT-3001, in a fresh disposable database.
+Have the local fixture operator change only that synthetic event period for each
+row, using parameterised SQL and an explicit loopback/database-name guard. The
+operation is `UPDATE events SET event_range=$1::tstzrange WHERE event_code=$2`.
+Do not use a shared Supabase connection. These edits arrange fixtures and do
+not test the event-edit UI. Restore the original period afterwards.
 
-```powershell
-function Set-ManualEventPeriod([string]$Period) {
-  $sql = "UPDATE events SET event_range = '$Period'::tstzrange WHERE event_code = 'EVT-3001';"
-  docker exec connectsphere-e06s02-pg psql -v ON_ERROR_STOP=1 -U postgres -d connectsphere_e06s02_manual -c $sql
-}
-```
-
-For each row below, call the helper with its period, expect `UPDATE 1`, then
+For each row below, set the fixture period, verify exactly one event changed, then
 refresh the saved Cedar assessment URL. Inspect the displayed event period
 before judging the result. Record each boundary separately.
 
-| Check | Command argument to Set-ManualEventPeriod | Expected assessment |
+| Check | Synthetic event period | Expected assessment |
 | --- | --- | --- |
 | Fully within | `'[2026-10-15 09:00+08,2026-10-15 11:00+08)'` | Suitable; no hours failure |
 | Exact boundaries | `'[2026-10-15 08:00+08,2026-10-15 22:00+08)'` | Suitable; no hours failure |
@@ -115,22 +90,13 @@ before judging the result. Record each boundary separately.
 | Ends after closing | `'[2026-10-15 09:00+08,2026-10-15 22:00:01+08)'` | Unsuitable; same explicit failure |
 | Crosses midnight | `'[2026-10-15 21:00+08,2026-10-16 09:00+08)'` | Unsuitable; same explicit failure |
 
-For example:
-
-```powershell
-Set-ManualEventPeriod '[2026-10-15 07:59:59+08,2026-10-15 11:00+08)'
-```
-
 9. While the early-start fixture is active, open the event search in another
    tab, reload defaults, and click **Search venues**. Cedar must remain
    **Suitable** in E06-S01 search, while its E06-S02 assessment is
    **Unsuitable** with the hours failure. Inspect both pages and save a
    screenshot of each. Search operating hours remain display-only.
-10. Restore the original fixture when finished:
-
-```powershell
-Set-ManualEventPeriod '[2026-10-15 09:00+08,2026-10-15 17:00+08)'
-```
+10. Restore the original fixture period, 15 October 2026 09:00-17:00 SGT,
+    using the same guarded local fixture operation.
 
 ## D. Presentation and access checks
 
@@ -146,7 +112,7 @@ After performing the steps, create a new run file using
 `docs/testing/runs/TEMPLATE.md`; never overwrite an existing execution record.
 Use the actual Singapore timestamp and your GitHub login, with:
 `scope: frontend/e2e`, `environment: local`, `run_type: manual`,
-`database: real`, `test_case_version: 081026` (verify still current).
+`database: real`, `test_case_version: 161026` (verify still current).
 Get the commit using `git rev-parse --short HEAD`. If code is uncommitted,
 explicitly state the branch and that the run included working-tree changes;
 the SHA alone does not identify those changes. Add the PR number only if known.
@@ -174,3 +140,26 @@ Use PASS/FAIL/SKIP/N/A only, and describe what actually happened even on PASS.
 If setup fails, record the blocker rather than inventing browser results.
 Run `python scripts/check_test_run_records.py` once the completed record exists.
 This run can support review of the partial PR; it does not mark the story Done.
+
+## E. Combined accessibility and capacity follow-up (TC_E06S02_02)
+
+This is a plan, not a passing execution claim. The earlier human run covered
+capacity alone; retain that immutable record unchanged.
+
+1. In the disposable local database, prepare a separate Approved event assigned
+   to Coordinator A: EVT-S02-MANUAL, Theatre, 150 attendees, Wheelchair access,
+   15 January 2027 09:00-11:00 Singapore time.
+2. Prepare Manual Suitability Room with Theatre capacity 120, opening hours
+   08:00-22:00 and no Wheelchair access feature. Ensure no occupancy or block
+   overlaps the fixture period; do not alter existing bookings to make it free.
+3. Open `/coordinator/events/EVT-S02-MANUAL/venues` as Coordinator A. Search,
+   locate Manual Suitability Room and choose Check recorded event requirements.
+4. Expect Unsuitable and both named failures: capacity 120 below required 150,
+   and missing Wheelchair access. Inspect comparison values and advisory text.
+5. Refresh and verify both failures persist. Save original hand-taken PNG/JPG
+   evidence under a fresh run folder, named TC_E06S02_02-1, -2, etc., each
+   below 1000 KB. Record actual results only after the human performs the steps.
+
+This covers the combined-failure assessment, not TC_E06S02_04 staff display.
+Coordinate the latter with E06-S04; API fixtures or Coordinator screenshots
+cannot prove what Venue Staff see when deciding.

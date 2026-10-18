@@ -62,7 +62,7 @@ test('the queue lists only staffable events, open requests first', async () => {
   const call = sqlCalls(db.calls, /FROM tech_support_requests r/)[0]!;
   assert.match(call.sql, /support_required AND r.status <> 'cancelled'/);
   assert.match(call.sql, /ORDER BY \(r.status = 'open'\) DESC/);
-  assert.deepEqual(call.values, [['approved', 'planning', 'confirmed']]);
+  assert.deepEqual(call.values, [['approved', 'planning', 'safety_review', 'confirmed']]);
 });
 
 test('a request lists every active colleague, marks who is on it, and names clashes for the rest', async () => {

@@ -69,3 +69,20 @@ observations.
 This document records manual acceptance reported by the user. It does not claim
 production deployment, independently observed reserved fixtures, or overall Jira
 Done solely from the manual results.
+
+## T-93 human screenshot re-run — 17 October 2026
+
+[Manual session](../testing/runs/20261017-103734-xiangyingg-frontend-e2e.md), tested application d87081d, local frontend/backend and real remote database. Ten original human screenshots are stored unchanged in the matching evidence folder and linked in execution order. Each is below 1000 KB and contains no visible secrets or real personal data. Prior records and story Done status are unchanged.
+
+| Case | Actual result | Outcome |
+| --- | --- | --- |
+| TC_E07S02_01 | Event A microphone 2 and projector 1 saved; tester confirms both persist after refresh as Not reserved. Support inbox and opened notification identify Event A/microphone ×2. | PASS |
+| TC_E07S02_02 | Microphone 15 saves against stock 10 with explicit cannot-be-met warning. | PASS |
+| TC_E07S02_03 | Event B remains Approved with No equipment requested yet after requests were added to Event A. | PASS |
+| TC_E07S02_04 | Unreserved microphone changes 2→3, then is removed; projector 1 remains. | PASS |
+| Supplemental access | Other Coordinator sees Access refused / event not assigned; no request rows exposed. | PASS |
+| Supplemental reserved protection | Coordinator sees projector Reserved and Reserved requests are protected, without edit/remove controls. | PASS |
+
+Agent prepared synthetic events/equipment using existing seeded accounts; the human performed UI checks and took screenshots. No reset/reseed, S01-fixture changes or new automated application tests. The 01-3 image is a Support request list, correctly labelled; 01-4 is the opened notification body.
+
+This run establishes one Support account received the notification, not delivery to all active accounts or fresh direct-API bypass protection. The earlier recipient interpretation approval above remains historical evidence; this run adds no new team-wide approval. Teammate evidence review, new-head CI and reviewed merge remain required. No separate issue or Jira reopening is needed.
