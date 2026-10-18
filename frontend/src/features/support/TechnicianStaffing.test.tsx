@@ -39,6 +39,39 @@ function renderAt(path: string) {
 const posts = (calls: ReturnType<typeof stubApi>) => calls.filter(call => call.method === 'POST');
 const colleagues = async () => within(await screen.findByRole('list', { name: 'Colleagues' }));
 
+test('TC_E11S01_11 self actions do not claim notification, and confirmation is focused and brought into view', async () => {
+  const self = { staffId: 'test-user', name: 'Tech A', assigned: false, conflicts: [] };
+  let assigned = false;
+  const scroll = vi.fn();
+  const previous = HTMLElement.prototype.scrollIntoView;
+  HTMLElement.prototype.scrollIntoView = scroll;
+  stubApi({
+    [DETAIL]: () => ({ body: { request: { ...conference, assignees: assigned ? [{ assignmentId: 'self', staffId: self.staffId, name: self.name }] : [] }, candidates: assigned ? [] : [self], canAssign: true } }),
+    [POST]: (_url, init) => {
+      assigned = JSON.parse(String(init?.body)).action === 'assign';
+      return { body: assigned ? { assignment: { id: 'self', staffId: self.staffId, name: self.name } } : { removed: true, requestStatus: 'open' } };
+    },
+  }, { role: 'technical_support_staff' });
+  try {
+    renderAt(`/support/technicians/${REQ}`);
+    const button = await screen.findByRole('button', { name: 'Assign Tech A…' });
+    button.focus();
+    fireEvent.click(button);
+    expect(document.activeElement).toHaveAttribute('aria-label', 'Staffing confirmation');
+    expect(scroll).toHaveBeenCalledWith({ block: 'center' });
+    expect(screen.queryByText(/will be notified/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(button).toHaveFocus();
+    fireEvent.click(button);
+    fireEvent.click(screen.getByRole('button', { name: 'Assign technician' }));
+    expect(await screen.findByText("Tech A is assigned. It's on their schedule.")).toBeVisible();
+    fireEvent.click(await screen.findByRole('button', { name: 'Remove Tech A…' }));
+    expect(screen.queryByText(/will be notified/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove assignment' }));
+    expect(await screen.findByText('Tech A is no longer assigned. Their time is free again.')).toBeVisible();
+  } finally { HTMLElement.prototype.scrollIntoView = previous; }
+});
+
 test('the queue shows requests needing a technician first, with filters for staffed and all', async () => {
   stubApi({ [QUEUE]: { body: { requests: [
     conference,

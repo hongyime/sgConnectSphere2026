@@ -24,6 +24,13 @@ test('shows a loading state before notifications arrive', () => {
   expect(screen.getByRole('status')).toHaveTextContent('Loading notifications…');
 });
 
+test('TC_E11S01_01 event/change details are visible before opening a notice', async () => {
+  render(<NotificationInbox />);
+  expect(await screen.findByText(fixtureNotifications[0].message)).toBeVisible();
+  expect(screen.getByRole('button', { name: fixtureNotifications[0].title }).closest('li')).toHaveClass('notification-unread');
+  expect(vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === 'POST')).toBe(false);
+});
+
 test('renders notifications newest first once loaded', async () => {
   render(<NotificationInbox />);
   const list = await screen.findByRole('list', { name: 'Notifications' });
