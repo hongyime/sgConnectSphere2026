@@ -105,8 +105,9 @@ marked Done in Sprint 3.
 
 - TC_07 waits for E10-S04 (Sprint 4); see the PO decision above. The branch
   name carries SCRUM-48, so `jira-sync` moves SCRUM-48 to Done when #298
-  merges. Agree with the team before merging whether #298 waits for E10-S04
-  or SCRUM-48 is kept open by hand after merge.
+  merges. The recorded PO decision governs: keep #298 unmerged until E10-S04
+  is built and TC_07 passes. Do not merge early and rely on manually keeping
+  Jira open.
 - Ji Ning's #299 reviewed (comment review, 16 Oct).
 - Follow-up candidate: the rejection notice's line breaks show as spaces in
   the notifications page.
