@@ -1,5 +1,8 @@
 # Backlog Decision Review (BDR)
 
+See the [ConnectSphere decision register](../decisions/README.md) for the
+single entry point to BDR, ADR and repository decision records.
+
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
 Version 10  ·  18 October 2026
@@ -96,7 +99,7 @@ Release 1 now stands at 47 stories and 155 points across four sprints.
 
 C-01 to C-70 — customer clarifications. C-01 to C-64 are taken from the Week 2 and Week 4 Q&A spreadsheets and numbered in their own row order so any entry can be checked against the source file; C-65 to C-70 are the six items of the Week 7 Customer Changes document, in document order. C-71 to C-136 are the Week 9 Q&A rows in workbook order.
 
-T-01 to T-91 — team decisions, each naming the clarification it follows from or the gap it closes.
+T-01 to T-98 — team decisions, each naming the clarification it follows from or the gap it closes.
 
 O-01 to O-49 — questions and standing assumptions, including items closed with the answer recorded against them. O-20 to O-44 were raised from Week 7 and are reconciled against Week 9; O-45 to O-49 record remaining Week 9 gaps and design dependencies.
 

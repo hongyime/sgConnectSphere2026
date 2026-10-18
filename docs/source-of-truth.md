@@ -12,6 +12,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
 | Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 181026.docx` |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 181026.docx` |
+| Decision index | `docs/decisions/README.md` | Links to the authoritative records above; does not duplicate their text |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 181026.xlsx` |
 | Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
@@ -130,7 +131,10 @@ disagree, the difference is raised in `design.md` and resolved in review
 (ADR-017). Figma boards are proposals derived from these sources. Link them to
 stories, batch related screens, preserve existing boards, and pair
 desktop/mobile variants where appropriate. Keep role-specific flows
-identifiable.
+identifiable. Each story owner owns the design and implementation for that
+story, including selecting and linking its Figma frames. Amareet Kaur Madas
+coordinates cross-story Figma organization and consistency; this does not make
+her the sole designer for every story (repository decision 0016).
 
 Each teammate uses their own Jira account or token. Keep real credentials,
 personal configuration, raw private API responses and machine-specific paths out

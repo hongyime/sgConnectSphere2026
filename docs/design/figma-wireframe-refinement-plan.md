@@ -119,8 +119,10 @@ Recommended system:
 
 Work in Figma should happen in controlled batches to avoid API/rate-limit waste:
 
-1. Ask the designer or product owner to select the exact frame for each priority
-   screen and copy frame-specific Figma links with `node-id=...`.
+1. Each story owner selects the exact frame for their priority screen and copies
+   a frame-specific Figma link with `node-id=...`, coordinating cross-story
+   layout and consistency with Amareet. Ask the product owner about unresolved
+   product behavior.
 2. Create or update a Figma page named `High-fi proposal`.
 3. Add a small design-token area with colors, type scale, spacing, radius, and
    status chip examples.
@@ -325,6 +327,7 @@ equipment reservations and registrations.
 The actual Figma file still needs a frame-specific design pass. The shared link
 in this plan opens the file root, not a selected screen, and a previous connector
 write attempt returned `INVALID_ARGUMENT`; no live Figma frame was changed by
-this decision update. A design owner should select the target frames, update and
-review them, then export accepted screens and link those frames from the affected
-stories.
+this decision update. Each story owner selects, updates and reviews the frames
+for their story, then exports accepted screens and links those frames from the
+affected stories. Amareet coordinates the shared Figma workspace and cross-story
+consistency; see repository decision 0016.

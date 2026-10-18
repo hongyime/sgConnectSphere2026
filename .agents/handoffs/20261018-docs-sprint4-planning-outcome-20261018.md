@@ -1,6 +1,6 @@
 # Sprint 4 planning outcome and decisions
 
-Record the team's accepted O-50/O-51 defaults as T-97/T-98, align canonical backlog and test-case Markdown, and preserve the verified Sprint 3 close / Sprint 4 plan for review.
+Record the team's accepted O-50/O-51 defaults as T-97/T-98, provide one index to all authoritative decision records, clarify per-story design ownership plus Amareet's cross-story coordination, align canonical backlog and test-case Markdown, and preserve the verified Sprint 3 close / Sprint 4 plan for review.
 
 ## Done so far
 
@@ -11,12 +11,14 @@ Record the team's accepted O-50/O-51 defaults as T-97/T-98, align canonical back
 - O-50/O-51 are closed as team decisions, not customer answers. Product/release backlog criteria and the relevant cases now cite T-97/T-98.
 - Regenerated backlog, test-case, and ADR/BDR exports for 18 October 2026.
 - No live Figma frames were edited. The existing shared link opens the page root; a previous connector write attempt returned `INVALID_ARGUMENT`.
+- Added `docs/decisions/README.md` as the single entry point to BDR customer/team decisions, ADR technical choices, and repository decisions. It links to the source files instead of copying their content.
+- Added repository decision 0016: every story owner owns that story's design and implementation; Amareet coordinates shared Figma organization and cross-story consistency. Updated the source-of-truth guide and Figma refinement plan to use the same split.
 
 ## Not done / next step
 
-- Review the complete diff and generated exports, then commit and push this docs branch and open a draft PR. Do not merge it.
+- Review the complete diff and generated exports, then run the repository check, commit and push this docs branch. Mark PR #316 ready only after its latest checks pass and it is conflict-free; do not merge it without independent human review.
 - The user decision is to complete all remaining stories without Sprint 5. The other 35 non-Done Jira stories remain outside the current 18-story, 64-point allocation until the team selects owners; nine product stories and three technical stories have no estimate. Record the chosen owners and estimates in Jira before expanding Sprint 4.
-- A design owner needs to select exact Figma frames, update/review them, export accepted screens, and link them from the relevant stories.
+- Each story owner needs to select exact Figma frames, update/review them, export accepted screens, and link them from the relevant stories. Amareet coordinates cross-story consistency. No live Figma frames have been edited.
 - Do not change Jira descriptions from the unmerged Markdown; reconcile them after the canonical change merges.
 
 ## Verification run

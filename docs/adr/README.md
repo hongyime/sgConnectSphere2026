@@ -1,5 +1,8 @@
 # Architecture Decision Records
 
+See the [ConnectSphere decision register](../decisions/README.md) for the
+single entry point to BDR, ADR and repository decision records.
+
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
 Version 8  ·  13 October 2026
