@@ -67,3 +67,5 @@ artifacts/*
 artifacts/sbom/*
 !artifacts/sbom/npm.cdx.json
 !artifacts/sbom/python-tooling.cdx.json
+
+!artifacts/e10-s04-manual-evidence.html
