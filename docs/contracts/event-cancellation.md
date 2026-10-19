@@ -37,6 +37,8 @@ entries commit atomically. Notification failure rolls everything back.
 All event-linked Sessions are covered; no single-Session selector is used.
 Tentative/Pending/Confirmed/Conflicting venue bookings become Released and lose
 primary designation. Reserved/Partial equipment reservations become Released.
+Both resource types clear stale requires_reconfirmation flags, matching ordinary
+release semantics while retaining the historical rows.
 Rejected/expired/already-released historical bookings are preserved. Availability
 readers already exclude released rows, so no separate calendar cache is updated.
 Every released venue booking has an actor/time `Booking Released` audit entry,

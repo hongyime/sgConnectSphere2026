@@ -264,7 +264,7 @@ export async function cancelEvent(
           beforeNotify: async () => {
             const bookings = (
               await client.query<{ id: string; status: string }>(
-                `UPDATE venue_bookings SET status='released',is_primary=false
+                `UPDATE venue_bookings SET status='released',is_primary=false,requires_reconfirmation=false
           WHERE event_id=$1 AND status IN ('tentative','pending','confirmed','conflicting') RETURNING id`,
                 [event.id],
               )
@@ -277,7 +277,7 @@ export async function cancelEvent(
               );
             const reservations = (
               await client.query<{ id: string }>(
-                `UPDATE equipment_reservations SET status='released'
+                `UPDATE equipment_reservations SET status='released',requires_reconfirmation=false
           WHERE event_id=$1 AND status IN ('reserved','partial') RETURNING id`,
                 [event.id],
               )

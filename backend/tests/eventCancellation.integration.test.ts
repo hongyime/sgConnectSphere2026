@@ -158,6 +158,8 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
     await assert.rejects(cancelEvent(f.pool, coord, f.event, { reason: "" }), {
       status: 400,
     });
+    await f.q('UPDATE venue_bookings SET requires_reconfirmation=true WHERE event_id=$1',[f.event]);
+    await f.q('UPDATE equipment_reservations SET requires_reconfirmation=true WHERE event_id=$1',[f.event]);
     const requested = await cancelEvent(f.pool, org, f.event, {
       reason: "Sponsor withdrew",
     });
@@ -186,7 +188,7 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
     assert.equal(state.obsoleteRequests.length, 3);
     for (const table of ["venue_bookings", "equipment_reservations"]) {
       const rows = (
-        await f.q(`SELECT status,session_id FROM ${table} WHERE event_id=$1`, [
+        await f.q(`SELECT status,session_id,requires_reconfirmation FROM ${table} WHERE event_id=$1`, [
           f.event,
         ])
       ).rows;
@@ -195,7 +197,7 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
         new Set(rows.map((r) => r.session_id)),
         new Set(f.sessionIds),
       );
-      assert.ok(rows.every((r) => r.status === "released"));
+      assert.ok(rows.every((r) => r.status === "released" && r.requires_reconfirmation === false));
     }
     assert.equal(
       (

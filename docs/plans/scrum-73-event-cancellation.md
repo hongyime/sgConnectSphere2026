@@ -56,6 +56,8 @@ backlog and cases/E10.md. No acceptance criteria, estimates or Done states chang
 
 - [20261019-220825-xiangyingg-runtime.md](../testing/runs/20261019-220825-xiangyingg-runtime.md)
 
+- [20261019-221519-xiangyingg-backend-db.md](../testing/runs/20261019-221519-xiangyingg-backend-db.md)
+
 ## Release and remaining work
 
 1. Separate migration-only 0022 PR, normal review/checks/merge.
@@ -77,3 +79,5 @@ receipt and production roster correctness are not proved by local outbox tests.
 ## Review artifacts
 
 Automated desktop and phone screenshots are under artifacts/e10-cancellation-automated-*.png and displayed on the hosted PostPlan. They are browser-generated implementation review evidence, not hand-taken manual acceptance. Migration prerequisite: #319.
+
+Final release-semantics correction clears requires_reconfirmation on released venue and equipment rows. A focused final combined database run remains 18/18 with 100% cancellation coverage and asserts both Sessions start flagged and finish released/unflagged. PR #320 is draft; Jira SCRUM-73 is In Progress, not Done.
