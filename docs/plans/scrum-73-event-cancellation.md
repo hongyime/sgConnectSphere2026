@@ -30,6 +30,7 @@ backlog and cases/E10.md. No acceptance criteria, estimates or Done states chang
   overlaid, two bookings approved then cancelled, actor/record/time release audit
   and primary clearing verified (1 passed). Reproducible method is in the manual
   integration note. No #298 code committed; no claim to pass its whole latest suite.
+- Runtime smoke suite passed on committed implementation 790dd5c.
 - Both typechecks and build passed; existing Vite chunk-size advisory.
 - A later browser rerun initially used the API process from before the history
   endpoint addition; it failed the visible-history assertion. That FAIL is
@@ -52,6 +53,8 @@ backlog and cases/E10.md. No acceptance criteria, estimates or Done states chang
 - [20261019-220227-xiangyingg-tooling.md](../testing/runs/20261019-220227-xiangyingg-tooling.md)
 - [20261019-220511-xiangyingg-frontend-e2e.md](../testing/runs/20261019-220511-xiangyingg-frontend-e2e.md)
 - [20261019-220744-xiangyingg-tooling.md](../testing/runs/20261019-220744-xiangyingg-tooling.md)
+
+- [20261019-220825-xiangyingg-runtime.md](../testing/runs/20261019-220825-xiangyingg-runtime.md)
 
 ## Release and remaining work
 
