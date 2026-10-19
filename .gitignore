@@ -69,3 +69,7 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/e10-cancellation-review.html
+!artifacts/e10-cancellation-automated-desktop.png
+!artifacts/e10-cancellation-automated-phone.png
