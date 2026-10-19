@@ -35,3 +35,46 @@ Record the 18 October decisions and planning direction in one reviewable branch:
 - `.venv-tools/bin/python scripts/check.py` passed on the original PR #316 head; its T-65 record is `docs/testing/runs/20261018-221242-bryanseah234-tooling.md`. It validated 418 run records and 158 tooling tests and warned that secondary worktrees are present.
 - After the follow-up edits, `.venv-tools/bin/python scripts/check.py` passed three times: once with 418 prior run records and twice with 419 records after adding this session file. All three runs passed 158 repository tooling tests and reported existing secondary worktrees as a warning. The outcomes are recorded in `docs/testing/runs/20261018-223029-bryanseah234-tooling.md` at HEAD `04f92bc`.
 - No application test suite, database suite, Supabase write, migration or deployment was performed for this documentation task.
+
+## 19 October follow-up — Jira allocation and E09 migration request
+
+- Jira SCRUM-153, SCRUM-155, SCRUM-156 and SCRUM-157 are now unassigned for
+  team selection. This is a current-state follow-up to the 18 October snapshot
+  above; it did not change their statuses, estimates, or Sprint fields.
+  SCRUM-157 remains In Progress because the Lead and Safety Officer role
+  landing pages are not complete; its seeded-role subtask is Done.
+- The Jira goal for SCRUM Sprint 4 (sprint 67) now says: “Complete all remaining
+  Release 1 stories. Focus on the event lifecycle, venue-booking and registration
+  work: deliver SCRUM-73 event cancellation to unblock SCRUM-48 and its
+  TC_E06S04_07 release audit; complete SCRUM-47; deliver SCRUM-61/SCRUM-62
+  lifecycle transitions, attendee registration (E09), and the Safety Officer
+  check (E08-S06).” Sprint dates and membership were preserved. Twelve Release 1
+  stories remain outside Sprint 4, so the target still needs team capacity
+  planning and estimates.
+- Amareet's message asks Bryan to apply her separate E09 migration this time,
+  after she opens a migration-only PR; she plans to use the shared workflow once
+  PR #315 is merged and configured. As of 19 October, no open E09 migration PR
+  was found. Nothing was applied. The exact reviewed migration must be merged
+  first; follow `docs/ops/production-migrations.md` for the ledger precheck,
+  exact-file apply, postcheck, and sanitized run record.
+- PR #315 is currently OPEN, non-draft, MERGEABLE, and REVIEW_REQUIRED. Its
+  current checks passed; human review and Production environment setup remain
+  prerequisites before the workflow can be used. Rotate the database credential
+  previously exposed in chat before setting the replacement secret.
+- The Week 9 audit found the client answers already preserved as BDR C-71 to
+  C-136, team impact-review choices as T-79 to T-91, and the later O-50/O-51
+  resolutions as T-98/T-99. The BDR change log and linked ADRs record downstream
+  effects. Added a trace guide to `docs/decisions/README.md`; no duplicate
+  change-request log was created and no prior record was rewritten.
+- `python scripts/check.py` passed after the plan/handoff changes at HEAD
+  `ee09735`: 158 repository tooling tests, 419 existing T-65 records validated,
+  and `.env.template` generation matched. It warned about pre-existing
+  secondary worktrees. Session record: `docs/testing/runs/20261019-093350-bryanseah234-tooling.md`.
+- After adding the decision trace guide and first session record,
+  `python scripts/check.py` passed again at HEAD `ee09735`: 158 tooling tests,
+  420 existing run records validated, and `.env.template` matched; the same
+  secondary-worktree warning remained. Session record:
+  `docs/testing/runs/20261019-093541-bryanseah234-tooling.md`. The newest run
+  record was added after this run; current-head CI will validate both new files.
+- Local root checkout remains on `feature/SCRUM-47-e06s03-fix-from-299`; its
+  pre-existing untracked files were not changed. No database operation was run.

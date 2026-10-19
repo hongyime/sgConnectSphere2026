@@ -29,6 +29,37 @@ the explicit superseding link; do not erase its history. See
 [source of truth](../source-of-truth.md) for the full authority order and the
 downstream update process.
 
+## Trace a client answer through the team's decision
+
+Use the existing BDR and ADR records as one trace, rather than copying the
+decision into a second log:
+
+1. **Client wording and answer:** find the `C-` row in
+   [customer clarifications](../bdr/A-customer-clarifications.md). The archived
+   source workbook or briefing is linked from
+   [customer source archive](../bdr/customer-sources/README.md).
+2. **Team response:** follow the `T-` reference in
+   [team decisions](../bdr/B-team-decisions.md). It records the team's choice
+   and rationale separately from what the client said.
+3. **Unresolved question:** follow its `O-` reference in
+   [open questions](../bdr/C-open-questions.md). A team default remains a team
+   assumption until the question is answered and the BDR records the outcome.
+4. **Affected work:** use the dated entries in
+   [BDR change log](../bdr/G-change-log.md) to find downstream backlog,
+   test-case, and design/schema updates. The story's Backlog Decision Reference
+   links its criteria back to the applicable `C-`, `T-`, `O-` or `B-` entries.
+5. **Technical choice:** follow the Related BDR references from the relevant
+   [ADR index](../adr/README.md) to the architecture record. An ADR explains
+   implementation structure; it does not replace the customer answer or team
+   product decision.
+
+For Week 9, the 66 client answers are C-71 to C-136 in the customer-clarification
+table, and the team's impact-review decisions are T-79 to T-91 in the team
+decisions table. The later team defaults T-98 and T-99 close O-50 and O-51.
+For example, C-107 led to T-79/T-85 and ADR-018; the earlier C-62 remains in
+history and is explicitly superseded for the current Release 1 model. This is
+an index to the maintained records, not another copy of their text.
+
 ## Repository decisions
 
 | ID | Decision |

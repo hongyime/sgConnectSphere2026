@@ -91,3 +91,29 @@ The backlog Markdown and BDR/ADR remain the requirement and decision sources;
 Jira remains the assignment/status/sprint view. This plan is a dated snapshot
 of the user's planning direction and the read-only Jira inventory, not a change
 to any story's acceptance criteria or estimates.
+
+## Jira follow-up — 19 October 2026
+
+The 18 October table above is retained as that day's snapshot. On 19 October,
+Bryan asked that the four remaining Release 1 stories assigned to `b` be opened
+for team selection. Jira now has no assignee on SCRUM-153, SCRUM-155, SCRUM-156,
+or SCRUM-157. Their statuses, estimates, and sprint fields were not changed:
+SCRUM-153/155/156 remain To Do and SCRUM-157 remains In Progress. SCRUM-157 is
+still active because its role-specific Lead and Safety Officer landing pages
+are incomplete; its seeded-role subtask is Done. Together with the original
+eight, all 12 Release 1 stories outside Sprint 4 are now available for the team
+to claim. No owner has been selected for any of them.
+
+The Jira goal for SCRUM Sprint 4 was updated to reflect the team's no-Sprint-5
+Release 1 completion target and Amareet's requested priorities:
+
+> Complete all remaining Release 1 stories. Focus on the event lifecycle,
+> venue-booking and registration work: deliver SCRUM-73 event cancellation to
+> unblock SCRUM-48 and its TC_E06S04_07 release audit; complete SCRUM-47; deliver
+> SCRUM-61/SCRUM-62 lifecycle transitions, attendee registration (E09), and the
+> Safety Officer check (E08-S06).
+
+The Sprint 4 start/end dates and story membership were not changed. The goal is
+not a capacity-confirmed forecast: the 12 stories above remain outside Sprint 4,
+and nine of them remain unestimated. The team still needs to choose owners,
+estimate unestimated work, and agree how that scope fits before the deadline.
