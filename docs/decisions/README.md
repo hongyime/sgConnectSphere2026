@@ -60,6 +60,44 @@ For example, C-107 led to T-79/T-85 and ADR-018; the earlier C-62 remains in
 history and is explicitly superseded for the current Release 1 model. This is
 an index to the maintained records, not another copy of their text.
 
+### Week 9 change and decision trace at a glance
+
+Week 9 produced 66 customer Q&A entries, not one client change request. Keep
+the client's exact answer in `C-` records, the team's interpretation or choice
+in `T-` records, any unresolved point in `O-` records, and the dated downstream
+application in the BDR change log. Read the original answers in [BDR section
+A](../bdr/A-customer-clarifications.md), team decisions in [section
+B](../bdr/B-team-decisions.md), unresolved questions in [section
+C](../bdr/C-open-questions.md), and chronology in [section
+G](../bdr/G-change-log.md). The table below is a cross-reference only; those
+records hold the full wording and rationale.
+
+| Team decision | Client answer(s) | Decision at a glance | Open question / affected records |
+| --- | --- | --- | --- |
+| [T-79](../bdr/B-team-decisions.md) | C-107; earlier C-62 | Restore Sessions under an Event; bookings and equipment attach to Sessions; registration and lifecycle stay Event-level. | Closes O-10 and supersedes T-48 while retaining C-62 as history. E04, E06–E10, ADR-018, schema and venue/equipment contracts. |
+| [T-80](../bdr/B-team-decisions.md) | C-111, C-118, C-119 | Choose open-ended venue blocks until lifted; keep setup/turnaround buffers off maintenance blocks. | Resolves O-22/O-23 as a team choice despite the C-111/C-119 conflict. E05/E06, schema and venue-booking contract. |
+| [T-81](../bdr/B-team-decisions.md) | C-113, C-120, C-121 | Venue loss returns a Confirmed event to Planning and alerts its Coordinator; notify Organisers/Attendees after replacement arrangements or formal changes. | Resolves O-24 and supersedes the conflicting part of T-28/T-67. E05/E08/E10/E11 and lifecycle/notification contracts. |
+| [T-82](../bdr/B-team-decisions.md) | C-132, C-134 | Start Safety Review automatically when arrangements are confirmed; keep a team-added checklist plus the required decision/comments. | Resolves O-40/O-42. E08/E14, safety flow, schema, ADR-006 and ADR-009. |
+| [T-83](../bdr/B-team-decisions.md) | C-104, C-128–C-130 | The Lead assigns/reassigns directly; only Leads see the queue; no Coordinator-initiated reassignment workflow. | Resolves O-36–O-38 and supersedes T-15/T-70 where they conflict. E01/E03 and access, assignment and notification flows. |
+| [T-84](../bdr/B-team-decisions.md) | C-79, C-99, C-110, C-124–C-126 | Set each hold's expiry and warning; allow at most two extensions, each with a reason. | Resolves O-31/O-33/O-34. E06-S05, venue-booking contract, schema and ADR-006. |
+| [T-85](../bdr/B-team-decisions.md) | C-78, C-97, C-98, C-107 | One event-level registration can select Sessions; enforce per-Session and combined Event capacity; over-capacity requests enter Pending review. | Resolves O-48 and refines T-29/T-31. E04/E09, schema, cases and ADR-018. |
+| [T-86](../bdr/B-team-decisions.md) | C-136 | One account may hold multiple roles; initial seed data still gives each account one role. | Resolves O-44 as a team choice; ADR-019 supersedes ADR-012. E01 access model and role schema. |
+| [T-87](../bdr/B-team-decisions.md) | C-71, C-72 | No fixed minimum lead time; the team sets a two-year maximum date horizon. | Resolves O-45; the maximum is a team policy, not a client requirement. E02 date rules and boundary cases. |
+| [T-88](../bdr/B-team-decisions.md) | C-77 | Make pending change requests Obsolete when their Event becomes Completed or Cancelled; record the transition. | Resolves O-46. E10 lifecycle, audit behavior and ADR-009. |
+| [T-89](../bdr/B-team-decisions.md) | C-89 | Keep venue-to-staff assignment as setup/routing data; do not add a Release 1 roster screen. | Resolves O-49 and refines T-64. E05/E06 setup and E11 routing. |
+| [T-90](../bdr/B-team-decisions.md) | C-74 | Include E02-S05 in Release 1 with its existing estimate; leave sprint placement to planning. | E02 release backlog and copy flow; no story requirement was retroactively rewritten. |
+| [T-91](../bdr/B-team-decisions.md) | C-112 | Allow Venue Staff to edit blocks, preserve the change history, and notify affected Coordinators when a block is lifted. | Resolves O-47. E05-S06, schema, venue-booking contract and ADR-009. |
+
+Later resolutions are recorded in their own dated entries: T-98/T-99 close
+O-50/O-51. The subsequent story and architecture changes remain in their
+canonical files. For a future client-requested scope change, record the
+client's wording first, record the team's impact decision separately, leave
+any unresolved point open, and then log the affected canonical files in the
+change log. Week 9 was recorded as customer Q&A, so this index does not assign
+it a new CR number after the fact. This preserves the distinction between what
+the client said and what the team chose without inventing a second copy of
+either record.
+
 ## Repository decisions
 
 | ID | Decision |
