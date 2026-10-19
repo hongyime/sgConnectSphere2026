@@ -34,6 +34,19 @@ export type VenueInput = {
   turnaround_time_minutes: number;
 };
 
+// E05-S05 Scenario 4: a buffer change that makes bookings overlap is saved,
+// and the server lists each later booking with the bookings it now clashes
+// with (catalogue.ts detectAndMarkBufferConflicts).
+export type BufferConflict = {
+  eventCode: string | null;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  conflictingWith: { eventId: string; title: string }[];
+};
+
+export type SavedVenue = { venue: Venue; bufferConflicts: BufferConflict[] };
+
 // The 100-row cap on GET /api/venues: the inventory says when it is reached.
 export const VENUE_LIST_LIMIT = 100;
 
@@ -52,14 +65,16 @@ export async function getVenue(id: string, signal?: AbortSignal): Promise<ApiRes
 }
 
 // A refused save keeps the server's per-field messages in `fieldErrors`.
-async function submitVenue(body: Record<string, unknown>): Promise<ApiResult<Venue>> {
-  const result = await apiCall<{ venue: Venue }>('/api/venues', jsonRequest('POST', body), 'Please correct the highlighted fields.');
+// Only an update returns buffer conflicts; a create always has none.
+async function submitVenue(body: Record<string, unknown>): Promise<ApiResult<SavedVenue>> {
+  const result = await apiCall<{ venue: Venue; bufferConflicts?: unknown }>('/api/venues', jsonRequest('POST', body), 'Please correct the highlighted fields.');
   if (!result.ok) {
     if (result.code === 'name_in_use') return { ...result, message: 'A venue with this name already exists.' };
     if (result.status === 0) return { ...result, message: 'Service unavailable. Please try again.' };
     return result;
   }
-  return { ok: true, data: result.data.venue };
+  const conflicts = result.data.bufferConflicts;
+  return { ok: true, data: { venue: result.data.venue, bufferConflicts: Array.isArray(conflicts) ? conflicts as BufferConflict[] : [] } };
 }
 
 export function createVenue(input: VenueInput) {

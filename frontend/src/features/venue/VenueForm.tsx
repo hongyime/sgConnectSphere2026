@@ -1,12 +1,14 @@
 // E05-S01 / E05-S02 / E05-S05 add and edit venue form for Venue Staff,
 // on the shared blocks (ADR-017).
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Alert, Button, ButtonLink, ErrorState, FormActions, FormField, FormSection, LoadingState, PageLayout, useLoad,
+  Alert, Button, ButtonLink, ErrorState, FormActions, FormField, FormSection, LoadingState, PageLayout, formatDateRange, useLoad,
   type ApiResult,
 } from '../../shared';
-import { createVenue, getVenue, MAX_BUFFER_MINUTES, updateVenue, type Venue, type VenueLayout } from './venueApi';
+import {
+  createVenue, getVenue, MAX_BUFFER_MINUTES, updateVenue, type BufferConflict, type Venue, type VenueLayout,
+} from './venueApi';
 import './venue.css';
 
 type FormValues = {
@@ -42,6 +44,13 @@ export function validateBufferMinutes(value: string, label: string): string | un
   if (!/^\d+$/.test(value)) return error;
   const minutes = Number(value);
   return Number.isSafeInteger(minutes) && minutes <= MAX_BUFFER_MINUTES ? undefined : error;
+}
+
+// "Alumni Dinner (EVT-2), 15 Jan 2027, 12:30 pm – 2:00 pm: conflicts with Charity Run"
+export function conflictLine(booking: BufferConflict): string {
+  const line = `${booking.title} (${booking.eventCode ?? 'no code'}), ${formatDateRange(booking.startsAt, booking.endsAt)}`;
+  const others = (booking.conflictingWith ?? []).map((other) => other.title);
+  return others.length > 0 ? `${line}: conflicts with ${others.join(', ')}` : line;
 }
 
 function toForm(venue: Venue): FormValues {
@@ -94,6 +103,14 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [layoutWarning, setLayoutWarning] = useState<string | null>(null);
+  // E05-S05 Scenario 4: the save went through but made bookings overlap, so
+  // the form stays put and lists them (design.md: outcome where the action was).
+  const [savedConflicts, setSavedConflicts] = useState<BufferConflict[]>([]);
+  const conflictsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (savedConflicts.length > 0) conflictsRef.current?.scrollIntoView?.({ block: 'start' });
+  }, [savedConflicts]);
 
   const setField = (key: TextFieldKey) => (value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
@@ -165,6 +182,7 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
     setSaving(true);
     setErrors({});
     setFormError(null);
+    setSavedConflicts([]);
 
     const input = {
       name: values.name.trim(),
@@ -188,6 +206,10 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
       return;
     }
 
+    if (result.data.bufferConflicts.length > 0) {
+      setSavedConflicts(result.data.bufferConflicts);
+      return;
+    }
     navigate('/venue/inventory');
   };
 
@@ -196,6 +218,22 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
   return (
     <form onSubmit={submit} noValidate className="venue-form card" aria-label={mode === 'create' ? 'Add venue' : 'Edit venue'}>
       {formError ? <Alert tone="error">{formError}</Alert> : null}
+      {savedConflicts.length > 0 ? (
+        <div ref={conflictsRef}>
+          <Alert
+            tone="warning" title="Changes saved, and some bookings now conflict"
+            action={<ButtonLink to="/venue/inventory">Back to venue inventory</ButtonLink>}
+          >
+            With the new setup and turnaround time, these bookings overlap another booking at this venue.
+            They keep their status, the calendar marks them for review, and their assigned Coordinators have been notified.
+            <ul className="venue-blocking" aria-label="Bookings that now conflict">
+              {savedConflicts.map((booking) => (
+                <li key={`${booking.eventCode ?? 'no-code'}-${booking.startsAt}`}>{conflictLine(booking)}</li>
+              ))}
+            </ul>
+          </Alert>
+        </div>
+      ) : null}
 
       <FormSection title="Basic details">
         <TextField label="Venue name" value={values.name} onChange={setField('name')} error={fieldError('name')} wide />
