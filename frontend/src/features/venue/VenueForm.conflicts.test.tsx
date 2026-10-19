@@ -1,7 +1,7 @@
 // E05-S05 Scenario 4 (TC_E05S05_03): a buffer change that makes bookings
 // overlap is saved, and the form lists the conflicts instead of leaving.
 import { StrictMode } from 'react';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { VenueInventory } from './Venue';
@@ -23,9 +23,9 @@ const later: BufferConflict = {
   conflictingWith: [{ eventId: 'event-101', title: 'Client A Planning Event' }],
 };
 
-const scrollIntoView = vi.fn();
-beforeEach(() => { Element.prototype.scrollIntoView = scrollIntoView; });
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); scrollIntoView.mockReset(); });
+const scrollTo = vi.fn();
+beforeEach(() => { window.scrollTo = scrollTo as unknown as typeof window.scrollTo; });
+afterEach(() => { cleanup(); vi.unstubAllGlobals(); scrollTo.mockReset(); });
 
 // Each POST takes the next reply's bufferConflicts value (undefined leaves the
 // field out, as an older server would).
@@ -74,7 +74,7 @@ test('TC_E05S05_03: a save that creates a conflict stays on the form and lists t
   ]);
   expect(within(alert).getByRole('link', { name: 'Back to venue inventory' })).toHaveAttribute('href', '/venue/inventory');
   expect(screen.queryByRole('heading', { name: 'Venue inventory' })).not.toBeInTheDocument();
-  expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+  await waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }));
 });
 
 test('TC_E05S05_03: a chain of conflicts lists every later booking, with or without an event code, and each booking it clashes with', async () => {
@@ -123,7 +123,7 @@ test('TC_E05S05_03: a reply without a conflict list is treated as no conflicts',
   await saveTurnaround('45');
 
   expect(await screen.findByRole('heading', { name: 'Venue inventory' })).toBeInTheDocument();
-  expect(scrollIntoView).not.toHaveBeenCalled();
+  expect(scrollTo).not.toHaveBeenCalled();
 });
 
 test('TC_E05S05_03: a conflict line without an event code or partners still reads plainly', () => {

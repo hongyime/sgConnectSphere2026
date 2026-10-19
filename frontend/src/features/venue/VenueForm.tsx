@@ -1,6 +1,6 @@
 // E05-S01 / E05-S02 / E05-S05 add and edit venue form for Venue Staff,
 // on the shared blocks (ADR-017).
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert, Button, ButtonLink, ErrorState, FormActions, FormField, FormSection, LoadingState, PageLayout, formatDateRange, useLoad,
@@ -106,10 +106,10 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
   // E05-S05 Scenario 4: the save went through but made bookings overlap, so
   // the form stays put and lists them (design.md: outcome where the action was).
   const [savedConflicts, setSavedConflicts] = useState<BufferConflict[]>([]);
-  const conflictsRef = useRef<HTMLDivElement>(null);
 
+  // Back to the top of the page, so the sticky header can't cover the Alert.
   useEffect(() => {
-    if (savedConflicts.length > 0) conflictsRef.current?.scrollIntoView?.({ block: 'start' });
+    if (savedConflicts.length > 0) window.scrollTo({ top: 0 });
   }, [savedConflicts]);
 
   const setField = (key: TextFieldKey) => (value: string) => {
@@ -219,20 +219,18 @@ function VenueFormBody({ mode, venueId, initial }: { mode: 'create' | 'edit'; ve
     <form onSubmit={submit} noValidate className="venue-form card" aria-label={mode === 'create' ? 'Add venue' : 'Edit venue'}>
       {formError ? <Alert tone="error">{formError}</Alert> : null}
       {savedConflicts.length > 0 ? (
-        <div ref={conflictsRef}>
-          <Alert
-            tone="warning" title="Changes saved, and some bookings now conflict"
-            action={<ButtonLink to="/venue/inventory">Back to venue inventory</ButtonLink>}
-          >
-            With the new setup and turnaround time, these bookings overlap another booking at this venue.
-            They keep their status, the calendar marks them for review, and their assigned Coordinators have been notified.
-            <ul className="venue-blocking" aria-label="Bookings that now conflict">
-              {savedConflicts.map((booking) => (
-                <li key={`${booking.eventCode ?? 'no-code'}-${booking.startsAt}`}>{conflictLine(booking)}</li>
-              ))}
-            </ul>
-          </Alert>
-        </div>
+        <Alert
+          tone="warning" title="Changes saved, and some bookings now conflict"
+          action={<ButtonLink to="/venue/inventory">Back to venue inventory</ButtonLink>}
+        >
+          With the new setup and turnaround time, these bookings overlap another booking at this venue.
+          They keep their status, the calendar marks them for review, and their assigned Coordinators have been notified.
+          <ul className="venue-blocking" aria-label="Bookings that now conflict">
+            {savedConflicts.map((booking) => (
+              <li key={`${booking.eventCode ?? 'no-code'}-${booking.startsAt}`}>{conflictLine(booking)}</li>
+            ))}
+          </ul>
+        </Alert>
       ) : null}
 
       <FormSection title="Basic details">
