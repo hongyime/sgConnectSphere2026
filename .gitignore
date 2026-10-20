@@ -69,3 +69,5 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/e08-s05-manual-evidence.html
