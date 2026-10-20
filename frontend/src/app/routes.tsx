@@ -1,3 +1,4 @@
+import { EventCompletion } from '../features/events/EventCompletion';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
@@ -165,6 +166,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/events/:eventCode/plan', <PlanningWorkspace />, 'mock', 'E07-S02'),
   page('/coordinator/events/:eventCode/readiness', <EventReadiness />, 'live', 'E08-S03'),
   page('/coordinator/events/:eventCode/confirm', <ConfirmRedirect />, 'redirect', 'E08-S03'),
+  page('/coordinator/events/:eventCode/complete', <EventCompletion />, 'live', 'E08-S05'),
   page('/coordinator/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),

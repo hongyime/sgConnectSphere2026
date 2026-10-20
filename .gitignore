@@ -69,3 +69,7 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/e08-completion-review.html
+!artifacts/e08-completion-automated-desktop.png
+!artifacts/e08-completion-automated-phone.png
