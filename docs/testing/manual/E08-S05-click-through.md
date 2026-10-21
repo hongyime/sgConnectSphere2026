@@ -28,11 +28,10 @@ link to **Event completion** for Confirmed/Completed events.
    Click **Mark complete…**, then **Go back**; verify Confirmed remains. Reopen
    and click **Mark complete**. Capture Completed and success text as
    `TC_E08S05_02-1.png`; reload and capture persistence as `TC_E08S05_02-2.png`.
-3. **TC_E08S05_05**: on that page capture the Activity log's Confirmed → Completed
-   row, Coordinator A and timestamp as `TC_E08S05_05-1.png`. Current live Activity
-   log access is on the assigned Coordinator page. The canonical example asks
-   for System Administrator; its separate admin screen is still a mock. State
-   this role substitution in Remarks; do not claim admin UI was tested.
+3. **TC_E08S05_05**: as the Coordinator assigned to MANUAL, open the event
+   Activity log and capture its Confirmed → Completed row, Coordinator A and
+   timestamp as `TC_E08S05_05-1.png`. This checks the event-log reader permitted
+   by E14-S02; no separate administrator Activity Log screen is in scope.
 4. **TC_E08S05_01**: open AUTO and capture Confirmed and its passed end time as
    `TC_E08S05_01-1.png`. An authorized local tester triggers the existing internal
    maintenance endpoint `/api/cron/outbox-relay?task=completion` with the configured

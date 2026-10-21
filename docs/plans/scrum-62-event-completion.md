@@ -71,10 +71,13 @@ and authenticated browser tests. This is an explicit exception to a claim of
 
 Use [the human guide](../testing/manual/E08-S05-click-through.md), take original
 screenshots and create a new T-65 record; none is prefilled PASS. The canonical
-TC05 example asks for System Administrator. This branch uses the existing live
-assigned-Coordinator Activity log; the administrator screen is still a mock.
-Record that role substitution and obtain reviewer acceptance; do not claim the
-admin page was tested or silently change the canonical case.
+PO decision (21 October): TC_E08S05_05 uses the assigned Event Coordinator as
+its reader, aligning the case with E14-S02, which permits an Event Coordinator
+to read the event Activity log. The earlier System Administrator test step was
+not an E08-S05 requirement; no separate administrator Activity Log screen is
+in scope or claimed as tested. The #325 manual run used the assigned Coordinator
+on the manual-completion event, matching the corrected case. Keep missing
+TC01/TC04/TC06 observations open.
 
 Before Done: human acceptance evidence, independent current-head code/test
 review, required CI, authorized migration-0022 application verification and
