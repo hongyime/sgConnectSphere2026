@@ -863,6 +863,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a seeded request with no saved assessment reports no advisory result
 - only Venue Staff can decide; a refusal is audited and leaves the request pending
+- task12: stale Venue Staff identity cannot decide after database account revocation
 - a decided request cannot be decided again
 - two Venue Staff deciding the same request at once: one decision wins, the other is refused
 - the first approved booking becomes the primary venue; a second Confirmed venue does not
@@ -876,6 +877,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/venueBookingDecisions.test.ts`
 
+- decision rechecks the current staff account and rolls back stale or busy authority
 - validateDecision accepts an approval as is
 - validateDecision needs an object and a known decision
 - validateDecision keeps the reason within the limit, at the limit and just above
