@@ -2,6 +2,15 @@
 
 Record the 18 October decisions and planning direction in one reviewable branch: provide a decision index, clarify story-level design ownership, reserve unique BDR IDs, and show the gap between the current Sprint 4 allocation and the user's no-Sprint-5 Release 1 completion target.
 
+## Continuation — 21 October 2026
+
+- PR #323 merged first through the protected merge queue at `56d7117`. Integrated that current `main` into this branch and resolved the `docs/source-of-truth.md` workbook pointer to the new combined export.
+- Regenerated `docs/CONNECTSPHERE BACKLOGS CAA 211026.xlsx` from the combined backlog Markdown. The exporter reports 64 Release 1 stories and 84 product stories; the 8-point E10-S01 estimate from #323 and this PR's planning changes are both included.
+- The BDR collision is resolved in this branch: #293 retains T-97; this PR's two 18 October entries use T-98/T-99, and `G-change-log.md` preserves the earlier draft IDs. No decision wording or date was changed in that renumbering.
+- PR #316 remains open, mergeable, and awaiting human review. The team review/approval gate is not cleared. The merge of #323 first means any later merge/rebase after additional backlog edits must regenerate this derivative again from the combined Markdown.
+- `python scripts/check.py` exited 1 on Windows with the four known `test_worktree_hygiene` path/unlink failures. Secret scanning, repository hooks, `.env.template`, and backlog roundtrip/export tests passed; 445 existing test-run records validated. The observed tooling result is recorded in a new 21 October T-65 record.
+- Main integration and workbook generation are local; no commit or push for this continuation has occurred yet. No Jira fields, story estimates, sprint allocations, or production state were changed.
+
 ## Done so far
 
 - PR #316 branch `docs/sprint4-planning-outcome-20261018` contains the decision index and repository decision 0016. It is open and ready for human review; the branch has not been merged.
@@ -32,8 +41,8 @@ Record the 18 October decisions and planning direction in one reviewable branch:
 ## Verification
 
 - Before the first commit, `.venv-tools/bin/python scripts/export_backlog_xlsx.py`, `.venv-tools/bin/python scripts/export_testcases_xlsx.py` and `.venv-tools/bin/python scripts/export_adr_bdr_docx.py` passed on the 18 October content.
-- `.venv-tools/bin/python scripts/check.py` passed on the original PR #316 head; its T-65 record is `docs/testing/runs/20261018-221242-bryanseah234-tooling.md`. It validated 418 run records and 158 tooling tests and warned that secondary worktrees are present.
-- After the follow-up edits, `.venv-tools/bin/python scripts/check.py` passed three times: once with 418 prior run records and twice with 419 records after adding this session file. All three runs passed 158 repository tooling tests and reported existing secondary worktrees as a warning. The outcomes are recorded in `docs/testing/runs/20261018-223029-bryanseah234-tooling.md` at HEAD `04f92bc`.
+- `.venv-tools/bin/python scripts/check.py` passed on the original PR #316 head; its T-65 record is the tooling run dated 18 October at 22:12. It validated 418 run records and 158 tooling tests and warned that secondary worktrees are present.
+- After the follow-up edits, `.venv-tools/bin/python scripts/check.py` passed three times: once with 418 prior run records and twice with 419 records after adding this session file. All three runs passed 158 repository tooling tests and reported existing secondary worktrees as a warning. The outcomes are recorded in the 18 October 22:30 tooling run at HEAD `04f92bc`.
 - No application test suite, database suite, Supabase write, migration or deployment was performed for this documentation task.
 
 ## 19 October follow-up — Jira allocation and E09 migration request
@@ -70,17 +79,17 @@ Record the 18 October decisions and planning direction in one reviewable branch:
 - `python scripts/check.py` passed after the plan/handoff changes at HEAD
   `ee09735`: 158 repository tooling tests, 419 existing T-65 records validated,
   and `.env.template` generation matched. It warned about pre-existing
-  secondary worktrees. Session record: `docs/testing/runs/20261019-093350-bryanseah234-tooling.md`.
+  secondary worktrees. Session record: the 19 October 09:33 T-65 tooling run.
 - After adding the initial decision trace guide and first session record,
   `python scripts/check.py` passed again at HEAD `ee09735`: 158 tooling tests,
   420 existing run records validated, and `.env.template` matched; the same
-  secondary-worktree warning remained. Session record:
-  `docs/testing/runs/20261019-093541-bryanseah234-tooling.md`.
+  secondary-worktree warning remained. Session record: the 19 October 09:35
+  T-65 tooling run.
 - After adding the Week 9 C/T/O/G crosswalk, `python scripts/check.py` passed
   locally at working-tree HEAD `e863508`: 158 tooling tests, 421 existing run
   records validated, and `.env.template` matched. It reported the same
-  advisory for pre-existing secondary worktrees. Session record:
-  `docs/testing/runs/20261019-094154-bryanseah234-tooling.md`; GitHub Actions
-  will validate that new record with the pushed commit.
+  advisory for pre-existing secondary worktrees. Session record: the 19 October
+  09:41 T-65 tooling run; GitHub Actions validated that record with the pushed
+  commit.
 - Local root checkout remains on `feature/SCRUM-47-e06s03-fix-from-299`; its
   pre-existing untracked files were not changed. No database operation was run.

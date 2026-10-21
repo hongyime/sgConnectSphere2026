@@ -325,9 +325,10 @@ classDiagram
 
     class RegistrationStatus {
         <<enumeration>>
-        pending
         registered
         waitlisted
+        pending
+        rejected
         withdrawn
     }
 
