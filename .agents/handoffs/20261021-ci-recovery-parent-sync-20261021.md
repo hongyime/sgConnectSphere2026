@@ -59,3 +59,11 @@ secret scanning; the longer retry completed. Publish as draft to main. Independe
 human code/test review, current-head checks and merge are still required. Policy
 and #329 remain prospective; no generic allowance clears #298/TC_E06S04_07 or
 production authorization gates. No application acceptance is claimed.
+
+Published draft: https://github.com/hongyime/sgConnectSphere2026/pull/333.
+Publication metadata correction: the new `20261021-215417-bryanseah234-tooling.md`
+session incorrectly labels `test_case_version: 161026`. The newest dated workbook
+actually present was CAA **171026**. Use 171026 for that run's catalogue provenance.
+The session is preserved as written, not silently edited; its observed commands,
+base, outcomes and mocked HTTP boundary are unchanged. This correction is not a
+new run. Human review remains required; no merge or acceptance occurred.
