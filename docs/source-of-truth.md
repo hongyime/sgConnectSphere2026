@@ -8,12 +8,13 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 201026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 211026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 161026.docx` |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 181026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 181026.docx` |
+| Decision index | `docs/decisions/README.md` | Links to the authoritative records above; does not duplicate their text |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 161026.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 181026.xlsx` |
 | Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Shared venue booking interface | `docs/contracts/venue-bookings.md` | Shared schema, API, lifecycle and migration ownership for E06-S03/S04/S05/S06 |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
@@ -130,7 +131,10 @@ disagree, the difference is raised in `design.md` and resolved in review
 (ADR-017). Figma boards are proposals derived from these sources. Link them to
 stories, batch related screens, preserve existing boards, and pair
 desktop/mobile variants where appropriate. Keep role-specific flows
-identifiable.
+identifiable. Each story owner owns the design and implementation for that
+story, including selecting and linking its Figma frames. Amareet Kaur Madas
+coordinates cross-story Figma organization and consistency; this does not make
+her the sole designer for every story (repository decision 0016).
 
 Each teammate uses their own Jira account or token. Keep real credentials,
 personal configuration, raw private API responses and machine-specific paths out
@@ -140,3 +144,5 @@ flag contradictions with a source reference rather than silently deleting them.
 The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and test-case exports and refreshes the legacy coverage input from that generated test-case workbook. Completed E07-S01/SCRUM-51 is retained; Jira creation and planning for the new canonical follow-up happen after merge.
 
 The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
+
+The 18 October 2026 T-98/T-99 decision update regenerated the CAA 181026 backlog and test-case workbooks and the ADR/BDR Word exports. No test-case IDs changed, so the legacy coverage input and generated coverage inventory did not need refreshing.

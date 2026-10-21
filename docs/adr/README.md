@@ -1,5 +1,8 @@
 # Architecture Decision Records
 
+See the [ConnectSphere decision register](../decisions/README.md) for the
+single entry point to BDR, ADR and repository decision records.
+
 ConnectSphere Event Planning and Venue Booking System  ·  IS212 (AY 2026/27 T1)
 
 Version 8  ·  13 October 2026
@@ -16,7 +19,7 @@ arrangements, automatic Safety Review, per-hold configuration, block history,
 registration capacity and multiple roles. The retired ADR-004/005 records remain
 historical and point to ADR-018. Schema, contracts, C4/module views, flows and
 the wireframe refinement plan now reflect the accepted decisions and keep
-O-50/O-51 explicit.
+T-98/T-99 close O-50/O-51.
 
 Version 6 added ADR-017, recording that each story's owner builds its frontend as well as its backend, on a shared frontend skeleton and design language, following instructor feedback at the end of Sprint 2.
 

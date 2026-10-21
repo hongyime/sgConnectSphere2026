@@ -121,10 +121,10 @@ wording. The owning story and API implementation PR must finalize endpoint detai
 
 | Interface | Role | Week 9 requirement | Trace |
 |---|---|---|---|
-| Event create/update and `GET /api/events?id=<id>` | Organiser, Coordinator | Preserve the Event's overall expected-attendance planning total and represent one or more child Sessions, each with separate date/time, expected attendance, layout, venue/accessibility requirements and equipment requirements. Only Session attendance is the fallback for that Session's booking suitability. Event lifecycle, registration window and technical support remain Event-level. Event dates more than two years ahead are rejected; no fixed minimum lead time is imposed. | E02-S01/S02/S05/S07, E04-S02; T-79/T-87; O-51 |
+| Event create/update and `GET /api/events?id=<id>` | Organiser, Coordinator | Preserve the Event's overall expected-attendance planning total and represent one or more child Sessions, each with separate date/time, expected attendance, layout, venue/accessibility requirements and equipment requirements. Only Session attendance is the fallback for that Session's booking suitability. Event lifecycle, registration window and technical support remain Event-level. Event dates more than two years ahead are rejected; no fixed minimum lead time is imposed. | E02-S01/S02/S05/S07, E04-S02; T-79/T-87/T-99 |
 | `POST /api/venues` `action: request_booking` / `hold` | Assigned Coordinator | Include and validate `session_id`; booking period lies within that Session. Per-booking headcount falls back to Session expected attendance. Multiple bookings for an Event, including repeat bookings of one venue across separate Sessions, remain supported. | E06; C-107/T-79 |
 | Equipment request/reservation endpoints | Coordinator, Technical Support Staff | Include Session ownership on each request/reservation; available periods use the linked Session. Keep technical-support assignment Event-level. | E07-S08; C-107/T-79 |
-| `GET /api/attendee/events` and registration submission | Attendee | Show Session choices and accept one Event registration selecting one or more Sessions. Enforce each selected Session's confirmed layout capacity and combined Event capacity derived from confirmed Session layouts. A submission over either limit becomes Pending for Organiser decision and is not an approved seat. Keep the Event-level waitlist for combined Event capacity; no per-Session waitlist is assumed while O-50 is open. | E04-S02, E09-S01/S02/S03/S05; T-85; O-50 |
+| `GET /api/attendee/events` and registration submission | Attendee | Show Session choices and accept one Event registration selecting one or more Sessions. Enforce each selected Session's confirmed layout capacity and combined Event capacity derived from confirmed Session layouts. A submission over either limit becomes Pending for Organiser decision and is not an approved seat. Keep the Event-level waitlist for combined Event capacity; do not create a per-Session waitlist (T-98). | E04-S02, E09-S01/S02/S03/S05; T-85; T-98 |
 | Organiser registration review | Organiser | List Pending over-capacity registrations and recheck both capacity limits when approving. Reject approval if either limit would be exceeded. Preserve one active registration per account/Event; withdrawing releases the attendee's places in the Event and all selected Sessions. | E09-S01/S02/S05; T-85 |
 | Automatic readiness transition | System | On confirmation of all required Session venue/equipment arrangements and Event-level technical support, create the safety review and move Planning to Safety Review. Do not expose a Coordinator `safety=submit` action. | E08-S03; C-132/T-82 |
 | Safety decision | Safety Officer | Persist overall decision and comments, plus the team-added checklist for each safety factor. Approval moves to Confirmed; changes/rejection return to Planning. | E08-S06; C-134/T-82 |
@@ -133,11 +133,10 @@ wording. The owning story and API implementation PR must finalize endpoint detai
 | Venue block and hold lifecycle | Venue Staff, Coordinator | Permit open-ended blocks; retain edit/lift history; notify the affected Coordinator on lift. Configure each hold expiry/warning without a default; require a reason for at most two extensions. | E05-S06, E06-S05; T-80/T-84/T-91 |
 | Venue-to-staff routing | Setup only | Store venue-to-staff assignment for notification routing; add no roster-management screen to Release 1. | T-89; O-49 |
 
-O-50 (Session waitlist) and O-51 (exact copy-forward scope) remain team
-assumptions. Keep them visible in API copy, validation and design until reviewed;
-do not label either as a customer requirement. The Session copy route must copy
-only the scope accepted under O-51 and must not copy transactional records by
-default.
+The team closed O-50 and O-51 as T-98 and T-99. API copy and validation must
+follow those team decisions without labeling them as customer requirements.
+The Session copy route copies only the scope accepted under T-99 and does not
+copy transactional records.
 
 ### Out of scope here
 
