@@ -18,8 +18,8 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 
 ## Next
 
-- Obtain the required team decision and independent human review; do not merge or dispatch the workflow before the credential-rotation and Production-secret prerequisites are confirmed by an administrator.
-- After rotating the exposed Supabase database password, a repository administrator should add the replacement connection string as the `Production` environment secret `DATABASE_URL`.
+- The repository owner/PO's decision to adopt the workflow is recorded in the PR body and decision comment, satisfying the recorded-team-decision rule in `AGENTS.md`. Independent human code review remains pending; do not merge or dispatch before it is complete.
+- The owner confirms rotation and `DATABASE_URL` is configured in the GitHub `Production` environment. Its value and connectivity remain unverified; do not inspect or print the value.
 
 ## Continuation — 21 October 2026
 
@@ -43,7 +43,7 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Migration `0022_change_request_obsolete.sql` is merged through #319, but it has not been applied to production. No workflow dispatch, production connection/write, reset, seed, or deployment has been performed in this task.
 - Hardened the workflow's token permissions: the request-validation job has only `contents: read`; `deployments: write` is limited to the gated apply job. This does not change the environment review requirement or migration behavior.
 - `python scripts/check.py` on Windows at `7de3b27` ran 158 tooling tests: 154 passed and four existing `test_worktree_hygiene` path/unlink tests failed. Repository hooks, secret scan, `.env.template`, and validation of 456 prior records passed. The immutable T-65 record is in `docs/testing/runs/`.
-- The production secret value and connectivity are not independently validated. Team decision and independent human review remain required before merge or first use. A teammate with repository permission may initiate a run; an eligible different teammate must approve the Production environment gate.
+- The production secret value and connectivity are not independently validated. The owner/PO's workflow-adoption decision is recorded; independent human review remains required before merge or first use. A teammate with repository permission may initiate a run; an eligible different teammate must approve the Production environment gate.
 
 ## Security notes
 
