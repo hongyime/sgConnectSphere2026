@@ -26,8 +26,9 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Refreshed from `origin/main` at `0567f46`. The only merge conflict was `backend/package.json`; resolved the test script by retaining both main's equipment-notification test and this PR's migration-selector/guard tests. No workflow or database guard logic was changed.
 - Regenerated `docs/testing/tc-coverage.md`; it remains 201 automated, 134 scaffold, and 41 no-test cases (376 total).
 - `python scripts/check.py` exited 1 on Windows with the same four `test_worktree_hygiene` path-separator/unlink failures seen on unchanged `main`. Secret scanning, repository hooks, `.env.template`, and all 158 tooling tests except those four passed; it validated 452 existing test-run records. The observed run is recorded in the new 21 October T-65 tooling record.
+- After installing the backend workspace dependencies from the lockfile, the focused selector/guard and equipment-notification unit command passed 19/19 on merge commit `18ccdb6`; its T-65 record is in `docs/testing/runs/` dated 21 October at 16:58 Singapore time.
 - Read-only Supabase ledger inspection showed entries through `0020_released_booking_replacement_retry.sql`; `0022_change_request_obsolete.sql`, `0023_registration_review_statuses.sql`, and `0024_registration_sessions.sql` are pending. Current `main` already has the exact `migrate --only` selector, but no production migration command was run: the production credential rotation/replacement-secret status is not verified, and PR #315 remains unmerged.
-- No workflow dispatch, production write, secret access, reset, seed, or deployment was performed. The merge resolution and this handoff update are local and have not been committed or pushed yet.
+- No workflow dispatch, production write, secret access, reset, seed, or deployment was performed. The main-integration merge is committed locally as `18ccdb6`; the follow-up unit-run record and handoff update are staged for their own conventional commit and have not been pushed yet.
 
 ## Security notes
 
