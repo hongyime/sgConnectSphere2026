@@ -1,7 +1,9 @@
 import { test } from '@playwright/test';
 
-// E08 - 15 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
+// E08 - 28 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
+// TC_E08S03_03, _04 and _05 (with _08 to _10) are implemented in
+// eventReadiness.spec.ts (SCRUM-60).
 
 test.describe("E08-S03", () => {
 
@@ -47,71 +49,6 @@ test.describe("E08-S03", () => {
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Open event "Tech Conference 2026"
     // 3. Click "Confirm Event"
-    void page;
-  });
-
-  /**
-   * TC_E08S03_03
-   * AC:      E08-S03 - Scenario 3 (Partial equipment blocks confirmation)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has all events with confirmed venues, but the event's "Projector" reservation is partial (2 of 3 requested)
-   *
-   * Test data:
-   *   the event: Projector reserved 2 of 3 requested
-   *
-   * Expected result:
-   *   Confirmation is blocked; the message shows the event's outstanding quantity of 1 "Projector" unit
-   */
-  test.fixme("TC_E08S03_03 - Verify that attempting to confirm an event while a event has only a partial equipment reservation should be blocked with the outstanding quantity shown", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Click "Confirm Event"
-    void page;
-  });
-
-  /**
-   * TC_E08S03_04
-   * AC:      E08-S03 - Scenario 5 (Outstanding support assignment blocks confirmation)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   All events of "Tech Conference 2026" have confirmed venues and full equipment, but the event's technical support request has no staff assigned
-   *
-   * Test data:
-   *   the event: technical support requested, no staff assigned
-   *
-   * Expected result:
-   *   Confirmation is blocked due to the event's outstanding technical support assignment
-   */
-  test.fixme("TC_E08S03_04 - Verify that attempting to confirm an event while a event's requested technical support has no staff assigned should be blocked", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Click "Confirm Event"
-    void page;
-  });
-
-  /**
-   * TC_E08S03_05
-   * AC:      E08-S03 - Scenario 6 (Organiser sees confirmed arrangements)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Event "Charity Run" has just been confirmed, with venue Riverside Hall, date 15/01/2027, time 09:00-17:00
-   *
-   * Test data:
-   *   Confirmed venue: Riverside Hall | Date: 15/01/2027 | Time: 09:00-17:00
-   *
-   * Expected result:
-   *   The Organiser sees the confirmed venue (Riverside Hall), date (15/01/2027), time (09:00-17:00), and full arrangements for the event
-   */
-  test.fixme("TC_E08S03_05 - Verify that once an event is confirmed, the Organiser should see the confirmed venue, date, time and arrangements for every event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open the confirmed event "Charity Run"
     void page;
   });
 
@@ -340,6 +277,62 @@ test.describe("E08-S05", () => {
     // 2. Record the event status
     // 3. Set the system clock to 2026-11-02 17:00:00 +08:00 and trigger it again
     // 4. Record the event status
+    void page;
+  });
+
+});
+
+// Week 7 additions from docs/testing/cases/E08.md.
+
+test.describe("E08-S03 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S03_06 — Verify that confirming an event with several venue bookings should be blocked while any booking is still Pending or Conflicting, listing each outstanding booking by venue", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_06).
+    void page;
+  });
+
+  test.fixme("TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed venue", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S03_07).
+    void page;
+  });
+
+});
+
+test.describe("E08-S04 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S04_05).
+    void page;
+  });
+
+});
+
+test.describe("E08-S06 — Week 7 case scaffolds", () => {
+  test.fixme("TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_01).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, and log the decision with the checklist", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_02).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from being Confirmed until resubmitted and approved", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_03).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_04 — Verify that rejecting the safety arrangement should return the event to Planning with a rejection flag without cancelling it", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_04).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_05 — Verify that reject and request changes should require a reason and that no role other than Safety Officer can decide", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_05).
+    void page;
+  });
+
+  test.fixme("TC_E08S06_06 — Verify that events confirmed before the safety check existed should be untouched and that Safety Review should count as an active status for the tracker and for deactivation", async ({ page }) => {
+    // Implement from docs/testing/cases/E08.md (TC_E08S06_06).
     void page;
   });
 

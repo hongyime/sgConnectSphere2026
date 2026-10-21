@@ -43,8 +43,9 @@ status-notice inbox/outbox. A converted Pending row must not be expired by the w
 
 ## Pending checks
 
-Venue Staff email/inbox receipt and decision presentation remain SCRUM-189 and
-E06-S04 integration checks. Mark them blocked until those workflows land. The
+Venue Staff inbox receipt can be checked once SCRUM-189 (#272) is merged: a
+request for Orchid Hall reaches `venue_a`. Decision presentation remains an
+E06-S04 check; mark it blocked until that workflow lands. The
 injected-resolver database tests do not prove production assignments or actual
 email-provider receipt. Confirmation/primary selection are not part of this run.
 

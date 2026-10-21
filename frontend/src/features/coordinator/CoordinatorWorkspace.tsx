@@ -5,7 +5,7 @@
 // Coordinator.tsx still use mock data until their stories' backends land. Built on the shared blocks in src/shared (ADR-017).
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, CheckCircle2, Clock3, Gavel, Loader2, MessageCircleQuestion, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock3, Gavel, ListChecks, Loader2, MessageCircleQuestion, PencilLine, Send, UserRoundCheck, Users } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FilterChips, FormActions,
   FormField, LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, isAbort, statusLabel, useLoad,
@@ -96,7 +96,7 @@ function DashboardBody({ events, incoming }: { events: AssignedEventSummary[]; i
         <article><span>Active events</span><strong>{active.length}</strong></article>
         <article><span>Needs review</span><strong>{count('submitted', 'under_review')}</strong></article>
         <article><span>Awaiting organiser</span><strong>{count('awaiting_clarification')}</strong></article>
-        <article><span>Approved &amp; planning</span><strong>{count('approved', 'planning', 'confirmed')}</strong></article>
+        <article><span>Approved &amp; planning</span><strong>{count('approved', 'planning', 'safety_review', 'confirmed')}</strong></article>
       </section>
       {active.length === 0 ? (
         <EmptyState title="No events assigned to you yet">
@@ -121,7 +121,7 @@ const queueFilters = [
   { id: 'all', label: 'All', statuses: null },
   { id: 'review', label: 'Needs review', statuses: ['submitted', 'under_review'] },
   { id: 'clarification', label: 'Awaiting organiser', statuses: ['awaiting_clarification'] },
-  { id: 'planning', label: 'Approved & planning', statuses: ['approved', 'planning', 'confirmed'] },
+  { id: 'planning', label: 'Approved & planning', statuses: ['approved', 'planning', 'safety_review', 'confirmed'] },
   { id: 'closed', label: 'Closed', statuses: ['rejected', 'cancelled', 'completed'] },
 ] as const;
 type QueueFilter = (typeof queueFilters)[number]['id'];
@@ -197,7 +197,9 @@ export function RequestDetail() {
 
   return (
     <PageLayout
-      eyebrow={event?.event_code ?? eventCode}
+      // E08-S03 fix (b): a request with no event code yet is not named by
+      // its id (design.md section 8.1), as on the decision page.
+      eyebrow={event ? (event.event_code ?? 'Request') : 'Coordinator'}
       title={event?.title ?? (result.state === 'error' ? 'Event unavailable' : 'Loading event…')}
       actions={event ? (
         <>
@@ -208,7 +210,11 @@ export function RequestDetail() {
               <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
             </>
           ) : null}
-          {['approved','planning','confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          {['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          {/* E08-S03 (SCRUM-60): navigation, so no ellipsis. */}
+          {READINESS_VISIBLE.includes(event.status) ? (
+            <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
+          ) : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}
@@ -245,6 +251,9 @@ export function RequestDetail() {
     </PageLayout>
   );
 }
+
+// E08-S03 (SCRUM-60): readiness is checked in Planning and followed in Safety Review.
+const READINESS_VISIBLE = ['planning', 'safety_review'];
 
 // E03-S07 (SCRUM-37) Scenarios 2 and 5: only the assigned Coordinator can
 // open this page (the read refuses anyone else), and the server accepts

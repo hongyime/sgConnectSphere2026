@@ -61,12 +61,14 @@ and retry behaviour. The hook never calls Redis or the email provider.
 
 `resolveVenueStaff(client, venueIds)` is an optional **trusted server adapter** for
 the explicit venue-to-staff relationship. It is not a request-body list. The
-Week 9 target stores venue-to-staff assignments as setup data (T-89), but this
-implementation snapshot predates that model: until persistence and the resolver
-are implemented, capture returns unresolved venue IDs and affected hooks return
-them with a structured dependency warning. Known recipients still receive
-their notifications. There is no `decided_by` or all-Venue-Staff fallback.
-Tests inject an explicit assignment resolver and also verify the unresolved path.
+assignments are setup data (T-89) in `venue_staff_assignments` (SCRUM-189,
+migration 0018). When no resolver is injected, `captureEventAudience` uses the
+default `resolveAssignedVenueStaff`, which reads the assignments current at
+that moment. A venue with no current assignment to an active Venue Staff
+account is returned in `unresolvedVenueIds`, and affected hooks report it with
+a structured dependency warning. Known recipients still receive their
+notifications. There is no `decided_by` or all-Venue-Staff fallback. Tests
+cover the default resolver, an injected resolver and the unresolved path.
 
 ## Coordinator integration and merge coordination
 
@@ -101,11 +103,16 @@ PR checks. Do not copy the unmerged foundation into every unrelated branch.
 After each main merge, refresh affected branches and regenerate their derived
 files. Jira remains unchanged until the approved backlog change merges.
 
-## Remaining tasks and owners
+## Historical remaining tasks and owners
+
+For the current source/Jira snapshot and actionable follow-ups, use the
+[17 October integration audit](../testing/e11-s01-integration-audit-20261017.md).
+The following table is retained as its original planning snapshot; in particular,
+equipment/support and booking submission callers are no longer all absent.
 
 | Task | Owning work | Completion evidence |
 | --- | --- | --- |
-| Persist venue-to-staff assignments as setup data and provide the trusted resolver | Venue management / E05 and E06 owners | Target relationship and setup source are defined, a roster screen is excluded (T-89), and real recipient resolution covers old/new venues; maintenance permissions remain unspecified |
+| Persist venue-to-staff assignments as setup data and provide the trusted resolver | SCRUM-189 (#271 table, #272 default resolver) | Table, seed assignments and default resolver with real PostgreSQL tests; a roster screen is excluded (T-89). Loading the real production assignments and who maintains them remain open |
 | Call booking-request and booking-decision hooks from real transactions | E06-S03 / E06-S04 | Pending/confirmed/rejected/released tests with correct staff and Coordinator |
 | Call equipment/support hooks with explicit affected-role flags | E07 owners | Reservation, shortfall and availability changes notify only affected responsibilities |
 | Integrate change approval, publication updates, reconfirmation and cancellation release flows | E08 / E10 owners | Effective public changes and cancellation retain correct before/after recipients |
@@ -184,6 +191,7 @@ and T-89 now govern future work:
   routing. Release 1 has no roster-management screen and must not broadcast to
   every Venue Staff account. The target relation is `VENUE_STAFF_ASSIGNMENTS`;
   persistence and `resolveVenueStaff` integration remain implementation work.
+  SCRUM-189 implements both (#271, #272); see "Venue Staff assignments" below.
 - T-89 does not specify an interface or permission model for maintaining that
   setup data. Do not infer a roster screen or new access policy; decide the
   setup mechanism with the owning E05/E06 work before implementation.
@@ -194,3 +202,28 @@ and T-89 now govern future work:
 These decisions update the target and follow-up work only. They do not claim
 that existing notification code implements the new assignment model or remove
 historical records and test evidence.
+
+## Venue Staff assignments (SCRUM-189, 2026-10-15)
+
+`venue_staff_assignments(venue_id, staff_id, active_from, active_until)` holds
+which Venue Staff look after each venue (migration 0018, #271). It is setup
+data with no Release 1 screen (T-89). The seed assigns `venue_a` to Orchid
+Hall, Lotus Room and Maple Room, and `venue_b` to Jasmine Hall and Cedar
+Auditorium. #272 makes `resolveAssignedVenueStaff` the default resolver, so
+booking-request notices (E06-S03) reach the requested venue's assigned staff
+without an injected resolver. An ended assignment, or one to an inactive or
+non-Venue Staff account, notifies no one and leaves the venue unresolved.
+Production needs the real assignment rows after 0018 is applied; who supplies
+and maintains them is still open with the PO and deploy owner.
+
+## Equipment result routing follow-up (18 October 2026)
+
+The E11 follow-up uses the equipment owner's recipient clarification supplied
+by Ji Ning: notify the event's assigned Technical Staff and the relevant
+venue's assigned staff, excluding the actor/inactive users. Capture recipients
+before release, not all historical assignees. Existing Coordinator notices and
+E07 no-notice exceptions are preserved. Full/partial reservations, quantity
+changes, release and selected operational shortfalls reuse the transactional
+writer; preferences remain separate under E01-S05. See the
+[implementation boundaries and evidence](../testing/e11-s01-integration-audit-20261017.md#equipment-routing-implementation--18-october).
+This is unfinished E11 integration, not a reopening of Done E07 stories.

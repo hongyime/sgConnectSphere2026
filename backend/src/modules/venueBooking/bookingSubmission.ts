@@ -144,7 +144,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         VALUES($1,$2,'event',$3,$3,$4,'venue_booking',$5,$6)`, [auditId,user.id,event.id,`Venue booking requested for ${candidate.name}`,hold ? 'tentative' : null,id]);
       const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
       // Reuse the shared audience resolver, scoped to the requested venue.
-      // #272 supplies its default resolveAssignedVenueStaff lookup after merge.
+      // With no injected resolver it reads venue_staff_assignments (SCRUM-189).
       const requestedAudience = await captureEventAudience(client, event.id, options, [input!.venue_id]);
       const notice = await notifyEventChange(client, { changeId: auditId, occurredAt, actorId: user.id, before: requestedAudience, after: requestedAudience, change: { kind: 'booking_requested' } });
       return { status: hold ? 200 : 201, body: { booking: await returnedBooking(client, id), event_status: 'planning', suitability, unresolved_venue_ids: notice.unresolvedVenueIds } };

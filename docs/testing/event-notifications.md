@@ -1,5 +1,11 @@
 # E11-S01 notification implementation and verification
 
+**Current audit:** [17 October integration/evidence matrix](e11-s01-integration-audit-20261017.md)
+supersedes the historical pending-caller summaries below. Booking submission,
+equipment and support callers are now present on main; staff decisions and
+withdrawal remain open-PR integrations. Production roster and actual-mailbox
+verification remain separate follow-ups. No fresh execution is claimed by the audit.
+
 Story: SCRUM-75. Rules: BDR T-64 (2026-09-27), the approved matrix in
 `docs/backlog/release-1/E11-notifications-reminders.md`, and
 `docs/plans/e11-notification-hooks.md`. This story remains partially integrated;
@@ -27,8 +33,8 @@ do not mark it Done merely because the inbox and reusable hooks pass tests.
 
 | Acceptance criterion | Current status | Remaining dependency |
 | --- | --- | --- |
-| Status change / booking decision notified | Existing status flows integrated; booking hooks tested, callers pending | E06-S03 SCRUM-47 and E06-S04 SCRUM-48 |
-| All affected parties notified for arrangements | Current date/time edit and shared old/new audience hooks tested; not complete for every workflow | Explicit Venue Staff assignment relationship: E05/E06 owners, no dedicated ticket identified; E07-S04..S07 SCRUM-54..57; E08-S03..S05 SCRUM-60..62; E10-S01..S05 SCRUM-70..74 |
+| Status change / booking decision notified | Status flows and real booking submission are integrated; staff decisions and Pending withdrawal are open-PR work | Review/integrate #298 and #299; do not confuse their isolated evidence with root CI |
+| All affected parties notified for arrangements | Date/time hooks and E07 operational callers exist; exact affected-role coverage still needs case-by-case review | SCRUM-195 production roster; E08/E10 owning workflows; see current audit rather than treating Done E07 stories as absent |
 | Unaffected users not notified | Recipient selection enforced/tested for integrated flows; future callers must use the same hook | Same workflow integrations above; PR #141 assignment integration is now on main |
 | Delivered in-app and by email | In-app, durable email generation, provider success/failure handling implemented/tested | Authorized deployed relay/worker configuration and actual mailbox delivery verification remain deployment-owner work |
 | Newest-first list and unread distinction | Fully implemented and verified | None |
@@ -202,3 +208,15 @@ also passed. Provider tests do not prove deployed mailbox delivery.
 
 Publication refresh: main f0c4264 now includes font PR #182. The open-PR
 snapshot above predates that merge; only screen-inventory PR #183 remains open.
+
+## Venue Staff assignments (SCRUM-189, 2026-10-15)
+
+The dependency table above records 2 October. Since then SCRUM-189 adds the
+`venue_staff_assignments` table (#271, migration 0018) and the default
+`resolveAssignedVenueStaff` resolver (#272). PostgreSQL tests in
+`backend/tests/eventNotifications.integration.test.ts` prove that only current
+assignments to active Venue Staff count, and
+`backend/tests/bookingSubmission.integration.test.ts` proves that a booking
+request with no injected resolver notifies only the requested venue's staff
+and reports an unassigned venue as unresolved. Production still needs the
+real assignment rows once 0018 is applied.

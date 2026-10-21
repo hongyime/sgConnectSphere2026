@@ -13,6 +13,14 @@ first, then update/promote the matching runnable tests. Regenerate dated XLSX
 exports with `scripts/export_testcases_xlsx.py`. The coverage auditor still reads
 the legacy undated workbook; catalogue changes must reconcile that input too.
 
+## Sprint Number display
+
+In dated workbook exports, an empty, missing, or whitespace-only `Sprint`
+metadata field is displayed as `Unassigned`. This is a presentation value only:
+leave the canonical case metadata blank until a sprint is assigned, and do not
+treat the label as a planning decision. Assigned sprint values retain their
+existing numeric or text representation.
+
 Original scaffold snapshot (historical, not current execution results):
 
 - 11 Playwright spec files.
@@ -57,6 +65,13 @@ logs unless someone cites one. See
 convention, scope enum, and agent instructions. Use
 [`docs/testing/runs/TEMPLATE.md`](runs/TEMPLATE.md) as the copy-paste
 starting point.
+
+For manual records dated from **2026-10-07T15:09:10+08:00** onward, every
+results row must include an observed result in `Remarks`; blank, whitespace-only,
+and outcome-only values are rejected. The detailed rule uses the timezone-aware
+frontmatter timestamp and is documented in the
+[execution-record guide](runs/README.md#manual-remarks-validation). Automated
+records and earlier manual records keep their existing validation.
 
 A future `scripts/export_test_runs_xlsx.py` will export all session records
 to an "Execution Records" sheet in the course deliverable workbook, following

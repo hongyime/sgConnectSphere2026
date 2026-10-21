@@ -8,11 +8,11 @@ import type { ActivityEntry } from '../events/ActivityLog';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
-  | 'approved' | 'planning' | 'confirmed' | 'cancelled' | 'completed';
+  | 'approved' | 'planning' | 'safety_review' | 'confirmed' | 'cancelled' | 'completed';
 
 // BDR T-52: only these statuses can be reassigned (ACTIVE_EVENT_STATUSES).
 export const ACTIVE_STATUSES: readonly EventStatus[] = [
-  'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'confirmed',
+  'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'safety_review', 'confirmed',
 ];
 
 export type AssignedEventSummary = {

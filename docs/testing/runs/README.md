@@ -129,16 +129,34 @@ test title in code. `Outcome` must be one of the four values below.
 
 For a manual run (`run_type: manual`), write the **actual result** in
 `Remarks` on every row, including rows that pass: what you saw on screen, the
-status it changed to, who was notified, or the exact message shown. "PASS"
-alone records the verdict but not the evidence. The course test-case template
-(IS212 Week 4, slide 22) keeps "Actual Result" separate from "Pass/Fail";
-`Remarks` carries it here so the column order the exporter relies on stays
-unchanged. Automated runs may leave `Remarks` blank, because the command and
-its output are the evidence.
+status it changed to, who was notified, or the exact message shown. The
+validator's effective timestamp and exact rule are documented below. The course
+test-case template (IS212 Week 4, slide 22) keeps "Actual Result" separate from
+"Pass/Fail"; `Remarks` carries it here so the column order the exporter relies
+on stays unchanged. Automated runs may leave `Remarks` blank, because the
+command and its output are the evidence.
 
 ```markdown
 | TC_E03S02_01 | Coordinator sends two questions | PASS | Status changed to Awaiting clarification; organiser_c got one notice listing both questions |
 ```
+
+### Manual Remarks validation
+
+The validator applies this rule to records with `run_type: manual` and a
+timezone-aware frontmatter `date` at or after **2026-10-07T15:09:10+08:00**
+(Singapore time). This is the merge time of PR #223, commit `d1c4e9b`, recorded
+as `2026-10-07T07:09:10Z` and converted to Singapore time. The filename date
+continues to be checked against the frontmatter date; it is not used for the
+policy decision.
+
+Every result row, including `TC_ID = MULTIPLE`, must have at least one
+non-whitespace character in `Remarks`. A cell containing only that row's
+`Outcome` token is invalid, case-insensitively: `PASS`, `FAIL`, `SKIP`, or `N/A`
+alone is not an observed result. There is no minimum character count or required
+format; human review still determines whether the text describes what was
+observed. Automated records may leave `Remarks` blank, and `regression` records
+retain their existing validation. Earlier manual records remain grandfathered
+and must not be edited to satisfy this rule.
 
 ### `Outcome` values
 
@@ -167,6 +185,71 @@ Example:
 ```markdown
 | MULTIPLE | Backend unit suite | PASS | 23/23 passed — https://github.com/hongyime/sgConnectSphere2026/actions/runs/12345 |
 ```
+
+## Screenshots for manual runs (T-93)
+
+Every manual run (`run_type: manual`) keeps screenshots as evidence, taken by
+hand by the person running the test. Screenshots from an agent or Playwright
+do not count as manual evidence; record those runs as `automated`.
+
+- **Where:** `docs/testing/runs/evidence/<record filename without .md>/`, so
+  each run's images sit together and never collide with another run's.
+- **Name:** the TC_ID the image shows, for example `TC_E11S01_02.png`. For
+  several images of one test case, add a number: `TC_E11S01_02-1.png`,
+  `TC_E11S01_02-2.png`. For a `MULTIPLE` row, use `MULTIPLE-<short-label>.png`.
+- **What:** at least one screenshot for every `PASS` or `FAIL` row, showing
+  the result written in `Remarks` (the message, status or notification).
+  `SKIP` and `N/A` rows need none.
+- **Format:** PNG or JPG under 1000 KB each (the pre-commit large-file limit).
+  Crop to the part of the screen that matters, and use JPG for full-page
+  shots. Images stay in git history for good, even if deleted later, so keep
+  each one as small as it can be while still readable.
+- **Never show** passwords, tokens, connection strings or real personal data.
+  Seeded test accounts are fine.
+- **Link** them from the record in a `## Screenshots` section under the results
+  table, and commit them in the same commit as the record. Like the record,
+  they are not edited or replaced once merged.
+
+**Recommended:** also show the screenshots in the PR's postplan (every PR gets
+one, `CONTRIBUTING.md`), so reviewers see them on one page. This is best
+practice, not required; the repository copy remains the evidence, and a
+postplan is a public link, so leave out anything sensitive.
+
+**Which records:** manual records whose frontmatter `date` is on or after
+`2026-10-16T00:00:00+08:00` (the day after the decision). Earlier records are
+not retrofitted, whenever they merge.
+
+**Sprint 3 Done stories are re-run with screenshots.** Every story marked
+Done in Sprint 3 whose manual run was recorded before the cutoff gets a
+**new** manual record with screenshots, run by its owner against the current
+code before the Sprint 3 Review. This is a re-run, not a reopening:
+
+- The story stays Done (T-74), and its old record stays unchanged (records
+  are immutable). Adding evidence is not a fix or a change, so it needs no
+  new user story.
+- The old record already met the Definition of Done, so a story whose re-run
+  is not finished in time still stays Done; say so at the Sprint Review.
+- **If the re-run fails:** record `FAIL`. The fix is a new user story with
+  what went wrong documented (`CONTRIBUTING.md`); the original stays Done.
+- Sprint 3 re-runs include screenshots whatever their `date`, even one
+  recorded before the cutoff.
+
+**A Sprint 3 Done story with no manual record at all** is a Definition of
+Done gap, not extra evidence. Its owner writes its test cases in
+`docs/testing/cases/` if they are missing and records its **first** manual
+run, with screenshots, before the Sprint 3 Review. On 16 October 2026 this
+applied to E03-S11 only.
+
+**Earlier sprints (1 and 2) are left as they are.** Their Sprint Reviews have
+happened, so a new run cannot change what those sprints showed. If one is
+re-run for another reason (for example a release regression), record the real
+`date`, never backdate, and follow the same failure rule.
+
+**Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
+check the `## Screenshots` section, one image per PASS/FAIL row, or that the
+linked files exist, and the 1000 KB limit runs only in local pre-commit, not
+in CI, so an image uploaded through the GitHub web UI skips it. Reviewers
+check these by hand until the checker is extended.
 
 ## Design decisions
 
@@ -205,7 +288,9 @@ is needed.
 5. Copy the frontmatter template from `TEMPLATE.md` and fill in every required
    field. Set `pr` only if this run is tied to an open PR; otherwise omit it.
 6. Add one row to the results table for each test case you ran. Use `MULTIPLE`
-   if only aggregate counts are available.
+   if only aggregate counts are available. For a manual run, save your
+   screenshots under `evidence/<record filename without .md>/`, named by
+   TC_ID, and link them in a `## Screenshots` section (T-93).
 7. Save the file. Run `python scripts/check.py`. Commit the record in the same
    PR as the code it covers, or as a standalone commit if it is a standalone
    verification run.
@@ -238,6 +323,11 @@ After a test run that is used as evidence, create exactly one session record fil
 - Use `MULTIPLE` for any suite where the runner does not emit per-test TC_IDs.
 - For a manual run, fill `Remarks` on every row with the actual result
   observed, including passing rows (see "Results table").
+- For a manual run, use only screenshots the human tester took and supplied
+  (T-93). Never take or substitute your own screenshots as manual evidence.
+  Save each one under `evidence/<record filename without .md>/` named by TC_ID,
+  check it shows no secrets or real personal data, and link it in the
+  record's `## Screenshots` section.
 - Do not edit existing session files.
 
 ## Relationship to the per-story implementation logs

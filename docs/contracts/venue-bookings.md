@@ -145,7 +145,7 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 - Tentative → Released: Coordinator releases the hold.
 - Pending → Confirmed: Venue Staff approves.
 - Pending → Rejected: Venue Staff rejects.
-- Pending → Released: Coordinator withdraws.
+- Pending → Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
 - Confirmed → Released: event workflow releases the booking.
 - E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
 - Pending or Confirmed → Conflicting: E05-S06 marks a booking affected by an unavailability; its resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
@@ -154,7 +154,7 @@ Every submission path uses one shared service and transaction. It authorizes the
 
 An Approved event becomes Planning in the same transaction as its first formal request. An event already in Planning stays there. A Confirmed event is not silently moved; the Coordinator first uses the existing event revert action (POST /api/events?revert=1&id=<event-id>), then submits.
 
-First-confirmed primary assignment and manual selection are separate from request creation: new Pending rows always have is_primary = false. O-30 does not define automatic promotion if a primary booking ceases to be Confirmed. **Proposal:** clear its primary flag in that transaction and require the Coordinator to select another Confirmed booking before the event safety-confirmation gate.
+First-confirmed primary assignment and manual selection are separate from request creation: new Pending rows always have is_primary = false. T-94 records the Product Owner's future Confirmed-booking cancellation rule: clear a cancelled primary and prompt the Organiser to select another Confirmed venue; never automatically promote one. That cancellation flow is outside E06-S03/TC_E06S03_08. It does not change the current Coordinator primary-selection permission under T-78; future cancellation prompt/selection permissions must be implemented in that owning workflow.
 
 The expiry worker updates only rows still Tentative whose expires_at <= clock_timestamp(). Thus, if conversion wins the row lock, the worker sees Pending and skips it; if expiry wins, conversion sees Expired and fails. A converted Pending row is never expired.
 
@@ -231,8 +231,8 @@ or extension changes early. `convert_hold` and direct requests share a service.
 Requests return 201 (new direct request) or 200 (conversion/retry), including
 `booking`, `event_status` and `suitability`. An identical direct retry returns the
 same saved assessment and does not repeat effects. Booking-request notifications
-resolve staff for the requested venue only. SCRUM-189/#271/#272 production
-resolver integration remains pending; unresolved routing is reported explicitly.
+resolve staff for the requested venue only, from `venue_staff_assignments`
+(SCRUM-189, #271/#272); a venue with no current assignment is reported explicitly.
 Primary confirmation/selection and staff assessment presentation remain E06-S04.
 
 
@@ -247,8 +247,10 @@ No shared database migration has been applied by this branch.
 A suggested-venue switch creates a new Pending row through the shared submission
 service. It carries `replaces_booking_id`; the referenced row must be Rejected,
 belong to the same assigned event and suggest the requested venue. The rejection
-remains unchanged. A unique partial index permits one replacement per rejection;
-identical idempotent retries return the same row. Current eligibility, period,
+remains unchanged. The merged 0019 unique index currently permits one replacement
+per rejection regardless of status; T-96 supersedes that target rule only for
+Released replacements and requires a new migration. Identical idempotent retries
+return the same row. Current eligibility, period,
 Session, venue activity, buffers, blocks and advisory suitability all rerun.
 The Coordinator form prefills the rejected booking?s period, purpose and headcount.
 
@@ -259,3 +261,62 @@ parallel resolver and will use #272?s default `resolveAssignedVenueStaff` once
 merged. Until then, production default staff routing is still unresolved; do not
 claim it verified. Coordination of hold-conversion semantics with #245 remains
 with the story owner.
+
+
+## Agreed withdrawal follow-up (15 October 2026; T-94 to T-96)
+
+**Requirements recorded; not implemented by this documentation change.** E06-S03
+owns assigned-Coordinator withdrawal of Pending requests only. Reuse Released:
+no new status or status migration. Confirmed cancellation belongs to a separate
+flow, and Tentative hold release/expiry remains E06-S05.
+
+### Transaction, races and audit
+
+- Lock the requested venue row `FOR NO KEY UPDATE`, then the booking `FOR UPDATE`;
+  recheck assignment and Pending status against current data. Align lock ordering
+  with E06-S04; do not introduce a booking-before-venue acquisition.
+- Change only the Pending booking to Released. Keep its history and replacement
+  link; do not restore a converted hold or expiry. Remaining bookings and the
+  event's status stay unchanged. Released no longer reserves venue occupancy;
+  availability still reflects other bookings, buffers and venue blocks.
+- Withdrawal wins: staff approval/rejection returns 409, explaining that the
+  Coordinator withdrew the request. Decision wins: withdrawal returns 409 and
+  the Coordinator refreshes. No stale write may overwrite the winning decision.
+- Persist an audit entry with the actor, `entity_type='venue_booking'`,
+  `entity_id=<booking id>`, `event_id`, `action='Booking Withdrawn'`,
+  `field_changed='status'`, old `pending`, new `released`.
+- Notify only this venue's currently assigned active Venue Staff. Resolve with
+  the shared `captureEventAudience(client, eventId, options, [venueId])` scope;
+  persist the in-app notification and email outbox atomically with withdrawal.
+  Existing `booking_decided: released` targets the Coordinator and cannot serve
+  as this staff notice: add a distinct withdrawal routing category or equivalent
+  shared routing extension. No broadcast and no inference from `decided_by`.
+
+### Replacement retry and rejection chain
+
+Allow one **non-Released** replacement per source rejection. A Released
+replacement stays as history and no longer blocks a fresh request referencing
+that same rejection. The fresh request uses a new submission key and reruns
+authorisation, eligibility, venue activity, period/Session, buffers, blocks and
+advisory suitability. A retry of an already successful submission keeps returning
+that existing request rather than creating another one.
+
+A Rejected replacement still blocks reuse of its source rejection. If it has its
+own suggested venue, a next request links to that immediately preceding Rejected
+row. Thus A rejected with suggestion B, then B rejected with suggestion C, permits
+a new request for C linked to B's rejection, not a second B from A's rejection.
+There is no fixed maximum of two attempts. Without a new suggestion, that chain
+ends; this does not forbid the separate ordinary venue-search/request journey.
+
+Migration 0019's all-status `venue_booking_replacement_idx` is unchanged and
+still blocks retry after withdrawal today. Coordinate a **new migration** that
+excludes Released rows only, keeping Rejected and all other non-Released rows
+protected. An active-only predicate would incorrectly reopen rejected attempts.
+Update duplicate checks, list `has_replacement`/switch controls and concurrency
+tests to match the new predicate. Do not rewrite 0019 or claim the new index has
+already shipped. No migration number is reserved by this documentation change.
+
+Source: Product Owner clarification relayed by the story owner, E06-S04 owner
+agreement, and the story owner's notification/retry/chain confirmations in the
+15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
+database migration, staff-routing verification and human manual run remain pending.

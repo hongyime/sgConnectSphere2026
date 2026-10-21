@@ -29,6 +29,7 @@ class MetadataTests(unittest.TestCase):
         for branch in (
             "feature/42-user-profile",
             "feature/SCRUM-26-submit-event-request",
+            "feature/T-72-coordinator-lead-safety-officer",
             "fix/SCRUM-41-layout-capacity",
             "docs/SCRUM-86-update-backlog-source",
             "chore/setup-ci",

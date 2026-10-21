@@ -25,6 +25,10 @@ import { writeEventNotification } from '../eventNotifications/service.js';
 // Support is staffed for events that are going ahead: approved, being
 // planned, or confirmed. Not for drafts, rejected, cancelled or past events.
 export const STAFFABLE_STATUSES = ['approved', 'planning', 'confirmed'];
+// E08-S03 (D64): an event in Safety Review stays in the queue so its staffed
+// requests don't vanish, but its arrangements are frozen until it returns to
+// Planning or is confirmed, so nobody can be assigned to it meanwhile.
+export const QUEUE_STATUSES = ['approved', 'planning', 'safety_review', 'confirmed'];
 const NOT_STAFFABLE = 'Technicians can only be assigned to approved, planning or confirmed events.';
 
 export type Conflict = { eventCode: string | null; title: string; startsAt: string; endsAt: string };
@@ -62,7 +66,7 @@ const QUEUE_SELECT = `SELECT r.id, r.event_id AS "eventId", e.event_code AS "eve
 export async function listQueue(query: Query, user: AuthenticatedUser | undefined) {
   await requireTechnician(query, user);
   const rows = (await query<QueueRow>(`${QUEUE_SELECT} AND e.status = ANY($1::event_status[])
-    ORDER BY (r.status = 'open') DESC, lower(r.support_range), r.created_at`, [STAFFABLE_STATUSES])).rows;
+    ORDER BY (r.status = 'open') DESC, lower(r.support_range), r.created_at`, [QUEUE_STATUSES])).rows;
   return { requests: rows };
 }
 
@@ -136,7 +140,7 @@ const isOverlapViolation = (error: unknown) =>
   ['23P01', '40P01'].includes((error as { code?: string })?.code ?? '');
 
 export async function assignTechnician(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
-  await requireTechnician(database.query.bind(database) as Query, user);
+  const actor = await requireTechnician(database.query.bind(database) as Query, user);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const id = requestId(data.request);
   const staffId = typeof data.staff === 'string' ? data.staff.trim() : '';
@@ -162,7 +166,9 @@ export async function assignTechnician(database: Pool, user: AuthenticatedUser |
       await client.query(`INSERT INTO tech_staff_assignments (id, request_id, event_id, staff_id, assignment_range, status)
         VALUES ($1, $2, $3, $4, $5::tstzrange, 'assigned')`, [assignmentId, request.id, request.eventId, colleague.id, request.range]);
       await client.query(`UPDATE tech_support_requests SET status = 'staffed' WHERE id = $1`, [request.id]);
-      await writeEventNotification(client, {
+      // E11-S01 / T-64: the action result acknowledges self-assignment;
+      // routine inbox/email notices are only for another affected colleague.
+      if (colleague.id !== actor.id) await writeEventNotification(client, {
         eventId: request.eventId, changeId: `${assignmentId}:assigned`, userId: colleague.id, occurredAt: new Date(),
         title: 'Technical support assignment',
         message: `You're assigned to ${name(request)}: ${request.description}`,
@@ -180,7 +186,7 @@ export async function assignTechnician(database: Pool, user: AuthenticatedUser |
 }
 
 export async function removeAssignment(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {
-  await requireTechnician(database.query.bind(database) as Query, user);
+  const actor = await requireTechnician(database.query.bind(database) as Query, user);
   const data = body && typeof body === 'object' ? body as Record<string, unknown> : {};
   const assignmentId = typeof data.assignment === 'string' ? data.assignment.trim() : '';
   if (!/^[0-9a-f-]{36}$/i.test(assignmentId)) throw new AccessError(400, 'An assignment id is required.');
@@ -194,7 +200,7 @@ export async function removeAssignment(database: Pool, user: AuthenticatedUser |
     await client.query(`UPDATE tech_staff_assignments SET status = 'released' WHERE id = $1`, [assignmentId]);
     const left = await client.query(`SELECT 1 FROM tech_staff_assignments WHERE request_id = $1 AND status = 'assigned'`, [request.id]);
     if (!left.rowCount) await client.query(`UPDATE tech_support_requests SET status = 'open' WHERE id = $1`, [request.id]);
-    await writeEventNotification(client, {
+    if (assignment.staffId !== actor.id) await writeEventNotification(client, {
       eventId: request.eventId, changeId: `${assignmentId}:released`, userId: assignment.staffId, occurredAt: new Date(),
       title: 'Technical support assignment removed',
       message: `You're no longer assigned to ${name(request)}. That time is free again.`,

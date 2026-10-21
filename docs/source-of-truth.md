@@ -8,9 +8,9 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 141026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 161026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 141026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 161026.docx` |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 161026.xlsx` |
@@ -79,6 +79,12 @@ history and adds TC_E06S04_05/_06/_07. The coverage generator still counts
 retired catalogue rows as scaffold/skip; its row total is a strict inventory,
 not a count of current acceptance obligations.
 
+The 15 October E06-S03 withdrawal clarification (T-94 to T-96, renumbered on
+16 October to reserve #279's earlier T-93) adds TC_E06S03_09 to _13 and
+refines _08. Its regenerated CAA 161026 testcase workbook also refreshes the
+legacy compatibility input, so the generated inventory includes these unexecuted
+cases. This records requirements and traceability, not passing test evidence.
+
 ## Requirement changes flow downstream
 
 1. Amend canonical backlog Markdown and record scope decisions in `docs/bdr/`.
@@ -132,3 +138,5 @@ of committed files and public PostPlans. Preserve historical source documents;
 flag contradictions with a source reference rather than silently deleting them.
 
 The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and test-case exports and refreshes the legacy coverage input from that generated test-case workbook. Completed E07-S01/SCRUM-51 is retained; Jira creation and planning for the new canonical follow-up happen after merge.
+
+The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.

@@ -220,3 +220,9 @@ ede1540. The user confirmed all checks, including the final same-period refresh
 and phone layout. No automated test has been relabelled as manual evidence.
 Final-head CI and renewed human approval remain required before reviewed merge
 and Jira Done.
+
+## T-93 screenshot-backed re-run — 17 October 2026
+
+[New manual session](../testing/runs/20261017-111622-xiangyingg-frontend-e2e.md), application d87081d, real database with local frontend/backend. Eight original human PNGs linked in execution order. Cases 01 reserved/damaged/maintenance, 02 other location, 03 morning/noon/afternoon half-open availability, invalid-range and Coordinator data refusal have PASS results. Microphone 10/3/2→5; maintenance stock 4→0; Grand Ballroom projector 10 free; shared microphone free 10→0→10. Invalid range actual Start 18:00/End 14:00 is recorded exactly.
+
+Agent prepared separate synthetic fixtures; human performed UI checks. Cropped rows omit date inputs, so their periods are attributed to the human’s ordered walkthrough; generic availability has no destination-venue selector. Coordinator can render the empty form but query data is refused. These limits are explicit in the record. No fresh release/mobile/concurrency/automated application claim. Older records and Done status unchanged; teammate evidence review and merge required.

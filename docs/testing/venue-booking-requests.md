@@ -56,7 +56,7 @@ with the merged guard; its owner must renumber it. No production migration was r
 | Pending, calendar and Planning transition | Unit, real PostgreSQL and intercepted browser coverage. Responsible staff routing is still needed to finish Scenario 1. |
 | Multiple requests, purpose/headcount, periods, assignment/status gates | Implemented; database tests cover retries, simultaneous submissions and refusals. |
 | Advisory suitability (TC_E06S02_04) | A real unsuitable Pending request and failing criteria are persisted; staff presentation remains E06-S04. |
-| Responsible staff notifications | SCRUM-189 / #271 and #272. Inject `NotificationOptions.resolveVenueStaff`; only this requested venue's active staff receive notices. Current production wiring reports unresolved venue ids rather than broadcasting or inferring `decided_by`. |
+| Responsible staff notifications | SCRUM-189 / #271 and #272. With no injected resolver, notices go to the requested venue's staff in `venue_staff_assignments`; a venue with no current assignment is reported in `unresolved_venue_ids` rather than broadcasting or inferring `decided_by`. Production also needs the real assignment rows after migration 0018. |
 | Staff decisions and primary venue | E06-S04. Schema invariants exist; confirmation and primary selection are not implemented here. |
 | Session selection | Post-Sprint-3 follow-up under T-73/T-79; no Session UI here. |
 | Human manual E2E | Follow [the script](manual/E06-S03-click-through.md), then create a fresh T-65 record. Automated screenshots are not a manual run. |
@@ -95,8 +95,9 @@ period refusals, blank values, Coordinator isolation, mobile presentation,
 hold conversion and Tentative calendar display were observed by the human tester.
 Read-only local DB checks corroborated metadata, cleared expiry, audits and queued
 status-notice delivery. Buffer-only overlap, retries/expiry races and actual
-staff/provider receipt are not claimed as manual results. Screenshot files still
-need saving/linking through the team's PostPlan convention before PR evidence use.
+staff/provider receipt are not claimed as manual results. The [archived human screenshots](runs/evidence/20261015-014746-jininggg-frontend-e2e/README.md)
+now retain all 24 saved images in the repository. The immutable pre-cutoff run
+record is unchanged; these are historical attachments, not a current rerun.
 
 
 ## Review follow-up verification
@@ -124,3 +125,40 @@ requests remain 404. Booking activity names the requested venue and uses a
 ?Venue booking? fallback label; expiry changes still show their dates.
 Occupancy/formatting/expiry-message helpers now live in `bookingShared.ts`,
 removing the workflow import cycle. Conversion reuses the same expired-hold copy.
+
+
+## Recorded withdrawal follow-up decisions (15 October; T-94 to T-96)
+
+Pending-only withdrawal and replacement retry/chain rules are now recorded in
+the canonical backlog, BDR and booking contract. They remain **unimplemented**
+by this documentation change. Confirmed cancellation is excluded. Reuse Released,
+preserve other bookings and event status, lock venue before booking, and persist
+the booking-specific audit and requested-venue staff inbox/email outbox atomically.
+Withdrawal of a converted hold never recreates that hold.
+
+Follow-up work must add the staff withdrawal routing (not Coordinator-only
+booking_decided released), revise the replacement index in a new migration to
+exclude Released rows only, and align service duplicate checks and switch UI.
+Rejected replacements still block their predecessor's slot; a new suggestion on
+that latest rejection starts the next link without a fixed two-attempt limit.
+TC_E06S03_08 is clarified; new cases TC_E06S03_09 to _13 cover Pending-only access,
+decision races, staff notifications/rollback, withdrawal retry and rejection chains.
+No passing execution evidence is claimed for these new requirements. Obtain peer
+review of the shared index/routing contract before implementation, and record
+fresh automated and human manual outcomes afterward. No Jira edits in this task.
+
+
+### Review planning note (16 October 2026)
+
+The Product Owner confirmed on 16 October that TC_E06S03_09 to _13 remain under
+E06-S03's current Sprint 3 plan and that the remaining work should be completed.
+Record anything unfinished honestly at sprint close. The cases remain
+unimplemented until actual code and verification evidence exist; this is not a
+Sprint 4 assignment, automatic carryover or completion claim. The prior request
+for PO/Scrum Master scheduling confirmation is resolved.
+
+References remain T-94/T-95/T-96 because #279 reserved T-93 first. Earlier dated
+exports and immutable run records retain their historical references. Current-main
+integration regenerates the 359-case workbook and coverage inventory; #268's
+fixed-354 assertion was repaired per the PO's review comment. No unrelated tooling
+test or story estimate is changed by this documentation correction.
