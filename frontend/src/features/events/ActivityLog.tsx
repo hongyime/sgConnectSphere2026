@@ -15,6 +15,7 @@ export type ActivityEntry = {
   actor_name: string | null;
   entity_type?: string;
   venue_name?: string | null;
+  booking_id?: string | null;
 };
 
 type Row = ActivityEntry & { key: string };
@@ -67,7 +68,13 @@ export function describeAction(entry: ActivityEntry) {
 // Event statuses are StatusPills (design.md section 7); "to" is read out instead
 // of the arrow. A booking's status is not an event status, so it stays in words.
 function Change({ entry }: { entry: ActivityEntry }) {
-  if (isBookingDecision(entry) || entry.field_changed !== 'status' || !entry.new_value) return <>{describeChange(entry)}</>;
+  if (isBookingDecision(entry)) return (
+    <span>
+      {describeChange(entry)}
+      {entry.booking_id ? <><br />Booking reference: {entry.booking_id}</> : null}
+    </span>
+  );
+  if (entry.field_changed !== 'status' || !entry.new_value) return <>{describeChange(entry)}</>;
   return (
     <span>
       {entry.old_value ? (
