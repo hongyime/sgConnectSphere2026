@@ -50,7 +50,7 @@ authorised or performed by this task.
 - `python scripts/check.py` passed after correction: 146 repository-tooling
   tests, hygiene and secret checks passed, `.env.template` matched, and 358
   test-run records validated. It warned about existing secondary worktrees;
-  none were removed. T-65 record: `docs/testing/runs/20261016-171252-bryanseah234-tooling.md`.
+  none were removed. A T-65 tooling record was added for that run.
 - No application test/build, production account/database operation, deployment,
   or PostPlan HTML/browser work was performed. Markdown LSP diagnostics are not
   available in this environment.
@@ -88,9 +88,29 @@ authorised or performed by this task.
   uses normal commits and a fresh tooling record; no database write, seed,
   reset, password rotation or browser action is part of this documentation lane.
 - Final candidate check: 146 tooling tests passed at HEAD `f4afe05` with these
-  corrections present; 358 existing records validated. Evidence is
-  `docs/testing/runs/20261016-174209-bryanseah234-tooling.md`. The archived seed
+  corrections present; 358 existing records validated. Evidence is in the
+  corresponding T-65 tooling record. The archived seed
   reference is unchanged; only the active account reference is updated.
 
 Do not self-approve or merge. Await teammate review on the final head; do not
 reopen Done stories or load a roster without the separately approved mapping.
+
+## 2026-10-21 continuation
+
+- Integrated `origin/main` at `56d7117` into this branch in merge commit
+  `11d55ad`. The source-of-truth backlog workbook pointer now matches main's
+  `201026` export; the BDR source and its `181026` dated export are preserved.
+- Pushed the merge to PR #293. GitHub reports the branch mergeable and the
+  review decision remains `REVIEW_REQUIRED`; the requested reviewers include
+  the reviewer whose prior approval was dismissed. Checks for this head show
+  repository, conventions, secret scan, dependency review, LFS guard, and
+  docs-only application skip passing; the application-checks job was still
+  running at the latest observation.
+- Installed the declared local tooling environment and ran
+  `python scripts/check.py` at `11d55ad`: 158 tooling tests ran, with 4
+  failures isolated to Windows path normalization and unlink semantics in
+  `test_worktree_hygiene.py`; other repository hooks, secret checks,
+  `.env.template` validation, and 443 prior test-run records passed. T-65
+  session evidence is recorded in the new tooling run record in this branch.
+- No application/production credentials, database writes, or deployment were
+  used. Continue to await human review; do not self-approve or merge.
