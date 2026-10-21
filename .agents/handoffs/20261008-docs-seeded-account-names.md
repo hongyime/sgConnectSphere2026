@@ -59,3 +59,29 @@ Audit the merged test-case export against Markdown and verify only intended case
   checks passed on the previous pushed head; refresh them for the new merge
   head and wait for Xiang's independent re-review. Do not self-approve, edit
   the PR body/comments, or merge.
+
+## Xiang review follow-up — 21 October 2026
+
+- Addressed the 17 October E11 finding in the canonical case and updated the
+  final-head HTML review brief: `TC_E11S01_02` now changes only the effective
+  date/time to a future period, keeps EVT-3001 at Jasmine Hall, and states the
+  required recipient links and published attendee snapshot as preconditions.
+  Venue-move coverage remains explicitly separate and is not claimed as
+  executable.
+- Corrected `TC_E01S12_03`'s stale past-date fixture to use seeded EVT-3003's
+  future Orchid Hall booking on 25/10/2026. The case explicitly prepares the
+  booking as Confirmed for the scenario and retains coord_a ownership while
+  coord_b checks that the period is shown only as Unavailable.
+- Regenerated `PROJECT TEST CASES CAA 211026.xlsx` from canonical Markdown;
+  the generator reports 376 cases across 13 epic files. Regenerated
+  `tc-coverage.md`; the count remains 201 automated, 134 scaffold and 41 no
+  test, so no coverage diff was needed.
+- `python scripts/check.py` with these source/workbook changes at HEAD `f557a5f`
+  ran 158 tooling tests and exited 1 on the same four Windows
+  `test_worktree_hygiene` path/unlink assertions. Repository and secret hooks,
+  `.env.template`, and 446 prior run records passed. The observed run is
+  recorded in a new T-65 tooling session file.
+- The prior pushed head's six required GitHub checks passed, but these case and
+  workbook corrections must be pushed and checked on their own PR head. The
+  formal `CHANGES_REQUESTED` state remains until Xiang's independent re-review;
+  no PR body/comment, approval, or merge was made.
