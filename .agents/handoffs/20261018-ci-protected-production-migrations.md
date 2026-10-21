@@ -13,13 +13,21 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Guarded runs construct node-postgres config from validated URL components (ignoring connection-string overrides), require verified TLS, pin the session search path to `public, extensions`, and qualify the ledger table. The workflow checks out the immutable dispatch SHA. The runbook says manual migrations must not overlap a queued or active workflow run.
 - Updated `docs/ops/production-migrations.md` with the protected workflow and secret setup instructions.
 - Regenerated `docs/testing/tc-coverage.md` after hosted CI identified drift from the newly added test blocks.
-- Focused migration-selection/guard unit tests passed 17/17 both before and after the implementation commit; latest evidence is `docs/testing/runs/20261018-123027-bryanseah234-backend-unit.md`. Backend TypeScript build passed on commit `261ec6e`; workflow YAML validation passed. No database connection was made.
-- The latest `python scripts/check.py` run passed after coverage regeneration: 158 repository tooling tests, 429 test-run records validated, secret scan passed, and `.env.template` remained current. It warned only about existing secondary worktrees. Latest evidence is `docs/testing/runs/20261018-123428-bryanseah234-tooling.md`.
+- Focused migration-selection/guard unit tests passed 17/17 both before and after the implementation commit; the latest T-65 backend/unit record is dated 18 October at 12:30. Backend TypeScript build passed on commit `261ec6e`; workflow YAML validation passed. No database connection was made.
+- The latest `python scripts/check.py` run passed after coverage regeneration: 158 repository tooling tests, 429 test-run records validated, secret scan passed, and `.env.template` remained current. It warned only about existing secondary worktrees. Latest T-65 tooling evidence is dated 18 October at 12:34.
 
 ## Next
 
-- Commit the verified changes and open a draft PR for review; do not merge or apply a migration.
+- Obtain the required team decision and independent human review; do not merge or dispatch the workflow before the credential-rotation and Production-secret prerequisites are confirmed by an administrator.
 - After rotating the exposed Supabase database password, a repository administrator should add the replacement connection string as the `Production` environment secret `DATABASE_URL`.
+
+## Continuation — 21 October 2026
+
+- Refreshed from `origin/main` at `0567f46`. The only merge conflict was `backend/package.json`; resolved the test script by retaining both main's equipment-notification test and this PR's migration-selector/guard tests. No workflow or database guard logic was changed.
+- Regenerated `docs/testing/tc-coverage.md`; it remains 201 automated, 134 scaffold, and 41 no-test cases (376 total).
+- `python scripts/check.py` exited 1 on Windows with the same four `test_worktree_hygiene` path-separator/unlink failures seen on unchanged `main`. Secret scanning, repository hooks, `.env.template`, and all 158 tooling tests except those four passed; it validated 452 existing test-run records. The observed run is recorded in the new 21 October T-65 tooling record.
+- Read-only Supabase ledger inspection showed entries through `0020_released_booking_replacement_retry.sql`; `0022_change_request_obsolete.sql`, `0023_registration_review_statuses.sql`, and `0024_registration_sessions.sql` are pending. Current `main` already has the exact `migrate --only` selector, but no production migration command was run: the production credential rotation/replacement-secret status is not verified, and PR #315 remains unmerged.
+- No workflow dispatch, production write, secret access, reset, seed, or deployment was performed. The merge resolution and this handoff update are local and have not been committed or pushed yet.
 
 ## Security notes
 
