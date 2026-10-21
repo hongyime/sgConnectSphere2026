@@ -262,7 +262,8 @@ async function handleCommentPost(request: VercelRequest, response: VercelRespons
       return;
     }
     const comment = await inTransaction(getDatabasePool(), async client => {
-      await client.query('SELECT id FROM events WHERE id::text=$1 OR event_code=$1 FOR UPDATE', [eventId.slice(0,240)]);
+      const organisationId = await requireOrganiser((sql, values) => client.query(sql, values), user, 'events');
+      await client.query('SELECT id FROM events WHERE client_org_id=$2 AND (id::text=$1 OR event_code=$1) FOR UPDATE', [eventId.slice(0,240), organisationId]);
       return createEventComment((sql, values) => client.query(sql, values), user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
     });
     sendJson(response, 201, { comment });
