@@ -6,7 +6,7 @@ Finish PR #230's six fixture-consistency gate findings on `docs/seeded-account-n
 - Updated `TC_E11S01_02` per the approved PO clarification: effective date/time change only, venue stays at seeded Jasmine Hall/`venue_b`; recipient links and attendee-facing publication snapshot are explicit preconditions. Venue-move coverage remains separate.
 - Regenerated `docs/testing/PROJECT TEST CASES CAA 211026.xlsx`; the generator reports 376 cases across 13 epic files. `docs/source-of-truth.md` now points to this export.
 - Regenerated `docs/testing/tc-coverage.md` for 376 cases. `python scripts/check.py` ran on Windows and exited 1: the secret scanner and repository hooks passed, but four `test_worktree_hygiene` unit tests failed on Windows path-separator/unlink behavior. These tests are unchanged from `main`; see the new T-65 tooling run record.
-- Not yet updated the final-head review brief, committed, pushed, or refreshed PR checks. The pre-existing handoff restriction against editing PR body/comments and self-approval still applies; teammate review remains required.
+- The corrections and final-head review brief are committed and pushed; PR checks passed on the previously observed head. The PR body/comments remain untouched, and teammate review is still required.
 - The separate production migration task is blocked in this shell because `DATABASE_URL` is absent and `psql` is unavailable. No production query or write was attempted.
 
 ### Resume next
@@ -42,3 +42,20 @@ Audit the merged test-case export against Markdown and verify only intended case
 
 - Seed facts are sourced from `backend/src/database/cli.ts`; case-local feature/status/ownership/date preparations are stated explicitly so the intended acceptance checks can be reached without mutating the shared seed or weakening requirements.
 - This remains a documentation/workbook change only. Repository hygiene/tooling verification and data audits passed; no application behavior or story acceptance execution is claimed.
+
+## Latest-main refresh — 21 October 2026
+
+- Merged latest `origin/main` at `56d7117` into this branch in `5c50a7d`.
+  The merge was conflict-free and included #323's backlog export update; no
+  additional canonical test-case changes were introduced by that main commit.
+- The current branch retains the generated test-case export dated `211026` and
+  the regenerated coverage catalogue. The accepted E11 date/time-only case and
+  its explicit recipient/publication preconditions are present in the branch.
+- `python scripts/check.py` at `5c50a7d` validated 445 prior run records and
+  passed repository/secret hooks and `.env.template` validation, but exited 1
+  after 158 tooling tests because of the same four Windows path/unlink failures
+  in `test_worktree_hygiene.py`. This run is recorded as T-65 evidence.
+- The PR still has a formal `CHANGES_REQUESTED` review state. Its required
+  checks passed on the previous pushed head; refresh them for the new merge
+  head and wait for Xiang's independent re-review. Do not self-approve, edit
+  the PR body/comments, or merge.
