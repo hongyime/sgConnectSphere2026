@@ -37,6 +37,14 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Current read-only GitHub checks show the Production environment's required-reviewer gate is configured and `gh secret list --env Production` returns no entries. The required credential rotation and replacement-secret configuration therefore remain unverified; no dispatch or production operation is authorized by this refresh.
 - PR #315 still requires the recorded team decision and independent human reviews. Recheck GitHub CI on the refreshed head after pushing; do not merge or dispatch until the stated decision and administrator credential prerequisites are satisfied.
 
+## Owner follow-up — 21 October 2026
+
+- The repository owner confirms the production database credential was rotated and configured `DATABASE_URL` in the GitHub `Production` environment. A later `gh secret list --env Production` showed the secret name and timestamp only; its value was never read or displayed. Name-only presence does not prove the value is correct or that a production connection will succeed.
+- Migration `0022_change_request_obsolete.sql` is merged through #319, but it has not been applied to production. No workflow dispatch, production connection/write, reset, seed, or deployment has been performed in this task.
+- Hardened the workflow's token permissions: the request-validation job has only `contents: read`; `deployments: write` is limited to the gated apply job. This does not change the environment review requirement or migration behavior.
+- `python scripts/check.py` on Windows at `7de3b27` ran 158 tooling tests: 154 passed and four existing `test_worktree_hygiene` path/unlink tests failed. Repository hooks, secret scan, `.env.template`, and validation of 456 prior records passed. The immutable T-65 record is in `docs/testing/runs/`.
+- The production secret value and connectivity are not independently validated. Team decision and independent human review remain required before merge or first use. A teammate with repository permission may initiate a run; an eligible different teammate must approve the Production environment gate.
+
 ## Security notes
 
 - Never add the connection string to a file, log, PR, or command transcript.
