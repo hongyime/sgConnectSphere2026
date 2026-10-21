@@ -28,7 +28,14 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - `python scripts/check.py` exited 1 on Windows with the same four `test_worktree_hygiene` path-separator/unlink failures seen on unchanged `main`. Secret scanning, repository hooks, `.env.template`, and all 158 tooling tests except those four passed; it validated 452 existing test-run records. The observed run is recorded in the new 21 October T-65 tooling record.
 - After installing the backend workspace dependencies from the lockfile, the focused selector/guard and equipment-notification unit command passed 19/19 on merge commit `18ccdb6`; its T-65 record is in `docs/testing/runs/` dated 21 October at 16:58 Singapore time.
 - Read-only Supabase ledger inspection showed entries through `0020_released_booking_replacement_retry.sql`; `0022_change_request_obsolete.sql`, `0023_registration_review_statuses.sql`, and `0024_registration_sessions.sql` are pending. Current `main` already has the exact `migrate --only` selector, but no production migration command was run: the production credential rotation/replacement-secret status is not verified, and PR #315 remains unmerged.
-- No workflow dispatch, production write, secret access, reset, seed, or deployment was performed. The main-integration merge is committed locally as `18ccdb6`; the follow-up unit-run record and handoff update are staged for their own conventional commit and have not been pushed yet.
+- No workflow dispatch, production write, secret access, reset, seed, or deployment was performed. The main-integration merge is committed and pushed; the follow-up unit-run record and handoff update were pushed in a separate conventional commit.
+
+## Latest-main refresh — 21 October 2026
+
+- Refreshed from `origin/main` at `56d7117` (including the merged #323 workbook update) in merge commit `6bd25d9`. The merge was conflict-free; no migration workflow or application files changed in this refresh.
+- `python scripts/check.py` at `6bd25d9` ran 158 tooling tests and exited 1 on four unchanged Windows `test_worktree_hygiene` path/unlink assertions. Repository/secret hooks, `.env.template` validation, and validation of 455 prior run records passed. The run is captured in a new T-65 tooling session record.
+- Current read-only GitHub checks show the Production environment's required-reviewer gate is configured and `gh secret list --env Production` returns no entries. The required credential rotation and replacement-secret configuration therefore remain unverified; no dispatch or production operation is authorized by this refresh.
+- PR #315 still requires the recorded team decision and independent human reviews. Recheck GitHub CI on the refreshed head after pushing; do not merge or dispatch until the stated decision and administrator credential prerequisites are satisfied.
 
 ## Security notes
 
