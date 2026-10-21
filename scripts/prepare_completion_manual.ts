@@ -9,9 +9,11 @@ assert.match(
   /^\/connectsphere_notification_test(?:_[a-z0-9_]+)?$/,
 );
 const pool = new Pool({ connectionString: address.href });
+const client = await pool.connect();
+const fixtures: string[] = [];
 try {
   const users = (
-    await pool.query(
+    await client.query(
       "SELECT id,role,client_org_id FROM users WHERE email IN ('organiser_a@clienta.com','coord_a@connectsphere.com')",
     )
   ).rows;
@@ -19,9 +21,9 @@ try {
     coordinator = users.find((u) => u.role === "event_coordinator");
   assert.equal(users.length, 2, "Seed the isolated test database first");
   const now = (
-    await pool.query<{ now: Date }>("SELECT clock_timestamp() AS now")
+    await client.query<{ now: Date }>("SELECT clock_timestamp() AS now")
   ).rows[0].now.getTime();
-  await pool.query("BEGIN");
+  await client.query("BEGIN");
   for (const [label, status, start, end] of [
     ["MANUAL", "confirmed", now - 3600000, now + 86400000],
     [
@@ -35,7 +37,7 @@ try {
   ] as const) {
     const id = randomUUID(),
       code = `E08-${label}-${id.slice(0, 8)}`;
-    await pool.query(
+    await client.query(
       "INSERT INTO events(id,event_code,title,organiser_id,coordinator_id,client_org_id,status,event_range,expected_attendance) VALUES($1,$2,$3,$4,$5,$6,$7,tstzrange($8,$9,'[)'),10)",
       [
         id,
@@ -49,16 +51,18 @@ try {
         new Date(end),
       ],
     );
-    await pool.query(
+    await client.query(
       "INSERT INTO change_requests(event_id,requested_by,description,status) VALUES($1,$2,'Manual pending change','pending'),($1,$2,'Previously approved change','approved')",
       [id, organiser.id],
     );
-    console.log(`${label}: ${code} — /coordinator/events/${code}/complete`);
+    fixtures.push(`${label}: ${code} — /coordinator/events/${code}/complete`);
   }
-  await pool.query("COMMIT");
+  await client.query("COMMIT");
+  fixtures.forEach(line => console.log(line));
 } catch (e) {
-  await pool.query("ROLLBACK");
+  await client.query("ROLLBACK");
   throw e;
 } finally {
+  client.release();
   await pool.end();
 }

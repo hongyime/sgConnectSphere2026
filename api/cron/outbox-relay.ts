@@ -1,3 +1,4 @@
+import { runEventMaintenance } from '../../backend/src/modules/eventLifecycle/maintenance.js';
 import { evaluateCompletions } from '../../backend/src/modules/eventLifecycle/completion.js';
 import { requireEnv, runtimeConfig } from '../../backend/src/config.js';
 import { hasInternalSecret, requireMethod, sendJson } from '../../backend/src/http.js';
@@ -52,13 +53,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   // their Coordinator. A passed hold already stops holding the venue without
   // this (holds.ts), so a late run only delays the status change and notice.
   if (task === 'holds') {
-    try {
-      const result = await expireHolds(notificationDatabase());
-      const completion = await evaluateCompletions(notificationDatabase());
-      sendJson(response, 200, { holds_expired: result.holdsExpired, notified: result.notified, events_completed: completion.completed });
-    } catch {
-      sendJson(response, 503, { error: 'hold_expiry_unavailable' });
-    }
+    const result = await runEventMaintenance(
+      () => expireHolds(notificationDatabase()),
+      () => evaluateCompletions(notificationDatabase()),
+    );
+    sendJson(response, result.status, result.body);
     return;
   }
 

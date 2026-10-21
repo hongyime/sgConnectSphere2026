@@ -78,3 +78,23 @@ test("Completion reads/writes refuse missing, wrong-role, locked/inactive and in
       await assert.rejects(action(db, actor, id), { status: 400 });
   }
 });
+
+// Regression for PR #324: a later phase failure must not hide committed expiry.
+test("TC_E08S05_01 maintenance distinguishes expiry and completion failures", async () => {
+  const { runEventMaintenance } = await import("../src/modules/eventLifecycle/maintenance.js");
+  let evaluations = 0;
+  const complete = async () => { evaluations++; return { completed: 2 }; };
+  const fail = async (): Promise<never> => { throw new Error("synthetic failure"); };
+  assert.deepEqual(await runEventMaintenance(fail, complete), {
+    status: 503, body: { error: "hold_expiry_unavailable" },
+  });
+  assert.equal(evaluations, 0);
+  const expire = async () => ({ holdsExpired: 3, notified: 1 });
+  assert.deepEqual(await runEventMaintenance(expire, fail), {
+    status: 503, body: { holds_expired: 3, notified: 1, error: "event_completion_unavailable" },
+  });
+  assert.deepEqual(await runEventMaintenance(expire, complete), {
+    status: 200, body: { holds_expired: 3, notified: 1, events_completed: 2 },
+  });
+  assert.equal(evaluations, 1);
+});

@@ -130,7 +130,7 @@ async function transition(
         await client.query(
           `INSERT INTO audit_logs
         (actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
-        VALUES($1,'change_request',$2,$3,'Pending change request made Obsolete','status','pending','obsolete')`,
+        VALUES($1,'change_request',$2,$3,'Change request became Obsolete','status','pending','obsolete')`,
           [actorId, request.id, event.id],
         );
     },
