@@ -3,7 +3,7 @@
 ## E10-S01 — Request a change after submission
 
 - **Sprint**: Sprint 4
-- **Points**: 3
+- **Points**: 8
 - **BDR references**: C-14, C-52, C-54, C-77, T-16, T-88
 - **Owner**:
 
