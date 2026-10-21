@@ -103,7 +103,12 @@ PR checks. Do not copy the unmerged foundation into every unrelated branch.
 After each main merge, refresh affected branches and regenerate their derived
 files. Jira remains unchanged until the approved backlog change merges.
 
-## Remaining tasks and owners
+## Historical remaining tasks and owners
+
+For the current source/Jira snapshot and actionable follow-ups, use the
+[17 October integration audit](../testing/e11-s01-integration-audit-20261017.md).
+The following table is retained as its original planning snapshot; in particular,
+equipment/support and booking submission callers are no longer all absent.
 
 | Task | Owning work | Completion evidence |
 | --- | --- | --- |
@@ -210,3 +215,15 @@ without an injected resolver. An ended assignment, or one to an inactive or
 non-Venue Staff account, notifies no one and leaves the venue unresolved.
 Production needs the real assignment rows after 0018 is applied; who supplies
 and maintains them is still open with the PO and deploy owner.
+
+## Equipment result routing follow-up (18 October 2026)
+
+The E11 follow-up uses the equipment owner's recipient clarification supplied
+by Ji Ning: notify the event's assigned Technical Staff and the relevant
+venue's assigned staff, excluding the actor/inactive users. Capture recipients
+before release, not all historical assignees. Existing Coordinator notices and
+E07 no-notice exceptions are preserved. Full/partial reservations, quantity
+changes, release and selected operational shortfalls reuse the transactional
+writer; preferences remain separate under E01-S05. See the
+[implementation boundaries and evidence](../testing/e11-s01-integration-audit-20261017.md#equipment-routing-implementation--18-october).
+This is unfinished E11 integration, not a reopening of Done E07 stories.

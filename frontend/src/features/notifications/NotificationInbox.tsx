@@ -21,7 +21,6 @@ function byNewestFirst(a: NotificationRecord, b: NotificationRecord) {
 
 export function NotificationInbox() {
   const [state, setState] = useState<InboxState>({ status: 'loading' });
-  const [openedId, setOpenedId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
@@ -82,13 +81,11 @@ export function NotificationInbox() {
                   {!notification.is_read ? <span className="notification-dot" aria-hidden="true" /> : null}
                   <div>
                     <button type="button" className="secondary-action"
-                      aria-expanded={openedId === notification.id}
                       disabled={markingId === notification.id}
                       onClick={() => {
-                        setOpenedId(openedId === notification.id ? null : notification.id);
                         if (!notification.is_read) void handleMarkRead(notification.id);
                       }}>{notification.title}</button>
-                    {openedId === notification.id ? <p>{notification.message}</p> : null}
+                    <p>{notification.message}</p>
                     <p className="notification-meta">
                       {plainDate(notification.created_at)} · {notification.is_read ? 'Read' : 'Unread'}
                     </p>
