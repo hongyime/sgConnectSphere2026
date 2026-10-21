@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **375**
-- Automated (explicit TC_ID in an active test title): **195** (52.0%)
+- Automated (explicit TC_ID in an active test title): **196** (52.3%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **159**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **133** (35.5%)
+  - Live-assertion (other active tests): **160**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **132** (35.2%)
 - No test yet (no test file mentions the TC_ID): **47** (12.5%)
 
 ## Coverage by epic
@@ -23,7 +23,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 37 | 29 | 8 | 0 |
-| E06 | 43 | 27 | 11 | 5 |
+| E06 | 43 | 28 | 10 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 27 | 0 | 26 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 5 | 3 | 6 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **375** | **195** | **133** | **47** |
+| **Total** | **375** | **196** | **132** | **47** |
 
 ## Case-by-case status
 
@@ -257,7 +257,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_04: approval is blocked when the buffered windows overlap a confirmed booking, which is named; backend/tests/venu |
 | `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_05: an approval is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
 | `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_06: a rejection is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
-| `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ✅ active | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time; frontend/src/features/events/Activ |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_02 — Verify that a tentative hold should occupy the venue |
 | `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
@@ -1122,6 +1122,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a status change with no previous status shows only the new status
 - a booking decision missing its venue or earlier status is still described
 - booking entries show hold expiry or a generic booking label without internal IDs
+
+### `frontend/src/features/events/ActivityReleaseReference.test.tsx`
+
+- event and legacy hold entries do not invent a booking reference
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
