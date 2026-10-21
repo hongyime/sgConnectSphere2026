@@ -336,7 +336,7 @@ erDiagram
         uuid id PK
         uuid event_id FK
         uuid attendee_id FK "at most one active registration with event_id"
-        registration_status status "pending, registered, waitlisted, withdrawn"
+        registration_status status "registered, waitlisted, pending, rejected, withdrawn"
         boolean manually_added "distinguishes Organiser-added attendee (T-50)"
         timestamptz registered_at "orders first-come waitlist claims"
         timestamptz withdrawn_at
@@ -476,7 +476,9 @@ erDiagram
   append `VENUE_BLOCK_HISTORY` snapshots; a lift retains the block row, attributes
   the actor/time and notifies each affected Coordinator (T-91).
 - Registration remains one row per attendee/Event. A partial unique constraint
-  allows only one active `EVENT_REGISTRATIONS` row per account/Event; the join table
+  allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
+  and Organiser-`rejected` rows are not active, so the account may register
+  again; migrations 0023-0024); the join table
   records one or more attendee-selected Sessions. Approved registrations occupy
   one place in every selected Session and one place against combined Event
   capacity, derived from confirmed Session layout capacities. Over-capacity
