@@ -10,7 +10,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | --- | --- | --- |
 | Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 201026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 161026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 211026.docx` |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 161026.xlsx` |
@@ -35,6 +35,13 @@ story ID once. At the 20 September 2026 audit there are 71 distinct product
 stories, of which 47 are in Release 1.
 
 ## Authority order
+
+The [canonical shared DoD](../CONTRIBUTING.md#definition-of-done) records the
+21 October 2026 PO-approved prospective clarification and its effective-date
+condition: reviewed merge into `main`, not this branch or #312's stacked base.
+PR #312 supplies proposal provenance, not independently adopted policy.
+The instructor floor takes precedence over its proposed false-Done reopening
+exception; T-65's evidence-only recording scope is unchanged.
 
 1. Canonical Markdown requirements and accepted decisions above.
 2. Merged code, tests, PR review records and recorded verification establish
@@ -110,8 +117,13 @@ before/after state and actual correction date.
   accountable owner, not a complete contributor list.
 - Duplicates and superseded items retain their history but are excluded from
   delivered-scope counts, even if the workflow represents closure as Done.
-- Reopen partial scope or missing review/verification rather than silently
-  weakening acceptance criteria. Add source links and a concise explanation.
+- Don't weaken acceptance criteria to hide partial scope or missing review
+  or verification. The earlier reopening instruction is superseded
+  prospectively by the no-reopening rule in the canonical DoD: keep incomplete
+  work open before Done; once marked Done, retain the flag and document any
+  missing scope, review or verification in a new linked, appropriately
+  classified follow-up with cause and prevention. Don't rewrite historical
+  transitions, closed PR checklists or run records.
 - Use the actual Agile API sprint timestamps. A sprint whose end date has passed
   may still be active until the team completes it in Jira. Do not backdate a
   present-day correction to make a historical burndown look better.
@@ -120,6 +132,15 @@ before/after state and actual correction date.
 
 See [the Jira workflow](jira-agent-workflow.md) and
 [Sprint 1's reconciliation record](backlog/sprint-1-delivery.md).
+
+Story acceptance belongs to the Product Owner or a documented delegate, not an
+agent or the PR approver by inference. Record the AC-to-evidence checklist,
+exact tested tree, real integration/manual acceptance evidence and independent
+human code and test review receipt in the current issue or linked PR. Manual
+acceptance precedes Done and is due no later than Review. Partial PR merge,
+story acceptance and pre-Review regression are different checkpoints; a generic
+partial-merge allowance never clears #298's TC_E06S04_07 hold. Jira links to
+the canonical DoD; it doesn't define a competing completion policy.
 
 ## Design and access practices
 
