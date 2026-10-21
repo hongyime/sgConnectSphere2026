@@ -18,3 +18,5 @@ base64-encoded screenshot bytes embedded in the postplan HTML. Removed embedded
 binary data and linked the unchanged original evidence folder. No scanner policy
 or exclusions changed. A clean single-commit replacement is needed because the
 scan reads introduced history, including the original artifact revision.
+
+21 October review follow-up: integrated current main without replacing original human evidence. Outstanding capture checklist: docs/testing/E10-S04-review-follow-up.md. No new manual PASS, production migration claim, or Jira Done transition. Merge remains after implementation PR and acceptance review.

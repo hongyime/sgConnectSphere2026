@@ -44,6 +44,20 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
 const sqlCalls = (calls: Array<{ sql: string }>, pattern: RegExp) => calls.filter(call => pattern.test(call.sql));
 const overlapError = () => Object.assign(new Error('conflicting key value violates exclusion constraint'), { code: '23P01' });
 
+test('TC_E11S01_11 self-assignment and self-removal commit without routine inbox or email writes', async () => {
+  const db = fakeDatabase([
+    [/FOR UPDATE OF r/, { rows: [locked] }],
+    [/role = 'technical_support_staff' AND is_active/, { rows: [{ id: tech.id, name: 'Tech A' }] }],
+    [/WHERE a.id = \$1 AND a.status = 'assigned' FOR UPDATE OF a/, { rows: [{ requestId: REQUEST, staffId: tech.id, name: 'Tech A' }] }],
+  ]);
+  assert.equal((await assignTechnician(db.pool, tech, { request: REQUEST, staff: tech.id })).status, 201);
+  assert.equal((await removeAssignment(db.pool, tech, { assignment: ASSIGNMENT })).status, 200);
+  assert.equal(sqlCalls(db.calls, /INSERT INTO tech_staff_assignments/).length, 1);
+  assert.equal(sqlCalls(db.calls, /SET status = 'released'/).length, 1);
+  assert.equal(sqlCalls(db.calls, /^COMMIT$/).length, 2);
+  assert.equal(sqlCalls(db.calls, /INSERT INTO notifications|INSERT INTO notification_deliveries/).length, 0);
+});
+
 test('every operation refuses signed-out users and roles other than Technical Support, and audits the refusal', async () => {
   const db = fakeDatabase([]);
   await assert.rejects(listQueue(db.query, undefined), { status: 401 });

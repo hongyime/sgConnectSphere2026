@@ -8,6 +8,7 @@ import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { availabilityRows, capacityFor } from './availability.js';
+import { equipmentStaffRecipients, notifyEquipmentStaff } from './notifications.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_QUANTITY = 2147483647;
@@ -305,19 +306,24 @@ async function notifyCoordinator(
   reserved: number,
   requested: number,
 ) {
-  if (!event.coordinatorId || event.coordinatorId === actor.id) return 0;
   const outstanding = requested - reserved;
   const what =
     outstanding > 0
       ? `${name} × ${reserved} of ${requested} reserved; ${outstanding} outstanding.`
       : `${name} × ${reserved} reserved.`;
+  const message = `${eventLabel(event)}, ${formatEventDates(event.startsAt, event.endsAt)}: ${what}`;
+  await notifyEquipmentStaff(client, {
+    eventId: event.id, actorId: actor.id, changeId: change.id, occurredAt: change.occurred_at,
+    title, message,
+  });
+  if (!event.coordinatorId || event.coordinatorId === actor.id) return 0;
   const id = await writeEventNotification(client, {
     eventId: event.id,
     changeId: change.id,
     userId: event.coordinatorId,
     occurredAt: change.occurred_at,
     title,
-    message: `${eventLabel(event)}, ${formatEventDates(event.startsAt, event.endsAt)}: ${what}`,
+    message,
   });
   return id ? 1 : 0;
 }
@@ -536,13 +542,14 @@ export function releaseReservation(
       throw new AccessError(409, 'This reservation has already been released.');
     // Released rows stay as history; the units count as free again (E07-S03
     // ignores released rows). D42: no notice to the Coordinator.
+    const recipients = await equipmentStaffRecipients(client, event.id, actor.id);
     const updated = (
       await client.query<Reservation>(
         `UPDATE equipment_reservations SET status='released',requires_reconfirmation=false WHERE id=$1 RETURNING *`,
         [reservation.id],
       )
     ).rows[0]!;
-    await recordActivity(
+    const change = await recordActivity(
       client,
       actor,
       event,
@@ -550,6 +557,11 @@ export function releaseReservation(
       describe(equipment.name, reservation.quantity_reserved, request.quantity_requested),
       `${equipment.name} × ${reservation.quantity_reserved} returned to the available pool`,
     );
+    await notifyEquipmentStaff(client, {
+      eventId: event.id, actorId: actor.id, changeId: change.id, occurredAt: change.occurred_at,
+      title: 'Equipment reservation released', recipients,
+      message: `${eventLabel(event)}, ${formatEventDates(event.startsAt, event.endsAt)}: ${equipment.name} × ${reservation.quantity_reserved} released.`,
+    });
     return {
       status: 200,
       body: outcome(event, equipment.name, updated, request.quantity_requested, true, 0),
