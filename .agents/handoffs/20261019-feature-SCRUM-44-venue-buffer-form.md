@@ -23,11 +23,12 @@ Finish E05-S05 (SCRUM-44) on `main`: bring Bryan's venue-form buffer fields from
   setup SQL `docs/testing/manual/E05-S05-preconditions.sql`.
 - Gates so far: coverage of changed lines 100%; four deliberate bugs all
   caught; F3 dry run 19/19 on the local real stack.
+- **F4, Aaron's manual run (21 October, 17:45–18:09):** all seven cases
+  passed on `394461d`, local real stack, with his 13 screenshots.
+  Record `docs/testing/runs/20261021-180929-Bl0oper-frontend-e2e.md`.
 
 ## Not done / next step
 
-- Aaron's manual run (F4) of the click-through script, with his own
-  screenshots, and its T-65 record.
 - `python scripts/check.py`, `tc-coverage.md` regenerated last, then the PR
   (draft first), listing teammates' files for their owners.
 - Ask Bryan to close #305 as replaced.
@@ -77,3 +78,10 @@ All agreed with Aaron; D78 and D79 also with Bryan.
 - The venue inventory's cards are `<article>`s and the shared `Card` is a
   `<section>`: in Playwright use `getByRole('article' | 'region', { name })`,
   not a CSS filter, or a wrapper card's text is read instead.
+- A buffer change notifies the Coordinators of **both** events in each
+  clashing pair (`catalogue.ts`), though only the later booking is flagged;
+  TC_E05S05_03 checks only the later event's Coordinator.
+- For a manual run with several accounts, use one browser profile per
+  account: every private window of one browser shares one sign-in. And
+  agree before starting that every screenshot is the whole browser window;
+  a cropped one loses the address bar and the signed-in role.
