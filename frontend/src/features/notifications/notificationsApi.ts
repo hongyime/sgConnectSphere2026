@@ -7,6 +7,8 @@ export type NotificationRecord = {
   created_at: string;
   event_id: string | null;
 };
+
+export const NOTIFICATIONS_CHANGED = 'connectsphere:notifications-changed';
 export type ListNotificationsResult =
   | { ok: true; notifications: NotificationRecord[] }
   | { ok: false; message: string };
@@ -31,6 +33,7 @@ export async function markNotificationRead(id: string): Promise<MarkNotification
       body: JSON.stringify({ action: 'mark_read', id }),
     });
     const body = await response.json();
+    if (response.ok) window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED));
     return response.ok ? { ok: true, notification: body.notification }
       : { ok: false, message: body.error ?? 'Unable to mark notification as read.' };
   } catch { return { ok: false, message: 'Unable to mark notification as read. Please try again.' }; }
