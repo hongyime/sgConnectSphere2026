@@ -9,3 +9,7 @@ Verification and documented coverage exceptions: records20261022-194403 and20261
 Resume remaining integration work from main after this PR is actually merged; do not assume approval or merge from publication. User owns final combined manual run, other owners their subtask tests. Existing PR299 dependencies remain unchanged.
 
 Publication verification: merged main c7ccd48 at a287668. Sole conflict generated inventory, regenerated206/376. Post-merge focused backend20/20 (15 realDB), frontend17/17, both typechecks/build pass. New immutable publication record retained worker-EPERM retry. check.py hygiene/env pass;158 tooling3fail11error remain. PostPlan https://oeiqxqzntfro.postplan.dev rendered and visually inspected; no human acceptance screenshots.
+
+## 23 October application CI repair
+
+User authorised fixing failed application checks. Fast-forwarded to remote195375f (main integration by another session) without overwriting it. Actual latest failure39815991532 differs from earlier timeout: TC_E03S07_04 desktop/mobile still expected old Coming-soon page; real-form route also needed its own API fixture instead of Event-detail JSON. Added exact GET contract fixture and real-form assertions, preserving readonly/link/URL checks. Local focused2/2; surrounding E03-S07 group12pass/2existingfixme, both types pass. Inventory regenerated unchanged206/376. No product/CI-timeout change or SCRUM205prefill completion claim. Publish normal follow-up, keep all remaining integration gates.
