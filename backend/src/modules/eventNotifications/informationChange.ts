@@ -29,9 +29,19 @@ export async function updateEventInformationWithNotifications(
     await applyArrangementImpact(query, user.id, event.id, impact);
     const overSubscription = assessOverSubscription(arrangementsAfter, await loadRegistrationCounts(query, event.id));
     const after = await captureEventAudience(client, event.id, options);
-    if (after.status!=='draft' && (before.startsAt!==after.startsAt || before.endsAt!==after.endsAt)) {
+    const dateChanged = after.status!=='draft' && (before.startsAt!==after.startsAt || before.endsAt!==after.endsAt);
+    if (impact.affected || dateChanged) {
+      // One change ID for the edit: staff who get the specific reconfirmation
+      // notice below are not sent the generic date notice as well.
+      const changeId = randomUUID();
       const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0].now;
-      await notifyEventChange(client, { changeId: randomUUID(), occurredAt: changedAt, actorId: user.id,
+      if (impact.affected) {
+        const staff = await captureEventAudience(client, event.id, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
+        await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id, before: staff, after: staff,
+          change: { kind: 'reconfirmation_required', venueAffected: impact.bookings.length > 0, technicalAffected: impact.reservations.length > 0,
+            reasons: [...impact.bookings, ...impact.reservations].flatMap(item => item.reasons) } });
+      }
+      if (dateChanged) await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id,
         before, after, change: { kind: 'arrangements', fields: ['date','time'] } });
     }
     return { ...result, impact, overSubscription };

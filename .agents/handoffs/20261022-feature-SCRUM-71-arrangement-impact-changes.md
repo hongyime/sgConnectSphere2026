@@ -48,6 +48,16 @@ live, manual run with hand-taken screenshots (T-93) and T-65 records.
   and after the edit under its existing row lock, applies the impact, and
   returns `{ ...result, impact, overSubscription }`. The existing date-change
   notice is unchanged. 5 more unit cases (now 14 in the file).
+- Task 5: new `EventChange` kind `reconfirmation_required` in
+  `eventNotifications/service.ts`, routed to `venueStaff` when bookings are
+  flagged and `technicalStaff` when reservations are. The save captures the
+  audience with `requestedVenueIds` = the flagged venues, so only those
+  venues' assigned Venue Staff are told; Technical Support Staff are the
+  event's current `tech_staff_assignments`. The reconfirmation notice and the
+  generic date notice share one change id, so a staff member gets one
+  notification (the specific one), not two; Organiser and Attendees still get
+  the generic date notice. Tests: TC_E10S02_06, a capacity-only case, and 3
+  routing rows in `eventNotifications.test.ts`.
 
 ## Decisions taken without team sign-off (reviewer please check)
 
@@ -87,13 +97,12 @@ live, manual run with hand-taken screenshots (T-93) and T-65 records.
 
 ## Next step
 
-Task 5: notify staff. A date/time edit already sends the generic
-`arrangements` notice to everyone, including Venue Staff and Technical
-Support Staff (`eventNotifications/service.ts` `groupsFor`). Still missing:
-a capacity-only flag notifies nobody, and the notice does not say
-reconfirmation is required. Add a `reconfirmation_required` change kind
-scoped to the affected venues (venueStaff) and, when reservations are
-affected, technicalStaff.
+Task 6: real-database tests on native loopback PostgreSQL (never Supabase,
+no Docker Desktop; see `docs/testing/supabase-test-schema.md`). Add
+`backend/tests/arrangementImpact.integration.test.ts` covering TC_E10S02_01–09
+with two Sessions inserted directly, that the preview leaves no rows or audit
+entries behind, and that notifications reach only the flagged venues' staff.
+Add it to `test:db` and the CI booking selector, then write the T-65 record.
 
 ## Commands run
 
@@ -108,4 +117,9 @@ affected, technicalStaff.
   tests: 29/29, 100% on `arrangementImpact.ts`, `eventChange.ts`,
   `informationChange.ts`. Full `npm test` (backend): 447/447.
   `api/events.ts` strict tsc: exit 0.
+- Task 5: c8 over `eventChangePreview`, `arrangementImpact` and
+  `eventNotifications` tests: 36/36; 100% on the three SCRUM-71 files, and
+  every changed line of `service.ts` covered (its uncovered lines 145, 146,
+  149 and 172 are older notice kinds). Full `npm test` (backend): 449/449.
+  Backend `tsc --noEmit`: exit 0.
 - No database suite has been run yet.

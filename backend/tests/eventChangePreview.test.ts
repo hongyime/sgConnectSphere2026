@@ -89,21 +89,28 @@ test('applyArrangementImpact writes nothing when nothing is affected', async () 
   assert.deepEqual(calls, []);
 });
 
-type Script = { event?: boolean; rejected?: boolean; registered?: number; status?: string };
+type Script = { event?: boolean; rejected?: boolean; registered?: number; status?: string; staff?: boolean };
 function scriptedClient(script: Script = {}) {
   const sql: string[] = [];
+  const notices: unknown[][] = [];
   let edited = false;
+  let attendance = 80;
   const range = () => edited
     ? { starts_at: new Date('2026-11-20T01:00:00Z'), ends_at: new Date('2026-11-20T09:00:00Z') }
     : { starts_at: new Date('2026-11-15T01:00:00Z'), ends_at: new Date('2026-11-15T09:00:00Z') };
-  const answer = (text: string): unknown[] => {
+  const answer = (text: string, values: unknown[] = []): unknown[] => {
+    // The session row follows the Event edit, as the 0014 sync trigger does.
+    if (text.startsWith('UPDATE events') && text.includes('expected_attendance')) attendance = values[0] as number;
+    if (text.startsWith('INSERT INTO notifications')) { notices.push(values); return []; }
+    if (text.includes('FROM tech_staff_assignments a')) return script.staff ? [{ staff_id: 'tech-1' }] : [];
+    if (text.startsWith('SELECT id FROM users WHERE id=ANY')) return (values[0] as string[]).map(id => ({ id }));
     if (text.includes('FOR UPDATE')) return script.event === false ? [] : [{ id: 'event-1' }];
     if (text.includes('AND organiser_id = $2')) return script.rejected ? [{ status: 'rejected' }] : [];
     if (text.includes('SELECT id, status, organiser_id')) return [{ id: 'event-1', status: 'planning', organiser_id: 'organiser-1', coordinator_id: coordinator.id, client_org_id: 'org-1' }];
     if (text.includes('AS start_at')) return [{ start_at: range().starts_at, end_at: range().ends_at }];
     if (text.startsWith('UPDATE events')) { edited ||= text.includes('event_range'); return []; }
     if (text.includes('FROM events WHERE id = $1')) return [range()];
-    if (text.includes('FROM sessions')) return [{ id: 'session-a', ...range(), expected_attendance: 80 }];
+    if (text.includes('FROM sessions')) return [{ id: 'session-a', ...range(), expected_attendance: attendance }];
     if (text.includes('FROM venue_bookings')) return [{ id: 'booking-a', session_id: 'session-a', venue_id: 'hall', venue_name: 'Riverside Hall', headcount: null, capacity: 200 }];
     if (text.includes('FROM equipment_reservations')) return [{ id: 'reservation-a', session_id: 'session-a', equipment_id: 'projector', equipment_name: 'Projector' }];
     if (text.includes('FROM event_registrations WHERE')) return [{ count: String(script.registered ?? 0) }];
@@ -113,10 +120,13 @@ function scriptedClient(script: Script = {}) {
     return [];
   };
   const client = {
-    query: async (text: string) => { sql.push(text); return { rows: answer(text) }; },
+    query: async (text: string, values?: unknown[]) => { sql.push(text); return { rows: answer(text, values) }; },
     release: () => undefined,
   } as unknown as PoolClient;
-  return { client, sql };
+  // Venue Staff come from the trusted resolver; record which venues it is asked about.
+  const resolved: string[][] = [];
+  const options = { resolveVenueStaff: async (_client: PoolClient, venueIds: readonly string[]) => { resolved.push([...venueIds]); return script.staff ? ['venue-1'] : []; } };
+  return { client, sql, notices, resolved, options };
 }
 
 test('TC_E10S02_03: a date change previews the affected booking and equipment, then rolls back', async () => {
@@ -185,11 +195,45 @@ test('TC_E10S02_02: saving a description-only edit flags nothing and sends no da
   assert.ok(!sql.includes('SELECT transaction_timestamp() AS now'));
 });
 
-test('a draft date change saves without the date notice; an unknown Event is refused', async () => {
-  const draft = scriptedClient({ status: 'draft' });
-  await updateEventInformationWithNotifications(poolFor(draft.client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' });
-  assert.ok(!draft.sql.includes('SELECT transaction_timestamp() AS now'));
+test('a draft date change sends no generic date notice; an unknown Event is refused', async () => {
+  const draft = scriptedClient({ status: 'draft', staff: true });
+  await updateEventInformationWithNotifications(poolFor(draft.client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' }, draft.options);
+  assert.ok(!draft.notices.some(values => String(values[3]).includes('Event date, time changed')));
   const missing = scriptedClient({ event: false });
   await assert.rejects(updateEventInformationWithNotifications(poolFor(missing.client), coordinator, 'nope', { description: 'x' }), (error: AccessError) => error.status === 403);
   assert.equal(missing.sql.at(-1), 'ROLLBACK');
+});
+
+const byRecipient = (notices: unknown[][]) => {
+  const seen = new Map<string, { ids: Set<unknown>; first: string }>();
+  for (const values of notices) {
+    const user = String(values[0]);
+    const entry = seen.get(user) ?? { ids: new Set(), first: String(values[3]) };
+    entry.ids.add(values[4]);
+    seen.set(user, entry);
+  }
+  return seen;
+};
+
+test('TC_E10S02_06: a date change tells the affected Venue Staff and the assigned Technical Support Staff to reconfirm', async () => {
+  const { client, notices, resolved, options } = scriptedClient({ staff: true });
+  await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' }, options);
+  assert.deepEqual(resolved[1], ['hall'], 'Venue Staff are looked up for the flagged venue only');
+  const recipients = byRecipient(notices);
+  assert.deepEqual([...recipients.keys()].sort(), ['tech-1', 'venue-1']);
+  for (const [user, { ids, first }] of recipients) {
+    assert.match(first, /date or time\) means venue bookings or equipment reservations need reconfirmation/, user);
+    assert.equal(ids.size, 1, `${user}: the generic date notice reuses the same notification id, so it is not sent twice`);
+  }
+});
+
+test('a capacity-only change notifies the Venue Staff alone, with no date notice', async () => {
+  const { client, notices, options } = scriptedClient({ staff: true });
+  const result = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', { expectedAttendance: 250 }, options);
+  assert.deepEqual(result.impact.bookings.map(booking => booking.reasons), [['capacity']]);
+  assert.deepEqual(result.impact.reservations, []);
+  const recipients = byRecipient(notices);
+  assert.deepEqual([...recipients.keys()], ['venue-1'], 'no equipment is affected, so Technical Support is not told');
+  assert.match(recipients.get('venue-1')!.first, /attendance above capacity/);
+  assert.ok(!notices.some(values => String(values[3]).includes('Event date, time changed')));
 });
