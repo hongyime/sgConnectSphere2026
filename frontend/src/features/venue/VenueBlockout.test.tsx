@@ -82,7 +82,7 @@ test('TC_E05S04_01 - lists current and upcoming blocks for the picked venue, the
     const blockListGets = calls.filter(call => call.method === 'GET' && call.url.searchParams.get('blocks') === '1');
     expect(blockListGets.length).toBeGreaterThanOrEqual(2);
   });
-  expect(await screen.findByRole('cell', { name: 'Scheduled maintenance', exact: true })).toBeInTheDocument();
+  expect(await screen.findByRole('cell', { name: 'Scheduled maintenance' })).toBeInTheDocument();
 });
 
 test('TC_E05S04_02 - shows the server message and names the conflicting booking on a 409 booking_conflict (Scenario 2)', async () => {

@@ -25,3 +25,5 @@ Checkout recovery: final check in original temporary application checkout encoun
 Focused synchronization fix verification: 7 targeted venue-blockout tests and full463 frontend components pass; frontend typecheck passes. Record 20261023-022314-xiangyingg-frontend-vitest.md. Production source unchanged; no new manual screenshots needed for this correction. Fresh CI must verify the pushed head.
 
 Repository gate passed,163 tooling tests; postplan structure/render passed: https://ei6hssr481df.postplan.dev/v/1. Synchronization correction staged in clean checkout of latest f78487c, preserving prior teammate docs. Push explicitly to existing #320 feature branch; no force push.
+
+Fresh cc7322f CI caught a type error in the added RTL role query: ByRoleOptions does not support exact. Removed unsupported option (string accessible-name query already matches exactly). Local incremental tsc used shared cached build metadata and had returned success; use frontend tsc -b --force for this follow-up. Failed CI39831097976 is not a passing verification.
