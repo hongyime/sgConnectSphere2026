@@ -1,3 +1,4 @@
+import { EventCancellation } from '../features/events/EventCancellation';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
@@ -32,7 +33,7 @@ import { OrganiserRequestFlow } from '../features/organiser/OrganiserRequestFlow
 import { OrganiserDrafts, OrganiserDraftEdit } from '../features/organiser/OrganiserDrafts';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail,
-  ChangeRequest, CancellationForm,
+  ChangeRequest,
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
@@ -128,7 +129,7 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode', <SubmittedDetail />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode/clarify', <AnswerQuestions />, 'live', 'E03-S02'),
   page('/organiser/requests/:eventCode/change', <ChangeRequest />, 'mock', 'E10-S01'),
-  page('/organiser/requests/:eventCode/cancel', <CancellationForm />, 'mock', 'E10-S04'),
+  page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
   // Where restricted post-approval edits (E03-S07) and the edit API's 409
   // changeRequestUrl send the Organiser, until E10-S01 builds the form.
   page('/change-requests/new', (
@@ -158,6 +159,8 @@ export const routes: AppRoute[] = [
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),
   page('/coordinator/queue', <CoordinatorReviewQueue />, 'live', 'E03-S01'),
   page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
+  page('/coordinator/events/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
+  page('/events/:eventCode/cancellation', <EventCancellation />, 'live', 'E10-S04'),
   page('/coordinator/events/:eventCode', <CoordinatorRequestDetail />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode/clarify', <RequestClarification />, 'live', 'E03-S02'),
   page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'live', 'E03-S03'),
