@@ -17,7 +17,7 @@ const sampleEvents: SampleEvent[] = [
   { id: 'EVT-103', title: 'Partner Networking Night', organiser: 'Organiser A', startsAt: '2027-02-18T10:00:00Z', status: 'awaiting_clarification' },
 ];
 
-const statuses = ['draft', 'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'confirmed', 'rejected', 'cancelled', 'completed'];
+const statuses = ['draft', 'submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'safety_review', 'confirmed', 'rejected', 'cancelled', 'completed'];
 
 export function UiKit() {
   const [filter, setFilter] = useState<'all' | 'review' | 'approved'>('all');

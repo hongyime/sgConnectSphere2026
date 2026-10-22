@@ -484,7 +484,7 @@ button {
 }
 
 /* Status chip states used across E-series stories (draft, submitted, under
-   review, awaiting clarification, approved, planning, confirmed, rejected,
+   review, awaiting clarification, approved, planning, safety review, confirmed, rejected,
    cancelled, completed), mapped onto the tone classes above per the labels
    already in docs/design/figma-wireframe-refinement-plan.md ("Success/
    confirmed/approved", "Warning/pending/at-risk", "Danger/blocked/rejected",
@@ -496,7 +496,8 @@ button {
 
 .status-submitted,
 .status-under-review,
-.status-planning {
+.status-planning,
+.status-safety-review {
   background: var(--blue-soft);
   color: var(--blue);
 }

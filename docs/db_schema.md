@@ -336,7 +336,7 @@ erDiagram
         uuid id PK
         uuid event_id FK
         uuid attendee_id FK "at most one active registration with event_id"
-        registration_status status "pending, registered, waitlisted, withdrawn"
+        registration_status status "registered, waitlisted, pending, rejected, withdrawn"
         boolean manually_added "distinguishes Organiser-added attendee (T-50)"
         timestamptz registered_at "orders first-come waitlist claims"
         timestamptz withdrawn_at
@@ -476,7 +476,9 @@ erDiagram
   append `VENUE_BLOCK_HISTORY` snapshots; a lift retains the block row, attributes
   the actor/time and notifies each affected Coordinator (T-91).
 - Registration remains one row per attendee/Event. A partial unique constraint
-  allows only one active `EVENT_REGISTRATIONS` row per account/Event; the join table
+  allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
+  and Organiser-`rejected` rows are not active, so the account may register
+  again; migrations 0023-0024); the join table
   records one or more attendee-selected Sessions. Approved registrations occupy
   one place in every selected Session and one place against combined Event
   capacity, derived from confirmed Session layout capacities. Over-capacity
@@ -521,6 +523,7 @@ The ERD above describes the shared target schema. The checked-in migration 0001 
 - Migration 0014, `0014_event_sessions.sql`, is assigned to SCRUM-183. It creates Sessions, backfills one Session per existing Event, and adds the `session_id` links and composite ownership foreign keys for venue bookings and equipment requests/reservations. E06 migrations consume these links and must not recreate them.
 - Migration 0017, `0017_event_safety_review_status.sql` (SCRUM-184, E08-S03), adds the `safety_review` event status between `planning` and `confirmed` (C-70, T-71). It adds the enum value only, in its own migration-only PR applied before the E08-S03 code that uses it, since PostgreSQL rejects the value in queries until it exists.
 - Migration 0019 is proposed as `0019_venue_bookings_contract.sql` (to be owned by E06-S03 or E06-S04). It depends on migrations 0011 (PR #231), 0012, committed 0013, and 0014; it adds the remaining shared booking request/hold fields (`purpose`, `headcount`, `requested_by`, `requested_at`, `is_primary`, `submission_key`), backfills occupancy_range through occupied_window(), and moves the active-booking exclusion constraint to (venue_id, occupancy_range) for tentative, pending, and confirmed rows. See [the shared venue bookings contract](contracts/venue-bookings.md) for fields, API behavior, transition rules, and retry semantics.
+- Migration 0020, `0020_released_booking_replacement_retry.sql` (SCRUM-47, E06-S03; PR #306), narrows `venue_booking_replacement_idx` to non-Released replacements, preserving rejected replacement uniqueness and leaving 0019 unchanged; production application remains subject to the [release gates](ops/e06-s03-0020-release-plan.md).
 
 Migration 0013 is merged; migration 0014 is the Session foundation; migration 0019 remains the shared venue contract proposal. Do not add a second E06-S03 migration for fields or constraints in 0019. Safety review and venue-block schema work remains with its owning stories; legacy Coordinator reassignment requests remain read-only history under T-83, with any removal/deprecation planned separately.
 

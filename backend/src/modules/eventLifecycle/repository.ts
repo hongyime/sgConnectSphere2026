@@ -115,6 +115,15 @@ function mapEvent(row: EventRow): EventRecord {
 
 export type EventStatusChange = { auditId: string; occurredAt: Date; from: EventRecord['status'] };
 
+export const ONLY_SAFETY_OFFICER_CONFIRMS = 'Only a Safety Officer can confirm an event in Safety Review.';
+
+// E08-S03 Scenario 7 (C-70, T-71): thrown by applyEventStatusChange when
+// anyone but an active Safety Officer tries to confirm an event in Safety
+// Review. The caller's transaction rolls back, so the event stays put.
+export class ConfirmationRefusedError extends Error {
+  constructor() { super(ONLY_SAFETY_OFFICER_CONFIRMS); }
+}
+
 // The one status-change path (lock, transition check, audit entry, T-64
 // notices), run inside the caller's transaction. updateEventStatus() wraps it
 // in its own; E03-S02 calls it directly so its questions or answers commit
@@ -149,6 +158,15 @@ export async function applyEventStatusChange(
   const transition = validateEventStatusTransition(fromStatus, status);
   if (!transition.allowed) {
     throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
+  }
+  // E08-S03 Scenario 7: checked here, in the one status-change path, so no
+  // route can confirm an event in Safety Review without the Safety Officer.
+  // The role is compared as text, as the role was added by migration 0012.
+  if (fromStatus === 'safety_review' && status === 'confirmed') {
+    const actor = await client.query<{ role: string }>(
+      `SELECT role::text AS role FROM users WHERE id = $1 AND is_active`, [actorId],
+    );
+    if (actor.rows[0]?.role !== 'safety_officer') throw new ConfirmationRefusedError();
   }
 
   const before = await captureEventAudience(client, eventId, options.notificationOptions);

@@ -32,7 +32,7 @@ test.afterAll(async () => {
   await database?.close();
 });
 
-test('TC_E07S06_01 TC_E07S06_03 TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technical support request and technician staffing on the real stack', async ({ page }) => {
+test('TC_E07S06_01 TC_E07S06_03 TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 TC_E11S01_11 technical support request and technician staffing on the real stack', async ({ page }) => {
   const q = database.pool.query.bind(database.pool);
   const org = randomUUID(), organiser = randomUUID(), coord = randomUUID(), other = randomUUID();
   const techA = randomUUID(), techB = randomUUID(), techC = randomUUID();
@@ -139,9 +139,23 @@ test('TC_E07S06_01 TC_E07S06_03 TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07
   await expect(page.getByText('Tech B is already assigned to EVT-SUP-CR Charity Run at an overlapping time.')).toBeVisible();
   await page.getByRole('button', { name: 'Cancel' }).click();
   await assign('Tech A');
-  await expect(page.getByText("Tech A is assigned and has been notified. It's on their schedule.")).toBeVisible();
+  await expect(page.getByText("Tech A is assigned. It's on their schedule.")).toBeVisible();
   expect((await q(`SELECT staff_id FROM tech_staff_assignments WHERE request_id=$1 AND status='assigned'`, [conferenceRequest[0].id])).rows)
     .toEqual([{ staff_id: techA }]);
+
+  // E11-S01: self-actions acknowledge the change without routine notices.
+  await page.getByRole('button', { name: 'Remove Tech A…' }).click();
+  await expect(page.getByText('Tech A will be notified, and their time is freed for other events.')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Remove assignment' }).click();
+  await expect(page.getByText('Tech A is no longer assigned. Their time is free again.')).toBeVisible();
+  expect((await q(`SELECT status FROM tech_staff_assignments WHERE request_id=$1 AND staff_id=$2`, [conferenceRequest[0].id, techA])).rows)
+    .toEqual([{ status: 'released' }]);
+  const ownNotices = `FROM notifications n WHERE n.event_id=$1 AND n.user_id=$2
+    AND n.title IN ('Technical support assignment','Technical support assignment removed')`;
+  expect((await q(`SELECT count(*)::int AS n ${ownNotices}`, [conference, techA])).rows[0].n).toBe(0);
+  expect((await q(`SELECT count(*)::int AS n FROM notification_deliveries d
+    JOIN notifications n ON n.id=d.notification_id WHERE n.event_id=$1 AND n.user_id=$2
+    AND n.title IN ('Technical support assignment','Technical support assignment removed')`, [conference, techA])).rows[0].n).toBe(0);
 
   // Refusals: a cross-site POST and a Coordinator are both refused by the API.
   const csrf = await page.request.post('/api/venues?task=staffing', { headers: { origin: 'https://attacker.example.test' }, data: { action: 'assign', request: conferenceRequest[0].id, staff: techC } });
