@@ -10,8 +10,9 @@ import assert from 'node:assert/strict';
 import type { Pool, PoolClient } from 'pg';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import {
-  assessOverSubscription, loadRegistrationCounts, previewEventChange, previewEventChangeWith,
+  applyArrangementImpact, assessOverSubscription, loadRegistrationCounts, previewEventChange, previewEventChangeWith,
 } from '../src/modules/changeManagement/eventChange.js';
+import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 import type { ArrangementSnapshot } from '../src/modules/changeManagement/arrangementImpact.js';
 import { RejectedRequestError } from '../src/modules/eventLifecycle/decision.js';
 import { AccessError } from '../src/modules/eventVisibility/service.js';
@@ -65,7 +66,30 @@ test('loadRegistrationCounts counts only Registered places, per Event and per Se
   assert.deepEqual(none, { event: 0, sessions: {} });
 });
 
-type Script = { event?: boolean; rejected?: boolean; registered?: number };
+test('applyArrangementImpact flags each affected arrangement and logs why, once each', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  await applyArrangementImpact(async (sql, values) => { calls.push({ sql, values }); return { rows: [] }; }, 'coordinator-1', 'event-1', {
+    affected: true,
+    bookings: [{ id: 'booking-a', sessionId: 'session-a', venueId: 'hall', venueName: 'Riverside Hall', reasons: ['time', 'capacity'], governingHeadcount: 250, capacity: 200 }],
+    reservations: [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] }],
+  });
+  assert.deepEqual(calls.slice(0, 2).map(call => [call.sql.split(' SET')[0], call.values]), [
+    ['UPDATE venue_bookings', [['booking-a']]],
+    ['UPDATE equipment_reservations', [['reservation-a']]],
+  ]);
+  assert.deepEqual(calls.slice(2).map(call => call.values), [
+    ['coordinator-1', 'venue_booking', 'booking-a', 'event-1', 'Reconfirmation required: date or time changed, attendance above capacity'],
+    ['coordinator-1', 'equipment_reservation', 'reservation-a', 'event-1', 'Reconfirmation required: date or time changed'],
+  ]);
+});
+
+test('applyArrangementImpact writes nothing when nothing is affected', async () => {
+  const calls: string[] = [];
+  await applyArrangementImpact(async sql => { calls.push(sql); return { rows: [] }; }, 'coordinator-1', 'event-1', { affected: false, bookings: [], reservations: [] });
+  assert.deepEqual(calls, []);
+});
+
+type Script = { event?: boolean; rejected?: boolean; registered?: number; status?: string };
 function scriptedClient(script: Script = {}) {
   const sql: string[] = [];
   let edited = false;
@@ -83,6 +107,9 @@ function scriptedClient(script: Script = {}) {
     if (text.includes('FROM venue_bookings')) return [{ id: 'booking-a', session_id: 'session-a', venue_id: 'hall', venue_name: 'Riverside Hall', headcount: null, capacity: 200 }];
     if (text.includes('FROM equipment_reservations')) return [{ id: 'reservation-a', session_id: 'session-a', equipment_id: 'projector', equipment_name: 'Projector' }];
     if (text.includes('FROM event_registrations WHERE')) return [{ count: String(script.registered ?? 0) }];
+    // captureEventAudience: no linked people, so no notification rows follow.
+    if (text.includes('AS public_name')) return [{ id: 'event-1', title: 'Tech Conference 2026', public_name: null, status: script.status ?? 'planning', ...range(), organiser_id: null, coordinator_id: null }];
+    if (text.includes('transaction_timestamp()')) return [{ now: new Date('2026-10-22T10:00:00Z') }];
     return [];
   };
   const client = {
@@ -130,4 +157,39 @@ test('previewEventChange wraps the preview in its own transaction', async () => 
   await previewEventChange(pool, coordinator, 'EVT-1', { description: 'New wording' });
   assert.equal(sql[0], 'BEGIN');
   assert.equal(sql.at(-1), 'COMMIT', 'the savepoint already discarded the edit, so committing saves nothing');
+});
+
+const poolFor = (client: PoolClient) => ({ connect: async () => client }) as unknown as Pool;
+
+test('TC_E10S02_05: saving a date change flags the booking and equipment in the same transaction', async () => {
+  const { client, sql } = scriptedClient({ registered: 250 });
+  const result = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' });
+  assert.equal(result.updated, true);
+  assert.deepEqual(result.impact.bookings.map(b => b.id), ['booking-a']);
+  assert.deepEqual(result.impact.reservations.map(r => r.id), ['reservation-a']);
+  assert.deepEqual(result.overSubscription, [{ scope: 'event', sessionId: null, registered: 250, capacity: 200 }]);
+  const update = sql.findIndex(text => text.startsWith('UPDATE events'));
+  const flagBooking = sql.findIndex(text => text.startsWith('UPDATE venue_bookings SET requires_reconfirmation'));
+  const flagReservation = sql.findIndex(text => text.startsWith('UPDATE equipment_reservations SET requires_reconfirmation'));
+  assert.ok(update < flagBooking && flagBooking < flagReservation, 'flags follow the edit');
+  assert.ok(sql.includes('SELECT transaction_timestamp() AS now'), 'the existing date-change notice still runs');
+  assert.equal(sql.at(-1), 'COMMIT');
+  assert.ok(!sql.includes('SAVEPOINT event_change_preview'), 'saving is not a preview');
+});
+
+test('TC_E10S02_02: saving a description-only edit flags nothing and sends no date notice', async () => {
+  const { client, sql } = scriptedClient();
+  const result = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', { description: 'New wording' });
+  assert.equal(result.impact.affected, false);
+  assert.ok(!sql.some(text => text.includes('requires_reconfirmation = true')));
+  assert.ok(!sql.includes('SELECT transaction_timestamp() AS now'));
+});
+
+test('a draft date change saves without the date notice; an unknown Event is refused', async () => {
+  const draft = scriptedClient({ status: 'draft' });
+  await updateEventInformationWithNotifications(poolFor(draft.client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' });
+  assert.ok(!draft.sql.includes('SELECT transaction_timestamp() AS now'));
+  const missing = scriptedClient({ event: false });
+  await assert.rejects(updateEventInformationWithNotifications(poolFor(missing.client), coordinator, 'nope', { description: 'x' }), (error: AccessError) => error.status === 403);
+  assert.equal(missing.sql.at(-1), 'ROLLBACK');
 });
