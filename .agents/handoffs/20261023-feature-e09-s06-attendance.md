@@ -2,8 +2,10 @@ Implement E09-S06 / SCRUM-68 Record attendance using the existing Event registra
 
 Branch based on main 240d7bc; no dependency branch merged in. Contract with #326: registered-only Event-level roster; Session choices never multiply counts. #324 supplies completion flow; #327 supplies live registration UI. No new migration; production migration verification remains separate. Assigned Coordinator only, current DB account rechecked, Event -> Account -> Registration locks; retries no-op; attendance history and audit commit together. Pending/waitlisted/withdrawn/rejected excluded from counts. False is default if no attendance history; corrections append a new row. No automatic venue changes (C-45).
 
-Pending: finish frontend/API/browser tests, coverage evidence, regenerate inventory, repository checks, draft PR, and ask registration owner to review shared contract. Human manual run must be supplied separately; no human PASS claimed. No Jira Done transition.
+Remaining: draft PR/CI, registration-owner response and independent code/test review. Human manual run must be supplied separately; no human PASS claimed. No Jira Done transition.
 
 Implementation and targeted API/frontend/browser tests complete. Unit regression 422, frontend 462, targeted backend 6, component 9, browser 4 passed. Targeted service (including real DB) and component coverage 100%. Automated real UI smoke passed; screenshots not committed as human evidence. Evidence session: 20261023-012214-xiangyingg-full-regression.md. Manual guide and implementation plan added. Registration contract asked at #326 issuecomment-6346826737; no owner response assumed. Remaining: repository check, draft PR and CI; human cross-story acceptance remains pending.
 
 Repository checks passed after staging EOF normalization; 163 tooling tests. Postplan structural/render check passed; https://vpod90od6vru.postplan.dev/v/1. No extra migration; local completion test database alone upgraded through 0024, no production access.
+
+Implementation commit 817f524. Compiled API runtime 17/17 passes with checkout-owned dependency cache; initial shared-cache symlink cleanup guard failed and was resolved locally without changing tests. Final manual fixtures should be prepared fresh after automated smoke so the human sees zero attended initially.
