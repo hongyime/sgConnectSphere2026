@@ -237,18 +237,18 @@ test.describe("E06-S06", () => {
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Orchid Hall had setup/turnaround 0 when confirmed Charity Run (09:00-11:00) and Pending Product Expo (11:00-13:00) were accepted; setup later changed to 30 minutes and C-109 flagged the retained bookings
+   *   Orchid Hall had setup/turnaround 0 when confirmed Charity Run (09:00-11:00) and Pending Product Expo (11:00-13:00) were accepted; after setup changed to 30 minutes, both remain and only Pending Product Expo has buffer_conflict true
    *
    * Test data:
    *   Before: adjacent advertised intervals, both buffers 0 | After: setup 30 creates buffered overlap from 10:30-11:00
    *
    * Expected result:
-   *   Approval rechecks current buffers and is refused; the Confirmed booking and Pending request remain with their buffer-conflict flags
+   *   Approval rechecks current buffers and is refused; Confirmed Charity Run remains unflagged and Pending Product Expo retains buffer_conflict true
    */
   test.fixme("TC_E06S06_01 - T-100: Verify approval rechecks a confirmed booking after buffer growth", async ({ page }) => {
     // Steps from the specification:
     // 1. Set Orchid Hall's setup and turnaround to 0; accept the two adjacent bookings.
-    // 2. Increase setup to 30 and confirm both bookings stay present and flagged under C-109.
+    // 2. Increase setup to 30; confirm both bookings stay present, Charity Run remains unflagged, and Product Expo has buffer_conflict true.
     // 3. Attempt to approve Product Expo; verify the current conflict blocks approval.
     void page;
   });
@@ -390,7 +390,7 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
 
 test.describe("E06-S06 — Week 7 case scaffolds", () => {
   test.fixme("TC_E06S06_06 — T-100: Verify buffer-growth conflicts block approvals until explicit resolution", async ({ page }) => {
-    // Start with valid adjacent 0/0 claims; grow buffers; verify both remain flagged and approvals fail while conflict remains.
+    // Start with valid adjacent 0/0 Pending claims; grow buffers; verify both remain, earlier Charity Run is unflagged, later Alumni Dinner has buffer_conflict true, and both approvals fail while conflict remains.
     // Primary resolution: Venue Staff reject one Pending request with a reason, then approve the other still-Pending request.
     // Alternative: an authorized Coordinator withdraws/replans one request; approve only remaining requests that are Pending and conflict-free.
     void page;
