@@ -7,7 +7,9 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -30,6 +32,7 @@ def _issue(**overrides) -> IssueInfo:
         status="In Review",
         assignee_account_id="acct-abc",
         assignee_display="student",
+        is_subtask=True,
     )
     defaults.update(overrides)
     return IssueInfo(**defaults)
@@ -318,6 +321,118 @@ class ReconcileControlFlowTests(unittest.TestCase):
                                     repo="a/b", stream=stream)
         self.assertEqual(code, 0)
         self.assertIn("does not match PR author", stream.getvalue())
+
+
+class RecordingJira:
+    """Accumulate fake HTTP calls; reject every POST unless explicitly allowed."""
+
+    def __init__(self, fields, *, allow_posts=False):
+        self.fields = fields
+        self.allow_posts = allow_posts
+        self.calls = []
+
+    def __call__(self, config, method, path, payload=None):
+        self.calls.append((method, path, payload))
+        if method == "POST":
+            if not self.allow_posts:
+                raise AssertionError(f"Forbidden POST: {path}")
+            if path.endswith("/transitions"):
+                assert payload == {"transition": {"id": "41"}}
+            elif not path.endswith("/comment"):
+                raise AssertionError(f"Unexpected POST: {path}")
+            return {}
+        if path.endswith("/transitions"):
+            return {"transitions": [{"id": "41", "to": {"name": "Done"}}]}
+        return {"fields": self.fields}
+
+
+class IssueTypeSafetyTests(unittest.TestCase):
+    """Recovery task 6: merge evidence must not accept SCRUM-73 or E00 Stories."""
+
+    def test_report_only_when_issue_type_is_absent(self):
+        fake = RecordingJira({"status": {"name": "In Review"},
+                              "parent": {"key": "SCRUM-11"}})
+        with patch.object(module, "_jira_call", side_effect=fake):
+            code = module.reconcile([_pr()], CONFIG, apply=True,
+                                    repo="a/b", stream=io.StringIO())
+        self.assertEqual(code, 0)
+        self.assertEqual([call[0] for call in fake.calls], ["GET"])
+
+    def test_report_only_when_issue_snapshot_uses_default_classification(self):
+        issue = IssueInfo("SCRUM-123", "In Review", None, None)
+        fake = RecordingJira({})
+        with patch.object(module, "get_issue", return_value=issue), \
+             patch.object(module, "_jira_call", side_effect=fake):
+            code = module.reconcile([_pr()], CONFIG, apply=True,
+                                    repo="a/b", stream=io.StringIO())
+        self.assertEqual(code, 0)
+        self.assertEqual(fake.calls, [])
+
+    def test_report_only_when_issue_is_not_explicitly_a_subtask(self):
+        classifications = (
+            {"name": "Story", "subtask": False},
+            {"name": "Task", "subtask": False},
+            {"name": "Subtask", "subtask": False},
+            {"name": "Subtask"}, {}, None, "Subtask", True,
+            *({"name": "Subtask", "subtask": value}
+              for value in (None, "true", "false", 1, 0, [], {})),
+        )
+        for identity in classifications:
+            for apply in (False, True):
+                for summary in ("E10-S04 cancellation", "E00 technical enabler"):
+                    with self.subTest(identity=identity, apply=apply, summary=summary):
+                        fields = {"status": {"name": "In Review"}, "issuetype": identity,
+                                  "summary": summary, "parent": {"key": "SCRUM-11"},
+                                  "subtasks": [{"key": "SCRUM-320",
+                                                "fields": {"status": {"name": "To Do"}}}]}
+                        fake = RecordingJira(fields)
+                        stream = io.StringIO()
+                        pr = _pr(head_ref="fix/partial", title="fix: migration only",
+                                 body="Partial delivery. Closes SCRUM-73.")
+                        with patch.object(module, "_jira_call", side_effect=fake):
+                            code = module.reconcile([pr], CONFIG, apply=apply,
+                                                    repo="a/b", stream=stream)
+                        self.assertEqual(code, 0)
+                        self.assertEqual([call[0] for call in fake.calls], ["GET"])
+                        self.assertIn("report-only", stream.getvalue())
+                        self.assertNotIn("would transition", stream.getvalue())
+
+    def test_terminal_statuses_remain_noop_when_classification_missing(self):
+        for status in module.TERMINAL_STATUSES:
+            with self.subTest(status=status):
+                fake = RecordingJira({"status": {"name": status}})
+                stream = io.StringIO()
+                with patch.object(module, "_jira_call", side_effect=fake):
+                    code = module.reconcile([_pr()], CONFIG, apply=True,
+                                            repo="a/b", stream=stream)
+                self.assertEqual(code, 0)
+                self.assertEqual([call[0] for call in fake.calls], ["GET"])
+                self.assertIn(f"already {status}", stream.getvalue())
+
+    def test_cli_event_yes_writes_only_when_subtask_identity_is_true(self):
+        event = {"pull_request": {"number": 319, "merged": True,
+                 "title": "fix: scoped change (SCRUM-73)", "body": "Partial delivery",
+                 "head": {"ref": "fix/SCRUM-73-partial"},
+                 "user": {"login": "student", "type": "User"}}}
+        for subtask in (False, True):
+            with self.subTest(subtask=subtask), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "event.json"
+                path.write_text(json.dumps(event), encoding="utf-8")
+                fake = RecordingJira({"status": {"name": "In Review"},
+                                      "issuetype": {"name": "Custom type", "subtask": subtask},
+                                      "parent": {"key": "SCRUM-11"}}, allow_posts=subtask)
+                with patch.dict(os.environ, {"JIRA_SITE_URL": CONFIG.site_url,
+                                "JIRA_EMAIL": CONFIG.email, "JIRA_API_TOKEN": CONFIG.api_token,
+                                "JIRA_PROJECT_KEY": CONFIG.project_key}), \
+                     patch.object(module, "_jira_call", side_effect=fake):
+                    code = module.main(["--event-path", str(path), "--yes", "--repo", "a/b"])
+                self.assertEqual(code, 0)
+                posts = [call[1] for call in fake.calls if call[0] == "POST"]
+                self.assertEqual(posts, ["/rest/api/3/issue/SCRUM-73/transitions",
+                                         "/rest/api/3/issue/SCRUM-73/comment"] if subtask else [])
+                self.assertTrue(all("/SCRUM-11" not in call[1] for call in fake.calls))
+                requested = fake.calls[0][1].partition("?fields=")[2].split(",")
+                self.assertIn("issuetype", requested)
 
 
 if __name__ == "__main__":

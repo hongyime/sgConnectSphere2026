@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Bell, LogOut, UserRound } from 'lucide-react';
-import { listNotifications } from '../notifications/notificationsApi';
+import { listNotifications, NOTIFICATIONS_CHANGED } from '../notifications/notificationsApi';
 import { homeFor, isRole, roleLabel, roleNavigation } from '../../app/roles';
 import { useSession } from '../../shared/session';
 import './appHeader.css';
@@ -17,10 +17,16 @@ function useUnreadCount(enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
     let active = true;
-    listNotifications().then(result => {
-      if (active && result.ok) setCount(result.notifications.filter(item => !item.is_read).length);
-    });
-    return () => { active = false; };
+    let generation = 0;
+    const refresh = () => {
+      const request = ++generation;
+      void listNotifications().then(result => {
+        if (active && request === generation && result.ok) setCount(result.notifications.filter(item => !item.is_read).length);
+      });
+    };
+    window.addEventListener(NOTIFICATIONS_CHANGED, refresh);
+    refresh();
+    return () => { active = false; window.removeEventListener(NOTIFICATIONS_CHANGED, refresh); };
   }, [enabled]);
   return count;
 }

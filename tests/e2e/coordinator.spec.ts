@@ -3,10 +3,8 @@
 // The dashboard, queue and event detail are live E03-S01 screens (SCRUM-32):
 // these tests run them against the in-memory fake in helpers/coordinatorBackend.ts,
 // which answers with the response shapes of api/events.ts. The decision page
-// (E03-S03) is tested in e03.spec.ts. The confirmation screen further down
-// still uses the mock data in
-// frontend/src/features/coordinator/mocks.ts (SCRUM-96) until their stories'
-// backends land.
+// (E03-S03) is tested in e03.spec.ts, and the readiness page that replaced the
+// mock confirmation screen (E08-S03) in eventReadiness.spec.ts.
 import { test, expect } from '@playwright/test';
 import { coordA, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 
@@ -38,15 +36,4 @@ test('request detail shows the assigned Coordinator and request details', async 
   await expect(page.getByRole('heading', { level: 1, name: 'Charity Run' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Event summary' })).toContainText('Assigned CoordinatorCoord A');
   await expect(page.getByText('Outdoor start line')).toBeVisible();
-});
-
-test('final confirmation blocks until readiness is met', async ({ page }) => {
-  await page.goto('/coordinator/events/EVT-C01/confirm');
-  await expect(page.getByRole('button', { name: 'Confirm event' })).toBeDisabled();
-  await expect(page.getByText('Complete the readiness checklist first.')).toBeVisible();
-  await page.goto('/coordinator/events/EVT-C03/confirm');
-  const confirmButton = page.getByRole('button', { name: 'Confirm event' });
-  await expect(confirmButton).toBeEnabled();
-  await confirmButton.click();
-  await expect(page.getByRole('status')).toContainText('Event confirmed');
 });

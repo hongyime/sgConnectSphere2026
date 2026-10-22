@@ -52,8 +52,8 @@ export function VenueDashboard() {
   );
 }
 
-// E05-S01 / E05-S02 venue catalogue for Venue Staff, on the shared blocks
-// (ADR-017). Search runs on submit; retiring asks for confirmation inline and
+// E05-S01 / E05-S02 / E05-S05 venue catalogue for Venue Staff, on the shared
+// blocks (ADR-017). Search runs on submit; retiring asks for confirmation inline and
 // lists any future bookings that stop it (Scenario 4).
 export function VenueInventory() {
   // Search input the user is typing; only takes effect on submit. Kept
@@ -175,6 +175,8 @@ function VenueCard({ venue, onRetired }: { venue: Venue; onRetired: () => void }
           ['Location', venue.location],
           ['Opening hours', `${venue.opens_at}–${venue.closes_at}`],
           ['Max capacity', venue.max_capacity.toLocaleString('en-SG')],
+          ['Setup time', `${venue.setup_time_minutes} minutes`],
+          ['Turnaround time', `${venue.turnaround_time_minutes} minutes`],
           ['Layouts', list(venue.supported_layouts.map((layout) => `${layout.label} (${layout.capacity})`))],
           ['Facilities', list(venue.facilities)],
           ['Accessibility', list(venue.accessibility_features)],

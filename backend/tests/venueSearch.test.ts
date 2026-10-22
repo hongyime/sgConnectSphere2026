@@ -16,6 +16,16 @@ for (const [name, change, expected] of [
 ] as [string,Partial<Candidate>,string][]) test(`TC_E06S01_02 TC_E06S01_03: ${name} identifies failing criterion`,()=> {
  const result=assessVenue({...venue,...change},criteria); assert.equal(result.suitable,false); assert.ok(result.mismatches.some(m=>m.includes(expected)));
 });
+test('TC_E05S05_07: an unavailable venue names the buffered overlap in Singapore time', () => {
+ const result = assessVenue({ ...venue, available: false, booking_overlap: { starts_at: '2027-01-15T04:30:00.000Z', ends_at: '2027-01-15T04:45:00.000Z' } }, criteria);
+ assert.equal(result.suitable, false);
+ assert.ok(result.mismatches.includes('Unavailable during the requested period: another booking needs the venue from 15 Jan 2027, 12:30 pm to 15 Jan 2027, 12:45 pm, including setup and turnaround.'));
+});
+test('TC_E05S05_07: an unavailable venue with no clashing booking keeps the plain sentence', () => {
+ for (const booking_overlap of [null, undefined]) {
+  assert.ok(assessVenue({ ...venue, available: false, booking_overlap }, criteria).mismatches.includes('Unavailable during the requested period.'));
+ }
+});
 test('capacity without layout uses venue maximum and respects separate minimum',()=>assert.equal(assessVenue(venue,{...criteria,layout:'',capacity:250}).suitable,false));
 const user: AuthenticatedUser={id:'u',email:'u@example.test',role:'event_coordinator',isActive:true,failedLoginCount:0};
 const query: Query=async <T extends Record<string,unknown>>()=>({rows:[] as T[]});

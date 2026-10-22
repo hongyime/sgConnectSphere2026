@@ -63,7 +63,9 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const activity = await listEventActivity(query, event.id);
     const comments = await listEventComments(query, event.id);
-    const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(String(event.status));
+    // E08-S03 (D64): Safety Review counts as approved, so an Organiser can't
+    // change restricted details while the safety check runs.
+    const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(String(event.status));
     const assignedCoordinator = user.role === 'event_coordinator' && event.coordinator_id === user.id;
     const organiser = user.role === 'event_organiser';
     const canEdit = assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id));
@@ -152,7 +154,7 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
   if (user.role === 'event_coordinator' && (event.coordinator_id !== user.id || !['approved', 'planning', 'confirmed', 'completed'].includes(event.status))) {
     throw new AccessError(403, 'Only the assigned Coordinator may edit an approved event.');
   }
-  const approved = ['approved', 'planning', 'confirmed', 'completed'].includes(event.status);
+  const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(event.status);
   const changed = Object.keys(patch).filter(field => editableFields.has(field));
   if (!changed.length) throw new AccessError(400, 'No editable fields supplied.');
   if (user.role === 'event_organiser' && approved) {
