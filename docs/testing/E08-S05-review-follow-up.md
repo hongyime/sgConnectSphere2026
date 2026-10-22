@@ -1,13 +1,12 @@
 # E08-S05 manual evidence review follow-up — PR #325
 
-These are outstanding human checks, not recorded PASS results.
+New human evidence: [23 October session](runs/20261023-005047-xiangyingg-frontend-e2e.md), tested application 553962f. Original session/images remain unchanged.
 
-- TC_E08S05_01: use a fresh AUTO fixture; capture Confirmed with a passed end time, trigger the authorized evaluator, refresh, then capture Completed with event code and System activity row. The original 01-2 image shows manual completion before the end and is not auto-completion proof.
-- TC_E08S05_04: capture CANCELLED before and after the same evaluation, with original passed end time and event code. A single unchanged Cancelled view is insufficient evaluation evidence.
-- TC_E08S05_06: remains pending human controlled-boundary evidence or explicit product-owner acceptance of automated boundary proof. Do not change the computer clock or claim an automated run was manual.
-- Retake TC_E08S05_02-2 on the MANUAL event: the original named image is the PREMATURE event and remains Confirmed. Capture its Completed result with the event code visible.
-- Retake TC_E08S05_03-1 including the disabled completion control and explanation. For TC_E08S05_05, capture System for automatic completion separately from Coordinator A manual completion. Obtain Bryan product-owner approval for the Coordinator activity-log role substitution; do not claim the admin screen was tested.
-- Follow docs/testing/manual/E08-S05-click-through.md on the application branch. Keep the original session/images unchanged and append a new human T-65/T-93 session with the actual tested commit.
-- Merge only after #324 and after the missing acceptance evidence is reviewed.
+- TC01: fresh AUTO Confirmed after its end, then Completed with System activity. Evaluator terminal output was not supplied; browser sequence and System audit are recorded.
+- TC02: correct MANUAL Completed success and reload captures replace the earlier wrong-event evidence for review. Confirmation Go back branch is not captured.
+- TC03: retake includes future start, explanation and disabled completion control.
+- TC04: same CANCELLED event before/after the AUTO evaluation remains Cancelled after its original end.
+- TC05: Coordinator A log supplied. PO decision 21 October (94ccd2f on #324) approves the assigned Coordinator reader; no administrator screen is claimed. Separate System capture supports TC01.
+- TC06 remains SKIP pending controlled human boundary evidence or explicit PO acceptance of automated proof. Do not change the computer clock or label automation as manual.
 
-Production migration 0022 application and verification must be recorded by the authorized deployment owner under docs/ops/production-migrations.md before the implementation merge gate is cleared. A merged migration PR does not prove production application.
+Review the new evidence; merge only after #324. Production migration 0022 must be verified by the authorized deployment owner under docs/ops/production-migrations.md. Local migration application is not production proof. Independent review and required CI remain gates; no Jira Done transition is claimed.
