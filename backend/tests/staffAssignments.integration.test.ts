@@ -8,12 +8,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { loginDatabase } from './helpers/loginDatabase.js';
+import { listInbox, markInboxRead } from '../src/modules/eventNotifications/inbox.js';
 import {
   assignTechnician, getRequest, listQueue, mySchedule, removeAssignment,
 } from '../src/modules/equipmentSupport/staffAssignments.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
-test('TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 technician assignments against PostgreSQL', async () => {
+test('TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 TC_E11S01_06 TC_E11S01_07 TC_E11S01_09 TC_E11S01_11 technician assignments and notification inbox against PostgreSQL', async () => {
   const db = await loginDatabase();
   const { pool } = db;
   const q = pool.query.bind(pool);
@@ -113,6 +114,61 @@ test('TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07
     await assert.rejects(assign(later.requestId, techOff), { status: 400, message: 'Only active Technical Support Staff can be assigned.' });
     await assert.rejects(listQueue(q, as(coordId, 'event_coordinator')), { status: 403 });
     assert.equal((await q(`SELECT * FROM audit_logs WHERE actor_id=$1 AND action='Access Denied'`, [coordId])).rowCount, 1);
+
+    // E11-S01 / T-64: self-actions still change staffing and the schedule,
+    // but never persist routine self-notifications or their email deliveries.
+    const self = await eventWithRequest('EVT-SELF', 'Self staffing', 'planning', '[2027-02-01 09:00+08,2027-02-01 12:00+08)');
+    const own = await assign(self.requestId, techA);
+    assert.equal(own.status, 201);
+    assert.equal(await statusOf(self.requestId), 'staffed');
+    const ownId = (own.body as { assignment: { id: string } }).assignment.id;
+    assert.equal((await removeAssignment(pool, as(techA), { assignment: ownId })).status, 200);
+    assert.equal(await statusOf(self.requestId), 'open');
+    assert.equal((await q('SELECT status FROM tech_staff_assignments WHERE id=$1', [ownId])).rows[0].status, 'released');
+    assert.equal((await q('SELECT count(*)::int AS n FROM notifications WHERE event_id=$1', [self.eventId])).rows[0].n, 0);
+    assert.equal((await q('SELECT count(*)::int AS n FROM notification_deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.event_id=$1', [self.eventId])).rows[0].n, 0);
+
+    // Another person's action must still notify the colleague atomically.
+    await q(`CREATE FUNCTION reject_staffing_delivery() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN RAISE EXCEPTION 'Synthetic staffing delivery failure'; END; $$`);
+    await q(`CREATE TRIGGER reject_staffing_delivery BEFORE INSERT ON notification_deliveries
+      FOR EACH ROW EXECUTE FUNCTION reject_staffing_delivery()`);
+    try {
+      await assert.rejects(assign(self.requestId, techB), /Synthetic staffing delivery failure/);
+      assert.equal(await statusOf(self.requestId), 'open');
+      assert.equal((await q("SELECT count(*)::int AS n FROM tech_staff_assignments WHERE request_id=$1 AND status='assigned'", [self.requestId])).rows[0].n, 0);
+      assert.equal((await q('SELECT count(*)::int AS n FROM notifications WHERE event_id=$1', [self.eventId])).rows[0].n, 0);
+    } finally { await q('DROP TRIGGER reject_staffing_delivery ON notification_deliveries'); }
+    const colleagueAssignment = await assign(self.requestId, techB);
+    assert.equal(colleagueAssignment.status, 201);
+    const colleagueId = (colleagueAssignment.body as { assignment: { id: string } }).assignment.id;
+    await q(`CREATE TRIGGER reject_staffing_delivery BEFORE INSERT ON notification_deliveries
+      FOR EACH ROW EXECUTE FUNCTION reject_staffing_delivery()`);
+    try {
+      await assert.rejects(removeAssignment(pool, as(techA), { assignment: colleagueId }), /Synthetic staffing delivery failure/);
+      assert.equal(await statusOf(self.requestId), 'staffed');
+      assert.equal((await q('SELECT status FROM tech_staff_assignments WHERE id=$1', [colleagueId])).rows[0].status, 'assigned');
+      assert.equal((await q('SELECT count(*)::int AS n FROM notifications WHERE event_id=$1', [self.eventId])).rows[0].n, 1);
+      assert.equal((await q('SELECT count(*)::int AS n FROM notification_deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.event_id=$1', [self.eventId])).rows[0].n, 1);
+    } finally { await q('DROP TRIGGER reject_staffing_delivery ON notification_deliveries'); }
+    assert.equal((await removeAssignment(pool, as(techA), { assignment: colleagueId })).status, 200);
+    const colleagueNotices = await q(`SELECT n.user_id, count(d.id)::int AS deliveries FROM notifications n
+      LEFT JOIN notification_deliveries d ON d.notification_id=n.id WHERE n.event_id=$1 GROUP BY n.id`, [self.eventId]);
+    assert.equal(colleagueNotices.rows.length, 2);
+    assert.ok(colleagueNotices.rows.every(n => n.user_id === techB && n.deliveries === 1));
+
+    // Use the actual inbox readers, not a second test-only notification query.
+    const inboxForEvent = async (userId: string) => (await listInbox(q, userId)).filter(n => n.event_id === self.eventId);
+    const inbox = await inboxForEvent(techB);
+    assert.deepEqual(inbox.map(n => n.title), ['Technical support assignment removed', 'Technical support assignment']);
+    assert.ok(inbox.every(n => n.is_read === false && n.read_at === null));
+    for (const unrelated of [techA, techC, coordId, organiser]) assert.equal((await inboxForEvent(unrelated)).length, 0);
+    await assert.rejects(markInboxRead(q, techA, inbox[0]!.id), { status: 404 });
+    const read = await markInboxRead(q, techB, inbox[0]!.id);
+    const refreshed = await inboxForEvent(techB);
+    assert.equal(refreshed[0]!.is_read, true);
+    assert.deepEqual(refreshed[0]!.read_at, read.read_at);
+    assert.equal(refreshed[1]!.is_read, false);
 
     // Removal still works after the event is cancelled, so nobody's time stays blocked.
     await q(`UPDATE events SET status='cancelled' WHERE id=$1`, [conference.eventId]);

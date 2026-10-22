@@ -3,24 +3,26 @@
 Reads Jira credentials from four environment variables documented in
 `.env.template`: ``JIRA_SITE_URL``, ``JIRA_EMAIL``, ``JIRA_API_TOKEN``, and
 ``JIRA_PROJECT_KEY``. When a merged PR references a Jira issue (via the branch
-name or the PR title), verifies the issue is in the ``Done`` state and offers
-to transition it if not.
+name, the PR title, or an explicit closing clause), reports its status. Only
+positively classified subtasks are eligible for automatic transition to Done.
 
 Two invocation modes:
 
 - Locally, after your own PR merged::
 
       python scripts/reconcile_jira.py --pr 94
-      python scripts/reconcile_jira.py --pr 94 --yes         # apply changes
+      python scripts/reconcile_jira.py --pr 94 --yes         # apply subtask changes
 
 - From CI, on ``pull_request: closed`` with ``merged == true``::
 
       python scripts/reconcile_jira.py --event-path "$GITHUB_EVENT_PATH" --yes
 
-Dry-run is the default. ``--yes`` performs the transition and posts a short
-Jira comment linking back to the PR. Only issues whose key appears in the
-branch name or the PR title are touched — body-only mentions ("follow-up to
-SCRUM-42") are ignored to avoid false positives.
+Dry-run is the default. ``--yes`` transitions explicitly classified subtasks and
+posts a short Jira comment linking back to the PR. All other issues, including
+Stories, E00 technical enablers and unknown classifications, remain report-only:
+no transition or comment is posted, even with ``--yes``. Story completion needs
+explicit Definition of Done acceptance, not merge evidence alone. Bare body
+mentions ("follow-up to SCRUM-42") are ignored to avoid false positives.
 
 Secrets are read from the environment; nothing is written to disk.
 """
@@ -99,9 +101,7 @@ def _strip_non_prose(body: str) -> str:
         lines.append(line)
     return "\n".join(lines)
 
-# Statuses that should not be transitioned. Any status not in this set is
-# treated as "needs to move to Done" when the referenced PR merged. Kept
-# permissive so a workflow rename doesn't silently break the check.
+# Statuses that should not be transitioned, even for eligible subtasks.
 TERMINAL_STATUSES = {"Done", "Closed", "Cancelled", "Won't Do", "Rejected"}
 
 
@@ -123,6 +123,7 @@ class IssueInfo:
     status: str
     assignee_account_id: str | None
     assignee_display: str | None
+    is_subtask: bool = False
 
 
 @dataclass(frozen=True)
@@ -236,14 +237,16 @@ def get_status(config: JiraConfig, key: str) -> str:
 
 def get_issue(config: JiraConfig, key: str) -> IssueInfo:
     """Fetch the minimal issue snapshot used by reconcile()."""
-    data = _jira_call(config, "GET", f"/rest/api/3/issue/{key}?fields=status,assignee")
+    data = _jira_call(config, "GET", f"/rest/api/3/issue/{key}?fields=status,assignee,issuetype")
     fields = data["fields"]
     assignee = fields.get("assignee") or {}
+    issue_type = fields.get("issuetype")
     return IssueInfo(
         key=key,
         status=fields["status"]["name"],
         assignee_account_id=assignee.get("accountId"),
         assignee_display=assignee.get("displayName"),
+        is_subtask=isinstance(issue_type, dict) and issue_type.get("subtask") is True,
     )
 
 
@@ -323,6 +326,11 @@ def reconcile(prs: Iterable[PullRequest], config: JiraConfig, *, apply: bool, re
                 print(f"PR #{pr.number}: {key} already {issue.status}; nothing to do.",
                       file=stream)
                 continue
+            if not issue.is_subtask:
+                print(f"PR #{pr.number}: {key} is {issue.status}; report-only: not an "
+                      f"explicitly classified subtask. No transition or comment; story "
+                      f"completion requires explicit Definition of Done acceptance.", file=stream)
+                continue
             if not apply:
                 print(f"PR #{pr.number}: {key} is {issue.status}; would transition to Done "
                       f"(rerun with --yes to apply).", file=stream)
@@ -356,7 +364,8 @@ def main(argv: list[str] | None = None) -> int:
     source.add_argument("--event-path", type=Path,
                         help="Path to a GitHub pull_request event JSON (e.g. $GITHUB_EVENT_PATH).")
     parser.add_argument("--yes", action="store_true",
-                        help="Apply transitions. Without this, only prints what would change.")
+                        help="Apply transitions/comments only to explicit subtasks; all other "
+                             "issues remain report-only. Without this, dry-run only.")
     parser.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY", ""),
                         help="Repository to fetch PRs from and cite in Jira comments. Defaults to $GITHUB_REPOSITORY.")
     args = parser.parse_args(argv)
