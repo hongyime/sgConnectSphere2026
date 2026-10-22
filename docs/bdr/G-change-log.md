@@ -309,3 +309,28 @@ and delivered in #247, is now in the release and product backlogs with five
 scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
 which stays Done (T-74): the Organiser could not edit the registration setup,
 and the registration date labels were laid out wrongly.
+
+## 22 October 2026: PO interpretation of venue claim rule B (T-100)
+
+The Product Owner approved a prospective interpretation of C-01, C-16, C-46,
+C-60 and C-65: the first successfully accepted hold or request claims its
+venue's buffered slot; later overlapping claims are refused while that claim is
+active. Hold conversion keeps the same claim. Approval rechecks current
+availability, concurrency and current buffers. C-109 continues to govern later
+buffer edits: retain affected bookings and flag conflicts; do not release a
+claim silently. Approval waits until the conflict is explicitly rejected,
+withdrawn or replanned. This is a PO interpretation, not a new customer quote.
+
+T-100 resolves the open choice recorded in #338 prospectively. It does not adopt
+the first-approval proposal associated with #308; that proposal remains
+untouched, and this addendum makes no claim that #308 has merged. Reconcile only
+E06-S06 in both backlog views and its seven existing cases, plus the shared
+contract and matching scaffold descriptions. Preserve E06-S03's multi-venue
+semantics and all IDs, estimates, sprint assignments, owners and Done flags.
+The decision does not rewrite migration 0016 or adopt migration 0021. Product
+adoption, implementation, evidence and human review gates remain in force.
+
+Regenerate the CAA 221026 backlog and test-case workbooks, refresh the legacy
+test-case compatibility input from the generated workbook, rebuild the coverage
+inventory, and regenerate the BDR Word export. Keep older dated exports and all
+T-65 records as historical evidence.

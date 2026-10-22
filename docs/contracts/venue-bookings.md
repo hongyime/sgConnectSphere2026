@@ -320,3 +320,32 @@ Source: Product Owner clarification relayed by the story owner, E06-S04 owner
 agreement, and the story owner's notification/retry/chain confirmations in the
 15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
 database migration, staff-routing verification and human manual run remain pending.
+
+## E06-S06 rule B: first accepted claim and approval recheck (T-100, 22 October 2026)
+
+The Product Owner approved this interpretation of C-01, C-16, C-46, C-60 and
+C-65. It is a PO interpretation, not a new customer quote. It applies to
+E06-S06 and does not change E06-S03's multiple-venue semantics.
+
+- A claim is active while its booking is Pending, Confirmed, or Tentative with
+  an expiry in the future. Converting an unexpired Tentative hold to a Pending
+  request changes the same claim; it does not create a second reservation.
+- The first successfully accepted hold or request reserves that venue's current
+  buffered window. A later overlapping hold or request is refused while the
+  first claim remains active. Concurrent overlapping new claims serialize: one
+  is accepted, and the losing request returns 409 without a new row or effects.
+- Approval rechecks live availability, concurrency and current buffer values.
+  If a later buffer edit creates a conflict, apply C-109 and the existing
+  `buffer_conflict` flag: save the edit, retain the affected bookings and flag
+  them for review. Refuse approval while the conflict remains. Do not silently
+  release a claim or treat the first approval as the winner. An explicit
+  rejection by Venue Staff or Coordinator withdrawal/replan must resolve the
+  conflict before later approval succeeds.
+- Occupancy uses half-open buffered intervals, so exact adjacency is allowed.
+  Conflict checks remain per venue: the same event may hold or confirm
+  overlapping bookings at different venues (C-67, T-68).
+
+This decision creates no queue, status, schema or migration change. It does not
+rewrite migration 0016 or adopt migration 0021. The open-choice snapshot in #338
+is superseded prospectively; the proposal associated with #308 is not adopted
+and remains untouched. This contract note does not assert that #308 has merged.
