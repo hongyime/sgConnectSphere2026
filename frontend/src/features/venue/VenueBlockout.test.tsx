@@ -42,15 +42,18 @@ function renderPage(handlers: Record<string, FakeHandler> = {}) {
 
 test('TC_E05S04_01 - lists current and upcoming blocks for the picked venue, then creates a new one (Scenario 1)', async () => {
   const createCalls: unknown[] = [];
+  const createdBlock = {
+    id: 'blk-2', venueId: 'v-1', from: '2027-02-01', to: '2027-02-03', reason: 'Scheduled maintenance',
+    startsAt: '2027-01-31T16:00:00.000Z', endsAt: '2027-02-03T16:00:00.000Z',
+  };
   const calls = renderPage({
     'GET /api/venues?q=': { body: { venues } },
-    'GET /api/venues?id=v-1&blocks=1': () => ({ body: { blocks: [existingBlock] } }),
+    'GET /api/venues?id=v-1&blocks=1': () => ({ body: { blocks: createCalls.length ? [existingBlock, createdBlock] : [existingBlock] } }),
     'POST /api/venues': async (_url, init) => {
       const body = init?.body ? JSON.parse(String(init.body)) : null;
       createCalls.push(body);
       return { status: 201, body: {
-        block: { id: 'blk-2', venueId: 'v-1', from: '2027-02-01', to: '2027-02-03', reason: 'Scheduled maintenance',
-          startsAt: '2027-01-31T16:00:00.000Z', endsAt: '2027-02-03T16:00:00.000Z' },
+        block: createdBlock,
         notifiedEventCount: 0,
       } };
     },
@@ -72,9 +75,14 @@ test('TC_E05S04_01 - lists current and upcoming blocks for the picked venue, the
   // Success flash appears and the request shape matches the backend contract.
   expect(await screen.findByText(/Block saved/)).toBeInTheDocument();
   expect(createCalls).toEqual([{ action: 'block', id: 'v-1', from: '2027-02-01', to: '2027-02-03', reason: 'Scheduled maintenance' }]);
-  // The list reloads: expect at least one block-list GET after the POST.
-  const blockListGets = calls.filter(call => call.method === 'GET' && call.url.searchParams.get('blocks') === '1');
-  expect(blockListGets.length).toBeGreaterThanOrEqual(2);
+  // The success flash and reload effect are separate React updates. Wait for
+  // the actual GET and server-returned row, rather than assuming the flash
+  // means the effect has already run (CI exposed this scheduling race).
+  await waitFor(() => {
+    const blockListGets = calls.filter(call => call.method === 'GET' && call.url.searchParams.get('blocks') === '1');
+    expect(blockListGets.length).toBeGreaterThanOrEqual(2);
+  });
+  expect(await screen.findByRole('cell', { name: 'Scheduled maintenance', exact: true })).toBeInTheDocument();
 });
 
 test('TC_E05S04_02 - shows the server message and names the conflicting booking on a 409 booking_conflict (Scenario 2)', async () => {

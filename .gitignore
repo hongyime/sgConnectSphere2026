@@ -74,3 +74,5 @@ artifacts/sbom/*
 !artifacts/e10-cancellation-review.html
 !artifacts/e10-cancellation-automated-desktop.png
 !artifacts/e10-cancellation-automated-phone.png
+
+!artifacts/e10-cancellation-ci-followup.html
