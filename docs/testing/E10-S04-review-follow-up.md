@@ -1,10 +1,7 @@
 # E10-S04 manual evidence review follow-up — PR #321
 
-Latest human session: [22 October retake](runs/20261022-232415-xiangyingg-frontend-e2e.md), tested application `4b37591`. Earlier immutable sessions/images remain unchanged.
-
-- **TC03 PASS, ready for review:** registered and waitlisted attendee notices supplied for fresh event E10-MANUAL-44ae5f72. Account attribution follows the human login sequence; headers are cropped.
-- **Stored per-Session release proof supplied:** 01-11 shows both Sessions and both arrangement types Released, with periods. This is manual read-only database inspection, not a browser screen.
-- **TC01 still partial:** retake fresh equipment availability with selected periods and item visible for both Sessions. Supplied 01-7 is the older event E10-MANUAL-2e0089d2 and is excluded. Capture selected venue name with the after-calendar date/free periods.
-- Supplied before-state terminal 01-4 is withheld from Git because the prompt identifies the local machine/user; retain original locally and supply a clean human capture. Do not regenerate or alter manual evidence.
-- Append later retakes as a new T-65/T-93 session, never overwrite existing records or images.
-- Merge #321 only after #320 and review of complete acceptance evidence. Authorized production migration 0022 application/verification is a separate gate; a merged migration PR is not proof it ran in production.
+- **TC01 PASS, ready for review:** [final contextual retakes](runs/20261022-234437-xiangyingg-frontend-e2e.md) complete the [earlier 22 October journey](runs/20261022-232415-xiangyingg-frontend-e2e.md), application `4b37591`. Clean before-state database output and earlier after-state output identify both Sessions/periods and all arrangement transitions. Final equipment captures show both selected periods, correct item and restored free quantity; venue capture shows selected venue/date and Free availability. Earlier staff notices and cancellation result are linked.
+- **TC03 PASS, ready for review:** the earlier 22 October record contains registered and waitlisted attendee notices. Account attribution follows the tester's sequence; headers are cropped.
+- Final screenshots are in a new immutable session folder; original records/images, including the wrong-fixture and cropped captures, remain unchanged. The clean before-state capture is retained terminal output, not a new Planning transition or data reset.
+- No further screenshot gap is identified for this requested TC01/TC03 follow-up. Teammate acceptance/review and required CI still apply. Database inspection is distinguished from browser evidence.
+- Merge #321 after implementation #320 through normal checks. Authorized production migration 0022 application/verification is separate; no production, Jira Done or full-story closure claim.
