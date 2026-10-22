@@ -28,3 +28,7 @@ Additional real DB tests cover current authority, wrong event/registration, conc
 Main includes 0023–0024 schema (#322). No dependent feature branch merged into this branch. Registration owner contract posted on #326: https://github.com/hongyime/sgConnectSphere2026/pull/326#issuecomment-6346826737. Await owner review of statuses/counts/lock order. #324 completion and #326/#327 live registration are needed for the full human register → complete → attendance flow. Local synthetic fixture setup is not evidence of those upstream flows or production migration verification.
 
 Manual guide: `docs/testing/manual/E09-S06-click-through.md`. Human screenshots not yet supplied. Draft/review status only; do not mark SCRUM-68 Done. Service SQL coverage is measured with real PostgreSQL rather than pretending mocked SQL proves persistence; targeted service and component coverage reports are recorded in the run session.
+
+## Combined integration follow-up
+
+Automated live registration → completion → attendance passed on isolated assembly e4a6860; [record](../testing/runs/20261023-015630-xiangyingg-frontend-e2e.md). Actual UI registrations selected three Sessions across two attendees, actual UI completion preceded attendance, and registered count stayed two while attended became one. This does not claim human T-93 acceptance, production migration verification, merged dependencies or owner confirmation. #343 source remains independent of those dependency branches. Reusable harness: `scripts/verify_attendance_integration.ts`.
