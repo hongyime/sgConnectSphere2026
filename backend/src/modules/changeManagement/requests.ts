@@ -14,16 +14,22 @@ const columns = {
   equipmentRequirements: 'equipment_requirements', accessibilityNote: 'accessibility_note',
   layoutPreference: 'layout_preference', registrationSetup: 'registration_setup',
   startAt: 'starts_at', endAt: 'ends_at',
+  layoutId: 'layout_id', accessibilityFeatureIds: 'accessibility_feature_ids',
+  registrationEnabled: 'registration_enabled', waitlistEnabled: 'waitlist_enabled',
+  registrationDates: 'registration_dates', withdrawalDeadline: 'withdrawal_deadline',
 } as const;
 type Field = keyof typeof columns;
-type Values = Partial<Record<Field, string | number | null>>;
+type RegistrationDates = { opensAt: string | null; closesAt: string | null };
+type Value = string | number | boolean | null | string[] | RegistrationDates;
+type Values = Partial<Record<Field, Value>>;
 const safeFields = new Set<Field>(['title', 'description', 'purpose']);
 export const WAITING_FOR_ARRANGEMENTS = 'Approved — waiting for the arrangement check';
 
 type Event = {
   id: string; event_code: string; organiser_id: string; client_org_id: string;
   coordinator_id: string | null; status: string;
-} & Record<(typeof columns)[Field], string | number | Date | null>;
+  registration_opens_at: Date | null; registration_closes_at: Date | null;
+} & Record<(typeof columns)[Field], Value | Date>;
 type Request = {
   id: string; event_id: string; requested_by: string; description: string;
   requested_changes: { fields: Values; before: Values; action?: string };
@@ -33,6 +39,14 @@ type Request = {
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AccessError(400, 'Expected an object.');
   return value as Record<string, unknown>;
+}
+
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function dateValue(value: unknown, nullable = false): string | null {
+  if (nullable && value === null) return null;
+  if (typeof value !== 'string' || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value)
+    || !Number.isFinite(Date.parse(value))) throw new AccessError(400, 'Use a valid date and time with a timezone.');
+  return new Date(value).toISOString();
 }
 
 export function parseChangeRequest(body: unknown) {
@@ -45,15 +59,35 @@ export function parseChangeRequest(body: unknown) {
   for (const [key, value] of Object.entries(raw)) {
     if (!Object.hasOwn(columns, key)) throw new AccessError(400, `Unsupported change field: ${key}`);
     const field = key as Field;
-    if (field === 'expectedAttendance') {
+    if (field === 'layoutId') {
+      if (value !== null && (typeof value !== 'string' || !uuid.test(value))) throw new AccessError(400, 'Select a valid layout.');
+      fields[field] = typeof value === 'string' ? value.toLowerCase() : null;
+    } else if (field === 'accessibilityFeatureIds') {
+      if (!Array.isArray(value) || value.some(id => typeof id !== 'string' || !uuid.test(id))) {
+        throw new AccessError(400, 'Select valid accessibility features.');
+      }
+      fields[field] = [...new Set((value as string[]).map(id => id.toLowerCase()))].sort();
+    } else if (field === 'registrationEnabled' || field === 'waitlistEnabled') {
+      if (typeof value !== 'boolean') throw new AccessError(400, `${field} must be true or false.`);
+      fields[field] = value;
+    } else if (field === 'registrationDates') {
+      const dates = object(value);
+      if (Object.keys(dates).some(key => !['opensAt', 'closesAt'].includes(key))
+        || !Object.hasOwn(dates, 'opensAt') || !Object.hasOwn(dates, 'closesAt')) {
+        throw new AccessError(400, 'Specify both registration window boundaries.');
+      }
+      const opensAt = dateValue(dates.opensAt, true), closesAt = dateValue(dates.closesAt, true);
+      if (opensAt && closesAt && opensAt >= closesAt) throw new AccessError(400, 'Registration closing must be after opening.');
+      fields[field] = { opensAt, closesAt };
+    } else if (field === 'withdrawalDeadline') {
+      fields[field] = dateValue(value, true);
+    } else if (field === 'expectedAttendance') {
       if (!Number.isSafeInteger(value) || (value as number) <= 0 || (value as number) > 2147483647) {
         throw new AccessError(400, 'Expected attendance must be a positive integer.');
       }
       fields[field] = value as number;
     } else if (field === 'startAt' || field === 'endAt') {
-      if (typeof value !== 'string' || !/^\d{4}-\d\d-\d\dT.*(?:Z|[+-]\d\d:\d\d)$/.test(value)
-        || !Number.isFinite(Date.parse(value))) throw new AccessError(400, 'Use a valid date and time with a timezone.');
-      fields[field] = new Date(value).toISOString();
+      fields[field] = dateValue(value);
     } else {
       const max = field === 'title' ? 240 : 4000;
       if (typeof value !== 'string' || !value.trim() || value.trim().length > max) {
@@ -67,6 +101,10 @@ export function parseChangeRequest(body: unknown) {
 
 function snapshot(event: Event, fields: Values): Values {
   return Object.fromEntries(Object.keys(fields).map(key => {
+    if (key === 'registrationDates') return [key, {
+      opensAt: event.registration_opens_at?.toISOString() ?? null,
+      closesAt: event.registration_closes_at?.toISOString() ?? null,
+    }];
     const value = event[columns[key as Field]];
     return [key, value instanceof Date ? value.toISOString() : value];
   }));
@@ -79,10 +117,24 @@ function active(event: Event) {
 }
 
 async function lockedEvent(client: PoolClient, identifier: string) {
-  const event = (await client.query<Event>(`SELECT *, lower(event_range) AS starts_at,
-    upper(event_range) AS ends_at FROM events WHERE id::text=$1 OR event_code=$1 FOR UPDATE`, [identifier])).rows[0];
+  const event = (await client.query<Event>(`SELECT e.*, lower(e.event_range) AS starts_at,
+    upper(e.event_range) AS ends_at,
+    ARRAY(SELECT feature_id::text FROM event_accessibility_needs WHERE event_id=e.id ORDER BY feature_id) AS accessibility_feature_ids
+    FROM events e WHERE e.id::text=$1 OR e.event_code=$1 FOR UPDATE OF e`, [identifier])).rows[0];
   if (!event) throw new AccessError(404, 'Event not found.');
   return event;
+}
+
+async function validateReferences(client: PoolClient, fields: Values) {
+  if (fields.layoutId !== undefined && fields.layoutId !== null) {
+    if (!(await client.query('SELECT id FROM room_layouts WHERE id=$1 FOR KEY SHARE', [fields.layoutId])).rowCount) {
+      throw new AccessError(400, 'The selected layout no longer exists.');
+    }
+  }
+  if (Array.isArray(fields.accessibilityFeatureIds) && fields.accessibilityFeatureIds.length) {
+    const result = await client.query('SELECT id FROM accessibility_features WHERE id=ANY($1::uuid[]) FOR KEY SHARE', [fields.accessibilityFeatureIds]);
+    if (result.rowCount !== fields.accessibilityFeatureIds.length) throw new AccessError(400, 'A selected accessibility feature no longer exists.');
+  }
 }
 
 async function activeActor(client: PoolClient, user: AuthenticatedUser) {
@@ -140,12 +192,13 @@ export async function submitChangeRequest(pool: Pool, user: AuthenticatedUser | 
     if (event.organiser_id !== user!.id || event.client_org_id !== org) throw new AccessError(403, 'Change request access denied.');
     active(event);
     if (!event.coordinator_id) throw new AccessError(409, 'An assigned Coordinator is required.');
+    await validateReferences(client, parsed.fields);
     const before = snapshot(event, parsed.fields);
     const fields = Object.fromEntries(Object.entries(parsed.fields).filter(([key, value]) => !isDeepStrictEqual(value, before[key as Field])));
     if (!Object.keys(fields).length) throw new AccessError(400, 'The requested values are unchanged.');
     const start = fields.startAt ?? event.starts_at;
     const end = fields.endAt ?? event.ends_at;
-    if (new Date(start!).getTime() >= new Date(end!).getTime()) throw new AccessError(400, 'End must be after start.');
+    if (new Date(start as string | Date).getTime() >= new Date(end as string | Date).getTime()) throw new AccessError(400, 'End must be after start.');
     const request = (await client.query<Request>(`INSERT INTO change_requests
       (event_id,requested_by,description,requested_changes) VALUES ($1,$2,$3,$4::jsonb) RETURNING *`,
     [event.id, user!.id, parsed.description, JSON.stringify({ fields, before: snapshot(event, fields) })])).rows[0]!;
@@ -181,6 +234,7 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
       // Validate persisted data too: old or differently-shaped requests must
       // never bypass the field allowlist or stale protection.
       parseChangeRequest({ description: request.description, changes: stored.fields });
+      await validateReferences(client, stored.fields);
       if (!stored.before || !isDeepStrictEqual(snapshot(event, stored.fields), stored.before)) {
         throw new AccessError(409, 'The Event changed since submission. Submit a fresh request or re-review it.');
       }
@@ -224,6 +278,11 @@ export async function listChangeRequests(pool: Pool, user: AuthenticatedUser | u
     }
     const requests = (await client.query<Request>(`SELECT * FROM change_requests WHERE event_id=$1
       AND requested_changes->>'action' IS DISTINCT FROM 'cancel' ORDER BY created_at DESC,id`, [event.id])).rows;
-    return { current: snapshot(event, Object.fromEntries(Object.keys(columns).map(key => [key, null]))), requests };
+    const layouts = (await client.query<{ id: string; label: string }>('SELECT id,label FROM room_layouts ORDER BY label,id')).rows;
+    const accessibility = (await client.query<{ id: string; label: string }>('SELECT id,label FROM accessibility_features ORDER BY label,id')).rows;
+    return { event: { id: event.id, eventCode: event.event_code, status: event.status },
+      permissions: { canSubmit: organiser, canDecide: !organiser },
+      references: { layouts, accessibility },
+      current: snapshot(event, Object.fromEntries(Object.keys(columns).map(key => [key, null]))), requests };
   });
 }

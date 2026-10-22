@@ -1,0 +1,9 @@
+Publish the independently reviewable E10-S01 foundation so Xiang Ying can integrate SCRUM-205/206. User explicitly authorised renaming the local UI branch, committing, pushing and opening a PR on 22 October. This supersedes earlier instructions to keep E10 work local.
+
+Branch: feature/e10-change-request-foundation. Includes backend base5470919 plus structured-field follow-up and real frontend. This is one vertical foundation increment, not completion of SCRUM-70, SCRUM-202, SCRUM-203 or SCRUM-204. Keep all those issues open. Jira references remain ordinary PR-body traceability only; no Jira key in branch/title and no closing clause. Existing committed message mentioning SCRUM-202 does not drive the inspected sync script.
+
+Xiang Ying can use the real form/read/decision API and existing requested_changes.fields/before lifecycle. Her refused-edit prefilling and Completed-to-Obsolete handling remain her work. No team message sent. Le Xin E10-S02 preview/apply, Session contract, integration regressions and formal human screenshots remain outstanding. Arrangement approval is deliberately Approved/unapplied, not completed Scenario4.
+
+Verification and documented coverage exceptions: records20261022-194403 and20261022-211022. Latest development results: frontend457/457, backend423/423, focused20/20 (15 real native PostgreSQL), both types/build pass. Old database instance failed missing physical file; preserved, not reset. Fresh isolated database used for final checks. Earlier parallel frontend timing failures retained in record. No production/email/manual acceptance claim. Historical UI/backend handoffs retained for provenance; this file is current publication state.
+
+Resume remaining integration work from main after this PR is actually merged; do not assume approval or merge from publication. User owns final combined manual run, other owners their subtask tests. Existing PR299 dependencies remain unchanged.

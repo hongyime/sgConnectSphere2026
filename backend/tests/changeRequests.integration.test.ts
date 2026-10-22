@@ -40,6 +40,10 @@ test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event 
   const request = await f.submit();
   assert.equal((await f.pool.query('SELECT name FROM event_publications WHERE event_id=$1', [f.event])).rows[0].name, 'Original');
   const view = await listChangeRequests(f.pool, f.organiser, f.event);
+  assert.equal(view.event.status, 'confirmed');
+  assert.equal(view.event.id, f.event);
+  assert.deepEqual(view.permissions, { canSubmit: true, canDecide: false });
+  assert.deepEqual((await listChangeRequests(f.pool, f.coordinator, f.event)).permissions, { canSubmit: false, canDecide: true });
   assert.equal(view.current.title, 'Original');
   assert.equal(view.requests[0].status, 'pending');
   assert.deepEqual(request.requested_changes.before, { title: 'Original' });
@@ -168,4 +172,62 @@ test('TC_E10S01_04: notification failure rolls back Event, request and audit wri
   assert.equal(view.current.title, 'Original');
   assert.equal(view.requests[0].status, 'pending');
   assert.equal((await f.pool.query("SELECT count(*) FROM audit_logs WHERE action='Approved Change Applied' AND event_id=$1", [f.event])).rows[0].count, '0');
+}));
+
+test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: structured references/settings are snapshotted but never applied early', () => run(async f => {
+  const layout = randomUUID(), feature = randomUUID();
+  await f.pool.query("INSERT INTO room_layouts(id,code,label) VALUES ($1,'change_layout','Seminar')", [layout]);
+  await f.pool.query("INSERT INTO accessibility_features(id,code,label) VALUES ($1,'change_feature','Step-free')", [feature]);
+  const request = await f.submit({ layoutId: layout, accessibilityFeatureIds: [feature, feature],
+    registrationEnabled: true, waitlistEnabled: true,
+    registrationDates: { opensAt: '2027-02-01T09:00:00+08:00', closesAt: '2027-02-28T18:00:00+08:00' },
+    withdrawalDeadline: '2027-02-28T12:00:00+08:00' });
+  assert.deepEqual(request.requested_changes.before, { layoutId: null, accessibilityFeatureIds: [], registrationEnabled: false,
+    waitlistEnabled: false, registrationDates: { opensAt: null, closesAt: null }, withdrawalDeadline: null });
+  const view = await listChangeRequests(f.pool, f.organiser, f.event);
+  assert.deepEqual(view.references, { layouts: [{ id: layout, label: 'Seminar' }], accessibility: [{ id: feature, label: 'Step-free' }] });
+  assert.deepEqual(request.requested_changes.fields.accessibilityFeatureIds, [feature]);
+  assert.equal((await f.decide(request.id)).status, 'approved');
+  await assert.rejects(f.decide(request.id, 'apply'), /waiting for the arrangement check/);
+  const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
+  assert.equal(current.registrationEnabled, false);
+  assert.equal(current.layoutId, null);
+  assert.deepEqual(current.accessibilityFeatureIds, []);
+  assert.deepEqual(current.registrationDates, { opensAt: null, closesAt: null });
+}));
+
+test('TC_E10S01_04: registration-window and accessibility changes make a pending request stale', () => run(async f => {
+  const request = await f.submit({ registrationDates: { opensAt: '2027-02-01T00:00:00Z', closesAt: null } });
+  await f.pool.query("UPDATE events SET registration_closes_at='2027-02-28T00:00:00Z' WHERE id=$1", [f.event]);
+  await assert.rejects(f.decide(request.id), /changed since submission/);
+  const feature = randomUUID();
+  await f.pool.query("INSERT INTO accessibility_features(id,code,label) VALUES ($1,'stale_feature','Step-free')", [feature]);
+  const features = await f.submit({ accessibilityFeatureIds: [feature] });
+  await f.pool.query('INSERT INTO event_accessibility_needs(event_id,feature_id) VALUES ($1,$2)', [f.event, feature]);
+  await assert.rejects(f.decide(features.id), /changed since submission/);
+}));
+
+test('TC_E10S01_01 / TC_E10S01_04: missing/deleted reference values refuse submission/approval but permit decline', () => run(async f => {
+  await assert.rejects(f.submit({ layoutId: randomUUID() }), /no longer exists/);
+  await assert.rejects(f.submit({ accessibilityFeatureIds: [randomUUID()] }), /no longer exists/);
+  const layout = randomUUID();
+  await f.pool.query("INSERT INTO room_layouts(id,code,label) VALUES ($1,'deleted_layout','Seminar')", [layout]);
+  const request = await f.submit({ layoutId: layout });
+  await f.pool.query('DELETE FROM room_layouts WHERE id=$1', [layout]);
+  await assert.rejects(f.decide(request.id), /no longer exists/);
+  assert.equal((await f.decide(request.id, 'decline')).status, 'declined');
+}));
+
+test('TC_E10S01_01: clearing existing settings is distinct from omitted fields', () => run(async f => {
+  await f.pool.query(`UPDATE events SET registration_enabled=true,waitlist_enabled=true,
+    registration_opens_at='2027-02-01T00:00:00Z',registration_closes_at='2027-02-28T00:00:00Z',
+    withdrawal_deadline='2027-02-28T00:00:00Z' WHERE id=$1`, [f.event]);
+  const request = await f.submit({ registrationEnabled: false, waitlistEnabled: false,
+    registrationDates: { opensAt: null, closesAt: null }, withdrawalDeadline: null });
+  assert.equal(request.requested_changes.fields.registrationEnabled, false);
+  assert.equal(request.requested_changes.fields.withdrawalDeadline, null);
+  assert.equal((await f.decide(request.id)).status, 'approved');
+  const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
+  assert.equal(current.registrationEnabled, true);
+  assert.equal(current.withdrawalDeadline, '2027-02-28T00:00:00.000Z');
 }));

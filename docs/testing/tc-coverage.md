@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **376**
 - Automated (explicit TC_ID in an active test title): **205** (54.5%)
-  - Real-database (`.integration.test` / `.db.test`): **39**
+  - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **165**
+  - Live-assertion (other active tests): **167**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **130** (34.6%)
 - No test yet (no test file mentions the TC_ID): **41** (10.9%)
 
@@ -402,7 +402,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
 | `TC_E10S01_01` | E10-S01 | Verify that submitting a change request on an approved or confirmed event should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
-| `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; tests/e2e/e |
+| `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled wit |
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/e2e/e10.spec.ts: TC_E10S01_05 - Verify that |

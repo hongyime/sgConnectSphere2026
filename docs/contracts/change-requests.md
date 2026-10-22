@@ -11,7 +11,7 @@ Use the existing `/api/events` cookie-session handler:
 
 | Method / query | Body | Result |
 | --- | --- | --- |
-| GET `?changeRequests=1&id=<event id or code>` | None | `{ current, requests }` |
+| GET `?changeRequests=1&id=<event id or code>` | None | `{ event: { id, eventCode, status }, permissions: { canSubmit, canDecide }, references: { layouts, accessibility }, current, requests }` |
 | POST `?changeRequests=1&id=<event id or code>` | `{ description, changes: { title: "New name" } }` | 201 `{ request }` |
 | POST `?changeRequests=1&id=<event id or code>&requestId=<request id>` | `{ decision: "approve" | "decline" | "apply", reason?: string }` | 200 `{ request }` |
 
@@ -63,11 +63,9 @@ Approval records Approved and notifies the requester with
 until the real E10-S02 shared function is integrated. Nothing is partially
 applied, flagged or falsely reported as Applied in this interim state.
 
-Session edits, layout IDs, predefined accessibility IDs and structured
-registration-capacity/window fields are not accepted by this first allowlist.
-They need their schema/validation and shared E10-S02 preview/apply contracts
-before support is added; they must not be sent as arbitrary JSON. Full Scenario
-4 remains incomplete, as does the parent story. Agree the shared function's
+The structured-field follow-up below extends that first allowlist without
+enabling arrangement application. Full Scenario 4 remains incomplete, as does
+the parent story. Agree the shared function's
 typed input/result, preview-before-apply, publication updates, transaction
 ownership, stale checking and resulting staff-notification responsibility with
 Le Xin before wiring it. Do not invoke an external transaction after committing
@@ -77,3 +75,60 @@ SCRUM-203 owns the real UI and side-by-side view; SCRUM-205 owns refused-edit
 prefilling. Cancellation and completion owners retain terminal Obsolete handling.
 SCRUM-204 remains the human acceptance/evidence and whole-story completion gate.
 Automated service tests do not establish browser acceptance or mailbox receipt.
+
+## Structured-field audit and follow-up — 22 October
+
+The canonical E10-S01 agreement, E09-S03 window rules and current schema were
+checked before extending the allowlist. No migration or speculative Session
+API is introduced.
+
+| Field | Existing source | Request behaviour |
+| --- | --- | --- |
+| `layoutId` | events.layout_id -> room_layouts | UUID or explicit null; referenced layout must exist at submission and approval. |
+| `accessibilityFeatureIds` | event_accessibility_needs -> accessibility_features | Array of UUIDs, including empty to request clearing. Canonical lowercase/sorted unique set; every feature must exist. |
+| `registrationEnabled`, `waitlistEnabled` | Existing Event booleans | Strict booleans; false is retained, not treated as an omitted field. |
+| `registrationDates` | registration_opens_at / registration_closes_at | Both keys required; each may be a zoned date or explicit null. Closing must be later than opening when both are set. |
+| `withdrawalDeadline` | events.withdrawal_deadline | Zoned date or explicit null. |
+| Session edits | sessions and Session requirement relations exist | No mutation shape added: coordinate the E04/E10-S02 write/preview contract first. |
+| Registration capacity | E09-S02 derives combined capacity from confirmed Session layouts | No independently writable Event-capacity column invented. Coordinate with E09 and E10-S02. |
+
+All newly accepted fields are arrangement-affecting. A mixed request stays
+entirely Approved/unapplied; safe fields inside it are not applied separately.
+Snapshot arrays and registration windows are compared structurally for staleness.
+Related-record existence is rechecked when approving, including deletions after
+submission. Decline remains possible when a referenced catalogue item is gone.
+
+The private GET now includes `references: { layouts, accessibility }`, each an
+array of `{ id, label }`. The form uses catalogue choices and explicit switches,
+Singapore-local date inputs and clearable boundaries. Comparisons display
+labels and Enabled/Disabled rather than raw objects or UUIDs. E09-S03 permits
+closing after Event start with a warning/confirmation; this increment does not
+reject such a proposal. That confirmation must be part of the real apply path,
+which remains disabled pending E10-S02.
+
+### Coordination checklist for Le Xin (proposal, not a new agreed API)
+
+- Agree the typed preview/apply interface, including these structured values and
+  the future Session-change shape; retain only one authoritative field classifier.
+- Keep Event locking and stale checks in the same transaction as the apply,
+  affected-arrangement flags, audit, publication and notice/outbox writes.
+- Show the affected arrangements and any over-subscription/late-close warning
+  before applying. Do not remove registrations automatically.
+- Decide which owner writes each notice so E10-S01 decision notices and E10-S02
+  staff-arrangement notices are not duplicated.
+- Only mark Applied after the actual update succeeds; failure must roll back the
+  whole application step. No mock success or client force flag.
+
+This coordination checklist is prepared locally only; no message was sent to
+another team member and no Jira scope/status was changed.
+
+## Publication and integration handoff
+
+The first PR is an explicitly partial foundation under
+`feature/e10-change-request-foundation`. SCRUM-70, SCRUM-202, SCRUM-203 and
+SCRUM-204 remain open after this increment. Their keys are traceability, not
+completion directives. Xiang Ying can build SCRUM-205/206 against these routes
+and lifecycle without waiting for E10-S02; no automatic prefilling is supplied
+by this PR. Coordinate that query/prefill contract with her before extending it.
+After this increment merges, continue the E10-S02/Session integration from the
+then-current main in a new branch and run the combined acceptance evidence.

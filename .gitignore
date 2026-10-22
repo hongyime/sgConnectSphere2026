@@ -70,3 +70,5 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/e10-change-request-foundation.html
