@@ -1,7 +1,11 @@
 // Plain-language formatting shared by every screen.
 
+// Labels that aren't the stored value in sentence case (design.md section 7).
+const LABELS: Record<string, string> = { safety_review: 'Safety Review' };
+
 // "under_review" -> "Under review"
 export function statusLabel(status: string): string {
+  if (LABELS[status]) return LABELS[status];
   const text = status.replaceAll('_', ' ');
   return text.charAt(0).toUpperCase() + text.slice(1);
 }

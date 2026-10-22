@@ -125,3 +125,32 @@ E07-S01's reservation interactions before that workflow is available.
 Do not mark the pending manual rows as passed until the user performs the stated
 steps and supplies the observed result. Add a new immutable execution session for
 that later run rather than rewriting the existing session record.
+
+## Screenshot-backed manual validation — 16 October 2026
+
+SCRUM-51 / E07-S01, following T-65 and the hand-taken screenshot rules proposed in PR #279 (T-93). Screenshots were taken and supplied by Xiang Ying; the agent copied original PNGs unchanged, prepared synthetic data and documented the visible results. No agent screenshots substitute for manual evidence. Original merged records are unchanged; the story stays Done.
+
+| Case | Actual result | Tested application | Evidence |
+| --- | --- | --- | --- |
+| TC_E07S01_01 | Save confirmation, full item details and Technical Support availability showing 10 free are captured. Explicit refresh/input confirmation and canonical Coordinator selection were not established in that session; full-case verdict deferred. | 7a3368e | [Partial practice record](../testing/runs/20261016-005043-xiangyingg-frontend-e2e.md), images 01-1/01-2/01-3 |
+| TC_E07S01_04 | PASS: Annex Storage, quantity 10, Audio and Working visible; tester explicitly confirmed persistence after reopening/refreshing. | 7a3368e | Same practice record, TC_E07S01_04.png |
+| TC_E07S01_02 | PASS: 6 reserved for 16 November 09:00–12:00; stock 10→4 flags the reservation; Coordinator receives opened review notification naming the event/item and total stock 4. | ef18a96 (current main at run) | [Current-main record](../testing/runs/20261016-011435-xiangyingg-frontend-e2e.md), images 02-1/02-2/02-3 |
+| TC_E07S01_03 | PASS: retired projector retains two past one-unit reservations (10/11 October); complete availability results for 16–26 November exclude it. | ef18a96 | Same current-main record, images 03-3/03-4 |
+
+### Setup and limits
+
+Agent prepared synthetic future event EVT-S01-MANUAL-16OCT for seeded Coordinator A; an extra Session mistakenly inserted during setup caused an initial request refusal and was removed before the successful human request/reservation. EVT-3001 was unchanged. Agent also prepared a separate synthetic projector with two historical reservations; the human performed retirement. Database was real and remote; no reset/reseed was run.
+
+Nine human PNGs are stored under the records' matching `docs/testing/runs/evidence/` folders, with TC_ID filenames and record links. The supplied 03-3 filename describes retired details/history; 03-4 shows availability exclusion. Each original is under 1000 KB and contains no visible secrets or real personal data. Record dates describe evidence intake; exact capture times are not independently certified.
+
+This evidence PR does not claim a complete current-main re-run: TC_E07S01_01 remains incomplete and TC_E07S01_04 was run on the older commit. Finish those current-code checks before claiming the whole T-93 re-run complete. No new application automated tests or production deployment are claimed. Teammate review and evidence PR merge remain required.
+
+Current-main add/edit follow-up session 20261016-014025: Final Check item creation save visible, then corrected human image shows Annex Storage and stock 10; tester reported completion after edit/reopen/refresh instructions. TC_E07S01_04 PASS on ef18a96. TC_E07S01_01 availability/details evidence remains pending. Corrected screenshot preserved separately as TC_E07S01_04-3.png to avoid overwriting the earlier different image.
+
+Final add evidence received: TC_E07S01_01-7.png shows S01 Final Check 16Oct, total/free 10 and reserved/withdrawn 0 for 16 November 2026 09:00–12:00. Human details attachment shows description Final manual check and Annex Storage. TC_E07S01_01 PASS on ef18a96 using supported Technical Support availability reader; canonical Coordinator-role adaptation explicitly disclosed in session for peer review. Separate original details PNG and explicit refresh action confirmation were not supplied, and are not fabricated. All four current-main catalogue cases now have observed manual results; teammate evidence review/merge remain required.
+
+## PR #281 reviewer follow-up — 17 October 2026
+
+[Supplemental human record](../testing/runs/20261017-112428-xiangyingg-frontend-e2e.md) adds Coordinator-side evidence on d87081d: Final Check item successfully selected/saved with total stock 10 (01-8), and complete selector excludes retired projector (03-5). These close the reviewers’ requested role-side evidence without changing Technical Support-only API permissions or canonical case wording. Human saved an extra request in synthetic Event A rather than cancelling; no reservation created. Prior S02 session remains unchanged.
+
+Earlier TC_02 notification was viewed as Coordinator A, coord_a@connectsphere.com, according to the human login walkthrough; cropped header limitation remains explicit. TC_01 free-10 screenshot 01-7 was taken after TC_04 edit to Annex Storage. Clarifications are in the new record rather than rewriting old sessions. Original story remains Done; renewed teammate evidence review remains required.
