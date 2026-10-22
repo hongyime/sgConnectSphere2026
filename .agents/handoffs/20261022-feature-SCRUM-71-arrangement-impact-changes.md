@@ -29,6 +29,16 @@ live, manual run with hand-taken screenshots (T-93) and T-65 records.
   `assessArrangementImpact(before, after)` and `loadArrangementSnapshot(query, eventId)`.
 - `backend/tests/arrangementImpact.test.ts`: 15 unit cases following
   TC_E10S02_01/02/05/07/08/09 data plus boundaries; added to `npm test`.
+- Task 3: `backend/src/modules/changeManagement/eventChange.ts`.
+  `previewEventChange` locks the Event, runs the real `updateEventInformation`
+  inside `SAVEPOINT event_change_preview`, reads the after-snapshot and the
+  registration counts, then rolls back to the savepoint, so validation,
+  permissions and the 0014 Session sync trigger all apply and nothing is
+  saved. `assessOverSubscription` + `loadRegistrationCounts` give the
+  Scenario 4 warning. Route: `PATCH /api/events?edit=1&id=<id>&preview=1`
+  (same errors as the save, including the change-request offer).
+- `backend/tests/eventChangePreview.test.ts`: 9 unit cases with a scripted
+  client double (TC_02/_03/_04 data, savepoint order, refusals).
 
 ## Decisions taken without team sign-off (reviewer please check)
 
@@ -43,24 +53,38 @@ live, manual run with hand-taken screenshots (T-93) and T-65 records.
   attendance falls but stays above capacity is still listed.
 - Any Event-wide start or end change flags every Session's arrangements
   (Scenario 5). Adding or removing a Session is E04-S02, not this check.
+- Over-subscription (T-85, C-78): a Session's capacity is the sum of its
+  Confirmed bookings' capacities; the Event's combined capacity is the sum of
+  all Confirmed bookings. Only `registered` places count (Pending holds no
+  seat). Equal to capacity is not over. With no Confirmed booking there is no
+  capacity, so nothing is compared. E09-S02 (SCRUM-64, unbuilt) should reuse
+  this rule rather than define its own.
+- An Event edit alone rarely changes capacity (capacity comes from bookings),
+  so the warning matters most when E10-S01 applies a venue change; the same
+  function serves both.
 
 ## Open questions for the team
 
 1. Two-Session cases (TC_01, _05, _07, _08, _09) cannot be set up in the app
    until E04-S02 (SCRUM-39) and E07-S08 (SCRUM-181) exist. Proposal: prove
    them with real-database tests now; hand-test them once those land.
-2. TC_04 "venue change reduces capacity": with several bookings, is the
-   Event's capacity the sum of Confirmed bookings or the primary venue's?
+2. ~~TC_04 combined capacity~~ answered by C-78 ("total attendee capacity is
+   determined by the total layout capacity") and T-85; see decisions above.
 
 ## Next step
 
-Task 3: preview. Run the edit inside a savepoint, load the after-snapshot,
-assess, roll back to the savepoint, and return the impact plus the
-registration count against capacity.
+Task 4: apply on save. In `updateEventInformationWithNotifications`, load the
+before-snapshot under the existing row lock, run the edit, load the after-
+snapshot, set `requires_reconfirmation = true` on the affected bookings and
+reservations, and write one audit row each, in the same transaction.
 
 ## Commands run
 
 - `npx c8 --include src/modules/changeManagement/arrangementImpact.ts tsx --test tests/arrangementImpact.test.ts`
   (from `backend/`): 15/15 passed, 100% statements/branches/functions/lines.
 - `npm run typecheck` (backend): passed.
+- Task 3: `npx c8 ... tsx --test tests/eventChangePreview.test.ts tests/arrangementImpact.test.ts`
+  (from `backend/`): 24/24 passed, 100% on both files.
+  `tsx --test tests/eventVisibility.test.ts tests/eventNotifications.test.ts tests/decision.test.ts`: 31/31.
+  `npm run test:runtime`: 17/17. `tsc --noEmit --strict ... api/events.ts`: exit 0.
 - No database suite has been run yet.
