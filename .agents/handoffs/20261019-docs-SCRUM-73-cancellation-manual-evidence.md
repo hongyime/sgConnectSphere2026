@@ -20,3 +20,5 @@ or exclusions changed. A clean single-commit replacement is needed because the
 scan reads introduced history, including the original artifact revision.
 
 21 October review follow-up: integrated current main without replacing original human evidence. Outstanding capture checklist: docs/testing/E10-S04-review-follow-up.md. No new manual PASS, production migration claim, or Jira Done transition. Merge remains after implementation PR and acceptance review.
+
+22 October human retake filed: session 20261022-232415-xiangyingg-frontend-e2e, application 4b37591. Twelve original images preserved byte-for-byte; withheld 01-4 due personal/machine prompt. TC03 PASS for both attendees via supplied role sequence. Stored Session release gap closed by human read-only SQL capture 01-11. TC01 remains SKIP because 01-7 is old fixture and period/venue context cropped. Follow-up doc updated; no historical record edited, no application/Jira/production changes.
