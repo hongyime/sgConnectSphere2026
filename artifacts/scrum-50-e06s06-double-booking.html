@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SCRUM-50 · E06-S06 venue approval conflicts</title>
+  <style>
+    :root { color-scheme: dark; --bg:#10171b; --panel:#192328; --line:#34444b; --text:#edf3f2; --muted:#adc0c0; --accent:#52d6b3; --warn:#ffc36c; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(100% - 32px,1000px); margin:0 auto; padding:36px 0 64px; }
+    section { margin:22px 0; padding:24px; border:1px solid var(--line); border-radius:16px; background:var(--panel); }
+    h1,h2 { line-height:1.2; }
+    h1 { margin:0 0 12px; font-size:clamp(2rem,6vw,3.2rem); }
+    h2 { margin:0 0 16px; color:var(--accent); font-size:1.35rem; }
+    p,li { max-width:78ch; }
+    .eyebrow,small { color:var(--muted); }
+    .diagram { margin:22px 0 0; padding:12px; border:1px solid var(--line); border-radius:12px; background:#121c20; }
+    svg { display:block; width:100%; height:auto; }
+    figcaption { margin:8px 4px 0; color:var(--muted); font-size:.92rem; }
+    .node { fill:#20343a; stroke:#52d6b3; stroke-width:2; }
+    .node-warn { fill:#3a3021; stroke:#ffc36c; stroke-width:2; }
+    .arrow { stroke:#adc0c0; stroke-width:2; fill:none; marker-end:url(#arrow); }
+    .svg-text { fill:#edf3f2; font:600 17px system-ui,sans-serif; text-anchor:middle; }
+    .svg-small { fill:#adc0c0; font:14px system-ui,sans-serif; text-anchor:middle; }
+    table { width:100%; border-collapse:collapse; margin:14px 0; }
+    th,td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-weight:600; }
+    code { color:#c8f8e9; overflow-wrap:anywhere; }
+    .note { padding:12px 14px; border-left:3px solid var(--warn); background:#27251f; }
+    @media (max-width:640px) { section { padding:18px; } th,td { padding:8px 6px; font-size:.9rem; } }
+  </style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">SCRUM-50 · E06-S06 · draft follow-up targeting PR #298's branch</p>
+  <section id="overview">
+    <h1>One venue approval wins</h1>
+    <p>Approval checks the shared buffered occupancy window under the venue lock, confirms one request, and flags overlapping Pending requests with the confirmed booking that now blocks them.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 900 240" role="img" aria-labelledby="diagram-title diagram-desc">
+        <title id="diagram-title">Venue approval conflict flow</title>
+        <desc id="diagram-desc">Two Pending venue requests are checked under a venue lock using buffered occupancy; one is confirmed, while the other remains Pending and is flagged with its conflicting booking.</desc>
+        <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#adc0c0"/></marker></defs>
+        <rect class="node" x="24" y="40" width="180" height="62" rx="12"/><text class="svg-text" x="114" y="68">Pending request A</text><text class="svg-small" x="114" y="89">Venue Staff approves</text>
+        <rect class="node" x="24" y="138" width="180" height="62" rx="12"/><text class="svg-text" x="114" y="166">Pending request B</text><text class="svg-small" x="114" y="187">overlaps after buffers</text>
+        <rect class="node" x="286" y="82" width="210" height="76" rx="12"/><text class="svg-text" x="391" y="112">Venue row lock</text><text class="svg-small" x="391" y="136">occupied_window(...)</text>
+        <rect class="node" x="580" y="40" width="270" height="62" rx="12"/><text class="svg-text" x="715" y="68">Confirmed request A</text><text class="svg-small" x="715" y="89">winner; venue occupied</text>
+        <rect class="node-warn" x="580" y="138" width="270" height="62" rx="12"/><text class="svg-text" x="715" y="166">Pending request B</text><text class="svg-small" x="715" y="187">flagged; approval blocked</text>
+        <path class="arrow" d="M204 71L286 101"/><path class="arrow" d="M204 169L286 139"/><path class="arrow" d="M496 101L580 71"/><path class="arrow" d="M496 139L580 169"/>
+      </svg>
+      <figcaption>The venue lock serializes approval; the existing buffered window determines which same-venue pending requests must be flagged.</figcaption>
+    </figure>
+  </section>
+
+  <section id="details">
+    <h2>Implementation and evidence</h2>
+    <table>
+      <thead><tr><th>Area</th><th>Result</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>Acceptance scope</td><td>TC_E06S06_01–07 and the five E06-S06 booking scenarios define this follow-up.</td><td><code>docs/testing/cases/E06.md</code>; <code>docs/backlog/product/E06-venue-search-booking.md</code></td></tr>
+        <tr><td>Approval</td><td>Confirmed bookings and live holds block with the conflict identified; competing Pending rows retain Pending status and carry the confirmed winner ID.</td><td><code>backend/src/modules/venueBooking/decisions.ts</code></td></tr>
+        <tr><td>Database</td><td>Migration 0021 adds the conflict reference and permits only that flagged Pending row to coexist with its confirmed winner in the existing trigger guard.</td><td><code>backend/database/migrations/0021_venue_approval_conflict.sql</code>; ADR-003; migration 0016</td></tr>
+        <tr><td>Venue Staff UI</td><td>Queue and request details show “Conflicting”, name the confirmed booking, and remove the approval action while the conflict remains.</td><td><code>frontend/src/features/venue/BookingRequests.tsx</code></td></tr>
+        <tr><td>Loopback PostgreSQL</td><td>TC_E06S06_01–07 pass; 28/28 venue decision integration tests pass, including buffered race arbitration and the database write guard.</td><td><code>docs/testing/runs/20261017-225319-bryanseah234-backend-db.md</code></td></tr>
+        <tr><td>Unit and UI</td><td>435/435 backend unit tests pass; decision module is at 100% statements, branches, functions, and lines. Venue request UI: 25/25 pass.</td><td><code>docs/testing/runs/20261017-225319-bryanseah234-backend-unit.md</code>; <code>docs/testing/runs/20261017-225319-bryanseah234-frontend-vitest.md</code></td></tr>
+        <tr><td>Repository check</td><td>Repository hygiene and all 158 tooling tests pass.</td><td><code>docs/testing/runs/20261017-225434-bryanseah234-tooling.md</code></td></tr>
+        <tr><td>Application CI</td><td>Full checks passed on code head <code>0ec90bb</code> and later docs-only head <code>2871ece</code>; the 2871 run passed all 33 steps, including E06-S06 PostgreSQL acceptance, browser, and T-72 checks. An intervening run failed in pre-existing TC_E03S12_01 before later suites; a subsequent run passed.</td><td><a href="https://github.com/hongyime/sgConnectSphere2026/actions/runs/39042942434">Code-head run</a>, <code>docs/testing/runs/20261017-230311-bryanseah234-full-regression.md</code>; <a href="https://github.com/hongyime/sgConnectSphere2026/actions/runs/39043612484">intervening run</a>, <code>docs/testing/runs/20261017-230822-bryanseah234-full-regression.md</code>; <a href="https://github.com/hongyime/sgConnectSphere2026/actions/runs/39043998150">passing latest run</a>, <code>docs/testing/runs/20261017-232045-bryanseah234-full-regression.md</code></td></tr>
+      </tbody>
+    </table>
+    <p class="note">Verification used a disposable PostgreSQL database on 127.0.0.1. No shared Supabase writes, resets, or seeds were run. The canonical raw-overlap preconditions in TC_E06S06_01–03 and _05 cannot be inserted through the existing production exclusion constraint, so tests seeded them only in isolated schemas with that constraint and the buffer trigger temporarily bypassed; the live trigger was restored before each approval. Frontend build passed with Vite's existing large-chunk advisory.</p>
+    <p>TC_E06S06_04 checks half-open adjacency. TC_E06S06_05 checks a one-minute raw overlap. TC_E06S06_06 checks that the loser stays Pending and a direct bypass write still receives the ADR-003 exclusion error.</p>
+  </section>
+
+  <section id="next-steps">
+    <h2>Review and acceptance still needed</h2>
+    <ol>
+      <li>Review this draft stack PR against <code>feature/SCRUM-48-decide-venue-request</code>; keep PRs #298 and #299 unmerged.</li>
+      <li>Venue Staff must manually run TC_E06S06_01–07 under T-65 and save hand-taken screenshots by TC_ID in <code>docs/testing/runs/evidence/</code>.</li>
+      <li>Keep SCRUM-50 open until human review and manual acceptance evidence are recorded.</li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>

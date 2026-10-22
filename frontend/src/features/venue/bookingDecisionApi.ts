@@ -16,6 +16,7 @@ export type BookingRequest = {
   decidedBy: string | null;
   decidedAt: string | null;
   requestedAt: string;
+  approvalConflict?: { bookingId: string; eventTitle: string | null } | null;
   // TC_E06S02_04: the advisory suitability result saved at submission; null
   // when none was recorded. Advisory only, never a reason to refuse.
   advisoryMismatches?: string[] | null;
