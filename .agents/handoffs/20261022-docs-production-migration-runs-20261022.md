@@ -10,9 +10,9 @@ Apply the merged production migrations 0022, 0023, and 0024 one at a time, verif
 - The migration ledger contains 24 rows. Every post-run check found only the expected new row.
 - Run records were created at `docs/ops/production-migration-runs/20261022-1540-0022_change_request_obsolete.sql.md`, `20261022-1543-0023_registration_review_statuses.sql.md`, and `20261022-1547-0024_registration_sessions.sql.md`.
 
-## Not done / next step
+## PR and remaining work
 
-Commit these records and this handoff, push `docs/production-migration-runs-20261022`, open the docs PR, wait for the Linux CI `repository-checks` run, and obtain human review and merge. The production migrations themselves are complete; do not re-run them.
+The run records and this handoff are committed at `6a348cb` and opened as PR #342, https://github.com/hongyime/sgConnectSphere2026/pull/342. The PR is ready for review; `repository-checks` and `pr-conventions` passed on that head, and review was requested from the other code owners. Next step: obtain human review and merge. The production migrations themselves are complete; do not re-run them.
 
 ## Decisions taken without team sign-off
 
@@ -28,7 +28,7 @@ Commit these records and this handoff, push `docs/production-migration-runs-2026
 
 ## Blockers
 
-Human review and merge. The durable certificate-verification gap and the #315 policy decision remain open.
+Human review and merge. The durable certificate-verification gap and the #315 policy decision remain open. Copilot's automatic review attempt failed on quota, so a human approval is still required.
 
 ## Learnings
 
