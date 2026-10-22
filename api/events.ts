@@ -1,3 +1,4 @@
+import { getAttendance, recordAttendance } from '../backend/src/modules/eventAttendance/service.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
@@ -91,6 +92,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.get('attendance') === '1') {
+      await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
+        await currentUser(request), params.get('id') || '', request.body) }));
+      return;
+    }
     if (params.get('comment') === '1') {
       await handleCommentPost(request, response, params);
       return;
@@ -308,6 +314,11 @@ async function requireOrganiserWithClient(request: VercelRequest): Promise<Authe
 // one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.get('attendance') === '1') {
+    await respond(response, async () => ({ attendance: await getAttendance(getDatabasePool(),
+      await currentUser(request), params.get('id') || '') }));
+    return;
+  }
 
   if (params.get('mine') === '1') {
     await handleGetMine(request, response, params);

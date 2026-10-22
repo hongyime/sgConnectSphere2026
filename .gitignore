@@ -70,3 +70,5 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/e09-s06-attendance.html

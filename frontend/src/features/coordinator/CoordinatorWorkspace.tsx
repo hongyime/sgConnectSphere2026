@@ -226,6 +226,7 @@ export function RequestDetail() {
           {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>
           <OutstandingQuestions questions={event.outstandingQuestions ?? []} />
+          <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventRef(event))}/attendance`}>Record attendance</ButtonLink>
           <section className="coordinator-detail-grid" aria-label="Event summary">
             <Card title="Summary">
               <FactList
