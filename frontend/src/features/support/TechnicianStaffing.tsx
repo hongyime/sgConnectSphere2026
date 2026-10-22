@@ -4,12 +4,12 @@
 //   - StaffingRequestPage /support/technicians/:requestId  who is on it, who is free, assign and remove
 //   - MySchedule          /support/schedule                the signed-in technician's assignments
 // Data comes from staffingApi.ts; the server runs the overlap check.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarClock, UserMinus, UserPlus } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FactList, FilterChips,
-  LoadingState, PageLayout, StatusPill, formatDateRange, statusLabel, useLoad, type Column,
+  LoadingState, PageLayout, StatusPill, formatDateRange, statusLabel, useLoad, useSession, type Column,
 } from '../../shared';
 import {
   assignTechnician, getMySchedule, getStaffingRequest, listStaffingQueue, removeAssignment,
@@ -79,6 +79,9 @@ function clashText(conflict: Conflict) {
 type Pending = { kind: 'assign'; candidate: Candidate } | { kind: 'remove'; assignmentId: string; name: string };
 
 export function StaffingRequestPage() {
+  const session = useSession();
+  const confirmation = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLElement | null>(null);
   const { requestId = '' } = useParams();
   const { result, reload } = useLoad(signal => getStaffingRequest(requestId, signal), [requestId]);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -87,8 +90,17 @@ export function StaffingRequestPage() {
   const [done, setDone] = useState<string | null>(null);
   const detail = result.state === 'ready' ? result.data : null;
   const request = detail?.request;
+  const otherRecipient = (id: string) => session.status === 'signed-in' && session.user.id !== id;
+
+  useEffect(() => {
+    if (pending) {
+      confirmation.current?.focus({ preventScroll: true });
+      confirmation.current?.scrollIntoView?.({ block: 'center' });
+    }
+  }, [pending]);
 
   function choose(next: Pending) {
+    trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setPending(next);
     setRefusal(null);
     setDone(null);
@@ -103,8 +115,8 @@ export function StaffingRequestPage() {
     setBusy(false);
     if (outcome.ok) {
       setDone(target.kind === 'assign'
-        ? `${target.candidate.name} is assigned and has been notified. It's on their schedule.`
-        : `${target.name} is no longer assigned and has been notified. Their time is free again.`);
+        ? `${target.candidate.name} is assigned${otherRecipient(target.candidate.staffId) ? ' and has been notified' : ''}. It's on their schedule.`
+        : `${target.name} is no longer assigned${otherRecipient(on.assignees.find(person => person.assignmentId === target.assignmentId)?.staffId ?? '') ? ' and has been notified' : ''}. Their time is free again.`);
       setPending(null);
       reload();
     } else {
@@ -127,19 +139,21 @@ export function StaffingRequestPage() {
             {done ? <Alert tone="success">{done}</Alert> : null}
           </div>
           {pending ? (
+            <div ref={confirmation} tabIndex={-1} aria-label="Staffing confirmation">
             <ConfirmPanel
               title={pending.kind === 'assign' ? `Assign ${pending.candidate.name}?` : `Remove ${pending.name}?`}
               description={pending.kind === 'assign'
-                ? `${pending.candidate.name} will be notified and the event added to their schedule for ${formatDateRange(request.startsAt, request.endsAt)}.`
-                : `${pending.name} will be notified, and their time is freed for other events.`}
+                ? `${otherRecipient(pending.candidate.staffId) ? `${pending.candidate.name} will be notified and the event added` : 'The event will be added'} to their schedule for ${formatDateRange(request.startsAt, request.endsAt)}.`
+                : `${pending.name}${otherRecipient(request.assignees.find(person => person.assignmentId === pending.assignmentId)?.staffId ?? '') ? ' will be notified, and their' : "'s"} time is freed for other events.`}
               confirmLabel={pending.kind === 'assign' ? 'Assign technician' : 'Remove assignment'}
               busyLabel={pending.kind === 'assign' ? 'Assigning…' : 'Removing…'}
               danger={pending.kind === 'remove'}
               busy={busy}
               error={refusal ?? undefined}
               onConfirm={() => confirm(pending, request)}
-              onCancel={() => { setPending(null); setRefusal(null); }}
+              onCancel={() => { setPending(null); setRefusal(null); trigger.current?.focus(); }}
             />
+            </div>
           ) : null}
           <Card title="Support needed">
             <FactList columns={2} items={[

@@ -15,6 +15,7 @@ import {
 } from '../src/modules/equipmentSupport/requests.js';
 import { checkEquipmentAvailability } from '../src/modules/equipmentSupport/availability.js';
 import { saveEquipment } from '../src/modules/equipmentSupport/catalogue.js';
+import { markUnavailable } from '../src/modules/equipmentSupport/unavailability.js';
 import { getEvent } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
@@ -29,6 +30,94 @@ const person = (id: string, role: Role, isActive = true): AuthenticatedUser => (
 // 15 Nov 2026 9:00 am to 5:00 pm Singapore time, and a later, separate day.
 const PERIOD = ['2026-11-15T01:00:00.000Z', '2026-11-15T09:00:00.000Z'] as const;
 const LATER = ['2026-11-20T01:00:00.000Z', '2026-11-20T09:00:00.000Z'] as const;
+
+test('TC_E11S01_10 TC_E11S01_11 TC_E11S01_09 equipment results reach only affected assigned staff atomically, including pre-release recipients', async () => {
+  const t = await setup();
+  try {
+    const eventId = await t.event('EVT-E11', 'planning');
+    const equipmentId = await t.equipment('E11 microphone', 10);
+    const requestId = await t.request(eventId, equipmentId, 4);
+    const venue = randomUUID(), venueStaff = randomUUID(), endedStaff = randomUUID(), unrelated = randomUUID();
+    for (const id of [venueStaff, endedStaff, unrelated]) await t.q(`INSERT INTO users(id,email,password_hash,full_name,role)
+      VALUES($1,$2,'unused','Venue colleague','venue_staff')`, [id, `${id}@example.test`]);
+    await t.q(`INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at)
+      VALUES($1,'E11 venue','Synthetic',100,'08:00','22:00')`, [venue]);
+    await t.q(`INSERT INTO venue_bookings(venue_id,event_id,booking_range,status,decided_by)
+      SELECT $1,id,event_range,'confirmed',$3 FROM events WHERE id=$2`, [venue, eventId, unrelated]);
+    await t.q(`INSERT INTO venue_staff_assignments(venue_id,staff_id,active_from,active_until)
+      VALUES($1,$2,now()-interval '2 days',NULL),($1,$3,now()-interval '2 days',now()-interval '1 day')`, [venue, venueStaff, endedStaff]);
+    const supportId = (await t.q(`INSERT INTO tech_support_requests(event_id,support_required,support_range,requested_by)
+      SELECT id,true,event_range,$2 FROM events WHERE id=$1 RETURNING id`, [eventId, t.ids.coord])).rows[0].id;
+    for (const staff of [t.ids.tech, t.ids.otherTech, t.ids.inactiveTech]) await t.q(`INSERT INTO tech_staff_assignments(request_id,event_id,staff_id,assignment_range)
+      SELECT $1,id,$3,event_range FROM events WHERE id=$2`, [supportId, eventId, staff]);
+    const staffNotices = async () => (await t.q(`SELECT n.user_id,n.title,n.message,count(d.id)::int AS deliveries
+      FROM notifications n LEFT JOIN notification_deliveries d ON d.notification_id=n.id
+      WHERE n.event_id=$1 AND n.user_id<>$2 GROUP BY n.id ORDER BY n.created_at,n.id`, [eventId, t.ids.coord])).rows;
+    const assertRecipients = async (changes: number) => {
+      const rows = await staffNotices();
+      assert.equal(rows.length, changes * 2);
+      assert.ok(rows.every(r => [venueStaff, t.ids.otherTech].includes(r.user_id) && r.deliveries === 1));
+      assert.ok(rows.every(r => /EVT-E11/.test(r.message) && /Changed at/.test(r.message)));
+    };
+    const partial = await reserveEquipment(t.db.pool, t.tech, 'EVT-E11', { requestId, quantity: 2 });
+    assert.equal(partial.status, 201);
+    const reservationId = (partial.body.reservation as { id: string }).id;
+    await assertRecipients(1);
+    assert.equal((await changeReservation(t.db.pool, t.tech, 'EVT-E11', { reservationId, quantity: 4 })).status, 200);
+    await assertRecipients(2);
+    await changeReservation(t.db.pool, t.tech, 'EVT-E11', { reservationId, quantity: 4 });
+    await assertRecipients(2); // unchanged quantity is silent
+    // A second full allocation proves the full-reserve path, not only change.
+    const otherItem = await t.equipment('E11 full allocation', 2);
+    assert.equal((await reserveEquipment(t.db.pool, t.tech, 'EVT-E11', {
+      requestId: await t.request(eventId, otherItem, 1), quantity: 1,
+    })).status, 201);
+    await assertRecipients(3);
+    assert.equal((await markUnavailable(t.db.pool, t.tech, equipmentId, {
+      from: '2026-11-15', to: '2026-11-15', quantity: 8, reason: 'Synthetic shortfall',
+    })).status, 201);
+    await assertRecipients(4);
+    assert.equal((await saveEquipment(t.db.pool, t.tech, {
+      name: 'E11 full allocation', category: 'Audio', description: 'Synthetic', total_quantity: 0,
+      home_location: 'Store', operational_status: 'available',
+    }, otherItem)).status, 200);
+    await assertRecipients(5);
+    await t.q(`CREATE FUNCTION reject_equipment_staff_delivery() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN IF EXISTS(SELECT 1 FROM notifications WHERE id=NEW.notification_id AND user_id='${venueStaff}'::uuid)
+        THEN RAISE EXCEPTION 'Synthetic affected staff outbox failure'; END IF; RETURN NEW; END; $$`);
+    await t.q(`CREATE TRIGGER reject_equipment_staff_delivery BEFORE INSERT ON notification_deliveries
+      FOR EACH ROW EXECUTE FUNCTION reject_equipment_staff_delivery()`);
+    const auditsBefore = (await t.activity(eventId)).length;
+    const rollbackItem = await t.equipment('E11 rollback allocation', 3);
+    const rollbackRequest = await t.request(eventId, rollbackItem, 1);
+    await assert.rejects(reserveEquipment(t.db.pool, t.tech, 'EVT-E11', {
+      requestId: rollbackRequest, quantity: 1,
+    }), /Synthetic affected staff outbox failure/);
+    assert.equal((await t.q('SELECT count(*)::int AS n FROM equipment_reservations WHERE request_id=$1', [rollbackRequest])).rows[0].n, 0);
+    const periodsBefore = (await t.q('SELECT count(*)::int AS n FROM equipment_unavailability')).rows[0].n;
+    await assert.rejects(markUnavailable(t.db.pool, t.tech, equipmentId, {
+      from: '2026-11-15', to: '2026-11-15', quantity: 1, reason: 'Must roll back',
+    }), /Synthetic affected staff outbox failure/);
+    assert.equal((await t.q('SELECT count(*)::int AS n FROM equipment_unavailability')).rows[0].n, periodsBefore);
+    await assert.rejects(releaseReservation(t.db.pool, t.tech, 'EVT-E11', { reservationId }), /Synthetic affected staff outbox failure/);
+    assert.equal((await t.q('SELECT status FROM equipment_reservations WHERE id=$1', [reservationId])).rows[0].status, 'reserved');
+    assert.equal((await t.activity(eventId)).length, auditsBefore);
+    await assertRecipients(5);
+    await t.q('DROP TRIGGER reject_equipment_staff_delivery ON notification_deliveries');
+    // Simulate an owning release workflow dropping links in the same transaction.
+    await t.q(`CREATE FUNCTION release_equipment_staff_links() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN UPDATE tech_staff_assignments SET status='released' WHERE event_id=NEW.event_id;
+      UPDATE venue_bookings SET status='released' WHERE event_id=NEW.event_id; RETURN NEW; END; $$`);
+    await t.q(`CREATE TRIGGER release_equipment_staff_links AFTER UPDATE ON equipment_reservations
+      FOR EACH ROW WHEN (NEW.status='released') EXECUTE FUNCTION release_equipment_staff_links()`);
+    assert.equal((await releaseReservation(t.db.pool, t.tech, 'EVT-E11', { reservationId })).status, 200);
+    await assertRecipients(6);
+    // Existing E07 release behaviour still sends no Coordinator notice.
+    assert.equal((await t.notices(t.ids.coord)).length, 5);
+    await assert.rejects(releaseReservation(t.db.pool, t.tech, 'EVT-E11', { reservationId }), { status: 409 });
+    await assertRecipients(6);
+  } finally { await t.db.close(); }
+});
 
 async function setup() {
   const db = await loginDatabase();
