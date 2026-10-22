@@ -69,7 +69,7 @@ import {
   updateEventRequest,
 } from '../backend/src/modules/eventLifecycle/service.js';
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
-import { isEventStatus } from '../backend/src/modules/eventLifecycle/status.js';
+import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
@@ -262,8 +262,6 @@ async function handleCommentPost(request: VercelRequest, response: VercelRespons
       return;
     }
     const comment = await inTransaction(getDatabasePool(), async client => {
-      const organisationId = await requireOrganiser((sql, values) => client.query(sql, values), user, 'events');
-      await client.query('SELECT id FROM events WHERE client_org_id=$2 AND (id::text=$1 OR event_code=$1) FOR UPDATE', [eventId.slice(0,240), organisationId]);
       return createEventComment((sql, values) => client.query(sql, values), user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
     });
     sendJson(response, 201, { comment });
@@ -317,12 +315,11 @@ async function requireOrganiserWithClient(request: VercelRequest): Promise<Authe
 // organiser's own event requests, for the "my drafts" list and for reopening
 // one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
-  const cancellationParams = new URL(request.url || '/', 'http://localhost').searchParams;
-  if (cancellationParams.get('cancellation') === '1') {
-    await respond(response, async () => ({ cancellation: await getCancellation(getDatabasePool(), await currentUser(request), cancellationParams.get('id') || '') }));
+  const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.get('cancellation') === '1') {
+    await respond(response, async () => ({ cancellation: await getCancellation(getDatabasePool(), await currentUser(request), params.get('id') || '') }));
     return;
   }
-  const params = new URL(request.url || '/', 'http://localhost').searchParams;
 
   if (params.get('mine') === '1') {
     await handleGetMine(request, response, params);
@@ -364,7 +361,10 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
     if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');
-    if (id) return { event: await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240))) };
+    if (id) {
+      const event = await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240)));
+      return { event: { ...event, canCancel: (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String((event as Record<string, unknown>).status)) } };
+    }
     return { events: await listAssignedEvents(database, user, params.get('status')) };
   });
 }

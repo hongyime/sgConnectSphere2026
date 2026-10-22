@@ -149,7 +149,7 @@ export function EventCancellation() {
               ))}
             </Card>
           ) : null}
-          {open && (item.canCancel || item.canRequest) ? (
+          {open && (item.canCancel || (item.canRequest && item.requests.length === 0)) ? (
             <ConfirmPanel
               title={
                 item.canCancel ? "Cancel this event?" : "Request cancellation?"
@@ -172,7 +172,7 @@ export function EventCancellation() {
                 setError(undefined);
               }}
             />
-          ) : item.canCancel || item.canRequest ? (
+          ) : item.canCancel || (item.canRequest && item.requests.length === 0) ? (
             <Card title="Cancellation">
               <FactList items={[["Event", item.title]]} />
               <Button

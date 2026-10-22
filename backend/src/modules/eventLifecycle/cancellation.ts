@@ -148,7 +148,7 @@ export async function getCancellation(
         ? event.status_changed_at.toISOString()
         : null,
     canCancel: available(event) && user.role === "event_coordinator",
-    canRequest: available(event) && user.role === "event_organiser",
+    canRequest: available(event) && user.role === "event_organiser" && !!event.coordinator_id && requests.length === 0,
     requests,
     obsoleteRequests,
   };
@@ -196,12 +196,14 @@ export async function cancelEvent(
             "An assigned Coordinator is required before requesting cancellation.",
           );
         const existing = (
-          await client.query<{ id: string }>(
-            `SELECT id FROM change_requests
+          await client.query<{ id: string; description: string }>(
+            `SELECT id,description FROM change_requests
         WHERE event_id=$1 AND status='pending' AND ${requestPredicate}`,
             [event.id],
           )
         ).rows[0];
+        if (existing && existing.description !== reason)
+          throw new AccessError(409, "A cancellation request is already pending. Your new reason was not submitted.");
         if (existing)
           return {
             status: "requested",
@@ -238,6 +240,9 @@ export async function cancelEvent(
           eventId: event.id,
         };
       }
+      // Wait for staffing before capturing the notification audience as well as
+      // before releasing assignments. New support requests require the event lock.
+      await client.query("SELECT id FROM tech_support_requests WHERE event_id=$1 ORDER BY id FOR UPDATE", [event.id]);
       // Same stable Event -> Venue -> Equipment order as arrangement writers.
       const venues = (
         await client.query<{ id: string }>(
@@ -288,13 +293,19 @@ export async function cancelEvent(
           VALUES($1,'equipment_reservation',$2,$3,'Equipment reservation released','status','released')`,
                 [currentUser.id, reservation.id, event.id],
               );
-            await client.query(
-              "UPDATE tech_staff_assignments SET status='released' WHERE event_id=$1 AND status='assigned'",
-              [event.id],
-            );
-            await client.query(
-              "UPDATE tech_support_requests SET status='cancelled' WHERE event_id=$1 AND status IN ('open','staffed')",
-              [event.id],
+            const supportRequests = (await client.query<{ id: string }>(
+              "UPDATE tech_support_requests SET status='cancelled' WHERE event_id=$1 AND status IN ('open','staffed') RETURNING id", [event.id],
+            )).rows;
+            const assignments = (await client.query<{ id: string }>(
+              "UPDATE tech_staff_assignments SET status='released' WHERE event_id=$1 AND status='assigned' RETURNING id", [event.id],
+            )).rows;
+            for (const [entityType, rows, action, value] of [
+              ['tech_support_request', supportRequests, 'Technical support request cancelled', 'cancelled'],
+              ['tech_staff_assignment', assignments, 'Technician assignment released', 'released'],
+            ] as const) for (const row of rows) await client.query(
+              `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,new_value)
+               VALUES($1,$2,$3,$4,$5,'status',$6)`,
+              [currentUser.id, entityType, row.id, event.id, action, value],
             );
             const obsolete = (
               await client.query<{ id: string }>(

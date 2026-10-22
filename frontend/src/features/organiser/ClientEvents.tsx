@@ -11,7 +11,7 @@ import { Alert } from '../../shared/feedback';
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
 type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
-type Event = { cancellation_reason?: string | null; id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
+type Event = { cancellation_reason?: string | null; id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canRequestCancellation?: boolean; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
 type Notification = { id: string; title: string; message: string };
 
 function plainStatus(status: string) {
@@ -117,7 +117,7 @@ export function ClientEvents() {
       </>}
       {!busy && !error && event && <article><div className="organiser-event-heading"><div><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p></div>{event.canEdit ? <button type="button" className="secondary-action" onClick={() => { setEditing(true); setSaved(null); }}><PencilLine size={14} aria-hidden="true" /> Edit event</button> : null}</div>
         {event.status==='cancelled' ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
-        {['submitted','under_review','awaiting_clarification','approved','planning','safety_review','confirmed'].includes(event.status) ? <Link to={`/organiser/requests/${encodeURIComponent(event.event_code || event.id)}/cancel`}>Request cancellation</Link> : null}
+        {event.canRequestCancellation ? <Link to={`/organiser/requests/${encodeURIComponent(event.event_code || event.id)}/cancel`}>Request cancellation</Link> : null}
         {saved ? <Alert tone="success">{saved}</Alert> : null}
         {editing ? <EventEditForm
           eventId={event.id}

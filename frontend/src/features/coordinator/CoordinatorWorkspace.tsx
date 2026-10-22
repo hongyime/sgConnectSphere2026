@@ -204,7 +204,7 @@ export function RequestDetail() {
       title={event?.title ?? (result.state === 'error' ? 'Event unavailable' : 'Loading event…')}
       actions={event ? (
         <>
-          {['submitted','under_review','awaiting_clarification','approved','planning','safety_review','confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/cancel`}>Cancel event</ButtonLink> : null}
+          {event.canCancel ? <ButtonLink to={`${eventLink(event)}/cancel`}>Cancel event</ButtonLink> : null}
           {event.status === 'under_review' ? (
             <>
               <ButtonLink to={`${eventLink(event)}/clarify`} icon={<MessageCircleQuestion size={14} aria-hidden="true" />}>Request clarification</ButtonLink>

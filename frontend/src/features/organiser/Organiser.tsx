@@ -222,7 +222,7 @@ export function SubmittedDetail() {
       {request ? (
         <>
           {request.status === 'cancelled' && request.statusChangedAt ? <CancellationNotice reason={request.cancellationReason} date={request.statusChangedAt}/> : null}
-          {!closedStatuses.includes(request.status) ? <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/cancel`}>Request cancellation</ButtonLink> : null}
+          {request.canRequestCancellation ? <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/cancel`}>Request cancellation</ButtonLink> : null}
           {answered ? <Alert tone="success">Answers sent. The request is back under review.</Alert> : null}
           {request.status === 'awaiting_clarification' ? (
             <Alert

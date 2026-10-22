@@ -105,18 +105,15 @@ test("TC_E10S04_05 Organiser requests cancellation without promising immediate r
           ...item,
           canCancel: false,
           canRequest: true,
-          requests: [
-            { id: "r", reason: "Original request", created_at: "2027-01-01" },
-          ],
+          requests: [],
         },
       },
     },
     [`POST ${path}`]: { body: { cancellation: { status: "requested" } } },
   });
   show();
-  expect(await screen.findByText(/Original request/)).toBeInTheDocument();
   fireEvent.click(
-    screen.getByRole("button", { name: "Request cancellation…" }),
+    await screen.findByRole("button", { name: "Request cancellation…" }),
   );
   expect(screen.getByText(/It does not cancel the event/)).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText("Cancellation reason"), {
@@ -214,4 +211,15 @@ test("TC_E10S04_04 legacy cancellation with no reason is still read-only", () =>
   expect(
     screen.getByText(/No cancellation reason recorded/),
   ).toBeInTheDocument();
+});
+
+test("TC_E10S04_05 pending request hides the duplicate reason form", async () => {
+  stubApi({ [`GET ${path}`]: () => ({ body: { cancellation: {
+    ...item, canCancel: false, canRequest: true,
+    requests: [{id:'pending',reason:'Original reason',created_at:'2027-01-15T01:00Z'}],
+  } } }) });
+  show();
+  expect(await screen.findByText(/Original reason/)).toBeInTheDocument();
+  expect(screen.queryByRole('button',{name:'Request cancellation…'})).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Cancellation reason')).not.toBeInTheDocument();
 });

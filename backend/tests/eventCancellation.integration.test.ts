@@ -164,8 +164,12 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
       reason: "Sponsor withdrew",
     });
     assert.equal(requested.status, "requested");
+    await assert.rejects(cancelEvent(f.pool, org, f.event, { reason: "Different reason" }), { status: 409 });
+    assert.equal((await getCancellation(f.pool, org, f.event)).canRequest, false);
+    assert.equal((await getEvent(f.q, otherOrg, 'EVT-CANCEL'))?.canRequestCancellation, false);
+
     assert.equal(
-      (await cancelEvent(f.pool, org, f.event, { reason: "retry" })).replayed,
+      (await cancelEvent(f.pool, org, f.event, { reason: "Sponsor withdrew" })).replayed,
       true,
     );
     assert.equal(
@@ -180,6 +184,13 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
     await cancelEvent(f.pool, coord, f.event, {
       reason: "Insufficient sponsor funding",
     });
+    await assert.rejects(updateEventInformationWithNotifications(f.pool, coord, f.event, { title: "Changed" }), { status: 409 });
+    for (const entityType of ['tech_support_request','tech_staff_assignment']) {
+      const audit = await f.q("SELECT entity_id,new_value,actor_id FROM audit_logs WHERE event_id=$1 AND entity_type=$2", [f.event,entityType]);
+      assert.equal(audit.rows.length, 1);
+      assert.equal(audit.rows[0].actor_id, coord.id);
+      assert.equal(audit.rows[0].new_value, entityType === 'tech_support_request' ? 'cancelled' : 'released');
+    }
     const state = await getCancellation(f.pool, coord, f.event);
     assert.equal(state.status, "cancelled");
     assert.equal(state.reason, "Insufficient sponsor funding");
@@ -465,5 +476,38 @@ test("TC_E10S04_03 notices without publication never leak private title; request
     );
   } finally {
     await f.close();
+  }
+});
+
+// PR #320 / Le Xin: cancellation must wait for the staffing writer before
+// reading assignments, otherwise an uncommitted assignment survives release.
+test("TC_E10S04_01 cancellation releases an in-flight technician assignment", async () => {
+  const f = await fixture();
+  const writer = await f.pool.connect();
+  try {
+    await f.q("DELETE FROM tech_staff_assignments WHERE event_id=$1", [f.event]);
+    const support = (await f.q("SELECT id FROM tech_support_requests WHERE event_id=$1", [f.event])).rows[0].id;
+    const inserted = await f.q("INSERT INTO tech_staff_assignments(request_id,event_id,staff_id,assignment_range,status) VALUES($1,$2,$3,'[2027-01-15 01:00Z,2027-01-15 09:00Z)','released') RETURNING id", [support,f.event,f.users[3].id]);
+    await writer.query('BEGIN');
+    await writer.query('SELECT id FROM tech_support_requests WHERE id=$1 FOR UPDATE', [support]);
+    const cancelling = cancelEvent(f.pool, f.users[1], f.event, {reason:'Concurrent staffing'});
+    // Observe the cancellation waiting on the writer's request lock.
+    let waiting = false;
+    for(let i=0;i<100;i++) {
+      const rows = await f.q("SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE 'SELECT id FROM tech_support_requests%'");
+      if(rows.rows.length) { waiting=true; break; }
+      await new Promise(resolve=>setTimeout(resolve,10));
+    }
+    await writer.query("UPDATE tech_staff_assignments SET status='assigned' WHERE id=$1",[inserted.rows[0].id]);
+    await writer.query('COMMIT');
+    await cancelling;
+    assert.equal(waiting,true,'cancellation must wait for the in-flight staffing request');
+    assert.equal((await f.q('SELECT status FROM tech_staff_assignments WHERE id=$1',[inserted.rows[0].id])).rows[0].status,'released');
+    assert.equal((await f.q('SELECT status FROM tech_support_requests WHERE id=$1',[support])).rows[0].status,'cancelled');
+    assert.ok((await f.q("SELECT 1 FROM notifications WHERE event_id=$1 AND user_id=$2 AND title='Event update'",[f.event,f.users[3].id])).rows.length, 'concurrently assigned technician must receive the cancellation notice');
+    await f.q("UPDATE events SET coordinator_id=NULL,status='submitted' WHERE id=$1",[f.event]);
+    assert.equal((await getCancellation(f.pool,f.users[0],f.event)).canRequest,false);
+  } finally {
+    await writer.query('ROLLBACK'); writer.release(); await f.close();
   }
 });

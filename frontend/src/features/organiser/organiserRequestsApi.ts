@@ -48,6 +48,7 @@ export type ConfirmedArrangements = {
 };
 
 export type RequestDetail = OwnRequest & {
+  canRequestCancellation?: boolean;
   cancellationReason?: string | null;
   eventCode: string | null;
   statusChangedAt: string | null;
@@ -148,6 +149,7 @@ export async function getRequestDetail(identifier: string, signal?: AbortSignal)
     data: {
       ...own.data.event,
       cancellationReason: event.cancellation_reason ?? null,
+      canRequestCancellation: event.canRequestCancellation === true,
       eventCode: event.event_code ?? null,
       statusChangedAt: event.status_changed_at ?? null,
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
