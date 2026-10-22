@@ -10,6 +10,7 @@ docs/backlog/sprint-1-delivery.md
 # These existing handoffs link to public T-65 run records whose runner handles
 # are already allowed via docs/testing/runs/.
 .agents/handoffs/20261016-docs-safety-officer-provision-20261016.md
+.agents/handoffs/20261018-docs-production-migration-0020-run-record.md
 .agents/handoffs/20261021-ci-recovery-parent-sync-20261021.md
 # The sprint retrospective quotes GitHub handles in its audit evidence.
 # These are already public on github.com and were committed in PR #99.

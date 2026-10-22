@@ -90,7 +90,7 @@ async function withFixture(work: (f: Fixture) => Promise<void>) {
   try { await work(f); } finally { await f.close(); }
 }
 
-type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null };
+type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null; booking_id: string | null };
 
 // T-75: the assigned Coordinator reads the decision in the event Activity log;
 // the Organiser's view of the same log leaves booking decisions out.
@@ -256,6 +256,7 @@ test('TC_E06S04_05: an approval is recorded with the actor, action, booking, eve
   assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking')
     .map(row => [row.action, row.venue_name, row.actor_name, row.old_value, row.new_value]),
   [['Booking Approved', 'Small Room', 'Venue Staff A', 'pending', 'confirmed']]);
+  assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking').map(row => row.booking_id), [bookingId]);
   assert.equal(organiserView.some(row => row.entity_type === 'venue_booking'), false);
 }));
 
