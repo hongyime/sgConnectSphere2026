@@ -10,7 +10,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | --- | --- | --- |
 | Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 201026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 161026.docx` |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 161026.docx` (BDR refreshed 2026-10-16; older dated exports remain history) |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 211026.xlsx` |
@@ -140,3 +140,9 @@ flag contradictions with a source reference rather than silently deleting them.
 The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and test-case exports and refreshes the legacy coverage input from that generated test-case workbook. Completed E07-S01/SCRUM-51 is retained; Jira creation and planning for the new canonical follow-up happen after merge.
 
 The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
+
+The 16 October Product Owner approvals in T-97 update the canonical BDR and
+`docs/ops/demo-account-provisioning.md`. Regenerate only the BDR Word export for
+the new decision; the architecture sources did not change, so the dated ADR
+export remains unchanged. No backlog, test-case, or coverage derivative changes
+are part of this decision record.
