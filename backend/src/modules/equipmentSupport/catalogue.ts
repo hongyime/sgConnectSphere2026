@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { notifyEquipmentStaff } from './notifications.js';
 
 export type EquipmentInput = {
   name: string; category: string; description: string; total_quantity: number;
@@ -111,13 +112,16 @@ export async function saveEquipment(database: Pool, user: AuthenticatedUser | un
           FROM active a JOIN flagged f ON f.id=a.id ORDER BY a.id`, [equipment.id, capacity])).rows;
         const changeId = randomUUID(), occurredAt = new Date();
         for (const eventId of new Set(affectedReservations.map(r => r.eventId))) {
+          const event = affectedReservations.find(r => r.eventId === eventId)!;
+          const message = `${event.eventCode ?? event.title}: ${equipment.name} stock or operational status changed. Reservations need review; total stock is ${input.total_quantity}.`;
+          await notifyEquipmentStaff(client, { eventId, actorId: actor.id, changeId, occurredAt,
+            title: 'Equipment reservation needs review', message });
           const coordinator = (await client.query<{id: string}>(`SELECT u.id FROM events e JOIN users u ON u.id=e.coordinator_id
             WHERE e.id=$1 AND u.is_active AND u.role='event_coordinator'`, [eventId])).rows[0];
           if (coordinator && coordinator.id !== actor.id) {
-            const event = affectedReservations.find(r => r.eventId === eventId)!;
             await writeEventNotification(client, { eventId, changeId, userId: coordinator.id, occurredAt,
               title: 'Equipment reservation needs review',
-              message: `${event.eventCode ?? event.title}: ${equipment.name} stock or operational status changed. Reservations need review; total stock is ${input.total_quantity}.` });
+              message });
           }
         }
       }
