@@ -50,7 +50,7 @@ export function VenueBookingRequests() {
         {booking.purpose && <p><strong>Purpose:</strong> {booking.purpose}</p>}
         {booking.headcount != null && <p><strong>Booking headcount:</strong> {booking.headcount}</p>}
         {booking.is_primary && <p>Primary venue</p>}
-        {booking.status === 'confirmed' && !booking.is_primary && <>
+        {booking.status === 'confirmed' && !booking.is_primary && ['approved', 'planning', 'safety_review', 'confirmed'].includes(result.data.event.status) && <>
           <Button disabled={busy} onClick={() => { setSelectingPrimary(booking.id); setWithdrawing(null); setFailure(''); }}>Set as primary venue</Button>
           {selectingPrimary === booking.id && <ConfirmPanel title={`Make ${booking.venue_name} the primary venue?`}
             description="This replaces the current primary designation. All bookings keep their existing periods and statuses."

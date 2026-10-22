@@ -134,7 +134,7 @@ E06-S03 owns this explicit selection service/API and the Coordinator booking-lis
 control. E06-S04 owns automatic first-confirmed assignment. `set_primary` locks
 the event `FOR NO KEY UPDATE` first, then rechecks account/assignment and locks
 the selected/existing-primary bookings. It is permitted on assigned Confirmed
-events as well as Planning events; it is not a new booking submission. It clears
+events as well as Approved, Planning and Safety Review events; it is not a new booking submission. Completed, Cancelled and pre-approval Events return 409 before flag changes or replay success, checked under the Event lock. It clears
 the old flag before setting the target to preserve the immediate unique index.
 Booking statuses, periods, expiry and event status are unchanged. It writes a
 transactional `Primary Venue Changed` audit (`entity_type=venue_booking`,
@@ -361,3 +361,5 @@ historical row and the other constraints. Service/list predicates match it.
 This is local branch implementation, not a production migration, human
 acceptance result or whole-story Done claim. Full E06-S04 decision integration
 and human manual verification must still be observed against the merged flow.
+
+Activity log visibility: these audits use `entity_type=venue_booking`. The current main Event-only read query does not expose them until E06-S04 PR #298 widens it. Formatter tests alone do not establish Coordinator log visibility; defer that human log check until the dependency is integrated.

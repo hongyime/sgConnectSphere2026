@@ -437,3 +437,22 @@ test('TC_E06S03_07 selecting primary rolls back both flags when audit persistenc
     assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE is_primary')).rows,[{id:first.body.booking.id}]);
   } finally {await f.close();}
 });
+
+
+test('TC_E06S03_07 Completed and Cancelled Events preserve primary flags and audit history',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    const flags=(await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows;
+    const audit=(await f.q('SELECT id FROM audit_logs ORDER BY id')).rows;
+    for(const status of ['completed','cancelled']) {
+      await f.q('UPDATE events SET status=$1 WHERE id=$2',[status,f.event]);
+      for(const booking_id of [first.body.booking.id,second.body.booking.id])
+        await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id}),{status:409});
+      assert.deepEqual((await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows,flags);
+      assert.deepEqual((await f.q('SELECT id FROM audit_logs ORDER BY id')).rows,audit);
+    }
+  } finally {await f.close();}
+});

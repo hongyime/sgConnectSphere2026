@@ -15,13 +15,15 @@ export async function setPrimaryBooking(database: Pool, user: AuthenticatedUser 
     throw new AccessError(400, 'A booking id is required.');
   try {
     return await inTransaction(database, async client => {
-      const event = (await client.query<{ id: string; coordinator_id: string | null }>(
-        'SELECT id,coordinator_id FROM events WHERE id=(SELECT event_id FROM venue_bookings WHERE id=$1) FOR NO KEY UPDATE', [id])).rows[0];
+      const event = (await client.query<{ id: string; coordinator_id: string | null; status: string }>(
+        'SELECT id,coordinator_id,status FROM events WHERE id=(SELECT event_id FROM venue_bookings WHERE id=$1) FOR NO KEY UPDATE', [id])).rows[0];
       if (!event || event.coordinator_id !== user.id) throw new AccessError(404, 'Assigned booking request not found.');
       const account = (await client.query<{ is_active: boolean; role: string; failed_login_count: number; locked_until: Date | null }>(
         'SELECT is_active,role,failed_login_count,locked_until FROM users WHERE id=$1 FOR SHARE NOWAIT', [user.id])).rows[0];
       if (!account?.is_active || account.role !== 'event_coordinator' || account.failed_login_count >= 5 || (account.locked_until && account.locked_until > new Date()))
         throw new AccessError(403, 'Your account cannot select a primary venue.');
+      if (!['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status))
+        throw new AccessError(409, 'The primary venue can only be changed for an active approved Event. Refresh the booking list.');
       const rows = (await client.query<{ id: string; status: string; is_primary: boolean; name: string }>(
         `SELECT b.id,b.status,b.is_primary,v.name FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
          WHERE b.event_id=$1 AND (b.id=$2 OR b.is_primary) ORDER BY b.id FOR UPDATE OF b`, [event.id,id])).rows;

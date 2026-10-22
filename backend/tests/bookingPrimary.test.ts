@@ -9,7 +9,7 @@ import type { VercelResponse } from '../src/vercel.js';
 
 const actor: AuthenticatedUser = { id:randomUUID(),role:'event_coordinator',email:'synthetic@example.test',isActive:true,failedLoginCount:0 };
 const id=randomUUID(),event=randomUUID(),old=randomUUID();
-type State={event?:boolean;assigned?:boolean;account?:boolean;active?:boolean;role?:string;failures?:number;lock?:Date|null;missing?:boolean;status?:string;primary?:boolean;previous?:boolean;fail?:string;busy?:boolean};
+type State={eventStatus?:string;event?:boolean;assigned?:boolean;account?:boolean;active?:boolean;role?:string;failures?:number;lock?:Date|null;missing?:boolean;status?:string;primary?:boolean;previous?:boolean;fail?:string;busy?:boolean};
 function database(state:State={}) {
   const calls:{sql:string;values?:unknown[]}[]=[];
   const query=async(sql:string,values?:unknown[])=>{
@@ -17,7 +17,7 @@ function database(state:State={}) {
     if(state.busy && sql.includes('NOWAIT'))throw Object.assign(new Error('busy'),{code:'55P03'});
     if(state.fail && sql.includes(state.fail))throw new Error('Synthetic failure');
     let rows:unknown[]=[];
-    if(sql.startsWith('SELECT id,coordinator_id'))rows=state.event===false?[]:[{id:event,coordinator_id:state.assigned===false?old:actor.id}];
+    if(sql.startsWith('SELECT id,coordinator_id'))rows=state.event===false?[]:[{id:event,coordinator_id:state.assigned===false?old:actor.id,status:state.eventStatus??'planning'}];
     else if(sql.startsWith('SELECT is_active'))rows=state.account===false?[]:[{is_active:state.active!==false,role:state.role??actor.role,failed_login_count:state.failures??0,locked_until:state.lock??null}];
     else if(sql.includes('SELECT b.id,b.status'))rows=[...(state.missing?[]:[{id,status:state.status??'confirmed',is_primary:state.primary??false,name:'Selected Hall'}]),...(state.previous===false?[]:[{id:old,status:'confirmed',is_primary:true,name:'Old Hall'}])];
     return {rows,rowCount:rows.length};
@@ -71,4 +71,18 @@ test('primary selection shares origin/authentication HTTP boundary, without subm
   const handler=createBookingSubmissionHandler({authenticate:async()=>actor,pool:()=>database().pool,allowedOrigin:()=>true});
   await handler({method:'POST',headers:{},body:{action:'set_primary',booking_id:id}},response);
   assert.equal(status,200);
+});
+
+
+test('TC_E06S03_07 primary selection refuses ended/pre-approval Events even for a replay',async()=>{
+  for(const eventStatus of ['completed','cancelled','draft','submitted','under_review','clarification_requested','rejected']) {
+    for(const primary of [false,true]) {
+      const db=database({eventStatus,primary});
+      await assert.rejects(setPrimaryBooking(db.pool,actor,{booking_id:id}),{status:409});
+      assert.equal(db.calls.at(-1)?.sql,'ROLLBACK');
+      assert.ok(!db.calls.some(c=>c.sql.startsWith('UPDATE')||c.sql.includes('INSERT')));
+    }
+  }
+  for(const eventStatus of ['approved','planning','safety_review','confirmed'])
+    assert.equal((await setPrimaryBooking(database({eventStatus}).pool,actor,{booking_id:id})).status,200);
 });

@@ -181,3 +181,11 @@ test('TC_E06S03_07 primary conflict refreshes and busy submission runs only once
   fireEvent.click(screen.getByRole('button',{name:'Refresh booking list'}));
   await waitFor(()=>expect(screen.queryByRole('button',{name:'Set as primary venue'})).not.toBeInTheDocument());
 });
+
+
+test.each(['completed','cancelled'])('TC_E06S03_07 primary selection is hidden for %s Events',async status=>{
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(new Response(JSON.stringify({...data,event:{...data.event,status},bookings:[{...data.bookings[0],status:'confirmed',is_primary:false}]}),{status:200,headers:{'Content-Type':'application/json'}})));
+  render(<MemoryRouter initialEntries={['/events/EVT-1']}><Routes><Route path="/events/:eventCode" element={<VenueBookingRequests/>}/></Routes></MemoryRouter>);
+  await screen.findByText('Main Hall');
+  expect(screen.queryByRole('button',{name:'Set as primary venue'})).not.toBeInTheDocument();
+});

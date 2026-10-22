@@ -19,7 +19,8 @@ export async function withdrawBooking(database: Pool, user: AuthenticatedUser | 
     const event = (await client.query<{ id: string; coordinator_id: string | null }>(
       `SELECT id,coordinator_id FROM events WHERE id=(SELECT event_id FROM venue_bookings WHERE id=$1)`, [id])).rows[0];
     if (!event || event.coordinator_id !== user.id) throw new AccessError(404, 'Assigned booking request not found.');
-    // Match E06-S04 and the occupancy guard: Venue, then Booking.
+    // Lock Venue then Booking, like the occupancy guard. E06-S04 decisions
+    // and submission lock Event first; the Event lock below is NOWAIT.
     await client.query('SELECT v.id FROM venues v JOIN venue_bookings b ON b.venue_id=v.id WHERE b.id=$1 FOR NO KEY UPDATE OF v', [id]);
     const booking = (await client.query<{ id: string; event_id: string; venue_id: string; status: string }>(
       'SELECT id,event_id,venue_id,status FROM venue_bookings WHERE id=$1 FOR UPDATE', [id])).rows[0];
