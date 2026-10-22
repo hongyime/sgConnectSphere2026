@@ -7,6 +7,14 @@ cases have been executed.
 
 ## Current readiness
 
+**Update, 19 October 2026 (SCRUM-44):** the branch
+`feature/SCRUM-44-venue-buffer-form` adds the venue-form buffer fields
+(Bryan's #305 commit) and the case fixtures as setup stages in
+[`E05-S05-preconditions.sql`](E05-S05-preconditions.sql). The step-by-step
+script, the tester and every run are in
+[`docs/plans/scrum-44-implementation-status.md`](../../plans/scrum-44-implementation-status.md).
+The readiness table below describes `main` before that branch merges.
+
 The current venue form does not expose setup-time or turnaround-time fields.
 Although the backend accepts and stores those fields, there is no supported
 browser interaction for changing them. The seeded database also does not

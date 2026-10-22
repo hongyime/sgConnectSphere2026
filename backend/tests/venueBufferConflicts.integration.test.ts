@@ -252,6 +252,49 @@ test('TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertis
   } finally { await f.close(); }
 });
 
+// TC_E05S05_07: search marks the venue unavailable and names the stretch of
+// the requested period another booking needs once buffers apply (Scenario 7).
+test('TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private', async () => {
+  const f = await fixture();
+  try {
+    await updateVenue(f.pool,f.staff,f.ids.venue,{setup_time_minutes:30,turnaround_time_minutes:45});
+    await book(f,'SEARCH-A','confirmed','2027-01-15T10:00','2027-01-15T12:00','Private earlier event');
+    await book(f,'SEARCH-B','confirmed','2027-01-15T13:30','2027-01-15T15:00','Private later event');
+    const query: Query = (sql, values) => f.pool.query(sql, values);
+    const search = async (start: string, end: string) => {
+      const result = await venueSearch(query,f.coordinator,new URLSearchParams({start:`${start}${SGT}`,end:`${end}${SGT}`,attendance:'100',search:'1'}));
+      return result.venues!.find(v => v.id === f.ids.venue)!;
+    };
+    const named = 'Unavailable during the requested period: another booking needs the venue from 15 Jan 2027, 12:30 pm to 15 Jan 2027, 12:45 pm, including setup and turnaround.';
+
+    // The case's own numbers: 09:30-12:45 taken, event 12:30-14:00. Both
+    // bookings clash; the earlier one is named.
+    const direct = await search('2027-01-15T12:30','2027-01-15T14:00');
+    assert.equal(direct.available,false);
+    assert.deepEqual([new Date(direct.booking_overlap!.starts_at).toISOString(),new Date(direct.booking_overlap!.ends_at).toISOString()],
+      ['2027-01-15T04:30:00.000Z','2027-01-15T04:45:00.000Z']);
+    assert.ok(direct.mismatches.includes(named));
+
+    // 12:50-13:00 misses the 12:45 turnaround, but its own 30-minute setup
+    // (12:20) reaches into it, so the overlap is buffer to buffer.
+    const bufferOnly = await search('2027-01-15T12:50','2027-01-15T13:00');
+    assert.equal(bufferOnly.available,false);
+    assert.ok(bufferOnly.mismatches.includes('Unavailable during the requested period: another booking needs the venue from 15 Jan 2027, 12:20 pm to 15 Jan 2027, 12:45 pm, including setup and turnaround.'));
+    assert.ok(!JSON.stringify(bufferOnly).includes('Private'));
+
+    // Setup starting exactly at 12:45 is free of A; B's setup starts 13:00, so
+    // a 13:15-13:20 slot (turnaround to 14:05) still clashes only with B.
+    const touching = await search('2027-01-15T13:15','2027-01-15T13:20');
+    assert.equal(touching.available,false);
+    assert.equal(new Date(touching.booking_overlap!.starts_at).toISOString(),'2027-01-15T05:15:00.000Z');
+
+    const free = await search('2027-01-15T16:30','2027-01-15T17:00');
+    assert.equal(free.available,true);
+    assert.equal(free.booking_overlap,null);
+    assert.ok(!free.mismatches.some(m => m.startsWith('Unavailable')));
+  } finally { await f.close(); }
+});
+
 test('new hold and conversion enforce buffered clashes; flags remain visible without private event disclosure', async () => {
   const f = await fixture();
   try {
