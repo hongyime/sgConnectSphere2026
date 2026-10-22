@@ -19,6 +19,10 @@ const bookingApproved: ActivityEntry = {
   occurred_at: '2026-10-09T01:00:00.000Z', action: 'Booking Approved', field_changed: 'status',
   old_value: 'pending', new_value: 'confirmed', actor_name: 'Venue Staff A', entity_type: 'venue_booking', venue_name: 'Orchid Hall',
 };
+const primaryVenueChanged: ActivityEntry = {
+  ...approved, action: 'Record updated', field_changed: 'primary_venue', old_value: 'Orchid Hall', new_value: 'Jasmine Hall',
+  entity_type: 'venue_booking', venue_name: 'Jasmine Hall',
+};
 const edited: ActivityEntry = {
   occurred_at: '2026-10-08T03:00:00.000Z', action: 'Record updated', field_changed: 'venueRequirements',
   old_value: null, new_value: 'Lecture theatre with step-free access', actor_name: 'Coordinator B',
@@ -114,6 +118,13 @@ test('a change is described in words for status changes, edits and entries witho
   expect(describeChange({ ...reassigned, old_value: 'Coordinator A' })).toBe('Coordinator: Coordinator A');
 });
 
+test('primary venue activity names the designation and preserves venue names', () => {
+  expect(describeAction(primaryVenueChanged)).toBe('Primary venue changed');
+  expect(describeChange(primaryVenueChanged)).toBe('Primary venue: Orchid Hall → Jasmine Hall');
+  expect(describeChange({ ...primaryVenueChanged, old_value: null })).toBe('Primary venue: Jasmine Hall');
+  expect(describeChange({ ...primaryVenueChanged, new_value: null })).toBe('Primary venue');
+});
+
 test('an entry whose actor account was removed still shows, without a name', async () => {
   stub([{ ...approved, actor_name: null }]);
   renderDetail();
@@ -135,12 +146,14 @@ test('a status change with no previous status shows only the new status', async 
 });
 
 test('TC_E06S04_05/_06: a booking decision is shown as a booking change, not an event status change', async () => {
-  stub([bookingApproved, { ...bookingApproved, action: 'Booking Rejected', new_value: 'rejected', venue_name: 'Lotus Room' }]);
+  const bookingId = '3f2a9c4e-0000-4000-8000-000000000001';
+  stub([{ ...bookingApproved, booking_id: bookingId }, { ...bookingApproved, action: 'Booking Rejected', new_value: 'rejected', venue_name: 'Lotus Room' }]);
   renderDetail();
   const rows = within(await activityCard()).getAllByRole('row').slice(1);
   expect(rows[0]).toHaveTextContent('Booking approved');
   expect(rows[0]).toHaveTextContent('Orchid Hall: Pending → Confirmed');
   expect(rows[0]).toHaveTextContent('Venue Staff A');
+  expect(rows[0]).toHaveTextContent(`Booking reference: ${bookingId}`);
   expect(rows[0]).not.toHaveTextContent('Status changed');
   expect(rows[0]!.querySelectorAll('.status-pill')).toHaveLength(0);
   expect(rows[1]).toHaveTextContent('Booking rejected');

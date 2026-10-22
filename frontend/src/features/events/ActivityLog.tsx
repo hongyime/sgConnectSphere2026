@@ -29,6 +29,12 @@ const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit;
 // "Small Room: Pending → Confirmed" for a booking decision.
 export function describeChange(entry: ActivityEntry) {
+  if (entry.field_changed === 'primary_venue') {
+    if (!entry.new_value) return 'Primary venue';
+    return entry.old_value
+      ? `Primary venue: ${entry.old_value} → ${entry.new_value}`
+      : `Primary venue: ${entry.new_value}`;
+  }
   if (isBookingDecision(entry)) {
     const venue = entry.venue_name ?? 'Venue';
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
@@ -58,6 +64,7 @@ export function describeChange(entry: ActivityEntry) {
 // The stored action is written for the database ("Status changed to
 // under_review", "Record updated"); show it in the interface's words (design.md 8.1).
 export function describeAction(entry: ActivityEntry) {
+  if (entry.field_changed === 'primary_venue') return 'Primary venue changed';
   // "Booking Approved" -> "Booking approved" (sentence case, design.md 8.1).
   if (isBookingDecision(entry)) return entry.action.charAt(0) + entry.action.slice(1).toLowerCase();
   if (entry.field_changed === 'status') return 'Status changed';
