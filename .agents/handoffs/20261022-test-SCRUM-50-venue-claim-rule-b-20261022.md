@@ -22,7 +22,9 @@ Only test/helper/selector/inventory changes are introduced here. No new or chang
 
 ## Next and remaining gates
 
-Publish a focused draft PR on #334; publication and hosted checks are not yet claimed here. Keep human code and test validity review, genuine T-93 manual runs, PO acceptance, parent integration/main conflicts and production migration authorization separate. Do not merge #308's first-approval proposal or reopen the completed recovery audit.
+Focused draft [#340](https://github.com/hongyime/sgConnectSphere2026/pull/340) is published on #334, initially at `3078cd8514540fe82bd53ba8011a2b10cb3949af`. Canonical reconciliation is draft [#339](https://github.com/hongyime/sgConnectSphere2026/pull/339), initially at `6af29e24bd64cfdfae7a9441180b0ef9d26ed06e`. Fresh [PostPlan version 1](https://epv7ptn4c6i9.postplan.dev/v/1) was uploaded and publicly verified; structural checks and independent visual review passed on fresh phone/desktop captures. Hosted application checks were still running at publication; inspect current exact-head results before inferring CI success.
+
+Keep human code and test validity review, genuine T-93 manual runs, PO acceptance, parent integration/main conflicts and production migration authorization separate. The final handoff-only publication commit does not change the tested helper, tests, selector or inventory hashes. Do not merge #308's first-approval proposal or reopen the completed recovery audit.
 
 ## Learnings
 
