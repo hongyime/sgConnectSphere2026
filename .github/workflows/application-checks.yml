@@ -48,7 +48,8 @@ jobs:
   application-checks:
     name: application-checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Same cold-browser setup budget verified on PR #320 (18dcd7b).
+    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17
@@ -218,7 +219,7 @@ jobs:
         run: npm run test:redis
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps --only-shell chromium
 
       - name: Login and recovery desktop and mobile browser tests
         env:
