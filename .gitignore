@@ -55,6 +55,7 @@ artifacts/*
 !artifacts/pr-230-seeded-account-names.html
 !artifacts/pr-248-safe-worktree-cleanup.html
 !artifacts/pr-sbom-public.html
+!artifacts/e11-notification-integration.html
 !artifacts/pr-week9-jira-reconciliation.html
 !artifacts/scaffold-review-plan-20261014.html
 !artifacts/scaffold-review-plan-desktop.png
@@ -67,3 +68,5 @@ artifacts/*
 artifacts/sbom/*
 !artifacts/sbom/npm.cdx.json
 !artifacts/sbom/python-tooling.cdx.json
+
+!artifacts/e10-obsolete-prerequisite.html

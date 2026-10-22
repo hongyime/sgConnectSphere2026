@@ -49,7 +49,7 @@ test('coordinator assignments block without successful audit or mutations', asyn
   await assert.rejects(deactivateAccount(pool, user, { confirm: true }), error => error instanceof DeactivationBlockedError && error.events.length === 1);
   assert.equal(calls.at(-1)?.sql, 'ROLLBACK');
   assert.equal(calls.some(call => call.sql.startsWith('UPDATE users') || call.sql.includes('INSERT INTO audit_logs')), false);
-  assert.deepEqual(DEACTIVATION_BLOCKING_STATUSES, ['submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'confirmed']);
+  assert.deepEqual(DEACTIVATION_BLOCKING_STATUSES, ['submitted', 'under_review', 'awaiting_clarification', 'approved', 'planning', 'safety_review', 'confirmed']);
 });
 test('coordinator without blocking assignments succeeds', async () => {
   const { pool } = fixture('event_coordinator');

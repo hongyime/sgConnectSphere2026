@@ -9,6 +9,7 @@ import { inTransaction } from '../../database/pool.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { notifyEquipmentStaff } from './notifications.js';
 import { availabilityRows, capacityFor } from './availability.js';
 import { requireEquipmentAccess, type ReservationReview } from './catalogue.js';
 import { eventLabel, formatEventDates } from './reservations.js';
@@ -252,6 +253,16 @@ async function notifyCoordinators(
   for (const eventId of new Set(affected.map((reservation) => reservation.event_id))) {
     const lines = affected.filter((reservation) => reservation.event_id === eventId);
     const event = lines[0]!;
+    const reserved = lines.reduce((sum, line) => sum + line.quantity_reserved, 0);
+    const units = `${period.quantity} ${period.quantity === 1 ? 'unit' : 'units'}`;
+    const message =
+      `${eventLabel({ eventCode: event.event_code, title: event.title })}, ` +
+      `${formatEventDates(event.event_starts_at, event.event_ends_at)}: ${name} is unavailable from ` +
+      `${formatDay(period.from)} to ${formatDay(period.to)} (${period.reason}), ${units} out of service. ` +
+      `The reservation of ${reserved} needs review.`;
+    await notifyEquipmentStaff(client, { eventId, actorId: actor.id,
+      changeId: `equipment-unavailable:${period.id}`, occurredAt,
+      title: 'Equipment reservation needs review', message });
     if (!event.coordinator_id || event.coordinator_id === actor.id) continue;
     const coordinator = (
       await client.query(
@@ -260,19 +271,13 @@ async function notifyCoordinators(
       )
     ).rows[0];
     if (!coordinator) continue;
-    const reserved = lines.reduce((sum, line) => sum + line.quantity_reserved, 0);
-    const units = `${period.quantity} ${period.quantity === 1 ? 'unit' : 'units'}`;
     const id = await writeEventNotification(client, {
       eventId,
       changeId: `equipment-unavailable:${period.id}`,
       userId: event.coordinator_id,
       occurredAt,
       title: 'Equipment reservation needs review',
-      message:
-        `${eventLabel({ eventCode: event.event_code, title: event.title })}, ` +
-        `${formatEventDates(event.event_starts_at, event.event_ends_at)}: ${name} is unavailable from ` +
-        `${formatDay(period.from)} to ${formatDay(period.to)} (${period.reason}), ${units} out of service. ` +
-        `The reservation of ${reserved} needs review.`,
+      message,
     });
     if (id) notified += 1;
   }
