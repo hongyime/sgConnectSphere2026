@@ -48,7 +48,10 @@ jobs:
   application-checks:
     name: application-checks
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Cold Playwright system-dependency installation took 12m40s in run
+    # 39823362107; allow the unchanged browser suites to run afterward.
+    # Keep a finite cap for a genuinely stalled runner/install.
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17

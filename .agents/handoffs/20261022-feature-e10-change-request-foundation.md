@@ -13,3 +13,7 @@ Publication verification: merged main c7ccd48 at a287668. Sole conflict generate
 ## 23 October application CI repair
 
 User authorised fixing failed application checks. Fast-forwarded to remote195375f (main integration by another session) without overwriting it. Actual latest failure39815991532 differs from earlier timeout: TC_E03S07_04 desktop/mobile still expected old Coming-soon page; real-form route also needed its own API fixture instead of Event-detail JSON. Added exact GET contract fixture and real-form assertions, preserving readonly/link/URL checks. Local focused2/2; surrounding E03-S07 group12pass/2existingfixme, both types pass. Inventory regenerated unchanged206/376. No product/CI-timeout change or SCRUM205prefill completion claim. Publish normal follow-up, keep all remaining integration gates.
+
+## Repeated CI time limit (23 October)
+
+Current application run39823362107 at4cb5200 passed all executed pre-browser tests/build, then hit the15min job cap during Playwright install. Installation started17:33:17Z and completed browser download17:45:57Z (12m40s), immediately before cancellation. This is separate from the repaired stale assertion. User asked to fix the continuing checks; raise existing job budget to30min, retain finite cap/all commands/assertions/services. No new CI service or bypass. Linux CI must establish full outcome; Windows cannot emulate apt installation timing.
