@@ -71,3 +71,5 @@ artifacts/sbom/*
 !artifacts/sbom/python-tooling.cdx.json
 
 !artifacts/e10-obsolete-prerequisite.html
+
+!artifacts/pr299-review-followup.html
