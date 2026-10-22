@@ -1,0 +1,7 @@
+# E10-S04 manual evidence review follow-up — PR #321
+
+- **TC01 PASS, ready for review:** [final contextual retakes](runs/20261022-234437-xiangyingg-frontend-e2e.md) complete the [earlier 22 October journey](runs/20261022-232415-xiangyingg-frontend-e2e.md), application `4b37591`. Clean before-state database output and earlier after-state output identify both Sessions/periods and all arrangement transitions. Final equipment captures show both selected periods, correct item and restored free quantity; venue capture shows selected venue/date and Free availability. Earlier staff notices and cancellation result are linked.
+- **TC03 PASS, ready for review:** the earlier 22 October record contains registered and waitlisted attendee notices. Account attribution follows the tester's sequence; headers are cropped.
+- Final screenshots are in a new immutable session folder; original records/images, including the wrong-fixture and cropped captures, remain unchanged. The clean before-state capture is retained terminal output, not a new Planning transition or data reset.
+- No further screenshot gap is identified for this requested TC01/TC03 follow-up. Teammate acceptance/review and required CI still apply. Database inspection is distinguished from browser evidence.
+- Merge #321 after implementation #320 through normal checks. Authorized production migration 0022 application/verification is separate; no production, Jira Done or full-story closure claim.
