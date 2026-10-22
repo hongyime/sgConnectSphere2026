@@ -9,3 +9,5 @@ Verification: python3 scripts/check.py passed (158 tooling tests), record 202610
 21 October review follow-up: integrated current main without replacing original human evidence. Outstanding capture checklist: docs/testing/E08-S05-review-follow-up.md. No new manual PASS, production migration claim, or Jira Done transition. Merge remains after implementation PR and acceptance review.
 
 23 October: appended human session 20261023-005047-xiangyingg-frontend-e2e with nine original screenshots, application 553962f. TC01–05 visible results PASS with explicit limitations; TC06 SKIP. Corrected derivative follow-up for PO-approved Coordinator reader. Original sessions untouched. Production migration/review and merge-after-324 remain gates.
+
+CI follow-up for #325: run 39818176477 repository-checks failed solely because artifacts/e08-s05-manual-evidence.html lacked its terminal newline. The local fixer correction had not been staged. Stage that exact normalization; no screenshot, application or outcome changes.
