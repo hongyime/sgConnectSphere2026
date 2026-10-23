@@ -2,7 +2,7 @@ import { tokenDigest } from '../src/modules/accessControl/sessions';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
 import { getEvent, listEvents, listNotifications, permittedDelivery, type Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
@@ -24,10 +24,10 @@ test('E01-S02: organisation isolation, colleagues, search, audit and notificatio
     await ensureTestExtensions(db);
     await db.query(`SET search_path TO ${schema}, public`);
     // Exercise the actual repository migrations, not an approximation of the schema.
-    await db.query(await readFile(new URL('../database/migrations/0001_connectsphere_schema.sql', import.meta.url), 'utf8'));
-    await db.query(await readFile(new URL('../database/migrations/0002_event_visibility.sql', import.meta.url), 'utf8'));
-    await db.query(await readFile(new URL('../database/migrations/0003_auth_sessions.sql', import.meta.url), 'utf8'));
-    await db.query(await readFile(new URL('../database/migrations/0004_attendee_visibility.sql', import.meta.url), 'utf8'));
+    const migrations = new URL('../database/migrations/', import.meta.url);
+    for (const name of (await readdir(migrations)).filter(name => name.endsWith('.sql')).sort()) {
+      await db.query(await readFile(new URL(name, migrations), 'utf8'));
+    }
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2), ($3, $4)', [a, 'Client A', b, 'Client B']);
     await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
       VALUES ($1, $2, 'organiser@example.test', 'unused', 'Organiser A', 'event_organiser'),
