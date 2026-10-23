@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **208** (55.3%)
-  - Real-database (`.integration.test` / `.db.test`): **34**
+- Automated (explicit TC_ID in an active test title): **213** (56.6%)
+  - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **173**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **127** (33.8%)
-- No test yet (no test file mentions the TC_ID): **41** (10.9%)
+  - Live-assertion (other active tests): **177**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **123** (32.7%)
+- No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
 
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
-| E10 | 29 | 0 | 20 | 9 |
+| E10 | 29 | 5 | 16 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **208** | **127** | **41** |
+| **Total** | **376** | **213** | **123** | **40** |
 
 ## Case-by-case status
 
@@ -421,11 +421,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
 | `TC_E10S03_04` | E10-S03 | Pending change requests should become Obsolete when a rescheduled Event later be | ❌ none | — |
-| `TC_E10S04_01` | E10-S04 | Cancelling an Event should release all Session bookings and equipment reservatio | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_01 - Verify that cancelling an event and recording a reason should release its venue bookings and equipment reservations, update the venue calendar |
-| `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_03 - Verify that cancelling a event should notify all of its registered and waitlisted Attendees |
-| `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_04 - Verify that a cancelled event should be read-only and show its cancellation reason and date to any viewer |
-| `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_05 - Verify that an Event Organiser attempting to cancel directly should have the action recorded as a cancellation request for the Coordinator to  |
-| `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ❌ none | — |
+| `TC_E10S04_01` | E10-S04 | Cancelling an Event should release all Session bookings and equipment reservatio | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
 | `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue se |
 | `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking |

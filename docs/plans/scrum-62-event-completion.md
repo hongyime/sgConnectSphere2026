@@ -88,3 +88,9 @@ reviewed merge into main. Jira stays In Progress while these gates remain.
 - [Completion database rerun](../testing/runs/20261020-225623-xiangyingg-backend-db.md): 8/8 and 100% focused combined coverage.
 - [Current-stack browser run](../testing/runs/20261020-225844-xiangyingg-frontend-e2e.md): 1/1 including the actual scheduled-maintenance task and protected standalone retry.
 - A setup-only ECONNREFUSED run is retained in `20261020-225428-xiangyingg-backend-db.md`; Docker was stopped between sessions and restarted without resetting data.
+
+## Current-main conflict and manual-boundary follow-up
+
+Main now includes cancellation (#320), its human evidence (#321), and authorized migration verification (#342). Preserve both completion and cancellation routes/tests. Two independent historical runs had filename20261021-151956-xiangyingg-full-regression.md: main's cancellation record remains in place; the original completion record is preserved byte-for-byte at `docs/testing/runs/archive/pr-324/20261021-151956-xiangyingg-full-regression.md`.
+
+TC01–05 follow-up screenshots are recorded in #325's 23 October session. TC06 requires a human-controlled boundary observation: the canonical manual case uses16:59:59 and17:00:00 +08:00 on2November2026. `scripts/manual_completion_boundary.ts` prepares a disposable schema and waits for human before/at commands, calling the real evaluator with its existing injected application clock. No OS-clock change or HTTP clock override. Helper developer smoke execution remains automated; human outcome stays pending until original screenshots and observations are supplied. See the click-through guide for exact steps.

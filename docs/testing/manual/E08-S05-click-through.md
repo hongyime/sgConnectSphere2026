@@ -43,11 +43,10 @@ link to **Event completion** for Confirmed/Completed events.
    evaluation as `TC_E08S05_04-1.png`. After that same evaluation, refresh and
    capture Cancelled unchanged as `TC_E08S05_04-2.png`. Prepare this before step
    4's evaluation if before/after proof is needed.
-6. **TC_E08S05_06**: exact-end (one millisecond before vs equality) is covered by
-   injected-clock unit/real-DB tests. Do not mark a human boundary PASS from the
-   automatic images. A separate controlled human boundary run must log its
-   actual clock/evaluation method; otherwise record SKIP and cite automated
-   evidence separately.
+6. **TC_E08S05_06**: the canonical manual case evaluates at 2 November 2026
+   16:59:59 +08:00 and exactly 17:00:00 +08:00. Use the controlled human
+   procedure below. The separate automated millisecond-boundary tests remain
+   automated evidence; do not mark a human PASS from them.
 7. Supplemental: retry a completed MANUAL event by refreshing; no second action
    appears and the log stays singular. Sign out, log in as Coordinator B, open
    MANUAL and capture refusal as `MULTIPLE-unassigned-coordinator-denied.png`.
@@ -67,3 +66,41 @@ Store hand-taken images under `evidence/<session-stem>/`, named by TC_ID and
 below 1000 KB each. Do not prefill PASS or replace images in merged records.
 Manual acceptance, migration verification, independent human review and merge
 remain required before SCRUM-62 is Done.
+
+## TC06 controlled human boundary procedure
+
+The helper uses the real completion evaluator and a real disposable PostgreSQL
+schema, with the existing application-clock dependency injection. It sets no
+computer/server operating-system clock and adds no HTTP clock parameter. It
+contains no test runner and does not decide PASS for the operator. Its only
+fixture is Confirmed EVT-2002 ending at the canonical 17:00:00 +08:00. Each
+invocation creates its own schema; unrelated manual events are not evaluated.
+Audit timestamps retain actual database time and are labelled separately from
+the controlled evaluation clock.
+
+1. Start the disposable local PostgreSQL container. In the completion checkout,
+   set TEST_DATABASE_URL to the loopback test database used for the other runs.
+2. Run `npx tsx scripts/manual_completion_boundary.ts`. The helper prints the
+   actual application commit and wall-clock run time. No browser login is
+   required for this local system-evaluator procedure.
+3. At `TC06 >`, manually type `before` and press Enter. Compare the printed
+   controlled clock (`2026-11-02T16:59:59+08:00`) and actual observation:
+   EVT-2002 must remain `confirmed`, completedThisEvaluation must be 0, and
+   completion activity must be empty. Capture the observation block as
+   `TC_E08S05_06-1.png`, including case ID, application commit, event identity,
+   controlled clock and observed result.
+4. Manually type `at` and press Enter. Compare the printed controlled clock
+   (`2026-11-02T17:00:00+08:00`) and actual result: EVT-2002 must be `completed`,
+   completedThisEvaluation must be 1, and the activity must show the
+   Confirmed-to-Completed change attributed to System. Capture the observation
+   block and actual activity as `TC_E08S05_06-2.png`. Use overlapping captures if
+   needed; exclude any personal shell prompt or window title.
+5. After saving both images, type `quit` to clean up the isolated schema.
+6. Supply the original hand-taken images and actual observations for a new
+   immutable manual T-65/T-93 session in #325. Record the clock method above,
+   actual wall-clock run time and source commit. Leave the old SKIP record
+   unchanged. If a result differs, record the observed failure; never prefill
+   PASS. The reviewer must assess this controlled manual method and evidence.
+
+Piping commands into the helper is allowed only for automated developer smoke
+verification and is not human acceptance or T-93 screenshot evidence.

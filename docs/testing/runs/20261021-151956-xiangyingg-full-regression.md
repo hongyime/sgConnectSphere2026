@@ -6,10 +6,10 @@ environment: local
 run_type: automated
 test_case_version: 171026
 database: real
-commit: 1a68102
-pr: 324
+commit: e36a289
+pr: 320
 ---
 
 | TC_ID | Test Name | Outcome | Remarks |
 | --- | --- | --- | --- |
-| MULTIPLE | PR review follow-up verification | PASS | 421 backend unit tests before maintenance regression addition passed; focused updated suite passed 9 tests (4 unit and 5 real-PostgreSQL). Maintenance helper has 100% statement/branch/function/line coverage. Backend typecheck and 20 compiled runtime tests passed; repository hygiene/tooling: 158 tests passed. Initial database attempt failed because Docker was stopped; rerun passed after starting existing disposable container. No new manual acceptance or production verification. Tested HEAD plus uncommitted main integration and review fixes, before merge commit. |
+| MULTIPLE | PR review follow-up verification | PASS | 420 backend unit tests, 4 real-PostgreSQL cancellation tests, backend typecheck and 17 compiled runtime tests passed. Repository hygiene/tooling: 158 tests passed. Initial database attempt failed because Docker was stopped; rerun passed after starting existing disposable container. No new human evidence or production verification. API organisation-scoped lock change is typechecked and covered by existing access tests; exact lock-contention behaviour still needs independent review. Tested HEAD plus uncommitted main integration and review fixes, before merge commit. |

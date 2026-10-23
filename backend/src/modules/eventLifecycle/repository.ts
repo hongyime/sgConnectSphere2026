@@ -139,6 +139,7 @@ export async function applyEventStatusChange(
     reason?: string;
     auditAction?: string;
     notificationOptions?: NotificationOptions;
+    notificationVenueIds?: readonly string[];
     beforeNotify?: (change: EventStatusChange) => Promise<void>;
   } = {},
 ): Promise<{ event: EventRecord; change: EventStatusChange | null }> {
@@ -170,7 +171,7 @@ export async function applyEventStatusChange(
     if (actor.rows[0]?.role !== 'safety_officer') throw new ConfirmationRefusedError();
   }
 
-  const before = await captureEventAudience(client, eventId, options.notificationOptions);
+  const before = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
   const result = await client.query<EventRow>(
     `
       UPDATE events
@@ -217,7 +218,7 @@ export async function applyEventStatusChange(
     );
     change = { auditId: audit.rows[0].id, occurredAt: audit.rows[0].occurred_at, from: fromStatus };
     await options.beforeNotify?.(change);
-    const after = await captureEventAudience(client, eventId, options.notificationOptions);
+    const after = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
     await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
       actorId: actorId ?? undefined, before, after, change:{kind:'status',from:fromStatus,to:status} });
   }

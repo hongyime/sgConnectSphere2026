@@ -60,3 +60,10 @@ test.each([
   expect(screen.queryByText('Event A')).not.toBeInTheDocument();
   expect(screen.queryByText('Event A failed')).not.toBeInTheDocument();
 });
+
+test.each([true, false])('TC_E10S04_05 cancellation link follows server ownership permission: %s', async permission => {
+  vi.stubGlobal('fetch', vi.fn(async () => ({ok:true,status:200,json:async()=>({event:{...event('EVT-A','Event A').event,canRequestCancellation:permission}})})));
+  renderEventA();
+  await screen.findByRole('heading',{name:'Event A'});
+  expect(!!screen.queryByRole('link',{name:'Request cancellation'})).toBe(permission);
+});

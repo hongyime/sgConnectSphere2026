@@ -182,6 +182,7 @@ export async function getAssignedEvent(database: Pool, user: AuthenticatedUser |
   const result = await database.query(
     `SELECT ${ASSIGNED_EVENT_FIELDS}, e.description, e.purpose, e.venue_requirements, e.accessibility_note,
        e.equipment_requirements, e.layout_preference, e.registration_setup, e.coordinator_id,
+       CASE WHEN e.status='cancelled' THEN e.decision_reason END AS cancellation_reason,
        c.full_name AS coordinator_name, o.email AS organiser_email
      FROM events e JOIN users o ON o.id = e.organiser_id JOIN users c ON c.id = e.coordinator_id
      WHERE (e.id::text = $2 OR e.event_code = $2) AND e.coordinator_id = $1 AND e.status <> 'draft'`,
