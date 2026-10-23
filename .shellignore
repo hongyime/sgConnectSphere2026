@@ -7,6 +7,11 @@ docs/backlog/sprint-1-delivery.md
 # This existing handoff records a public GitHub attribution from its source task.
 .agents/handoffs/20261005-feature-SCRUM-53-equipment-availability.md
 .agents/handoffs/20261008-feature-SCRUM-86-coordinator-activity-log.md
+# These main-history handoffs cite T-65 run-record filenames containing the
+# runner's public GitHub login. They already exist on main; this exact
+# exception keeps the optional local identity hook from blocking the merge.
+.agents/handoffs/20261016-docs-safety-officer-provision-20261016.md
+.agents/handoffs/20261021-ci-recovery-parent-sync-20261021.md
 # The sprint retrospective quotes GitHub handles in its audit evidence.
 # These are already public on github.com and were committed in PR #99.
 docs/plans/sprint-1-retrospective.md
