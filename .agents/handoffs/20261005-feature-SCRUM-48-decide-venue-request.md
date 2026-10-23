@@ -124,12 +124,33 @@ marked Done in Sprint 3.
 - Sync merge committed as `c851f18`; this handoff is a follow-up commit. No
   merge queue action, approval, or merge has been performed.
 
+## 2026-10-23 TC_E06S04_07 manual run: PASS
+
+- Le Xin ran TC_E06S04_07 by hand on `25629b0` in a real browser:
+  `venue_a` approved the seeded Orchid Hall request for EVT-3003, `coord_a`
+  cancelled EVT-3003 (E10-S04), and EVT-3003's Activity log showed
+  "Booking released · Orchid Hall: Released · Coordinator A · 9:45 pm". A
+  read-only database check matched one `Booking Released` audit row (actor
+  `coord_a`, the Orchid Hall booking, EVT-3003, 21:45:42 SGT).
+- Record: `docs/testing/runs/20261023-213936-lexinphun2024-debug-frontend-e2e.md`;
+  hand-taken screenshots `TC_E06S04_07-1` to `-3` in its evidence folder.
+- Database: native PostgreSQL 17 on loopback 5432 (no Docker Desktop, per
+  AGENTS.md), `connectsphere_dev_stack` created, reset and seeded for the run;
+  the API ran with only `DATABASE_URL`.
+- `docs/testing/manual/E06-S04-click-through.md` gains section G (steps
+  19–21) for TC_07, and its template row no longer says N/A.
+- Observations for E10-S04 (#320), not this story: the cancellation banner
+  runs the reason into "This event is read-only." with no full stop, and the
+  release audit row has no `old_value`, so the log reads "Released" rather
+  than "Confirmed → Released".
+- Known hardening already in Bryan's follow-ups, merging after #298: #334
+  rechecks Venue Staff authority inside the decision transaction (today it is
+  checked once before the transaction starts) and shows the buffered window
+  in the clash message; #335 adds the booking reference to booking Activity
+  rows, so two same-venue bookings stay distinguishable.
+
 ## Still to do
 
-- Push the sync merge `c851f18` and this handoff commit.
-- Fresh manual `TC_E06S04_07` run by Le Xin on the pushed head (not the
-  20261019 bounded integration record), with a T-65 record and T-93
-  screenshots under `docs/testing/runs/evidence/<record>/`.
 - Bryan reviews/approves #298 after the final head is pushed; then queue
   #298. Do not request approval before the final push, because a new commit
   dismisses it.
@@ -139,7 +160,8 @@ marked Done in Sprint 3.
   precondition, one handoff, workbook export, checklist/postplan, refresh
   main. #315 is Bryan's review/approval, not an AI approval.
 - The branch name carries SCRUM-48, so `jira-sync` moves SCRUM-48 to Done
-  when #298 merges. Do not mark it Done before TC_07 passes and #298 merges.
+  when #298 merges. TC_07 has passed; do not mark it Done by hand before
+  #298 merges.
 - Ji Ning's #299 reviewed (comment review, 16 Oct).
 - Follow-up candidate: the rejection notice's line breaks show as spaces in
   the notifications page.
