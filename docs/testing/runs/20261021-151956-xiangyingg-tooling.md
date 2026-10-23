@@ -6,8 +6,8 @@ environment: local
 run_type: automated
 test_case_version: 171026
 database: none
-commit: 2429afb
-pr: 325
+commit: 7b31a4d
+pr: 321
 ---
 
 | TC_ID | Test Name | Outcome | Remarks |
