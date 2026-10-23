@@ -1,6 +1,12 @@
 import type { Client } from 'pg';
+import { assertNextProductionMigration } from './productionMigrationGuard.js';
 
 export type MigrationClient = Pick<Client, 'query'>;
+
+// Stable two-int key shared by every production migration process. Changing it
+// would let an old and a new runner bypass each other.
+const PRODUCTION_MIGRATION_LOCK_NAMESPACE = 20261018;
+const PRODUCTION_MIGRATION_LOCK_ID = 1;
 
 export type MigrationRunnerOptions = {
   requireExistingLedger?: boolean;
@@ -65,44 +71,72 @@ export async function runMigrations(
     ? 'public._connectsphere_migrations'
     : '_connectsphere_migrations';
 
+  let lockAcquired = false;
   if (options.requireExistingLedger) {
-    const ledger = await client.query<{ ledger: string | null }>(
-      "SELECT to_regclass('public._connectsphere_migrations')::text AS ledger",
+    const lock = await client.query<{ locked: boolean }>(
+      'SELECT pg_try_advisory_lock($1::int, $2::int) AS locked',
+      [PRODUCTION_MIGRATION_LOCK_NAMESPACE, PRODUCTION_MIGRATION_LOCK_ID],
     );
-    if (!ledger.rows[0]?.ledger) {
-      throw new Error('The migration ledger is missing; refusing to create it in guarded mode.');
+    if (lock.rows[0]?.locked !== true) {
+      throw new Error('Another production migration is already running; refusing to start.');
     }
-  } else {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS _connectsphere_migrations (
-        name text PRIMARY KEY,
-        applied_at timestamptz NOT NULL DEFAULT now()
-      )
-    `);
+    lockAcquired = true;
   }
 
-  const applied = await client.query<{ name: string }>(`SELECT name FROM ${ledgerTable}`);
-  const appliedNames = new Set(applied.rows.map((row) => row.name));
-  const pendingFiles = selectPendingMigrations(availableFiles, appliedNames, selectedFile);
+  try {
+    if (options.requireExistingLedger) {
+      const ledger = await client.query<{ ledger: string | null }>(
+        "SELECT to_regclass('public._connectsphere_migrations')::text AS ledger",
+      );
+      if (!ledger.rows[0]?.ledger) {
+        throw new Error('The migration ledger is missing; refusing to create it in guarded mode.');
+      }
+    } else {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS _connectsphere_migrations (
+          name text PRIMARY KEY,
+          applied_at timestamptz NOT NULL DEFAULT now()
+        )
+      `);
+    }
 
-  if (selectedFile !== undefined && appliedNames.has(selectedFile)) {
-    log(`migration already applied ${selectedFile}`);
-    return [];
-  }
+    const applied = await client.query<{ name: string }>(`SELECT name FROM ${ledgerTable}`);
+    const appliedNames = new Set(applied.rows.map((row) => row.name));
 
-  for (const file of pendingFiles) {
-    const sql = await readMigration(file);
-    await client.query('BEGIN');
-    try {
-      await client.query(sql);
-      await client.query(`INSERT INTO ${ledgerTable} (name) VALUES ($1)`, [file]);
-      await client.query('COMMIT');
-      log(`applied migration ${file}`);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
+    if (options.requireExistingLedger && selectedFile !== undefined) {
+      // Re-check under the advisory lock so a concurrent apply cannot move the
+      // next-pending target after the workflow precheck.
+      assertNextProductionMigration(availableFiles, [...appliedNames], selectedFile);
+    }
+
+    const pendingFiles = selectPendingMigrations(availableFiles, appliedNames, selectedFile);
+
+    if (selectedFile !== undefined && appliedNames.has(selectedFile)) {
+      log(`migration already applied ${selectedFile}`);
+      return [];
+    }
+
+    for (const file of pendingFiles) {
+      const sql = await readMigration(file);
+      await client.query('BEGIN');
+      try {
+        await client.query(sql);
+        await client.query(`INSERT INTO ${ledgerTable} (name) VALUES ($1)`, [file]);
+        await client.query('COMMIT');
+        log(`applied migration ${file}`);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    }
+
+    return pendingFiles;
+  } finally {
+    if (lockAcquired) {
+      await client.query('SELECT pg_advisory_unlock($1::int, $2::int)', [
+        PRODUCTION_MIGRATION_LOCK_NAMESPACE,
+        PRODUCTION_MIGRATION_LOCK_ID,
+      ]);
     }
   }
-
-  return pendingFiles;
 }

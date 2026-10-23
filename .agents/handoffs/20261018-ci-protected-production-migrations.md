@@ -45,6 +45,18 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - `python scripts/check.py` on Windows at `7de3b27` ran 158 tooling tests: 154 passed and four existing `test_worktree_hygiene` path/unlink tests failed. Repository hooks, secret scan, `.env.template`, and validation of 456 prior records passed. The immutable T-65 record is in `docs/testing/runs/`.
 - The production secret value and connectivity are not independently validated. The owner/PO's workflow-adoption decision is recorded; independent human review remains required before merge or first use. A teammate with repository permission may initiate a run; an eligible different teammate must approve the Production environment gate.
 
+## Review fixes — 23 October 2026
+
+- Closed the guarded-selector gap: `runMigrations` now re-validates the requested file with `assertNextProductionMigration` after reading the ledger and before any no-op, transaction, or SQL. A guarded run refuses a selection that is not the next pending file in repository order, including a later file whose dependencies appear satisfied.
+- Added a PostgreSQL advisory lock around the guarded ledger check and apply. `pg_try_advisory_lock` must succeed before the ledger is read; `pg_advisory_unlock` runs in `finally` on success, no-op, validation failure, or SQL failure. The workflow and manual guarded path therefore share one serialization point.
+- Updated the manual runbook commands and run-record template to pass `--require-existing-ledger`. Without it, the manual CLI path constructed a connection string directly and could create a missing ledger, bypassing the endpoint/TLS/ledger checks in guarded mode.
+- Resolved the `backend/package.json` refresh conflict by retaining both main's event-cancellation test and this branch's migration-selector/guard tests.
+- Extended the migration-selection unit mock for advisory-lock and ledger queries. Added tests for non-next selection rejection, lock-unavailable refusal without a ledger read, lock release on SQL failure, and guarded already-applied rejection. The focused selector/guard command passed 21/21.
+- Merged `origin/main` at `38ffa999` into this branch; resolved `backend/package.json` by keeping both `eventCancellation.test.ts` and `productionMigrationGuard.test.ts`. The post-merge affected suites passed 23/23, the backend build passed, and the regenerated `docs/testing/tc-coverage.md` reports 207/376 automated.
+- `scripts/check.py` passed repository hygiene, `.env.template`, and the worktree warning; four of its 163 tooling tests fail on Windows path normalization/unlink assertions in `tooling/tests/test_worktree_hygiene.py`, which this branch does not change.
+- Added the two main-history handoff paths that cite T-65 run-record filenames to `.shellignore` after the optional local identity hook blocked the merge; they already exist on main and remain subject to secret scanning.
+- No workflow dispatch, production connection/write, reset, seed, or deployment was performed in this review-fix pass. This handoff is included in the merge commit; independent human review remains required.
+
 ## Security notes
 
 - Never add the connection string to a file, log, PR, or command transcript.

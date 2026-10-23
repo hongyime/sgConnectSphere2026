@@ -42,6 +42,8 @@ export type Reassignment = {
 };
 
 export type AssignedEventDetail = Omit<AssignedEventSummary, 'reassignment_pending'> & {
+  canCancel?: boolean;
+  cancellation_reason?: string | null;
   description: string | null;
   purpose: string | null;
   venue_requirements: string | null;

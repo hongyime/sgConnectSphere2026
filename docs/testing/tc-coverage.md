@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **201** (53.5%)
-  - Real-database (`.integration.test` / `.db.test`): **36**
+- Automated (explicit TC_ID in an active test title): **207** (55.1%)
+  - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **164**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **134** (35.6%)
-- No test yet (no test file mentions the TC_ID): **41** (10.9%)
+  - Live-assertion (other active tests): **171**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **129** (34.3%)
+- No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
 
@@ -22,16 +22,16 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 37 | 29 | 8 | 0 |
+| E05 | 37 | 30 | 7 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 6 | 21 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
-| E10 | 29 | 0 | 20 | 9 |
+| E10 | 29 | 5 | 16 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **201** | **134** | **41** |
+| **Total** | **376** | **207** | **129** | **40** |
 
 ## Case-by-case status
 
@@ -217,7 +217,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers; tests/e2e/e05.spe |
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently; tests/e2e/e05.spec. |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them |
-| `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_07 — Verify that a venue whose existing booking overlaps the event only once its setup and turnaround time are applied should not appear as availab |
+| `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private; backend/tes |
 | `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked |
 | `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events  |
 | `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason |
@@ -421,11 +421,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
 | `TC_E10S03_04` | E10-S03 | Pending change requests should become Obsolete when a rescheduled Event later be | ❌ none | — |
-| `TC_E10S04_01` | E10-S04 | Cancelling an Event should release all Session bookings and equipment reservatio | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_01 - Verify that cancelling an event and recording a reason should release its venue bookings and equipment reservations, update the venue calendar |
-| `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_03 - Verify that cancelling a event should notify all of its registered and waitlisted Attendees |
-| `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_04 - Verify that a cancelled event should be read-only and show its cancellation reason and date to any viewer |
-| `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S04_05 - Verify that an Event Organiser attempting to cancel directly should have the action recorded as a cancellation request for the Coordinator to  |
-| `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ❌ none | — |
+| `TC_E10S04_01` | E10-S04 | Cancelling an Event should release all Session bookings and equipment reservatio | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_03` | E10-S04 | Verify that cancelling a event should notify all of its registered and waitliste | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
+| `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
 | `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue se |
 | `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking |
@@ -737,6 +737,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an explicit filename outside the migration directory is rejected
 - the runner applies only the selected migration and records only that filename
 - guarded migration runner requires an existing ledger and never creates one
+- guarded migration runner refuses a selection that is not the next pending migration
+- guarded migration runner refuses to start when the advisory lock is held
+- guarded migration runner releases the advisory lock when a migration fails
+- guarded migration runner rejects an already-applied selected migration
 - the runner preserves all-pending behavior without a selector
 - an already-applied selected migration reports a no-op without opening a transaction
 - an unknown selected filename is rejected before any database query

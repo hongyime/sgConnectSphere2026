@@ -56,12 +56,12 @@ To apply a migration:
 
 The workflow never runs `reset`, seeding, or a database test suite. It serializes
 its own Actions runs so only one production migration workflow can apply at a
-time. The manual CLI procedure below is a separate path: verify that no
-`Production Migration` run is queued or in progress and coordinate one deploy
-owner before using it. Never overlap a manual production migration with a
-workflow run or another manual run. If the
-`DATABASE_URL` secret is absent, targets another database, or the ledger cannot
-be read, it stops before applying SQL.
+time. The manual CLI procedure below is a separate trigger, but it uses the same
+guarded runner and PostgreSQL advisory lock. Verify that no `Production
+Migration` run is queued or in progress and coordinate one deploy owner before
+using it. Never overlap a manual production migration with a workflow run or
+another manual run. If the `DATABASE_URL` secret is absent, targets another
+database, or the ledger cannot be read, it stops before applying SQL.
 
 ## Apply one migration safely
 
@@ -75,23 +75,23 @@ be read, it stops before applying SQL.
    ```
 
    Compare the ledger with the `.sql` files in `backend/database/migrations/`. If the ledger is missing or cannot be read, stop and investigate. Do not let the CLI create the ledger as a substitute for this pre-check.
-3. Compare the ledger with the migration files. If the ledger has more than one pending file, select only the next migration whose dependencies are satisfied. Never use the default all-pending mode against production. Do not rename or move migration files.
-4. From the `backend/` directory, run the exact pending migration with the selector. Replace the example filename with exactly one pending filename confirmed by the pre-run ledger check:
+3. Compare the ledger with the migration files. Select only the next unapplied file in repository order. The guarded command refuses any other selection, even when a later file's dependencies appear satisfied. Never use the default all-pending mode against production. Do not rename or move migration files.
+4. From the `backend/` directory, run the exact pending migration with the selector and the existing-ledger guard. Replace the example filename with exactly one pending filename confirmed by the pre-run ledger check:
 
    ```sh
-   npx tsx src/database/cli.ts migrate --only 0009_keepalive_logs.sql
+   npx tsx src/database/cli.ts migrate --only 0009_keepalive_logs.sql --require-existing-ledger
    ```
 
    For example, only if the pre-run ledger check confirms the file is pending:
 
    ```sh
-   npx tsx src/database/cli.ts migrate --only 0013_tentative_venue_holds.sql
+   npx tsx src/database/cli.ts migrate --only 0013_tentative_venue_holds.sql --require-existing-ledger
    ```
 
-   Run one command per migration. After its post-run ledger check and run record are complete, repeat the pre-run ledger query and selector command for the next pending file. The selector accepts one exact repository filename; it rejects missing or unknown files and reports an already-recorded migration without applying SQL. The no-selector command still applies all pending files for existing local workflows; do not use it in production.
+   Run one command per migration. The guarded command takes a PostgreSQL advisory lock around the ledger check and apply, rechecks that the selected filename is still the next pending file, and releases the lock on success or failure. The selector accepts one exact repository filename; it rejects missing or unknown files and reports an already-recorded migration without applying SQL. The no-selector command still applies all pending files for existing local workflows; do not use it in production.
 
    Never run `reset` or `seed` against production. Do not set `ALLOW_DATABASE_RESET` for this operation.
-5. If the command fails, stop. Do not retry blindly or proceed to another migration. Re-read the ledger with the read-only query, record the sanitized failure, and have the deploy owner investigate the database state before any further write.
+5. If the command fails, stop. Do not retry blindly or proceed to another migration. A lock-held failure means another guarded run is active; wait and re-check the ledger. Re-read the ledger with the read-only query, record the sanitized failure, and have the deploy owner investigate the database state before any further write.
 6. If it succeeds, run the same read-only query again. Verify the expected migration filename appears in `_connectsphere_migrations` and that no unexpected migration was applied. Only then is this migration verified. Repeat the full pre-check, apply, and post-check separately for each later migration.
 
 ## Record each attempt
@@ -113,7 +113,7 @@ Copy this template for each attempt:
 - `main` commit:
 - Migration file:
 - Pre-run ledger check: PASS / STOPPED — <expected pending filename and any relevant ledger finding>
-- Command: `npx tsx src/database/cli.ts migrate --only <exact-migration-filename.sql>` from `backend/`
+- Command: `npx tsx src/database/cli.ts migrate --only <exact-migration-filename.sql> --require-existing-ledger` from `backend/`
 - Outcome: PASS / FAILED / NOT RUN
 - Post-run ledger check: PASS / FAILED / NOT RUN — <whether the expected filename is present; note any unexpected filename>
 - Notes: <sanitized outcome or follow-up; no credentials or application data>

@@ -19,6 +19,7 @@ function mockClient(
   failOnSql?: string,
   ledgerExists = true,
   currentSchema: string | null = 'public',
+  lockAcquired = true,
 ) {
   const calls: Array<{ sql: string; values?: unknown[] }> = [];
   const applied = new Set(appliedNames);
@@ -30,6 +31,12 @@ function mockClient(
       }
       if (sql.includes('SELECT current_schema() AS schema')) {
         return { rows: [{ schema: currentSchema }] };
+      }
+      if (sql.includes('pg_try_advisory_lock')) {
+        return { rows: [{ locked: lockAcquired }] };
+      }
+      if (sql.includes('pg_advisory_unlock')) {
+        return { rows: [{ unlocked: true }] };
       }
       if (sql.includes('SELECT name FROM') && sql.includes('_connectsphere_migrations')) {
         return { rows: [...applied].map((name) => ({ name })) };
@@ -160,6 +167,79 @@ test('guarded migration runner requires an existing ledger and never creates one
   assert.ok(existingLedger.calls.some((call) => call.sql.includes("SELECT to_regclass('public._connectsphere_migrations')")));
   assert.ok(existingLedger.calls.some((call) => call.sql.includes('SELECT name FROM public._connectsphere_migrations')));
   assert.ok(existingLedger.calls.some((call) => call.sql.includes('INSERT INTO public._connectsphere_migrations')));
+});
+
+test('guarded migration runner refuses a selection that is not the next pending migration', async () => {
+  const { client, calls } = mockClient(['0009_keepalive_logs.sql']);
+  await assert.rejects(
+    runMigrations(
+      client,
+      files,
+      '0013_tentative_venue_holds.sql',
+      async () => 'unexpected SQL',
+      () => {},
+      { requireExistingLedger: true },
+    ),
+    /The next pending migration is 0010_audit_logs_immutable\.sql; refusing a different selection\./,
+  );
+  assert.equal(calls.some((call) => call.sql === 'BEGIN'), false);
+  assert.equal(calls.some((call) => call.sql.startsWith('SQL for ')), false);
+  assert.equal(calls.some((call) => call.sql.includes('pg_advisory_unlock')), true);
+});
+
+test('guarded migration runner refuses to start when the advisory lock is held', async () => {
+  const { client, calls } = mockClient([], undefined, true, 'public', false);
+  await assert.rejects(
+    runMigrations(
+      client,
+      files,
+      '0009_keepalive_logs.sql',
+      async () => 'unexpected SQL',
+      () => {},
+      { requireExistingLedger: true },
+    ),
+    /Another production migration is already running; refusing to start\./,
+  );
+  assert.equal(calls.some((call) => call.sql.includes('SELECT to_regclass')), false);
+  assert.equal(calls.some((call) => call.sql.includes('SELECT name FROM')), false);
+  assert.equal(calls.some((call) => call.sql.includes('pg_advisory_unlock')), false);
+  assert.equal(calls.some((call) => call.sql.includes('INSERT INTO')), false);
+});
+
+test('guarded migration runner releases the advisory lock when a migration fails', async () => {
+  const sql = 'FAIL THIS GUARDED MIGRATION';
+  const { client, calls } = mockClient([], sql);
+  await assert.rejects(
+    runMigrations(
+      client,
+      files,
+      '0009_keepalive_logs.sql',
+      async () => sql,
+      () => {},
+      { requireExistingLedger: true },
+    ),
+    /migration query failed/,
+  );
+  assert.equal(calls.some((call) => call.sql === 'BEGIN'), true);
+  assert.equal(calls.some((call) => call.sql === 'ROLLBACK'), true);
+  assert.equal(calls.some((call) => call.sql.includes('pg_advisory_unlock')), true);
+});
+
+test('guarded migration runner rejects an already-applied selected migration', async () => {
+  const { client, calls } = mockClient(files);
+  await assert.rejects(
+    runMigrations(
+      client,
+      files,
+      '0010_audit_logs_immutable.sql',
+      async () => 'unexpected SQL',
+      () => {},
+      { requireExistingLedger: true },
+    ),
+    /The selected migration is already recorded as applied\./,
+  );
+  assert.equal(calls.some((call) => call.sql === 'BEGIN'), false);
+  assert.equal(calls.some((call) => call.sql.includes('pg_advisory_unlock')), true);
 });
 
 test('the runner preserves all-pending behavior without a selector', async () => {

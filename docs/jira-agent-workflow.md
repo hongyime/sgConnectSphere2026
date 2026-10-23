@@ -113,7 +113,7 @@ repository events:
 | PR opened or marked ready for review | In Review |
 | PR changes requested | In Progress |
 | PR approved and checks pass | Ready to Merge |
-| PR merged | Done, after definition of done is satisfied |
+| PR merged | Merge evidence only; parent Story stays report-only pending explicit DoD acceptance |
 
 Do not auto-close or auto-transition issues to Done solely because a PR merged if
 the issue still lacks test evidence, design review, migration notes, or source
@@ -124,7 +124,30 @@ closing-clause examples caused SCRUM-42 (venue calendar) to be closed by the
 sync script. PR #78's similarly mislabelled branch is also not calendar work.
 Review the issue's actual story and accepted scope before applying a transition.
 An explicit body saying "partial" is not evidence that the whole story is Done.
-The current automation still needs this guard; see the delivery ledger's actions.
+The merge reconciliation script now treats every non-subtask as report-only,
+including product Stories, E00 technical-enabler Stories, other issue types and
+unknown classification. Even `--yes` never transitions or posts a reconciliation
+comment for them. Keys, closing verbs, a parent field, a type name such as
+"Subtask", partial-scope wording or child status cannot authorize parent closure.
+Already-terminal issues remain unchanged; child completion never propagates to
+a parent.
+
+Run `python scripts/reconcile_jira.py --pr 94` for a dry-run. Adding `--yes`
+permits a transition and linking comment only when Jira explicitly returns the
+boolean `issuetype.subtask: true`. Missing, malformed or non-boolean identity
+fails closed to report-only. The merge workflow uses this same rule; its separate
+title-sync job is unchanged. These are implementation-progress observations, not
+automated whole-story acceptance.
+
+Before a parent Story is marked Done, the Product Owner or a documented delegate
+must explicitly accept its Definition of Done against the current issue/linked
+PR: AC-to-evidence checklist, exact tested tree, independent human code and test
+review, changed-code coverage or an explicit justified gap, relevant logged real
+integration/manual E2E evidence, documentation and main merges. A PR approval or
+an agent's own run alone is not acceptance. Preserve existing Done history;
+record discrepancies and separately classified follow-up work rather than
+reopening it. The E06-S04 TC_E06S04_07 / PR #298 cancellation-audit hold remains
+independent and is not cleared by this automation change.
 
 The free Jira plan cannot run an automation rule that fills an empty Team or
 an empty assignee. `.github/workflows/jira-hygiene-sweep.yml` does that
