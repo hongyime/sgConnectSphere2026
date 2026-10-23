@@ -1,3 +1,4 @@
+import { EventCancellation } from '../features/events/EventCancellation';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
@@ -32,7 +33,6 @@ import { OrganiserRequestFlow } from '../features/organiser/OrganiserRequestFlow
 import { OrganiserDrafts, OrganiserDraftEdit } from '../features/organiser/OrganiserDrafts';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail,
-  CancellationForm,
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
@@ -129,7 +129,7 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode', <SubmittedDetail />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode/clarify', <AnswerQuestions />, 'live', 'E03-S02'),
   page('/organiser/requests/:eventCode/change', <ChangeRequests />, 'live', 'E10-S01'),
-  page('/organiser/requests/:eventCode/cancel', <CancellationForm />, 'mock', 'E10-S04'),
+  page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
   page('/change-requests/new', <ChangeRequests />, 'live', 'E10-S01'),
   page('/coordinator/events/:eventCode/changes', <ChangeRequests coordinator />, 'live', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
@@ -155,6 +155,8 @@ export const routes: AppRoute[] = [
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),
   page('/coordinator/queue', <CoordinatorReviewQueue />, 'live', 'E03-S01'),
   page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
+  page('/coordinator/events/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
+  page('/events/:eventCode/cancellation', <EventCancellation />, 'live', 'E10-S04'),
   page('/coordinator/events/:eventCode', <CoordinatorRequestDetail />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode/clarify', <RequestClarification />, 'live', 'E03-S02'),
   page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'live', 'E03-S03'),

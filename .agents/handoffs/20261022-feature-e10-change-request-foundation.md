@@ -17,3 +17,7 @@ User authorised fixing failed application checks. Fast-forwarded to remote195375
 ## Repeated CI time limit (23 October)
 
 Current application run39823362107 at4cb5200 passed all executed pre-browser tests/build, then hit the15min job cap during Playwright install. Installation started17:33:17Z and completed browser download17:45:57Z (12m40s), immediately before cancellation. This is separate from the repaired stale assertion. User asked to fix the continuing checks; raise existing job budget to30min, retain finite cap/all commands/assertions/services. No new CI service or bypass. Linux CI must establish full outcome; Windows cannot emulate apt installation timing.
+
+## 23 October cancellation/main merge
+
+User authorised resolving PR341 conflicts against main38ffa99. Retain both API dispatches/live routes, remove obsolete mock ChangeRequest/CancellationForm, union backend tests/artifacts, regenerate211/376; preserve30minCIcap. Verification20261023-134942-jininggg-full-regression.md:427backendunits,480frontend(two workers),20focusedbackend(15realDB),2desktop/mobile nav,17runtime,both types/build pass. Old database stopped caused15DBfail/5unitpass; fresh native disposable server started and20pass. Repo163tests3fail11error remain. No whole-storyDone or production/manual claim. Push normal merge, retain remaining integration gates and request current-head review/CI.
