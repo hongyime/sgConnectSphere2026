@@ -1,5 +1,8 @@
 import { getAttendance, recordAttendance } from '../backend/src/modules/eventAttendance/service.js';
+import { inTransaction } from '../backend/src/database/pool.js';
+import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
+import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../backend/src/modules/changeManagement/requests.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -68,7 +71,7 @@ import {
   updateEventRequest,
 } from '../backend/src/modules/eventLifecycle/service.js';
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
-import { isEventStatus } from '../backend/src/modules/eventLifecycle/status.js';
+import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
@@ -95,6 +98,14 @@ export default async function handler(request: VercelRequest, response: VercelRe
     if (params.get('attendance') === '1') {
       await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
         await currentUser(request), params.get('id') || '', request.body) }));
+      return;
+    }
+    if (params.has('changeRequests')) {
+      await handleChangeRequests(request, response, params);
+      return;
+    }
+    if (params.get('cancellation') === '1') {
+      await respond(response, async () => ({ cancellation: await cancelEvent(getDatabasePool(), await currentUser(request), params.get('id') || '', request.body) }));
       return;
     }
     if (params.get('comment') === '1') {
@@ -261,7 +272,9 @@ async function handleCommentPost(request: VercelRequest, response: VercelRespons
       sendJson(response, 400, { error: 'invalid_payload' });
       return;
     }
-    const comment = await createEventComment(query, user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
+    const comment = await inTransaction(getDatabasePool(), async client => {
+      return createEventComment((sql, values) => client.query(sql, values), user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
+    });
     sendJson(response, 201, { comment });
   } catch (error) {
     if (error instanceof AccessError) { sendJson(response, error.status, { error: error.message }); return; }
@@ -319,6 +332,14 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
       await currentUser(request), params.get('id') || '') }));
     return;
   }
+  if (params.has('changeRequests')) {
+    await handleChangeRequests(request, response, params);
+    return;
+  }
+  if (params.get('cancellation') === '1') {
+    await respond(response, async () => ({ cancellation: await getCancellation(getDatabasePool(), await currentUser(request), params.get('id') || '') }));
+    return;
+  }
 
   if (params.get('mine') === '1') {
     await handleGetMine(request, response, params);
@@ -344,6 +365,20 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
   });
 }
 
+// SCRUM-202: same authenticated serverless handler, no extra deployment slot.
+async function handleChangeRequests(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const pool = getDatabasePool();
+    if (request.method === 'GET') return { status: 200, body: await listChangeRequests(pool, user, identifier) };
+    const requestId = params.get('requestId');
+    if (requestId !== null) return { status: 200, body: { request: await decideChangeRequest(pool, user, identifier, requestId, request.body) } };
+    return { status: 201, body: { request: await submitChangeRequest(pool, user, identifier, request.body) } };
+  });
+}
+
 // SCRUM-32 (E03-S01): Event Coordinator reads. Coordinators see only the
 // events assigned to them, never drafts (decision D2 in the SCRUM-32 plan).
 //   GET /api/events?assigned=1[&status=<status>]  -> { events }
@@ -360,7 +395,10 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
     if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');
-    if (id) return { event: await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240))) };
+    if (id) {
+      const event = await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240)));
+      return { event: { ...event, canCancel: (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String((event as Record<string, unknown>).status)) } };
+    }
     return { events: await listAssignedEvents(database, user, params.get('status')) };
   });
 }
