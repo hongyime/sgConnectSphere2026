@@ -259,3 +259,17 @@ test('TC_E10S01_01: registration windows refuse reversed dates and allow explici
   await screen.findByText('Change request sent for Coordinator review. Current Event details stay unchanged.');
   expect(calls.find(call => call.method === 'POST')?.body).toEqual({ description: 'Change window', changes: { registrationDates: { opensAt: null, closesAt: null } } });
 });
+
+
+test.each([
+  { fields: { title: 'New title' }, arrangement: false },
+  { fields: { expectedAttendance: 50 }, arrangement: true },
+  { fields: { title: 'New title', expectedAttendance: 50 }, arrangement: true },
+])('TC_E10S01_04: approval confirmation describes all-or-nothing apply for $fields', async ({ fields, arrangement }) => {
+  stubApi({ [read]: { body: data({ requests: [{ ...pending(), requested_changes: { fields, before: {} } }] }) } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: /^Approve/ }));
+  expect(screen.getByText(arrangement
+    ? 'This request includes arrangement changes. Nothing in this request is applied until the arrangement check, including any name, description or purpose changes.'
+    : 'This request changes only name, description or purpose. The changes are applied when approved.')).toBeInTheDocument();
+});

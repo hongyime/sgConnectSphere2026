@@ -132,3 +132,26 @@ and lifecycle without waiting for E10-S02; no automatic prefilling is supplied
 by this PR. Coordinate that query/prefill contract with her before extending it.
 After this increment merges, continue the E10-S02/Session integration from the
 then-current main in a new branch and run the combined acceptance evidence.
+
+## E10-S02 owner proposal (Le Xin, review5628492414)
+
+Reuse the same arrangement path as Coordinator direct edits. Under the existing
+Event lock: loadArrangementSnapshot before; apply stored fields; load snapshot
+after; assessArrangementImpact; applyArrangementImpact with per-arrangement
+audit and the reconfirmation_required staff notice; return impact and
+assessOverSubscription. Preview must use previewEventChangeWith's savepoint and
+rollback before the Coordinator confirms. Preserve one transaction and the
+existing stale/terminal checks; no second independent UPDATE/apply path.
+
+Her capacity proposal uses C-78 combined Confirmed layout capacity with T-85;
+booking headcount takes priority over Session attendance for impact (T-78/T-79).
+This records her proposal, not a newly approved shared signature. Her unpublished
+backend must still expose support for layoutId, accessibilityFeatureIds,
+registrationEnabled, waitlistEnabled and withdrawalDeadline before those fields
+can be applied here. Session shape and registration warning/confirmation remain
+to agree against the published PR. Do not mark mixed requests Applied meanwhile.
+
+Read listing uses a plain Event SELECT, not a retained row lock. Mutations still
+lock Event before request. canSubmit requires both the owning Organiser and an
+assigned Coordinator; history remains readable without one. Approval confirmation
+explains the entire mixed request waits, matching the backend atomic behaviour.

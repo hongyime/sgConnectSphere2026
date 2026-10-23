@@ -116,11 +116,11 @@ function active(event: Event) {
   }
 }
 
-async function lockedEvent(client: PoolClient, identifier: string) {
+async function loadEvent(client: PoolClient, identifier: string, lock = true) {
   const event = (await client.query<Event>(`SELECT e.*, lower(e.event_range) AS starts_at,
     upper(e.event_range) AS ends_at,
     ARRAY(SELECT feature_id::text FROM event_accessibility_needs WHERE event_id=e.id ORDER BY feature_id) AS accessibility_feature_ids
-    FROM events e WHERE e.id::text=$1 OR e.event_code=$1 FOR UPDATE OF e`, [identifier])).rows[0];
+    FROM events e WHERE e.id::text=$1 OR e.event_code=$1 ${lock ? 'FOR UPDATE OF e' : ''}`, [identifier])).rows[0];
   if (!event) throw new AccessError(404, 'Event not found.');
   return event;
 }
@@ -187,7 +187,7 @@ export async function submitChangeRequest(pool: Pool, user: AuthenticatedUser | 
   const org = await requireOrganiser((sql, values) => pool.query(sql, values), user, 'change_request_submit');
   const parsed = parseChangeRequest(body);
   return requestTransaction(pool, user!, identifier, async client => {
-    const event = await lockedEvent(client, identifier);
+    const event = await loadEvent(client, identifier);
     await activeActor(client, user!);
     if (event.organiser_id !== user!.id || event.client_org_id !== org) throw new AccessError(403, 'Change request access denied.');
     active(event);
@@ -217,7 +217,7 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
   const reason = input.reason === undefined ? null : input.reason;
   if (reason !== null && (typeof reason !== 'string' || reason.trim().length > 4000)) throw new AccessError(400, 'Invalid decision reason.');
   return requestTransaction(pool, coordinator, identifier, async client => {
-    const event = await lockedEvent(client, identifier);
+    const event = await loadEvent(client, identifier);
     await activeActor(client, coordinator);
     if (event.coordinator_id !== coordinator.id) throw new AccessError(403, 'Only the assigned Coordinator may decide this request.');
     active(event);
@@ -271,7 +271,7 @@ export async function listChangeRequests(pool: Pool, user: AuthenticatedUser | u
   const org = organiser ? await requireOrganiser((sql, values) => pool.query(sql, values), user, 'change_request_read') : null;
   if (!organiser) await requireCoordinator(pool, user, 'change_request_read');
   return requestTransaction(pool, user, identifier, async client => {
-    const event = await lockedEvent(client, identifier);
+    const event = await loadEvent(client, identifier, false);
     await activeActor(client, user);
     if (organiser ? event.organiser_id !== user.id || event.client_org_id !== org : event.coordinator_id !== user.id) {
       throw new AccessError(403, 'Change request access denied.');
@@ -281,7 +281,7 @@ export async function listChangeRequests(pool: Pool, user: AuthenticatedUser | u
     const layouts = (await client.query<{ id: string; label: string }>('SELECT id,label FROM room_layouts ORDER BY label,id')).rows;
     const accessibility = (await client.query<{ id: string; label: string }>('SELECT id,label FROM accessibility_features ORDER BY label,id')).rows;
     return { event: { id: event.id, eventCode: event.event_code, status: event.status },
-      permissions: { canSubmit: organiser, canDecide: !organiser },
+      permissions: { canSubmit: organiser && !!event.coordinator_id, canDecide: !organiser },
       references: { layouts, accessibility },
       current: snapshot(event, Object.fromEntries(Object.keys(columns).map(key => [key, null]))), requests };
   });

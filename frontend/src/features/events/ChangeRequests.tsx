@@ -201,7 +201,9 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
       ]} /> : <p>No structured field changes recorded.</p>}
     {coordinator && request.status === 'pending' ? choice ? <div ref={panel} tabIndex={-1}>
       <ConfirmPanel title={choice === 'approve' ? 'Approve this change request?' : 'Decline this change request?'}
-        description={<><p>{choice === 'approve' ? 'Name, description and purpose changes are applied now. Other changes wait for the arrangement check.' : 'The Event stays unchanged.'}</p>
+        description={<><p>{choice === 'approve' ? (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))
+          ? 'This request changes only name, description or purpose. The changes are applied when approved.'
+          : 'This request includes arrangement changes. Nothing in this request is applied until the arrangement check, including any name, description or purpose changes.') : 'The Event stays unchanged.'}</p>
           <FormField label="Decision note (optional)">{props => <textarea {...props} rows={2} maxLength={4000}
             disabled={busy} value={note} onChange={event => setNote(event.target.value)} />}</FormField></>}
         confirmLabel={choice === 'approve' ? 'Approve change request' : 'Decline change request'} busy={busy}

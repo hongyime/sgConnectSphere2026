@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import type { Pool } from 'pg';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../src/modules/changeManagement/requests.js';
@@ -230,4 +231,43 @@ test('TC_E10S01_01: clearing existing settings is distinct from omitted fields',
   const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
   assert.equal(current.registrationEnabled, true);
   assert.equal(current.withdrawalDeadline, '2027-02-28T00:00:00.000Z');
+}));
+
+
+test('TC_E10S01_01: missing Coordinator hides submission but preserves Organiser history access', () => run(async f => {
+  await f.pool.query('UPDATE events SET coordinator_id=NULL WHERE id=$1', [f.event]);
+  const view = await listChangeRequests(f.pool, f.organiser, f.event);
+  assert.deepEqual(view.permissions, { canSubmit: false, canDecide: false });
+  assert.equal(view.current.title, 'Original');
+  await assert.rejects(f.submit(), { status: 409 });
+}));
+
+test('TC_E10S01_02: viewing requests does not block an Event writer while the read transaction remains open', { timeout: 10000 }, () => run(async f => {
+  let reached!: () => void, resume!: () => void;
+  const paused = new Promise<void>(resolve => { reached = resolve; });
+  const released = new Promise<void>(resolve => { resume = resolve; });
+  const readPool = {
+    query: f.pool.query.bind(f.pool),
+    connect: async () => {
+      const client = await f.pool.connect();
+      return { release: () => client.release(), query: async (sql: string, values?: unknown[]) => {
+        const result = await client.query(sql, values);
+        if (sql.includes('SELECT * FROM change_requests')) { reached(); await released; }
+        return result;
+      } };
+    },
+  } as unknown as Pool;
+  const listing = listChangeRequests(readPool, f.organiser, f.event);
+  const writer = await f.pool.connect();
+  try {
+    await Promise.race([paused, listing.then(() => { throw new Error('Read did not pause'); })]);
+    await writer.query('BEGIN');
+    // Fails immediately with55P03 if the reader retains an Event row lock.
+    await writer.query('SELECT id FROM events WHERE id=$1 FOR UPDATE NOWAIT', [f.event]);
+    await writer.query("UPDATE events SET title='Concurrent edit' WHERE id=$1", [f.event]);
+    await writer.query('COMMIT');
+  } finally {
+    await writer.query('ROLLBACK'); writer.release(); resume(); await listing;
+  }
+  assert.equal((await f.pool.query('SELECT title FROM events WHERE id=$1', [f.event])).rows[0].title, 'Concurrent edit');
 }));
