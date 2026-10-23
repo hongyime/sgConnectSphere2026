@@ -1,6 +1,7 @@
 import { inTransaction } from '../backend/src/database/pool.js';
 import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
+import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../backend/src/modules/changeManagement/requests.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -93,6 +94,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.has('changeRequests')) {
+      await handleChangeRequests(request, response, params);
+      return;
+    }
     if (params.get('cancellation') === '1') {
       await respond(response, async () => ({ cancellation: await cancelEvent(getDatabasePool(), await currentUser(request), params.get('id') || '', request.body) }));
       return;
@@ -316,6 +321,10 @@ async function requireOrganiserWithClient(request: VercelRequest): Promise<Authe
 // one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.has('changeRequests')) {
+    await handleChangeRequests(request, response, params);
+    return;
+  }
   if (params.get('cancellation') === '1') {
     await respond(response, async () => ({ cancellation: await getCancellation(getDatabasePool(), await currentUser(request), params.get('id') || '') }));
     return;
@@ -342,6 +351,20 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
       notifications: await listNotifications(query, user),
       organisationId: user.clientOrgId,
     };
+  });
+}
+
+// SCRUM-202: same authenticated serverless handler, no extra deployment slot.
+async function handleChangeRequests(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const pool = getDatabasePool();
+    if (request.method === 'GET') return { status: 200, body: await listChangeRequests(pool, user, identifier) };
+    const requestId = params.get('requestId');
+    if (requestId !== null) return { status: 200, body: { request: await decideChangeRequest(pool, user, identifier, requestId, request.body) } };
+    return { status: 201, body: { request: await submitChangeRequest(pool, user, identifier, request.body) } };
   });
 }
 

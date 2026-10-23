@@ -33,13 +33,13 @@ import { OrganiserRequestFlow } from '../features/organiser/OrganiserRequestFlow
 import { OrganiserDrafts, OrganiserDraftEdit } from '../features/organiser/OrganiserDrafts';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail,
-  ChangeRequest,
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
   EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback,
 } from '../features/attendee/AttendeeRegistration';
 import { NotificationInbox } from '../features/notifications/NotificationInbox';
+import { ChangeRequests } from '../features/events/ChangeRequests';
 import { AnswerQuestions } from '../features/organiser/AnswerQuestions';
 import { RequestClarification } from '../features/coordinator/RequestClarification';
 import {
@@ -128,14 +128,10 @@ export const routes: AppRoute[] = [
   page('/organiser/requests', <OrganiserRequestList />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode', <SubmittedDetail />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode/clarify', <AnswerQuestions />, 'live', 'E03-S02'),
-  page('/organiser/requests/:eventCode/change', <ChangeRequest />, 'mock', 'E10-S01'),
+  page('/organiser/requests/:eventCode/change', <ChangeRequests />, 'live', 'E10-S01'),
   page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
-  // Where restricted post-approval edits (E03-S07) and the edit API's 409
-  // changeRequestUrl send the Organiser, until E10-S01 builds the form.
-  page('/change-requests/new', (
-    <ComingSoon story="E10-S01" title="Request a change"
-      summary="After approval, changes to restricted event details such as the date, attendance or requirements go through a change request that the assigned Coordinator reviews." />
-  ), 'coming-soon', 'E10-S01'),
+  page('/change-requests/new', <ChangeRequests />, 'live', 'E10-S01'),
+  page('/coordinator/events/:eventCode/changes', <ChangeRequests coordinator />, 'live', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
   page('/organiser/drafts', <OrganiserDrafts />, 'live', 'E02-S02'),
   page('/organiser/drafts/:id', <OrganiserDraftEdit />, 'live', 'E02-S02'),
