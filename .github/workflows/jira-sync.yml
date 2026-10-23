@@ -1,6 +1,8 @@
 name: Jira Sync
 
-# Transitions a Jira SCRUM issue to Done after its PR merges to main. Advisory
+# Reports linked issues; only explicit Jira subtasks can transition after merge.
+# Stories (including E00) and unknown types are report-only, with no comment POST.
+# Story Done requires explicit DoD acceptance, not a merged PR. Advisory
 # only: because pull_request:closed fires after the merge is already complete,
 # a failure here cannot un-merge the PR. It only surfaces a red run on the
 # Actions dashboard so a teammate notices the sync gap.
@@ -22,7 +24,7 @@ concurrency:
 
 jobs:
   transition:
-    name: transition
+    name: Report issues and reconcile explicit subtasks
     if: >-
       github.event.pull_request.merged == true &&
       github.event.pull_request.user.type != 'Bot'
@@ -35,7 +37,7 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
-      - name: Transition linked SCRUM issue to Done
+      - name: Report parent issues; transition only explicit SCRUM subtasks
         env:
           JIRA_SITE_URL: ${{ secrets.JIRA_SITE_URL }}
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}

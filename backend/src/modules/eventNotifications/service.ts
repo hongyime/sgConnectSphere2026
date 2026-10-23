@@ -119,7 +119,7 @@ export function selectEventRecipients(before: EventAudience, after: EventAudienc
   const recipients = new Map<string, 'internal' | 'attendee'>();
   for (const group of groups) {
     const publicGroup = group==='registered' || group==='waitlisted';
-    const ids = publicGroup ? (attendees.publicName ? attendees[group] : [])
+    const ids = publicGroup ? (attendees.publicName || cancelled ? attendees[group] : [])
       : group==='venueStaff' || group==='technicalStaff' ? [...before[group], ...after[group]] : after[group];
     for (const id of ids) {
       if (id!==actorId) {
@@ -180,7 +180,7 @@ export async function notifyEventChange(client: PoolClient, input: {
   const inserted: string[] = [];
   for (const [userId, audience] of recipients) {
     const publicName = change.kind==='status' && change.to==='cancelled' ? before.publicName : after.publicName;
-    const eventName = audience==='attendee' ? publicName : after.title;
+    const eventName = audience==='attendee' ? (publicName ?? (change.kind==='status' && change.to==='cancelled' ? 'Your event' : null)) : after.title;
     if (!eventName) throw new Error('public_notification_name_missing');
     const message = `${eventName}: ${description(change)} Changed at ${occurredAt.toISOString()}.`;
     const id = await writeEventNotification(client, {eventId:after.eventId,changeId,userId,occurredAt,title:'Event update',message});
