@@ -1138,6 +1138,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - an event with no recorded activity says so
 - a change is described in words for status changes, edits and entries without a field
+- primary venue activity names the designation and preserves venue names
 - an entry whose actor account was removed still shows, without a name
 - stored actions are shown in plain words, and other actions as written
 - a status change with no previous status shows only the new status
