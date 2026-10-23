@@ -81,11 +81,13 @@ test('missingDetails names every blank or missing account detail (TC_E09S01_04, 
   assert.deepEqual(missingDetails({ full_name: '  ', email: 'c@example.test', contact_number: null }), ['Name', 'Contact number']);
 });
 
-test('parseSessionIds accepts one to fifty Session ids and de-duplicates them', () => {
-  assert.deepEqual(parseSessionIds({ sessionIds: [sessionA, sessionA.toUpperCase(), sessionB] }), [sessionA, sessionB]);
-  for (const body of [null, 'x', {}, { sessionIds: [] }, { sessionIds: ['not-a-uuid'] }, { sessionIds: [1] },
-    { sessionIds: Array.from({ length: 51 }, () => randomUUID()) }]) {
-    assert.equal(parseSessionIds(body), null);
+test('parseSessionIds accepts one to fifty Session ids, de-duplicates them and says why it refuses', () => {
+  assert.deepEqual(parseSessionIds({ sessionIds: [sessionA, sessionA.toUpperCase(), sessionB] }), { ids: [sessionA, sessionB] });
+  for (const body of [null, 'x', {}, { sessionIds: [] }, { sessionIds: 'not-an-array' }]) {
+    assert.deepEqual(parseSessionIds(body), { error: 'Choose at least one Session.' });
+  }
+  for (const body of [{ sessionIds: ['not-a-uuid'] }, { sessionIds: [1] }, { sessionIds: Array.from({ length: 51 }, () => randomUUID()) }]) {
+    assert.deepEqual(parseSessionIds(body), { error: 'Choose valid Sessions from this event.' });
   }
 });
 
@@ -151,6 +153,7 @@ test('registerForEvent creates one registration with the selected Sessions and a
 test('registerForEvent refuses before touching the database when the body or role is wrong', async () => {
   const { pool, calls } = script();
   assert.deepEqual(await registerForEvent(pool, attendee, eventId, { sessionIds: [] }), { status: 400, body: { error: 'Choose at least one Session.' } });
+  assert.deepEqual(await registerForEvent(pool, attendee, eventId, { sessionIds: ['not-a-uuid'] }), { status: 400, body: { error: 'Choose valid Sessions from this event.' } });
   assert.equal(calls.some(call => call.sql === 'BEGIN'), false);
   await assert.rejects(registerForEvent(pool, { ...attendee, role: 'event_coordinator' }, eventId, { sessionIds: [sessionA] }), { status: 403 });
   await assert.rejects(registerForEvent(pool, attendee, '', { sessionIds: [sessionA] }), { status: 400 });
@@ -182,7 +185,7 @@ test('registerForEvent keeps one active registration and rejects foreign Session
   assert.deepEqual((duplicate.body.registration as { sessionIds: string[] }).sessionIds, [sessionA]);
   assert.equal(calls.some(call => call.sql.includes('INSERT INTO event_registrations')), false);
   const foreign = await registerForEvent(script().pool, attendee, eventId, { sessionIds: [sessionA, randomUUID()] });
-  assert.deepEqual(foreign, { status: 400, body: { error: 'Choose Sessions from this event.' } });
+  assert.deepEqual(foreign, { status: 400, body: { error: 'Choose valid Sessions from this event.' } });
 });
 
 test('registerForEvent maps a lost unique race, a busy account and rethrows other failures', async () => {
