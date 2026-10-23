@@ -8,7 +8,7 @@ audit log. Scope follows `docs/backlog/release-1/E06-venue-search-booking.md`
 (5 scenarios); the Jira description is an older copy with only Scenarios 1-3.
 
 - Jira: SCRUM-48 (Sprint 3, 3 points), parent SCRUM-7
-- Branch pre-created by @bryanseah234 on 2026-10-05; merged `origin/main` on 2026-10-08
+- Branch pre-created by the repository owner on 2026-10-05; merged `origin/main` on 2026-10-08
 - Progress on 2026-10-09: backend steps 1.1-1.5 and screen steps 2.1-2.3 done (see below)
 - Progress on 2026-10-14: merged `main` (Week 9 docs, holds #245); booking decisions now in the Coordinator Activity log
 
@@ -101,12 +101,45 @@ marked Done in Sprint 3.
 - Local env note: `python` on PATH may resolve to the Windows Store stub; run
   hooks and `check.py` with `.venv-tools/Scripts` first on PATH.
 
+## 2026-10-23 main sync and merge gate
+
+- Team decisions (Bryan): fresh TC_07 by Le Xin on the final synced head;
+  Bryan is the independent human reviewer for #298 and may authorize the
+  merge queue after TC_07 passes; sync #298 with `origin/main` `38ffa999` now;
+  after #298 merges, retarget #308/#311/#334/#335 to `main`, mark #334/#335
+  ready, and merge after checks; fix #230; Bryan reviews/approves #315; keep
+  `.shellignore`.
+- E10-S04 is merged (#320 `211ba9dd`, #321 `38ffa999`); #342 `e256c947`
+  merged. TC_07 is no longer blocked on the feature existing, only on the
+  fresh manual run.
+- Sync conflicts: `backend/package.json` test/test:db (kept both #298
+  venue-decision and #320 cancellation tests); `docs/testing/tc-coverage.md`
+  regenerated.
+- Local verification on the merge: backend unit 451/451; merged-module tests
+  108/108; backend/frontend typecheck and build pass; targeted Vitest 80/80.
+  The full Vitest run hit Windows worker-start timeouts (91 tests passed
+  before the timeout), not test failures. Runtime was 17/18 with a
+  worktree-junction teardown assertion. `check.py` has the four known
+  Windows-only worktree-hygiene failures.
+- Sync merge committed as `c851f18`; this handoff is a follow-up commit. No
+  merge queue action, approval, or merge has been performed.
+
 ## Still to do
 
-- TC_07 waits for E10-S04 (Sprint 4); see the PO decision above. The branch
-  name carries SCRUM-48, so `jira-sync` moves SCRUM-48 to Done when #298
-  merges. Agree with the team before merging whether #298 waits for E10-S04
-  or SCRUM-48 is kept open by hand after merge.
+- Push the sync merge `c851f18` and this handoff commit.
+- Fresh manual `TC_E06S04_07` run by Le Xin on the pushed head (not the
+  20261019 bounded integration record), with a T-65 record and T-93
+  screenshots under `docs/testing/runs/evidence/<record>/`.
+- Bryan reviews/approves #298 after the final head is pushed; then queue
+  #298. Do not request approval before the final push, because a new commit
+  dismisses it.
+- After #298 merges: retarget #308/#311/#334/#335 to `main`, mark #334/#335
+  ready, and merge after checks. Keep `.shellignore` as decided.
+- Fix #230 review items: `TC_E01S12_03` state/date, duplicate E03
+  precondition, one handoff, workbook export, checklist/postplan, refresh
+  main. #315 is Bryan's review/approval, not an AI approval.
+- The branch name carries SCRUM-48, so `jira-sync` moves SCRUM-48 to Done
+  when #298 merges. Do not mark it Done before TC_07 passes and #298 merges.
 - Ji Ning's #299 reviewed (comment review, 16 Oct).
 - Follow-up candidate: the rejection notice's line breaks show as spaces in
   the notifications page.
