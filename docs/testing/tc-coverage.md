@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **211** (56.1%)
+- Automated (explicit TC_ID in an active test title): **217** (57.7%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **174**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **125** (33.2%)
+  - Live-assertion (other active tests): **180**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **119** (31.6%)
 - No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 37 | 30 | 7 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 6 | 21 | 1 |
+| E08 | 28 | 12 | 15 | 1 |
 | E09 | 44 | 5 | 31 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **211** | **125** | **40** |
+| **Total** | **376** | **217** | **119** | **40** |
 
 ## Case-by-case status
 
@@ -335,12 +335,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log |
 | `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
-| `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_01 - Verify that a Confirmed event should automatically become Completed once its last event |
-| `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_02 - Verify that an Event Coordinator should be able to manually mark a Confirmed event complete once its last event has started |
-| `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_03 - Verify that attempting to mark an event complete before its first event has started should be blocked |
-| `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_04 - Verify that a Cancelled event should never auto-complete, even after its original end time passes |
-| `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_05 - Verify that an event |
-| `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S05_06 - Verify that an event auto-completes at the exact end time and not before |
+| `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
+| `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/tests/eventCo |
+| `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/tests/eventCo |
+| `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
+| `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/completion/even |
+| `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
 | `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first |
 | `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, an |
 | `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from  |
@@ -636,6 +636,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
 - E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
 - E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
+
+### `backend/tests/eventCompletion.integration.test.ts`
+
+- Completion refuses stale accounts and assignment, wrong statuses, and rolls back audit/status/request changes on outbox failure
+- Concurrent manual/automatic evaluation yields one transition; Cancelled wins when committed before evaluation lock
+- Evaluation tolerates an event removed after candidate selection
+
+### `backend/tests/eventCompletion.test.ts`
+
+- Completion reads/writes refuse missing, wrong-role, locked/inactive and invalid identifiers before querying
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -1101,6 +1111,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - stored actions are shown in plain words, and other actions as written
 - a status change with no previous status shows only the new status
 - booking entries show hold expiry or a generic booking label without internal IDs
+
+### `frontend/src/features/events/EventCompletion.test.tsx`
+
+- Non-Confirmed states and missing event code are displayed without an action
+- Loading, refused read, and retry
+- Server refusal stays visible and busy submission prevents duplicate clicks
+- A late submission response cannot overwrite a different event route
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 

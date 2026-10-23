@@ -72,9 +72,14 @@ artifacts/sbom/*
 !artifacts/e10-s04-manual-evidence.html
 !artifacts/e10-obsolete-prerequisite.html
 
+!artifacts/e08-completion-review.html
+!artifacts/e08-completion-automated-desktop.png
+!artifacts/e08-completion-automated-phone.png
 !artifacts/e10-change-request-foundation.html
 !artifacts/e10-cancellation-review.html
 !artifacts/e10-cancellation-automated-desktop.png
 !artifacts/e10-cancellation-automated-phone.png
 
 !artifacts/e10-cancellation-ci-followup.html
+
+!artifacts/e08-completion-conflict-followup.html
