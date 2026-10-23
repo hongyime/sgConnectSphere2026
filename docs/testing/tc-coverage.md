@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 376 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 377 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **376**
-- Automated (explicit TC_ID in an active test title): **207** (55.1%)
+- Total test cases: **377**
+- Automated (explicit TC_ID in an active test title): **207** (54.9%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **171**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **129** (34.3%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **130** (34.5%)
 - No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 37 | 30 | 7 | 0 |
+| E05 | 38 | 30 | 8 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 6 | 21 | 1 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **376** | **207** | **129** | **40** |
+| **Total** | **377** | **207** | **130** | **40** |
 
 ## Case-by-case status
 
@@ -221,9 +221,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked |
 | `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events  |
 | `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason |
-| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be refused | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_04 — Verify that an unavailability with no end date and time should be refused |
+| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted |
 | `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bo |
 | `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
+| `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted |
 
 ### E06
 

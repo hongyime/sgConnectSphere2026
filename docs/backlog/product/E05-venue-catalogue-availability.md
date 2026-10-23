@@ -193,47 +193,54 @@ Given a venue's existing booking or hold, once that venue's setup and turnaround
 
 - **Sprint**:
 - **Points**:
-- **BDR references**: C-66, C-48, C-61, T-28, T-67, T-74, O-23, O-24, O-25, O-26
+- **BDR references**: C-66, C-48, C-61, C-120, C-121, C-122, T-28, T-67, T-74, T-80, T-81, T-91, O-23, O-24, O-25, O-26
 - **Owner**:
 
 ### User story
 
 As a Venue Staff member, I want to mark a venue temporarily unavailable for maintenance, equipment failure, renovation, a safety concern or another operational reason, even when events are already booked in it, so that affected bookings are identified and their Coordinators can arrange an alternative without the events themselves being cancelled.
 
-New story from the Week 7 Customer Changes (C-66). It supersedes E05-S04 Scenario 2, which refused a block over a confirmed booking; E05-S04 is in the Sprint 2 sprint backlog and is not edited (T-67, T-74). Estimate to be set by planning poker at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+New story from the Week 7 Customer Changes (C-66). It supersedes E05-S04 Scenario 2, which refused a block over a confirmed booking; E05-S04 is in the Sprint 2 sprint backlog and is not edited (T-67, T-74). Estimate to be set by planning poker at Sprint 3 planning (T-73).
+
+Updated on 23 October 2026, before any work on the story started, to the Week 9 decisions that closed its open questions; an incomplete story's criteria are updated in place (T-74). T-80 allows an unavailability with no end, in force until Venue Staff lift it, and keeps setup and turnaround buffers off unavailability periods (closes O-23). T-81 returns a Confirmed event whose active venue booking is lost to Planning without cancelling it (C-120, closes O-24 and replaces its earlier "status unchanged" default). C-121 confirms the O-25 notification rule and C-122 the O-26 restore rule. T-91 lets Venue Staff edit an unavailability, keeps the history of each change and notifies affected Coordinators when it is lifted.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Unavailability recorded with a reason
 
-Given I am viewing a venue When I mark it unavailable for a period and choose a reason category from maintenance, equipment failure, renovation, safety concern or other, with a free-text note Then the unavailability is saved with the period, the category, the note and my identity, and the calendar shows the period as Blocked
+Given I am viewing a venue When I mark it unavailable from a start date and time, with an optional end date and time, and choose a reason category from maintenance, equipment failure, renovation, safety concern or other, with a free-text note Then the unavailability is saved with the period, the category, the note and my identity, and the calendar shows the period as Blocked; with no end, it shows as Blocked from its start until it is lifted (T-80)
 
 #### Scenario 2 — Overlapping bookings become Conflicting, not released
 
-Given the venue has a Pending request and a Confirmed booking inside the period When I save the unavailability Then the save succeeds, both bookings are marked Conflicting, neither is released or cancelled, and the two affected events are listed to me on save
+Given the venue has a Pending request and a Confirmed booking inside the period When I save the unavailability Then the save succeeds, both bookings are marked Conflicting, neither is released or cancelled, and the two affected events are listed to me on save; overlap is judged on each booking's advertised times, not its setup and turnaround buffers (T-80)
 
-#### Scenario 3 — The event itself is untouched
+#### Scenario 3 — A Confirmed event returns to Planning, not cancelled
 
-Given a Confirmed event's booking has just become Conflicting When anyone views that event Then its status is still Confirmed, every other arrangement is intact, and a venue-conflict flag with the reason category is shown; the event changes status only when its Coordinator acts (assumes O-24)
+Given a Confirmed event's active venue booking has just become Conflicting When the unavailability is saved Then the event returns to Planning automatically and is not cancelled, every other arrangement is intact, and a venue-conflict flag with the reason category is shown on the event; an affected event that was not Confirmed keeps its status (C-120, T-81)
 
 #### Scenario 4 — Affected Coordinators informed
 
-Given the unavailability made one or more bookings Conflicting When it is saved Then the Coordinator of each affected event receives an in-app and email notification naming the venue, the period, the reason category and the event, and stating that alternative arrangements are required (assumes O-25)
+Given the unavailability made one or more bookings Conflicting When it is saved Then the Coordinator of each affected event immediately receives an in-app and email notification naming the venue, the period, the reason category and the event, and stating that alternative arrangements are required; the Organiser and registered Attendees are not notified at this point (C-121, T-81)
 
-#### Scenario 5 — End date required and extendable
+#### Scenario 5 — Open-ended or extended unavailability
 
-Given I am recording an unavailability When I omit the end date and time Then the save is refused; and Given a saved unavailability When I extend its end Then bookings newly inside the longer period are handled as in Scenario 2 (assumes O-23)
+Given I am recording an unavailability When I leave the end date and time empty Then it is saved as open-ended and stays in force until it is lifted; and Given a saved unavailability When I extend its end or remove its end Then bookings newly inside the longer period are handled as in Scenarios 2 to 4 (T-80, T-91)
 
-#### Scenario 6 — Unavailability shortened or ended early
+#### Scenario 6 — Unavailability shortened, lifted or ended early
 
-Given a booking is Conflicting only because of an unavailability When I shorten or end that unavailability so the booking no longer overlaps it Then the Conflicting flag clears and the booking stands as it was; a booking the Coordinator has already cancelled or replaced is not restored (assumes O-26)
+Given a booking is Conflicting only because of an unavailability When I shorten or lift that unavailability so the booking no longer overlaps it Then the Conflicting flag clears and the booking returns to the status it had before, Pending or Confirmed; a booking the Coordinator has already cancelled or replaced is not restored; an event already returned to Planning follows E08-S04 Scenario 4 rather than returning straight to Confirmed (C-122, T-81)
+
+#### Scenario 7 — Edits and lifts keep their history
+
+Given an unavailability exists When I edit its period or reason, or lift it Then a history entry keeps the earlier and new period and reason with my identity and the time, a lifted unavailability is kept rather than deleted, and when it is lifted the Coordinator of each event whose booking it made Conflicting is notified (T-91)
 
 ### Checklist
 
-- Mark a venue unavailable for a period with a reason category and a note, including when Pending or Confirmed bookings fall inside the period
+- Mark a venue unavailable from a start date and time, with an optional end, a reason category and a note, including when Pending or Confirmed bookings fall inside the period
 - See the affected events listed on save and their bookings marked Conflicting, with none released or cancelled
-- Confirm the affected events keep their status and other arrangements, with a visible venue-conflict flag
-- Confirm each affected Coordinator is notified in-app and by email
-- Be refused an unavailability with no end date and time
-- Confirm shortening or ending an unavailability clears the Conflicting flag on bookings it no longer touches
+- Confirm an affected Confirmed event returns to Planning without being cancelled, keeps its other arrangements and shows a venue-conflict flag
+- Confirm each affected Coordinator is notified in-app and by email, and the Organiser and registered Attendees are not
+- Save an open-ended unavailability, and extend an existing one so bookings newly inside it are flagged
+- Confirm shortening or lifting an unavailability clears the Conflicting flag on bookings it no longer touches and restores their earlier status
+- Confirm each edit and lift keeps a history entry, and a lift notifies the affected Coordinators
 - Confirm E05-S04's existing block, shorten and remove behaviour still works for periods with no bookings
