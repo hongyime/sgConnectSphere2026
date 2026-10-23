@@ -489,7 +489,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/attendeeRegistration.test.ts`
 
 - registrationState: both window ends are inclusive and unset ends are unbounded
-- parseSessionIds accepts one to fifty Session ids and de-duplicates them
+- parseSessionIds accepts one to fifty Session ids, de-duplicates them and says why it refuses
 - listOpenEvents returns public fields and the signed-in Attendee registration status only
 - getRegistrationForm shows Sessions with their own venues, account details and any active registration
 - registerForEvent refuses before touching the database when the body or role is wrong
