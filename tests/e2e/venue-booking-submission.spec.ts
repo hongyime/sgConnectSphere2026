@@ -67,9 +67,8 @@ test('rejected booking switches through a prefilled new Pending request',async({
   await expect(page.getByText('Rejected',{exact:true})).toBeVisible();
   await page.screenshot({path:test.info().outputPath('suggested-venue-prefill.png'),fullPage:true});
   await page.getByRole('button',{name:'Submit booking request'}).click();
-  await expect(page.getByRole('heading',{name:'Booking request submitted'})).toBeVisible();
+  await expect(page.getByText('Replacement booking request submitted. The new request is Pending.',{exact:true})).toBeVisible();
   await expect(page.getByText('Rejected',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'View venue booking requests',exact:true}).click();
   await expect(page.getByRole('heading',{name:'Suggested Hall',exact:true})).toBeVisible();
   await expect(page.getByText('Pending',{exact:true})).toBeVisible();
   await expect(page.getByText('A replacement request has already been submitted.')).toBeVisible();

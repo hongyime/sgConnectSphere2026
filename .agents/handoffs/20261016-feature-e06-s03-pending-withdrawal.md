@@ -106,3 +106,7 @@ Fix in intentional manual worktree adds successful-submit callback to embedded f
 Human final retests confirmed automatic refresh for both initial replacement and retry. All14 original screenshots imported; focused manual record20261024-162200 preserves original FAIL and fixed PASS, explicitly excludes full canonical TC11/13 claims. Test catalogue version211026 used for final record. Repository check hygiene/env/record validation pass;163Windows tests3fail11errors persist. Ready for normal commit/push, no auto-merge.
 
 CI follow-up: repository-checks on fa63b89 passed Linux tooling but failed generated tc-coverage drift from renamed regression title. Regenerated exact one-line inventory change; count remains229/376. Local check rerun retains known163Windows3fail11errors. No app change or manual rerun needed.
+
+Application CI follow-up at da6c66c: job120833459812 had471backend and526frontend passing, but2Playwright replacement cases failed desktop/mobile from old intermediate heading/View expectations. Browser assertions now require automatic Pending list and retained rejected history, unchanged payload checks. Full booking-submission file16/16 passes across both viewports with intercepted APIs. No product change or human rerun. Inventory regenerated. Commit/push normal update and await CI.
+
+Pre-commit repository check rerun: hygiene/env checks pass; known Windows163tooling3fail11errors remain. No all-green local tooling claim.
