@@ -1382,7 +1382,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - empty list, error retry and missing route parameter use shared states
 - refused access shows no private event details
 - route change ignores a late response for the previous event
-- suggested venue switch prefills a new request and retains the rejected card
+- suggested venue switch automatically reloads the Pending replacement and retains rejected history
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
