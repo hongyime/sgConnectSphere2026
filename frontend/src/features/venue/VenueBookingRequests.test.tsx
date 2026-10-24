@@ -58,7 +58,7 @@ test('route change ignores a late response for the previous event', async () => 
 });
 
 
-test('suggested venue switch prefills a new request and retains the rejected card', async () => {
+test('suggested venue switch automatically reloads the Pending replacement and retains rejected history', async () => {
   const rejected={...data.bookings[0],status:'rejected',decision_reason:'Use another room',suggested_venue_id:'suggested',suggested_venue_name:'Suggested Hall'};
   const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[rejected]})})
     .mockResolvedValueOnce({ok:true,json:async()=>({booking:{id:'new'},suitability:{mismatches:[]}})})
@@ -69,9 +69,8 @@ test('suggested venue switch prefills a new request and retains the rejected car
   expect(screen.getByLabelText('Headcount (optional)')).toHaveValue(120);
   expect(screen.getByText('Rejected',{exact:true})).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:'Submit booking request'}));
-  expect(await screen.findByText('Booking request submitted')).toBeInTheDocument();
+  expect(await screen.findByText('Replacement booking request submitted. The new request is Pending.')).toBeInTheDocument();
   expect(JSON.parse(fetcher.mock.calls[1][1].body)).toMatchObject({venue_id:'suggested',replaces_booking_id:'one',purpose:'Main programme',headcount:120});
-  fireEvent.click(screen.getByRole('button',{name:'View venue booking requests'}));
   expect(await screen.findByText('A replacement request has already been submitted.')).toBeInTheDocument();
   expect(screen.getByRole('heading',{name:'Suggested Hall'})).toBeInTheDocument();
   expect(screen.queryByText('Booking request submitted')).not.toBeInTheDocument();

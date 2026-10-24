@@ -63,7 +63,7 @@ export function VenueBookingRequests() {
         {booking.status === 'rejected' && booking.suggested_venue_id && !booking.has_replacement && ['approved', 'planning'].includes(result.data.event.status) && <>
           <Button onClick={() => setSwitching(booking.id)}>Request suggested venue</Button>
           {switching === booking.id && <VenueBookingForm key={booking.id} eventId={result.data.event.id} eventCode={eventCode} venueId={booking.suggested_venue_id}
-            onViewBookings={() => { setSwitching(null); reload(); }}
+            onSubmitted={() => { setSwitching(null); setNotice('Replacement booking request submitted. The new request is Pending.'); reload(); }}
             start={result.data.event.starts_at ?? booking.starts_at} end={result.data.event.ends_at ?? booking.ends_at} replacement={{ id: booking.id, starts_at: booking.starts_at, ends_at: booking.ends_at, purpose: booking.purpose ?? '', headcount: booking.headcount ?? null }} />}
         </>}
         {booking.has_replacement && <p>A replacement request has already been submitted.</p>}

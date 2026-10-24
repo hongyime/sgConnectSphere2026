@@ -95,3 +95,12 @@ User authorised merge-conflict resolution/push. Merge main38ffa99 into cbd43ea i
 ## 24 October actual merged298 integration
 
 User authorised resolving299 after298merged. Main9c8a37f includes actual decisions.ts. Union .gitignore/backend/runtime tests; regenerate229/376. Preserve primary-specific formatting against generic venue_booking formatter; existing realistic test covers it. Added combinedfile to CI-used booking selector. Record20261024-161007-jininggg-full-regression.md:8realraces no skips,43submission/decisionDB,exactCIcommand52realDB,471backendunits,52targetfrontend,both types/build pass. Runtime22API assertionspass butafter-hookjunction containmentfails; repo163tests3fail11error. InitialduplicatefixtureTS1117 corrected, no assertions weakened. No fullfrontend/manual rerun.298waiting andActivityquerygates nowclear; freshCI/currentheadhumanreview and outstandingmanualcasesremain. No0020rerun orauto-merge.
+
+
+## 24 October manual replacement refresh finding
+
+Human tested local b5f5736: staff approval, automatic first primary, approval Activity and Coordinator inbox observed; rejection with suggestion, replacement withdrawal/retry, and no-suggestion controls observed. Replacement and retry saved but list required F5 twice: not a clean manual pass. Human screenshots supplied in conversation and named for saving; originals still need importing to a formal T-93 evidence directory. UI button is Venue bookings.
+
+Fix in intentional manual worktree adds successful-submit callback to embedded form; parent closes form, reports Pending replacement and reloads immediately. Regression asserts updated list without clicking View. 21 focused component tests and frontend types pass; immutable record 20261024-164833-jininggg-frontend-vitest.md. No new human rerun, commit or push yet. Local manual server remains active with fresh isolated native database; preserve this worktree and existing human fixture state. Root E10 work and review notes untouched.
+
+Human final retests confirmed automatic refresh for both initial replacement and retry. All14 original screenshots imported; focused manual record20261024-162200 preserves original FAIL and fixed PASS, explicitly excludes full canonical TC11/13 claims. Test catalogue version211026 used for final record. Repository check hygiene/env/record validation pass;163Windows tests3fail11errors persist. Ready for normal commit/push, no auto-merge.

@@ -414,3 +414,7 @@ manual boundary cases listed in PR299, rather than repeating old screenshots.
 Keep actual API/race checks labelled automated when not run by hand. After that,
 obtain current-head code/test review and green CI before queuing. No new human
 run or full-story completion is claimed by this merge update.
+
+## 24 October: focused human integration and refresh fix
+
+See runs/20261024-162200-jininggg-frontend-e2e.md for the human approval, automatic primary, Activity/inbox and replacement/retry observations. Initial replacement/retry list refresh failed; the callback fix was retested successfully without F5. Original failures and fixed retest screenshots are retained. Coverage is limited to the explicitly recorded subsets; recipient-exclusion, complete chain and other outstanding boundaries are not inferred. UI entry is Venue bookings. Twenty-one focused component tests and frontend typecheck passed (run20261024-164833). Current-head human review and CI remain required.
