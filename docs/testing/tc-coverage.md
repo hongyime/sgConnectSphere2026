@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **223** (59.0%)
+- Automated (explicit TC_ID in an active test title): **232** (61.4%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **187**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **115** (30.4%)
-- No test yet (no test file mentions the TC_ID): **40** (10.6%)
+  - Live-assertion (other active tests): **196**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **111** (29.4%)
+- No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
 
@@ -23,15 +23,15 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 39 | 30 | 9 | 0 |
-| E06 | 43 | 27 | 11 | 5 |
+| E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 5 | 31 | 8 |
+| E09 | 44 | 8 | 28 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **223** | **115** | **40** |
+| **Total** | **378** | **232** | **111** | **35** |
 
 ## Case-by-case status
 
@@ -246,13 +246,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
 | `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
 | `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
-| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; tests/ |
-| `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_08 — Verify that withdrawing one of several venue bookings should leave the others untouched and that a booking outside the event |
-| `TC_E06S03_09` | E06-S03 | Refuse withdrawal of Confirmed bookings and requests assigned to another Coordin | ❌ none | — |
-| `TC_E06S03_10` | E06-S03 | Serialize Pending withdrawal against approval or rejection | ❌ none | — |
-| `TC_E06S03_11` | E06-S03 | Notify only the withdrawn request's current venue staff and retain conversion hi | ❌ none | — |
-| `TC_E06S03_12` | E06-S03 | Allow a fresh suggested-venue replacement after withdrawal while retaining histo | ❌ none | — |
-| `TC_E06S03_13` | E06-S03 | Follow the latest rejection's suggestion without reopening older rejected attemp | ❌ none | — |
+| `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E06S03_07 primary selection validates actor, identifier and current assignment/account; backend/tests/bookingPrimary.test.ts: TC_E06S03_07  |
+| `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_09` | E06-S03 | Refuse withdrawal of Confirmed bookings and requests assigned to another Coordin | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_10` | E06-S03 | Serialize Pending withdrawal against approval or rejection | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_10 decision winning the venue lock prevents withdrawal from overwriting its result; backend/tests/bookingSubmission.i |
+| `TC_E06S03_11` | E06-S03 | Notify only the withdrawn request's current venue staff and retain conversion hi | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
+| `TC_E06S03_12` | E06-S03 | Allow a fresh suggested-venue replacement after withdrawal while retaining histo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_12 TC_E06S03_13 Released replacement permits a fresh attempt; Rejected follows only its own suggestion; backend/tests |
+| `TC_E06S03_13` | E06-S03 | Follow the latest rejection's suggestion without reopening older rejected attemp | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_12 TC_E06S03_13 Released replacement permits a fresh attempt; Rejected follows only its own suggestion |
 | `TC_E06S04_01` | E06-S04 | Verify that approving a pending request for a venue that is free for the period  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_01: approving a pending request confirms it, updates the calendar and notifies the Coordinator once; backend/test |
 | `TC_E06S04_02` | E06-S04 | Verify that rejecting a request with a recorded reason and a suggested alternati | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_02: rejecting with a reason and an alternative venue tells the Coordinator both; backend/tests/venueBookingDecisi |
 | `TC_E06S04_03` | E06-S04 | Verify that attempting to reject a request without recording a reason should be  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_03: a rejection without a reason is blocked and nothing changes; backend/tests/venueBookingDecisions.test.ts: TC_ |
@@ -390,10 +390,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
 | `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ❌ none | — |
-| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S06_01 — feedback requires a rating |
-| `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed |
-| `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked |
-| `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_04 - Verify that registration and attendance counts should be viewable side by side for each event |
+| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
+| `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
+| `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_03 — all non-Completed statuses block writes, server capability matches; missing, foreign and inactive registrations re |
+| `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S07_01` | E09-S07 | Verify that opening the registration list for an event with registered Attendees | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_01 - Verify that opening the registration list for an event with registered Attendees should show each Attendee |
 | `TC_E09S07_02` | E09-S07 | Verify that the registration list should show the registered count and remaining | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event |
 | `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_03 - Verify that attempting to open the registration list for an event that does not belong to the Organiser |
@@ -493,6 +493,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
 
+### `backend/tests/bookingPrimary.test.ts`
+
+- primary selection shares origin/authentication HTTP boundary, without submission key
+
 ### `backend/tests/bookingSubmission.integration.test.ts`
 
 - notification failure rolls back request, status, audit and deliveries together
@@ -514,6 +518,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - submission handler enforces method/origin and hides server errors
 - replacement input validates rejected provenance and rejects duplicate switches before persistence
 - unassigned hold conversion remains forbidden while direct requests conceal event assignment
+
+### `backend/tests/bookingWithdrawal.test.ts`
+
+- withdrawal handler shares POST origin/authentication boundary and needs no submission key
 
 ### `backend/tests/clarification.test.ts`
 
@@ -638,6 +646,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
 - E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
 - E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
+
+### `backend/tests/eventAttendance.integration.test.ts`
+
+- E09-S06 authority is rechecked in DB; no cross-Coordinator roster; concurrent retries produce one history/audit row
+
+### `backend/tests/eventAttendance.test.ts`
+
+- E09-S06 only a signed-in active unlocked Coordinator passes attendance authorization
+- E09-S06 rejects malformed registration identifiers and non-boolean attendance
+
+### `backend/tests/eventAttendanceRoutes.integration.test.ts`
+
+- E09-S06 live API cookie sessions wire reads, writes, missing id, malformed body and access refusals
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -1116,6 +1137,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - opening a panel moves focus into it, and Cancel returns focus to the button that opened it
 - a late answer for the previous request never replaces the current one
 
+### `frontend/src/features/coordinator/EventAttendance.test.tsx`
+
+- attendance empty state and server read refusal/retry
+- server write refusal is visible without changing the attendee
+- navigating during save aborts late response and hides the old success
+- aborted save rejection on navigation is ignored
+- unexpected save response failure is recoverable and shows an error
+
 ### `frontend/src/features/coordinator/EventReadiness.test.tsx`
 
 - SCRUM-60: an event in Safety Review, or not yet in Planning, offers nothing to submit
@@ -1384,9 +1413,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - empty list, error retry and missing route parameter use shared states
 - refused access shows no private event details
 - route change ignores a late response for the previous event
-- suggested venue switch prefills a new request and retains the rejected card
+- suggested venue switch automatically reloads the Pending replacement and retains rejected history
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
+- a withdrawal in flight disables controls and does not submit twice
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1498,6 +1528,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/attendee-events.spec.ts`
 
 - empty registrations and expired sessions have useful states
+
+### `tests/e2e/attendee-registration.spec.ts`
+
+- feedback requires a rating
 
 ### `tests/e2e/client-events.spec.ts`
 
