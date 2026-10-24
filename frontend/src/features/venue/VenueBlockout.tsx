@@ -7,13 +7,15 @@
 // bookings (T-67): the server flags them Conflicting and the screen lists the
 // affected events; an edit or lift lists the bookings it restored. A server
 // 409 refusal over another unavailability is shown verbatim with that one named.
+// Lifted unavailability can be listed as lifted, and each one's history shows
+// every create, edit and lift with who made it and when (Scenario 7).
 //
-// Backend contract: see api/venues/index.ts (?blocks=1 for the list; POST
-// actions block / edit_block / lift_block) and
+// Backend contract: see api/venues/index.ts (?blocks=1 for the list, with
+// &lifted=1 or &history=<block>; POST actions block / edit_block / lift_block) and
 // backend/src/modules/venueBooking/blocks.ts for the request and response
 // shapes. The form sends Singapore times with a +08:00 offset.
 import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react';
-import { CalendarClock, PencilLine, Plus, Unlock } from 'lucide-react';
+import { CalendarClock, History, PencilLine, Plus, Unlock } from 'lucide-react';
 import {
   Alert, Button, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FormActions, FormField, FormSection,
   LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, useLoad,
@@ -21,8 +23,10 @@ import {
 } from '../../shared';
 import { listVenues, type Venue } from './venueApi';
 import {
-  CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, editUnavailability, liftUnavailability, listBlocks, overlappingBlocks,
-  type AffectedEvent, type ReasonCategory, type RestoredEvent, type SavedUnavailability, type UnavailabilityInput, type VenueBlock,
+  CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, editUnavailability, getBlockHistory, liftUnavailability, listBlocks,
+  overlappingBlocks,
+  type AffectedEvent, type HistoryEntry, type HistoryState, type ReasonCategory, type RestoredEvent, type SavedUnavailability,
+  type UnavailabilityInput, type VenueBlock,
 } from './blocksApi';
 
 // Scenarios 2 and 6: a save lists the affected events, and an edit or lift
@@ -80,7 +84,8 @@ function VenuePicker({ venues, selectedId, onSelect }: {
 type EditingState =
   | { kind: 'none' }
   | { kind: 'edit'; block: VenueBlock }
-  | { kind: 'lift'; block: VenueBlock };
+  | { kind: 'lift'; block: VenueBlock }
+  | { kind: 'history'; block: VenueBlock };
 
 // Times show the way design.md section 8.1 wants ("15 Jan 2027, 8:00 am").
 function periodLabel(block: Pick<VenueBlock, 'startsAt' | 'endsAt'>): string {
@@ -88,7 +93,9 @@ function periodLabel(block: Pick<VenueBlock, 'startsAt' | 'endsAt'>): string {
 }
 
 function VenueBlocksPanel({ venueId }: { venueId: string }) {
-  const { result, reload } = useLoad(signal => listBlocks(venueId, signal), [venueId]);
+  // Scenario 7: lifted unavailability is kept and can be listed as lifted.
+  const [showLifted, setShowLifted] = useState(false);
+  const { result, reload } = useLoad(signal => listBlocks(venueId, signal, { includeLifted: showLifted }), [venueId, showLifted]);
   const [flash, setFlash] = useState<Flash>(null);
   const [conflict, setConflict] = useState<ConflictAlert>(null);
   const [editing, setEditing] = useState<EditingState>({ kind: 'none' });
@@ -126,6 +133,9 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
       ) : null}
 
       <Card title="Current and upcoming blocks">
+        <label className="venue-show-lifted">
+          <input type="checkbox" checked={showLifted} onChange={event => setShowLifted(event.target.checked)} /> Show lifted
+        </label>
         {result.state === 'loading' ? (
           <LoadingState label="Loading blocks…" rows={2} />
         ) : result.state === 'error' ? (
@@ -133,9 +143,18 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
         ) : result.data.length === 0 ? (
           <EmptyState title="No current or upcoming blocks">Blocks you add below will appear here.</EmptyState>
         ) : (
-          <BlocksTable blocks={result.data} onEdit={block => setEditing({ kind: 'edit', block })} onLift={block => setEditing({ kind: 'lift', block })} />
+          <BlocksTable
+            blocks={result.data}
+            onEdit={block => setEditing({ kind: 'edit', block })}
+            onLift={block => setEditing({ kind: 'lift', block })}
+            onHistory={block => setEditing({ kind: 'history', block })}
+          />
         )}
       </Card>
+
+      {editing.kind === 'history' ? (
+        <HistoryCard key={editing.block.id} venueId={venueId} block={editing.block} onClose={() => setEditing({ kind: 'none' })} />
+      ) : null}
 
       {editing.kind === 'edit' ? (
         <UnavailabilityForm
@@ -254,27 +273,78 @@ function RestoredEventList({ events }: { events: RestoredEvent[] }) {
   );
 }
 
-function BlocksTable({ blocks, onEdit, onLift }: {
-  blocks: VenueBlock[]; onEdit: (block: VenueBlock) => void; onLift: (block: VenueBlock) => void;
+function BlocksTable({ blocks, onEdit, onLift, onHistory }: {
+  blocks: VenueBlock[]; onEdit: (block: VenueBlock) => void; onLift: (block: VenueBlock) => void; onHistory: (block: VenueBlock) => void;
 }) {
   const columns: Column<VenueBlock>[] = [
     { header: 'Start', cell: block => formatDate(block.startsAt, true) },
     { header: 'End', cell: block => block.endsAt ? formatDate(block.endsAt, true) : 'Until lifted' },
     { header: 'Category', cell: block => CATEGORY_LABELS[block.reasonCategory] },
-    { header: 'Note', cell: block => block.reason, primary: true },
+    {
+      header: 'Note', primary: true,
+      cell: block => block.liftedAt ? (
+        <>
+          {block.reason}{' '}
+          <StatusPill status="neutral" label="Lifted" />{' '}
+          <span className="field-hint">by {block.liftedBy ?? 'a former staff member'}, {formatDate(block.liftedAt, true)}</span>
+        </>
+      ) : block.reason,
+    },
     {
       header: 'Actions', key: 'edit', hideHeader: true,
-      cell: block => <Button icon={<PencilLine size={14} aria-hidden="true" />} onClick={() => onEdit(block)}>Edit…</Button>,
+      // A lifted unavailability is history: it can be read, not changed.
+      cell: block => block.liftedAt ? null : <Button icon={<PencilLine size={14} aria-hidden="true" />} onClick={() => onEdit(block)}>Edit…</Button>,
     },
     {
       header: 'Actions', key: 'lift', hideHeader: true,
-      cell: block => <Button variant="danger" icon={<Unlock size={14} aria-hidden="true" />} onClick={() => onLift(block)}>Lift…</Button>,
+      cell: block => block.liftedAt ? null : <Button variant="danger" icon={<Unlock size={14} aria-hidden="true" />} onClick={() => onLift(block)}>Lift…</Button>,
+    },
+    {
+      header: 'Actions', key: 'history', hideHeader: true,
+      cell: block => <Button icon={<History size={14} aria-hidden="true" />} onClick={() => onHistory(block)}>History…</Button>,
     },
   ];
   return <DataTable caption="Current and upcoming maintenance blocks" columns={columns} rows={blocks} rowKey={block => block.id} />;
 }
 
-type FormErrors = { startDate?: string; startTime?: string; endDate?: string; endTime?: string; category?: string; note?: string };
+const CHANGE_LABELS: Record<HistoryEntry['action'], string> = { created: 'Created', edited: 'Edited', lifted: 'Lifted' };
+
+function historyStateLabel(state: HistoryState | null): string {
+  if (!state) return '–';
+  const category = state.reasonCategory ? CATEGORY_LABELS[state.reasonCategory] : 'No category';
+  return [periodLabel(state), category, state.reason].filter(Boolean).join(' · ');
+}
+
+// T-91 / Scenario 7: each create, edit and lift with who made it, when, and
+// the period, category and note before and after.
+function HistoryCard({ venueId, block, onClose }: { venueId: string; block: VenueBlock; onClose: () => void }) {
+  const { result, reload } = useLoad(signal => getBlockHistory(venueId, block.id, signal), [venueId, block.id]);
+  const columns: Column<HistoryEntry>[] = [
+    { header: 'When', cell: entry => formatDate(entry.changedAt, true) },
+    { header: 'Who', cell: entry => entry.actor ?? 'Former staff member' },
+    { header: 'Change', cell: entry => CHANGE_LABELS[entry.action], primary: true },
+    { header: 'Before', cell: entry => historyStateLabel(entry.previous) },
+    { header: 'After', cell: entry => historyStateLabel(entry.next) },
+  ];
+  return (
+    <Card title={`History of the ${periodLabel(block)} unavailability`}>
+      {result.state === 'loading' ? (
+        <LoadingState label="Loading history…" rows={2} />
+      ) : result.state === 'error' ? (
+        <ErrorState failure={result.failure} onRetry={reload} context="the history of this unavailability" />
+      ) : result.data.length === 0 ? (
+        <EmptyState title="No changes recorded">Blocks saved before change history was kept have no entries.</EmptyState>
+      ) : (
+        <DataTable caption="Changes to this unavailability, oldest first" columns={columns} rows={result.data} rowKey={entry => `${entry.action}-${entry.changedAt}`} />
+      )}
+      <FormActions>
+        <Button onClick={onClose}>Close</Button>
+      </FormActions>
+    </Card>
+  );
+}
+
+type FormErrors ={ startDate?: string; startTime?: string; endDate?: string; endTime?: string; category?: string; note?: string };
 
 // The form takes Singapore wall-clock time (UTC+08:00, no daylight saving).
 function sgtInstant(date: string, time: string): string {

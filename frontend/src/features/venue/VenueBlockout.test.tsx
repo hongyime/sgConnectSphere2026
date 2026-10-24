@@ -464,6 +464,89 @@ test('a failed lift shows the server message and closes the confirmation', async
   expect(screen.queryByRole('button', { name: 'Lift unavailability' })).not.toBeInTheDocument();
 });
 
+test('TC_E05S06_07 - the history shows the create, the edit and the lift with who, when, and the period and note before and after (Scenario 7)', async () => {
+  const created = { startsAt: '2027-01-15T00:00:00.000Z', endsAt: '2027-01-15T10:00:00.000Z', reasonCategory: 'maintenance', reason: 'Floor resurfacing' };
+  const edited = { ...created, endsAt: '2027-01-15T12:00:00.000Z', reason: 'Floor resurfacing, second coat' };
+  const liftedBlock = { ...existingBlock, ...edited, from: '2027-01-15', to: '2027-01-15', liftedAt: '2027-01-14T06:00:00.000Z', liftedBy: 'Venue Staff One' };
+  const historyCalls: string[] = [];
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1&history=blk-1': url => {
+      historyCalls.push(url.search);
+      return { body: { history: [
+        { action: 'created', changedAt: '2027-01-14T01:00:00.000Z', actor: 'Venue Staff One', previous: null, next: created },
+        { action: 'edited', changedAt: '2027-01-14T02:00:00.000Z', actor: 'Venue Staff One', previous: created, next: edited },
+        { action: 'lifted', changedAt: '2027-01-14T06:00:00.000Z', actor: null, previous: edited, next: null },
+      ] } };
+    },
+    'GET /api/venues?id=v-1&blocks=1': url => ({ body: { blocks: url.searchParams.get('lifted') === '1' ? [liftedBlock] : [] } }),
+  });
+
+  // Lifted unavailability is kept: it appears once "Show lifted" is ticked.
+  await screen.findByText(/No current or upcoming blocks/);
+  fireEvent.click(screen.getByLabelText('Show lifted'));
+  const row = (await screen.findByText('Floor resurfacing, second coat')).closest('tr') as HTMLElement;
+  expect(within(row).getByText('Lifted')).toBeInTheDocument();
+  expect(within(row).getByText('by Venue Staff One, 14 Jan 2027, 2:00 pm')).toBeInTheDocument();
+  // History is read-only: no Edit or Lift on a lifted row.
+  expect(within(row).queryByRole('button', { name: /Edit/ })).not.toBeInTheDocument();
+  expect(within(row).queryByRole('button', { name: /Lift/ })).not.toBeInTheDocument();
+
+  fireEvent.click(within(row).getByRole('button', { name: /History/ }));
+  const table = await screen.findByRole('table', { name: 'Changes to this unavailability, oldest first' });
+  const rows = within(table).getAllByRole('row').slice(1).map(tr => [...tr.querySelectorAll('td')].map(td => td.textContent));
+  expect(rows).toEqual([
+    ['14 Jan 2027, 9:00 am', 'Venue Staff One', 'Created', '–', '15 Jan 2027, 8:00 am – 6:00 pm · Maintenance · Floor resurfacing'],
+    ['14 Jan 2027, 10:00 am', 'Venue Staff One', 'Edited',
+      '15 Jan 2027, 8:00 am – 6:00 pm · Maintenance · Floor resurfacing', '15 Jan 2027, 8:00 am – 8:00 pm · Maintenance · Floor resurfacing, second coat'],
+    ['14 Jan 2027, 2:00 pm', 'Former staff member', 'Lifted', '15 Jan 2027, 8:00 am – 8:00 pm · Maintenance · Floor resurfacing, second coat', '–'],
+  ]);
+  expect(historyCalls).toEqual(['?id=v-1&blocks=1&history=blk-1']);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+  expect(screen.queryByRole('table', { name: 'Changes to this unavailability, oldest first' })).not.toBeInTheDocument();
+});
+
+test('a lifted row with no recorded lifter, a block with no history yet, and an open-ended entry with no category read clearly', async () => {
+  const liftedBlock = { ...existingBlock, endsAt: null, to: null, liftedAt: '2027-01-14T06:00:00.000Z', liftedBy: null };
+  let history: unknown[] = [];
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1&history=blk-1': () => ({ body: { history } }),
+    'GET /api/venues?id=v-1&blocks=1': url => ({ body: { blocks: url.searchParams.get('lifted') === '1' ? [liftedBlock] : [existingBlock] } }),
+  });
+
+  const current = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  fireEvent.click(within(current).getByRole('button', { name: /History/ }));
+  expect(await screen.findByText('No changes recorded')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+  fireEvent.click(screen.getByLabelText('Show lifted'));
+  expect(await screen.findByText(/by a former staff member/)).toBeInTheDocument();
+  history = [{ action: 'created', changedAt: '2027-01-14T01:00:00.000Z', actor: 'Venue Staff One', previous: null,
+    next: { startsAt: '2027-01-15T00:00:00.000Z', endsAt: null, reasonCategory: null, reason: '' } }];
+  const row = screen.getByText(/by a former staff member/).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /History/ }));
+  expect(await screen.findByRole('cell', { name: '15 Jan 2027, 8:00 am until lifted · No category' })).toBeInTheDocument();
+});
+
+test('a history that fails to load offers Try again', async () => {
+  let fail = true;
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1&history=blk-1': () => (fail
+      ? { status: 503, body: { error: 'The history of this unavailability could not be loaded.' } }
+      : { body: { history: [] } }),
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
+  });
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /History/ }));
+  const retry = await screen.findByRole('button', { name: /Try again/ });
+  fail = false;
+  fireEvent.click(retry);
+  expect(await screen.findByText('No changes recorded')).toBeInTheDocument();
+});
+
 test('loading state renders while blocks are in flight', async () => {
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
