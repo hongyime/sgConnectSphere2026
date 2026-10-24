@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **223** (59.0%)
+- Automated (explicit TC_ID in an active test title): **226** (59.8%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **187**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **115** (30.4%)
-- No test yet (no test file mentions the TC_ID): **40** (10.6%)
+  - Live-assertion (other active tests): **190**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **111** (29.4%)
+- No test yet (no test file mentions the TC_ID): **41** (10.8%)
 
 ## Coverage by epic
 
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 27 | 11 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 5 | 31 | 8 |
+| E09 | 44 | 8 | 27 | 9 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **223** | **115** | **40** |
+| **Total** | **378** | **226** | **111** | **41** |
 
 ## Case-by-case status
 
@@ -354,15 +354,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity |
+| `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent creates one registration with the selected Sessions and a confirmation (TC_E09S01_01, _07); tests/e2e/attendee-registra |
 | `TC_E09S01_02` | E09-S01 | [RETIRED — T-79 restores Sessions under one Event; selecting Sessions is covered | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
-| `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
-| `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields |
-| `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused |
-| `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue |
-| `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ❌ none | — |
-| `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit |
-| `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join |
+| `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ✅ active | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate; frontend/src/feat |
+| `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ✅ active | backend/tests/attendeeRegistration.test.ts: missingDetails names every blank or missing account detail (TC_E09S01_04, T-32); tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submi |
+| `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ✅ active | backend/tests/attendeeRegistration.test.ts: getRegistrationForm refuses unconfirmed, unknown and registration-free events (TC_E09S01_05); tests/e2e/e09.spec.ts: TC_E09S01_05 - Veri |
+| `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ✅ active | tests/e2e/e09.spec.ts: TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue; frontend/src/features/attendee/EventRegistration.test.t |
+| `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_07 — one submission creates one Event registration with both Sessions; frontend/src/features/attendee/EventRegistration.test.tsx: |
+| `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ❌ none | — |
+| `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ❌ none | — |
 | `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
 | `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
 | `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
@@ -483,6 +483,22 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 ## Active tests that cover behaviour without an explicit TC reference
 
 The following tests are actively running (not `test.fixme`) but their titles do not embed a TC_ID. They still contribute to Q1/Q2 coverage; they just don't show up in the counts above. Add a TC_XX reference to the test title if you want the auditor to pick it up next run. Blank sections mean every active test in that file already has a TC_ID.
+
+### `backend/tests/attendeeRegistration.integration.test.ts`
+
+- E09-S01: register once for a Confirmed Event, selecting Sessions, on real PostgreSQL
+
+### `backend/tests/attendeeRegistration.test.ts`
+
+- registrationState: both window ends are inclusive and unset ends are unbounded
+- parseSessionIds accepts one to fifty Session ids, de-duplicates them and says why it refuses
+- listOpenEvents returns public fields and the signed-in Attendee registration status only
+- getRegistrationForm shows Sessions with their own venues, account details and any active registration
+- registerForEvent refuses before touching the database when the body or role is wrong
+- registerForEvent refuses unconfirmed events and closed or not-yet-open windows (Scenario 4, E09-S03)
+- registerForEvent names missing account details and refuses inactive accounts (Scenario 3)
+- registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
+- registerForEvent maps a lost unique race, a busy account and rethrows other failures
 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
@@ -1072,6 +1088,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
 
+### `frontend/src/features/attendee/EventRegistration.test.tsx`
+
+- windowText and missingMessage describe the window and missing details in plain words
+- Discover lists open events with the registration state and links to each event
+- Discover shows an empty state and a retryable error
+- the event page marks a registered Attendee’s Sessions and explains a closed or unopened window
+- choosing no Session blocks registration without calling the server
+- every blank account detail reads Missing, and a Session without a venue says so
+- the server’s missing-details refusal is shown when the form had none missing
+- an existing registration, a closed window and other refusals are shown before or after submitting
+- leaving the form while registering drops the late reply
+
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 
 - the assigned Coordinator edits an approved event and only the changed field is sent
@@ -1525,6 +1553,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
 - decision page /coordinator/events/EVT-C01/decide is one centred column
+- register page /attendee/register/EVT-TECH is one centred column
 - fields side by side keep their controls level when only one has a hint
 
 ### `tests/e2e/organiser.spec.ts`

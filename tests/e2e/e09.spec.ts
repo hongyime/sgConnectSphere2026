@@ -1,4 +1,5 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
+import { fakeRegistrationBackend, registrationForm, registrationEvent } from './helpers/registrationBackend';
 
 // E09 - 36 cases. Source: docs/testing/cases/E09.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -42,12 +43,17 @@ test.describe("E09-S01", () => {
    * Expected result:
    *   attendee_c@example.com is told they are already registered; no duplicate registration is created
    */
-  test.fixme("TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Open event "Community Meetup"
-    // 3. Attempt to register again
-    void page;
+  test("TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate", async ({ page }) => {
+    const posts = await fakeRegistrationBackend(page, { post: () => ({ status: 409, json: {
+      error: "You're already registered for this event.",
+      registration: { id: "r-1", status: "registered", registeredAt: "2027-03-01T02:00:00.000Z", sessionIds: ["s-a"] },
+    } }) });
+    await page.goto("/attendee/register/EVT-TECH");
+    await page.getByRole("group", { name: "Choose your Sessions" }).getByRole("checkbox", { name: /Session B/ }).check();
+    await page.getByRole("button", { name: "Confirm registration" }).click();
+    await expect(page.getByText("You're already registered for this event")).toBeVisible();
+    await expect(page.getByText(/Your Sessions: Session A\./)).toBeVisible();
+    expect(posts).toHaveLength(1);
   });
 
   /**
@@ -64,13 +70,18 @@ test.describe("E09-S01", () => {
    * Expected result:
    *   Registration is blocked, and the Email field is identified as missing
    */
-  test.fixme("TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_e@example.com
-    // 2. Open event "Community Meetup"
-    // 3. Leave the Email field empty
-    // 4. Submit registration
-    void page;
+  test("TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields", async ({ page }) => {
+    // T-32 / O-05: details come from the account, so the contact number is the field that can be missing.
+    const posts = await fakeRegistrationBackend(page, { form: { json: registrationForm({
+      details: { name: "Erin Lee", email: "attendee_e@example.com", contactNumber: null }, missingDetails: ["Contact number"],
+    }) } });
+    await page.goto("/attendee/register/EVT-TECH");
+    await expect(page.getByText("Missing: Contact number")).toBeVisible();
+    await page.getByRole("group", { name: "Choose your Sessions" }).getByRole("checkbox", { name: /Session A/ }).check();
+    await page.getByRole("button", { name: "Confirm registration" }).click();
+    await expect(page.getByRole("alert").first()).toContainText("Add your contact number to your profile before registering.");
+    await expect(page.getByRole("link", { name: "Update your profile" })).toHaveAttribute("href", "/profile");
+    expect(posts).toHaveLength(0);
   });
 
   /**
@@ -87,11 +98,11 @@ test.describe("E09-S01", () => {
    * Expected result:
    *   Registration is refused, since the event is not yet Confirmed
    */
-  test.fixme("TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Attempt to open the registration form for "Draft Networking Event"
-    void page;
+  test("TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused", async ({ page }) => {
+    await fakeRegistrationBackend(page, { form: { status: 409, json: { error: "Registration is only open for confirmed events that take registrations." } } });
+    await page.goto("/attendee/register/EVT-DRAFT");
+    await expect(page.getByText("Registration is only open for confirmed events that take registrations.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Confirm registration" })).toHaveCount(0);
   });
 
 });
@@ -687,9 +698,16 @@ test.describe("E09-S07", () => {
 // Week 7 additions from docs/testing/cases/E09.md.
 
 test.describe("E09-S01 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue", async ({ page }) => {
-    // Implement from docs/testing/cases/E09.md (TC_E09S01_06).
-    void page;
+  test("TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue", async ({ page }) => {
+    await fakeRegistrationBackend(page);
+    await page.goto(`/attendee/discover/${registrationEvent.eventCode}`);
+    await expect(page.getByRole("heading", { name: "Tech Summit" })).toBeVisible();
+    // The Event shows its primary venue; each Session shows its own; venues are not separate registrations.
+    await expect(page.getByText("Grand Auditorium, Level 1").first()).toBeVisible();
+    const table = page.getByRole("table", { name: "Sessions" });
+    await expect(table.getByText("Seminar Room B, Level 2")).toBeVisible();
+    await page.getByRole("link", { name: "Register" }).click();
+    await expect(page.getByRole("group", { name: "Choose your Sessions" }).getByRole("checkbox")).toHaveCount(2);
   });
 
 });
