@@ -25,3 +25,5 @@ Second merge validation:464 backend units,526 frontend,20 runtime and11 attendan
 Manual evidence filing checks: python3 scripts/check.py passed; tooling record20261024-182937. Updated postplan structure/render/visual checks passed; https://bijgefhig57x.postplan.dev/v/3. Evidence-only update; no application test rerun or new application changes.
 
 Post-upload main advanced to8cdc2a5 (#344 venue-loss testcase alignment). Resolve sole generated tc-coverage conflict by rerunning generator against merged canonical cases/workbook; no screenshot or historical session changes. Manual session retains211026 catalogue used during actual run.
+
+24 October third sync: main94f9e4a now contains merged E08 manual evidence #325. Resolve sole .gitignore conflict by retaining both E09 attendance and E08 manual-evidence artifact exceptions. No manual record/image or application logic changed beyond incoming reviewed main.
