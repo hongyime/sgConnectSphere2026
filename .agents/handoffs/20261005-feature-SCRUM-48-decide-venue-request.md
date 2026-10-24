@@ -149,13 +149,34 @@ marked Done in Sprint 3.
   in the clash message; #335 adds the booking reference to booking Activity
   rows, so two same-venue bookings stay distinguishable.
 
+## 2026-10-24 Ji Ning's review (comment review at `d1d210d`)
+
+- Point 2, stale Venue Staff authority: answered by merging Bryan's #334
+  (`origin/fix/SCRUM-48-recovery-decision-20261021`) into this branch at
+  `5d0c09d`, a clean merge. It re-reads the account `FOR SHARE NOWAIT` after
+  the event lock (403 revoked, 409 busy) and adds the buffered window to the
+  clash message. #334 can be closed once #298 merges; #340 (stacked on #334)
+  still fits.
+- Point 1, closed events: `c035dc5` reads the event status under the
+  existing event lock and refuses Completed or Cancelled events with 409
+  before the venue lock or any write. Lock order unchanged.
+- Evidence at `c035dc5`: `20261024-120055-lexinphun2024-debug-backend-unit.md`
+  (453/453, `decisions.ts` 100%) and `20261024-120102-lexinphun2024-debug-backend-db.md`
+  (decision suite 23/23, booking selector 34/34) on native PostgreSQL 5432,
+  database `connectsphere_notification_test` created locally for this.
+  The `.env` `TEST_DATABASE_URL` still points at the old Docker port 5433, so
+  it was not used.
+- TC_E06S04_07 was run on `25629b0`; these changes only add refusals, so it
+  was not re-run. Re-run only if a reviewer asks.
+
 ## Still to do
 
-- Bryan reviews/approves #298 after the final head is pushed; then queue
-  #298. Do not request approval before the final push, because a new commit
-  dismisses it.
-- After #298 merges: retarget #308/#311/#334/#335 to `main`, mark #334/#335
-  ready, and merge after checks. Keep `.shellignore` as decided.
+- One teammate (Ji Ning knows it best) approves #298 after the final head is
+  pushed; then queue #298. Do not request approval before the final push,
+  because a new commit dismisses it.
+- After #298 merges: close #334 (merged here), retarget #308/#311/#335 to
+  `main`, mark #335 ready, and merge after checks. Keep `.shellignore` as
+  decided.
 - Fix #230 review items: `TC_E01S12_03` state/date, duplicate E03
   precondition, one handoff, workbook export, checklist/postplan, refresh
   main. #315 is Bryan's review/approval, not an AI approval.
