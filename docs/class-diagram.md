@@ -46,6 +46,8 @@ classDiagram
         +Duration warningBefore W9
         +DateTime reminderSentAt
         +int extensionCount W9
+        +BookingStatus statusBeforeConflict "restored when the unavailability ends" W7
+        +uuid conflictBlockId W7
         +bool requiresReconfirmation
         +string decisionReason
         +requestBooking()
@@ -73,6 +75,8 @@ classDiagram
         +string action
         +Range previousRange
         +Range newRange
+        +UnavailabilityReason previousCategory
+        +UnavailabilityReason newCategory
         +string previousReason
         +string newReason
         +uuid actorId
