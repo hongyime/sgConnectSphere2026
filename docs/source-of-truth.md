@@ -8,7 +8,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 231026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 241026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
 | Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 241026.docx` (BDR refreshed 2026-10-24; older dated exports remain history) |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
@@ -141,7 +141,7 @@ The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and te
 
 The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
 
-The E05-S06 and E10-S05 venue-loss alignment (SCRUM-152, SCRUM-74, 23 October 2026) updates both stories and their test cases in place to the existing decisions T-80, T-81 and T-91 (C-120, C-121, C-122), adds TC_E05S06_07, regenerates the CAA 231026 backlog export and the CAA 241026 test-case export (rebuilt after main's CAA 211026 E08 case changes, so it carries both) and refreshes the legacy coverage input from that test-case workbook. The alignment is logged in `docs/bdr/G-change-log.md`, so the BDR export is regenerated as CAA 241026; no decision changes and the ADR export is unchanged.
+The E05-S06 and E10-S05 venue-loss alignment (SCRUM-152, SCRUM-74, 23–24 October 2026) updates both stories and their test cases in place to the existing decisions T-80, T-81 and T-91 (C-111, C-120, C-121, C-122), adds TC_E05S06_07 and TC_E05S06_08, and aligns the booking contract's Conflicting transition with C-111. It regenerates the CAA 241026 backlog, test-case and BDR exports (the test-case export also carries main's CAA 211026 E08 changes) and refreshes the legacy coverage input from that test-case workbook. The alignment is logged in `docs/bdr/G-change-log.md`; no decision changes and the ADR export is unchanged.
 
 The 16 October Product Owner approvals in T-97 update the canonical BDR and
 `docs/ops/demo-account-provisioning.md`. Regenerate only the BDR Word export for

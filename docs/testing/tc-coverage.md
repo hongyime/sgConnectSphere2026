@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 377 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 378 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **377**
-- Automated (explicit TC_ID in an active test title): **217** (57.6%)
+- Total test cases: **378**
+- Automated (explicit TC_ID in an active test title): **217** (57.4%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **180**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **120** (31.8%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **121** (32.0%)
 - No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 38 | 30 | 8 | 0 |
+| E05 | 39 | 30 | 9 | 0 |
 | E06 | 43 | 21 | 17 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **377** | **217** | **120** | **40** |
+| **Total** | **378** | **217** | **121** | **40** |
 
 ## Case-by-case status
 
@@ -225,6 +225,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bo |
 | `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
 | `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted |
+| `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coord |
 
 ### E06
 

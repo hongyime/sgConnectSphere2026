@@ -362,6 +362,12 @@ recorded; no decision is new or changed.
 - Test cases follow: TC_E05S06_02 to _05 and TC_E10S05_01, _03 and _04 are
   updated, TC_E05S06_04 now checks an open-ended save instead of a refusal, and
   TC_E05S06_07 is added.
+- C-111 also says affected existing bookings are flagged. Only its open-ended
+  part had been used (T-80), so no story covered an unexpired Tentative hold
+  inside a new unavailability. E05-S06 Scenario 2 now flags such a hold
+  Conflicting without releasing it, Scenario 6 restores it (or marks it Expired
+  if its expiry passed meanwhile), the booking contract's Conflicting
+  transition includes holds, and TC_E05S06_08 is added.
 
 One interpretation for review: a restored booking does not return its event
 straight to Confirmed; the event follows E08-S04 Scenario 4.

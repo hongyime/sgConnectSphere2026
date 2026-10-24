@@ -795,4 +795,9 @@ test.describe("E05-S06 — Week 7 case scaffolds", () => {
     void page;
   });
 
+  test.fixme("TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coordinator, and restore it when the unavailability is lifted", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_08).
+    void page;
+  });
+
 });
