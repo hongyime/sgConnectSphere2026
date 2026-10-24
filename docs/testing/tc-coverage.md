@@ -1039,7 +1039,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - Scenario 5: removing the end of an unavailability flags bookings far in the future
 - Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
-- Scenario 7: lifting tells the Coordinator of a replaced booking too, which stays Conflicting
+- Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one
 
 ### `backend/tests/venueUnavailability.test.ts`
 

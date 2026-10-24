@@ -198,21 +198,26 @@ test('TC_E05S06_08: an unexpired tentative hold is flagged without being release
   assert.equal(restored.expires_at.toISOString(), '2099-01-01T00:00:00.000Z');
 }));
 
-test('Scenario 7: lifting tells the Coordinator of a replaced booking too, which stays Conflicting', () => withFixture(async f => {
+test('Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one', () => withFixture(async f => {
   const night = await f.book('Harbour Night', f.ids.coordinator2, 'planning', 'pending', '2027-01-22', '14:00', '16:00');
+  const cancelled = await f.book('Quiz Night', f.ids.coordinator1, 'planning', 'pending', '2027-01-22', '18:00', '20:00');
   const created = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
     starts_at: '2027-01-22T00:00:00+08:00', ends_at: '2027-01-23T00:00:00+08:00', reason_category: 'safety_concern',
   });
+  assert.equal((await f.booking(cancelled.bookingId)).status, 'conflicting');
   const otherVenue = randomUUID();
   await f.pool.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, 'Harbour Suite', 'Test wing', 300, '08:00', '22:00')`, [otherVenue]);
   await f.pool.query(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status, replaces_booking_id)
     VALUES ($1, $2, '[2027-01-22T14:00:00+08:00,2027-01-22T16:00:00+08:00)', 'pending', $3)`, [otherVenue, night.eventId, night.bookingId]);
+  // C-122: Quiz Night's Coordinator then cancels the Conflicting booking, so it is not restored either.
+  await f.pool.query(`UPDATE venue_bookings SET status = 'released' WHERE id = $1`, [cancelled.bookingId]);
 
   const lifted = await liftVenueBlock(f.pool, f.staff, f.ids.venue, (created.body as EditBody).block.id);
   const body = lifted.body as LiftBody;
   assert.deepEqual(body.restoredEvents, []);
   assert.equal(body.notifiedEventCount, 1);
   assert.equal((await f.booking(night.bookingId)).status, 'conflicting');
+  assert.equal((await f.booking(cancelled.bookingId)).status, 'released');
   const again = (await f.notices(night.eventId)).filter(notice => notice.title === 'Venue available again');
   assert.equal(again.length, 1);
   assert.match(again[0]!.message, /still needs your attention/);
@@ -276,6 +281,11 @@ test('TC_E05S06_02: an unavailability over a Pending request and a Confirmed boo
 test('TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period, reason and event; the Organiser gets none', () => withFixture(async f => {
   const run = await f.book('Charity Run', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-15', '10:00', '12:00');
   const dinner = await f.book('Alumni Dinner', f.ids.coordinator2, 'planning', 'pending', '2027-01-15', '14:00', '16:00');
+  // A registered Attendee of the Confirmed event, who must not be told yet (C-121).
+  const attendee = randomUUID();
+  await f.pool.query(`INSERT INTO users (id, email, password_hash, full_name, role) VALUES ($1, $2, 'unused', 'Attendee A', 'attendee')`,
+    [attendee, `${attendee}@example.test`]);
+  await f.pool.query(`INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered')`, [run.eventId, attendee]);
   await createVenueBlock(f.pool, f.staff, f.ids.venue, {
     starts_at: '2027-01-15T00:00:00+08:00', ends_at: '2027-01-16T00:00:00+08:00', reason_category: 'safety_concern', reason: 'Ceiling inspection',
   });
@@ -288,8 +298,10 @@ test('TC_E05S06_03: each Coordinator whose booking became Conflicting gets one i
     assert.ok(rows[0]!.delivery_id, `${title}: an email delivery is queued with the in-app notice`);
     assert.match(rows[0]!.message, new RegExp(`^Riverside Hall is unavailable 15 Jan 2027, .* \\(Safety concern: Ceiling inspection\\)\\. This affects the venue booking for "${title}"\\. Alternative arrangements are required\\.`));
   }
-  const organiser = (await f.pool.query(`SELECT count(*)::int AS count FROM notifications WHERE user_id = $1`, [f.ids.organiser])).rows[0];
-  assert.equal(organiser.count, 0);
+  for (const [who, id] of [['Organiser', f.ids.organiser], ['registered Attendee', attendee]]) {
+    const count = (await f.pool.query(`SELECT count(*)::int AS count FROM notifications WHERE user_id = $1`, [id])).rows[0].count;
+    assert.equal(count, 0, `the ${who} is not told when the venue is lost`);
+  }
 }));
 
 test('TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted', () => withFixture(async f => {

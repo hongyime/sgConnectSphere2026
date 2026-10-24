@@ -25,7 +25,7 @@
     "test:venue-search": "tsx --test tests/venueSearch.test.ts",
     "test:venue-search:db": "tsx --test tests/venueSearch.integration.test.ts",
     "test:event-notifications:db": "tsx --test tests/eventNotifications.integration.test.ts tests/notificationInbox.integration.test.ts",
-    "test:venue-booking-requests:db": "tsx --test tests/venueBookingRequests.integration.test.ts tests/bookingSubmission.integration.test.ts tests/venueBookingDecisions.integration.test.ts tests/venueUnavailabilitySchema.integration.test.ts"
+    "test:venue-booking-requests:db": "tsx --test tests/venueBookingRequests.integration.test.ts tests/bookingSubmission.integration.test.ts tests/venueBookingDecisions.integration.test.ts tests/venueUnavailabilitySchema.integration.test.ts tests/venueUnavailability.integration.test.ts"
   },
   "dependencies": {
     "@upstash/redis": "latest",
