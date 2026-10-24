@@ -60,7 +60,7 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
   if (criteria.q.length > 240) errors.q = ['Search must be at most 240 characters.'];
   if (Object.keys(errors).length) return { errors };
   const result = await query<Candidate>(`SELECT v.id, v.name, v.location, v.max_capacity,
-    NOT EXISTS (SELECT 1 FROM venue_blocks b WHERE b.venue_id=v.id AND b.block_range && tstzrange($1::timestamptz,$2::timestamptz,'[)'))
+    NOT EXISTS (SELECT 1 FROM venue_blocks b WHERE b.venue_id=v.id AND b.lifted_at IS NULL AND b.block_range && tstzrange($1::timestamptz,$2::timestamptz,'[)'))
     AND NOT EXISTS (SELECT 1 FROM venue_bookings b WHERE b.venue_id=v.id AND ${holdsVenue('b', 'now()')} AND occupied_window(b.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && occupied_window(tstzrange($1::timestamptz,$2::timestamptz,'[)'), v.setup_time_minutes, v.turnaround_time_minutes)) AS available,
     -- E05-S05 Scenario 7: the earliest clashing booking's buffered window, cut
     -- to the requested period; if they meet only buffer to buffer, cut to the
