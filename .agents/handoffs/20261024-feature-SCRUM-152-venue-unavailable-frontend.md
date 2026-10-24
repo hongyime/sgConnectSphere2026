@@ -10,8 +10,8 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 
 ## Task list
 
-- [ ] 0. Branch and this handoff file.
-- [ ] 0b. Backend (on #348's branch): read an unavailability's history and list lifted unavailabilities, so the history screen TC_E05S06_07 step 3 opens has data. Then merge into this branch.
+- [x] 0. Branch and this handoff file (`77db351`).
+- [x] 0b. Backend (on #348's branch): read an unavailability's history and list lifted unavailabilities, so the history screen TC_E05S06_07 step 3 opens has data. Then merge into this branch. Done in #348 (`0203699`, records `f6fa9c2`): GET `?id=&blocks=1&history=<block>` and `?id=&blocks=1&lifted=1`, Venue Staff only; merged here.
 - [ ] 1. `blocksApi.ts`: timed input, optional end, reason category, `edit_block`, `lift_block`, history read, affected/restored events.
 - [ ] 2. `VenueBlockout.tsx` create form: start/end date and time, end optional ("until lifted"), category picker, note (Scenarios 1, 5).
 - [ ] 3. Affected events listed on save (Scenarios 2–4).
