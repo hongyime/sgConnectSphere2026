@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **378**
 - Automated (explicit TC_ID in an active test title): **240** (63.5%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+  - Real-database (`.integration.test` / `.db.test`): **40**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **196**
+  - Live-assertion (other active tests): **199**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **103** (27.2%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
@@ -1074,6 +1074,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
 - E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
 - the block list shows an open-ended block with no end and hides lifted ones in its query
+- Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only
+- Scenario 7: block history returns each create, edit and lift with the earlier and new period, category, note, actor and time
 - Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read
 
 ### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
@@ -1422,7 +1424,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
+- the end needs both a date and a time, and must be after the start, before any POST is sent
+- server field errors show next to their fields, and other failures show the server message
+- an overlap with another unavailability is refused and names that unavailability
 - removing a block goes through ConfirmPanel and reloads the list on success
+- E05-S06: an open-ended block lists as until lifted and can still be shortened to an end date (T-80)
+- a failed remove shows the server message and closes the confirmation
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
@@ -1483,6 +1490,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request form is available only for Approved or Planning assessments
 - shows server error and retry recovers
 - route change discards a late result for the previous venue
+
+### `frontend/src/features/venue/blocksApi.test.ts`
+
+- every reason category has a label (Scenario 1)
+- createUnavailability sends the timed body and returns the affected events (Scenarios 1 and 2)
+- an empty end is sent as null so the venue stays unavailable until lifted (Scenario 5)
+- createUnavailability keeps field errors and replaces a network failure with a service message
+- editUnavailability sends edit_block and returns flagged and restored events (Scenarios 5 and 6)
+- liftUnavailability sends lift_block and returns the restored events (Scenario 6)
+- getBlockHistory reads one block history and refuses safely (Scenario 7)
+- listBlocks asks for lifted blocks only when requested (Scenario 7)
 
 ### `frontend/src/features/venue/calendarDates.test.ts`
 

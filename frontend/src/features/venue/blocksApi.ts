@@ -33,22 +33,7 @@ export type VenueBlock = {
   liftedBy?: string | null;
 };
 
-export type BlockInput = { from: string; to: string; reason: string };
 export type ShortenBlockInput = { from: string; to: string; reason?: string };
-
-export type ConflictingBooking = {
-  eventCode: string | null;
-  title: string;
-  startsAt: string;
-  endsAt: string;
-};
-
-// Scenario 1 and 2 of the create case: a server refusal keeps the message the
-// server supplied, plus the structured conflict list for the alert.
-export type CreateBlockResult = {
-  block: VenueBlock;
-  notifiedEventCount: number;
-};
 
 export async function listBlocks(venueId: string, signal?: AbortSignal, options: { includeLifted?: boolean } = {}): Promise<ApiResult<VenueBlock[]>> {
   const lifted = options.includeLifted ? '&lifted=1' : '';
@@ -57,17 +42,6 @@ export async function listBlocks(venueId: string, signal?: AbortSignal, options:
     'The maintenance blocks for this venue could not be loaded.');
   if (!result.ok) return result;
   return { ok: true, data: Array.isArray(result.data.blocks) ? result.data.blocks as VenueBlock[] : [] };
-}
-
-export async function createBlock(venueId: string, input: BlockInput): Promise<ApiResult<CreateBlockResult>> {
-  const result = await apiCall<CreateBlockResult>(
-    '/api/venues', jsonRequest('POST', { action: 'block', id: venueId, ...input }),
-    'Correct the highlighted fields.');
-  if (!result.ok) {
-    if (result.status === 0) return { ...result, message: 'The service is unavailable. Try again.' };
-    return result;
-  }
-  return { ok: true, data: result.data };
 }
 
 export async function shortenBlock(venueId: string, blockId: string, input: ShortenBlockInput): Promise<ApiResult<VenueBlock>> {
@@ -86,12 +60,6 @@ export async function removeBlock(venueId: string, blockId: string): Promise<Api
     'The block could not be removed.');
   if (!result.ok) return result;
   return { ok: true, data: true };
-}
-
-// Read the conflictingBookings list the 409 booking_conflict carries, if any.
-export function conflictingBookings(details: Record<string, unknown> | undefined): ConflictingBooking[] {
-  const list = details?.conflictingBookings;
-  return Array.isArray(list) ? list as ConflictingBooking[] : [];
 }
 
 // Read the overlappingBlocks list the 409 block_overlap carries, if any.

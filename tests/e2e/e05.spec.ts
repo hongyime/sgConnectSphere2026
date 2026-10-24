@@ -607,11 +607,15 @@ test.describe("E05-S04", () => {
     });
     await page.goto('/venue/blockout');
     await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
-    await page.getByLabel('From').fill('2027-01-05');
-    await page.getByLabel('To').fill('2027-01-10');
-    await page.getByLabel('Reason').fill('Annual fire safety inspection');
-    await page.getByRole('button', { name: /Save block/ }).click();
-    await expect(page.getByText(/Block saved/)).toBeVisible();
+    // E05-S06 timed form: a whole-day block is 00:00 on the first day to 00:00 after the last.
+    await page.getByLabel('Start date').fill('2027-01-05');
+    await page.getByLabel('Start time').fill('00:00');
+    await page.getByLabel('End date (optional)').fill('2027-01-11');
+    await page.getByLabel('End time (optional)').fill('00:00');
+    await page.getByLabel('Reason category').selectOption('maintenance');
+    await page.getByLabel('Note').fill('Annual fire safety inspection');
+    await page.getByRole('button', { name: /Save unavailability/ }).click();
+    await expect(page.getByText(/Unavailability saved/)).toBeVisible();
   });
 
   /**
@@ -628,7 +632,7 @@ test.describe("E05-S04", () => {
    * Expected result:
    *   A warning is shown identifying the conflicting "Charity Run" booking; the block is not saved until the conflict is resolved
    */
-  test("TC_E05S04_02 - Verify that attempting to block a venue over a period with a confirmed booking should warn of the conflict before the block takes effect", async ({ page }) => {
+  test("TC_E05S04_02 superseded by TC_E05S06_02 - Verify that marking a venue unavailable over a confirmed booking saves and reports the notified Coordinator instead of refusing (T-67)", async ({ page }) => {
     const { signInAs } = await import('./helpers/fakeSession');
     await signInAs(page, 'venue_staff');
     const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
@@ -636,15 +640,19 @@ test.describe("E05-S04", () => {
     await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => route.fulfill({ json: { blocks: [] } }));
     await page.route(url => url.pathname === '/api/venues', async route => {
       if (route.request().method() !== 'POST') return route.fallback();
-      return route.fulfill({ status: 409, json: { error: 'booking_conflict', message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.', conflictingBookings: [{ eventCode: 'EVT-9', title: 'Charity Run', startsAt: '2027-01-15T01:00:00.000Z', endsAt: '2027-01-15T05:00:00.000Z' }] } });
+      // Superseded by TC_E05S06_02 (T-67): the save succeeds and the booking is flagged Conflicting.
+      return route.fulfill({ status: 201, json: { block: { id: 'blk-x', venueId: 'v-1', from: '2027-01-14', to: '2027-01-16', reasonCategory: 'renovation', reason: 'Flooring replacement', startsAt: '2027-01-13T16:00:00.000Z', endsAt: '2027-01-16T16:00:00.000Z' }, affectedEvents: [{ eventId: 'e-9', eventCode: 'EVT-9', title: 'Charity Run', returnedToPlanning: true, coordinatorNotified: true }], notifiedEventCount: 1 } });
     });
     await page.goto('/venue/blockout');
     await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
-    await page.getByLabel('From').fill('2027-01-14');
-    await page.getByLabel('To').fill('2027-01-16');
-    await page.getByLabel('Reason').fill('Flooring replacement');
-    await page.getByRole('button', { name: /Save block/ }).click();
-    await expect(page.getByRole('alert').filter({ hasText: 'Charity Run' })).toBeVisible();
+    await page.getByLabel('Start date').fill('2027-01-14');
+    await page.getByLabel('Start time').fill('00:00');
+    await page.getByLabel('End date (optional)').fill('2027-01-17');
+    await page.getByLabel('End time (optional)').fill('00:00');
+    await page.getByLabel('Reason category').selectOption('renovation');
+    await page.getByLabel('Note').fill('Flooring replacement');
+    await page.getByRole('button', { name: /Save unavailability/ }).click();
+    await expect(page.getByText('Unavailability saved. The Coordinator was notified for 1 affected event.')).toBeVisible();
   });
 
   /**
@@ -669,15 +677,19 @@ test.describe("E05-S04", () => {
     await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => route.fulfill({ json: { blocks: [] } }));
     await page.route(url => url.pathname === '/api/venues', async route => {
       if (route.request().method() !== 'POST') return route.fallback();
-      return route.fulfill({ status: 201, json: { block: { id: 'blk-x', venueId: 'v-1', from: '2027-01-20', to: '2027-01-25', reason: 'Renovation', startsAt: '2027-01-19T16:00:00.000Z', endsAt: '2027-01-25T16:00:00.000Z' }, notifiedEventCount: 2 } });
+      const affected = (id: string) => ({ eventId: id, eventCode: null, title: id, returnedToPlanning: false, coordinatorNotified: true });
+      return route.fulfill({ status: 201, json: { block: { id: 'blk-x', venueId: 'v-1', from: '2027-01-20', to: '2027-01-25', reasonCategory: 'renovation', reason: 'Renovation', startsAt: '2027-01-19T16:00:00.000Z', endsAt: '2027-01-25T16:00:00.000Z' }, affectedEvents: [affected('e-1'), affected('e-2')], notifiedEventCount: 2 } });
     });
     await page.goto('/venue/blockout');
     await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
-    await page.getByLabel('From').fill('2027-01-20');
-    await page.getByLabel('To').fill('2027-01-25');
-    await page.getByLabel('Reason').fill('Renovation');
-    await page.getByRole('button', { name: /Save block/ }).click();
-    await expect(page.getByText(/Coordinators were notified for 2 affected upcoming events/)).toBeVisible();
+    await page.getByLabel('Start date').fill('2027-01-20');
+    await page.getByLabel('Start time').fill('00:00');
+    await page.getByLabel('End date (optional)').fill('2027-01-26');
+    await page.getByLabel('End time (optional)').fill('00:00');
+    await page.getByLabel('Reason category').selectOption('renovation');
+    await page.getByLabel('Note').fill('Renovation');
+    await page.getByRole('button', { name: /Save unavailability/ }).click();
+    await expect(page.getByText(/Coordinators were notified for 2 affected events/)).toBeVisible();
   });
 
   /**
