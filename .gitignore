@@ -83,3 +83,5 @@ artifacts/sbom/*
 !artifacts/e10-cancellation-ci-followup.html
 
 !artifacts/e08-completion-conflict-followup.html
+
+!artifacts/team-pr-review-20261024.html
