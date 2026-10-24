@@ -1,3 +1,4 @@
+import cron from '../../api/cron/outbox-relay.js';
 import notifications from '../../api/notifications/send.js';
 import { createServer } from 'node:http';
 import register from '../../api/auth/register.js';
@@ -9,6 +10,7 @@ import internalPlanning from '../../api/internal/planning.js';
 import venues from '../../api/venues/index.js';
 
 const routes: Record<string, Record<string, typeof register>> = {
+  '/api/cron/outbox-relay': { GET: cron },
   '/api/notifications': { GET: notifications, POST: notifications },
   '/api/auth/register': { POST: register },
   '/api/auth/session': { GET: session, POST: session, DELETE: session },

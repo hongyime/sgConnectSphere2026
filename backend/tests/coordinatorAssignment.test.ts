@@ -331,7 +331,8 @@ test('TC_E14S02_01: the assigned Coordinator reads the event Activity log withou
   assert.deepEqual(event.activityLog, [entry]);
   const activity = find(calls, 'FROM audit_logs a')!;
   assert.deepEqual(activity.values, [eventId]);
-  assert.match(activity.sql, /a\.entity_type = 'event' AND a\.action <> 'Access Denied'/);
+  // E06-S04 Scenario 5: the Coordinator view also includes venue booking decisions.
+  assert.match(activity.sql, /a\.entity_type IN \('event', 'venue_booking'\) AND a\.action <> 'Access Denied'/);
   assert.doesNotMatch(activity.sql, /email/);
   assert.equal(has(calls, "'Access Denied', "), false);
 });

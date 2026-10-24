@@ -48,9 +48,10 @@ jobs:
   application-checks:
     name: application-checks
     runs-on: ubuntu-latest
-    # Cold Ubuntu browser dependencies took >8 minutes in run 39794534880.
-    # Keep room for the complete desktop/mobile suites and final seed checks.
-    timeout-minutes: 25
+    # Cold Playwright system-dependency installation took 12m40s in run
+    # 39823362107; allow the unchanged browser suites to run afterward.
+    # Keep a finite cap for a genuinely stalled runner/install.
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:17
@@ -93,6 +94,11 @@ jobs:
 
       - name: Frontend component tests
         run: npm test --workspace frontend
+
+      - name: E08-S05 event completion PostgreSQL acceptance
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test backend/tests/eventCompletion.integration.test.ts
 
       - name: E07-S03 equipment availability PostgreSQL acceptance
         env:
@@ -166,6 +172,12 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
         run: npx tsx --test tests/eventCancellation.integration.test.ts
+        working-directory: backend
+
+      - name: E10-S01 change requests PostgreSQL acceptance
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
+        run: npx tsx --test tests/changeRequests.integration.test.ts
         working-directory: backend
 
       - name: SCRUM-60 event readiness and safety review PostgreSQL acceptance tests
