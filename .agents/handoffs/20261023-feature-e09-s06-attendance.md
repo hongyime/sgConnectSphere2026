@@ -23,3 +23,5 @@ Second merge validation:464 backend units,526 frontend,20 runtime and11 attendan
 24 October human evidence:13 supplied originals appended in session20261024-182658-xiangyingg-frontend-e2e, tested local-only assemblyf4c3169 (attendance988b557 plus registration frontendb6fef3b). TC01–04, human full registration/completion/attendance and unassigned refusal observed; crop/identity attribution limitations documented. Normalize three duplicate filename suffixes only; bytes retained. Prior records unchanged. Independent review and required CI remain gates; no Jira Done claim.
 
 Manual evidence filing checks: python3 scripts/check.py passed; tooling record20261024-182937. Updated postplan structure/render/visual checks passed; https://bijgefhig57x.postplan.dev/v/3. Evidence-only update; no application test rerun or new application changes.
+
+Post-upload main advanced to8cdc2a5 (#344 venue-loss testcase alignment). Resolve sole generated tc-coverage conflict by rerunning generator against merged canonical cases/workbook; no screenshot or historical session changes. Manual session retains211026 catalogue used during actual run.
