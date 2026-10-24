@@ -6,7 +6,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { RequestDetail } from '../coordinator/CoordinatorWorkspace';
-import { describeAction, describeChange, type ActivityEntry } from './ActivityLog';
+import { ActivityLog, describeAction, describeChange, type ActivityEntry } from './ActivityLog';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -165,4 +165,14 @@ test('booking entries show hold expiry or a generic booking label without intern
   const request = { ...hold, action: 'Venue booking requested for Cedar Auditorium', new_value: 'internal-booking-id' };
   expect(describeAction(request)).toBe('Venue booking requested for Cedar Auditorium');
   expect(describeChange(request)).toBe('Venue booking');
+});
+
+
+test('TC_E08S05_05: automatic completion names the System without inventing an actor for unrelated rows', () => {
+  render(<MemoryRouter><ActivityLog entries={[
+    { ...approved, action: 'Automatically completed event', old_value: 'confirmed', new_value: 'completed', actor_name: null },
+    { ...edited, actor_name: null },
+  ]} /></MemoryRouter>);
+  expect(screen.getByRole('cell', { name: 'System' })).toBeTruthy();
+  expect(screen.getByRole('cell', { name: 'Not recorded' })).toBeTruthy();
 });
