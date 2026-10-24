@@ -15,7 +15,9 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 1. `blocksApi.ts`: timed input, optional end, reason category, `edit_block`, `lift_block`, history read, affected/restored events. (`2acd786`; old E05-S04 calls kept until Task 4; the current screen shows an open-ended block as "Until lifted").
 - [x] 2. `VenueBlockout.tsx` create form: start/end date and time, end optional ("until lifted"), category picker, note (Scenarios 1, 5). `59aec53`: old `createBlock` and the `booking_conflict` alert removed; TC_E05S04_02 unit + Playwright tests now check the superseding save (TC_E05S06_02); E05-S04 Playwright create tests use the new form (8/8 locally). #348's `tc-coverage.md` was stale after 0b; regenerated there (`7673580`) and merged here.
 - [x] 3. Affected events listed on save (Scenarios 2–4). `4d013fc`: success alert lists each event with code, "Returned to Planning" and "Coordinator notified" / "No Coordinator assigned" labels.
-- [ ] 4. Edit (extend, shorten, remove end, change reason), Lift with confirm, history view with actor and time, lifted entries listed as lifted (Scenarios 5–7, T-91).
+- [ ] 4. Edit (extend, shorten, remove end, change reason), Lift with confirm, history view with actor and time, lifted entries listed as lifted (Scenarios 5–7, T-91). Split in two:
+  - [x] 4a. Edit and Lift (`a02020f`): Edit reuses the create form prefilled; replies list newly flagged and restored events; Lift confirms and lists restored bookings. Shorten/Remove UI and `shortenBlock`/`removeBlock` removed (backend keeps the actions). TC_E05S04_04 unit + Playwright moved to Edit/Lift. The `if (lifting) return` double-click guard is the one uncovered changed branch (the button is disabled while busy, as with the old remove guard).
+  - [ ] 4b. History panel and "Show lifted" list.
 - [ ] 5. `VenueCalendar.tsx`: reason category, "until lifted", Conflicting bookings labelled.
 - [ ] 6. `BookingRequests.tsx`: Conflicting booking shows reason, period, earlier status.
 - [ ] 7. Coordinator event view: venue-conflict flag with reason category (Scenario 3). Check the data is already served before adding anything.
