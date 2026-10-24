@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **223** (59.0%)
+- Automated (explicit TC_ID in an active test title): **226** (59.8%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **187**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **115** (30.4%)
+  - Live-assertion (other active tests): **190**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **112** (29.6%)
 - No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 27 | 11 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 5 | 31 | 8 |
+| E09 | 44 | 8 | 28 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **223** | **115** | **40** |
+| **Total** | **378** | **226** | **112** | **40** |
 
 ## Case-by-case status
 
@@ -390,10 +390,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
 | `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ❌ none | — |
-| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S06_01 — feedback requires a rating |
-| `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed |
-| `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked |
-| `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S06_04 - Verify that registration and attendance counts should be viewable side by side for each event |
+| `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
+| `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
+| `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_03 — all non-Completed statuses block writes, server capability matches; missing, foreign and inactive registrations re |
+| `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S07_01` | E09-S07 | Verify that opening the registration list for an event with registered Attendees | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_01 - Verify that opening the registration list for an event with registered Attendees should show each Attendee |
 | `TC_E09S07_02` | E09-S07 | Verify that the registration list should show the registered count and remaining | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event |
 | `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_03 - Verify that attempting to open the registration list for an event that does not belong to the Organiser |
@@ -638,6 +638,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
 - E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
 - E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
+
+### `backend/tests/eventAttendance.integration.test.ts`
+
+- E09-S06 authority is rechecked in DB; no cross-Coordinator roster; concurrent retries produce one history/audit row
+
+### `backend/tests/eventAttendance.test.ts`
+
+- E09-S06 only a signed-in active unlocked Coordinator passes attendance authorization
+- E09-S06 rejects malformed registration identifiers and non-boolean attendance
+
+### `backend/tests/eventAttendanceRoutes.integration.test.ts`
+
+- E09-S06 live API cookie sessions wire reads, writes, missing id, malformed body and access refusals
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -1108,6 +1121,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - opening a panel moves focus into it, and Cancel returns focus to the button that opened it
 - a late answer for the previous request never replaces the current one
 
+### `frontend/src/features/coordinator/EventAttendance.test.tsx`
+
+- attendance empty state and server read refusal/retry
+- server write refusal is visible without changing the attendee
+- navigating during save aborts late response and hides the old success
+- aborted save rejection on navigation is ignored
+- unexpected save response failure is recoverable and shows an error
+
 ### `frontend/src/features/coordinator/EventReadiness.test.tsx`
 
 - SCRUM-60: an event in Safety Review, or not yet in Planning, offers nothing to submit
@@ -1490,6 +1511,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/attendee-events.spec.ts`
 
 - empty registrations and expired sessions have useful states
+
+### `tests/e2e/attendee-registration.spec.ts`
+
+- feedback requires a rating
 
 ### `tests/e2e/client-events.spec.ts`
 
