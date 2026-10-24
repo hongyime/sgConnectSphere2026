@@ -195,6 +195,34 @@ test('removing a block goes through ConfirmPanel and reloads the list on success
   await waitFor(() => expect(screen.getByText(/No current or upcoming blocks/)).toBeInTheDocument());
 });
 
+test('E05-S06: an open-ended block lists as until lifted and can still be shortened to an end date (T-80)', async () => {
+  const requests: unknown[] = [];
+  const openBlock = { ...existingBlock, to: null, endsAt: null, reasonCategory: 'renovation' };
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [openBlock] } },
+    'POST /api/venues': async (_url, init) => {
+      requests.push(init?.body ? JSON.parse(String(init.body)) : null);
+      return { status: 200, body: { block: { ...existingBlock, to: '2027-01-20' } } };
+    },
+  });
+
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  expect(within(row).getByText('Until lifted')).toBeInTheDocument();
+  fireEvent.click(within(row).getByRole('button', { name: /Remove/ }));
+  expect(screen.getByText(/until lifted block\?/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+  fireEvent.click(within(row).getByRole('button', { name: /Shorten/ }));
+  const newEndField = await screen.findByLabelText('New end date');
+  expect(newEndField).toHaveValue('');
+  fireEvent.change(newEndField, { target: { value: '2027-01-20' } });
+  fireEvent.click(screen.getByRole('button', { name: /Save shortened block/ }));
+  await waitFor(() => expect(requests).toEqual([
+    { action: 'shorten_block', id: 'v-1', block_id: 'blk-1', from: '2027-01-05', to: '2027-01-20', reason: 'Annual fire safety inspection' },
+  ]));
+});
+
 test('loading state renders while blocks are in flight', async () => {
   renderPage({
     'GET /api/venues?q=': { body: { venues } },

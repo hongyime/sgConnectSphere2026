@@ -85,6 +85,7 @@ function blockDay(day: string): string {
 }
 
 function blockRange(block: Pick<VenueBlock, 'from' | 'to'>): string {
+  if (!block.to) return `${blockDay(block.from)} until lifted`;
   return block.from === block.to ? blockDay(block.from) : `${blockDay(block.from)} to ${blockDay(block.to)}`;
 }
 
@@ -195,7 +196,7 @@ function BlocksTable({ blocks, onShorten, onRemove }: {
 }) {
   const columns: Column<VenueBlock>[] = [
     { header: 'From', cell: block => blockDay(block.from) },
-    { header: 'To', cell: block => blockDay(block.to) },
+    { header: 'To', cell: block => block.to ? blockDay(block.to) : 'Until lifted' },
     { header: 'Reason', cell: block => block.reason, primary: true },
     {
       header: 'Actions', key: 'shorten', hideHeader: true,
@@ -299,7 +300,7 @@ type ShortenErrors = { to?: string; reason?: string };
 function ShortenCard({ venueId, block, onCancel, onSaved }: {
   venueId: string; block: VenueBlock; onCancel: () => void; onSaved: () => void;
 }) {
-  const [newTo, setNewTo] = useState(block.to);
+  const [newTo, setNewTo] = useState(block.to ?? '');
   const [reason, setReason] = useState(block.reason);
   const [errors, setErrors] = useState<ShortenErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -312,7 +313,7 @@ function ShortenCard({ venueId, block, onCancel, onSaved }: {
     if (!newTo) next.to = 'End date is required.';
     // The server enforces the same rule, but refusing it here keeps the message
     // next to the field instead of in a server-error alert.
-    if (newTo && newTo > block.to) next.to = 'A block can only be shortened. Create a new block to cover extra dates.';
+    if (newTo && block.to && newTo > block.to) next.to = 'A block can only be shortened. Create a new block to cover extra dates.';
     if (newTo && newTo < block.from) next.to = 'End date must be on or after the start date.';
     if (!reason.trim()) next.reason = 'A reason for the block is required.';
     setErrors(next);
@@ -341,7 +342,7 @@ function ShortenCard({ venueId, block, onCancel, onSaved }: {
             {props => <input {...props} type="date" value={block.from} readOnly aria-readonly="true" />}
           </FormField>
           <FormField label="New end date" error={errors.to}>
-            {props => <input {...props} type="date" value={newTo} min={block.from} max={block.to} onChange={event => setNewTo(event.target.value)} />}
+            {props => <input {...props} type="date" value={newTo} min={block.from} max={block.to ?? undefined} onChange={event => setNewTo(event.target.value)} />}
           </FormField>
           <FormField label="Reason" wide error={errors.reason}>
             {props => <input {...props} type="text" value={reason} maxLength={255} onChange={event => setReason(event.target.value)} />}
