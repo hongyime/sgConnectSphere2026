@@ -1,3 +1,4 @@
+import { publishEvent, attendeeEvents } from '../src/modules/attendeeVisibility/service.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -454,5 +455,47 @@ test('TC_E06S03_07 Completed and Cancelled Events preserve primary flags and aud
       assert.deepEqual((await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows,flags);
       assert.deepEqual((await f.q('SELECT id FROM audit_logs ORDER BY id')).rows,audit);
     }
+  } finally {await f.close();}
+});
+
+
+test('TC_E06S03_07 publication follows exactly the selected primary and switches atomically',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    const attendee=randomUUID();
+    await f.q("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic Attendee','attendee')",[attendee,`${attendee}@example.test`]);
+    await f.q('INSERT INTO event_registrations(event_id,attendee_id) VALUES($1,$2)',[f.event,attendee]);
+    const reader={...f.actor,id:attendee,role:'attendee' as const};
+    await publishEvent(f.q,f.actor,f.event);
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 0');
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    await publishEvent(f.q,f.actor,f.event); // Two Confirmed rows must not collide on publication key.
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,1);
+    await f.q("CREATE FUNCTION reject_primary_publication() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic publication failure'; END $$");
+    await f.q('CREATE TRIGGER reject_primary_publication BEFORE UPDATE ON event_publications FOR EACH ROW EXECUTE FUNCTION reject_primary_publication()');
+    const audits=(await f.q("SELECT id FROM audit_logs WHERE action='Primary Venue Changed'")).rows.length;
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),/Synthetic publication failure/);
+    assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE is_primary')).rows,[{id:second.body.booking.id}]);
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Primary Venue Changed'")).rows.length,audits);
+    await f.q('DROP TRIGGER reject_primary_publication ON event_publications');
+    await f.q('UPDATE venue_bookings SET requires_reconfirmation=true WHERE id=$1',[first.body.booking.id]);
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),{status:409});
+    await f.q('UPDATE venue_bookings SET requires_reconfirmation=false WHERE id=$1',[first.body.booking.id]);
+    await f.q("UPDATE events SET status='planning' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id});
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    await f.q('DELETE FROM event_publications WHERE event_id=$1',[f.event]);
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,0);
+    await f.q('UPDATE venue_bookings SET is_primary=false WHERE event_id=$1',[f.event]);
+    await assert.rejects(publishEvent(f.q,f.actor,f.event),{status:403});
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,0);
   } finally {await f.close();}
 });

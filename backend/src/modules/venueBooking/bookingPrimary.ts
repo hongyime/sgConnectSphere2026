@@ -24,18 +24,24 @@ export async function setPrimaryBooking(database: Pool, user: AuthenticatedUser 
         throw new AccessError(403, 'Your account cannot select a primary venue.');
       if (!['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status))
         throw new AccessError(409, 'The primary venue can only be changed for an active approved Event. Refresh the booking list.');
-      const rows = (await client.query<{ id: string; status: string; is_primary: boolean; name: string }>(
-        `SELECT b.id,b.status,b.is_primary,v.name FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
+      const rows = (await client.query<{ id: string; status: string; is_primary: boolean; name: string; requires_reconfirmation: boolean }>(
+        `SELECT b.id,b.status,b.is_primary,v.name,b.requires_reconfirmation FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
          WHERE b.event_id=$1 AND (b.id=$2 OR b.is_primary) ORDER BY b.id FOR UPDATE OF b`, [event.id,id])).rows;
       const selected = rows.find(row => row.id === id);
       if (!selected) throw new AccessError(404, 'Assigned booking request not found.');
       if (selected.status !== 'confirmed') throw new AccessError(409, 'Only Confirmed bookings can be the primary venue. Refresh the booking list.');
+      if (event.status === 'confirmed' && selected.requires_reconfirmation)
+        throw new AccessError(409, 'The selected venue requires reconfirmation before it can be published as primary.');
       const booking = { id, status: selected.status, is_primary: true };
       if (selected.is_primary) return { status: 200, body: { booking, replayed: true } };
       const previous = rows.find(row => row.is_primary);
       // Clear first to preserve the immediate unique index inside the transaction.
       await client.query('UPDATE venue_bookings SET is_primary=false WHERE event_id=$1 AND is_primary', [event.id]);
       await client.query('UPDATE venue_bookings SET is_primary=true WHERE id=$1', [id]);
+      // Refresh only an existing publication of a Confirmed Event; never publish planning changes.
+      await client.query(`UPDATE event_publications p SET venue_name=v.name,venue_location=v.location,published_at=now()
+        FROM venues v WHERE p.event_id=$1 AND v.id=(SELECT venue_id FROM venue_bookings WHERE id=$2)
+        AND $3='confirmed'`, [event.id,id,event.status]);
       await client.query(`INSERT INTO audit_logs(id,actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
         VALUES($1,$2,'venue_booking',$3,$4,'Primary Venue Changed','primary_venue',$5,$6)`,
       [randomUUID(),user.id,id,event.id,previous?.name ?? null,selected.name]);

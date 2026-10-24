@@ -363,3 +363,10 @@ acceptance result or whole-story Done claim. Full E06-S04 decision integration
 and human manual verification must still be observed against the merged flow.
 
 Activity log visibility: PR #298 is merged (9c8a37f, 24 October); its Coordinator read query now includes `entity_type=venue_booking`. PR #299 integration preserves the primary-specific formatter before generic booking status formatting. The eight actual-service combined race cases now run in the existing CI booking command; they no longer skip for a missing dependency. Fresh human combined-flow/Activity checks remain separate from automated evidence.
+
+
+### E06-S03 attendee primary publication follow-up (#299)
+
+Explicit publication selects only the primary Confirmed booking, excluding rows requiring reconfirmation. Missing eligible primary is refused rather than selecting an arbitrary booking. Several Confirmed bookings therefore still produce one publication.
+
+Changing primary updates only the venue name/location and publication timestamp of an existing publication when the Event is Confirmed, in the same transaction as both primary flags and the audit. It never creates a publication or exposes Planning/Approved/Safety Review arrangements. A primary requiring reconfirmation cannot be selected on a Confirmed Event. Attendees continue to read only the published snapshot and must remain registered. Other published fields, booking statuses and periods stay unchanged. The dedicated CI booking selector also runs the attendee publication integration test.
