@@ -9,7 +9,7 @@ import type { VercelResponse } from '../src/vercel.js';
 
 const actor: AuthenticatedUser = { id:randomUUID(),role:'event_coordinator',email:'synthetic@example.test',isActive:true,failedLoginCount:0 };
 const id=randomUUID(),event=randomUUID(),old=randomUUID();
-type State={eventStatus?:string;event?:boolean;assigned?:boolean;account?:boolean;active?:boolean;role?:string;failures?:number;lock?:Date|null;missing?:boolean;status?:string;reconfirm?:boolean;primary?:boolean;previous?:boolean;fail?:string;busy?:boolean};
+type State={published?:boolean;eventStatus?:string;event?:boolean;assigned?:boolean;account?:boolean;active?:boolean;role?:string;failures?:number;lock?:Date|null;missing?:boolean;status?:string;reconfirm?:boolean;primary?:boolean;previous?:boolean;fail?:string;busy?:boolean};
 function database(state:State={}) {
   const calls:{sql:string;values?:unknown[]}[]=[];
   const query=async(sql:string,values?:unknown[])=>{
@@ -19,7 +19,10 @@ function database(state:State={}) {
     let rows:unknown[]=[];
     if(sql.startsWith('SELECT id,coordinator_id'))rows=state.event===false?[]:[{id:event,coordinator_id:state.assigned===false?old:actor.id,status:state.eventStatus??'planning'}];
     else if(sql.startsWith('SELECT is_active'))rows=state.account===false?[]:[{is_active:state.active!==false,role:state.role??actor.role,failed_login_count:state.failures??0,locked_until:state.lock??null}];
-    else if(sql.includes('SELECT b.id,b.status'))rows=[...(state.missing?[]:[{id,status:state.status??'confirmed',is_primary:state.primary??false,name:'Selected Hall',requires_reconfirmation:state.reconfirm??false}]),...(state.previous===false?[]:[{id:old,status:'confirmed',is_primary:true,name:'Old Hall'}])];
+    else if(sql.includes('SELECT b.id,b.status'))rows=[...(state.missing?[]:[{id,status:state.status??'confirmed',is_primary:state.primary??false,venue_id:id,name:'Selected Hall',requires_reconfirmation:state.reconfirm??false}]),...(state.previous===false?[]:[{id:old,status:'confirmed',is_primary:true,venue_id:old,name:'Old Hall'}])];
+    else if(sql.startsWith('SELECT event_id FROM event_publications'))rows=state.published?[{event_id:event}]:[];
+    else if(sql.startsWith('SELECT e.id, e.title'))rows=[{id:event,title:'Internal',public_name:'Public',status:'confirmed',starts_at:new Date(),ends_at:new Date(),organiser_id:actor.id,coordinator_id:actor.id}];
+    else if(sql.includes('INSERT INTO audit_logs'))rows=[{id:randomUUID(),occurred_at:new Date()}];
     return {rows,rowCount:rows.length};
   };
   const client={query,release(){}} as unknown as PoolClient;
@@ -91,4 +94,15 @@ test('TC_E06S03_07 confirmed primary must be reconfirmed before attendee publica
   await assert.rejects(setPrimaryBooking(database({eventStatus:'confirmed',reconfirm:true}).pool,actor,{booking_id:id}),{status:409});
   const db=database({eventStatus:'confirmed'});await setPrimaryBooking(db.pool,actor,{booking_id:id});
   assert.deepEqual(db.calls.find(c=>c.sql.startsWith('UPDATE event_publications'))?.values,[event,id,'confirmed']);
+});
+
+
+test('TC_E11S01_02 published primary change captures both scoped audiences; self-only audiences emit nothing',async()=>{
+  for(const previous of [true,false]){
+    const db=database({eventStatus:'confirmed',published:true,previous});
+    await setPrimaryBooking(db.pool,actor,{booking_id:id});
+    const scopes=db.calls.filter(c=>c.sql.startsWith('SELECT DISTINCT staff_id FROM venue_staff_assignments'));
+    assert.deepEqual(scopes.map(c=>c.values?.[0]),previous?[[old],[id]]:[[id]]);
+    assert.equal(db.calls.at(-1)?.sql,'COMMIT');
+  }
 });

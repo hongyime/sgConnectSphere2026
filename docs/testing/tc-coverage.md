@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **232** (61.4%)
-  - Real-database (`.integration.test` / `.db.test`): **35**
+- Automated (explicit TC_ID in an active test title): **233** (61.6%)
+  - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **196**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **111** (29.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **110** (29.1%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
@@ -28,10 +28,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 44 | 8 | 28 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
-| E11 | 15 | 12 | 3 | 0 |
+| E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **232** | **111** | **35** |
+| **Total** | **378** | **233** | **110** | **35** |
 
 ## Case-by-case status
 
@@ -438,8 +438,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
 | `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
-| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; tests/e2e/e11.spec.ts: |
-| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_03 - Verify that a user whose responsibilities are unaffected by a change should not be notified |
+| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E11S01_02 published primary change captures both scoped audiences; self-only audiences emit nothing; backend/tests/bookingSubmission.integr |
+| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically; tests/e2e/e11.spec.ts: |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
