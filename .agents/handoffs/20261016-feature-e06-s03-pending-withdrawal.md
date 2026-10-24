@@ -110,3 +110,5 @@ CI follow-up: repository-checks on fa63b89 passed Linux tooling but failed gener
 Application CI follow-up at da6c66c: job120833459812 had471backend and526frontend passing, but2Playwright replacement cases failed desktop/mobile from old intermediate heading/View expectations. Browser assertions now require automatic Pending list and retained rejected history, unchanged payload checks. Full booking-submission file16/16 passes across both viewports with intercepted APIs. No product change or human rerun. Inventory regenerated. Commit/push normal update and await CI.
 
 Pre-commit repository check rerun: hygiene/env checks pass; known Windows163tooling3fail11errors remain. No all-green local tooling claim.
+
+Le Xin24October review5637807328/inline4366750419: removed unused onViewBookings prop/destructure/ternary, retained plain ButtonLink and onSubmitted automatic reload.21focusedtests pass; form100%allcoverage, frontendtypespass. Repo163Windows3fail11error unchanged. Existing f44bb61 CI allgreen; new cleanup head needs CI/re-review. No manual rerun. PR body stale failure wording and spacing corrected separately.
