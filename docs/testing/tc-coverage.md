@@ -1050,6 +1050,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - missing identifiers and invalid event requirements are rejected
 - missing/draft event and missing/retired venue return not found
 
+### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
+
+- a block written the pre-0025 way still saves, as maintenance and active
+- an unavailability may be open-ended but must have a start, and only a lifted one records who lifted it
+- an active unavailability refuses an overlapping booking; a lifted one does not; an open-ended one refuses later dates
+- a booking remembers its earlier status and the unavailability that flagged it, for restoring
+- unavailability history is append-only, keeps its shape per action, and follows its venue when deleted
+
 ### `backend/tests/verificationEmail.test.ts`
 
 - sendVerificationEmail issues one token, one notification, one delivery
