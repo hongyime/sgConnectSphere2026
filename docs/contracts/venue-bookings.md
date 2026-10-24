@@ -362,4 +362,4 @@ This is local branch implementation, not a production migration, human
 acceptance result or whole-story Done claim. Full E06-S04 decision integration
 and human manual verification must still be observed against the merged flow.
 
-Activity log visibility: these audits use `entity_type=venue_booking`. The current main Event-only read query does not expose them until E06-S04 PR #298 widens it. Formatter tests alone do not establish Coordinator log visibility; defer that human log check until the dependency is integrated.
+Activity log visibility: PR #298 is merged (9c8a37f, 24 October); its Coordinator read query now includes `entity_type=venue_booking`. PR #299 integration preserves the primary-specific formatter before generic booking status formatting. The eight actual-service combined race cases now run in the existing CI booking command; they no longer skip for a missing dependency. Fresh human combined-flow/Activity checks remain separate from automated evidence.

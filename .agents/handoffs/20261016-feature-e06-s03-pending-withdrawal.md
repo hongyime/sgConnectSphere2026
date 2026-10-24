@@ -91,3 +91,7 @@ Main advanced to10bef44 and GitHub reported a conflict after initial fix push. M
 ## 23 October conflict resolution
 
 User authorised merge-conflict resolution/push. Merge main38ffa99 into cbd43ea in isolated worktree. Conflicts .gitignore/backend test lists/generatedinventory resolved by union/regeneration213/376. Cancellation notification/navigation auto-merges inspected. Backend full units exit0; frontend full captured469pass3timingfail, isolated44+8pass; both types pass. Repository163tests3fail11error. Evidence20261023-113712-jininggg-full-regression.md; do not claim full frontend green. No298 integration/production/manual action. Keep PR unqueued and current-head human/CI gates. E10 branch preserved.
+
+## 24 October actual merged298 integration
+
+User authorised resolving299 after298merged. Main9c8a37f includes actual decisions.ts. Union .gitignore/backend/runtime tests; regenerate229/376. Preserve primary-specific formatting against generic venue_booking formatter; existing realistic test covers it. Added combinedfile to CI-used booking selector. Record20261024-161007-jininggg-full-regression.md:8realraces no skips,43submission/decisionDB,exactCIcommand52realDB,471backendunits,52targetfrontend,both types/build pass. Runtime22API assertionspass butafter-hookjunction containmentfails; repo163tests3fail11error. InitialduplicatefixtureTS1117 corrected, no assertions weakened. No fullfrontend/manual rerun.298waiting andActivityquerygates nowclear; freshCI/currentheadhumanreview and outstandingmanualcasesremain. No0020rerun orauto-merge.

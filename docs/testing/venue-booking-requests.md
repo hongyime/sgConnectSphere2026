@@ -395,3 +395,22 @@ SCRUM-195 under SCRUM-75. Local fixture assignments and notification evidence
 do not establish production roster provisioning or live delivery. These
 operational gates and reviewed integration remain distinct from the completed
 human UI checks; no whole-story Done claim is made here.
+
+
+## 24 October: merged E06-S04 integration
+
+PR #298 is merged as9c8a37f. Its actual decisions.ts and Coordinator booking
+Activity query are now present; the prior wait-for-298 instruction is superseded.
+PR #299 unions both test lists and includes bookingDecisionIntegration in the
+existing test:venue-booking-requests:db command used by Actions. All8actual-service
+race/primary orderings passed without skips locally, plus43submission/decision
+regressions. These are automated PostgreSQL results, not human screenshots.
+
+Production migration0020 and its #314record are already complete; do not rerun.
+Existing human records remain evidence for their own scenarios/heads. Next human
+session should cover the previously unrecorded combined staff-decision, automatic
+primary/Activity and withdrawal/replacement paths and any explicitly outstanding
+manual boundary cases listed in PR299, rather than repeating old screenshots.
+Keep actual API/race checks labelled automated when not run by hand. After that,
+obtain current-head code/test review and green CI before queuing. No new human
+run or full-story completion is claimed by this merge update.
