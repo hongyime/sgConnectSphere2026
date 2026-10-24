@@ -1,6 +1,7 @@
 // E14-S02 Scenario 1 (T-75): the event Activity log, read-only, on the
 // assigned Coordinator's event page. The API already leaves out access-denial
-// entries (#161, TC_E14S02_08), so every row here is a change to the event.
+// entries (#161, TC_E14S02_08), so every row here is a change to the event or,
+// for E06-S04 Scenario 5, a Venue Staff decision on one of its venue bookings.
 // Entries can never be edited or deleted (Scenario 5), so there are no actions.
 import { Card, DataTable, StatusPill, formatDate, statusLabel, type Column } from '../../shared';
 import { editableFieldLabels } from './eventEditFields';
@@ -12,6 +13,8 @@ export type ActivityEntry = {
   old_value: string | null;
   new_value: string | null;
   actor_name: string | null;
+  entity_type?: string;
+  venue_name?: string | null;
 };
 
 type Row = ActivityEntry & { key: string };
@@ -19,6 +22,8 @@ type Row = ActivityEntry & { key: string };
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
+
+const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking';
 
 // E14-S03: edited event and registration times are stored as UTC ISO strings
 // ("opensAt to closesAt" for registration dates). Show them in Singapore time;
@@ -32,8 +37,14 @@ export function formatEditedValue(field: string | null, value: string): string {
   return value;
 }
 
-// "Under review → Approved" for a status change; "Venue requirements: …" for an edit.
+// "Under review → Approved" for a status change; "Venue requirements: …" for an edit;
+// "Small Room: Pending → Confirmed" for a booking decision.
 export function describeChange(entry: ActivityEntry) {
+  if (isBookingDecision(entry)) {
+    const venue = entry.venue_name ?? 'Venue';
+    const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
+    return entry.old_value ? `${venue}: ${statusLabel(entry.old_value)} → ${to}` : `${venue}: ${to}`;
+  }
   if (!entry.field_changed) return 'None recorded';
   if (entry.field_changed === 'status') {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
@@ -59,14 +70,17 @@ export function describeChange(entry: ActivityEntry) {
 // The stored action is written for the database ("Status changed to
 // under_review", "Record updated"); show it in the interface's words (design.md 8.1).
 export function describeAction(entry: ActivityEntry) {
+  // "Booking Approved" -> "Booking approved" (sentence case, design.md 8.1).
+  if (isBookingDecision(entry)) return entry.action.charAt(0) + entry.action.slice(1).toLowerCase();
   if (entry.field_changed === 'status') return 'Status changed';
   if (entry.action === 'Record updated') return 'Details edited';
   return entry.action;
 }
 
-// Statuses are StatusPills (design.md section 7); "to" is read out instead of the arrow.
+// Event statuses are StatusPills (design.md section 7); "to" is read out instead
+// of the arrow. A booking's status is not an event status, so it stays in words.
 function Change({ entry }: { entry: ActivityEntry }) {
-  if (entry.field_changed !== 'status' || !entry.new_value) return <>{describeChange(entry)}</>;
+  if (isBookingDecision(entry) || entry.field_changed !== 'status' || !entry.new_value) return <>{describeChange(entry)}</>;
   return (
     <span>
       {entry.old_value ? (
