@@ -16,7 +16,7 @@ import {
 import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
 import {
-  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+  createVenueBlock, editVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../../backend/src/modules/venueBooking/blocks.js';
 import { decideBooking, getBooking, listPendingBookings } from '../../backend/src/modules/venueBooking/decisions.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
@@ -138,7 +138,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         : removeVenueLayout(databasePool(), user, id, label);
     }
 
-    if (action === 'block' || action === 'shorten_block' || action === 'remove_block') {
+    if (action === 'block' || action === 'edit_block' || action === 'shorten_block' || action === 'remove_block') {
       const { id, block_id: blockId, ...rest } = fields;
       if (typeof id !== 'string' || !id) {
         return { status: 400, body: { error: 'validation_failed', errors: { id: ['A venue id is required.'] } } };
@@ -147,6 +147,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       if (typeof blockId !== 'string' || !blockId) {
         return { status: 400, body: { error: 'validation_failed', errors: { block_id: ['A block id is required.'] } } };
       }
+      if (action === 'edit_block') return editVenueBlock(databasePool(), user, id, blockId, rest);
       return action === 'shorten_block'
         ? shortenVenueBlock(databasePool(), user, id, blockId, rest)
         : removeVenueBlock(databasePool(), user, id, blockId);
@@ -160,7 +161,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'edit_block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
     } };
   });
 }

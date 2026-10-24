@@ -328,9 +328,136 @@ async function flagAffected(client: PoolClient, actorId: string, venueName: stri
   return result;
 }
 
-// Checklist: "Remove or shorten an existing block". Only shortening is
-// allowed here - lengthening would need the conflict checks and notifications
-// again, so a longer period is saved as a new block instead.
+type FlaggedRow = {
+  booking_id: string; status_before_conflict: 'pending' | 'confirmed' | 'tentative'; expired: boolean; replaced: boolean;
+  event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
+};
+
+// Scenario 6 (C-122): the bookings and holds this unavailability made
+// Conflicting that no longer overlap `$2`-`$3` (pass NULL, NULL... via
+// restoreAll for a lift). A hold whose expiry has passed meanwhile is
+// restored as Expired (E06-S05). A booking the Coordinator has replaced (an
+// active booking points at it through replaces_booking_id) is not restored.
+const flaggedSql = (lock: string, restoreAll: boolean) => `
+  SELECT vb.id AS booking_id, vb.status_before_conflict::text AS status_before_conflict,
+    (vb.status_before_conflict::text = 'tentative' AND vb.expires_at <= now()) AS expired,
+    EXISTS (SELECT 1 FROM venue_bookings r WHERE r.replaces_booking_id = vb.id AND ${holdsVenue('r', 'now()')}) AS replaced,
+    e.id AS event_id, e.event_code, e.title, e.coordinator_id
+  FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
+  WHERE vb.conflict_block_id::text = $1 AND vb.status = 'conflicting'
+    ${restoreAll ? '' : `AND NOT (vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)'))`}
+  ORDER BY lower(vb.booking_range), vb.id ${lock}`;
+
+// Scenario 6: put each booking back as it was and tell its Coordinator once.
+async function restoreFlagged(client: PoolClient, actorId: string, venueName: string, blockId: string,
+  occurredAt: Date, flagged: FlaggedRow[]) {
+  const restored: FlaggedRow[] = [];
+  for (const booking of flagged) {
+    if (booking.replaced) continue;
+    const status = booking.expired ? 'expired' : booking.status_before_conflict;
+    // Another booking may have taken the slot's buffers meanwhile (0016); that
+    // booking then stays Conflicting for staff to resolve, and the rest of the
+    // change still saves.
+    await client.query('SAVEPOINT restore_booking');
+    try {
+      await client.query(`UPDATE venue_bookings SET status = $2::booking_status, status_before_conflict = NULL, conflict_block_id = NULL
+        WHERE id = $1`, [booking.booking_id, status]);
+    } catch (error) {
+      await client.query('ROLLBACK TO SAVEPOINT restore_booking');
+      if ((error as { code?: string }).code === '23P01') continue;
+      throw error;
+    }
+    await client.query('RELEASE SAVEPOINT restore_booking');
+    await client.query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+      VALUES ($1, 'venue_booking', $2, $3, 'Booking Restored', 'status', 'conflicting', $4)`,
+    [actorId, booking.booking_id, booking.event_id, status]);
+    restored.push(booking);
+  }
+  const result = [];
+  for (const event of new Map(restored.map(item => [item.event_id, item])).values()) {
+    let coordinatorNotified = false;
+    if (event.coordinator_id) {
+      coordinatorNotified = Boolean(await writeEventNotification(client, {
+        eventId: event.event_id, changeId: `venue-available:${blockId}:${occurredAt.toISOString()}`,
+        userId: event.coordinator_id, occurredAt, title: 'Venue available again',
+        message: `${venueName} is no longer unavailable for the venue booking of "${event.title}", so that booking stands again. `
+          + 'Review the event\'s arrangements.',
+      }));
+    }
+    result.push({ eventId: event.event_id, eventCode: event.event_code, title: event.title, coordinatorNotified });
+  }
+  return result;
+}
+
+type NextBlock = { start: Date; end: Date | null; category: ReasonCategory; reason: string };
+type Decision = { next: NextBlock; response?: never } | { response: { status: number; body: Record<string, unknown> }; next?: never };
+
+// Scenarios 5 to 7 for an edit: change the period, category or note; flag
+// bookings the new period newly covers; restore those it no longer covers;
+// keep the history. Locks events, then the venue, then the block.
+async function changeBlock(client: PoolClient, actorId: string, venueId: string, blockId: string,
+  expected: { start: Date; end: Date | null }, decide: (current: BlockRow) => Decision, auditAction: string) {
+  const candidates = [
+    ...(await client.query<FlaggedRow>(flaggedSql('', true), [blockId])).rows,
+    ...(await client.query<AffectedRow>(affectedSql(''), [venueId, expected.start, expected.end])).rows,
+  ];
+  const locked = [...new Set(candidates.map(row => row.event_id))].sort();
+  await lockEvents(client, locked, false);
+  const venue = await lockVenue(client, venueId);
+  const current = await lockBlock(client, venueId, blockId);
+  const decision = decide(current);
+  if (decision.response) return decision.response;
+  const { start, end, category, reason } = decision.next;
+
+  const overlapping = await client.query<BlockRow>(`
+    SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
+    FROM venue_blocks WHERE venue_id = $1 AND id <> $2 AND lifted_at IS NULL
+      AND block_range && tstzrange($3::timestamptz, $4::timestamptz, '[)')
+    ORDER BY lower(block_range)`, [venue.id, current.id, start, end]);
+  if (overlapping.rows.length) {
+    return { status: 409, body: {
+      error: 'block_overlap',
+      message: 'This period overlaps an existing block. Change that block instead.',
+      overlappingBlocks: overlapping.rows.map(toVenueBlock),
+    } };
+  }
+
+  const updated = (await client.query<BlockRow & { changed_at: Date }>(`
+    UPDATE venue_blocks SET block_range = tstzrange($2::timestamptz, $3::timestamptz, '[)'), reason_category = $4, reason = $5
+    WHERE id = $1
+    RETURNING id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at, now() AS changed_at`,
+  [current.id, start, end, category, reason])).rows[0]!;
+  const block = toVenueBlock(updated);
+  await audit(client, actorId, block.id, auditAction, describe(toVenueBlock(current)), describe(block));
+  await recordHistory(client, block.id, 'edited', actorId, current, updated);
+
+  const toRestore = (await client.query<FlaggedRow>(flaggedSql('FOR UPDATE OF vb', false), [current.id, start, end])).rows;
+  const toFlag = (await client.query<AffectedRow>(affectedSql('FOR UPDATE OF vb'), [venue.id, start, end])).rows;
+  await lockEvents(client, [...new Set([...toRestore, ...toFlag].map(row => row.event_id))].filter(id => !locked.includes(id)).sort(), true);
+  const restoredEvents = await restoreFlagged(client, actorId, venue.name, current.id, updated.changed_at, toRestore);
+  const affectedEvents = await flagAffected(client, actorId, venue.name, updated, updated.changed_at, toFlag);
+  return { status: 200, body: { block, affectedEvents, restoredEvents } };
+}
+
+// T-91 / Scenarios 5 to 7: edit an unavailability's period, category or note.
+// The body is the full new state, as for creation, with starts_at required.
+export async function editVenueBlock(
+  database: Pool, user: AuthenticatedUser | undefined, venueId: string, blockId: string, body: unknown,
+) {
+  const staff = await requireVenueStaff(poolQuery(database), user);
+  if (!isPlainObject(body) || body.starts_at === undefined) {
+    return { status: 400, body: { error: 'validation_failed', errors: { starts_at: ['A start date and time is required.'] } } };
+  }
+  const validated = validateUnavailabilityInput(body);
+  if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
+  const next = validated.input;
+  return inTransaction(database, client => changeBlock(client, staff.id, venueId, blockId, next,
+    () => ({ next }), 'Venue block edited'));
+}
+
+// E05-S04 checklist "Remove or shorten an existing block", which the current
+// screen still uses: whole days, shortening only. It now also restores the
+// bookings the shorter period no longer covers (E05-S06 Scenario 6).
 export async function shortenVenueBlock(
   database: Pool, user: AuthenticatedUser | undefined, venueId: string, blockId: string, body: unknown,
 ) {
@@ -339,9 +466,7 @@ export async function shortenVenueBlock(
   if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
   const { start, end, reason } = validated.input;
 
-  return inTransaction(database, async client => {
-    await lockVenue(client, venueId);
-    const current = await lockBlock(client, venueId, blockId);
+  return inTransaction(database, client => changeBlock(client, staff.id, venueId, blockId, { start, end }, current => {
     const before = toVenueBlock(current);
     // Compare whole days: a block saved with times (the seeded 08:00-18:00
     // inspection) must still accept its own dates back unchanged.
@@ -349,22 +474,18 @@ export async function shortenVenueBlock(
     // An open-ended block has no last day, so any end shortens it.
     const afterLastDay = before.to ? Date.parse(`${before.to}T00:00:00${OFFSET}`) + DAY_MS : Infinity;
     if (start.getTime() < firstDay || end.getTime() > afterLastDay) {
-      return { status: 400, body: {
+      return { response: { status: 400, body: {
         error: 'validation_failed',
-        errors: { to: ['A block can only be shortened. Create a new block to cover extra dates.'] },
-      } };
+        errors: { to: ['A block can only be shortened. Edit it to cover extra dates.'] },
+      } } };
     }
     // Keep any partial-day start or end on days the request did not cut.
-    const newStart = new Date(Math.max(start.getTime(), current.starts_at.getTime()));
-    const newEnd = new Date(Math.min(end.getTime(), current.ends_at?.getTime() ?? Infinity));
-    const updated = await client.query<BlockRow>(`
-      UPDATE venue_blocks SET block_range = tstzrange($2::timestamptz, $3::timestamptz, '[)'), reason = $4 WHERE id = $1
-      RETURNING id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at`,
-    [current.id, newStart, newEnd, reason ?? current.reason]);
-    const block = toVenueBlock(updated.rows[0]!);
-    await audit(client, staff.id, block.id, 'Venue block shortened', describe(before), describe(block));
-    return { status: 200, body: { block } };
-  });
+    return { next: {
+      start: new Date(Math.max(start.getTime(), current.starts_at.getTime())),
+      end: new Date(Math.min(end.getTime(), current.ends_at?.getTime() ?? Infinity)),
+      category: current.reason_category, reason: reason ?? current.reason,
+    } };
+  }, 'Venue block shortened'));
 }
 
 export async function removeVenueBlock(database: Pool, user: AuthenticatedUser | undefined, venueId: string, blockId: string) {
