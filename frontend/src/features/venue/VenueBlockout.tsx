@@ -18,16 +18,17 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { CalendarClock, PencilLine, Plus, Trash2 } from 'lucide-react';
 import {
   Alert, Button, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FormActions, FormField, FormSection,
-  LoadingState, PageLayout, formatDate, useLoad,
+  LoadingState, PageLayout, StatusPill, formatDate, useLoad,
   type Column,
 } from '../../shared';
 import { listVenues, type Venue } from './venueApi';
 import {
   CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, listBlocks, overlappingBlocks, removeBlock, shortenBlock,
-  type ReasonCategory, type SavedUnavailability, type VenueBlock,
+  type AffectedEvent, type ReasonCategory, type SavedUnavailability, type VenueBlock,
 } from './blocksApi';
 
-type Flash = { tone: 'success'; message: string } | null;
+// Scenario 2: a save over bookings lists the affected events with the flash.
+type Flash = { tone: 'success'; message: string; affected?: AffectedEvent[] } | null;
 type ConflictAlert = { message: string; overlaps: VenueBlock[] } | null;
 
 export function VenueBlockout() {
@@ -100,8 +101,8 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
   const [editing, setEditing] = useState<EditingState>({ kind: 'none' });
   const [removing, setRemoving] = useState(false);
 
-  function afterChange(message: string) {
-    setFlash({ tone: 'success', message });
+  function afterChange(message: string, affected?: AffectedEvent[]) {
+    setFlash({ tone: 'success', message, affected });
     setConflict(null);
     setEditing({ kind: 'none' });
     reload();
@@ -109,7 +110,12 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
 
   return (
     <>
-      {flash ? <Alert tone="success">{flash.message}</Alert> : null}
+      {flash ? (
+        <Alert tone="success">
+          {flash.message}
+          {flash.affected?.length ? <AffectedEventList events={flash.affected} /> : null}
+        </Alert>
+      ) : null}
       {conflict ? (
         <Alert tone="error" title="Resolve the conflict first">
           {conflict.message}
@@ -173,17 +179,35 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
 
       <CreateUnavailabilityCard
         venueId={venueId}
-        onSaved={saved => afterChange(notifiedMessage(saved.affectedEvents.filter(event => event.coordinatorNotified).length))}
+        onSaved={saved => afterChange(savedMessage(saved.affectedEvents.length), saved.affectedEvents)}
         onConflict={setConflict}
       />
     </>
   );
 }
 
-function notifiedMessage(notified: number): string {
-  if (notified === 0) return 'Unavailability saved.';
-  if (notified === 1) return 'Unavailability saved. The Coordinator was notified for 1 affected event.';
-  return `Unavailability saved. Coordinators were notified for ${notified} affected events.`;
+function savedMessage(affected: number): string {
+  if (affected === 0) return 'Unavailability saved.';
+  const which = affected === 1 ? 'This event has a booking' : `These ${affected} events have bookings`;
+  return `Unavailability saved. ${which} in this period, now marked Conflicting. Nothing was cancelled.`;
+}
+
+// Scenarios 2 to 4: each affected event, whether a Confirmed event went back
+// to Planning (T-81), and whether its Coordinator was told (C-121).
+function AffectedEventList({ events }: { events: AffectedEvent[] }) {
+  return (
+    <ul className="venue-blocking" aria-label="Affected events">
+      {events.map(event => (
+        <li key={event.eventId}>
+          {event.title}{event.eventCode ? ` (${event.eventCode})` : ''}{' '}
+          {event.returnedToPlanning ? <StatusPill status="planning" label="Returned to Planning" /> : null}{' '}
+          {event.coordinatorNotified
+            ? <StatusPill status="success" label="Coordinator notified" />
+            : <StatusPill status="warning" label="No Coordinator assigned" />}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 function BlocksTable({ blocks, onShorten, onRemove }: {

@@ -652,7 +652,8 @@ test.describe("E05-S04", () => {
     await page.getByLabel('Reason category').selectOption('renovation');
     await page.getByLabel('Note').fill('Flooring replacement');
     await page.getByRole('button', { name: /Save unavailability/ }).click();
-    await expect(page.getByText('Unavailability saved. The Coordinator was notified for 1 affected event.')).toBeVisible();
+    await expect(page.getByText(/This event has a booking in this period, now marked Conflicting/)).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Affected events' })).toContainText('Charity Run (EVT-9)');
   });
 
   /**
@@ -689,7 +690,8 @@ test.describe("E05-S04", () => {
     await page.getByLabel('Reason category').selectOption('renovation');
     await page.getByLabel('Note').fill('Renovation');
     await page.getByRole('button', { name: /Save unavailability/ }).click();
-    await expect(page.getByText(/Coordinators were notified for 2 affected events/)).toBeVisible();
+    await expect(page.getByText(/These 2 events have bookings in this period/)).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Affected events' }).getByText('Coordinator notified')).toHaveCount(2);
   });
 
   /**

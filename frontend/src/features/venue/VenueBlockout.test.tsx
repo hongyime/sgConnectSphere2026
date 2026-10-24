@@ -117,12 +117,13 @@ test('TC_E05S04_02 superseded by TC_E05S06_02: saving over a confirmed booking s
     startDate: '2027-01-14', startTime: '00:00', endDate: '2027-01-17', endTime: '00:00', category: 'renovation', note: 'Flooring replacement',
   });
 
-  expect(await screen.findByText('Unavailability saved. The Coordinator was notified for 1 affected event.')).toBeInTheDocument();
+  expect(await screen.findByText(/This event has a booking in this period, now marked Conflicting\. Nothing was cancelled\./)).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Affected events' })).toHaveTextContent('Charity Run (EVT-9)');
   expect(screen.queryByText(/Resolve the conflict first/)).not.toBeInTheDocument();
 });
 
-test('TC_E05S04_03 - the success alert names the number of events with a Coordinator notification (Scenario 3)', async () => {
-  const event = (id: string, coordinatorNotified: boolean) => ({ eventId: id, eventCode: null, title: id, returnedToPlanning: false, coordinatorNotified });
+test('TC_E05S04_03 - the success alert shows which affected events had their Coordinator notified (Scenario 3)', async () => {
+  const event = (id: string, coordinatorNotified: boolean) => ({ eventId: id, eventCode: null, title: `Event ${id}`, returnedToPlanning: false, coordinatorNotified });
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
     'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [] } },
@@ -139,7 +140,53 @@ test('TC_E05S04_03 - the success alert names the number of events with a Coordin
     startDate: '2027-01-20', startTime: '00:00', endDate: '2027-01-26', endTime: '00:00', category: 'renovation', note: 'Renovation',
   });
 
-  expect(await screen.findByText(/Coordinators were notified for 2 affected events/)).toBeInTheDocument();
+  expect(await screen.findByText(/These 3 events have bookings in this period/)).toBeInTheDocument();
+  const items = within(screen.getByRole('list', { name: 'Affected events' })).getAllByRole('listitem');
+  expect(items.map(item => item.textContent?.replace(/\s+/g, ' ').trim())).toEqual([
+    'Event e-1 Coordinator notified', 'Event e-2 Coordinator notified', 'Event e-3 No Coordinator assigned',
+  ]);
+});
+
+test('TC_E05S06_02 - a save over a Pending request and a Confirmed booking lists both events and marks only the Confirmed one Returned to Planning (Scenarios 2-4)', async () => {
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [] } },
+    'POST /api/venues': { status: 201, body: {
+      block: { ...existingBlock, id: 'blk-x', reasonCategory: 'safety_concern', reason: 'Ceiling inspection' },
+      affectedEvents: [
+        { eventId: 'e-1', eventCode: 'EV-101', title: 'Alumni Dinner', returnedToPlanning: false, coordinatorNotified: true },
+        { eventId: 'e-2', eventCode: 'EV-102', title: 'Tech Conference 2026', returnedToPlanning: true, coordinatorNotified: true },
+      ],
+    } },
+  });
+
+  await screen.findByText(/No current or upcoming blocks/);
+  fillUnavailability({ startDate: '2027-01-15', startTime: '00:00', endDate: '2027-01-16', endTime: '00:00', category: 'safety_concern', note: 'Ceiling inspection' });
+
+  expect(await screen.findByText(/These 2 events have bookings in this period, now marked Conflicting\. Nothing was cancelled\./)).toBeInTheDocument();
+  const [dinner, conference] = within(screen.getByRole('list', { name: 'Affected events' })).getAllByRole('listitem');
+  expect(dinner).toHaveTextContent('Alumni Dinner (EV-101)');
+  expect(within(dinner!).queryByText('Returned to Planning')).not.toBeInTheDocument();
+  expect(conference).toHaveTextContent('Tech Conference 2026 (EV-102)');
+  expect(within(conference!).getByText('Returned to Planning')).toBeInTheDocument();
+  expect(within(conference!).getByText('Coordinator notified')).toBeInTheDocument();
+});
+
+test('TC_E05S06_08 - an event holding the venue with an unexpired tentative hold is listed the same way (Scenario 2, C-111)', async () => {
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [] } },
+    'POST /api/venues': { status: 201, body: {
+      block: { ...existingBlock, id: 'blk-x', reason: 'Lighting rig repair' },
+      affectedEvents: [{ eventId: 'e-3', eventCode: null, title: 'Spring Gala', returnedToPlanning: false, coordinatorNotified: true }],
+    } },
+  });
+
+  await screen.findByText(/No current or upcoming blocks/);
+  fillUnavailability({ startDate: '2027-01-22', startTime: '00:00', endDate: '2027-01-23', endTime: '00:00', category: 'maintenance', note: 'Lighting rig repair' });
+
+  expect(await screen.findByText(/This event has a booking in this period/)).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Affected events' })).toHaveTextContent('Spring Gala Coordinator notified');
 });
 
 test('TC_E05S06_01 - marking a venue unavailable with a reason category and note over a free period sends the timed period (Scenario 1)', async () => {
