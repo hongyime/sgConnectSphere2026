@@ -17,6 +17,7 @@ Goal: the application code for E05-S06 "Mark a venue temporarily unavailable ove
 - `api/venues/index.ts`: `edit_block`, `lift_block`.
 - Tests: `venueUnavailability.test.ts` (unit, 11), `venueUnavailability.integration.test.ts` (TC_E05S06_01–08 + Scenario 5–7 cases), updates in `venueBlocks*.test.ts`, `venueBookingDecisions.test.ts`, `venueCalendar.test.ts`; 0025 added to the hand-picked migration lists in `venueCalendar`, `venueSearch`, `venueAccessibility`, `venueBookingRequests` integration tests. Both E05-S06 database files run in CI through `test:venue-booking-requests:db` (CI does not run `test:db`).
 - T-65: `docs/testing/runs/20261024-212233-lexinphun2024-debug-backend-unit.md`, `docs/testing/runs/20261024-212240-lexinphun2024-debug-backend-db.md`.
+- 24 Oct: `main` merged into #345 (package.json test-list conflict) and then into this branch. `bookingRequests.ts` conflict: kept `main`'s `replacement.status<>'released'` filter plus this branch's conflict columns. Re-run at `fdd1ab9`: unit 490/490, booking selector 68/68, `test:db` 221/222 (same `registration.db.test.ts` failure). Records `20261024-213916-lexinphun2024-debug-backend-unit.md`, `20261024-213807-lexinphun2024-debug-backend-db.md`. #348 marked ready for review.
 
 ## Release order
 
