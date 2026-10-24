@@ -13,8 +13,8 @@ The stories were labelled Sprint 3, so the Week 9 decisions were not applied to 
 - `docs/testing/cases/E05.md`: TC_E05S06_02/_03/_04/_05 updated; TC_E05S06_04 now checks an open-ended save instead of a refusal; new TC_E05S06_07.
 - `docs/testing/cases/E10.md`: TC_E10S05_01/_03/_04 updated.
 - `tests/e2e/e05.spec.ts`, `tests/e2e/e10.spec.ts`: fixme scaffold titles follow the case titles; TC_E05S06_07 scaffold added. All remain `test.fixme`.
-- Regenerated `CONNECTSPHERE BACKLOGS CAA 231026.xlsx`, `PROJECT TEST CASES CAA 231026.xlsx`, legacy `PROJECT TEST CASES.xlsx` (copy of the new export) and `docs/testing/tc-coverage.md` (377 cases).
-- `docs/source-of-truth.md`: export table points at CAA 231026 (backlog, test cases) and CAA 241026 (BDR); one paragraph records this alignment.
+- Regenerated `CONNECTSPHERE BACKLOGS CAA 231026.xlsx`, `PROJECT TEST CASES CAA 241026.xlsx`, legacy `PROJECT TEST CASES.xlsx` (copy of the new export) and `docs/testing/tc-coverage.md` (377 cases). The test-case export was first made as CAA 231026; after main merged #324 (E08 case changes, CAA 211026), it was rebuilt from both sides as CAA 241026 and the unmerged 231026 file dropped.
+- `docs/source-of-truth.md`: export table points at CAA 231026 (backlog) and CAA 241026 (test cases, BDR); one paragraph records this alignment.
 - `docs/bdr/G-change-log.md`: 24 October entry for the alignment, following the team's practice of logging backlog changes there; BDR export regenerated as `BACKLOG DECISION REVIEW CAA 241026.docx`. ADR export unchanged (the generated ADR file was discarded).
 
 ## Decisions taken without team sign-off (reviewer please check)

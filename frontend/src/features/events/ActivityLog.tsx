@@ -84,7 +84,7 @@ function Change({ entry }: { entry: ActivityEntry }) {
 const columns: Column<Row>[] = [
   { header: 'Action', primary: true, cell: describeAction },
   { header: 'Change', cell: entry => <Change entry={entry} /> },
-  { header: 'By', cell: entry => entry.actor_name ?? 'Not recorded' },
+  { header: 'By', cell: entry => entry.actor_name ?? (entry.action === 'Automatically completed event' ? 'System' : 'Not recorded') },
   { header: 'When', cell: entry => formatDate(entry.occurred_at, true) },
 ];
 
