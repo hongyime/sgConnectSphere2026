@@ -152,7 +152,7 @@ export async function getVenueCalendar(
       greatest(lower(block_range), $2::timestamptz) AS starts_at,
       least(upper(block_range), $3::timestamptz) AS ends_at
     FROM venue_blocks
-    WHERE venue_id = $1 AND block_range && tstzrange($2::timestamptz, $3::timestamptz)
+    WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(block_range)`, window);
 
   const occupied: Array<[number, number]> = [

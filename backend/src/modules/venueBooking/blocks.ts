@@ -23,10 +23,11 @@ const REASON_MAX = 255;
 export type BlockInput = { start: Date; end: Date; reason: string };
 
 export type VenueBlock = {
-  id: string; venueId: string; from: string; to: string; reason: string; startsAt: string; endsAt: string;
+  id: string; venueId: string; from: string; to: string | null; reason: string; startsAt: string; endsAt: string | null;
 };
 
-type BlockRow = { id: string; venue_id: string; reason: string; starts_at: Date; ends_at: Date };
+// ends_at is null for an open-ended block (T-80).
+type BlockRow = { id: string; venue_id: string; reason: string; starts_at: Date; ends_at: Date | null };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -50,8 +51,8 @@ function toVenueBlock(row: BlockRow): VenueBlock {
     id: row.id, venueId: row.venue_id, reason: row.reason,
     from: sgtDate(row.starts_at.getTime()),
     // The stored end is exclusive, so the last blocked day is the one before it.
-    to: sgtDate(row.ends_at.getTime() - 1),
-    startsAt: row.starts_at.toISOString(), endsAt: row.ends_at.toISOString(),
+    to: row.ends_at ? sgtDate(row.ends_at.getTime() - 1) : null,
+    startsAt: row.starts_at.toISOString(), endsAt: row.ends_at?.toISOString() ?? null,
   };
 }
 
@@ -97,7 +98,7 @@ async function lockVenue(client: PoolClient, venueId: string) {
 async function lockBlock(client: PoolClient, venueId: string, blockId: string) {
   const result = await client.query<BlockRow>(`
     SELECT id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
-    FROM venue_blocks WHERE id::text = $1 AND venue_id::text = $2 FOR UPDATE`, [blockId, venueId]);
+    FROM venue_blocks WHERE id::text = $1 AND venue_id::text = $2 AND lifted_at IS NULL FOR UPDATE`, [blockId, venueId]);
   if (!result.rows[0]) throw new AccessError(404, 'Block not found on this venue.');
   return result.rows[0];
 }
@@ -115,10 +116,12 @@ export async function listVenueBlocks(query: Query, user: AuthenticatedUser | un
   await requireCatalogueViewer(query, user);
   const venue = await query(`SELECT 1 FROM venues WHERE id::text = $1`, [venueId]);
   if (!venue.rows[0]) throw new AccessError(404, 'Venue not found.');
-  // Past blocks are history, not something staff can still shorten or remove.
+  // Past and lifted blocks are history, not something staff can still change;
+  // an open-ended block stays current until it is lifted (T-80, T-91).
   const result = await query<BlockRow>(`
     SELECT id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
-    FROM venue_blocks WHERE venue_id::text = $1 AND upper(block_range) > now()
+    FROM venue_blocks WHERE venue_id::text = $1 AND lifted_at IS NULL
+      AND (upper_inf(block_range) OR upper(block_range) > now())
     ORDER BY lower(block_range)`, [venueId]);
   return { blocks: result.rows.map(toVenueBlock) };
 }
@@ -230,7 +233,8 @@ export async function shortenVenueBlock(
     // Compare whole days: a block saved with times (the seeded 08:00-18:00
     // inspection) must still accept its own dates back unchanged.
     const firstDay = Date.parse(`${before.from}T00:00:00${OFFSET}`);
-    const afterLastDay = Date.parse(`${before.to}T00:00:00${OFFSET}`) + DAY_MS;
+    // An open-ended block has no last day, so any end shortens it.
+    const afterLastDay = before.to ? Date.parse(`${before.to}T00:00:00${OFFSET}`) + DAY_MS : Infinity;
     if (start.getTime() < firstDay || end.getTime() > afterLastDay) {
       return { status: 400, body: {
         error: 'validation_failed',
@@ -239,7 +243,7 @@ export async function shortenVenueBlock(
     }
     // Keep any partial-day start or end on days the request did not cut.
     const newStart = new Date(Math.max(start.getTime(), current.starts_at.getTime()));
-    const newEnd = new Date(Math.min(end.getTime(), current.ends_at.getTime()));
+    const newEnd = new Date(Math.min(end.getTime(), current.ends_at?.getTime() ?? Infinity));
     const updated = await client.query<BlockRow>(`
       UPDATE venue_blocks SET block_range = tstzrange($2::timestamptz, $3::timestamptz, '[)'), reason = $4 WHERE id = $1
       RETURNING id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at`,

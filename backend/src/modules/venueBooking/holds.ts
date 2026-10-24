@@ -145,7 +145,7 @@ async function findClash(client: PoolClient, venueId: string, startsAt: Date, en
     return `This venue already has ${kind} for ${eventName(booking)} from ${formatSgt(booking.startsAt)} to ${formatSgt(booking.endsAt)}.`;
   }
   const block = (await client.query<{ reason: string }>(`SELECT reason FROM venue_blocks
-    WHERE venue_id = $1 AND block_range && tstzrange($2, $3, '[)') LIMIT 1`, [venueId, startsAt, endsAt])).rows[0];
+    WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2, $3, '[)') LIMIT 1`, [venueId, startsAt, endsAt])).rows[0];
   return block ? `This venue is blocked for that period (${block.reason}).` : null;
 }
 
