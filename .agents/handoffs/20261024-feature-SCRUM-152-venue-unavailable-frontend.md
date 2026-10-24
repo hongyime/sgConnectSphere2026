@@ -18,7 +18,7 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 4. Edit (extend, shorten, remove end, change reason), Lift with confirm, history view with actor and time, lifted entries listed as lifted (Scenarios 5–7, T-91). Split in two:
   - [x] 4a. Edit and Lift (`a02020f`): Edit reuses the create form prefilled; replies list newly flagged and restored events; Lift confirms and lists restored bookings. Shorten/Remove UI and `shortenBlock`/`removeBlock` removed (backend keeps the actions). TC_E05S04_04 unit + Playwright moved to Edit/Lift. The `if (lifting) return` double-click guard is the one uncovered changed branch (the button is disabled while busy, as with the old remove guard).
   - [x] 4b. History panel and "Show lifted" list (`4349f41`): lifted rows read-only with "Lifted by …, time"; History table (when, who, change, before, after); "Former staff member" for a deleted actor; "No changes recorded" for blocks saved before 0025.
-- [ ] 5. `VenueCalendar.tsx`: reason category, "until lifted", Conflicting bookings labelled.
+- [x] 5. `VenueCalendar.tsx`: reason category, "until lifted", Conflicting bookings labelled. `8efe1d6`. **Release risk found:** the calendar on `main` has no 'conflicting' state, so once #348 is live, a venue with a Conflicting booking crashes the calendar until this PR merges. Merge this PR straight after #348, or tell the reviewer.
 - [ ] 6. `BookingRequests.tsx`: Conflicting booking shows reason, period, earlier status.
 - [ ] 7. Coordinator event view: venue-conflict flag with reason category (Scenario 3). Check the data is already served before adding anything.
 - [ ] 8. Unit tests, 100% of changed code; update tests the old Shorten/Remove buttons break; regenerate `tc-coverage.md` if needed.
