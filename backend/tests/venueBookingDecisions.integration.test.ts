@@ -289,6 +289,18 @@ test('only Venue Staff can decide; a refusal is audited and leaves the request p
     [[f.ids.coordinator, 'venue_bookings'], [f.ids.coordinator, 'venue_bookings']]);
 }));
 
+test('task12: stale Venue Staff identity cannot decide after database account revocation', () => withFixture(async f => {
+  const { eventId, bookingId } = await f.pendingRequest();
+  for (const change of ["is_active=false", "role='event_coordinator'", 'failed_login_count=5', "locked_until=clock_timestamp()+interval '1 hour'"]) {
+    await f.pool.query(`UPDATE users SET ${change} WHERE id=$1`, [f.ids.staff]);
+    await assert.rejects(decideBooking(f.pool, f.staff, bookingId, { decision: 'approve' }), { status: 403 });
+    assert.equal((await f.row(bookingId)).status, 'pending');
+    assert.deepEqual(await f.audits(bookingId), []);
+    assert.deepEqual(await f.notices(eventId), []);
+    await f.pool.query("UPDATE users SET is_active=true,role='venue_staff',failed_login_count=0,locked_until=NULL WHERE id=$1", [f.ids.staff]);
+  }
+}));
+
 test('a decided request cannot be decided again', () => withFixture(async f => {
   const { eventId, bookingId } = await f.pendingRequest();
   await decideBooking(f.pool, f.staff, bookingId, { decision: 'approve' });
@@ -399,6 +411,7 @@ test('TC_E06S04_04: approval is blocked when the buffered windows overlap a conf
   assert.equal(result.status, 409);
   const body = result.body as { error: string; conflict: { bookingId: string; status: string; eventCode: string } };
   assert.match(body.error, /with setup and turnaround time it overlaps the confirmed booking for "EVT-5101 Product Expo 2026" \(1 Feb 2027, 10:00 am – 12:00 pm\) at Small Room\./);
+  assert.match(body.error, /Buffered window: 1 Feb 2027, 10:00 am – 1:00 pm/);
   assert.deepEqual([body.conflict.bookingId, body.conflict.status, body.conflict.eventCode], [confirmedId, 'confirmed', 'EVT-5101']);
   assert.equal((await f.row(pendingId)).status, 'pending');
   assert.deepEqual(await f.audits(pendingId), []);

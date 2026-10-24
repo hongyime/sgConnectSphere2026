@@ -156,7 +156,7 @@ async function lockBooking(client: PoolClient, bookingId: string) {
   return result.rows[0];
 }
 
-type Clash = { id: string; status: string; event_code: string | null; event_title: string; starts_at: Date; ends_at: Date };
+type Clash = { id: string; status: string; event_code: string | null; event_title: string; starts_at: Date; ends_at: Date; occupied_start: Date; occupied_end: Date };
 
 // Scenario 4: setup and turnaround time count, so two bookings whose advertised
 // times don't overlap can still clash. Since the 0016 guard, this only arises
@@ -165,7 +165,9 @@ type Clash = { id: string; status: string; event_code: string | null; event_titl
 // Venue Staff see which booking or block is in the way.
 async function approvalClash(client: PoolClient, row: BookingRow) {
   const booking = (await client.query<Clash>(`SELECT vb.id, vb.status, e.event_code, e.title AS event_title,
-      lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
+      lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at,
+      lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)) AS occupied_start,
+      upper(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)) AS occupied_end
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND vb.id <> $2 AND ${holdsVenue('vb', 'clock_timestamp()')}
       AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)
@@ -178,7 +180,8 @@ async function approvalClash(client: PoolClient, row: BookingRow) {
     const state = booking.status === 'confirmed' ? 'confirmed' : booking.status === 'pending' ? 'pending' : 'held';
     return {
       error: `This can't be approved: with setup and turnaround time it overlaps the ${state} booking for "${name}" `
-        + `(${formatEventDates(booking.starts_at, booking.ends_at)}) at ${row.venue_name}.`,
+        + `(${formatEventDates(booking.starts_at, booking.ends_at)}) at ${row.venue_name}. `
+        + `Buffered window: ${formatEventDates(booking.occupied_start, booking.occupied_end)}.`,
       conflict: {
         bookingId: booking.id, status: booking.status, eventCode: booking.event_code, eventTitle: booking.event_title,
         startsAt: booking.starts_at.toISOString(), endsAt: booking.ends_at.toISOString(),
@@ -236,6 +239,15 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
       'SELECT venue_id, event_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
     if (!target) return { status: 404, body: { error: 'Booking not found.' } };
     await client.query('SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id]);
+    try {
+      const account = await client.query(`SELECT id FROM users WHERE id=$1 AND is_active AND role='venue_staff'
+        AND failed_login_count<5 AND (locked_until IS NULL OR locked_until<=clock_timestamp()) FOR SHARE NOWAIT`, [staff.id]);
+      if (!account.rows[0]) throw new AccessError(403, 'Your account cannot decide booking requests.');
+    } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === '55P03')
+        throw new AccessError(409, 'An account update may be in progress. Refresh the booking list and try again.');
+      throw error;
+    }
     await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [target.venue_id]);
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };
