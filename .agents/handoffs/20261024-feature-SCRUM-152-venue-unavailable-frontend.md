@@ -13,7 +13,7 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 0. Branch and this handoff file (`77db351`).
 - [x] 0b. Backend (on #348's branch): read an unavailability's history and list lifted unavailabilities, so the history screen TC_E05S06_07 step 3 opens has data. Then merge into this branch. Done in #348 (`0203699`, records `f6fa9c2`): GET `?id=&blocks=1&history=<block>` and `?id=&blocks=1&lifted=1`, Venue Staff only; merged here.
 - [x] 1. `blocksApi.ts`: timed input, optional end, reason category, `edit_block`, `lift_block`, history read, affected/restored events. (`2acd786`; old E05-S04 calls kept until Task 4; the current screen shows an open-ended block as "Until lifted").
-- [ ] 2. `VenueBlockout.tsx` create form: start/end date and time, end optional ("until lifted"), category picker, note (Scenarios 1, 5).
+- [x] 2. `VenueBlockout.tsx` create form: start/end date and time, end optional ("until lifted"), category picker, note (Scenarios 1, 5). `59aec53`: old `createBlock` and the `booking_conflict` alert removed; TC_E05S04_02 unit + Playwright tests now check the superseding save (TC_E05S06_02); E05-S04 Playwright create tests use the new form (8/8 locally). #348's `tc-coverage.md` was stale after 0b; regenerated there (`7673580`) and merged here.
 - [ ] 3. Affected events listed on save (Scenarios 2–4).
 - [ ] 4. Edit (extend, shorten, remove end, change reason), Lift with confirm, history view with actor and time, lifted entries listed as lifted (Scenarios 5–7, T-91).
 - [ ] 5. `VenueCalendar.tsx`: reason category, "until lifted", Conflicting bookings labelled.
@@ -25,4 +25,5 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 ## Decisions for the reviewer
 
 - The timed form replaces E05-S04's whole-day form. No decision, design note or case asks to keep both; a whole day is still entered as 00:00 to 00:00 the next day. TC_E05S06_06 (E05-S04 regression on free periods) still applies.
+- The note is required on the form although the backend accepts an empty one: Scenario 1 marks only the end as optional and saves "the period, the category, the note"; TC_E05S06_01 enters one; a note explains "Other". The page title and menu label stay "Maintenance blocks" for now.
 - The history view is in scope: T-91 names the UI, the Figma refinement plan says "show history and actor", and TC_E05S06_07 opens it.
