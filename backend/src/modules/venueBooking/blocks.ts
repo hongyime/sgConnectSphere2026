@@ -170,18 +170,63 @@ function describe(block: VenueBlock): string {
   return `${block.from} to ${block.to ?? 'until lifted'}: ${block.reason}`;
 }
 
-export async function listVenueBlocks(query: Query, user: AuthenticatedUser | undefined, venueId: string) {
-  await requireCatalogueViewer(query, user);
+type ListedBlockRow = BlockRow & { lifted_at?: Date | null; lifted_by_name?: string | null };
+
+export async function listVenueBlocks(query: Query, user: AuthenticatedUser | undefined, venueId: string,
+  options: { includeLifted?: boolean } = {}) {
+  // Lifted blocks name the staff member who lifted them, so only Venue Staff see them.
+  if (options.includeLifted) await requireVenueStaff(query, user);
+  else await requireCatalogueViewer(query, user);
   const venue = await query(`SELECT 1 FROM venues WHERE id::text = $1`, [venueId]);
   if (!venue.rows[0]) throw new AccessError(404, 'Venue not found.');
-  // Past and lifted blocks are history, not something staff can still change;
-  // an open-ended block stays current until it is lifted (T-80, T-91).
-  const result = await query<BlockRow>(`
-    SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
-    FROM venue_blocks WHERE venue_id::text = $1 AND lifted_at IS NULL
-      AND (upper_inf(block_range) OR upper(block_range) > now())
-    ORDER BY lower(block_range)`, [venueId]);
-  return { blocks: result.rows.map(toVenueBlock) };
+  // Past blocks are history, not something staff can still change; an
+  // open-ended block stays current until it is lifted (T-80, T-91). A lifted
+  // block is kept and, on request, listed as lifted (Scenario 7).
+  const result = await query<ListedBlockRow>(`
+    SELECT b.id, b.venue_id, b.reason_category, b.reason, lower(b.block_range) AS starts_at, upper(b.block_range) AS ends_at,
+      b.lifted_at, u.full_name AS lifted_by_name
+    FROM venue_blocks b LEFT JOIN users u ON u.id = b.lifted_by
+    WHERE b.venue_id::text = $1 AND (b.lifted_at IS NULL OR $2::boolean)
+      AND (upper_inf(b.block_range) OR upper(b.block_range) > now())
+    ORDER BY lower(b.block_range), b.id`, [venueId, Boolean(options.includeLifted)]);
+  return {
+    blocks: result.rows.map(row => options.includeLifted
+      ? { ...toVenueBlock(row), liftedAt: row.lifted_at?.toISOString() ?? null, liftedBy: row.lifted_by_name ?? null }
+      : toVenueBlock(row)),
+  };
+}
+
+type HistoryRow = {
+  action: 'created' | 'edited' | 'lifted'; changed_at: Date; actor_name: string | null;
+  previous_starts_at: Date | null; previous_ends_at: Date | null; previous_category: ReasonCategory | null; previous_reason: string | null;
+  new_starts_at: Date | null; new_ends_at: Date | null; new_category: ReasonCategory | null; new_reason: string | null;
+};
+
+function historyState(startsAt: Date | null, endsAt: Date | null, category: ReasonCategory | null, reason: string | null) {
+  if (!startsAt) return null;
+  return { startsAt: startsAt.toISOString(), endsAt: endsAt?.toISOString() ?? null, reasonCategory: category, reason };
+}
+
+// T-91 / Scenario 7: the earlier and new period, category and note of each
+// create, edit and lift, with who made it and when. Lifted blocks included.
+export async function getVenueBlockHistory(query: Query, user: AuthenticatedUser | undefined, venueId: string, blockId: string) {
+  await requireVenueStaff(query, user);
+  const block = await query(`SELECT 1 FROM venue_blocks WHERE id::text = $1 AND venue_id::text = $2`, [blockId, venueId]);
+  if (!block.rows[0]) throw new AccessError(404, 'Block not found on this venue.');
+  const result = await query<HistoryRow>(`
+    SELECT h.action, h.changed_at, u.full_name AS actor_name,
+      lower(h.previous_range) AS previous_starts_at, upper(h.previous_range) AS previous_ends_at, h.previous_category, h.previous_reason,
+      lower(h.new_range) AS new_starts_at, upper(h.new_range) AS new_ends_at, h.new_category, h.new_reason
+    FROM venue_block_history h LEFT JOIN users u ON u.id = h.actor_id
+    WHERE h.block_id::text = $1
+    ORDER BY h.changed_at, h.id`, [blockId]);
+  return {
+    history: result.rows.map(row => ({
+      action: row.action, changedAt: row.changed_at.toISOString(), actor: row.actor_name,
+      previous: historyState(row.previous_starts_at, row.previous_ends_at, row.previous_category, row.previous_reason),
+      next: historyState(row.new_starts_at, row.new_ends_at, row.new_category, row.new_reason),
+    })),
+  };
 }
 
 // Scenario 4: the category as Venue Staff and Coordinators read it.

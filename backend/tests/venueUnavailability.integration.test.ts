@@ -13,7 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import {
-  createVenueBlock, editVenueBlock, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+  createVenueBlock, editVenueBlock, getVenueBlockHistory, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../src/modules/venueBooking/blocks.js';
 import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
@@ -177,6 +177,17 @@ test('TC_E05S06_07: editing and lifting keep a history, the lifted block is kept
   const listed = await listVenueBlocks((sql, values) => f.pool.query(sql, values), f.staff, f.ids.venue);
   assert.deepEqual(listed.blocks, []);
   await assert.rejects(liftVenueBlock(f.pool, f.staff, f.ids.venue, blockId), { status: 404 });
+
+  // Steps 3 and the "listed as lifted" result: what the history screen reads.
+  const staffName = (await f.pool.query<{ full_name: string }>(`SELECT full_name FROM users WHERE id = $1`, [f.ids.staff])).rows[0]!.full_name;
+  const withLifted = await listVenueBlocks(queryOf(f), f.staff, f.ids.venue, { includeLifted: true });
+  assert.deepEqual(withLifted.blocks.map(entry => [entry.id, (entry as { liftedBy: string | null }).liftedBy]), [[blockId, staffName]]);
+  const { history } = await getVenueBlockHistory(queryOf(f), f.staff, f.ids.venue, blockId);
+  assert.deepEqual(history.map(entry => [entry.action, entry.actor, entry.previous?.endsAt ?? null, entry.next?.endsAt ?? null, entry.next?.reason ?? null]), [
+    ['created', staffName, null, '2027-01-15T10:00:00.000Z', 'Floor resurfacing'],
+    ['edited', staffName, '2027-01-15T10:00:00.000Z', '2027-01-15T12:00:00.000Z', 'Floor resurfacing, second coat'],
+    ['lifted', staffName, '2027-01-15T12:00:00.000Z', null, null],
+  ]);
 }));
 
 test('TC_E05S06_08: an unexpired tentative hold is flagged without being released, its Coordinator told, and restored on lift', () => withFixture(async f => {
