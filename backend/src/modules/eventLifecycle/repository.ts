@@ -134,9 +134,10 @@ export async function applyEventStatusChange(
   client: PoolClient,
   eventId: string,
   status: EventRecord['status'],
-  actorId: string,
+  actorId: string | null,
   options: {
     reason?: string;
+    auditAction?: string;
     notificationOptions?: NotificationOptions;
     notificationVenueIds?: readonly string[];
     beforeNotify?: (change: EventStatusChange) => Promise<void>;
@@ -213,13 +214,13 @@ export async function applyEventStatusChange(
     const audit = await client.query<{ id: string; occurred_at: Date }>(
       `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
        VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5) RETURNING id, occurred_at`,
-      [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
+      [actorId, eventId, options.auditAction ?? `Status changed to ${status}`, fromStatus, status],
     );
     change = { auditId: audit.rows[0].id, occurredAt: audit.rows[0].occurred_at, from: fromStatus };
     await options.beforeNotify?.(change);
     const after = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
     await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
-      actorId, before, after, change:{kind:'status',from:fromStatus,to:status} });
+      actorId: actorId ?? undefined, before, after, change:{kind:'status',from:fromStatus,to:status} });
   }
 
   return { event: mapEvent(updated), change };

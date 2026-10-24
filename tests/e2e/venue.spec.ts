@@ -1,7 +1,7 @@
 // Playwright tests for /venue/* routes (SCRUM-97). Covers the four Batch 5
 // screens for Venue Staff: dashboard, inventory, availability calendar with
-// per-venue filter, and pending booking detail with a confirm/decline action.
-// Dashboard and booking detail are still backed by
+// per-venue filter, and the live booking request flow (E06-S04).
+// The dashboard is still backed by
 // frontend/src/features/venue/mocks.ts fixtures with no live network calls.
 // Inventory (E05-S01/E05-S02) and the availability calendar (E05-S03) call
 // the real GET /api/venues, so their tests intercept that call the same way
@@ -9,6 +9,7 @@
 // backend in this scaffold job.
 // Screens map to E05-S01, E05-S02, E05-S03, E05-S04 in the workbook.
 import { test, expect } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 test('venue dashboard shows pending and confirmed counts', async ({ page }) => {
   await page.goto('/venue');
@@ -144,9 +145,34 @@ test('availability calendar loads the selected venue from the API', async ({ pag
   expect(requestedIds).toEqual(['v-1', 'v-2']);
 });
 
-test('pending booking detail confirms a booking', async ({ page }) => {
-  await page.goto('/venue/bookings/B-1001');
-  await expect(page.getByRole('heading', { name: /Annual Sustainability Forum/ })).toBeVisible();
-  await page.getByRole('button', { name: 'Confirm booking' }).click();
-  await expect(page.getByRole('status')).toContainText('confirmed');
+// E06-S04 (SCRUM-48): the booking request pages are live, so the API is faked.
+test('Venue Staff approve a pending booking request', async ({ page }) => {
+  await signInAs(page, 'venue_staff');
+  const pending = {
+    id: 'b-1', status: 'pending', startsAt: '2026-10-25T10:00:00.000Z', endsAt: '2026-10-25T14:00:00.000Z',
+    venue: { id: 'v-1', name: 'Orchid Hall' },
+    event: { id: 'e-1', code: 'EVT-3003', title: 'Planning Phase Gala', expectedAttendance: 120, coordinatorName: 'Coordinator A' },
+    decisionReason: null, suggestedVenue: null, decidedBy: null, decidedAt: null, requestedAt: '2026-10-01T01:00:00.000Z',
+  };
+  let current = pending;
+  let decided: unknown;
+  await page.route('**/api/venues**', async (route) => {
+    const request = route.request();
+    if (request.method() === 'POST') {
+      decided = request.postDataJSON();
+      current = { ...pending, status: 'confirmed', decidedBy: 'Venue Staff A' };
+      return route.fulfill({ json: { booking: current, coordinatorNotified: true } });
+    }
+    const url = new URL(request.url());
+    if (url.searchParams.get('bookings') === 'pending') return route.fulfill({ json: { bookings: [current] } });
+    return route.fulfill({ json: { booking: current } });
+  });
+
+  await page.goto('/venue/bookings');
+  await page.getByRole('link', { name: 'Planning Phase Gala' }).click();
+  await page.getByRole('link', { name: 'Decide on request' }).click();
+  await page.getByRole('button', { name: 'Approve…' }).click();
+  await page.getByRole('button', { name: 'Approve request' }).click();
+  await expect(page.getByRole('status')).toContainText('Approved. The booking is confirmed. Coordinator A has been notified.');
+  expect(decided).toEqual({ action: 'decide', booking_id: 'b-1', decision: 'approve' });
 });

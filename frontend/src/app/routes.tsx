@@ -1,3 +1,4 @@
+import { EventCompletion } from '../features/events/EventCompletion';
 import { EventCancellation } from '../features/events/EventCancellation';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
@@ -57,7 +58,8 @@ import { TentativeHolds } from '../features/venue/TentativeHolds';
 import { VenueSearch } from '../features/venue/VenueSearch';
 import { VenueCalendar } from '../features/venue/VenueCalendar';
 import { VenueForm } from '../features/venue/VenueForm';
-import { VenueDashboard, VenueInventory, AvailabilityCalendar, PendingBookingDetail } from '../features/venue/Venue';
+import { VenueDashboard, VenueInventory, AvailabilityCalendar } from '../features/venue/Venue';
+import { BookingDecision, BookingDetail, BookingRequests } from '../features/venue/BookingRequests';
 import { VenueBlockout } from '../features/venue/VenueBlockout';
 import { EquipmentDashboard } from '../features/support/Support';
 import { EquipmentReservationFormPage } from '../features/support/EquipmentReservations';
@@ -164,6 +166,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/events/:eventCode/plan', <PlanningWorkspace />, 'mock', 'E07-S02'),
   page('/coordinator/events/:eventCode/readiness', <EventReadiness />, 'live', 'E08-S03'),
   page('/coordinator/events/:eventCode/confirm', <ConfirmRedirect />, 'redirect', 'E08-S03'),
+  page('/coordinator/events/:eventCode/complete', <EventCompletion />, 'live', 'E08-S05'),
   page('/coordinator/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),
@@ -178,11 +181,9 @@ export const routes: AppRoute[] = [
   page('/venue/inventory/new', <VenueForm mode="create" />, 'live', 'E05-S01'),
   page('/venue/inventory/:venueId/edit', <VenueForm mode="edit" />, 'live', 'E05-S01'),
   page('/venue/availability', <AvailabilityCalendar />, 'live', 'E05-S03'),
-  page('/venue/bookings/:bookingId', <PendingBookingDetail />, 'mock', 'E06-S04'),
-  page('/venue/bookings/:bookingId/decide', (
-    <ComingSoon story="E06-S04" title="Decide on a venue booking"
-      summary="Venue Staff approve or reject a single pending booking request with a required reason. Approving flags any competing pending requests as conflicting." />
-  ), 'coming-soon', 'E06-S04'),
+  page('/venue/bookings', <BookingRequests />, 'live', 'E06-S04'),
+  page('/venue/bookings/:bookingId', <BookingDetail />, 'live', 'E06-S04'),
+  page('/venue/bookings/:bookingId/decide', <BookingDecision />, 'live', 'E06-S04'),
   page('/venue/blockout', <VenueBlockout />, 'live', 'E05-S04'),
   page('/venue/holds', <TentativeHolds />, 'live', 'E06-S05'),
 

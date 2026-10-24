@@ -160,3 +160,14 @@ test('compiled venue booking submission rejects origin and anonymous actors befo
   assert.equal(anonymous.status, 401);
   assert.equal(anonymous.body.error, 'Sign in to continue.');
 });
+
+
+// E08-S05 completion dispatch must authenticate before touching PostgreSQL.
+for (const method of ['GET','POST']) test(`completion ${method} refuses a missing session before database access`,()=>{
+ const response=invoke('api/events.js',method,{url:'/api/events?completion=1&id=COMP-1'});
+ assert.equal(response.status,401);assert.equal(response.body.error,'Sign in to continue.');
+});
+test('completion evaluator rejects missing internal credentials in production',()=>{
+ const response=invoke('api/cron/outbox-relay.js','GET',{url:'/api/cron/outbox-relay?task=completion'});
+ assert.equal(response.status,401);
+});

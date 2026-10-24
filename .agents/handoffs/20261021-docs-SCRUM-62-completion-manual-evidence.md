@@ -19,3 +19,5 @@ Final source CI: application-checks run39993391775 succeeded on6be208a (24 Octob
 24 October: user supplied two original hand-taken TC06 screenshots from application6be208a. New immutable backend/db manual session20261024-012657 records visible Confirmed at16:59:59 and Completed at17:00:00 with System activity. Byte-identical originals retained under its evidence folder; historical SKIP records untouched. Controlled application time and actual observation/audit time explicitly separated. Update derivative checklist and postplan; independent evidence review and merge-after-324 remain required.
 
 Verification: python3 scripts/check.py passed163 tooling tests and hygiene; session20261024-013008. Postplan structure and browser visual check passed; https://rykjk4mfouv2.postplan.dev/v/1. No application change or application rerun.
+
+24 October follow-up: merge main9c8a37f after completion #324 and booking decisions #298 integrated. Resolve sole .gitignore conflict by retaining both E08 manual-evidence HTML and completion-review/automated-image exceptions. No manual session or screenshot edited; no application logic changes beyond incoming reviewed main.
