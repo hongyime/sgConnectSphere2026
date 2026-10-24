@@ -49,6 +49,12 @@ const NOT_DECIDABLE: Record<string, string> = {
   expired: 'This hold has expired, so there is nothing to decide.',
 };
 
+// Why a Pending request on a closed event can't be decided.
+const EVENT_CLOSED: Record<string, string> = {
+  completed: 'This event has been completed, so its booking requests can no longer be decided.',
+  cancelled: 'This event has been cancelled, so its booking requests can no longer be decided.',
+};
+
 const BOOKING_SELECT = `SELECT vb.id, vb.status, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at,
     v.id AS venue_id, v.name AS venue_name,
     e.id AS event_id, e.event_code, e.title AS event_title, e.expected_attendance,
@@ -238,7 +244,8 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     const target = (await client.query<{ venue_id: string; event_id: string }>(
       'SELECT venue_id, event_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
     if (!target) return { status: 404, body: { error: 'Booking not found.' } };
-    await client.query('SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id]);
+    const event = (await client.query<{ status: string }>(
+      'SELECT status FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id])).rows[0];
     try {
       const account = await client.query(`SELECT id FROM users WHERE id=$1 AND is_active AND role='venue_staff'
         AND failed_login_count<5 AND (locked_until IS NULL OR locked_until<=clock_timestamp()) FOR SHARE NOWAIT`, [staff.id]);
@@ -248,6 +255,10 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
         throw new AccessError(409, 'An account update may be in progress. Refresh the booking list and try again.');
       throw error;
     }
+    // A Completed or Cancelled event is closed, so a request still Pending on
+    // it is left alone rather than confirmed onto a finished event.
+    const closed = event && EVENT_CLOSED[event.status];
+    if (closed) return { status: 409, body: { error: closed } };
     await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [target.venue_id]);
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };

@@ -876,6 +876,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a seeded request with no saved assessment reports no advisory result
 - only Venue Staff can decide; a refusal is audited and leaves the request pending
 - task12: stale Venue Staff identity cannot decide after database account revocation
+- a pending request on a Completed or Cancelled event is refused and leaves no trace
 - a decided request cannot be decided again
 - two Venue Staff deciding the same request at once: one decision wins, the other is refused
 - the first approved booking becomes the primary venue; a second Confirmed venue does not
@@ -900,6 +901,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an invalid booking id or decision is refused before a transaction opens
 - an unknown booking is not found, and the transaction is left without changes
 - a booking that is no longer pending cannot be decided, with a reason for each status
+- a pending request on a Completed or Cancelled event cannot be decided, and nothing is written
 - the suggested venue must differ from the requested one and be active
 - an approval makes the booking primary only when its event has no primary yet
 - a rejection never makes the booking primary
