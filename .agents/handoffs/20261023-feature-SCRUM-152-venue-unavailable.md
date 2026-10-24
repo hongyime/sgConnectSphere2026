@@ -10,9 +10,9 @@ The stories were labelled Sprint 3, so the Week 9 decisions were not applied to 
 
 - `docs/backlog/release-1/` and `docs/backlog/product/` E05-S06: open-ended unavailability (T-80), Confirmed event returns to Planning, not cancelled (C-120, T-81), Coordinator-only notice at loss (C-121), restore on shorten/lift (C-122), new Scenario 7 for edit/lift history and lift notice (T-91). Sprint, Points and Owner metadata unchanged.
 - Same two files, E10-S05: Scenario 1 now returns a Confirmed event to Planning; Scenario 4 triggers on the replacement being confirmed (C-121, T-81).
-- `docs/testing/cases/E05.md`: TC_E05S06_02/_03/_04/_05 updated; TC_E05S06_04 now checks an open-ended save instead of a refusal; new TC_E05S06_07.
+- `docs/testing/cases/E05.md`: TC_E05S06_02/_03/_04/_05 updated; TC_E05S06_04 now checks an open-ended save instead of a refusal; new TC_E05S06_07 and TC_E05S06_08.
 - `docs/testing/cases/E10.md`: TC_E10S05_01/_03/_04 updated.
-- `tests/e2e/e05.spec.ts`, `tests/e2e/e10.spec.ts`: fixme scaffold titles follow the case titles; TC_E05S06_07 scaffold added. All remain `test.fixme`.
+- `tests/e2e/e05.spec.ts`, `tests/e2e/e10.spec.ts`: fixme scaffold titles follow the case titles; TC_E05S06_07 and _08 scaffolds added. All remain `test.fixme`.
 - Regenerated `CONNECTSPHERE BACKLOGS CAA 241026.xlsx` (first made as 231026, rebuilt on 24 Oct after the C-111 edit), `PROJECT TEST CASES CAA 241026.xlsx`, legacy `PROJECT TEST CASES.xlsx` (copy of the new export) and `docs/testing/tc-coverage.md` (378 cases). The test-case export was first made as CAA 231026; after main merged #324 (E08 case changes, CAA 211026), it was rebuilt from both sides as CAA 241026 and the unmerged 231026 file dropped.
 - `docs/source-of-truth.md`: export table points at CAA 241026 for backlog, test cases and BDR; one paragraph records this alignment.
 - `docs/bdr/G-change-log.md`: 24 October entry for the alignment, following the team's practice of logging backlog changes there; BDR export regenerated as `BACKLOG DECISION REVIEW CAA 241026.docx`. ADR export unchanged (the generated ADR file was discarded).
@@ -28,7 +28,7 @@ The stories were labelled Sprint 3, so the Week 9 decisions were not applied to 
 
 ## Next
 
-1. Open PR 1 as a draft, add a PostPlan, get one teammate approval.
+1. PR 1 is #344 (PostPlan https://6fcrmb7bq3ih.postplan.dev, version 2 covers the C-111 holds change). It needs one teammate approval, then merge. Main was merged in after #298 landed (only `tc-coverage.md` conflicted).
 2. PR 2 (backend, new branch): migration 0025 (block category, nullable end, lifted state, history table, booking status before conflict), datetime blocks, create/edit/lift with Conflicting flagging, T-81 reversion and Coordinator notices; unit tests at 100% and native loopback PostgreSQL integration tests only.
 3. PR 3 (frontend, new branch): block form, affected-events list, event venue-conflict flag.
 4. Le Xin runs TC_E05S06_01 to _07 by hand with T-93 screenshots.
