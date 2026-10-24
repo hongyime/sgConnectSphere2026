@@ -928,6 +928,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection without a suggested venue says nothing about an alternative
 - a clash names a pending booking or a hold, with or without an event code
 - an approval over a maintenance block is blocked and names the block
+- an approval over an open-ended unavailability says it lasts until lifted (E05-S06, T-80)
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
@@ -1038,6 +1039,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenario 5: removing the end of an unavailability flags bookings far in the future
 - Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
 - Scenario 7: lifting tells the Coordinator of a replaced booking too, which stays Conflicting
+
+### `backend/tests/venueUnavailability.test.ts`
+
+- Scenarios 2 to 4: creating flags every overlapping booking and hold, returns only the Confirmed event to Planning and tells each Coordinator once
+- Scenarios 1 and 5: an open-ended unavailability without a note says
+- creating refuses invalid input before a transaction, an overlapping unavailability, and an unknown venue
+- a booking that appears after the first read is locked without waiting, and a busy event asks staff to try again
+- Scenarios 5 to 7: editing restores bookings it no longer covers, skips replaced ones, flags new ones and keeps history
+- editing needs a start, valid input and a free period, and does not hide other restore errors
+- E05-S04 shorten still only shortens, keeps the category and note, and now restores what it releases
+- Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
+- E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
+- the block list shows an open-ended block with no end and hides lifted ones in its query
+- Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read
 
 ### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
 
