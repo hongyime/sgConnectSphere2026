@@ -152,25 +152,17 @@ test('invalid input is rejected before a transaction opens', async () => {
 // notification query wraps the booking range in occupied_window(); the
 // real-database boundary (a block ending before the advertised event start
 // but overlapping setup time) is covered in venueBufferConflicts.integration.test.ts.
-test('createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window', async () => {
-  let conflictSql = '';
-  let notifySql = '';
-  const calls: string[] = [];
+test('createVenueBlock finds affected bookings on the raw advertised booking range, not the buffered window (T-80)', async () => {
+  const affectedSql: string[] = [];
   const client = {
-    query: async (sql: string, values?: unknown[]) => {
-      calls.push(sql);
+    query: async (sql: string) => {
       if (sql.includes('FROM venues WHERE id::text')) return { rows: [{ id: 'v1', name: 'Riverside Hall' }] };
-      if (sql.includes('SELECT DISTINCT')) {
-        notifySql = sql;
-        return { rows: [] };
-      }
       if (sql.includes('FROM venue_bookings vb')) {
-        conflictSql = sql;
+        affectedSql.push(sql);
         return { rows: [] };
       }
-      if (sql.includes('FROM venue_blocks WHERE venue_id')) return { rows: [] };
       if (sql.includes('INSERT INTO venue_blocks')) {
-        return { rows: [{ id: 'b1', venue_id: 'v1', reason: valid.reason,
+        return { rows: [{ id: 'b1', venue_id: 'v1', reason_category: 'maintenance', reason: valid.reason,
           starts_at: new Date('2027-01-04T16:00:00.000Z'), ends_at: new Date('2027-01-10T16:00:00.000Z'),
           created_at: new Date('2027-01-01T00:00:00.000Z') }] };
       }
@@ -182,8 +174,7 @@ test('createVenueBlock compares maintenance blocks against the raw advertised bo
 
   const result = await createVenueBlock(pool, venueStaff, 'v1', valid);
   assert.equal(result.status, 201);
-  assert.ok(conflictSql, 'expected the booking-conflict check to run');
-  assert.ok(notifySql, 'expected the coordinator-notification query to run');
-  assert.ok(!conflictSql.includes('occupied_window'), `conflict check must not use buffers: ${conflictSql}`);
-  assert.ok(!notifySql.includes('occupied_window'), `notification query must not use buffers: ${notifySql}`);
+  // Read once before the locks and again under them.
+  assert.equal(affectedSql.length, 2);
+  for (const sql of affectedSql) assert.ok(!sql.includes('occupied_window'), `affected bookings must not use buffers: ${sql}`);
 });

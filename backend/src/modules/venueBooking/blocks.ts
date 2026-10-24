@@ -4,7 +4,8 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { requireCatalogueViewer, requireVenueStaff, type VenueErrors } from './catalogue.js';
-import { holdsVenue } from './bookingShared.js';
+import { formatSgt, holdsVenue } from './bookingShared.js';
+import { applyEventStatusChange } from '../eventLifecycle/repository.js';
 
 // E05-S04 "Block a venue for maintenance". A block is a venue_blocks row; venue
 // search (E06-S01) and the availability calendar (E05-S03) already read that
@@ -166,7 +167,7 @@ async function audit(client: PoolClient, actorId: string, blockId: string, actio
 }
 
 function describe(block: VenueBlock): string {
-  return `${block.from} to ${block.to}: ${block.reason}`;
+  return `${block.from} to ${block.to ?? 'until lifted'}: ${block.reason}`;
 }
 
 export async function listVenueBlocks(query: Query, user: AuthenticatedUser | undefined, venueId: string) {
@@ -183,42 +184,84 @@ export async function listVenueBlocks(query: Query, user: AuthenticatedUser | un
   return { blocks: result.rows.map(toVenueBlock) };
 }
 
+// Scenario 4: the category as Venue Staff and Coordinators read it.
+export const CATEGORY_LABELS: Record<ReasonCategory, string> = {
+  maintenance: 'Maintenance', equipment_failure: 'Equipment failure', renovation: 'Renovation',
+  safety_concern: 'Safety concern', other: 'Other',
+};
+
+function period(start: Date, end: Date | null) {
+  return end ? `${formatSgt(start)} to ${formatSgt(end)}` : `from ${formatSgt(start)} until lifted`;
+}
+
+const BUSY = 'Bookings at this venue are changing right now. Try again in a moment.';
+
+// T-91 / Scenario 7: an append-only snapshot of each create, edit and lift.
+async function recordHistory(client: PoolClient, blockId: string, action: 'created' | 'edited' | 'lifted',
+  actorId: string, before: BlockRow | null, after: BlockRow | null) {
+  await client.query(`INSERT INTO venue_block_history
+      (block_id, action, previous_range, new_range, previous_category, new_category, previous_reason, new_reason, actor_id)
+    VALUES ($1, $2,
+      CASE WHEN $3::timestamptz IS NULL THEN NULL ELSE tstzrange($3::timestamptz, $4::timestamptz, '[)') END,
+      CASE WHEN $5::timestamptz IS NULL THEN NULL ELSE tstzrange($5::timestamptz, $6::timestamptz, '[)') END,
+      $7, $8, $9, $10, $11)`,
+  [blockId, action, before?.starts_at ?? null, before?.ends_at ?? null, after?.starts_at ?? null, after?.ends_at ?? null,
+    before?.reason_category ?? null, after?.reason_category ?? null, before?.reason ?? null, after?.reason ?? null, actorId]);
+}
+
+type AffectedRow = {
+  booking_id: string; status: 'pending' | 'confirmed' | 'tentative';
+  event_id: string; event_code: string | null; title: string; event_status: string; coordinator_id: string | null;
+};
+
+// Scenario 2 (C-111): a Pending or Confirmed booking, or an unexpired hold,
+// that has not ended and overlaps the period on its advertised times (T-80:
+// no setup/turnaround buffers around an unavailability), on an event that is
+// still running.
+const affectedSql = (lock: string) => `
+  SELECT vb.id AS booking_id, vb.status::text AS status, e.id AS event_id, e.event_code, e.title,
+    e.status::text AS event_status, e.coordinator_id
+  FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
+  WHERE vb.venue_id::text = $1 AND ${holdsVenue('vb', 'now()')}
+    AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+    AND upper(vb.booking_range) > now() AND e.status NOT IN ('cancelled', 'completed', 'rejected')
+  ORDER BY lower(vb.booking_range), vb.id ${lock}`;
+
+// Event rows first, then the venue, as booking requests, holds and decisions
+// lock them, so creating an unavailability cannot deadlock with them.
+async function lockEvents(client: PoolClient, eventIds: string[], noWait: boolean) {
+  if (!eventIds.length) return;
+  try {
+    await client.query(`SELECT id FROM events WHERE id = ANY($1::uuid[]) ORDER BY id FOR NO KEY UPDATE${noWait ? ' NOWAIT' : ''}`, [eventIds]);
+  } catch (error) {
+    if ((error as { code?: string }).code === '55P03') throw new AccessError(409, BUSY);
+    throw error;
+  }
+}
+
+// E05-S06 Scenarios 1 to 4 and 7. Saving an unavailability never releases or
+// cancels a booking: overlapping bookings and holds become Conflicting, a
+// Confirmed event returns to Planning (T-81), and only each affected
+// Coordinator is told now (C-121). E05-S04 Scenario 2's refusal over a
+// confirmed booking is superseded (T-67).
 export async function createVenueBlock(database: Pool, user: AuthenticatedUser | undefined, venueId: string, body: unknown) {
   const staff = await requireVenueStaff(poolQuery(database), user);
-  const validated = validateBlockInput(body);
+  const validated = validateUnavailabilityInput(body);
   if (validated.errors) return { status: 400, body: { error: 'validation_failed', errors: validated.errors } };
-  const { start, end } = validated.input;
-  const reason = validated.input.reason!;
+  const { start, end, category, reason } = validated.input;
+  const window = [venueId, start, end];
 
   return inTransaction(database, async client => {
+    const candidates = await client.query<AffectedRow>(affectedSql(''), window);
+    const locked = [...new Set(candidates.rows.map(row => row.event_id))].sort();
+    await lockEvents(client, locked, false);
     const venue = await lockVenue(client, venueId);
 
-    // Scenario 2: a confirmed booking must be resolved first, so the block is
-    // refused and every conflicting booking is named. Scenario 5: venue
-    // setup/turnaround buffers do NOT apply against maintenance blocks, so
-    // this check uses the raw advertised booking_range.
-    const conflicts = await client.query<{ event_code: string | null; title: string; starts_at: Date; ends_at: Date }>(`
-      SELECT e.event_code, e.title, lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at
-      FROM venue_bookings vb
-        JOIN events e ON e.id = vb.event_id
-      WHERE vb.venue_id = $1 AND vb.status = 'confirmed'
-        AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-      ORDER BY lower(vb.booking_range)`, [venue.id, start, end]);
-    if (conflicts.rows.length) {
-      return { status: 409, body: {
-        error: 'booking_conflict',
-        message: 'This period overlaps a confirmed booking. Resolve the booking before blocking the venue.',
-        conflictingBookings: conflicts.rows.map(row => ({
-          eventCode: row.event_code, title: row.title, startsAt: row.starts_at.toISOString(), endsAt: row.ends_at.toISOString(),
-        })),
-      } };
-    }
-
-    // Overlapping blocks would make a later shorten or remove look like it
-    // failed, because the other block would still hold the period.
+    // Overlapping blocks would make a later edit or lift look like it failed,
+    // because the other block would still hold the period.
     const overlapping = await client.query<BlockRow>(`
       SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
-      FROM venue_blocks WHERE venue_id = $1 AND block_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+      FROM venue_blocks WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(block_range)`, [venue.id, start, end]);
     if (overlapping.rows.length) {
       return { status: 409, body: {
@@ -229,47 +272,60 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
     }
 
     const inserted = await client.query<BlockRow & { created_at: Date }>(`
-      INSERT INTO venue_blocks (venue_id, block_range, reason, created_by) VALUES ($1, tstzrange($2::timestamptz, $3::timestamptz, '[)'), $4, $5)
+      INSERT INTO venue_blocks (venue_id, block_range, reason_category, reason, created_by)
+      VALUES ($1, tstzrange($2::timestamptz, $3::timestamptz, '[)'), $4, $5, $6)
       RETURNING id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at, created_at`,
-    [venue.id, start, end, reason, staff.id]);
+    [venue.id, start, end, category, reason, staff.id]);
     const row = inserted.rows[0]!;
     const block = toVenueBlock(row);
     await audit(client, staff.id, block.id, 'Venue blocked', null, describe(block));
+    await recordHistory(client, block.id, 'created', staff.id, null, row);
 
-    const notified = await notifyAffectedCoordinators(client, venue.name, block, row.created_at);
-    return { status: 201, body: { block, notifiedEventCount: notified } };
+    // A booking added between the first read and the venue lock belongs to an
+    // event not locked yet; take it without waiting, or ask staff to retry.
+    const affected = (await client.query<AffectedRow>(affectedSql('FOR UPDATE OF vb'), window)).rows;
+    await lockEvents(client, [...new Set(affected.map(item => item.event_id))].filter(id => !locked.includes(id)).sort(), true);
+    const affectedEvents = await flagAffected(client, staff.id, venue.name, row, row.created_at, affected);
+    return { status: 201, body: {
+      block, affectedEvents, notifiedEventCount: affectedEvents.filter(event => event.coordinatorNotified).length,
+    } };
   });
 }
 
-// Scenario 3. A confirmed booking has already been refused above, so the
-// affected events are the ones still holding the venue tentatively: a pending
-// booking or an unexpired E06-S05 hold (both the calendar's "tentative"
-// state) that has not ended, on an event that has not ended. An event with no assigned Coordinator has nobody to tell
-// yet; assignment (E03-S01) notifies the Coordinator it later picks.
-// The notification ID is derived from the block ID, so a retried save never
-// sends the same Coordinator a second copy. Scenario 5: like the conflict
-// check above, this matches the raw advertised booking_range — a booking
-// whose setup/turnaround buffer merely touches the block is not affected.
-async function notifyAffectedCoordinators(client: PoolClient, venueName: string, block: VenueBlock, occurredAt: Date) {
-  const affected = await client.query<{ event_id: string; title: string; coordinator_id: string }>(`
-    SELECT DISTINCT e.id AS event_id, e.title, e.coordinator_id
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
-    WHERE vb.venue_id = $1 AND vb.status <> 'confirmed' AND ${holdsVenue('vb', 'now()')} AND vb.booking_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
-      AND upper(vb.booking_range) > now()
-      AND e.coordinator_id IS NOT NULL AND upper(e.event_range) > now()
-      AND e.status NOT IN ('cancelled', 'completed', 'rejected')`,
-  [block.venueId, block.startsAt, block.endsAt]);
-  let count = 0;
-  for (const event of affected.rows) {
-    const message = `${venueName} is blocked from ${block.from} to ${block.to} (${block.reason}). ` +
-      `This overlaps the venue request for "${event.title}". Review the event's venue plans.`;
-    const id = await writeEventNotification(client, {
-      eventId: event.event_id, changeId: `venue-block:${block.id}`, userId: event.coordinator_id,
-      occurredAt, title: 'Venue blocked', message,
-    });
-    if (id) count += 1;
+// Scenarios 2 to 4 for one saved unavailability and the bookings it covers.
+// Also used when an edit makes an unavailability cover more (Scenario 5).
+async function flagAffected(client: PoolClient, actorId: string, venueName: string, block: BlockRow,
+  occurredAt: Date, affected: AffectedRow[]) {
+  for (const booking of affected) {
+    await client.query(`UPDATE venue_bookings SET status = 'conflicting', status_before_conflict = status, conflict_block_id = $2
+      WHERE id = $1`, [booking.booking_id, block.id]);
+    await client.query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+      VALUES ($1, 'venue_booking', $2, $3, 'Booking Conflicting', 'status', $4, 'conflicting')`,
+    [actorId, booking.booking_id, booking.event_id, booking.status]);
   }
-  return count;
+  const events = [...new Map(affected.map(item => [item.event_id, item])).values()];
+  const result = [];
+  for (const event of events) {
+    const returnedToPlanning = event.event_status === 'confirmed';
+    if (returnedToPlanning) {
+      await applyEventStatusChange(client, event.event_id, 'planning', actorId, {
+        auditAction: 'Returned to Planning: venue unavailable', skipNotices: true,
+      });
+    }
+    let coordinatorNotified = false;
+    if (event.coordinator_id) {
+      const note = block.reason ? `: ${block.reason}` : '';
+      const message = `${venueName} is unavailable ${period(block.starts_at, block.ends_at)} `
+        + `(${CATEGORY_LABELS[block.reason_category]}${note}). This affects the venue booking for "${event.title}". `
+        + `Alternative arrangements are required.${returnedToPlanning ? ' The event has returned to Planning.' : ''}`;
+      coordinatorNotified = Boolean(await writeEventNotification(client, {
+        eventId: event.event_id, changeId: `venue-unavailability:${block.id}:${occurredAt.toISOString()}`,
+        userId: event.coordinator_id, occurredAt, title: 'Venue unavailable', message,
+      }));
+    }
+    result.push({ eventId: event.event_id, eventCode: event.event_code, title: event.title, returnedToPlanning, coordinatorNotified });
+  }
+  return result;
 }
 
 // Checklist: "Remove or shorten an existing block". Only shortening is

@@ -141,6 +141,9 @@ export async function applyEventStatusChange(
     notificationOptions?: NotificationOptions;
     notificationVenueIds?: readonly string[];
     beforeNotify?: (change: EventStatusChange) => Promise<void>;
+    // E05-S06 / C-121: a venue loss tells only the Coordinator, from the
+    // caller, so the generic status notices to everyone are left out.
+    skipNotices?: boolean;
   } = {},
 ): Promise<{ event: EventRecord; change: EventStatusChange | null }> {
   // Lock the row and read its authoritative current status before trusting
@@ -218,9 +221,11 @@ export async function applyEventStatusChange(
     );
     change = { auditId: audit.rows[0].id, occurredAt: audit.rows[0].occurred_at, from: fromStatus };
     await options.beforeNotify?.(change);
-    const after = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
-    await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
-      actorId: actorId ?? undefined, before, after, change:{kind:'status',from:fromStatus,to:status} });
+    if (!options.skipNotices) {
+      const after = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
+      await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
+        actorId: actorId ?? undefined, before, after, change:{kind:'status',from:fromStatus,to:status} });
+    }
   }
 
   return { event: mapEvent(updated), change };
