@@ -14,7 +14,7 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 0b. Backend (on #348's branch): read an unavailability's history and list lifted unavailabilities, so the history screen TC_E05S06_07 step 3 opens has data. Then merge into this branch. Done in #348 (`0203699`, records `f6fa9c2`): GET `?id=&blocks=1&history=<block>` and `?id=&blocks=1&lifted=1`, Venue Staff only; merged here.
 - [x] 1. `blocksApi.ts`: timed input, optional end, reason category, `edit_block`, `lift_block`, history read, affected/restored events. (`2acd786`; old E05-S04 calls kept until Task 4; the current screen shows an open-ended block as "Until lifted").
 - [x] 2. `VenueBlockout.tsx` create form: start/end date and time, end optional ("until lifted"), category picker, note (Scenarios 1, 5). `59aec53`: old `createBlock` and the `booking_conflict` alert removed; TC_E05S04_02 unit + Playwright tests now check the superseding save (TC_E05S06_02); E05-S04 Playwright create tests use the new form (8/8 locally). #348's `tc-coverage.md` was stale after 0b; regenerated there (`7673580`) and merged here.
-- [ ] 3. Affected events listed on save (Scenarios 2–4).
+- [x] 3. Affected events listed on save (Scenarios 2–4). `4d013fc`: success alert lists each event with code, "Returned to Planning" and "Coordinator notified" / "No Coordinator assigned" labels.
 - [ ] 4. Edit (extend, shorten, remove end, change reason), Lift with confirm, history view with actor and time, lifted entries listed as lifted (Scenarios 5–7, T-91).
 - [ ] 5. `VenueCalendar.tsx`: reason category, "until lifted", Conflicting bookings labelled.
 - [ ] 6. `BookingRequests.tsx`: Conflicting booking shows reason, period, earlier status.
