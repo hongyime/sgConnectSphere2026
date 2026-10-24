@@ -11,7 +11,7 @@ Goal: migration-only PR for E05-S06 "Mark a venue temporarily unavailable over e
   - `venue_block_history`, append-only like `audit_logs` (0010): created/edited/lifted snapshots of range, category and note with actor and time. Foreign-key actions may still clear the actor or remove rows with their venue.
   - `venue_bookings.status_before_conflict` and `conflict_block_id` to restore a booking or unexpired hold when the unavailability is shortened or lifted (C-111, C-122).
   - The 0016 write guard ignores lifted unavailability.
-- `backend/tests/venueUnavailabilitySchema.integration.test.ts` (5 tests), added to `test:db`.
+- `backend/tests/venueUnavailabilitySchema.integration.test.ts` (5 tests), added to `test:db` and to `test:venue-booking-requests:db`, the booking selector the Application Checks workflow runs (CI lists database suites explicitly and does not run `test:db`).
 - `docs/db_schema.md` and `docs/class-diagram.md`: category history columns, the two booking columns, an ERD relationship and a migration note.
 
 ## Compatibility with the deployed app
