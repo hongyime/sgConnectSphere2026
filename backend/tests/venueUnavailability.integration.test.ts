@@ -12,7 +12,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { createVenueBlock, editVenueBlock, liftVenueBlock, listVenueBlocks } from '../src/modules/venueBooking/blocks.js';
+import {
+  createVenueBlock, editVenueBlock, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+} from '../src/modules/venueBooking/blocks.js';
+import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
+import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { loginDatabase } from './helpers/loginDatabase.js';
 
@@ -212,4 +216,113 @@ test('Scenario 7: lifting tells the Coordinator of a replaced booking too, which
   const again = (await f.notices(night.eventId)).filter(notice => notice.title === 'Venue available again');
   assert.equal(again.length, 1);
   assert.match(again[0]!.message, /still needs your attention/);
+}));
+
+const coordinatorUser = (id: string): AuthenticatedUser => ({ id, email: `${id}@example.test`, role: 'event_coordinator', isActive: true, failedLoginCount: 0 });
+const queryOf = (f: Fixture) => ((sql: string, values?: unknown[]) => f.pool.query(sql, values)) as never;
+
+test('TC_E05S06_01: marking a free period unavailable with a reason category saves it and shows the period as Blocked', () => withFixture(async f => {
+  const result = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-20T08:00:00+08:00', ends_at: '2027-01-20T18:00:00+08:00',
+    reason_category: 'equipment_failure', reason: 'Projector rig fault',
+  });
+  assert.equal(result.status, 201);
+  const body = result.body as { block: Record<string, unknown>; affectedEvents: unknown[] };
+  assert.deepEqual(
+    [body.block.startsAt, body.block.endsAt, body.block.reasonCategory, body.block.reason],
+    ['2027-01-20T00:00:00.000Z', '2027-01-20T10:00:00.000Z', 'equipment_failure', 'Projector rig fault']);
+  assert.deepEqual(body.affectedEvents, []);
+  const saved = (await f.pool.query(`SELECT created_by, reason_category::text, reason FROM venue_blocks WHERE id = $1`, [body.block.id])).rows;
+  assert.deepEqual(saved, [{ created_by: f.ids.staff, reason_category: 'equipment_failure', reason: 'Projector rig fault' }]);
+
+  const calendar = await getVenueCalendar(queryOf(f), f.staff, f.ids.venue, '2027-01-20', '2027-01-20');
+  assert.deepEqual(calendar.entries.filter(entry => entry.state === 'blocked').map(entry => [entry.start, entry.end, entry.reasonCategory]),
+    [['2027-01-20T00:00:00.000Z', '2027-01-20T10:00:00.000Z', 'equipment_failure']]);
+}));
+
+test('TC_E05S06_02: an unavailability over a Pending request and a Confirmed booking flags both, lists both, releases neither and returns the Confirmed event to Planning', () => withFixture(async f => {
+  const run = await f.book('Charity Run', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-15', '10:00', '12:00');
+  const dinner = await f.book('Alumni Dinner', f.ids.coordinator2, 'planning', 'pending', '2027-01-15', '14:00', '16:00');
+  // Charity Run's other arrangement: a second Confirmed venue at the same time (C-67).
+  const annex = randomUUID();
+  await f.pool.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, 'Harbour Suite', 'Test wing', 300, '08:00', '22:00')`, [annex]);
+  const other = (await f.pool.query<{ id: string }>(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status)
+    VALUES ($1, $2, '[2027-01-15T10:00:00+08:00,2027-01-15T12:00:00+08:00)', 'confirmed') RETURNING id`, [annex, run.eventId])).rows[0]!;
+
+  const result = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-15T00:00:00+08:00', ends_at: '2027-01-16T00:00:00+08:00', reason_category: 'safety_concern', reason: 'Ceiling inspection',
+  });
+  assert.equal(result.status, 201);
+  const blockId = (result.body as EditBody).block.id;
+  assert.deepEqual((result.body as EditBody).affectedEvents.map(event => event.title), ['Charity Run', 'Alumni Dinner']);
+  assert.deepEqual(await f.booking(run.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: blockId });
+  assert.deepEqual(await f.booking(dinner.bookingId), { status: 'conflicting', status_before_conflict: 'pending', conflict_block_id: blockId });
+
+  // Charity Run is back in Planning, not cancelled; its other arrangement is intact; its event view carries the flag.
+  assert.equal(await f.eventStatus(run.eventId), 'planning');
+  assert.equal(await f.eventStatus(dinner.eventId), 'planning');
+  assert.equal((await f.booking(other.id)).status, 'confirmed');
+  const view = await listBookingRequests(queryOf(f), coordinatorUser(f.ids.coordinator1), run.eventId);
+  const flagged = (view.bookings as Array<Record<string, unknown>>).find(row => row.id === run.bookingId)!;
+  assert.deepEqual([flagged.status, flagged.conflict_reason_category, flagged.conflict_note], ['conflicting', 'safety_concern', 'Ceiling inspection']);
+
+  // The calendar shows the period Blocked with both Conflicting bookings visible.
+  const calendar = await getVenueCalendar(queryOf(f), f.staff, f.ids.venue, '2027-01-15', '2027-01-15');
+  assert.ok(calendar.entries.some(entry => entry.state === 'blocked'));
+  assert.deepEqual(calendar.entries.filter(entry => entry.state === 'conflicting').map(entry => [entry.event?.title, entry.reasonCategory]),
+    [['Charity Run', 'safety_concern'], ['Alumni Dinner', 'safety_concern']]);
+}));
+
+test('TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period, reason and event; the Organiser gets none', () => withFixture(async f => {
+  const run = await f.book('Charity Run', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-15', '10:00', '12:00');
+  const dinner = await f.book('Alumni Dinner', f.ids.coordinator2, 'planning', 'pending', '2027-01-15', '14:00', '16:00');
+  await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-15T00:00:00+08:00', ends_at: '2027-01-16T00:00:00+08:00', reason_category: 'safety_concern', reason: 'Ceiling inspection',
+  });
+  for (const [event, coordinator, title] of [[run.eventId, f.ids.coordinator1, 'Charity Run'], [dinner.eventId, f.ids.coordinator2, 'Alumni Dinner']]) {
+    const rows = (await f.pool.query<{ user_id: string; message: string; delivery_id: string | null }>(
+      `SELECT n.user_id, n.message, d.id AS delivery_id FROM notifications n
+       LEFT JOIN notification_deliveries d ON d.notification_id = n.id WHERE n.event_id = $1`, [event])).rows;
+    assert.equal(rows.length, 1, `${title}: exactly one notice, and none for the Organiser`);
+    assert.equal(rows[0]!.user_id, coordinator);
+    assert.ok(rows[0]!.delivery_id, `${title}: an email delivery is queued with the in-app notice`);
+    assert.match(rows[0]!.message, new RegExp(`^Riverside Hall is unavailable 15 Jan 2027, .* \\(Safety concern: Ceiling inspection\\)\\. This affects the venue booking for "${title}"\\. Alternative arrangements are required\\.`));
+  }
+  const organiser = (await f.pool.query(`SELECT count(*)::int AS count FROM notifications WHERE user_id = $1`, [f.ids.organiser])).rows[0];
+  assert.equal(organiser.count, 0);
+}));
+
+test('TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted', () => withFixture(async f => {
+  const result = await createVenueBlock(f.pool, f.staff, f.ids.venue, { starts_at: '2027-01-20T08:00:00+08:00', reason_category: 'renovation' });
+  assert.equal(result.status, 201);
+  const block = (result.body as { block: Record<string, unknown> }).block;
+  assert.deepEqual([block.startsAt, block.endsAt, block.to, block.reasonCategory], ['2027-01-20T00:00:00.000Z', null, null, 'renovation']);
+  const saved = (await f.pool.query(`SELECT created_by, upper_inf(block_range) AS open FROM venue_blocks WHERE id = $1`, [block.id])).rows;
+  assert.deepEqual(saved, [{ created_by: f.ids.staff, open: true }]);
+
+  const first = await getVenueCalendar(queryOf(f), f.staff, f.ids.venue, '2027-01-20', '2027-01-20');
+  assert.deepEqual(first.entries.filter(entry => entry.state === 'blocked').map(entry => [entry.start, entry.end]),
+    [['2027-01-20T00:00:00.000Z', '2027-01-20T16:00:00.000Z']]);
+  const later = await getVenueCalendar(queryOf(f), f.staff, f.ids.venue, '2027-03-20', '2027-03-20');
+  assert.deepEqual(later.entries.map(entry => entry.state), ['blocked']);
+  const listed = await listVenueBlocks(queryOf(f), f.staff, f.ids.venue);
+  assert.deepEqual(listed.blocks.map(entry => entry.id), [block.id]);
+}));
+
+test("TC_E05S06_06: E05-S04's block, shorten and remove still work for periods with no bookings", () => withFixture(async f => {
+  const created = await createVenueBlock(f.pool, f.staff, f.ids.venue, { from: '2027-01-05', to: '2027-01-07', reason: 'Annual fire safety inspection' });
+  assert.equal(created.status, 201);
+  const block = (created.body as { block: Record<string, unknown> }).block;
+  assert.deepEqual([block.from, block.to, block.reasonCategory], ['2027-01-05', '2027-01-07', 'maintenance']);
+  const blockedDays = async () => (await getVenueCalendar(queryOf(f), f.staff, f.ids.venue, '2027-01-05', '2027-01-07'))
+    .entries.filter(entry => entry.state === 'blocked').map(entry => entry.end);
+  assert.deepEqual(await blockedDays(), ['2027-01-07T16:00:00.000Z']);
+
+  const shortened = await shortenVenueBlock(f.pool, f.staff, f.ids.venue, String(block.id), { from: '2027-01-05', to: '2027-01-05' });
+  assert.equal(shortened.status, 200);
+  assert.deepEqual(await blockedDays(), ['2027-01-05T16:00:00.000Z']);
+
+  const removed = await removeVenueBlock(f.pool, f.staff, f.ids.venue, String(block.id));
+  assert.equal((removed.body as { removed: boolean }).removed, true);
+  assert.deepEqual(await blockedDays(), []);
 }));

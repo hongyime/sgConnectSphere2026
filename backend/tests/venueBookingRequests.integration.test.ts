@@ -36,6 +36,8 @@ test('TC_E06S03_05: PostgreSQL request list isolates assigned events and preserv
     }
     await client.query("INSERT INTO venue_bookings(venue_id,event_id,status,booking_range,decision_reason) VALUES($1,$2,'rejected','[2027-01-15T09:00:00+08,2027-01-15T10:00:00+08)','PRIVATE OTHER REASON')", [venue, other]);
     await client.query(await readFile(new URL('../database/migrations/0019_venue_bookings_contract.sql', import.meta.url), 'utf8'));
+    // E05-S06: the request list also reads the unavailability that flagged a booking.
+    await client.query(await readFile(new URL('../database/migrations/0025_venue_unavailability.sql', import.meta.url), 'utf8'));
     assert.equal((await client.query('SELECT requested_by FROM venue_bookings LIMIT 1')).rows[0].requested_by, null);
     for (const identifier of [event, 'EVT-REQUESTS']) {
       const result = await listBookingRequests(query, user, identifier);

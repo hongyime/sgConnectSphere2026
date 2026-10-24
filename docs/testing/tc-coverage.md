@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **227** (60.1%)
-  - Real-database (`.integration.test` / `.db.test`): **39**
+- Automated (explicit TC_ID in an active test title): **231** (61.1%)
+  - Real-database (`.integration.test` / `.db.test`): **43**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **187**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **111** (29.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **107** (28.3%)
 - No test yet (no test file mentions the TC_ID): **40** (10.6%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 39 | 34 | 5 | 0 |
+| E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 27 | 11 | 5 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **227** | **111** | **40** |
+| **Total** | **378** | **231** | **107** | **40** |
 
 ## Case-by-case status
 
@@ -218,12 +218,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently; tests/e2e/e05.spec. |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private; backend/tes |
-| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked |
-| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; tests/e2e/e05.spec.ts: TC_E05S0 |
-| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason |
-| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted |
+| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_01: marking a free period unavailable with a reason category saves it and shows the period as Blocked; tests/e2e/e0 |
+| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; backend/tests/venueUnavailabili |
+| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period |
+| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted; tests/e2e/e05.spec.ts: TC |
 | `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_05: extending by one minute over a booking flags it, and ending at its start again restores it; tests/e2e/e05.spec. |
-| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
+| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_06: E05-S04; tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
 | `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_07: editing and lifting keep a history, the lifted block is kept, and its Coordinator is told on lift; tests/e2e/e0 |
 | `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_08: an unexpired tentative hold is flagged without being released, its Coordinator told, and restored on lift; test |
 
@@ -955,6 +955,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - parseCalendarRange lists every Singapore day in an inclusive range
 - parseCalendarRange rejects missing, malformed, impossible, reversed and oversized ranges
 - an unassigned event is Unavailable to every Coordinator but visible to Venue Staff
+- a Conflicting booking shows inside the Blocked period with its unavailability category
 - Free periods skip overlapping bookings and blocks and stay within opening hours
 - a retired venue shows its bookings and blocks but no Free period
 - a day fully covered by a block has no Free period
