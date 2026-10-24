@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **378**
 - Automated (explicit TC_ID in an active test title): **240** (63.5%)
-  - Real-database (`.integration.test` / `.db.test`): **39**
+  - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **200**
+  - Live-assertion (other active tests): **201**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **103** (27.2%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
@@ -1427,9 +1427,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the end needs both a date and a time, and must be after the start, before any POST is sent
 - server field errors show next to their fields, and other failures show the server message
 - an overlap with another unavailability is refused and names that unavailability
-- removing a block goes through ConfirmPanel and reloads the list on success
-- E05-S06: an open-ended block lists as until lifted and can still be shortened to an end date (T-80)
-- a failed remove shows the server message and closes the confirmation
+- removing the end of an unavailability makes it open-ended, and Cancel closes the edit form (Scenario 5)
+- an edit that would overlap another unavailability is refused and names it
+- lifting goes through ConfirmPanel, lists the restored bookings and reloads the list (Scenario 6)
+- an open-ended unavailability lists as until lifted, edits with an empty end, and lifts with nothing to restore (T-80)
+- a failed lift shows the server message and closes the confirmation
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 

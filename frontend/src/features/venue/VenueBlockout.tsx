@@ -1,34 +1,33 @@
 // E05-S04 "Block a venue for maintenance" on the shared blocks (ADR-017
-// skeleton pilot, SCRUM-120). Venue Staff list a venue's current and upcoming
-// blocks, shorten a block, and remove a block. A server 409 refusal over an
-// existing block is shown verbatim with that block named; the save
-// confirmation reports how many events had their Coordinator notified.
-//
-// E05-S06 (SCRUM-152) replaces the whole-day create form: Venue Staff mark the
-// venue unavailable from a start date and time, with an optional end (none =
-// until lifted, T-80), a reason category and a note. The save succeeds over
-// existing bookings (T-67); the server flags them Conflicting.
+// skeleton pilot, SCRUM-120), reworked by E05-S06 (SCRUM-152) "Mark a venue
+// temporarily unavailable over existing bookings". Venue Staff list a venue's
+// current and upcoming unavailability, mark it unavailable from a start date
+// and time with an optional end (none = until lifted, T-80), a reason category
+// and a note, edit it and lift it (T-91). The save succeeds over existing
+// bookings (T-67): the server flags them Conflicting and the screen lists the
+// affected events; an edit or lift lists the bookings it restored. A server
+// 409 refusal over another unavailability is shown verbatim with that one named.
 //
 // Backend contract: see api/venues/index.ts (?blocks=1 for the list; POST
-// actions block / shorten_block / remove_block) and
+// actions block / edit_block / lift_block) and
 // backend/src/modules/venueBooking/blocks.ts for the request and response
-// shapes. The list reports YYYY-MM-DD Singapore days; the create form sends
-// Singapore times with a +08:00 offset.
-import { useEffect, useId, useState, type FormEvent } from 'react';
-import { CalendarClock, PencilLine, Plus, Trash2 } from 'lucide-react';
+// shapes. The form sends Singapore times with a +08:00 offset.
+import { useEffect, useId, useState, type FormEvent, type ReactNode } from 'react';
+import { CalendarClock, PencilLine, Plus, Unlock } from 'lucide-react';
 import {
   Alert, Button, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FormActions, FormField, FormSection,
-  LoadingState, PageLayout, StatusPill, formatDate, useLoad,
-  type Column,
+  LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, useLoad,
+  type ApiResult, type Column,
 } from '../../shared';
 import { listVenues, type Venue } from './venueApi';
 import {
-  CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, listBlocks, overlappingBlocks, removeBlock, shortenBlock,
-  type AffectedEvent, type ReasonCategory, type SavedUnavailability, type VenueBlock,
+  CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, editUnavailability, liftUnavailability, listBlocks, overlappingBlocks,
+  type AffectedEvent, type ReasonCategory, type RestoredEvent, type SavedUnavailability, type UnavailabilityInput, type VenueBlock,
 } from './blocksApi';
 
-// Scenario 2: a save over bookings lists the affected events with the flash.
-type Flash = { tone: 'success'; message: string; affected?: AffectedEvent[] } | null;
+// Scenarios 2 and 6: a save lists the affected events, and an edit or lift
+// the restored ones, with the flash.
+type Flash = { message: string; affected?: AffectedEvent[]; restored?: RestoredEvent[] } | null;
 type ConflictAlert = { message: string; overlaps: VenueBlock[] } | null;
 
 export function VenueBlockout() {
@@ -80,18 +79,12 @@ function VenuePicker({ venues, selectedId, onSelect }: {
 
 type EditingState =
   | { kind: 'none' }
-  | { kind: 'shorten'; block: VenueBlock }
-  | { kind: 'remove'; block: VenueBlock };
+  | { kind: 'edit'; block: VenueBlock }
+  | { kind: 'lift'; block: VenueBlock };
 
-// Blocks are whole Singapore days stored as YYYY-MM-DD; show them the way
-// design.md section 8.1 wants every date shown ("5 Jan 2027").
-function blockDay(day: string): string {
-  return formatDate(`${day}T00:00:00+08:00`);
-}
-
-function blockRange(block: Pick<VenueBlock, 'from' | 'to'>): string {
-  if (!block.to) return `${blockDay(block.from)} until lifted`;
-  return block.from === block.to ? blockDay(block.from) : `${blockDay(block.from)} to ${blockDay(block.to)}`;
+// Times show the way design.md section 8.1 wants ("15 Jan 2027, 8:00 am").
+function periodLabel(block: Pick<VenueBlock, 'startsAt' | 'endsAt'>): string {
+  return block.endsAt ? formatDateRange(block.startsAt, block.endsAt) : `${formatDate(block.startsAt, true)} until lifted`;
 }
 
 function VenueBlocksPanel({ venueId }: { venueId: string }) {
@@ -99,10 +92,10 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
   const [flash, setFlash] = useState<Flash>(null);
   const [conflict, setConflict] = useState<ConflictAlert>(null);
   const [editing, setEditing] = useState<EditingState>({ kind: 'none' });
-  const [removing, setRemoving] = useState(false);
+  const [lifting, setLifting] = useState(false);
 
-  function afterChange(message: string, affected?: AffectedEvent[]) {
-    setFlash({ tone: 'success', message, affected });
+  function afterChange(next: NonNullable<Flash>) {
+    setFlash(next);
     setConflict(null);
     setEditing({ kind: 'none' });
     reload();
@@ -114,6 +107,7 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
         <Alert tone="success">
           {flash.message}
           {flash.affected?.length ? <AffectedEventList events={flash.affected} /> : null}
+          {flash.restored?.length ? <RestoredEventList events={flash.restored} /> : null}
         </Alert>
       ) : null}
       {conflict ? (
@@ -123,7 +117,7 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
             <ul className="venue-blocking">
               {conflict.overlaps.map(block => (
                 <li key={block.id}>
-                  {blockRange(block)}: {block.reason}
+                  {periodLabel(block)}: {block.reason}
                 </li>
               ))}
             </ul>
@@ -139,36 +133,41 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
         ) : result.data.length === 0 ? (
           <EmptyState title="No current or upcoming blocks">Blocks you add below will appear here.</EmptyState>
         ) : (
-          <BlocksTable blocks={result.data} onShorten={block => setEditing({ kind: 'shorten', block })} onRemove={block => setEditing({ kind: 'remove', block })} />
+          <BlocksTable blocks={result.data} onEdit={block => setEditing({ kind: 'edit', block })} onLift={block => setEditing({ kind: 'lift', block })} />
         )}
       </Card>
 
-      {editing.kind === 'shorten' ? (
-        <ShortenCard
+      {editing.kind === 'edit' ? (
+        <UnavailabilityForm
           key={editing.block.id}
-          venueId={venueId}
-          block={editing.block}
+          title={`Edit the ${periodLabel(editing.block)} unavailability`}
+          hint="Extend, shorten or remove the end, or change the reason. Bookings newly inside the period are flagged Conflicting; bookings no longer inside it get their earlier status back."
+          initial={editing.block}
+          submitLabel="Save changes"
+          submitIcon={<CalendarClock size={14} aria-hidden="true" />}
+          submit={input => editUnavailability(venueId, editing.block.id, input)}
           onCancel={() => setEditing({ kind: 'none' })}
-          onSaved={() => afterChange(`Block shortened. The released dates are available again.`)}
+          onSaved={saved => afterChange({ message: editedMessage(saved), affected: saved.affectedEvents, restored: saved.restoredEvents })}
+          onConflict={setConflict}
         />
       ) : null}
 
-      {editing.kind === 'remove' ? (
+      {editing.kind === 'lift' ? (
         <ConfirmPanel
-          title={`Remove the ${blockRange(editing.block)} block?`}
-          description={`${editing.block.reason}. Removing restores availability for the released dates.`}
-          confirmLabel="Remove block"
-          busyLabel="Removing."
-          busy={removing}
+          title={`Lift the ${periodLabel(editing.block)} unavailability?`}
+          description={`${CATEGORY_LABELS[editing.block.reasonCategory]}: ${editing.block.reason}. Bookings it made Conflicting get their earlier status back, and their Coordinators are told. It stays in the history.`}
+          confirmLabel="Lift unavailability"
+          busyLabel="Lifting…"
+          busy={lifting}
           danger
           onCancel={() => setEditing({ kind: 'none' })}
           onConfirm={async () => {
-            if (removing) return;
-            setRemoving(true);
-            const outcome = await removeBlock(venueId, editing.block.id);
-            setRemoving(false);
+            if (lifting) return;
+            setLifting(true);
+            const outcome = await liftUnavailability(venueId, editing.block.id);
+            setLifting(false);
             if (outcome.ok) {
-              afterChange('Block removed. The released dates are available again.');
+              afterChange({ message: liftedMessage(outcome.data.restoredEvents.length), restored: outcome.data.restoredEvents });
             } else {
               setConflict({ message: outcome.message, overlaps: [] });
               setEditing({ kind: 'none' });
@@ -177,19 +176,51 @@ function VenueBlocksPanel({ venueId }: { venueId: string }) {
         />
       ) : null}
 
-      <CreateUnavailabilityCard
-        venueId={venueId}
-        onSaved={saved => afterChange(savedMessage(saved.affectedEvents.length), saved.affectedEvents)}
-        onConflict={setConflict}
-      />
+      {/* One form at a time, so the page never shows two sets of the same fields. */}
+      {editing.kind !== 'edit' ? (
+        <UnavailabilityForm
+          title="Mark this venue unavailable"
+          hint="Enter when the venue becomes unavailable, the reason and a note. Bookings inside the period are flagged Conflicting and their Coordinators are told; nothing is cancelled. An overlap with another unavailability is refused."
+          submitLabel="Save unavailability"
+          submitIcon={<Plus size={14} aria-hidden="true" />}
+          submit={input => createUnavailability(venueId, input)}
+          onSaved={saved => afterChange({ message: savedMessage(saved.affectedEvents.length), affected: saved.affectedEvents })}
+          onConflict={setConflict}
+        />
+      ) : null}
     </>
   );
 }
 
+function plural(count: number, one: string, many: string): string {
+  return count === 1 ? one : many.replace('{n}', String(count));
+}
+
 function savedMessage(affected: number): string {
   if (affected === 0) return 'Unavailability saved.';
-  const which = affected === 1 ? 'This event has a booking' : `These ${affected} events have bookings`;
-  return `Unavailability saved. ${which} in this period, now marked Conflicting. Nothing was cancelled.`;
+  return `Unavailability saved. ${plural(affected, 'This event has a booking', 'These {n} events have bookings')} in this period, now marked Conflicting. Nothing was cancelled.`;
+}
+
+function editedMessage(saved: SavedUnavailability): string {
+  const parts = ['Unavailability changed.'];
+  if (saved.affectedEvents.length) parts.push(`${plural(saved.affectedEvents.length, '1 event is', '{n} events are')} newly marked Conflicting.`);
+  if (saved.restoredEvents.length) parts.push(`${plural(saved.restoredEvents.length, '1 booking has its', '{n} bookings have their')} earlier status back.`);
+  return parts.join(' ');
+}
+
+function liftedMessage(restored: number): string {
+  if (restored === 0) return 'Unavailability lifted. It stays in the history.';
+  return `Unavailability lifted. It stays in the history. ${plural(restored, '1 booking has its', '{n} bookings have their')} earlier status back.`;
+}
+
+function CoordinatorPill({ notified }: { notified: boolean }) {
+  return notified
+    ? <StatusPill status="success" label="Coordinator notified" />
+    : <StatusPill status="warning" label="No Coordinator assigned" />;
+}
+
+function eventName(event: { title: string; eventCode: string | null }): string {
+  return `${event.title}${event.eventCode ? ` (${event.eventCode})` : ''}`;
 }
 
 // Scenarios 2 to 4: each affected event, whether a Confirmed event went back
@@ -199,61 +230,94 @@ function AffectedEventList({ events }: { events: AffectedEvent[] }) {
     <ul className="venue-blocking" aria-label="Affected events">
       {events.map(event => (
         <li key={event.eventId}>
-          {event.title}{event.eventCode ? ` (${event.eventCode})` : ''}{' '}
+          {eventName(event)}{' '}
           {event.returnedToPlanning ? <StatusPill status="planning" label="Returned to Planning" /> : null}{' '}
-          {event.coordinatorNotified
-            ? <StatusPill status="success" label="Coordinator notified" />
-            : <StatusPill status="warning" label="No Coordinator assigned" />}
+          <CoordinatorPill notified={event.coordinatorNotified} />
         </li>
       ))}
     </ul>
   );
 }
 
-function BlocksTable({ blocks, onShorten, onRemove }: {
-  blocks: VenueBlock[]; onShorten: (block: VenueBlock) => void; onRemove: (block: VenueBlock) => void;
+// Scenario 6 (C-122): each event whose booking got its earlier status back.
+function RestoredEventList({ events }: { events: RestoredEvent[] }) {
+  return (
+    <ul className="venue-blocking" aria-label="Restored events">
+      {events.map(event => (
+        <li key={event.eventId}>
+          {eventName(event)}{' '}
+          <StatusPill status="info" label="Booking restored" />{' '}
+          <CoordinatorPill notified={event.coordinatorNotified} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function BlocksTable({ blocks, onEdit, onLift }: {
+  blocks: VenueBlock[]; onEdit: (block: VenueBlock) => void; onLift: (block: VenueBlock) => void;
 }) {
   const columns: Column<VenueBlock>[] = [
-    { header: 'From', cell: block => blockDay(block.from) },
-    { header: 'To', cell: block => block.to ? blockDay(block.to) : 'Until lifted' },
-    { header: 'Reason', cell: block => block.reason, primary: true },
+    { header: 'Start', cell: block => formatDate(block.startsAt, true) },
+    { header: 'End', cell: block => block.endsAt ? formatDate(block.endsAt, true) : 'Until lifted' },
+    { header: 'Category', cell: block => CATEGORY_LABELS[block.reasonCategory] },
+    { header: 'Note', cell: block => block.reason, primary: true },
     {
-      header: 'Actions', key: 'shorten', hideHeader: true,
-      cell: block => <Button icon={<PencilLine size={14} aria-hidden="true" />} onClick={() => onShorten(block)}>Shorten…</Button>,
+      header: 'Actions', key: 'edit', hideHeader: true,
+      cell: block => <Button icon={<PencilLine size={14} aria-hidden="true" />} onClick={() => onEdit(block)}>Edit…</Button>,
     },
     {
-      header: 'Actions', key: 'remove', hideHeader: true,
-      cell: block => <Button variant="danger" icon={<Trash2 size={14} aria-hidden="true" />} onClick={() => onRemove(block)}>Remove…</Button>,
+      header: 'Actions', key: 'lift', hideHeader: true,
+      cell: block => <Button variant="danger" icon={<Unlock size={14} aria-hidden="true" />} onClick={() => onLift(block)}>Lift…</Button>,
     },
   ];
   return <DataTable caption="Current and upcoming maintenance blocks" columns={columns} rows={blocks} rowKey={block => block.id} />;
 }
 
-type CreateErrors = { startDate?: string; startTime?: string; endDate?: string; endTime?: string; category?: string; note?: string };
+type FormErrors = { startDate?: string; startTime?: string; endDate?: string; endTime?: string; category?: string; note?: string };
 
 // The form takes Singapore wall-clock time (UTC+08:00, no daylight saving).
 function sgtInstant(date: string, time: string): string {
   return `${date}T${time}:00+08:00`;
 }
 
-function CreateUnavailabilityCard({ venueId, onSaved, onConflict }: {
-  venueId: string;
+const SGT_MS = 8 * 60 * 60 * 1000;
+
+// An ISO instant as the Singapore date and time the form fields show.
+function sgtFields(instant: string | null): [date: string, time: string] {
+  if (!instant) return ['', ''];
+  const local = new Date(Date.parse(instant) + SGT_MS).toISOString();
+  return [local.slice(0, 10), local.slice(11, 16)];
+}
+
+// Scenarios 1 and 5: one form to create an unavailability or edit one; with
+// `initial` it starts from that unavailability and offers Cancel.
+function UnavailabilityForm({ title, hint, initial, submitLabel, submitIcon, submit, onCancel, onSaved, onConflict }: {
+  title: string;
+  hint: string;
+  initial?: VenueBlock;
+  submitLabel: string;
+  submitIcon: ReactNode;
+  submit: (input: UnavailabilityInput) => Promise<ApiResult<SavedUnavailability>>;
+  onCancel?: () => void;
   onSaved: (saved: SavedUnavailability) => void;
   onConflict: (alert: ConflictAlert) => void;
 }) {
-  const [startDate, setStartDate] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [category, setCategory] = useState<ReasonCategory | ''>('');
-  const [note, setNote] = useState('');
-  const [errors, setErrors] = useState<CreateErrors>({});
+  const [initialStartDate, initialStartTime] = sgtFields(initial?.startsAt ?? null);
+  const [initialEndDate, initialEndTime] = sgtFields(initial?.endsAt ?? null);
+  const [startDate, setStartDate] = useState(initialStartDate);
+  const [startTime, setStartTime] = useState(initialStartTime);
+  const [endDate, setEndDate] = useState(initialEndDate);
+  const [endTime, setEndTime] = useState(initialEndTime);
+  const [category, setCategory] = useState<ReasonCategory | ''>(initial?.reasonCategory ?? '');
+  const [note, setNote] = useState(initial?.reason ?? '');
+  const [errors, setErrors] = useState<FormErrors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const headingHintId = useId();
 
-  function validate(): CreateErrors {
-    const next: CreateErrors = {};
+  function validate(): FormErrors {
+    const next: FormErrors = {};
     if (!startDate) next.startDate = 'Start date is required.';
     if (!startTime) next.startTime = 'Start time is required.';
     // Both end fields empty means until lifted; one alone is a mistake.
@@ -268,14 +332,14 @@ function CreateUnavailabilityCard({ venueId, onSaved, onConflict }: {
     return next;
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const next = validate();
     setErrors(next);
     setServerError(null);
     if (Object.keys(next).length) return;
     setBusy(true);
-    const outcome = await createUnavailability(venueId, {
+    const outcome = await submit({
       startsAt: sgtInstant(startDate, startTime),
       endsAt: endDate ? sgtInstant(endDate, endTime) : null,
       reasonCategory: category as ReasonCategory,
@@ -309,12 +373,9 @@ function CreateUnavailabilityCard({ venueId, onSaved, onConflict }: {
   }
 
   return (
-    <Card title="Mark this venue unavailable">
-      <form onSubmit={submit} aria-describedby={headingHintId} noValidate>
-        <p id={headingHintId} className="field-hint">
-          Enter when the venue becomes unavailable, the reason and a note. Bookings inside the period are flagged Conflicting
-          and their Coordinators are told; nothing is cancelled. An overlap with another unavailability is refused.
-        </p>
+    <Card title={title}>
+      <form onSubmit={handleSubmit} aria-describedby={headingHintId} noValidate>
+        <p id={headingHintId} className="field-hint">{hint}</p>
         {serverError ? <Alert tone="error">{serverError}</Alert> : null}
         <FormSection title="Period">
           <FormField label="Start date" error={errors.startDate}>
@@ -344,69 +405,8 @@ function CreateUnavailabilityCard({ venueId, onSaved, onConflict }: {
           </FormField>
         </FormSection>
         <FormActions>
-          <Button type="submit" variant="primary" busy={busy} busyLabel="Saving…" icon={<Plus size={14} aria-hidden="true" />}>Save unavailability</Button>
-        </FormActions>
-      </form>
-    </Card>
-  );
-}
-
-type ShortenErrors = { to?: string; reason?: string };
-
-function ShortenCard({ venueId, block, onCancel, onSaved }: {
-  venueId: string; block: VenueBlock; onCancel: () => void; onSaved: () => void;
-}) {
-  const [newTo, setNewTo] = useState(block.to ?? '');
-  const [reason, setReason] = useState(block.reason);
-  const [errors, setErrors] = useState<ShortenErrors>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const hintId = useId();
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const next: ShortenErrors = {};
-    if (!newTo) next.to = 'End date is required.';
-    // The server enforces the same rule, but refusing it here keeps the message
-    // next to the field instead of in a server-error alert.
-    if (newTo && block.to && newTo > block.to) next.to = 'A block can only be shortened. Create a new block to cover extra dates.';
-    if (newTo && newTo < block.from) next.to = 'End date must be on or after the start date.';
-    if (!reason.trim()) next.reason = 'A reason for the block is required.';
-    setErrors(next);
-    setServerError(null);
-    if (Object.keys(next).length) return;
-    setBusy(true);
-    const outcome = await shortenBlock(venueId, block.id, { from: block.from, to: newTo, reason: reason.trim() });
-    setBusy(false);
-    if (outcome.ok) { onSaved(); return; }
-    if (outcome.fieldErrors) {
-      setErrors({ to: outcome.fieldErrors.to?.[0], reason: outcome.fieldErrors.reason?.[0] });
-      return;
-    }
-    setServerError(outcome.message);
-  }
-
-  return (
-    <Card title={`Shorten the ${blockRange(block)} block`}>
-      <form onSubmit={submit} aria-describedby={hintId} noValidate>
-        <p id={hintId} className="field-hint">
-          Keep the start date; set a new end date on or after the start and before the current end to release the trailing days.
-        </p>
-        {serverError ? <Alert tone="error">{serverError}</Alert> : null}
-        <FormSection title="New period">
-          <FormField label="From">
-            {props => <input {...props} type="date" value={block.from} readOnly aria-readonly="true" />}
-          </FormField>
-          <FormField label="New end date" error={errors.to}>
-            {props => <input {...props} type="date" value={newTo} min={block.from} max={block.to ?? undefined} onChange={event => setNewTo(event.target.value)} />}
-          </FormField>
-          <FormField label="Reason" wide error={errors.reason}>
-            {props => <input {...props} type="text" value={reason} maxLength={255} onChange={event => setReason(event.target.value)} />}
-          </FormField>
-        </FormSection>
-        <FormActions>
-          <Button onClick={onCancel} disabled={busy}>Cancel</Button>
-          <Button type="submit" variant="primary" busy={busy} busyLabel="Saving…" icon={<CalendarClock size={14} aria-hidden="true" />}>Save shortened block</Button>
+          {onCancel ? <Button onClick={onCancel} disabled={busy}>Cancel</Button> : null}
+          <Button type="submit" variant="primary" busy={busy} busyLabel="Saving…" icon={submitIcon}>{submitLabel}</Button>
         </FormActions>
       </form>
     </Card>

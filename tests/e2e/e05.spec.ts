@@ -712,23 +712,34 @@ test.describe("E05-S04", () => {
     const { signInAs } = await import('./helpers/fakeSession');
     await signInAs(page, 'venue_staff');
     const venues = [{ id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] }];
-    const block = { id: 'blk-1', venueId: 'v-1', from: '2027-01-05', to: '2027-01-10', reason: 'Annual fire safety inspection', startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-10T16:00:00.000Z' };
-    let shortened = false;
+    const block = { id: 'blk-1', venueId: 'v-1', from: '2027-01-05', to: '2027-01-10', reasonCategory: 'maintenance', reason: 'Annual fire safety inspection', startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-10T16:00:00.000Z' };
+    const shortenedBlock = { ...block, to: '2027-01-07', endsAt: '2027-01-07T16:00:00.000Z' };
+    let state: 'full' | 'shortened' | 'lifted' = 'full';
     await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('q') !== null, route => route.fulfill({ json: { venues } }));
     await page.route(url => url.pathname === '/api/venues' && url.searchParams.get('blocks') === '1', route => {
-      return route.fulfill({ json: { blocks: shortened ? [{ ...block, to: '2027-01-07' }] : [block] } });
+      return route.fulfill({ json: { blocks: state === 'full' ? [block] : state === 'shortened' ? [shortenedBlock] : [] } });
     });
     await page.route(url => url.pathname === '/api/venues', async route => {
       if (route.request().method() !== 'POST') return route.fallback();
-      shortened = true;
-      return route.fulfill({ status: 200, json: { block: { ...block, to: '2027-01-07' } } });
+      // E05-S06: shortening is an edit (edit_block) and removing is a lift (lift_block).
+      if (route.request().postDataJSON().action === 'edit_block') {
+        state = 'shortened';
+        return route.fulfill({ status: 200, json: { block: shortenedBlock, affectedEvents: [], restoredEvents: [] } });
+      }
+      state = 'lifted';
+      return route.fulfill({ status: 200, json: { block: shortenedBlock, lifted: true, restoredEvents: [] } });
     });
     await page.goto('/venue/blockout');
     await expect(page.getByText('Annual fire safety inspection')).toBeVisible();
-    await page.getByRole('button', { name: /Shorten/ }).click();
-    await page.getByLabel('New end date').fill('2027-01-07');
-    await page.getByRole('button', { name: /Save shortened block/ }).click();
-    await expect(page.getByText(/Block shortened/)).toBeVisible();
+    await page.getByRole('button', { name: /Edit/ }).click();
+    await page.getByLabel('End date (optional)').fill('2027-01-08');
+    await page.getByRole('button', { name: /Save changes/ }).click();
+    await expect(page.getByText('Unavailability changed.')).toBeVisible();
+    await expect(page.getByText('8 Jan 2027, 12:00 am')).toBeVisible();
+    await page.getByRole('button', { name: /Lift/ }).click();
+    await page.getByRole('button', { name: 'Lift unavailability' }).click();
+    await expect(page.getByText(/Unavailability lifted/)).toBeVisible();
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
   });
 
 });

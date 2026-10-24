@@ -1,6 +1,6 @@
 // E05-S04 maintenance blocks screen against a stubbed fetch shaped like the
 // backend's GET /api/venues?id=&blocks=1 list and the POST /api/venues
-// action: 'block' / 'shorten_block' / 'remove_block' responses. The server
+// action: 'block' / 'edit_block' / 'lift_block' responses. The server
 // decides the business rules (overlap, lengthening, auth); these tests check
 // the screen shows the server's refusals faithfully, reads the notified
 // event count from the success body, and reloads after each change.
@@ -27,7 +27,7 @@ const venues = [
 
 const existingBlock = {
   id: 'blk-1', venueId: 'v-1', from: '2027-01-05', to: '2027-01-10',
-  reason: 'Annual fire safety inspection',
+  reasonCategory: 'maintenance', reason: 'Annual fire safety inspection',
   startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-10T16:00:00.000Z',
 };
 
@@ -79,8 +79,9 @@ test('TC_E05S04_01 - lists current and upcoming blocks for the picked venue, the
   expect(await screen.findByText('Annual fire safety inspection')).toBeInTheDocument();
   const row = screen.getByText('Annual fire safety inspection').closest('tr') as HTMLElement;
   // Dates show the design.md way, not as the stored YYYY-MM-DD.
-  expect(within(row).getByText('5 Jan 2027')).toBeInTheDocument();
-  expect(within(row).getByText('10 Jan 2027')).toBeInTheDocument();
+  expect(within(row).getByText('5 Jan 2027, 12:00 am')).toBeInTheDocument();
+  expect(within(row).getByText('11 Jan 2027, 12:00 am')).toBeInTheDocument();
+  expect(within(row).getByText('Maintenance')).toBeInTheDocument();
 
   fillUnavailability({
     startDate: '2027-02-01', startTime: '00:00', endDate: '2027-02-04', endTime: '00:00', category: 'maintenance', note: 'Scheduled maintenance',
@@ -283,7 +284,7 @@ test('an overlap with another unavailability is refused and names that unavailab
     'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [] } },
     'POST /api/venues': { status: 409, body: {
       error: 'block_overlap', message: 'This period overlaps an existing block on this venue.',
-      overlappingBlocks: [{ ...existingBlock, to: null }],
+      overlappingBlocks: [{ ...existingBlock, to: null, endsAt: null }],
     } },
   });
   await screen.findByText(/No current or upcoming blocks/);
@@ -294,7 +295,7 @@ test('an overlap with another unavailability is refused and names that unavailab
   expect(alert).toHaveTextContent('until lifted: Annual fire safety inspection');
 });
 
-test('TC_E05S04_04 - shortening restores availability for the released dates, and lengthening is refused on the client', async () => {
+test('TC_E05S04_04 - editing to shorten an unavailability restores the bookings it no longer covers (Scenario 6)', async () => {
   const requests: unknown[] = [];
   let listResponse = { blocks: [existingBlock] };
   renderPage({
@@ -303,101 +304,164 @@ test('TC_E05S04_04 - shortening restores availability for the released dates, an
     'POST /api/venues': async (_url, init) => {
       const body = init?.body ? JSON.parse(String(init.body)) : null;
       requests.push(body);
-      if (body && typeof body === 'object' && 'action' in body && body.action === 'shorten_block') {
-        listResponse = { blocks: [{ ...existingBlock, to: '2027-01-07' }] };
-        return { status: 200, body: { block: { ...existingBlock, to: '2027-01-07' } } };
-      }
-      return { status: 400, body: { error: 'invalid_action' } };
+      const shortened = { ...existingBlock, to: '2027-01-07', endsAt: '2027-01-07T16:00:00.000Z' };
+      listResponse = { blocks: [shortened] };
+      return { status: 200, body: { block: shortened, affectedEvents: [], restoredEvents: [
+        { eventId: 'e-1', eventCode: 'EV-1', title: 'Alumni Dinner', coordinatorNotified: true },
+      ] } };
     },
   });
 
-  // Open the shorten form from the existing block's row.
+  // The edit form opens with the current period, category and note.
   const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
-  fireEvent.click(within(row).getByRole('button', { name: /Shorten/ }));
-  const newEndField = await screen.findByLabelText('New end date');
-  expect(newEndField).toHaveValue('2027-01-10');
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  const form = screen.getByRole('heading', { name: /^Edit the / }).closest('section') as HTMLElement;
+  expect(within(form).getByLabelText('Start date')).toHaveValue('2027-01-05');
+  expect(within(form).getByLabelText('Start time')).toHaveValue('00:00');
+  expect(within(form).getByLabelText('End date (optional)')).toHaveValue('2027-01-11');
+  expect(within(form).getByLabelText('Reason category')).toHaveValue('maintenance');
+  expect(within(form).getByLabelText('Note')).toHaveValue('Annual fire safety inspection');
+  // Only one form is shown while editing.
+  expect(screen.queryByRole('button', { name: /Save unavailability/ })).not.toBeInTheDocument();
 
-  // Lengthening is refused with the server's message, inline next to the field.
-  fireEvent.change(newEndField, { target: { value: '2027-01-20' } });
-  fireEvent.click(screen.getByRole('button', { name: /Save shortened block/ }));
-  expect(newEndField).toHaveAccessibleDescription(/A block can only be shortened/);
-  // The client refused, so no POST should have been sent for this attempt.
-  expect(requests.filter(r => r && typeof r === 'object' && 'action' in r && r.action === 'shorten_block')).toEqual([]);
+  fireEvent.change(within(form).getByLabelText('End date (optional)'), { target: { value: '2027-01-08' } });
+  fireEvent.click(within(form).getByRole('button', { name: /Save changes/ }));
 
-  // Now shorten properly.
-  fireEvent.change(newEndField, { target: { value: '2027-01-07' } });
-  fireEvent.click(screen.getByRole('button', { name: /Save shortened block/ }));
-  expect(await screen.findByText(/Block shortened\. The released dates are available again\./)).toBeInTheDocument();
-  expect(requests).toEqual([{ action: 'shorten_block', id: 'v-1', block_id: 'blk-1', from: '2027-01-05', to: '2027-01-07', reason: 'Annual fire safety inspection' }]);
+  expect(await screen.findByText('Unavailability changed. 1 booking has its earlier status back.')).toBeInTheDocument();
+  const restored = screen.getByRole('list', { name: 'Restored events' });
+  expect(restored).toHaveTextContent('Alumni Dinner (EV-1)');
+  expect(restored).toHaveTextContent('Booking restored');
+  expect(requests).toEqual([{
+    action: 'edit_block', id: 'v-1', block_id: 'blk-1', starts_at: '2027-01-05T00:00:00+08:00', ends_at: '2027-01-08T00:00:00+08:00',
+    reason_category: 'maintenance', reason: 'Annual fire safety inspection',
+  }]);
+  // The create form comes back once the edit is saved.
+  expect(screen.getByRole('button', { name: /Save unavailability/ })).toBeInTheDocument();
 });
 
-test('removing a block goes through ConfirmPanel and reloads the list on success', async () => {
+test('TC_E05S06_05 - extending flags a newly covered event and shortening again restores it (Scenarios 5 and 6)', async () => {
+  const gala = { eventId: 'e-2', eventCode: 'EV-2', title: 'Spring Gala' };
+  let reply: unknown = { block: existingBlock, affectedEvents: [{ ...gala, returnedToPlanning: true, coordinatorNotified: true }], restoredEvents: [] };
+  const calls = renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
+    'POST /api/venues': () => ({ body: reply }),
+  });
+
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  fireEvent.change(screen.getByLabelText('End time (optional)'), { target: { value: '00:01' } });
+  fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+  expect(await screen.findByText('Unavailability changed. 1 event is newly marked Conflicting.')).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Affected events' })).toHaveTextContent('Spring Gala (EV-2) Returned to Planning Coordinator notified');
+
+  reply = { block: existingBlock, affectedEvents: [], restoredEvents: [
+    { ...gala, coordinatorNotified: true }, { eventId: 'e-3', eventCode: null, title: 'Book Fair', coordinatorNotified: false },
+  ] };
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+  expect(await screen.findByText('Unavailability changed. 2 bookings have their earlier status back.')).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Restored events' })).toHaveTextContent('Book Fair Booking restored No Coordinator assigned');
+  expect(posted(calls).map(body => (body as Record<string, unknown>).ends_at)).toEqual(['2027-01-11T00:01:00+08:00', '2027-01-11T00:00:00+08:00']);
+});
+
+test('removing the end of an unavailability makes it open-ended, and Cancel closes the edit form (Scenario 5)', async () => {
+  const calls = renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
+    'POST /api/venues': { body: { block: { ...existingBlock, to: null, endsAt: null }, affectedEvents: [], restoredEvents: [] } },
+  });
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.queryByRole('button', { name: /Save changes/ })).not.toBeInTheDocument();
+
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  fireEvent.change(screen.getByLabelText('End date (optional)'), { target: { value: '' } });
+  fireEvent.change(screen.getByLabelText('End time (optional)'), { target: { value: '' } });
+  fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+  expect(await screen.findByText('Unavailability changed.')).toBeInTheDocument();
+  expect((posted(calls)[0] as Record<string, unknown>).ends_at).toBeNull();
+});
+
+test('an edit that would overlap another unavailability is refused and names it', async () => {
+  renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
+    'POST /api/venues': { status: 409, body: {
+      error: 'block_overlap', message: 'This period overlaps an existing block on this venue.',
+      overlappingBlocks: [{ ...existingBlock, id: 'blk-9', reason: 'Roof repair' }],
+    } },
+  });
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  fireEvent.click(screen.getByRole('button', { name: /Save changes/ }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('5 Jan 2027, 12:00 am – 11 Jan 2027, 12:00 am: Roof repair');
+});
+
+test('lifting goes through ConfirmPanel, lists the restored bookings and reloads the list (Scenario 6)', async () => {
   const requests: unknown[] = [];
   let blocks = [existingBlock];
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
     'GET /api/venues?id=v-1&blocks=1': () => ({ body: { blocks } }),
     'POST /api/venues': async (_url, init) => {
-      const body = init?.body ? JSON.parse(String(init.body)) : null;
-      requests.push(body);
-      if (body && typeof body === 'object' && 'action' in body && body.action === 'remove_block') {
-        blocks = [];
-        return { status: 200, body: { removed: true } };
-      }
-      return { status: 400, body: { error: 'invalid_action' } };
+      requests.push(init?.body ? JSON.parse(String(init.body)) : null);
+      blocks = [];
+      return { status: 200, body: { block: existingBlock, lifted: true, restoredEvents: [
+        { eventId: 'e-1', eventCode: null, title: 'Alumni Dinner', coordinatorNotified: true },
+      ], notifiedEventCount: 1 } };
     },
   });
 
   const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
-  fireEvent.click(within(row).getByRole('button', { name: /Remove/ }));
-  // ConfirmPanel opens; a cancel keeps the block.
-  const confirm = screen.getByRole('button', { name: 'Remove block' });
-  fireEvent.click(confirm);
-  expect(await screen.findByText(/Block removed/)).toBeInTheDocument();
-  expect(requests).toEqual([{ action: 'remove_block', id: 'v-1', block_id: 'blk-1' }]);
-  // The emptied list reloads.
+  fireEvent.click(within(row).getByRole('button', { name: /Lift/ }));
+  expect(screen.getByText(/Maintenance: Annual fire safety inspection\. Bookings it made Conflicting get their earlier status back/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Lift unavailability' }));
+  expect(await screen.findByText('Unavailability lifted. It stays in the history. 1 booking has its earlier status back.')).toBeInTheDocument();
+  expect(screen.getByRole('list', { name: 'Restored events' })).toHaveTextContent('Alumni Dinner Booking restored Coordinator notified');
+  expect(requests).toEqual([{ action: 'lift_block', id: 'v-1', block_id: 'blk-1' }]);
   await waitFor(() => expect(screen.getByText(/No current or upcoming blocks/)).toBeInTheDocument());
 });
 
-test('E05-S06: an open-ended block lists as until lifted and can still be shortened to an end date (T-80)', async () => {
-  const requests: unknown[] = [];
+test('an open-ended unavailability lists as until lifted, edits with an empty end, and lifts with nothing to restore (T-80)', async () => {
   const openBlock = { ...existingBlock, to: null, endsAt: null, reasonCategory: 'renovation' };
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
     'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [openBlock] } },
-    'POST /api/venues': async (_url, init) => {
-      requests.push(init?.body ? JSON.parse(String(init.body)) : null);
-      return { status: 200, body: { block: { ...existingBlock, to: '2027-01-20' } } };
-    },
+    'POST /api/venues': { body: { block: openBlock, lifted: true } },
   });
 
   const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
   expect(within(row).getByText('Until lifted')).toBeInTheDocument();
-  fireEvent.click(within(row).getByRole('button', { name: /Remove/ }));
-  expect(screen.getByText(/until lifted block\?/)).toBeInTheDocument();
+  expect(within(row).getByText('Renovation')).toBeInTheDocument();
+  fireEvent.click(within(row).getByRole('button', { name: /Edit/ }));
+  expect(screen.getByRole('heading', { name: 'Edit the 5 Jan 2027, 12:00 am until lifted unavailability' })).toBeInTheDocument();
+  expect(screen.getByLabelText('End date (optional)')).toHaveValue('');
+  expect(screen.getByLabelText('End time (optional)')).toHaveValue('');
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
-  fireEvent.click(within(row).getByRole('button', { name: /Shorten/ }));
-  const newEndField = await screen.findByLabelText('New end date');
-  expect(newEndField).toHaveValue('');
-  fireEvent.change(newEndField, { target: { value: '2027-01-20' } });
-  fireEvent.click(screen.getByRole('button', { name: /Save shortened block/ }));
-  await waitFor(() => expect(requests).toEqual([
-    { action: 'shorten_block', id: 'v-1', block_id: 'blk-1', from: '2027-01-05', to: '2027-01-20', reason: 'Annual fire safety inspection' },
-  ]));
+  fireEvent.click(within(row).getByRole('button', { name: /Lift/ }));
+  expect(screen.getByText(/until lifted unavailability\?/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  fireEvent.click(within(row).getByRole('button', { name: /Lift/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lift unavailability' }));
+  expect(await screen.findByText('Unavailability lifted. It stays in the history.')).toBeInTheDocument();
+  expect(screen.queryByRole('list', { name: 'Restored events' })).not.toBeInTheDocument();
 });
 
-test('a failed remove shows the server message and closes the confirmation', async () => {
+test('a failed lift shows the server message and closes the confirmation', async () => {
   renderPage({
     'GET /api/venues?q=': { body: { venues } },
     'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
     'POST /api/venues': { status: 404, body: { error: 'Block not found on this venue.' } },
   });
   const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
-  fireEvent.click(within(row).getByRole('button', { name: /Remove/ }));
-  fireEvent.click(screen.getByRole('button', { name: 'Remove block' }));
+  fireEvent.click(within(row).getByRole('button', { name: /Lift/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Lift unavailability' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('Block not found on this venue.');
-  expect(screen.queryByRole('button', { name: 'Remove block' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Lift unavailability' })).not.toBeInTheDocument();
 });
 
 test('loading state renders while blocks are in flight', async () => {
