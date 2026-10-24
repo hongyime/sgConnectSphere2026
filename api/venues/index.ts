@@ -16,7 +16,7 @@ import {
 import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
 import {
-  createVenueBlock, editVenueBlock, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+  createVenueBlock, editVenueBlock, getVenueBlockHistory, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../../backend/src/modules/venueBooking/blocks.js';
 import { decideBooking, getBooking, listPendingBookings } from '../../backend/src/modules/venueBooking/decisions.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
@@ -83,8 +83,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return await getVenueCalendar(query, user, id.slice(0, 240), params.get('from'), params.get('to'));
       }
       // E05-S04: a venue's current and upcoming maintenance blocks, with the
-      // ids staff need to shorten or remove one.
-      if (id && params.get('blocks') === '1') return listVenueBlocks(query, user, id.slice(0, 240));
+      // ids staff need to shorten or remove one. E05-S06: one block's history,
+      // or the list with lifted blocks kept, for Venue Staff (T-91).
+      if (id && params.get('blocks') === '1') {
+        const history = params.get('history');
+        if (history) return getVenueBlockHistory(query, user, id.slice(0, 240), history.slice(0, 64));
+        return listVenueBlocks(query, user, id.slice(0, 240), { includeLifted: params.get('lifted') === '1' });
+      }
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
       const layout = params.get('layout') || undefined;

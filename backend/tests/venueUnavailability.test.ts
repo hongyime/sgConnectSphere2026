@@ -14,7 +14,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool, PoolClient } from 'pg';
 import {
-  createVenueBlock, editVenueBlock, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+  createVenueBlock, editVenueBlock, getVenueBlockHistory, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../src/modules/venueBooking/blocks.js';
 import { applyEventStatusChange } from '../src/modules/eventLifecycle/repository.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -296,8 +296,62 @@ test('the block list shows an open-ended block with no end and hides lifted ones
   const listed = await listVenueBlocks(query, staff, VENUE);
   assert.deepEqual(listed.blocks.map(block => [block.from, block.to, block.endsAt, block.reasonCategory]), [['2027-01-15', null, null, 'other']]);
   assert.match(seen.at(-1)!, /lifted_at IS NULL/);
-  assert.match(seen.at(-1)!, /upper_inf\(block_range\)/);
+  assert.match(seen.at(-1)!, /upper_inf\(b\.block_range\)/);
   await assert.rejects(listVenueBlocks((async () => ({ rows: [] })) as never, staff, VENUE), { status: 404 });
+});
+
+test('Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only', async () => {
+  const seen: { sql: string; values?: unknown[] }[] = [];
+  const query = (async (sql: string, values?: unknown[]) => {
+    seen.push({ sql, values });
+    if (sql.startsWith('SELECT 1 FROM venues')) return { rows: [{}] };
+    return { rows: [
+      blockRow({ lifted_at: null, lifted_by_name: null }),
+      blockRow({ id: 'lifted', lifted_at: NOW, lifted_by_name: 'Venue Staff One' }),
+      blockRow({ id: 'orphan', lifted_at: NOW }),
+    ] };
+  }) as never;
+  const listed = await listVenueBlocks(query, staff, VENUE, { includeLifted: true });
+  assert.deepEqual(listed.blocks.map(block => [block.id, (block as { liftedAt: string | null }).liftedAt, (block as { liftedBy: string | null }).liftedBy]),
+    [[BLOCK, null, null], ['lifted', NOW.toISOString(), 'Venue Staff One'], ['orphan', NOW.toISOString(), null]]);
+  assert.equal(seen.at(-1)!.values?.[1], true);
+
+  const plain = await listVenueBlocks(query, staff, VENUE);
+  assert.equal('liftedAt' in plain.blocks[0]!, false);
+  assert.equal(seen.at(-1)!.values?.[1], false);
+
+  const coordinator = { ...staff, role: 'event_coordinator' } as AuthenticatedUser;
+  const denied = (async () => ({ rows: [] })) as never;
+  await assert.rejects(listVenueBlocks(denied, coordinator, VENUE, { includeLifted: true }), { status: 403 });
+});
+
+test('Scenario 7: block history returns each create, edit and lift with the earlier and new period, category, note, actor and time', async () => {
+  const later = new Date('2027-01-15T12:00:00Z');
+  const query = (async (sql: string) => {
+    if (sql.includes('FROM venue_blocks WHERE id::text')) return { rows: [{}] };
+    return { rows: [
+      { action: 'created', changed_at: NOW, actor_name: 'Venue Staff One',
+        previous_starts_at: null, previous_ends_at: null, previous_category: null, previous_reason: null,
+        new_starts_at: NOW, new_ends_at: later, new_category: 'maintenance', new_reason: 'Floor resurfacing' },
+      { action: 'edited', changed_at: NOW, actor_name: 'Venue Staff One',
+        previous_starts_at: NOW, previous_ends_at: later, previous_category: 'maintenance', previous_reason: 'Floor resurfacing',
+        new_starts_at: NOW, new_ends_at: null, new_category: 'maintenance', new_reason: 'Floor resurfacing, second coat' },
+      { action: 'lifted', changed_at: later, actor_name: null,
+        previous_starts_at: NOW, previous_ends_at: null, previous_category: 'maintenance', previous_reason: 'Floor resurfacing, second coat',
+        new_starts_at: null, new_ends_at: null, new_category: null, new_reason: null },
+    ] };
+  }) as never;
+  const { history } = await getVenueBlockHistory(query, staff, VENUE, BLOCK);
+  assert.deepEqual(history.map(entry => [entry.action, entry.actor, entry.changedAt]),
+    [['created', 'Venue Staff One', NOW.toISOString()], ['edited', 'Venue Staff One', NOW.toISOString()], ['lifted', null, later.toISOString()]]);
+  assert.equal(history[0]!.previous, null);
+  assert.deepEqual(history[0]!.next, { startsAt: NOW.toISOString(), endsAt: later.toISOString(), reasonCategory: 'maintenance', reason: 'Floor resurfacing' });
+  assert.deepEqual(history[1]!.next, { startsAt: NOW.toISOString(), endsAt: null, reasonCategory: 'maintenance', reason: 'Floor resurfacing, second coat' });
+  assert.equal(history[2]!.next, null);
+
+  await assert.rejects(getVenueBlockHistory((async () => ({ rows: [] })) as never, staff, VENUE, BLOCK), { status: 404 });
+  const coordinator = { ...staff, role: 'event_coordinator' } as AuthenticatedUser;
+  await assert.rejects(getVenueBlockHistory((async () => ({ rows: [] })) as never, coordinator, VENUE, BLOCK), { status: 403 });
 });
 
 test('Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read', async () => {
