@@ -867,6 +867,21 @@ test.describe("E03-S07", () => {
    */
   test("TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request form", async ({ page }) => {
     await fakeOrganiserEvent(page, 'approved');
+    // The target is the real E10-S01 form; this test's Event-detail fixture
+    // must also supply its separate authenticated change-request read contract.
+    await page.route('**/api/events?*', async route => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('changeRequests') !== '1') return route.fallback();
+      expect(route.request().method()).toBe('GET');
+      expect(url.searchParams.get('id')).toBe('event-annual');
+      await route.fulfill({ status: 200, json: {
+        event: { id: 'event-annual', eventCode: 'EVT-ANNUAL', status: 'approved' },
+        permissions: { canSubmit: true, canDecide: false },
+        references: { layouts: [], accessibility: [] },
+        current: { title: 'Annual Tech Summit', startAt: '2026-10-10T09:00:00.000Z', endAt: '2026-10-10T12:00:00.000Z' },
+        requests: [],
+      } });
+    });
     await page.goto('/events/EVT-ANNUAL');
     await page.getByRole('button', { name: 'Edit event' }).click();
     const form = page.getByRole('form', { name: 'Edit event details' });
@@ -875,8 +890,10 @@ test.describe("E03-S07", () => {
     // Following the link lands on the change request page (E10-S01), not the landing page.
     await form.getByRole('link', { name: 'Request a change' }).first().click();
     await expect(page).toHaveURL(/\/change-requests\/new\?event=event-annual/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Request a change' })).toBeVisible();
-    await expect(page.getByText('Coming soon · E10-S01')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Change requests' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Request a change', exact: true })).toBeVisible();
+    await expect(page.getByLabel('Describe the change')).toBeEditable();
+    await expect(page.getByRole('button', { name: 'Send change request' })).toBeVisible();
   });
 
   /**

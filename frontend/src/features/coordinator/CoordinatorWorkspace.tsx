@@ -213,10 +213,13 @@ export function RequestDetail() {
             </>
           ) : null}
           {['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          {['approved', 'planning', 'safety_review', 'confirmed', 'completed', 'cancelled'].includes(event.status) ?
+            <ButtonLink to={`${eventLink(event)}/changes`}>Change requests</ButtonLink> : null}
           {/* E08-S03 (SCRUM-60): navigation, so no ellipsis. */}
           {READINESS_VISIBLE.includes(event.status) ? (
             <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
           ) : null}
+          {['confirmed', 'completed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/complete`}>Event completion</ButtonLink> : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}

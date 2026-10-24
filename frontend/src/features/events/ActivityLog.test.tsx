@@ -6,13 +6,18 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { RequestDetail } from '../coordinator/CoordinatorWorkspace';
-import { describeAction, describeChange, type ActivityEntry } from './ActivityLog';
+import { ActivityLog, describeAction, describeChange, type ActivityEntry } from './ActivityLog';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const approved: ActivityEntry = {
   occurred_at: '2026-10-08T02:30:00.000Z', action: 'Status changed to approved', field_changed: 'status',
   old_value: 'under_review', new_value: 'approved', actor_name: 'Coordinator B',
+};
+// E06-S04 Scenario 5 (TC_E06S04_05/_06): a Venue Staff decision on one of the event's bookings.
+const bookingApproved: ActivityEntry = {
+  occurred_at: '2026-10-09T01:00:00.000Z', action: 'Booking Approved', field_changed: 'status',
+  old_value: 'pending', new_value: 'confirmed', actor_name: 'Venue Staff A', entity_type: 'venue_booking', venue_name: 'Orchid Hall',
 };
 const edited: ActivityEntry = {
   occurred_at: '2026-10-08T03:00:00.000Z', action: 'Record updated', field_changed: 'venueRequirements',
@@ -129,6 +134,26 @@ test('a status change with no previous status shows only the new status', async 
   expect([...row.querySelectorAll('.status-pill')].map(pill => pill.textContent)).toEqual(['Submitted']);
 });
 
+test('TC_E06S04_05/_06: a booking decision is shown as a booking change, not an event status change', async () => {
+  stub([bookingApproved, { ...bookingApproved, action: 'Booking Rejected', new_value: 'rejected', venue_name: 'Lotus Room' }]);
+  renderDetail();
+  const rows = within(await activityCard()).getAllByRole('row').slice(1);
+  expect(rows[0]).toHaveTextContent('Booking approved');
+  expect(rows[0]).toHaveTextContent('Orchid Hall: Pending → Confirmed');
+  expect(rows[0]).toHaveTextContent('Venue Staff A');
+  expect(rows[0]).not.toHaveTextContent('Status changed');
+  expect(rows[0]!.querySelectorAll('.status-pill')).toHaveLength(0);
+  expect(rows[1]).toHaveTextContent('Booking rejected');
+  expect(rows[1]).toHaveTextContent('Lotus Room: Pending → Rejected');
+});
+
+test('a booking decision missing its venue or earlier status is still described', () => {
+  expect(describeChange({ ...bookingApproved, venue_name: null })).toBe('Venue: Pending → Confirmed');
+  expect(describeChange({ ...bookingApproved, old_value: null })).toBe('Orchid Hall: Confirmed');
+  expect(describeChange({ ...bookingApproved, old_value: null, new_value: null })).toBe('Orchid Hall: Not recorded');
+  expect(describeAction({ ...bookingApproved, action: 'Booking Released' })).toBe('Booking released');
+});
+
 // E06-S05 (SCRUM-144): hold entries show the expiry as a date and never the booking id.
 test('booking entries show hold expiry or a generic booking label without internal IDs', () => {
   const hold = { occurred_at: '2026-10-13T02:00:00.000Z', action: 'Tentative hold placed on Cedar Auditorium', field_changed: 'venue_booking', old_value: null, new_value: '2026-10-15T02:00:00.000Z', actor_name: 'Coordinator A' };
@@ -140,4 +165,14 @@ test('booking entries show hold expiry or a generic booking label without intern
   const request = { ...hold, action: 'Venue booking requested for Cedar Auditorium', new_value: 'internal-booking-id' };
   expect(describeAction(request)).toBe('Venue booking requested for Cedar Auditorium');
   expect(describeChange(request)).toBe('Venue booking');
+});
+
+
+test('TC_E08S05_05: automatic completion names the System without inventing an actor for unrelated rows', () => {
+  render(<MemoryRouter><ActivityLog entries={[
+    { ...approved, action: 'Automatically completed event', old_value: 'confirmed', new_value: 'completed', actor_name: null },
+    { ...edited, actor_name: null },
+  ]} /></MemoryRouter>);
+  expect(screen.getByRole('cell', { name: 'System' })).toBeTruthy();
+  expect(screen.getByRole('cell', { name: 'Not recorded' })).toBeTruthy();
 });
