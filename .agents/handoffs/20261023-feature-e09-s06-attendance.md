@@ -19,3 +19,7 @@ Merged validation:429 backend units,492 frontend tests,28 targeted unit/real-DB/
 24 October second merge: integrate main9c8a37f after completion #324 and venue decisions #298 merged. Retain attendance and completion imports, API dispatch/routes, test commands and all artifact allowlists. Regenerate coverage; manual attendance evidence remains pending.
 
 Second merge validation:464 backend units,526 frontend,20 runtime and11 attendance/completion unit/real-DB/API tests passed; typecheck/build and repository checks passed. Initial DB attempt failed because Docker stopped; restart and rerun passed. Session20261024-173512 identifies base949ab07 plus staged main9c8a37f.
+
+24 October human evidence:13 supplied originals appended in session20261024-182658-xiangyingg-frontend-e2e, tested local-only assemblyf4c3169 (attendance988b557 plus registration frontendb6fef3b). TC01–04, human full registration/completion/attendance and unassigned refusal observed; crop/identity attribution limitations documented. Normalize three duplicate filename suffixes only; bytes retained. Prior records unchanged. Independent review and required CI remain gates; no Jira Done claim.
+
+Manual evidence filing checks: python3 scripts/check.py passed; tooling record20261024-182937. Updated postplan structure/render/visual checks passed; https://bijgefhig57x.postplan.dev/v/3. Evidence-only update; no application test rerun or new application changes.

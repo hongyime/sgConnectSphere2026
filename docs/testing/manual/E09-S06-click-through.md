@@ -1,6 +1,6 @@
 # E09-S06 Record attendance — SCRUM-68
 
-Human acceptance is pending. Automated browser results do not count as T-93 human screenshots.
+Human run supplied: [24 October manual session](../runs/20261024-182658-xiangyingg-frontend-e2e.md), local integration f4c3169. Independent evidence review remains required. Automated browser results do not count as T-93 human screenshots.
 
 ## Local setup
 
@@ -22,8 +22,8 @@ Keep screenshots under 1000 KB each, no passwords, tokens or terminal prompts. A
 
 ## Full integration gate
 
-After #326 registration backend, #327 frontend and #324 completion are integrated, register through the real Attendee UI, complete through the actual completion flow, then record attendance as the assigned Coordinator. Verify unchanged registration counts and Session selections. This local preloaded-fixture run alone does not close that cross-story gate. Registration-owner contract review, independent review of code/tests and required CI remain outstanding. No Jira Done claim.
+After #326 registration backend, #327 frontend and #324 completion are integrated, register through the real Attendee UI, complete through the actual completion flow, then record attendance as the assigned Coordinator. Verify unchanged registration counts and Session selections. This local preloaded-fixture run alone does not close that cross-story gate. Registration-owner contract is confirmed on #326; independent review of code/tests/evidence and required CI remain outstanding. No Jira Done claim.
 
-Automated combined integration now passes: [session](../runs/20261023-015630-xiangyingg-frontend-e2e.md). The human full-flow acceptance above remains pending; do not substitute the automated run for human screenshots.
+Automated combined integration now passes: [session](../runs/20261023-015630-xiangyingg-frontend-e2e.md). The 24 October human session now supplies the full-flow screenshots separately, with its tested dependency assembly and limitations recorded.
 
 To prepare a fresh Confirmed publication with two Sessions but no registrations for the full human flow, run `npx tsx scripts/verify_attendance_integration.ts --prepare-only` with TEST_DATABASE_URL and BASE_URL set to the combined loopback test targets. This prints registration/completion/attendance paths and performs no UI actions. Sign in separately as each synthetic Attendee, choose Sessions and confirm registration. Then sign in as Coordinator A, check recording is blocked, complete through the printed completion path, and record attendance. Capture your own before/after images. The default command without --prepare-only performs automated verification and is never human evidence.

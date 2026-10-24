@@ -27,7 +27,7 @@ Additional real DB tests cover current authority, wrong event/registration, conc
 
 Main includes 0023–0024 schema (#322). No dependent feature branch merged into this branch. Registration owner contract posted on #326: https://github.com/hongyime/sgConnectSphere2026/pull/326#issuecomment-6346826737. Registration owner confirmed the registered-only Event-level count, multi-Session deduplication, manually_added registration semantics and compatible Event → Account → Registration lock order: https://github.com/hongyime/sgConnectSphere2026/pull/326#issuecomment-6356562188 . #324 completion and #326/#327 live registration are needed for the full human register → complete → attendance flow. Local synthetic fixture setup is not evidence of those upstream flows or production migration verification.
 
-Manual guide: `docs/testing/manual/E09-S06-click-through.md`. Human screenshots not yet supplied. Draft/review status only; do not mark SCRUM-68 Done. Service SQL coverage is measured with real PostgreSQL rather than pretending mocked SQL proves persistence; targeted service and component coverage reports are recorded in the run session.
+Manual guide: `docs/testing/manual/E09-S06-click-through.md`. Human screenshots now supplied in [24 October session](../testing/runs/20261024-182658-xiangyingg-frontend-e2e.md), tested local integration f4c3169. TC01–04 and full-flow observations recorded with explicit crop/attribution limitations. Draft/review status only; do not mark SCRUM-68 Done. Service SQL coverage is measured with real PostgreSQL rather than pretending mocked SQL proves persistence; targeted service and component coverage reports are recorded in the run session.
 
 ## Combined integration follow-up
 
