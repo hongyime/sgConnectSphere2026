@@ -15,3 +15,7 @@ Follow-up: #343 created draft, head15abcf6 all required CI passed (full applicat
 24 October conflict follow-up: merged main6ab9f80 preserving attendance plus cancellation/change-request dispatch, routes, test commands and both artifact allowlists. Regenerated coverage inventory. Registration owner confirmation supplied in #326 issuecomment-6356562188 matches existing registered-only Event-level semantics, multi-Session deduplication, manual additions and compatible lock order. Human acceptance and independent review remain pending; no registration code or requirement changes.
 
 Merged validation:429 backend units,492 frontend tests,28 targeted unit/real-DB/API,17 runtime,4 desktop/mobile stubbed-API browser tests; typecheck/build and163 tooling tests passed. Record20261024-014401-xiangyingg-full-regression.md identifies base82a6cef plus main6ab9f80 staged merge. Review HTML structure/render passed; https://bijgefhig57x.postplan.dev/v/1. Fresh source CI follows push.
+
+24 October second merge: integrate main9c8a37f after completion #324 and venue decisions #298 merged. Retain attendance and completion imports, API dispatch/routes, test commands and all artifact allowlists. Regenerate coverage; manual attendance evidence remains pending.
+
+Second merge validation:464 backend units,526 frontend,20 runtime and11 attendance/completion unit/real-DB/API tests passed; typecheck/build and repository checks passed. Initial DB attempt failed because Docker stopped; restart and rerun passed. Session20261024-173512 identifies base949ab07 plus staged main9c8a37f.

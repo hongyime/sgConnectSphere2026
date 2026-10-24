@@ -1,4 +1,5 @@
 import { getAttendance, recordAttendance } from '../backend/src/modules/eventAttendance/service.js';
+import { getCompletion, completeEvent } from '../backend/src/modules/eventLifecycle/completion.js';
 import { inTransaction } from '../backend/src/database/pool.js';
 import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
@@ -102,6 +103,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.has('changeRequests')) {
       await handleChangeRequests(request, response, params);
+      return;
+    }
+    if (params.get('completion') === '1') {
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { completion: await completeEvent(getDatabasePool(), user, params.get('id') || '') };
+      });
       return;
     }
     if (params.get('cancellation') === '1') {
@@ -334,6 +342,13 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
   }
   if (params.has('changeRequests')) {
     await handleChangeRequests(request, response, params);
+    return;
+  }
+  if (params.get('completion') === '1') {
+    await respond(response, async () => {
+      const user = await currentUser(request);
+      return { completion: await getCompletion(getDatabasePool(), user, params.get('id') || '') };
+    });
     return;
   }
   if (params.get('cancellation') === '1') {

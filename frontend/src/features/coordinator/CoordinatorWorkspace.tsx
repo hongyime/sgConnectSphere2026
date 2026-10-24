@@ -219,6 +219,7 @@ export function RequestDetail() {
           {READINESS_VISIBLE.includes(event.status) ? (
             <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
           ) : null}
+          {['confirmed', 'completed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/complete`}>Event completion</ButtonLink> : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}
