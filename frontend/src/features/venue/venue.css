@@ -102,6 +102,7 @@
 .badge-tentative   { background: var(--amber-soft); color: var(--amber-ink); }
 .badge-confirmed   { background: var(--blue-soft); color: var(--blue); }
 .badge-blocked     { background: var(--red-soft); color: var(--red); }
+.badge-conflicting { background: var(--amber-soft); color: var(--red); }
 .badge-unavailable { background: var(--surface-strong); color: var(--muted); }
 
 .calendar-days { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
@@ -119,6 +120,7 @@
 .entry-tentative   { border-left-color: var(--amber); border-left-style: dashed; }
 .entry-confirmed   { border-left-color: var(--blue); }
 .entry-unavailable { border-left-color: var(--muted); }
+.entry-conflicting { border-left-color: var(--red); background: var(--amber-soft); }
 .entry-blocked {
   border-left-color: var(--red);
   background: repeating-linear-gradient(135deg, var(--red-soft) 0 8px, var(--surface) 8px 16px);

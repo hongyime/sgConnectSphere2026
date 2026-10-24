@@ -117,6 +117,60 @@ test('shows a maintenance block with its reason and never as a booking', async (
   expect(within(entry).queryByRole('button')).not.toBeInTheDocument();
 });
 
+test('E05-S06 Scenario 1: a Blocked period shows its reason category before the note', async () => {
+  calendarReply = url => ({ body: calendarBody(url, [
+    { state: 'blocked', kind: 'block', start: '2026-11-20T00:00:00.000Z', end: '2026-11-20T10:00:00.000Z',
+      reasonCategory: 'equipment_failure', reason: 'Projector rig fault' },
+    { state: 'blocked', kind: 'block', start: '2026-11-21T00:00:00.000Z', end: '2026-11-21T10:00:00.000Z', reasonCategory: 'other', reason: '' },
+  ]) });
+  renderCalendar();
+  const entry = within(await dayItem(/20 Nov 2026/)).getByText('Blocked').closest('li') as HTMLElement;
+  expect(entry).toHaveTextContent('08:00–18:00');
+  expect(entry).toHaveTextContent('Maintenance block · Equipment failure · Projector rig fault');
+  expect(within(await dayItem(/21 Nov 2026/)).getByText('Blocked').closest('li')).toHaveTextContent(/Maintenance block · Other$/);
+});
+
+test('E05-S06 Scenario 2: a Conflicting booking stays visible inside the Blocked period with its own label and the reason', async () => {
+  calendarReply = url => ({ body: calendarBody(url, [
+    { state: 'blocked', kind: 'block', start: '2026-11-20T00:00:00.000Z', end: '2026-11-20T10:00:00.000Z',
+      reasonCategory: 'safety_concern', reason: 'Ceiling inspection' },
+    { state: 'conflicting', kind: 'booking', start: '2026-11-20T06:00:00.000Z', end: '2026-11-20T08:00:00.000Z',
+      event: { id: 'e-5', code: 'EVT-2005', title: 'Alumni Dinner' }, reasonCategory: 'safety_concern' },
+    { state: 'conflicting', kind: 'booking', start: '2026-11-22T06:00:00.000Z', end: '2026-11-22T08:00:00.000Z',
+      event: { id: 'e-6', code: null, title: 'Book Fair' } },
+  ]) });
+  renderCalendar();
+  const day = await dayItem(/20 Nov 2026/);
+  const entry = within(day).getByText('Conflicting').closest('li') as HTMLElement;
+  expect(entry).toHaveClass('entry-conflicting');
+  expect(entry).toHaveTextContent('14:00–16:00');
+  expect(within(entry).getByRole('button', { name: 'Alumni Dinner · Venue unavailable — needs an alternative · Safety concern' })).toBeInTheDocument();
+  expect(within(day).getByText('Blocked')).toBeInTheDocument();
+  // Without a category the label still says what is needed.
+  expect(within(await dayItem(/22 Nov 2026/)).getByRole('button', { name: 'Book Fair · Venue unavailable — needs an alternative' })).toBeInTheDocument();
+});
+
+test('E05-S06: the legend lists all six states, Conflicting included', async () => {
+  renderCalendar();
+  await dayItem(/10 Nov 2026/);
+  const legend = screen.getByRole('list', { name: 'Legend' });
+  expect(within(legend).getAllByRole('listitem').map(item => item.textContent?.trim()))
+    .toEqual(['Free', 'Tentative', 'Confirmed', 'Conflicting', 'Blocked', 'Unavailable']);
+});
+
+test('E05-S06 Scenario 1 (T-80): an open-ended block, clipped by the server to the range, shows as Blocked on every day', async () => {
+  // Open-ended from 28/11 00:00 SGT; the server ends it at the end of the requested range.
+  calendarReply = url => ({ body: calendarBody(url, [
+    { state: 'blocked', kind: 'block', start: '2026-11-27T16:00:00.000Z', end: '2026-11-30T16:00:00.000Z', reasonCategory: 'renovation', reason: 'Roof works' },
+  ]) });
+  renderCalendar();
+  for (const pattern of [/28 Nov 2026/, /29 Nov 2026/, /30 Nov 2026/]) {
+    const day = await dayItem(pattern);
+    expect(day).toHaveTextContent('All day');
+    expect(day).toHaveTextContent('Renovation · Roof works');
+  }
+});
+
 test('shows an unavailable period without any event details', async () => {
   renderCalendar();
   const day = await dayItem(/12 Nov 2026/);
