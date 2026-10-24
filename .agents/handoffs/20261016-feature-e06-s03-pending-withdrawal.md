@@ -112,3 +112,5 @@ Application CI follow-up at da6c66c: job120833459812 had471backend and526fronten
 Pre-commit repository check rerun: hygiene/env checks pass; known Windows163tooling3fail11errors remain. No all-green local tooling claim.
 
 Le Xin24October review5637807328/inline4366750419: removed unused onViewBookings prop/destructure/ternary, retained plain ButtonLink and onSubmitted automatic reload.21focusedtests pass; form100%allcoverage, frontendtypespass. Repo163Windows3fail11error unchanged. Existing f44bb61 CI allgreen; new cleanup head needs CI/re-review. No manual rerun. PR body stale failure wording and spacing corrected separately.
+
+24October conflict resolution: merge main8cdc2a5 into42a04d7. Sole conflict generatedtc-coverage regenerated229/378 with114scaffold. Main contract changes retained. Both typechecks pass; repository163Windows3fail11error with hygiene/env passing. No application logic conflict, fresh manual or DB run. Preserve intentional manual worktree. Normal merge commit/push; CI and human review required.

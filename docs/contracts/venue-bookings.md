@@ -162,7 +162,7 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 - Pending → Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
 - Confirmed → Released: event workflow releases the booking.
 - E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
-- Pending or Confirmed → Conflicting: E05-S06 marks a booking affected by an unavailability; its resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
+- Pending, Confirmed or unexpired Tentative → Conflicting: E05-S06 marks a booking or hold affected by an unavailability (C-111); its resolution flow restores the applicable status, and a hold whose expiry has passed meanwhile becomes Expired. Venue Staff cannot approve/reject a booking while it is Conflicting.
 
 Every submission path uses one shared service and transaction. It authorizes the assigned Coordinator; locks the event and (for conversion) the hold; checks event status, range containment, venue block, suitability inputs, and expiry; writes the booking and any Approved-to-Planning transition; then persists audit and notification/outbox records. Any failure rolls the transaction back. The database exclusion constraint remains the final guard against concurrent occupancy conflicts. **Proposal:** Booking/block writes serialize on the venue so a concurrent block cannot slip past the block check. Hold creation follows the same block and occupancy checks; the event-status submission gate is checked again when a hold is converted.
 

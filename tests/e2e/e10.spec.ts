@@ -365,7 +365,7 @@ test.describe("E10-S02 — Week 7 case scaffolds", () => {
 });
 
 test.describe("E10-S05 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator's event should be flagged with the booking shown as Conflicting while status and other arrangements stay unchanged", async ({ page }) => {
+  test.fixme("TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator's event should be flagged with the booking shown as Conflicting, return to Planning without being cancelled, and keep its other arrangements", async ({ page }) => {
     // Implement from docs/testing/cases/E10.md (TC_E10S05_01).
     void page;
   });
