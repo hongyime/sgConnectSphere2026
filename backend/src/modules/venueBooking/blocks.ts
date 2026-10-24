@@ -488,13 +488,52 @@ export async function shortenVenueBlock(
   }, 'Venue block shortened'));
 }
 
+// T-91 / Scenarios 6 and 7: lifting keeps the unavailability as history,
+// restores every booking and hold it made Conflicting (C-122), and tells the
+// Coordinator of each event it affected, including one whose booking stays
+// Conflicting because it was replaced or now clashes.
+async function liftBlock(client: PoolClient, actorId: string, venueId: string, blockId: string, auditAction: string) {
+  const candidates = (await client.query<FlaggedRow>(flaggedSql('', true), [blockId])).rows;
+  const locked = [...new Set(candidates.map(row => row.event_id))].sort();
+  await lockEvents(client, locked, false);
+  const venue = await lockVenue(client, venueId);
+  const current = await lockBlock(client, venueId, blockId);
+
+  const lifted = (await client.query<{ lifted_at: Date }>(`UPDATE venue_blocks SET lifted_at = now(), lifted_by = $2
+    WHERE id = $1 RETURNING lifted_at`, [current.id, actorId])).rows[0]!;
+  await audit(client, actorId, current.id, auditAction, describe(toVenueBlock(current)), null);
+  await recordHistory(client, current.id, 'lifted', actorId, current, null);
+
+  const flagged = (await client.query<FlaggedRow>(flaggedSql('FOR UPDATE OF vb', true), [current.id])).rows;
+  await lockEvents(client, [...new Set(flagged.map(row => row.event_id))].filter(id => !locked.includes(id)).sort(), true);
+  const restoredEvents = await restoreFlagged(client, actorId, venue.name, current.id, lifted.lifted_at, flagged);
+  const restored = new Set(restoredEvents.map(event => event.eventId));
+  let notified = restoredEvents.filter(event => event.coordinatorNotified).length;
+  for (const event of new Map(flagged.map(item => [item.event_id, item])).values()) {
+    if (restored.has(event.event_id) || !event.coordinator_id) continue;
+    // Same change ID as the restore notice, so nobody is told twice.
+    if (await writeEventNotification(client, {
+      eventId: event.event_id, changeId: `venue-available:${current.id}:${lifted.lifted_at.toISOString()}`,
+      userId: event.coordinator_id, occurredAt: lifted.lifted_at, title: 'Venue available again',
+      message: `The unavailability on ${venue.name} has been lifted. The venue booking for "${event.title}" `
+        + 'still needs your attention before it can stand again.',
+    })) notified += 1;
+  }
+  return { status: 200, body: { block: toVenueBlock(current), lifted: true, restoredEvents, notifiedEventCount: notified } };
+}
+
+export async function liftVenueBlock(database: Pool, user: AuthenticatedUser | undefined, venueId: string, blockId: string) {
+  const staff = await requireVenueStaff(poolQuery(database), user);
+  return inTransaction(database, client => liftBlock(client, staff.id, venueId, blockId, 'Venue block lifted'));
+}
+
+// E05-S04's "remove", which the current screen still uses, now lifts the
+// block instead of deleting it, so its history is kept (T-91). The reply
+// keeps E05-S04's `removed` flag.
 export async function removeVenueBlock(database: Pool, user: AuthenticatedUser | undefined, venueId: string, blockId: string) {
   const staff = await requireVenueStaff(poolQuery(database), user);
   return inTransaction(database, async client => {
-    await lockVenue(client, venueId);
-    const current = await lockBlock(client, venueId, blockId);
-    await client.query(`DELETE FROM venue_blocks WHERE id = $1`, [current.id]);
-    await audit(client, staff.id, current.id, 'Venue block removed', describe(toVenueBlock(current)), null);
-    return { status: 200, body: { removed: true } };
+    const result = await liftBlock(client, staff.id, venueId, blockId, 'Venue block removed');
+    return { status: result.status, body: { ...result.body, removed: true } };
   });
 }
