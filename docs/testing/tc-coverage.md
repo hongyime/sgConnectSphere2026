@@ -1074,6 +1074,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
 - E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
 - the block list shows an open-ended block with no end and hides lifted ones in its query
+- Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only
+- Scenario 7: block history returns each create, edit and lift with the earlier and new period, category, note, actor and time
 - Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read
 
 ### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
