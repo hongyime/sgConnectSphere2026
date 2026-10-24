@@ -13,7 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool } from 'pg';
 import {
-  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock, validateBlockInput,
+  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock, validateBlockInput, validateUnavailabilityInput,
 } from '../src/modules/venueBooking/blocks.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -70,6 +70,55 @@ test('validateBlockInput makes the reason optional only when shortening', () => 
   const { input } = validateBlockInput({ from: valid.from, to: '2027-01-07' }, false);
   assert.equal(input!.reason, undefined);
   assert.ok(validateBlockInput({ from: valid.from, to: '2027-01-07', reason: '' }, false).errors?.reason);
+});
+
+// E05-S06 Scenarios 1 and 5: exact times, a reason category, an optional note
+// and an optional end (T-80).
+test('validateUnavailabilityInput reads a timed, categorised period with a note', () => {
+  const result = validateUnavailabilityInput({
+    starts_at: '2027-01-20T08:00:00+08:00', ends_at: '2027-01-20T18:00:00+08:00',
+    reason_category: 'equipment_failure', reason: '  Projector rig fault  ',
+  });
+  assert.deepEqual(result.input, {
+    start: new Date('2027-01-20T00:00:00Z'), end: new Date('2027-01-20T10:00:00Z'),
+    category: 'equipment_failure', reason: 'Projector rig fault',
+  });
+});
+
+test('validateUnavailabilityInput leaves the end open when it is missing, null or empty, and the note optional', () => {
+  for (const ends_at of [undefined, null, '']) {
+    const result = validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', ends_at, reason_category: 'renovation' });
+    assert.deepEqual(result.input, { start: new Date('2027-01-20T08:00:00Z'), end: null, category: 'renovation', reason: '' }, String(ends_at));
+  }
+  assert.equal(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', reason_category: 'other', reason: null }).input?.reason, '');
+});
+
+test('validateUnavailabilityInput reads the E05-S04 whole-day form as maintenance', () => {
+  assert.deepEqual(validateUnavailabilityInput({ from: '2027-01-05', to: '2027-01-06', reason: 'Inspection' }).input, {
+    start: new Date('2027-01-04T16:00:00Z'), end: new Date('2027-01-06T16:00:00Z'), category: 'maintenance', reason: 'Inspection',
+  });
+  assert.deepEqual(validateUnavailabilityInput({ from: '2027-01-05', to: '2027-01-06' }).errors, { reason: ['A reason for the block is required.'] });
+});
+
+test('validateUnavailabilityInput refuses a missing object, bad times, a reversed or zero-length period, an unknown category and a bad note', () => {
+  assert.deepEqual(Object.keys(validateUnavailabilityInput('nope').errors!), ['form']);
+  for (const starts_at of ['2027-01-20T08:00:00', '20/01/2027 08:00', '2027-01-20T99:00:00+08:00', 42]) {
+    assert.deepEqual(Object.keys(validateUnavailabilityInput({ starts_at, reason_category: 'other' }).errors!), ['starts_at'], String(starts_at));
+  }
+  assert.match(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', ends_at: 'tomorrow', reason_category: 'other' }).errors!.ends_at![0]!, /left empty/);
+  for (const ends_at of ['2027-01-20T08:00:00Z', '2027-01-20T07:59:00Z']) {
+    assert.deepEqual(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', ends_at, reason_category: 'other' }).errors,
+      { ends_at: ['End must be after the start.'] }, ends_at);
+  }
+  // A bad start leaves nothing to compare a valid end against.
+  assert.deepEqual(Object.keys(validateUnavailabilityInput({ starts_at: 'x', ends_at: '2027-01-20T08:00:00Z', reason_category: 'other' }).errors!), ['starts_at']);
+  for (const reason_category of [undefined, 'flood', 'Maintenance']) {
+    assert.deepEqual(Object.keys(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', reason_category }).errors!), ['reason_category'], String(reason_category));
+  }
+  assert.deepEqual(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', reason_category: 'other', reason: 7 }).errors, { reason: ['The note must be text.'] });
+  assert.deepEqual(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', reason_category: 'other', reason: 'x'.repeat(255) }).input?.reason.length, 255);
+  assert.deepEqual(validateUnavailabilityInput({ starts_at: '2027-01-20T08:00:00Z', reason_category: 'other', reason: 'x'.repeat(256) }).errors,
+    { reason: ['The note must be at most 255 characters.'] });
 });
 
 test('block changes require a signed-in Venue Staff member', async () => {

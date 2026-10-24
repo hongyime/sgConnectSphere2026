@@ -23,11 +23,12 @@ const REASON_MAX = 255;
 export type BlockInput = { start: Date; end: Date; reason: string };
 
 export type VenueBlock = {
-  id: string; venueId: string; from: string; to: string | null; reason: string; startsAt: string; endsAt: string | null;
+  id: string; venueId: string; from: string; to: string | null; reasonCategory: ReasonCategory; reason: string;
+  startsAt: string; endsAt: string | null;
 };
 
 // ends_at is null for an open-ended block (T-80).
-type BlockRow = { id: string; venue_id: string; reason: string; starts_at: Date; ends_at: Date | null };
+type BlockRow = { id: string; venue_id: string; reason_category: ReasonCategory; reason: string; starts_at: Date; ends_at: Date | null };
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -48,7 +49,7 @@ function sgtDate(time: number): string {
 
 function toVenueBlock(row: BlockRow): VenueBlock {
   return {
-    id: row.id, venueId: row.venue_id, reason: row.reason,
+    id: row.id, venueId: row.venue_id, reasonCategory: row.reason_category, reason: row.reason,
     from: sgtDate(row.starts_at.getTime()),
     // The stored end is exclusive, so the last blocked day is the one before it.
     to: row.ends_at ? sgtDate(row.ends_at.getTime() - 1) : null,
@@ -82,6 +83,62 @@ export function validateBlockInput(body: unknown, requireReason = true):
   return { input: { start: new Date(start!), end: new Date(last! + DAY_MS), ...(reason ? { reason } : {}) } };
 }
 
+// E05-S06 Scenario 1 (C-66): the reason categories, as in migration 0025.
+export const REASON_CATEGORIES = ['maintenance', 'equipment_failure', 'renovation', 'safety_concern', 'other'] as const;
+export type ReasonCategory = typeof REASON_CATEGORIES[number];
+
+// end is null for an open-ended unavailability (T-80).
+export type UnavailabilityInput = { start: Date; end: Date | null; category: ReasonCategory; reason: string };
+
+// The same instant rule as booking requests: a date and time with an explicit
+// offset, so a period never depends on the server's time zone.
+const INSTANT_PATTERN = /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/;
+
+function parseInstant(value: unknown): number | undefined {
+  if (typeof value !== 'string' || !INSTANT_PATTERN.test(value)) return undefined;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? undefined : time;
+}
+
+// E05-S06 Scenarios 1 and 5: `starts_at`, an optional `ends_at`, a
+// `reason_category` and an optional note in `reason`. A body without
+// `starts_at` is E05-S04's whole-day form, which the current screen still
+// sends; it is read as a maintenance block. Pure, like validateBlockInput.
+export function validateUnavailabilityInput(body: unknown):
+  | { input: UnavailabilityInput; errors?: never }
+  | { errors: VenueErrors; input?: never } {
+  if (!isPlainObject(body)) return { errors: { form: ['Submit an object containing starts_at, reason_category and an optional ends_at and reason.'] } };
+  if (body.starts_at === undefined) {
+    const days = validateBlockInput(body);
+    if (days.errors) return days;
+    return { input: { start: days.input.start, end: days.input.end, category: 'maintenance', reason: days.input.reason! } };
+  }
+  const errors: VenueErrors = {};
+
+  const start = parseInstant(body.starts_at);
+  if (start === undefined) errors.starts_at = ['Start must be a date and time with a time zone, for example 2027-01-20T08:00:00+08:00.'];
+  // No end, or an empty one, leaves the unavailability open until it is lifted.
+  const openEnded = body.ends_at === undefined || body.ends_at === null || body.ends_at === '';
+  const end = openEnded ? null : parseInstant(body.ends_at);
+  if (end === undefined) errors.ends_at = ['End must be a date and time with a time zone, or left empty to keep the venue unavailable until lifted.'];
+  else if (end !== null && start !== undefined && end <= start) errors.ends_at = ['End must be after the start.'];
+
+  const category = REASON_CATEGORIES.find(value => value === body.reason_category);
+  if (!category) errors.reason_category = ['Choose maintenance, equipment failure, renovation, safety concern or other.'];
+
+  let reason = '';
+  if (body.reason !== undefined && body.reason !== null) {
+    if (typeof body.reason !== 'string') errors.reason = ['The note must be text.'];
+    else {
+      reason = body.reason.trim();
+      if (reason.length > REASON_MAX) errors.reason = [`The note must be at most ${REASON_MAX} characters.`];
+    }
+  }
+
+  if (Object.keys(errors).length) return { errors };
+  return { input: { start: new Date(start!), end: end === null ? null : new Date(end!), category: category!, reason } };
+}
+
 function poolQuery(database: Pool): Query {
   return (sql, values) => database.query(sql, values);
 }
@@ -97,7 +154,7 @@ async function lockVenue(client: PoolClient, venueId: string) {
 
 async function lockBlock(client: PoolClient, venueId: string, blockId: string) {
   const result = await client.query<BlockRow>(`
-    SELECT id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
+    SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
     FROM venue_blocks WHERE id::text = $1 AND venue_id::text = $2 AND lifted_at IS NULL FOR UPDATE`, [blockId, venueId]);
   if (!result.rows[0]) throw new AccessError(404, 'Block not found on this venue.');
   return result.rows[0];
@@ -119,7 +176,7 @@ export async function listVenueBlocks(query: Query, user: AuthenticatedUser | un
   // Past and lifted blocks are history, not something staff can still change;
   // an open-ended block stays current until it is lifted (T-80, T-91).
   const result = await query<BlockRow>(`
-    SELECT id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
+    SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
     FROM venue_blocks WHERE venue_id::text = $1 AND lifted_at IS NULL
       AND (upper_inf(block_range) OR upper(block_range) > now())
     ORDER BY lower(block_range)`, [venueId]);
@@ -160,7 +217,7 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
     // Overlapping blocks would make a later shorten or remove look like it
     // failed, because the other block would still hold the period.
     const overlapping = await client.query<BlockRow>(`
-      SELECT id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
+      SELECT id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at
       FROM venue_blocks WHERE venue_id = $1 AND block_range && tstzrange($2::timestamptz, $3::timestamptz, '[)')
       ORDER BY lower(block_range)`, [venue.id, start, end]);
     if (overlapping.rows.length) {
@@ -173,7 +230,7 @@ export async function createVenueBlock(database: Pool, user: AuthenticatedUser |
 
     const inserted = await client.query<BlockRow & { created_at: Date }>(`
       INSERT INTO venue_blocks (venue_id, block_range, reason, created_by) VALUES ($1, tstzrange($2::timestamptz, $3::timestamptz, '[)'), $4, $5)
-      RETURNING id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at, created_at`,
+      RETURNING id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at, created_at`,
     [venue.id, start, end, reason, staff.id]);
     const row = inserted.rows[0]!;
     const block = toVenueBlock(row);
@@ -246,7 +303,7 @@ export async function shortenVenueBlock(
     const newEnd = new Date(Math.min(end.getTime(), current.ends_at?.getTime() ?? Infinity));
     const updated = await client.query<BlockRow>(`
       UPDATE venue_blocks SET block_range = tstzrange($2::timestamptz, $3::timestamptz, '[)'), reason = $4 WHERE id = $1
-      RETURNING id, venue_id, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at`,
+      RETURNING id, venue_id, reason_category, reason, lower(block_range) AS starts_at, upper(block_range) AS ends_at`,
     [current.id, newStart, newEnd, reason ?? current.reason]);
     const block = toVenueBlock(updated.rows[0]!);
     await audit(client, staff.id, block.id, 'Venue block shortened', describe(before), describe(block));
