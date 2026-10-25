@@ -211,7 +211,7 @@ erDiagram
         uuid conflict_block_id FK "the unavailability that made it Conflicting"
         text purpose "Week 7 C-67; e.g. Main programme, Breakout A"
         int headcount "Week 7 C-67; governs suitability for this venue, falls back to SESSIONS.expected_attendance (T-79)"
-        boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30)"
+        boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30), kept while an unavailability holds it Conflicting (E05-S06)"
         uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
         timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
         uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
@@ -486,7 +486,10 @@ erDiagram
   and `status_before_conflict` / `conflict_block_id` on `VENUE_BOOKINGS`, so a
   booking or unexpired hold flagged by an unavailability returns to its earlier
   status when the unavailability is shortened or lifted (E05-S06, C-111, C-122).
-  The 0016 write guard ignores lifted unavailability.
+  It also widens 0019's `venue_bookings_primary_confirmed` so the event's primary
+  booking stays primary while Conflicting, keeping the original venue (E10-S05)
+  and restoring it as it was; readers that show or publish the venue still require
+  Confirmed. The 0016 write guard ignores lifted unavailability.
 - Registration remains one row per attendee/Event. A partial unique constraint
   allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
   and Organiser-`rejected` rows are not active, so the account may register
