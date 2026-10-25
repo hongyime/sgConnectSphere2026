@@ -89,6 +89,13 @@ ALTER TABLE venue_bookings
 CREATE INDEX venue_bookings_conflict_block_id_idx
   ON venue_bookings (conflict_block_id) WHERE conflict_block_id IS NOT NULL;
 
+-- 5b. The event's primary booking (0019: primary must be Confirmed) stays
+-- primary while an unavailability holds it Conflicting, so the event keeps its
+-- original venue (E10-S05) and a lift restores it as it was (Scenario 6).
+ALTER TABLE venue_bookings DROP CONSTRAINT venue_bookings_primary_confirmed;
+ALTER TABLE venue_bookings ADD CONSTRAINT venue_bookings_primary_confirmed
+  CHECK (NOT is_primary OR status::text IN ('confirmed', 'conflicting'));
+
 -- 6. The 0016 write guard ignores lifted unavailability. Everything else is
 -- unchanged from 0016.
 CREATE OR REPLACE FUNCTION guard_venue_buffer_overlap() RETURNS trigger AS $$

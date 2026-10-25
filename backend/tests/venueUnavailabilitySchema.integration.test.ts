@@ -4,7 +4,8 @@
 // Proves the schema rules the application code will rely on: the reason
 // category, a required start with an optional end (T-80), lifted blocks kept
 // but no longer blocking (T-91), immutable history (T-91), the restore columns
-// on bookings (C-111, C-122), and that code written before 0025 still works.
+// on bookings (C-111, C-122), a primary booking kept primary while Conflicting,
+// and that code written before 0025 still works.
 //
 // Requires TEST_DATABASE_URL; see helpers/loginDatabase.ts.
 
@@ -95,6 +96,20 @@ test('a booking remembers its earlier status and the unavailability that flagged
   const row = (await f.pool.query<{ conflict_block_id: string | null }>(
     `SELECT conflict_block_id FROM venue_bookings WHERE id = $1`, [booking.id])).rows[0]!;
   assert.equal(row.conflict_block_id, null);
+}));
+
+test('the primary booking stays primary while Conflicting and when restored, but no other status may be primary', () => withVenue(async (f, ids) => {
+  const booking = (await f.pool.query<{ id: string }>(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status, is_primary)
+    VALUES ($1, $2, '[2027-01-25 10:00+08,2027-01-25 12:00+08)', 'confirmed', true) RETURNING id`, [ids.venue, ids.event])).rows[0]!;
+  await f.pool.query(`UPDATE venue_bookings SET status = 'conflicting', status_before_conflict = 'confirmed' WHERE id = $1`, [booking.id]);
+  await f.pool.query(`UPDATE venue_bookings SET status = 'confirmed', status_before_conflict = NULL WHERE id = $1`, [booking.id]);
+  for (const other of ['pending', 'tentative', 'rejected', 'released', 'expired']) {
+    await assert.rejects(f.pool.query(`UPDATE venue_bookings SET status = $2::booking_status WHERE id = $1`, [booking.id, other]),
+      { constraint: 'venue_bookings_primary_confirmed' }, other);
+  }
+  const row = (await f.pool.query<{ status: string; is_primary: boolean }>(
+    `SELECT status, is_primary FROM venue_bookings WHERE id = $1`, [booking.id])).rows[0]!;
+  assert.deepEqual(row, { status: 'confirmed', is_primary: true });
 }));
 
 test('unavailability history is append-only, keeps its shape per action, and follows its venue when deleted', () => withVenue(async (f, ids) => {
