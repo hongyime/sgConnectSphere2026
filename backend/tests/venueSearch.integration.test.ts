@@ -27,6 +27,7 @@ test('TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S0
   await client.query(await readFile(new URL('../database/migrations/0011_venue_setup_turnaround_buffers.sql',import.meta.url),'utf8'));
   await client.query(await readFile(new URL('../database/migrations/0013_tentative_venue_holds.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../database/migrations/0016_venue_buffer_write_guard.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/0019_venue_bookings_contract.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../database/migrations/0025_venue_unavailability.sql', import.meta.url), 'utf8'));
 
   const query: Query=(sql,values)=>client.query(sql,values);
