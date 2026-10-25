@@ -160,3 +160,29 @@ test('compiled venue booking submission rejects origin and anonymous actors befo
   assert.equal(anonymous.status, 401);
   assert.equal(anonymous.body.error, 'Sign in to continue.');
 });
+
+test('compiled Pending withdrawal shares origin and identity protection', () => {
+  const environment = { APP_URL: 'https://app.example.test' };
+  for (const [origin,status] of [['https://other.example.test',403],['https://app.example.test',401]]) {
+    const result=invoke('api/venues/index.js','POST',{headers:{origin},body:{action:'withdraw_booking',booking_id:'00000000-0000-4000-8000-000000000001'}},environment);
+    assert.equal(result.status,status);
+  }
+});
+
+test('compiled primary selection protects origin and requires a signed-in actor', () => {
+  const environment={APP_URL:'https://app.example.test'};
+  for(const [origin,status] of [['https://other.example.test',403],['https://app.example.test',401]]) {
+    const result=invoke('api/venues/index.js','POST',{headers:{origin},body:{action:'set_primary',booking_id:'00000000-0000-4000-8000-000000000001'}},environment);
+    assert.equal(result.status,status);
+  }
+});
+
+// E08-S05 completion dispatch must authenticate before touching PostgreSQL.
+for (const method of ['GET','POST']) test(`completion ${method} refuses a missing session before database access`,()=>{
+ const response=invoke('api/events.js',method,{url:'/api/events?completion=1&id=COMP-1'});
+ assert.equal(response.status,401);assert.equal(response.body.error,'Sign in to continue.');
+});
+test('completion evaluator rejects missing internal credentials in production',()=>{
+ const response=invoke('api/cron/outbox-relay.js','GET',{url:'/api/cron/outbox-relay?task=completion'});
+ assert.equal(response.status,401);
+});

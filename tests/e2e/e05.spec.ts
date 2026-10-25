@@ -765,7 +765,7 @@ test.describe("E05-S06 — Week 7 case scaffolds", () => {
     void page;
   });
 
-  test.fixme("TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events on save and release neither", async ({ page }) => {
+  test.fixme("TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events on save, release neither and return the Confirmed event to Planning", async ({ page }) => {
     // Implement from docs/testing/cases/E05.md (TC_E05S06_02).
     void page;
   });
@@ -775,7 +775,7 @@ test.describe("E05-S06 — Week 7 case scaffolds", () => {
     void page;
   });
 
-  test.fixme("TC_E05S06_04 — Verify that an unavailability with no end date and time should be refused", async ({ page }) => {
+  test.fixme("TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted", async ({ page }) => {
     // Implement from docs/testing/cases/E05.md (TC_E05S06_04).
     void page;
   });
@@ -787,6 +787,16 @@ test.describe("E05-S06 — Week 7 case scaffolds", () => {
 
   test.fixme("TC_E05S06_06 — Verify that E05-S04's block, shorten and remove behaviour still works for periods with no bookings after this story", async ({ page }) => {
     // Implement from docs/testing/cases/E05.md (TC_E05S06_06).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_07).
+    void page;
+  });
+
+  test.fixme("TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coordinator, and restore it when the unavailability is lifted", async ({ page }) => {
+    // Implement from docs/testing/cases/E05.md (TC_E05S06_08).
     void page;
   });
 

@@ -182,6 +182,7 @@ export async function getAssignedEvent(database: Pool, user: AuthenticatedUser |
   const result = await database.query(
     `SELECT ${ASSIGNED_EVENT_FIELDS}, e.description, e.purpose, e.venue_requirements, e.accessibility_note,
        e.equipment_requirements, e.layout_preference, e.registration_setup, e.coordinator_id,
+       CASE WHEN e.status='cancelled' THEN e.decision_reason END AS cancellation_reason,
        c.full_name AS coordinator_name, o.email AS organiser_email
      FROM events e JOIN users o ON o.id = e.organiser_id JOIN users c ON c.id = e.coordinator_id
      WHERE (e.id::text = $2 OR e.event_code = $2) AND e.coordinator_id = $1 AND e.status <> 'draft'`,
@@ -194,8 +195,9 @@ export async function getAssignedEvent(database: Pool, user: AuthenticatedUser |
   }
   const pending = await database.query(`${REASSIGNMENT_SELECT} WHERE r.event_id = $1 AND r.status = 'pending'`, [event.id]);
   // E14-S02 Scenario 1 (T-75): the assigned Coordinator reads the same
-  // Activity log as the Organiser, without access-denial entries.
-  const activity = await listEventActivity((sql, values) => database.query(sql, values), event.id);
+  // Activity log as the Organiser, without access-denial entries, plus the
+  // event's venue booking decisions (E06-S04 Scenario 5).
+  const activity = await listEventActivity((sql, values) => database.query(sql, values), event.id, { includeBookings: true });
   return {
     ...event,
     pendingReassignment: pending.rows[0] ? toReassignment(pending.rows[0] as ReassignmentRow) : null,

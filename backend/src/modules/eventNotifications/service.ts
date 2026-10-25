@@ -34,6 +34,7 @@ export type EventChange =
   | { kind: 'status'; from: EventStatus; to: EventStatus }
   | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[] }
   | { kind: 'booking_requested' }
+  | { kind: 'booking_withdrawn' }
   | { kind: 'booking_decided'; decision: 'confirmed' | 'rejected' | 'released' }
   | { kind: 'equipment_changed'; venueAffected: boolean; technicalAffected: boolean }
   | { kind: 'place_released' }
@@ -101,7 +102,8 @@ function groupsFor(change: EventChange): Group[] {
       return ['confirmed','cancelled','completed'].includes(change.to) || (change.from==='confirmed' && change.to==='planning')
         ? everyone : ['organiser','coordinator'];
     case 'arrangements': return change.fields.length ? everyone : [];
-    case 'booking_requested': return ['venueStaff'];
+    case 'booking_requested':
+    case 'booking_withdrawn': return ['venueStaff'];
     case 'booking_decided': return ['coordinator'];
     case 'equipment_changed': return ['coordinator', ...(change.venueAffected ? ['venueStaff' as const] : []), ...(change.technicalAffected ? ['technicalStaff' as const] : [])];
     case 'place_released': return ['waitlisted'];
@@ -119,7 +121,7 @@ export function selectEventRecipients(before: EventAudience, after: EventAudienc
   const recipients = new Map<string, 'internal' | 'attendee'>();
   for (const group of groups) {
     const publicGroup = group==='registered' || group==='waitlisted';
-    const ids = publicGroup ? (attendees.publicName ? attendees[group] : [])
+    const ids = publicGroup ? (attendees.publicName || cancelled ? attendees[group] : [])
       : group==='venueStaff' || group==='technicalStaff' ? [...before[group], ...after[group]] : after[group];
     for (const id of ids) {
       if (id!==actorId) {
@@ -139,6 +141,7 @@ function description(change: EventChange): string {
     case 'status': return change.from==='confirmed' && change.to==='planning' ? 'Previously confirmed arrangements are being revised.' : `Event status changed to ${change.to.replaceAll('_',' ')}.`;
     case 'arrangements': return `Event ${[...new Set(change.fields)].join(', ')} changed.`;
     case 'booking_requested': return 'A venue booking request needs a decision.';
+    case 'booking_withdrawn': return 'The Coordinator withdrew a Pending venue booking request. There is no longer a request to decide.';
     case 'booking_decided': return `The venue booking was ${change.decision}.`;
     case 'equipment_changed': return 'Equipment arrangements or availability changed; review the affected work.';
     case 'place_released': return 'A place is available. Apply on a first-come basis; no place has been reserved for you.';
@@ -180,7 +183,7 @@ export async function notifyEventChange(client: PoolClient, input: {
   const inserted: string[] = [];
   for (const [userId, audience] of recipients) {
     const publicName = change.kind==='status' && change.to==='cancelled' ? before.publicName : after.publicName;
-    const eventName = audience==='attendee' ? publicName : after.title;
+    const eventName = audience==='attendee' ? (publicName ?? (change.kind==='status' && change.to==='cancelled' ? 'Your event' : null)) : after.title;
     if (!eventName) throw new Error('public_notification_name_missing');
     const message = `${eventName}: ${description(change)} Changed at ${occurredAt.toISOString()}.`;
     const id = await writeEventNotification(client, {eventId:after.eventId,changeId,userId,occurredAt,title:'Event update',message});

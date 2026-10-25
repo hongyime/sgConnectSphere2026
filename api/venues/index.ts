@@ -18,13 +18,14 @@ import { listAccessibilityFeatures } from '../../backend/src/modules/venueBookin
 import {
   createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../../backend/src/modules/venueBooking/blocks.js';
+import { decideBooking, getBooking, listPendingBookings } from '../../backend/src/modules/venueBooking/decisions.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // GET and POST share one file (create/update/retire/layout mutations all
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  if (request.method === 'POST' && (request.body as Record<string, unknown> | undefined)?.action === 'request_booking') {
+  if (request.method === 'POST' && ['request_booking', 'withdraw_booking', 'set_primary'].includes(String((request.body as Record<string, unknown> | undefined)?.action))) {
     await bookingSubmissionHandler(request, response); return;
   }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('mode') === 'booking_requests') {
@@ -67,6 +68,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
       if (params.get('accessibilityFeatures') === '1') {
         return { features: await listAccessibilityFeatures(query, user) };
       }
+
+      // E06-S04 (SCRUM-48): Venue Staff's pending booking requests, and one
+      // booking with its decision.
+      if (params.get('bookings') === 'pending') return listPendingBookings(query, user);
+      const bookingId = params.get('booking');
+      if (bookingId) return getBooking(query, user, bookingId.slice(0, 64));
 
       const id = params.get('id');
       // E05-S03: the availability calendar shares this GET rather than adding
@@ -145,9 +152,15 @@ export default async function handler(request: VercelRequest, response: VercelRe
         : removeVenueBlock(databasePool(), user, id, blockId);
     }
 
+    // E06-S04 (SCRUM-48): approve or reject a pending booking request.
+    if (action === 'decide') {
+      const { booking_id: bookingId, ...decision } = fields;
+      return decideBooking(databasePool(), user, bookingId, decision);
+    }
+
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', or 'extend_hold'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
     } };
   });
 }
