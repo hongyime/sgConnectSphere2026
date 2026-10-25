@@ -10,7 +10,7 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | --- | --- | --- |
 | Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 241026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 241026.docx` (BDR refreshed 2026-10-24; older dated exports remain history) |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 261026.docx` (BDR refreshed 2026-10-26; older dated exports remain history) |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
 | Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 241026.xlsx` |
@@ -139,8 +139,9 @@ exact tested tree, real integration/manual acceptance evidence and independent
 human code and test review receipt in the current issue or linked PR. Manual
 acceptance precedes Done and is due no later than Review. Partial PR merge,
 story acceptance and pre-Review regression are different checkpoints; a generic
-partial-merge allowance never clears #298's TC_E06S04_07 hold. Jira links to
-the canonical DoD; it doesn't define a competing completion policy.
+partial-merge allowance never substitutes for current acceptance evidence and
+human review. Jira links to the canonical DoD; it doesn't define a competing
+completion policy.
 
 ## Design and access practices
 
