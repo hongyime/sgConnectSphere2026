@@ -104,8 +104,11 @@ test('TC_E07S06_02 - an approved event with no confirmed venue can still request
   expect(await screen.findByText('1 Technical Support Staff member has been notified.')).toBeInTheDocument();
   expect(posts(calls)).toHaveLength(1);
   // No venue endpoint was consulted along the way (the event page's own Venue
-  // holds card, E06-S05, is a separate card and not part of the request).
-  expect(calls.some(call => call.url.pathname === '/api/venues' && !['support', 'holds'].includes(call.url.searchParams.get('task') ?? ''))).toBe(false);
+  // holds card, E06-S05, and venue-conflict flag, E05-S06, are separate cards
+  // and not part of the request).
+  expect(calls.some(call => call.url.pathname === '/api/venues'
+    && !['support', 'holds'].includes(call.url.searchParams.get('task') ?? '')
+    && call.url.searchParams.get('mode') !== 'booking_requests')).toBe(false);
 });
 
 test('TC_E07S06_03 - marking the event as needing no support records it, notifies nobody and creates no request', async () => {

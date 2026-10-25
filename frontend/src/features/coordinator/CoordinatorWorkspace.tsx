@@ -24,6 +24,7 @@ import {
 } from './coordinatorApi';
 import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
 import { HOLDS_VISIBLE, VenueHoldsCard } from './VenueHolds';
+import { CONFLICT_VISIBLE, VenueConflictFlag } from './VenueConflictFlag';
 import './coordinator.css';
 
 // A refused read sends the Coordinator back to their dashboard.
@@ -230,6 +231,8 @@ export function RequestDetail() {
       {event ? (
         <>
           {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
+          {/* E05-S06 (SCRUM-152) Scenario 3: a venue lost to an unavailability is flagged on the event. */}
+          {CONFLICT_VISIBLE.includes(event.status) ? <VenueConflictFlag key={`conflict-${event.id}`} eventCode={eventRef(event)} /> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>
           <OutstandingQuestions questions={event.outstandingQuestions ?? []} />
           <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventRef(event))}/attendance`}>Record attendance</ButtonLink>

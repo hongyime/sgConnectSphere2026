@@ -1201,6 +1201,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
 
+### `frontend/src/features/coordinator/VenueConflictFlag.test.tsx`
+
+- no flag when no booking is Conflicting
+- a refused booking list shows no flag and no error
+- an event past the stages where a venue can be lost does not ask for its bookings
+
 ### `frontend/src/features/coordinator/VenueHolds.test.tsx`
 
 - the card lists live and expired holds with their expiry, and links to venue search
