@@ -24,6 +24,8 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 8. Unit tests, 100% of changed code; update tests the old Shorten/Remove buttons break; regenerate `tc-coverage.md` if needed. `d00af8c`: TC_E05S06_01–08 Playwright cases live (mocked API; _03 email stays with the backend DB test); every added/changed line in the 9 frontend source files covered (checked against the vitest JSON report); full Playwright 368 passed, 0 failed.
 - [x] 9. `scripts/check.py`, frontend tests, T-65 record, draft PR. Evidence at `86666e4`: `20261025-134344-lexinphun2024-debug-frontend-vitest.md` (571/571, changed lines fully covered), `20261025-134418-lexinphun2024-debug-frontend-e2e.md` (368 passed, 0 failed), `20261025-134629-lexinphun2024-debug-tooling.md` (14 known Windows-only `test_worktree_hygiene` failures). Draft PR **#349** opened against the backend branch; #348's description now asks for #349 to merge straight after it. PostPlan page prepared for the user to upload and link in a #349 comment.
 
+- [x] 10. Real local stack run + manual-run kit (25 Oct). `docs/testing/manual/E05-S06-preconditions.sql` (seeded events moved to Jan 2027 at Orchid Hall) and `E05-S06-click-through.md`. First real attempt failed TC_02: a **primary** Confirmed booking could not become Conflicting (0019 check) — fixed in #345 `049c389`, tested in #348 `47a268c`, merged here `92d8ff9`. Re-run on the real stack: all 8 cases pass, read-only SQL corroboration in `20261025-151652-lexinphun2024-debug-frontend-e2e.md` (automated, database real; not T-93). Temporary script deleted.
+
 ## Next steps
 
 - Reviews of #345, #348 and this PR.
