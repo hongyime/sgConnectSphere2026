@@ -62,3 +62,8 @@ Provide a reviewed GitHub Actions path for authorized teammates to apply one alr
 - Never add the connection string to a file, log, PR, or command transcript.
 - The workflow must only accept an exact migration filename that is the next unapplied file, run the existing `migrate --only` command, and verify that exactly that migration was added to the ledger.
 - Do not use reset, seed, or database test suites in this workflow.
+
+## Review follow-up — 25 October 2026
+
+- Merged PR #342 records production application and verification of migrations 0022, 0023 and 0024. The earlier dated observations above remain historical and are not rewritten.
+- A future workflow dispatch must derive the exact next pending filename from its live ledger precheck; it must not assume that 0022 is next.

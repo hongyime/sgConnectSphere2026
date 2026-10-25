@@ -526,75 +526,7 @@ test.describe("E09-S05", () => {
 
 });
 
-test.describe("E09-S06", () => {
-
-  /**
-   * TC_E09S06_02
-   * AC:      E09-S06 - Scenario 2 (Registered but not attended)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Charity Run" has status "Completed"; attendee_b@example.com was registered but has not been marked attended
-   *
-   * Test data:
-   *   Attendee: attendee_b@example.com (registered, not marked attended)
-   *
-   * Expected result:
-   *   attendee_b@example.com is shown as "Registered but not attended"
-   */
-  test.fixme("TC_E09S06_02 - Verify that a registered Attendee who did not attend should be shown as registered but not attended once the event is Completed", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the completed event "Charity Run"
-    // 3. Check attendee_b@example.com's status
-    void page;
-  });
-
-  /**
-   * TC_E09S06_03
-   * AC:      E09-S06 - Scenario 3 (Recording before completion blocked)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has status "Confirmed" (not yet Completed)
-   *
-   * Test data:
-   *   Event status: Confirmed (not Completed)
-   *
-   * Expected result:
-   *   The action is blocked; attendance cannot be recorded before the event is Completed
-   */
-  test.fixme("TC_E09S06_03 - Verify that attempting to record attendance before the event is Completed should be blocked", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Attempt to mark an Attendee as attended
-    void page;
-  });
-
-  /**
-   * TC_E09S06_04
-   * AC:      E09-S06 (checklist: registration/attendance counts viewable side by side)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Charity Run" has status "Completed"; its event had 5 registrations and 4 marked attended
-   *
-   * Test data:
-   *   Registered: 5 | Attended: 4
-   *
-   * Expected result:
-   *   The summary shows "Registered: 5" and "Attended: 4" together, side by side
-   */
-  test.fixme("TC_E09S06_04 - Verify that registration and attendance counts should be viewable side by side for each event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the completed event "Charity Run"
-    // 3. View the event's registration and attendance summary
-    void page;
-  });
-
-});
+// E09-S06 live attendance coverage: event-attendance.spec.ts and backend eventAttendance suites.
 
 test.describe("E09-S07", () => {
 

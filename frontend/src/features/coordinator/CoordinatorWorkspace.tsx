@@ -212,11 +212,15 @@ export function RequestDetail() {
               <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
             </>
           ) : null}
+          <ButtonLink to={`${eventLink(event)}/venue-bookings`}>Venue bookings</ButtonLink>
           {['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          {['approved', 'planning', 'safety_review', 'confirmed', 'completed', 'cancelled'].includes(event.status) ?
+            <ButtonLink to={`${eventLink(event)}/changes`}>Change requests</ButtonLink> : null}
           {/* E08-S03 (SCRUM-60): navigation, so no ellipsis. */}
           {READINESS_VISIBLE.includes(event.status) ? (
             <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
           ) : null}
+          {['confirmed', 'completed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/complete`}>Event completion</ButtonLink> : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}
@@ -228,6 +232,7 @@ export function RequestDetail() {
           {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>
           <OutstandingQuestions questions={event.outstandingQuestions ?? []} />
+          <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventRef(event))}/attendance`}>Record attendance</ButtonLink>
           <section className="coordinator-detail-grid" aria-label="Event summary">
             <Card title="Summary">
               <FactList
