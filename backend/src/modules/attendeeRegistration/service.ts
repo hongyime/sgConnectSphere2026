@@ -70,11 +70,16 @@ export function missingDetails(details: Details): string[] {
   return REQUIRED_DETAILS.filter(([field]) => !details[field]?.trim()).map(([, label]) => label);
 }
 
-export function parseSessionIds(body: unknown): string[] | null {
+const NO_SESSION = 'Choose at least one Session.';
+const INVALID_SESSIONS = 'Choose valid Sessions from this event.';
+
+// Nothing chosen and an unusable choice get different messages; more than 50
+// or a malformed id can only come from a direct API call, not the form.
+export function parseSessionIds(body: unknown): { ids: string[] } | { error: string } {
   const raw = body && typeof body === 'object' ? (body as Record<string, unknown>).sessionIds : undefined;
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_SESSIONS) return null;
-  if (!raw.every(id => typeof id === 'string' && UUID.test(id))) return null;
-  return [...new Set((raw as string[]).map(id => id.toLowerCase()))];
+  if (!Array.isArray(raw) || raw.length === 0) return { error: NO_SESSION };
+  if (raw.length > MAX_SESSIONS || !raw.every(id => typeof id === 'string' && UUID.test(id))) return { error: INVALID_SESSIONS };
+  return { ids: [...new Set((raw as string[]).map(id => id.toLowerCase()))] };
 }
 
 function identifier(value: string) {
@@ -184,8 +189,9 @@ async function lockAccount(client: PoolClient, user: AuthenticatedUser) {
 export async function registerForEvent(database: Pool, user: AuthenticatedUser, ref: string, body: unknown): Promise<Result> {
   identifier(ref);
   await requireAttendee((sql, values) => database.query(sql, values), user);
-  const sessionIds = parseSessionIds(body);
-  if (!sessionIds) return { status: 400, body: { error: 'Choose at least one Session.' } };
+  const parsed = parseSessionIds(body);
+  if ('error' in parsed) return { status: 400, body: { error: parsed.error } };
+  const sessionIds = parsed.ids;
   try {
     return await inTransaction(database, async client => {
       const query: Query = (sql, values) => client.query(sql, values);
@@ -204,7 +210,7 @@ export async function registerForEvent(database: Pool, user: AuthenticatedUser, 
         return { status: 409, body: { error: "You're already registered for this event.", registration: publicRegistration(existing) } };
       }
       const sessions = (await sessionsFor(query, event.id)).filter(session => sessionIds.includes(session.id));
-      if (sessions.length !== sessionIds.length) return { status: 400, body: { error: 'Choose Sessions from this event.' } };
+      if (sessions.length !== sessionIds.length) return { status: 400, body: { error: INVALID_SESSIONS } };
       const registration = (await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status)
         VALUES ($1, $2, 'registered') RETURNING id, status, registered_at`, [event.id, user.id])).rows[0] as Existing;
       await client.query(`INSERT INTO event_registration_sessions (registration_id, event_id, session_id, selected_at)

@@ -1,4 +1,6 @@
+import { isAllowedOrigin } from '../../backend/src/config.js';
 import { sendJson } from '../../backend/src/http.js';
+import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { currentUser, databasePool, query, respond, respondWithResult } from '../../backend/src/modules/eventVisibility/runtime.js';
 import { attendeeEvents } from '../../backend/src/modules/attendeeVisibility/service.js';
 import { getRegistrationForm, listOpenEvents, registerForEvent } from '../../backend/src/modules/attendeeRegistration/service.js';
@@ -12,8 +14,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
   const id = params.get('id') || undefined;
   if (request.method === 'POST' && params.get('registration') === '1') {
-    await respondWithResult(response, async () =>
-      registerForEvent(databasePool(), await currentUser(request), id ?? '', request.body));
+    await respondWithResult(response, async () => {
+      // Same origin check as the other cookie-authenticated write routes.
+      if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+      return registerForEvent(databasePool(), await currentUser(request), id ?? '', request.body);
+    });
     return;
   }
   if (request.method !== 'GET') {
