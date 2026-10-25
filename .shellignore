@@ -7,13 +7,17 @@ docs/backlog/sprint-1-delivery.md
 # This existing handoff records a public GitHub attribution from its source task.
 .agents/handoffs/20261005-feature-SCRUM-53-equipment-availability.md
 .agents/handoffs/20261008-feature-SCRUM-86-coordinator-activity-log.md
+# These main-history handoffs cite T-65 run-record filenames containing the
+# runner's public GitHub login. They already exist on main; this exact
+# exception keeps the optional local identity hook from blocking the merge.
 # These existing handoffs link to public T-65 run records whose runner handles
 # are already allowed via docs/testing/runs/.
 .agents/handoffs/20261016-docs-safety-officer-provision-20261016.md
 .agents/handoffs/20261021-ci-recovery-parent-sync-20261021.md
-# Existing main-history handoffs cite public T-65 runner handles; these are
-# attribution references, not credentials or private identity data.
+# These existing main-history handoffs cite public T-65 run records for the
+# same attribution purpose and are not credentials or private identity data.
 .agents/handoffs/20261017-feature-SCRUM-47-e06s03-fix-from-299.md
+.agents/handoffs/20261018-docs-production-migration-0020-run-record.md
 .agents/handoffs/20261021-fix-SCRUM-48-recovery-decision-20261021.md
 # This committed review artifact quotes the same public T-65 attribution.
 artifacts/scrum-47-e06s03-pr299-fix.html
