@@ -34,7 +34,8 @@ async function recordEventAccessDenial(query: Query, user: AuthenticatedUser, id
 export async function attendeeEvents(query: Query, user: AuthenticatedUser, identifier?: string) {
   await requireAttendee(query, user);
   // Explicit allowlist: never select planning fields, notes, decisions or comments.
-  const rows = (await query(`SELECT p.event_id AS id, p.name, p.starts_at, p.ends_at, p.venue_name, p.venue_location
+  const rows = (await query(`SELECT p.event_id AS id, p.name, p.starts_at, p.ends_at, p.venue_name, p.venue_location,
+      e.status, CASE WHEN e.status='cancelled' THEN e.decision_reason END AS cancellation_reason, e.status_changed_at
     FROM event_publications p JOIN event_registrations r ON r.event_id = p.event_id
     JOIN events e ON e.id = p.event_id
     WHERE r.attendee_id = $1 AND r.status = 'registered'

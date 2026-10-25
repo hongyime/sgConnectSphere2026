@@ -189,6 +189,26 @@ fail. On a fail, copy the exact words you saw.
     (Venue Staff B), each for EVT-3003, with times matching the Activity log
     in steps 6 and 17. Take a screenshot of the output.
 
+## G. A release is recorded (TC_E06S04_07)
+
+A Confirmed booking is released only when its event is cancelled (E10-S04,
+#320). Run this last, because cancelling makes EVT-3003 read-only. It needs
+Orchid Hall Confirmed (step 3); to run it on its own, reset the database and
+do step 3 first.
+
+19. Private window (`coord_a`): open
+    http://127.0.0.1:5173/coordinator/events/EVT-3003, click **Cancel
+    event**, enter a reason and confirm. Expect the pill **Cancelled** and
+    **"Event cancelled. Session arrangements have been released and
+    notifications queued."**
+20. Open http://127.0.0.1:5173/coordinator/events/EVT-3003 again. The
+    **Activity log** has **Booking released**, **Orchid Hall: Released**, by
+    **Coordinator A**, with today's time; every other booking still Pending or
+    Confirmed at that moment gets its own **Booking released** row too.
+21. Terminal 1, read-only: run step 18's query again. Each **Booking
+    Released** row names Coordinator A, the venue, EVT-3003 and a time
+    matching step 20.
+
 ## Results table
 
 Copy this into the run record under its frontmatter. Set **Outcome** to
@@ -203,4 +223,4 @@ numbers in **Remarks** with what you actually saw, even when it passes.
 | TC_E06S04_04 | Approval is blocked when the buffered windows overlap a confirmed booking, which is named | | Steps 12–15: <what you saw; note the step 14 SQL precondition> |
 | TC_E06S04_05 | An approval is recorded with the actor, action, affected records and time | | Steps 6, 18: <what you saw> |
 | TC_E06S04_06 | A rejection is recorded with the actor, action, affected records and time | | Steps 16–18: <what you saw> |
-| TC_E06S04_07 | A released booking is recorded with the actor, action, affected records and time | N/A | Not run: releasing a booking needs E10-S04 event cancellation (Sprint 4). Awaiting the Product Owner's decision on where this case belongs. |
+| TC_E06S04_07 | A released booking is recorded with the actor, action, affected records and time | | Steps 19–21: <what you saw> |

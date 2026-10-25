@@ -12,6 +12,12 @@ docs/backlog/sprint-1-delivery.md
 .agents/handoffs/20261016-docs-safety-officer-provision-20261016.md
 .agents/handoffs/20261018-docs-production-migration-0020-run-record.md
 .agents/handoffs/20261021-ci-recovery-parent-sync-20261021.md
+# Existing main-history handoffs cite public T-65 runner handles; these are
+# attribution references, not credentials or private identity data.
+.agents/handoffs/20261017-feature-SCRUM-47-e06s03-fix-from-299.md
+.agents/handoffs/20261021-fix-SCRUM-48-recovery-decision-20261021.md
+# This committed review artifact quotes the same public T-65 attribution.
+artifacts/scrum-47-e06s03-pr299-fix.html
 # The sprint retrospective quotes GitHub handles in its audit evidence.
 # These are already public on github.com and were committed in PR #99.
 docs/plans/sprint-1-retrospective.md

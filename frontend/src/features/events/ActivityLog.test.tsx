@@ -6,9 +6,17 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { RequestDetail } from '../coordinator/CoordinatorWorkspace';
-import { describeAction, describeChange, type ActivityEntry } from './ActivityLog';
+import { ActivityLog, describeAction, describeChange, type ActivityEntry } from './ActivityLog';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+test('TC_E06S03_07: primary venue activity names the designation and preserves venue names', () => {
+  const primary = { ...approved, action: 'Primary Venue Changed', field_changed: 'primary_venue',
+    old_value: 'Orchid Hall', new_value: 'Jasmine Hall', entity_type: 'venue_booking', venue_name: 'Jasmine Hall' };
+  expect(describeChange(primary)).toBe('Primary venue: Orchid Hall → Jasmine Hall');
+  expect(describeChange({ ...primary, old_value: null })).toBe('Primary venue: Jasmine Hall');
+  expect(describeChange({ ...primary, new_value: null })).toBe('Primary venue');
+});
 
 const approved: ActivityEntry = {
   occurred_at: '2026-10-08T02:30:00.000Z', action: 'Status changed to approved', field_changed: 'status',
@@ -165,4 +173,14 @@ test('booking entries show hold expiry or a generic booking label without intern
   const request = { ...hold, action: 'Venue booking requested for Cedar Auditorium', new_value: 'internal-booking-id' };
   expect(describeAction(request)).toBe('Venue booking requested for Cedar Auditorium');
   expect(describeChange(request)).toBe('Venue booking');
+});
+
+
+test('TC_E08S05_05: automatic completion names the System without inventing an actor for unrelated rows', () => {
+  render(<MemoryRouter><ActivityLog entries={[
+    { ...approved, action: 'Automatically completed event', old_value: 'confirmed', new_value: 'completed', actor_name: null },
+    { ...edited, actor_name: null },
+  ]} /></MemoryRouter>);
+  expect(screen.getByRole('cell', { name: 'System' })).toBeTruthy();
+  expect(screen.getByRole('cell', { name: 'Not recorded' })).toBeTruthy();
 });

@@ -45,6 +45,7 @@ function fakeDatabase(script: Script) {
       else if (sql.includes('INSERT INTO notification_deliveries')) rows = [{ id: '00000000-0000-4000-8000-0000000000d2' }];
       // decideBooking first finds the booking's event and venue to lock them.
       else if (sql.startsWith('SELECT venue_id, event_id FROM venue_bookings')) rows = [{ venue_id: venueId, event_id: bookingRow().event_id }];
+      else if (sql.includes('FROM users') && sql.includes('FOR SHARE NOWAIT')) rows = [{ id: staff.id }];
       else if (sql.includes('SELECT d.delivery_status')) rows = [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null, email: 'recipient@example.test', title: 'Venue notice', message: 'Synthetic notice' }];
       else rows = [];
     }
@@ -56,6 +57,20 @@ function fakeDatabase(script: Script) {
 }
 
 const has = (calls: { sql: string }[], fragment: string) => calls.some(call => call.sql.includes(fragment));
+
+test('decision rechecks the current staff account and rolls back stale or busy authority', async () => {
+  for (const outcome of ['missing', 'busy', 'failure']) {
+    const failure = Object.assign(new Error('Synthetic account query failure'), { code: outcome === 'busy' ? '55P03' : 'XX000' });
+    const db = fakeDatabase(sql => {
+      if (!sql.includes('FOR SHARE NOWAIT')) return undefined;
+      if (outcome === 'missing') return [];
+      throw failure;
+    });
+    await assert.rejects(decideBooking(db.pool, staff, bookingId, { decision: 'approve' }), outcome === 'failure' ? failure : { status: outcome === 'busy' ? 409 : 403 });
+    assert.equal(has(db.calls, 'ROLLBACK'), true);
+    assert.equal(has(db.calls, 'UPDATE venue_bookings'), false);
+  }
+});
 
 test('validateDecision accepts an approval as is', () => {
   assert.deepEqual(validateDecision({ decision: 'approve', reason: 'ignored' }).decision, { decision: 'approve' });
@@ -165,6 +180,29 @@ test('a booking that is no longer pending cannot be decided, with a reason for e
     assert.match((result.body as { error: string }).error, message, status);
     assert.equal(has(calls, 'UPDATE venue_bookings'), false);
   }
+});
+
+test('a pending request on a Completed or Cancelled event cannot be decided, and nothing is written', async () => {
+  for (const [status, message] of [['completed', /has been completed/], ['cancelled', /has been cancelled/]] as const) {
+    for (const decision of [{ decision: 'approve' }, { decision: 'reject', reason: 'Too small' }]) {
+      const { pool, calls } = fakeDatabase(sql => {
+        if (sql.includes('FROM events WHERE id = $1 FOR NO KEY UPDATE')) return [{ status }];
+        return sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined;
+      });
+      const result = await decideBooking(pool, staff, bookingId, decision);
+      assert.equal(result.status, 409);
+      assert.match((result.body as { error: string }).error, message);
+      for (const write of ['UPDATE venue_bookings', 'INSERT INTO audit_logs', 'INSERT INTO notifications', 'FROM venues WHERE id = $1 FOR NO KEY UPDATE']) {
+        assert.equal(has(calls, write), false, `${status} ${decision.decision}: ${write}`);
+      }
+    }
+  }
+  // An open event goes on to the decision as before.
+  const { pool } = fakeDatabase(sql => {
+    if (sql.includes('FROM events WHERE id = $1 FOR NO KEY UPDATE')) return [{ status: 'planning' }];
+    return sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined;
+  });
+  assert.equal((await decideBooking(pool, staff, bookingId, { decision: 'approve' })).status, 200);
 });
 
 test('the suggested venue must differ from the requested one and be active', async () => {
@@ -278,7 +316,8 @@ test('a rejection without a suggested venue says nothing about an alternative', 
 // Scenario 4 (C-65, T-66): approval checks the buffered window and maintenance blocks.
 const clashRow = (overrides: Record<string, unknown> = {}) => ({
   id: '00000000-0000-4000-8000-0000000000b2', status: 'confirmed', event_code: 'EVT-5002', event_title: 'Board Dinner',
-  starts_at: new Date('2027-01-15T04:00:00Z'), ends_at: new Date('2027-01-15T06:00:00Z'), ...overrides,
+  starts_at: new Date('2027-01-15T04:00:00Z'), ends_at: new Date('2027-01-15T06:00:00Z'),
+  occupied_start: new Date('2027-01-15T03:30:00Z'), occupied_end: new Date('2027-01-15T06:45:00Z'), ...overrides,
 });
 
 test('TC_E06S04_04: an approval whose buffered window overlaps another booking is blocked and names it', async () => {
@@ -291,6 +330,7 @@ test('TC_E06S04_04: an approval whose buffered window overlaps another booking i
   assert.equal(result.status, 409);
   const body = result.body as { error: string; conflict: Record<string, unknown> };
   assert.match(body.error, /with setup and turnaround time it overlaps the confirmed booking for "EVT-5002 Board Dinner" \(15 Jan 2027, .*\) at Small Room\./);
+  assert.match(body.error, /Buffered window: 15 Jan 2027, 11:30 am – 2:45 pm/);
   assert.deepEqual(body.conflict, {
     bookingId: '00000000-0000-4000-8000-0000000000b2', status: 'confirmed', eventCode: 'EVT-5002', eventTitle: 'Board Dinner',
     startsAt: '2027-01-15T04:00:00.000Z', endsAt: '2027-01-15T06:00:00.000Z',
