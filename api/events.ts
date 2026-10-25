@@ -1,3 +1,4 @@
+import { getAttendance, recordAttendance } from '../backend/src/modules/eventAttendance/service.js';
 import { getCompletion, completeEvent } from '../backend/src/modules/eventLifecycle/completion.js';
 import { inTransaction } from '../backend/src/database/pool.js';
 import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
@@ -95,6 +96,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.get('attendance') === '1') {
+      await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
+        await currentUser(request), params.get('id') || '', request.body) }));
+      return;
+    }
     if (params.has('changeRequests')) {
       await handleChangeRequests(request, response, params);
       return;
@@ -329,6 +335,11 @@ async function requireOrganiserWithClient(request: VercelRequest): Promise<Authe
 // one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.get('attendance') === '1') {
+    await respond(response, async () => ({ attendance: await getAttendance(getDatabasePool(),
+      await currentUser(request), params.get('id') || '') }));
+    return;
+  }
   if (params.has('changeRequests')) {
     await handleChangeRequests(request, response, params);
     return;

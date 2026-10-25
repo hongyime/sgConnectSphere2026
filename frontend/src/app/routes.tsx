@@ -1,3 +1,4 @@
+import { EventAttendance } from '../features/coordinator/EventAttendance';
 import { EventCompletion } from '../features/events/EventCompletion';
 import { EventCancellation } from '../features/events/EventCancellation';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
@@ -158,6 +159,7 @@ export const routes: AppRoute[] = [
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),
   page('/coordinator/queue', <CoordinatorReviewQueue />, 'live', 'E03-S01'),
   page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
+  page('/coordinator/events/:eventCode/attendance', <EventAttendance />, 'live', 'E09-S06'),
   page('/coordinator/events/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
   page('/events/:eventCode/cancellation', <EventCancellation />, 'live', 'E10-S04'),
   page('/coordinator/events/:eventCode', <CoordinatorRequestDetail />, 'live', 'E03-S01'),

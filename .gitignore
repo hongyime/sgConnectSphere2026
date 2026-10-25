@@ -60,6 +60,7 @@ artifacts/*
 !artifacts/scaffold-review-plan-20261014.html
 !artifacts/scaffold-review-plan-desktop.png
 !artifacts/scaffold-review-plan-mobile.png
+!artifacts/scrum-47-e06s03-pr299-fix.html
 !artifacts/scrum-182-one-migration-selector-mobile.png
 !artifacts/scrum-182-one-migration-selector.html
 !artifacts/scrum-182-one-migration-selector.png
@@ -72,6 +73,9 @@ artifacts/sbom/*
 !artifacts/e10-s04-manual-evidence.html
 !artifacts/e10-obsolete-prerequisite.html
 
+!artifacts/pr299-review-followup.html
+!artifacts/e09-s06-attendance.html
+!artifacts/e08-s05-manual-evidence.html
 !artifacts/e08-completion-review.html
 !artifacts/e08-completion-automated-desktop.png
 !artifacts/e08-completion-automated-phone.png

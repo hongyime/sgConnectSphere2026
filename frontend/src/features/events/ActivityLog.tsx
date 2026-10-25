@@ -23,7 +23,7 @@ const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
 
-const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking';
+const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking' && entry.field_changed !== 'primary_venue';
 
 // E14-S03: edited event and registration times are stored as UTC ISO strings
 // ("opensAt to closesAt" for registration dates). Show them in Singapore time;
@@ -46,6 +46,12 @@ export function describeChange(entry: ActivityEntry) {
     return entry.old_value ? `${venue}: ${statusLabel(entry.old_value)} → ${to}` : `${venue}: ${to}`;
   }
   if (!entry.field_changed) return 'None recorded';
+  if (entry.field_changed === 'primary_venue') {
+    if (!entry.new_value) return 'Primary venue';
+    return entry.old_value
+      ? `Primary venue: ${entry.old_value} → ${entry.new_value}`
+      : `Primary venue: ${entry.new_value}`;
+  }
   if (entry.field_changed === 'status') {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
     return entry.old_value ? `${statusLabel(entry.old_value)} → ${to}` : to;
