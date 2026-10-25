@@ -1056,6 +1056,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unavailability may be open-ended but must have a start, and only a lifted one records who lifted it
 - an active unavailability refuses an overlapping booking; a lifted one does not; an open-ended one refuses later dates
 - a booking remembers its earlier status and the unavailability that flagged it, for restoring
+- the primary booking stays primary while Conflicting and when restored, but no other status may be primary
 - unavailability history is append-only, keeps its shape per action, and follows its venue when deleted
 
 ### `backend/tests/verificationEmail.test.ts`
