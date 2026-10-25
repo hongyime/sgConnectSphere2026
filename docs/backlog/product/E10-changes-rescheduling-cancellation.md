@@ -173,20 +173,22 @@ Given the Event has Pending change requests When cancellation completes Then eac
 
 - **Sprint**:
 - **Points**: 3
-- **BDR references**: C-66, C-61, T-28, T-67, T-73, T-74, O-24, O-25
+- **BDR references**: C-66, C-61, C-120, C-121, T-28, T-67, T-73, T-74, T-81, O-24, O-25
 - **Owner**:
 
 ### User story
 
 As an Event Coordinator, I want to be alerted when a venue becomes unavailable for one of my events and to find and request a replacement from the event itself, so that I can arrange an alternative before Attendees are affected while the original event information is preserved.
 
-Returned to Release 1 by the Week 7 Customer Changes (C-66, T-67). The three-point estimate is carried from the original backlog and re-estimated at Sprint 3 planning (T-73). The alert itself is raised by E05-S06; this story is what the Coordinator does with it. Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+Returned to Release 1 by the Week 7 Customer Changes (C-66, T-67). The three-point estimate is carried from the original backlog and re-estimated at Sprint 3 planning (T-73). The alert itself is raised by E05-S06; this story is what the Coordinator does with it.
+
+Updated on 23 October 2026, before any work on the story started, to the Week 9 decisions that closed O-24 and O-25; an incomplete story's criteria are updated in place (T-74). T-81 returns a Confirmed event that loses its venue to Planning without cancelling it (C-120), replacing the earlier "status unchanged" default in Scenario 1. C-121 confirms the Scenario 4 notification rule.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Lost venue flags the event
 
-Given my event has a Pending or Confirmed venue booking When Venue Staff mark that venue unavailable over the booking's period (E05-S06) Then I am notified, the booking shows as Conflicting on the event, and the event is flagged as needing alternative arrangements while its status and every other arrangement stay as they were (assumes O-24)
+Given my event has a Pending or Confirmed venue booking When Venue Staff mark that venue unavailable over the booking's period (E05-S06) Then I am notified, the booking shows as Conflicting on the event, and the event is flagged as needing alternative arrangements; a Confirmed event returns to Planning without being cancelled, and every other arrangement stays as it was (C-120, T-81)
 
 #### Scenario 2 — Flagged event offers a replacement search
 
@@ -198,11 +200,11 @@ Given I have found a replacement venue When I submit a booking request for it (E
 
 #### Scenario 4 — Organiser and Attendees told on the actual change
 
-Given I confirm a replacement venue When the venue of a Confirmed event changes Then the Organiser and registered Attendees are notified of the new venue through the existing venue-change routing (E11-S01), and not earlier (assumes O-25)
+Given my event lost its venue When the replacement booking is confirmed Then the Organiser and registered Attendees are notified of the new venue through the existing venue-change routing (E11-S01), and not earlier (C-121, T-81)
 
 ### Checklist
 
-- Be notified when a venue I have booked is marked unavailable over my booking
+- Be notified when a venue I have booked is marked unavailable over my booking, and see a Confirmed event return to Planning without being cancelled
 - See the reason, period and affected booking on the event, with the original event information intact
 - Start a venue search for the same event from the flagged event
 - Request a replacement venue while the Conflicting booking remains on the event until I cancel it

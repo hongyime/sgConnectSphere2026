@@ -103,7 +103,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
           'SELECT status,event_id,suggested_venue_id FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
         if (!rejected || rejected.event_id !== event.id || rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)
           throw new AccessError(409, 'This rejected booking has no matching suggested venue.');
-        if ((await client.query('SELECT id FROM venue_bookings WHERE replaces_booking_id=$1', [input!.replaces_booking_id])).rows.length)
+        if ((await client.query("SELECT id FROM venue_bookings WHERE replaces_booking_id=$1 AND status<>'released'", [input!.replaces_booking_id])).rows.length)
           throw new AccessError(409, 'A replacement request already exists for this rejection.');
       }
       if (!['approved', 'planning'].includes(event.status)) throw new AccessError(409, 'Booking requests require an Approved or Planning event.');
