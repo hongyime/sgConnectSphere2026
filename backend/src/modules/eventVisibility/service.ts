@@ -1,3 +1,4 @@
+import { ACTIVE_EVENT_STATUSES } from '../eventLifecycle/status.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 
@@ -24,7 +25,7 @@ export async function requireOrganiser(query: Query, user: AuthenticatedUser | u
 }
 
 const projection = `e.id, e.event_code, e.title, e.description, e.status,
-  e.status_changed_at, lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
+  e.status_changed_at, CASE WHEN e.status='cancelled' THEN e.decision_reason END AS cancellation_reason, lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
   e.organiser_id, e.coordinator_id, u.full_name AS creator_name,
   c.full_name AS coordinator_name, e.purpose, e.expected_attendance,
   e.venue_requirements, e.accessibility_note, e.equipment_requirements,
@@ -68,12 +69,12 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
     const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(String(event.status));
     const assignedCoordinator = user.role === 'event_coordinator' && event.coordinator_id === user.id;
     const organiser = user.role === 'event_organiser';
-    const canEdit = assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id));
+    const canEdit = event.status !== 'cancelled' && (assignedCoordinator || (organiser && (!approved || event.organiser_id === user.id)));
     const organiserFields = approved
       ? ['title', 'description', 'purpose', 'registrationDates']
       : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'];
     const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'] : organiserFields;
-    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canPostComment: organiser, canEdit, editableFields: canEdit ? editable : [] };
+    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canRequestCancellation: organiser && event.organiser_id === user.id && !!event.coordinator_id && (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String(event.status)), canPostComment: organiser && event.status !== 'cancelled', canEdit, editableFields: canEdit ? editable : [] };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
@@ -90,15 +91,21 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 // they are never shown here (#161); they are checked in the test database.
 // Coordinator assignment entries store user IDs, so show the names instead;
 // a value that is not a user ID ("No eligible Event Coordinator") is kept.
-export async function listEventActivity(query: Query, eventId: string) {
-  return query(`SELECT a.occurred_at, a.action, a.field_changed,
+// E06-S04 Scenario 5 (T-75, T-76): the assigned Coordinator also sees Venue
+// Staff booking decisions, which are stored against the booking, with the
+// venue named. The Organiser view leaves them out.
+export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
+  const targets = options.includeBookings ? `a.entity_type IN ('event', 'venue_booking')` : `a.entity_type = 'event'`;
+  return query(`SELECT a.occurred_at, a.action, a.field_changed, a.entity_type,
       coalesce(was.full_name, a.old_value) AS old_value,
-      coalesce(now_is.full_name, a.new_value) AS new_value, u.full_name AS actor_name
+      coalesce(now_is.full_name, a.new_value) AS new_value, u.full_name AS actor_name, bv.name AS venue_name
     FROM audit_logs a
     LEFT JOIN users u ON u.id = a.actor_id
     LEFT JOIN users was ON a.field_changed = 'coordinator_id' AND was.id::text = a.old_value
     LEFT JOIN users now_is ON a.field_changed = 'coordinator_id' AND now_is.id::text = a.new_value
-    WHERE a.event_id = $1 AND a.entity_type = 'event' AND a.action <> 'Access Denied'
+    LEFT JOIN venue_bookings vb ON a.entity_type = 'venue_booking' AND vb.id = a.entity_id
+    LEFT JOIN venues bv ON bv.id = vb.venue_id
+    WHERE a.event_id = $1 AND ${targets} AND a.action <> 'Access Denied'
     ORDER BY a.occurred_at ASC, a.id ASC`, [eventId]);
 }
 
@@ -113,11 +120,12 @@ export async function createEventComment(query: Query, user: AuthenticatedUser, 
   const comment = typeof body === 'string' ? body.trim() : '';
   if (!comment || comment.length > 2000) throw new AccessError(400, 'Comment must be between 1 and 2000 characters.');
   const org = await requireOrganiser(query, user, 'events');
-  const eventResult = await query<{ id: string; coordinator_id: string | null }>(
-    `SELECT e.id, e.coordinator_id FROM events e
-     WHERE e.client_org_id = $1 AND (e.id::text = $2 OR e.event_code = $2)`, [org, identifier]);
+  const eventResult = await query<{ id: string; coordinator_id: string | null; status: string }>(
+    `SELECT e.id, e.coordinator_id, e.status FROM events e
+     WHERE e.client_org_id = $1 AND (e.id::text = $2 OR e.event_code = $2) FOR UPDATE`, [org, identifier]);
   const event = eventResult.rows[0];
   if (!event) throw new AccessError(403, 'Access denied. This event is not available to your organisation.');
+  if (event.status === 'cancelled') throw new AccessError(409, 'Cancelled events are read-only.');
   const commentResult = await query(`INSERT INTO event_threads (event_id, author_id, type, body)
     VALUES ($1, $2, 'comment', $3) RETURNING id, body, created_at`, [event.id, user.id, comment]);
   if (event.coordinator_id) {
@@ -144,9 +152,11 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
   if (!event || (user.role === 'event_organiser' && (!org || event.client_org_id !== org || event.organiser_id !== user.id))) {
     throw new AccessError(403, 'Edit access denied.');
   }
+  if (event.status === 'cancelled' && (user.role === 'event_organiser' || event.coordinator_id === user.id)) throw new AccessError(409, 'Cancelled events are read-only.');
   if (user.role === 'event_coordinator' && (event.coordinator_id !== user.id || !['approved', 'planning', 'confirmed', 'completed'].includes(event.status))) {
     throw new AccessError(403, 'Only the assigned Coordinator may edit an approved event.');
   }
+  if (event.status === 'cancelled') throw new AccessError(409, 'Cancelled events are read-only.');
   const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(event.status);
   const changed = Object.keys(patch).filter(field => editableFields.has(field));
   if (!changed.length) throw new AccessError(400, 'No editable fields supplied.');

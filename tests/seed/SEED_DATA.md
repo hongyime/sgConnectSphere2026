@@ -1,5 +1,12 @@
 # Seed data specification
 
+`backend/src/database/cli.ts` is authoritative for the current runtime seed.
+The fixture descriptions below originated with an older scaffold; they are not
+a current inventory of every venue, event or Session. Reset/reseed contracts
+apply only to approved disposable loopback or CI databases, never shared
+Supabase. The narrow T-97 Safety Officer operation uses the separate
+[demo-account procedure](../../docs/ops/demo-account-provisioning.md), not a seed run.
+
 Derived from the pre-conditions of the frontend verification scaffold. Updated for backlog v4: sessions were withdrawn (BDR C-62), so seeded identifiers are events. Every account, venue and item below is named
 explicitly by at least one case, so the suite cannot pass against an empty or hand-populated database.
 
@@ -22,6 +29,16 @@ results meaningless."* `globalSetup` must reset and reseed before every run.
 | `attendee_a@example.com` | Attendee | `ValidPass123` | `+65 9500 0001` | — | Registration, withdrawal, attendance |
 | `attendee_b@example.com` | Attendee | `ValidPass123` | `+65 9500 0002` | — | Capacity and duplicate-registration cases |
 | `attendee_i@example.com`, `attendee_j@example.com` | Attendee | `ValidPass123` | `+65 9500 0009`, `+65 9500 0010` | — | Waiting list, simultaneous-claim cases |
+
+The current seed also defines these two staff profiles from T-72 / PR #232.
+Their password is the same existing `seedCredential` defined in the CLI; no
+new credential value is introduced here. Together with the accounts above,
+the runtime seed defines 15 user profiles. This is not a production account count.
+
+| Email | Role | Password reference | Contact number | Client organisation | Notes |
+|---|---|---|---|---|---|
+| `coord_lead@connectsphere.com` | Event Coordinator Lead | `seedCredential` in the CLI | `+65 9200 0003` | — | Already defined for local/CI seed; not provisioned by the Safety Officer operation |
+| `safety_officer@connectsphere.com` | Safety Officer | `seedCredential` in the CLI | `+65 9200 0004` | — | Existing seed profile; targeted Supabase provisioning is separately authorised under T-97 and recorded in PR #295 |
 
 Contact numbers are seeded because E09-S07 now shows name, email address and contact number (BDR T-32, revised v5). Without them the registration-list cases cannot assert the third field.
 
