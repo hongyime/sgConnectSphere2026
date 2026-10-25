@@ -63,7 +63,10 @@ async function fixture() {
   const history = async (blockId: string) => (await f.pool.query<{ action: string; previous_reason: string | null; new_reason: string | null; actor_id: string }>(
     `SELECT action, previous_reason, new_reason, actor_id FROM venue_block_history WHERE block_id = $1 ORDER BY changed_at, action`, [blockId])).rows;
 
-  return { ...f, ids, staff, book, booking, eventStatus, notices, history };
+  const isPrimary = async (id: string) => (await f.pool.query<{ is_primary: boolean }>(
+    `SELECT is_primary FROM venue_bookings WHERE id = $1`, [id])).rows[0]!.is_primary;
+
+  return { ...f, ids, staff, book, booking, eventStatus, notices, history, isPrimary };
 }
 
 async function withFixture(work: (f: Fixture) => Promise<void>) {
@@ -256,8 +259,30 @@ test('TC_E05S06_01: marking a free period unavailable with a reason category sav
     [['2027-01-20T00:00:00.000Z', '2027-01-20T10:00:00.000Z', 'equipment_failure']]);
 }));
 
+test('Scenario 6 with a primary booking: editing over it and lifting restore it Confirmed and still primary', () => withFixture(async f => {
+  const run = await f.book('Charity Run', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-15', '10:00', '12:00');
+  await f.pool.query(`UPDATE venue_bookings SET is_primary = true WHERE id = $1`, [run.bookingId]);
+  const created = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-15T08:00:00+08:00', ends_at: '2027-01-15T09:00:00+08:00', reason_category: 'maintenance', reason: 'Early inspection',
+  });
+  const blockId = (created.body as EditBody).block.id;
+  // Extending over the primary booking flags it; it keeps the primary mark.
+  const extended = await editVenueBlock(f.pool, f.staff, f.ids.venue, blockId, {
+    starts_at: '2027-01-15T08:00:00+08:00', ends_at: '2027-01-15T18:00:00+08:00', reason_category: 'maintenance', reason: 'Early inspection',
+  });
+  assert.equal(extended.status, 200);
+  assert.deepEqual([(await f.booking(run.bookingId)).status, await f.isPrimary(run.bookingId)], ['conflicting', true]);
+
+  const lifted = await liftVenueBlock(f.pool, f.staff, f.ids.venue, blockId);
+  assert.equal(lifted.status, 200);
+  assert.deepEqual(await f.booking(run.bookingId), { status: 'confirmed', status_before_conflict: null, conflict_block_id: null });
+  assert.equal(await f.isPrimary(run.bookingId), true);
+}));
+
 test('TC_E05S06_02: an unavailability over a Pending request and a Confirmed booking flags both, lists both, releases neither and returns the Confirmed event to Planning', () => withFixture(async f => {
   const run = await f.book('Charity Run', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-15', '10:00', '12:00');
+  // As E06-S04 approval leaves it: the event's first Confirmed booking is its primary venue.
+  await f.pool.query(`UPDATE venue_bookings SET is_primary = true WHERE id = $1`, [run.bookingId]);
   const dinner = await f.book('Alumni Dinner', f.ids.coordinator2, 'planning', 'pending', '2027-01-15', '14:00', '16:00');
   // Charity Run's other arrangement: a second Confirmed venue at the same time (C-67).
   const annex = randomUUID();
@@ -273,6 +298,7 @@ test('TC_E05S06_02: an unavailability over a Pending request and a Confirmed boo
   assert.deepEqual((result.body as EditBody).affectedEvents.map(event => event.title), ['Charity Run', 'Alumni Dinner']);
   assert.deepEqual(await f.booking(run.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: blockId });
   assert.deepEqual(await f.booking(dinner.bookingId), { status: 'conflicting', status_before_conflict: 'pending', conflict_block_id: blockId });
+  assert.equal(await f.isPrimary(run.bookingId), true, 'the lost venue stays the primary record (E10-S05)');
 
   // Charity Run is back in Planning, not cancelled; its other arrangement is intact; its event view carries the flag.
   assert.equal(await f.eventStatus(run.eventId), 'planning');

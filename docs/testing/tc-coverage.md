@@ -1061,6 +1061,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenario 5: removing the end of an unavailability flags bookings far in the future
 - Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
 - Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one
+- Scenario 6 with a primary booking: editing over it and lifting restore it Confirmed and still primary
 
 ### `backend/tests/venueUnavailability.test.ts`
 
@@ -1084,6 +1085,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unavailability may be open-ended but must have a start, and only a lifted one records who lifted it
 - an active unavailability refuses an overlapping booking; a lifted one does not; an open-ended one refuses later dates
 - a booking remembers its earlier status and the unavailability that flagged it, for restoring
+- the primary booking stays primary while Conflicting and when restored, but no other status may be primary
 - unavailability history is append-only, keeps its shape per action, and follows its venue when deleted
 
 ### `backend/tests/verificationEmail.test.ts`
