@@ -115,6 +115,15 @@ function mapEvent(row: EventRow): EventRecord {
 
 export type EventStatusChange = { auditId: string; occurredAt: Date; from: EventRecord['status'] };
 
+export const ONLY_SAFETY_OFFICER_CONFIRMS = 'Only a Safety Officer can confirm an event in Safety Review.';
+
+// E08-S03 Scenario 7 (C-70, T-71): thrown by applyEventStatusChange when
+// anyone but an active Safety Officer tries to confirm an event in Safety
+// Review. The caller's transaction rolls back, so the event stays put.
+export class ConfirmationRefusedError extends Error {
+  constructor() { super(ONLY_SAFETY_OFFICER_CONFIRMS); }
+}
+
 // The one status-change path (lock, transition check, audit entry, T-64
 // notices), run inside the caller's transaction. updateEventStatus() wraps it
 // in its own; E03-S02 calls it directly so its questions or answers commit
@@ -125,10 +134,12 @@ export async function applyEventStatusChange(
   client: PoolClient,
   eventId: string,
   status: EventRecord['status'],
-  actorId: string,
+  actorId: string | null,
   options: {
     reason?: string;
+    auditAction?: string;
     notificationOptions?: NotificationOptions;
+    notificationVenueIds?: readonly string[];
     beforeNotify?: (change: EventStatusChange) => Promise<void>;
   } = {},
 ): Promise<{ event: EventRecord; change: EventStatusChange | null }> {
@@ -150,8 +161,17 @@ export async function applyEventStatusChange(
   if (!transition.allowed) {
     throw new Error(`Illegal event status transition: ${fromStatus} -> ${status}`);
   }
+  // E08-S03 Scenario 7: checked here, in the one status-change path, so no
+  // route can confirm an event in Safety Review without the Safety Officer.
+  // The role is compared as text, as the role was added by migration 0012.
+  if (fromStatus === 'safety_review' && status === 'confirmed') {
+    const actor = await client.query<{ role: string }>(
+      `SELECT role::text AS role FROM users WHERE id = $1 AND is_active`, [actorId],
+    );
+    if (actor.rows[0]?.role !== 'safety_officer') throw new ConfirmationRefusedError();
+  }
 
-  const before = await captureEventAudience(client, eventId, options.notificationOptions);
+  const before = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
   const result = await client.query<EventRow>(
     `
       UPDATE events
@@ -194,13 +214,13 @@ export async function applyEventStatusChange(
     const audit = await client.query<{ id: string; occurred_at: Date }>(
       `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
        VALUES ($1, 'event', $2, $2, $3, 'status', $4, $5) RETURNING id, occurred_at`,
-      [actorId, eventId, `Status changed to ${status}`, fromStatus, status],
+      [actorId, eventId, options.auditAction ?? `Status changed to ${status}`, fromStatus, status],
     );
     change = { auditId: audit.rows[0].id, occurredAt: audit.rows[0].occurred_at, from: fromStatus };
     await options.beforeNotify?.(change);
-    const after = await captureEventAudience(client, eventId, options.notificationOptions);
+    const after = await captureEventAudience(client, eventId, options.notificationOptions, options.notificationVenueIds);
     await notifyEventChange(client, { changeId:change.auditId, occurredAt:change.occurredAt,
-      actorId, before, after, change:{kind:'status',from:fromStatus,to:status} });
+      actorId: actorId ?? undefined, before, after, change:{kind:'status',from:fromStatus,to:status} });
   }
 
   return { event: mapEvent(updated), change };

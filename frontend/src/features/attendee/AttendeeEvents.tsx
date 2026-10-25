@@ -1,7 +1,8 @@
+import { CancellationNotice } from '../events/EventCancellation';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-type PublishedEvent = { id: string; name: string; starts_at: string; ends_at: string; venue_name: string; venue_location: string };
+type PublishedEvent = { id: string; name: string; starts_at: string; ends_at: string; venue_name: string; status?: string; cancellation_reason?: string|null; status_changed_at?: string; venue_location: string };
 export function AttendeeEvents() {
   const [events, setEvents] = useState<PublishedEvent[]>([]);
   const [error, setError] = useState('');
@@ -58,6 +59,7 @@ export function AttendeeEvents() {
       {!busy && !error && events.length === 0 && <p>No published events for your registrations yet.</p>}
       {!busy && error && <button onClick={() => setRevision(v => v + 1)}>Try again</button>}
       <div className="client-event-grid">{events.map(event => <article key={event.id}>
+        {event.status === 'cancelled' && event.status_changed_at ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
         <h2><a href={`/attendee/events/${event.id}`}>{event.name}</a></h2>
         <p><strong>Starts:</strong> <time dateTime={event.starts_at}>{new Date(event.starts_at).toLocaleString()}</time></p>
         <p><strong>Ends:</strong> <time dateTime={event.ends_at}>{new Date(event.ends_at).toLocaleString()}</time></p>

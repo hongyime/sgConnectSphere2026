@@ -12,9 +12,12 @@ npm run db:validate --workspace backend    # migrate + seed + constraint checks
 ```
 
 The seed inserts deterministic data using `stableUuid()` (SHA-1-based), so
-re-seeding produces identical UUIDs. Current fixture set: 2 client orgs,
-13 users (3 organisers, 2 coordinators, 2 venue staff, 2 tech support,
-4 attendees), 3 room layouts, 2 venues, 2 equipment items, 5 events.
+re-seeding produces identical UUIDs. The account inventory is 15 users: 3 Event
+Organisers, 2 Event Coordinators, 2 Venue Staff, 2 Technical Support Staff,
+4 Attendees, 1 Event Coordinator Lead and 1 Safety Officer. `cli.ts` is
+authoritative for the complete fixture set. These are local/CI seed profiles,
+not a count of live Supabase accounts; do not infer other fixture counts from
+this guide's older inventory.
 
 ## Credentials
 
@@ -25,12 +28,20 @@ for every account, so they all change together.
 There is no environment-variable override. Setting `SEED_PASSWORD` has no
 effect, because no code reads it -- an earlier version of this guide
 described such a variable and a fallback default, and neither ever existed.
-`tests/seed/SEED_DATA.md` is the authoritative list of seeded accounts and
-records the same password in its accounts table.
+`tests/seed/SEED_DATA.md` documents the named fixtures. Its additional staff
+profiles refer to `seedCredential`; the CLI remains authoritative for the
+actual current profiles and credential. The archived scaffold copy is historical.
 
 The value is suitable only for local development and disposable test
 databases. Treat any environment seeded with it as having publicly known
 credentials, because the constant is committed to this repository.
+
+The only approved production account exception is provisioning the one existing
+Safety Officer demo profile when a read-only precheck confirms it is missing,
+under `docs/ops/demo-account-provisioning.md` and T-97. This narrow operation
+does not authorize general production seeding or resetting, shared-database
+tests that commit writes, or other account creation. Local and CI resets remain
+confined to their intended disposable environments.
 
 **Rules:**
 

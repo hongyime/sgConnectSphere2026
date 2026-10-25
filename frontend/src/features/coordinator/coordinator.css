@@ -242,28 +242,6 @@
   text-decoration: none;
 }
 
-.coordinator-ready {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #047857;
-  font-weight: 600;
-}
-
-.coordinator-blocked {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  color: #b91c1c;
-  font-weight: 600;
-}
-
-.coordinator-blockers {
-  padding-left: 1.5rem;
-  margin: 0.35rem 0;
-  color: var(--ink);
-}
-
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -524,4 +502,11 @@
   .venue-hold {
     grid-template-columns: 1fr;
   }
+}
+
+/* E08-S03 (SCRUM-60): the outstanding items inside the readiness page's
+   warning alert. */
+.readiness-outstanding {
+  margin: 4px 0 0;
+  padding-left: 18px;
 }

@@ -182,6 +182,29 @@ test('a booking that is no longer pending cannot be decided, with a reason for e
   }
 });
 
+test('a pending request on a Completed or Cancelled event cannot be decided, and nothing is written', async () => {
+  for (const [status, message] of [['completed', /has been completed/], ['cancelled', /has been cancelled/]] as const) {
+    for (const decision of [{ decision: 'approve' }, { decision: 'reject', reason: 'Too small' }]) {
+      const { pool, calls } = fakeDatabase(sql => {
+        if (sql.includes('FROM events WHERE id = $1 FOR NO KEY UPDATE')) return [{ status }];
+        return sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined;
+      });
+      const result = await decideBooking(pool, staff, bookingId, decision);
+      assert.equal(result.status, 409);
+      assert.match((result.body as { error: string }).error, message);
+      for (const write of ['UPDATE venue_bookings', 'INSERT INTO audit_logs', 'INSERT INTO notifications', 'FROM venues WHERE id = $1 FOR NO KEY UPDATE']) {
+        assert.equal(has(calls, write), false, `${status} ${decision.decision}: ${write}`);
+      }
+    }
+  }
+  // An open event goes on to the decision as before.
+  const { pool } = fakeDatabase(sql => {
+    if (sql.includes('FROM events WHERE id = $1 FOR NO KEY UPDATE')) return [{ status: 'planning' }];
+    return sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined;
+  });
+  assert.equal((await decideBooking(pool, staff, bookingId, { decision: 'approve' })).status, 200);
+});
+
 test('the suggested venue must differ from the requested one and be active', async () => {
   const pending = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : undefined));
   const same = await decideBooking(pending.pool, staff, bookingId, { decision: 'reject', reason: 'Too small', suggested_venue_id: venueId });

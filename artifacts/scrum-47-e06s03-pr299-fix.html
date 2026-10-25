@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCRUM-47 · #299 database assertion fix</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1220; --panel:#121d30; --line:#263752; --text:#e7edf6; --muted:#a9bad0; --accent:#75d6c2; --warn:#f6ca75; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(960px,calc(100% - 36px)); margin:44px auto 72px; }
+    h1,h2,h3 { line-height:1.2; }
+    h1 { font-size:clamp(2rem,5vw,3.3rem); margin:.4rem 0 1rem; }
+    h2 { font-size:1.45rem; margin:0 0 1rem; }
+    p { color:var(--muted); }
+    a { color:var(--accent); }
+    .eyebrow { color:var(--accent); font-size:.8rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+    section { margin:26px 0; padding:26px; border:1px solid var(--line); border-radius:18px; background:var(--panel); }
+    figure { margin:24px 0 0; padding:18px; border-radius:14px; background:#0e1728; }
+    svg { display:block; width:100%; height:auto; }
+    figcaption { margin-top:10px; color:var(--muted); font-size:.9rem; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .card { padding:16px; border:1px solid var(--line); border-radius:12px; }
+    .card h3 { margin:0 0 8px; font-size:1rem; color:var(--accent); }
+    .card p { margin:0; }
+    table { border-collapse:collapse; width:100%; margin-top:12px; }
+    th,td { padding:12px 10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    th { color:var(--accent); font-size:.82rem; letter-spacing:.04em; }
+    code { color:#d4e5ff; overflow-wrap:anywhere; }
+    .note { border-left:3px solid var(--warn); padding:8px 14px; color:var(--muted); }
+    ol { padding-left:1.4rem; color:var(--muted); }
+    li { margin:.55rem 0; }
+    @media(max-width:700px){ main{margin:24px auto 48px} section{padding:19px}.grid{grid-template-columns:1fr} th,td{padding:9px 6px;font-size:.9rem} }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">SCRUM-47 · E06-S03 · follow-up to #299</div>
+  <h1>Current database assertions, restored</h1>
+  <p>Review of the stacked fix for the stale conflict-message expectations in PR #299.</p>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>The two stale race assertions now match the current 409 response, and the combined loopback PostgreSQL acceptance passed 27 of 27 cases.</p>
+    <figure>
+      <svg viewBox="0 0 840 190" role="img" aria-labelledby="flow-title flow-desc">
+        <title id="flow-title">Fix branch verification flow</title>
+        <desc id="flow-desc">The new fix branch starts from PR 299, updates its real-decision test assertions, runs PostgreSQL acceptance with the actual decision module from PR 298 in a temporary isolated overlay, and remains a draft stacked pull request.</desc>
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#75d6c2"/></marker>
+        </defs>
+        <g fill="#121d30" stroke="#75d6c2" stroke-width="2">
+          <rect x="10" y="54" width="170" height="78" rx="13"/><rect x="230" y="54" width="170" height="78" rx="13"/>
+          <rect x="450" y="54" width="170" height="78" rx="13"/><rect x="670" y="54" width="160" height="78" rx="13"/>
+        </g>
+        <g stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"><path d="M182 93 H220"/><path d="M402 93 H440"/><path d="M622 93 H660"/></g>
+        <g fill="#e7edf6" font-family="system-ui,sans-serif" font-size="15" text-anchor="middle">
+          <text x="95" y="84"><tspan x="95">#299 live head</tspan><tspan x="95" dy="22" fill="#a9bad0">15d5d40</tspan></text>
+          <text x="315" y="84"><tspan x="315">Fix assertion copy</tspan><tspan x="315" dy="22" fill="#a9bad0">fc443e8</tspan></text>
+          <text x="535" y="84"><tspan x="535">Loopback PostgreSQL</tspan><tspan x="535" dy="22" fill="#a9bad0">27 pass · 0 skip</tspan></text>
+          <text x="750" y="84"><tspan x="750">Draft stacked PR</tspan><tspan x="750" dy="22" fill="#a9bad0">base: #299 branch</tspan></text>
+        </g>
+      </svg>
+      <figcaption>Each step runs from the live #299 head toward a reviewable fix branch; #298’s decision module was overlaid only in the isolated test checkout.</figcaption>
+    </figure>
+  </section>
+
+  <section id="details">
+    <h2>Details and evidence</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Root cause</h3>
+        <p><a href="https://github.com/hongyime/sgConnectSphere2026/blob/15d5d405/backend/src/modules/venueBooking/bookingWithdrawal.ts#L46">#299’s withdrawal service</a> returns the current Venue Staff / event / account busy response. Two integration assertions still expected older wording.</p>
+      </div>
+      <div class="card">
+        <h3>Fix</h3>
+        <p><a href="https://github.com/hongyime/sgConnectSphere2026/blob/fc443e8/backend/tests/bookingDecisionIntegration.integration.test.ts#L108">Both affected assertions</a> now check the current response for approve and reject lock races.</p>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Evidence</th><th>Observed result</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/hongyime/sgConnectSphere2026/blob/7b78042/docs/testing/runs/20261017-220616-bryanseah234-backend-db.md">T-65 database session</a></td><td>27 passed, zero failures, zero skips on native loopback PostgreSQL, including TC_E06S03_09–13.</td></tr>
+        <tr><td>Decision-service dependency</td><td>For the eight real approve/reject race tests, the isolated checkout used the real <code>decisions.ts</code> from <a href="https://github.com/hongyime/sgConnectSphere2026/pull/298">PR #298</a> head <code>7d674fe</code>. That source was not added to this branch.</td></tr>
+        <tr><td><code>python scripts/check.py</code></td><td>Passed repository hygiene and 158 tooling tests; it reported the repository’s existing secondary-worktree warning.</td></tr>
+        <tr><td>Manual T-65 acceptance</td><td>Still pending human runs for the remaining authenticated workflow, privacy, race, delivery, and replacement-chain observations. Automated DB evidence is not a manual acceptance record.</td></tr>
+      </tbody>
+    </table>
+    <p class="note">A plain checkout without PR #298’s decision module retains the existing conditional skip for the eight dependent tests. The recorded zero-skip result comes from the isolated overlay run.</p>
+  </section>
+
+  <section id="next-steps">
+    <h2>Next steps</h2>
+    <ol>
+      <li>Review this draft follow-up against <a href="https://github.com/hongyime/sgConnectSphere2026/pull/299">PR #299</a>.</li>
+      <li>After approval, merge the fix into the #299 branch; keep #299 pending its remaining dependency and acceptance evidence.</li>
+      <li>Complete the remaining manual T-65 observations before evaluating SCRUM-47 completion.</li>
+    </ol>
+  </section>
+</main>
+</body>
+</html>

@@ -301,6 +301,25 @@ test('task12: stale Venue Staff identity cannot decide after database account re
   }
 }));
 
+// Ji Ning's #298 review: a Pending request left on a closed event must not be
+// confirmed or rejected onto it.
+test('a pending request on a Completed or Cancelled event is refused and leaves no trace', () => withFixture(async f => {
+  for (const [status, day] of [['completed', '2027-01-15'], ['cancelled', '2027-01-16']]) {
+    const { eventId, bookingId } = await f.pendingRequest(`EVT-${status}`, day);
+    await f.pool.query(`UPDATE events SET status = $2::event_status WHERE id = $1`, [eventId, status]);
+    for (const decision of [{ decision: 'approve' }, { decision: 'reject', reason: REASON }]) {
+      const result = await decideBooking(f.pool, f.staff, bookingId, decision);
+      assert.equal(result.status, 409);
+      assert.match((result.body as { error: string }).error, new RegExp(`has been ${status}`));
+      assert.equal((await f.row(bookingId)).status, 'pending');
+      assert.deepEqual(await f.audits(bookingId), []);
+      assert.deepEqual(await f.notices(eventId), []);
+    }
+    const event = (await f.pool.query<{ status: string }>('SELECT status FROM events WHERE id = $1', [eventId])).rows[0]!;
+    assert.equal(event.status, status);
+  }
+}));
+
 test('a decided request cannot be decided again', () => withFixture(async f => {
   const { eventId, bookingId } = await f.pendingRequest();
   await decideBooking(f.pool, f.staff, bookingId, { decision: 'approve' });

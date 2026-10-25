@@ -1,3 +1,6 @@
+import { EventAttendance } from '../features/coordinator/EventAttendance';
+import { EventCompletion } from '../features/events/EventCompletion';
+import { EventCancellation } from '../features/events/EventCancellation';
 import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
 import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
 import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
@@ -32,13 +35,13 @@ import { OrganiserRequestFlow } from '../features/organiser/OrganiserRequestFlow
 import { OrganiserDrafts, OrganiserDraftEdit } from '../features/organiser/OrganiserDrafts';
 import {
   OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail,
-  ChangeRequest, CancellationForm,
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
   EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback,
 } from '../features/attendee/AttendeeRegistration';
 import { NotificationInbox } from '../features/notifications/NotificationInbox';
+import { ChangeRequests } from '../features/events/ChangeRequests';
 import { AnswerQuestions } from '../features/organiser/AnswerQuestions';
 import { RequestClarification } from '../features/coordinator/RequestClarification';
 import {
@@ -46,7 +49,8 @@ import {
   Reassignments as CoordinatorReassignments,
 } from '../features/coordinator/CoordinatorWorkspace';
 import { SupportRequestForm } from '../features/coordinator/TechnicalSupport';
-import { PlanningWorkspace, ReadinessChecklist, FinalConfirmation } from '../features/coordinator/Coordinator';
+import { PlanningWorkspace } from '../features/coordinator/Coordinator';
+import { ConfirmRedirect, EventReadiness } from '../features/coordinator/EventReadiness';
 import { DecisionPanel } from '../features/coordinator/DecisionPanel';
 import { VenueSuitability } from '../features/venue/VenueSuitability';
 import { VenueBookingRequests } from '../features/venue/VenueBookingRequests';
@@ -127,14 +131,10 @@ export const routes: AppRoute[] = [
   page('/organiser/requests', <OrganiserRequestList />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode', <SubmittedDetail />, 'live', 'E03-S05'),
   page('/organiser/requests/:eventCode/clarify', <AnswerQuestions />, 'live', 'E03-S02'),
-  page('/organiser/requests/:eventCode/change', <ChangeRequest />, 'mock', 'E10-S01'),
-  page('/organiser/requests/:eventCode/cancel', <CancellationForm />, 'mock', 'E10-S04'),
-  // Where restricted post-approval edits (E03-S07) and the edit API's 409
-  // changeRequestUrl send the Organiser, until E10-S01 builds the form.
-  page('/change-requests/new', (
-    <ComingSoon story="E10-S01" title="Request a change"
-      summary="After approval, changes to restricted event details such as the date, attendance or requirements go through a change request that the assigned Coordinator reviews." />
-  ), 'coming-soon', 'E10-S01'),
+  page('/organiser/requests/:eventCode/change', <ChangeRequests />, 'live', 'E10-S01'),
+  page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
+  page('/change-requests/new', <ChangeRequests />, 'live', 'E10-S01'),
+  page('/coordinator/events/:eventCode/changes', <ChangeRequests coordinator />, 'live', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
   page('/organiser/drafts', <OrganiserDrafts />, 'live', 'E02-S02'),
   page('/organiser/drafts/:id', <OrganiserDraftEdit />, 'live', 'E02-S02'),
@@ -158,13 +158,17 @@ export const routes: AppRoute[] = [
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),
   page('/coordinator/queue', <CoordinatorReviewQueue />, 'live', 'E03-S01'),
   page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
+  page('/coordinator/events/:eventCode/attendance', <EventAttendance />, 'live', 'E09-S06'),
+  page('/coordinator/events/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
+  page('/events/:eventCode/cancellation', <EventCancellation />, 'live', 'E10-S04'),
   page('/coordinator/events/:eventCode', <CoordinatorRequestDetail />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode/clarify', <RequestClarification />, 'live', 'E03-S02'),
   page('/coordinator/events/:eventCode/decide', <DecisionPanel />, 'live', 'E03-S03'),
   page('/coordinator/events/:eventCode/support', <SupportRequestForm />, 'live', 'E07-S06'),
   page('/coordinator/events/:eventCode/plan', <PlanningWorkspace />, 'mock', 'E07-S02'),
-  page('/coordinator/events/:eventCode/readiness', <ReadinessChecklist />, 'mock', 'E08-S03'),
-  page('/coordinator/events/:eventCode/confirm', <FinalConfirmation />, 'mock', 'E08-S03'),
+  page('/coordinator/events/:eventCode/readiness', <EventReadiness />, 'live', 'E08-S03'),
+  page('/coordinator/events/:eventCode/confirm', <ConfirmRedirect />, 'redirect', 'E08-S03'),
+  page('/coordinator/events/:eventCode/complete', <EventCompletion />, 'live', 'E08-S05'),
   page('/coordinator/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),

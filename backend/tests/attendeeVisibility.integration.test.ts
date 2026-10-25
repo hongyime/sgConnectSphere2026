@@ -51,7 +51,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
     await db.query('INSERT INTO event_publications SELECT $1,name,starts_at,ends_at,venue_name,venue_location,published_at FROM event_publications WHERE event_id=$2', [hidden,event]);
     const rows = await attendeeEvents(query,user);
     assert.equal(rows.length,1);
-    assert.deepEqual(Object.keys(rows[0]).sort(), ['ends_at','id','name','starts_at','venue_location','venue_name']);
+    assert.deepEqual(Object.keys(rows[0]).sort(), ['cancellation_reason','ends_at','id','name','starts_at','status','status_changed_at','venue_location','venue_name']);
     assert.equal(rows[0].name,'Published event'); assert.equal(rows[0].venue_name,'Published Hall');
     assert.equal(JSON.stringify(rows).includes('PRIVATE_'),false);
     const notification = randomUUID();

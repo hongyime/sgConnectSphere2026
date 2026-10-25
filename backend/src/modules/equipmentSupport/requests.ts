@@ -160,7 +160,7 @@ export async function listEquipmentRequestEvents(
       await query(
         `SELECT e.id,e.event_code AS "eventCode",e.title,e.status,
     (SELECT count(*)::int FROM equipment_requests r WHERE r.event_id=e.id) AS "requestCount"
-    FROM events e WHERE ($1='event_coordinator' AND e.coordinator_id=$2 AND e.status IN ('approved','planning','confirmed'))
+    FROM events e WHERE ($1='event_coordinator' AND e.coordinator_id=$2 AND e.status IN ('approved','planning','safety_review','confirmed'))
       OR ($1='technical_support_staff' AND EXISTS(SELECT 1 FROM equipment_requests r WHERE r.event_id=e.id))
     ORDER BY lower(e.event_range),e.id`,
         [actor.role, actor.id],

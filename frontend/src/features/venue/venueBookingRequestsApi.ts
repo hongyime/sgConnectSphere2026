@@ -1,4 +1,14 @@
-import { apiCall } from '../../shared';
+import { apiCall, jsonRequest } from '../../shared';
+
+export function setPrimaryVenueBooking(bookingId: string) {
+  return apiCall<{ booking: { id: string; status: string; is_primary: boolean }; replayed: boolean }>('/api/venues',
+    jsonRequest('POST', { action: 'set_primary', booking_id: bookingId }), 'Unable to update the primary venue.');
+}
+
+export function withdrawVenueBooking(bookingId: string) {
+  return apiCall<{ booking: { id: string; status: string }; unresolved_venue_ids: string[] }>('/api/venues',
+    jsonRequest('POST', { action: 'withdraw_booking', booking_id: bookingId }), 'Unable to withdraw the booking request.');
+}
 
 export type VenueBookingRequestsData = {
   event: { id: string; event_code: string | null; title: string; status: string; starts_at?: string; ends_at?: string };

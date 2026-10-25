@@ -1,3 +1,4 @@
+import { CancellationNotice } from '../events/EventCancellation';
 // Organiser feature screens (SCRUM-105). Covers the Event Organiser role
 // area from Batch 5 minus screens already shipped:
 // - Dashboard (/organiser) — landing after sign-in
@@ -11,8 +12,9 @@
 // requests from the live API (organiserRequestsApi.ts) and are built on the
 // shared blocks in src/shared (ADR-017). Submitted Detail also shows the
 // E03-S02 (SCRUM-33) outstanding questions and links to the answer screen,
-// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify), and the
-// E03-S03 (SCRUM-34) rejection with its date and reason.
+// AnswerQuestions.tsx (/organiser/requests/:eventCode/clarify), the
+// E03-S03 (SCRUM-34) rejection with its date and reason, and the E08-S03
+// (SCRUM-60) confirmed arrangements.
 
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
@@ -26,8 +28,12 @@ import {
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
-  getRequestDetail, listOwnRequests, type EventStatus, type OwnRequest, type RequestDetail, type StatusHistoryEntry,
+  getRequestDetail, listOwnRequests, type ConfirmedArrangements, type EventStatus, type OwnRequest, type RequestDetail,
+  type StatusHistoryEntry,
 } from './organiserRequestsApi';
+
+// The stored value for "none required" (E02-S01 Scenario 4).
+const NONE_REQUIRED = 'none_required';
 import './organiser.css';
 
 const mockStatusTone: Record<OrganiserStatus, string> = {
@@ -43,7 +49,7 @@ const mockStatusTone: Record<OrganiserStatus, string> = {
 };
 
 const awaitingStatuses: EventStatus[] = ['submitted', 'under_review', 'awaiting_clarification'];
-const approvedStatuses: EventStatus[] = ['approved', 'planning', 'confirmed'];
+const approvedStatuses: EventStatus[] = ['approved', 'planning', 'safety_review', 'confirmed'];
 const closedStatuses: EventStatus[] = ['draft', 'rejected', 'cancelled', 'completed'];
 
 // When the request is planned for. Missing dates read "Not set" (a draft may
@@ -206,6 +212,8 @@ export function SubmittedDetail() {
       title={request ? requestTitle(request) : result.state === 'error' ? 'Request unavailable' : 'Loading request…'}
       actions={request ? (
         <span className="organiser-status">
+          {['approved', 'planning', 'safety_review', 'confirmed', 'completed', 'cancelled'].includes(request.status) ?
+            <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/change`}>Change requests</ButtonLink> : null}
           <StatusPill status={request.status} />
           {request.statusChangedAt ? <small>Since {formatDate(request.statusChangedAt)}</small> : null}
         </span>
@@ -215,6 +223,8 @@ export function SubmittedDetail() {
       {result.state === 'error' ? <LoadError failure={result.failure} onRetry={reload} context="this request" /> : null}
       {request ? (
         <>
+          {request.status === 'cancelled' && request.statusChangedAt ? <CancellationNotice reason={request.cancellationReason} date={request.statusChangedAt}/> : null}
+          {request.canRequestCancellation ? <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/cancel`}>Request cancellation</ButtonLink> : null}
           {answered ? <Alert tone="success">Answers sent. The request is back under review.</Alert> : null}
           {request.status === 'awaiting_clarification' ? (
             <Alert
@@ -242,7 +252,8 @@ export function SubmittedDetail() {
                   ...([
                     ['Venue needs', request.venueRequirements],
                     ['Accessibility', request.accessibilityNote],
-                    ['Equipment', request.equipmentRequirements],
+                    // E08-S03 fix (a): the stored sentinel reads as words.
+                    ['Equipment', request.equipmentRequirements === NONE_REQUIRED ? 'None required' : request.equipmentRequirements],
                     ['Layout', request.layoutPreference],
                   ] as [string, string | null | undefined][]).filter(([, value]) => value),
                 ]}
@@ -250,11 +261,15 @@ export function SubmittedDetail() {
             </Card>
             <Timeline history={[...request.statusHistory].reverse()} />
           </section>
+          {request.status === 'safety_review' ? (
+            <Alert tone="info">Your event is awaiting its safety check. It is confirmed once the Safety Officer approves it.</Alert>
+          ) : null}
+          {request.arrangements ? <ConfirmedArrangementsCard arrangements={request.arrangements} /> : null}
           <Card title={`Comments (${request.comments.length})`}>
             <p className="organiser-card-copy">
               <MessageSquareText size={16} aria-hidden="true" />
               <Link to={`/events/${encodeURIComponent(request.eventCode ?? request.id)}`}>
-                Read and post comments on the event page
+                {request.status === 'cancelled' ? 'Read comments on the event page' : 'Read and post comments on the event page'}
               </Link>
             </p>
           </Card>
@@ -263,6 +278,37 @@ export function SubmittedDetail() {
     </PageLayout>
   );
 }
+
+// E08-S03 (SCRUM-60) Scenario 6, TC_E08S03_05: once the event is Confirmed,
+// every confirmed venue with its purpose and period, and what was arranged.
+// Technician names are internal, so support shows only what was asked for.
+function ConfirmedArrangementsCard({ arrangements }: { arrangements: ConfirmedArrangements }) {
+  const equipment = arrangements.equipment.length
+    ? arrangements.equipment.map(item => `${item.name} × ${item.quantity}`).join(', ')
+    : arrangements.equipmentNoneRequired ? 'None required' : null;
+  const support = arrangements.support.length
+    ? arrangements.support.map(item => `${item.description} (${formatDateRange(item.startsAt, item.endsAt)})`).join('; ')
+    : null;
+  return (
+    <Card title="Confirmed arrangements">
+      {arrangements.venues.length === 0 ? <p className="organiser-card-copy">No confirmed venue recorded.</p> : (
+        <DataTable
+          caption="Confirmed venues"
+          columns={venueColumns}
+          rows={arrangements.venues}
+          rowKey={venue => `${venue.venueName}-${venue.startsAt}`}
+        />
+      )}
+      <FactList items={[['Equipment reserved', equipment], ['Technical support staffed', support]]} />
+    </Card>
+  );
+}
+
+const venueColumns: Column<ConfirmedArrangements['venues'][number]>[] = [
+  { header: 'Venue', primary: true, cell: venue => venue.venueName },
+  { header: 'Purpose', cell: venue => venue.purpose ?? 'None recorded' },
+  { header: 'When', cell: venue => formatDateRange(venue.startsAt, venue.endsAt) },
+];
 
 // E03-S03 (SCRUM-34) Scenario 5, TC_E03S03_05: the decision in plain language.
 // A fact about the record, so an info alert (D34); the red pill carries the
@@ -320,261 +366,4 @@ export function NotFound({ eventCode, message }: { eventCode: string | undefined
   );
 }
 
-// ─── ChangeRequest ─────────────────────────────────────────────────────────────
-
-export function ChangeRequest() {
-  const { eventCode } = useParams();
-  const event = findOrganiserEvent(eventCode ?? '');
-  const [what, setWhat] = useState('');
-  const [reason, setReason] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  if (!event) return <NotFound eventCode={eventCode} />;
-
-  function validate() {
-    const errs: Record<string, string> = {};
-    if (what.trim().length < 20) errs.what = 'Please describe the change in at least 20 characters.';
-    if (reason.trim().length < 20) errs.reason = 'Please provide a reason of at least 20 characters.';
-    return errs;
-  }
-
-  function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setErrors({});
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <main className="organiser-page">
-        <header className="organiser-heading">
-          <p className="eyebrow">{event.eventCode}</p>
-          <h1>Change request submitted</h1>
-        </header>
-        <div role="status" className="organiser-change-success">
-          <CheckCircle2 size={20} aria-hidden="true" />
-          <p>Your change request has been submitted and is pending coordinator review.</p>
-          <Link to={`/organiser/requests/${event.eventCode}`} className="secondary-action">
-            Back to request
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="organiser-page">
-      <header className="organiser-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>Request a change</h1>
-      </header>
-
-      <div className="organiser-change-layout">
-        <form className="organiser-change-form" onSubmit={submit} noValidate>
-          <div className="organiser-form-section">
-            <h2>What needs to change</h2>
-            <div className="organiser-form-row">
-              <label htmlFor="change-what">Description of change <span aria-hidden="true">*</span></label>
-              <textarea
-                id="change-what"
-                rows={4}
-                value={what}
-                onChange={e => setWhat(e.target.value)}
-                placeholder="Describe what you would like to change about this event…"
-                aria-describedby={errors.what ? 'what-error' : undefined}
-                aria-invalid={Boolean(errors.what)}
-                required
-              />
-              {errors.what && <span id="what-error" role="alert" className="organiser-field-error">{errors.what}</span>}
-            </div>
-          </div>
-
-          <div className="organiser-form-section">
-            <h2>Reason for change</h2>
-            <div className="organiser-form-row">
-              <label htmlFor="change-reason">Reason <span aria-hidden="true">*</span></label>
-              <textarea
-                id="change-reason"
-                rows={4}
-                value={reason}
-                onChange={e => setReason(e.target.value)}
-                placeholder="Explain why this change is needed…"
-                aria-describedby={errors.reason ? 'reason-error' : undefined}
-                aria-invalid={Boolean(errors.reason)}
-                required
-              />
-              {errors.reason && <span id="reason-error" role="alert" className="organiser-field-error">{errors.reason}</span>}
-            </div>
-          </div>
-
-          <div className="organiser-form-section">
-            <h2>Preferred timeline</h2>
-            <div className="organiser-date-row">
-              <div className="organiser-form-row">
-                <label htmlFor="change-from">Earliest date</label>
-                <input id="change-from" type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-              </div>
-              <div className="organiser-form-row">
-                <label htmlFor="change-to">Latest date</label>
-                <input id="change-to" type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-              </div>
-            </div>
-          </div>
-
-          <div className="organiser-form-actions">
-            <Link to={`/organiser/requests/${event.eventCode}`} className="secondary-action">Cancel</Link>
-            <button type="submit" className="primary-action">
-              <Send size={14} aria-hidden="true" /> Submit change request
-            </button>
-          </div>
-        </form>
-
-        <aside className="organiser-review-rail" aria-label="Current event details">
-          <h2>Current event details</h2>
-          <dl className="organiser-review-dl">
-            <dt>Event code</dt><dd>{event.eventCode}</dd>
-            <dt>Title</dt><dd>{event.title}</dd>
-            <dt>Status</dt>
-            <dd><span className={`status-pill status-${mockStatusTone[event.status]}`}>{event.status}</span></dd>
-            <dt>Date</dt><dd>{event.preferredDate}</dd>
-            <dt>Time</dt><dd>{event.preferredWindow}</dd>
-            <dt>Attendees</dt><dd>{event.attendeeCount}</dd>
-            <dt>Venue</dt><dd>{event.venue ?? 'Not yet assigned'}</dd>
-          </dl>
-        </aside>
-      </div>
-    </main>
-  );
-}
-
-// ─── CancellationForm ────────────────────────────────────────────────────────
-
-export function CancellationForm() {
-  const { eventCode } = useParams();
-  const event = findOrganiserEvent(eventCode ?? '');
-  const [reason, setReason] = useState('');
-  const [notifyAttendees, setNotifyAttendees] = useState(true);
-  const [confirmation, setConfirmation] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  if (!event) return <NotFound eventCode={eventCode} />;
-
-  const canSubmit =
-    reason.trim().length >= 30 &&
-    confirmation === event.title;
-
-  function validate() {
-    const errs: Record<string, string> = {};
-    if (reason.trim().length < 30) errs.reason = 'Please provide a reason of at least 30 characters.';
-    if (confirmation !== event!.title) errs.confirmation = 'The event name does not match. Please type it exactly.';
-    return errs;
-  }
-
-  function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const errs = validate();
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setErrors({});
-    setSubmitted(true);
-  }
-
-  if (submitted) {
-    return (
-      <main className="organiser-page">
-        <header className="organiser-heading">
-          <p className="eyebrow">{event.eventCode}</p>
-          <h1>Event cancelled</h1>
-        </header>
-        <div role="status" className="organiser-cancelled-banner">
-          <AlertTriangle size={20} aria-hidden="true" />
-          <p>The event has been marked as cancelled (mock, no backend call).</p>
-          <Link to="/organiser" className="secondary-action">Back to my events</Link>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <main className="organiser-page" style={{ maxWidth: '42rem' }}>
-      <header className="organiser-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>Cancel event</h1>
-      </header>
-
-      <div className="organiser-danger-banner" role="alert">
-        <AlertTriangle size={18} aria-hidden="true" />
-        <p>This action cannot be undone. The event will be permanently cancelled and all attendees will be notified.</p>
-      </div>
-
-      <form className="organiser-cancel-form" onSubmit={submit} noValidate>
-        <div className="organiser-form-section">
-          <div className="organiser-form-row">
-            <label htmlFor="cancel-reason">Reason for cancellation <span aria-hidden="true">*</span></label>
-            <textarea
-              id="cancel-reason"
-              rows={5}
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-              placeholder="Explain why this event is being cancelled…"
-              aria-describedby={errors.reason ? 'cancel-reason-error' : 'cancel-reason-hint'}
-              aria-invalid={Boolean(errors.reason)}
-              required
-            />
-            <span id="cancel-reason-hint" className="organiser-field-hint">Minimum 30 characters ({reason.trim().length} / 30)</span>
-            {errors.reason && <span id="cancel-reason-error" role="alert" className="organiser-field-error">{errors.reason}</span>}
-          </div>
-        </div>
-
-        <div className="organiser-form-section">
-          <label className="organiser-checkbox-label">
-            <input
-              type="checkbox"
-              checked={notifyAttendees}
-              onChange={e => setNotifyAttendees(e.target.checked)}
-            />
-            Notify registered attendees by email
-          </label>
-        </div>
-
-        <div className="organiser-form-section">
-          <div className="organiser-form-row">
-            <label htmlFor="cancel-confirm">
-              Type <strong>{event.title}</strong> to confirm
-            </label>
-            <input
-              id="cancel-confirm"
-              type="text"
-              value={confirmation}
-              onChange={e => setConfirmation(e.target.value)}
-              placeholder={event.title}
-              aria-describedby={errors.confirmation ? 'cancel-confirm-error' : 'cancel-confirm-hint'}
-              aria-invalid={Boolean(errors.confirmation)}
-            />
-            <span id="cancel-confirm-hint" className="organiser-field-hint">Must match exactly.</span>
-            {errors.confirmation && <span id="cancel-confirm-error" role="alert" className="organiser-field-error">{errors.confirmation}</span>}
-          </div>
-        </div>
-
-        <div className="organiser-form-actions">
-          <Link to={`/organiser/requests/${event.eventCode}`} className="secondary-action">
-            Keep the event
-          </Link>
-          <button
-            type="submit"
-            className="primary-action"
-            disabled={!canSubmit}
-            style={canSubmit ? { background: 'var(--red)', color: '#ffffff' } : {}}
-          >
-            <AlertTriangle size={14} aria-hidden="true" /> Cancel this event
-          </button>
-        </div>
-      </form>
-    </main>
-  );
-}
+// E10 change requests and cancellation use the live modules in ../events.

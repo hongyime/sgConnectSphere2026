@@ -23,7 +23,19 @@ const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
 
-const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking';
+const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking' && entry.field_changed !== 'primary_venue';
+
+// E14-S03: edited event and registration times are stored as UTC ISO strings
+// ("opensAt to closesAt" for registration dates). Show them in Singapore time;
+// other values, even ones that look like a date, stay as written.
+export function formatEditedValue(field: string | null, value: string): string {
+  if (field === 'startAt' || field === 'endAt') return formatDate(value, true);
+  if (field === 'registrationDates') {
+    const [opens, closes] = value.split(' to ');
+    return closes === undefined ? formatDate(value, true) : `${formatDate(opens, true)} to ${formatDate(closes, true)}`;
+  }
+  return value;
+}
 
 // "Under review → Approved" for a status change; "Venue requirements: …" for an edit;
 // "Small Room: Pending → Confirmed" for a booking decision.
@@ -34,6 +46,12 @@ export function describeChange(entry: ActivityEntry) {
     return entry.old_value ? `${venue}: ${statusLabel(entry.old_value)} → ${to}` : `${venue}: ${to}`;
   }
   if (!entry.field_changed) return 'None recorded';
+  if (entry.field_changed === 'primary_venue') {
+    if (!entry.new_value) return 'Primary venue';
+    return entry.old_value
+      ? `Primary venue: ${entry.old_value} → ${entry.new_value}`
+      : `Primary venue: ${entry.new_value}`;
+  }
   if (entry.field_changed === 'status') {
     const to = entry.new_value ? statusLabel(entry.new_value) : 'Not recorded';
     return entry.old_value ? `${statusLabel(entry.old_value)} → ${to}` : to;
@@ -49,9 +67,10 @@ export function describeChange(entry: ActivityEntry) {
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;
   // Coordinator assignment and reassignment keep the previous Coordinator.
+  const after = formatEditedValue(entry.field_changed, entry.new_value);
   return entry.old_value && entry.old_value !== entry.new_value
-    ? `${label}: ${entry.old_value} → ${entry.new_value}`
-    : `${label}: ${entry.new_value}`;
+    ? `${label}: ${formatEditedValue(entry.field_changed, entry.old_value)} → ${after}`
+    : `${label}: ${after}`;
 }
 
 // The stored action is written for the database ("Status changed to
@@ -85,7 +104,7 @@ function Change({ entry }: { entry: ActivityEntry }) {
 const columns: Column<Row>[] = [
   { header: 'Action', primary: true, cell: describeAction },
   { header: 'Change', cell: entry => <Change entry={entry} /> },
-  { header: 'By', cell: entry => entry.actor_name ?? 'Not recorded' },
+  { header: 'By', cell: entry => entry.actor_name ?? (entry.action === 'Automatically completed event' ? 'System' : 'Not recorded') },
   { header: 'When', cell: entry => formatDate(entry.occurred_at, true) },
 ];
 
