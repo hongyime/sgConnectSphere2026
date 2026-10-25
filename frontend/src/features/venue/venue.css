@@ -43,9 +43,6 @@
 .venue-search .secondary-action { flex: 0 0 auto; }
 .venue-search-hint { color: var(--muted, #5c5c5c); font-size: 0.85rem; margin: 0; }
 
-.venue-alert { display: inline-flex; align-items: center; gap: 0.4rem; color: #b91c1c; font-weight: 600; }
-.venue-ok    { display: inline-flex; align-items: center; gap: 0.4rem; color: #047857; font-weight: 600; }
-
 .venue-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 
 .card.venue-form { display: grid; gap: var(--space-5); box-shadow: none; }
@@ -81,14 +78,6 @@
 .venue-table th, .venue-table td { padding: 0.6rem 0.75rem; text-align: left; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
 .venue-table th { background: rgba(15, 23, 42, 0.03); font-weight: 600; color: var(--ink); }
 .venue-table a { color: var(--teal); text-decoration: none; font-weight: 500; }
-
-.venue-detail-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.venue-detail-grid article { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
-.venue-detail-grid h2 { margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--ink); }
-.venue-detail-grid dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.35rem 0.75rem; margin: 0; font-size: 0.9rem; }
-.venue-detail-grid dt { color: var(--muted); }
-
-.venue-decision-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 /* E05-S03 availability calendar. Each state pairs a colour with an icon and a
    text label; blocks also get a hatched fill so a maintenance block never

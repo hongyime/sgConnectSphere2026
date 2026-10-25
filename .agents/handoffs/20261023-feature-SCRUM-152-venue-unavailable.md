@@ -1,0 +1,38 @@
+# SCRUM-152 — E05-S06 venue unavailable over existing bookings
+
+Goal: deliver E05-S06 "Mark a venue temporarily unavailable over existing bookings" (Jira SCRUM-152). This branch carries the first of three PRs: a docs-only alignment of E05-S06 and E10-S05 (SCRUM-74) and their test cases to the existing Week 9 decisions T-80, T-81 and T-91, before any code is written. Backend and frontend follow on separate branches.
+
+## Why the docs PR comes first
+
+The stories were labelled Sprint 3, so the Week 9 decisions were not applied to them while that sprint ran (T-73; see `docs/plans/week9-customer-answers-impact.md`). Nobody owned them afterwards, so the text stayed on the old O-23/O-24 defaults while `docs/contracts/venue-bookings.md` (Venue loss, Block edits rows) already followed T-80/T-81/T-91. Both stories are unstarted, so T-74 allows updating their criteria in place.
+
+## Done so far (PR 1, docs only)
+
+- `docs/backlog/release-1/` and `docs/backlog/product/` E05-S06: open-ended unavailability (T-80), Confirmed event returns to Planning, not cancelled (C-120, T-81), Coordinator-only notice at loss (C-121), restore on shorten/lift (C-122), new Scenario 7 for edit/lift history and lift notice (T-91). Sprint, Points and Owner metadata unchanged.
+- Same two files, E10-S05: Scenario 1 now returns a Confirmed event to Planning; Scenario 4 triggers on the replacement being confirmed (C-121, T-81).
+- `docs/testing/cases/E05.md`: TC_E05S06_02/_03/_04/_05 updated; TC_E05S06_04 now checks an open-ended save instead of a refusal; new TC_E05S06_07 and TC_E05S06_08.
+- `docs/testing/cases/E10.md`: TC_E10S05_01/_03/_04 updated.
+- `tests/e2e/e05.spec.ts`, `tests/e2e/e10.spec.ts`: fixme scaffold titles follow the case titles; TC_E05S06_07 and _08 scaffolds added. All remain `test.fixme`.
+- Regenerated `CONNECTSPHERE BACKLOGS CAA 241026.xlsx` (first made as 231026, rebuilt on 24 Oct after the C-111 edit), `PROJECT TEST CASES CAA 241026.xlsx`, legacy `PROJECT TEST CASES.xlsx` (copy of the new export) and `docs/testing/tc-coverage.md` (378 cases). The test-case export was first made as CAA 231026; after main merged #324 (E08 case changes, CAA 211026), it was rebuilt from both sides as CAA 241026 and the unmerged 231026 file dropped.
+- `docs/source-of-truth.md`: export table points at CAA 241026 for backlog, test cases and BDR; one paragraph records this alignment.
+- `docs/bdr/G-change-log.md`: 24 October entry for the alignment, following the team's practice of logging backlog changes there; BDR export regenerated as `BACKLOG DECISION REVIEW CAA 241026.docx`. ADR export unchanged (the generated ADR file was discarded).
+
+- C-111 gap (24 Oct): existing unexpired Tentative holds inside a new unavailability are flagged Conflicting (Scenario 2), restored or Expired on shorten/lift (Scenario 6); contract line updated; new TC_E05S06_08 (kept separate from TC_E05S06_02 so TC_E05S06_03's one-notice-per-Coordinator check still holds with the two seeded Coordinators).
+
+## Decisions taken without team sign-off (reviewer please check)
+
+- Holds under C-111: treating an existing hold like a Pending request is the story owner's reading of "flags affected existing bookings"; no new T-entry was added because it applies an existing customer answer.
+
+- When a shortened or lifted unavailability restores a booking, the event that T-81 returned to Planning does not jump back to Confirmed; it follows E08-S04 Scenario 4 (reconfirmation, then Safety Review). Written into E05-S06 Scenario 6, TC_E05S06_05 and TC_E10S05_03.
+- An affected event that was not Confirmed keeps its status (E05-S06 Scenario 3).
+
+## Next
+
+1. PR 1 is #344 (PostPlan https://6fcrmb7bq3ih.postplan.dev, version 2 covers the C-111 holds change). It needs one teammate approval, then merge. Main was merged in after #298 landed (only `tc-coverage.md` conflicted).
+2. PR 2 (backend, new branch): migration 0025 (block category, nullable end, lifted state, history table, booking status before conflict), datetime blocks, create/edit/lift with Conflicting flagging, T-81 reversion and Coordinator notices; unit tests at 100% and native loopback PostgreSQL integration tests only.
+3. PR 3 (frontend, new branch): block form, affected-events list, event venue-conflict flag.
+4. Le Xin runs TC_E05S06_01 to _07 by hand with T-93 screenshots.
+
+## Blockers
+
+- Jira: SCRUM-152 and SCRUM-74 still need assigning to Le Xin (agent write was not permitted).

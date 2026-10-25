@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
+import { readFile } from 'node:fs/promises';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js';
+import { withdrawBooking } from '../src/modules/venueBooking/bookingWithdrawal.js';
+import { setPrimaryBooking } from '../src/modules/venueBooking/bookingPrimary.js';
 import { convertHold, expireHolds, placeHold } from '../src/modules/venueBooking/holds.js';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
@@ -223,5 +227,232 @@ test('suggested venue replacement keeps rejection, validates links and serialize
     // Database invariant protects against writers bypassing the service too.
     await assert.rejects(f.q(`INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status,replaces_booking_id)
       SELECT event_id,session_id,venue_id,booking_range,'rejected',replaces_booking_id FROM venue_bookings WHERE id=$1`,[saved.id]),{code:'23505'});
+  } finally {await f.close();}
+});
+
+test('TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery', async () => {
+  const f = await fixture();
+  try {
+    // Use the merged default resolver, not an injected audience.
+    await f.q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [f.venues[0],f.staff]);
+    const hold = await placeHold(f.pool,f.actor,f.input);
+    const id = (hold.body.hold as { id: string }).id;
+    await convertHold(f.pool,f.actor,{ booking_id: id });
+    const other = await submitBooking(f.pool,f.actor,{ ...f.input,venue_id:f.venues[1] },randomUUID());
+    const before = (await f.q('SELECT * FROM venue_bookings WHERE id=$1',[other.body.booking.id])).rows[0];
+    await assert.rejects(withdrawBooking(f.pool,{...f.actor,id:f.other},{booking_id:id}),{status:404});
+    const notices = (await f.q('SELECT count(*)::int AS n FROM notifications')).rows[0].n;
+    await withdrawBooking(f.pool,f.actor,{booking_id:id});
+    assert.deepEqual((await f.q('SELECT * FROM venue_bookings WHERE id=$1',[other.body.booking.id])).rows[0],before);
+    const released = (await f.q('SELECT status,expires_at,is_primary FROM venue_bookings WHERE id=$1',[id])).rows[0];
+    assert.deepEqual(released,{status:'released',expires_at:null,is_primary:false});
+    assert.equal((await f.q('SELECT status FROM events WHERE id=$1',[f.event])).rows[0].status,'planning');
+    const audit = (await f.q("SELECT actor_id,entity_type,entity_id,event_id,field_changed,old_value,new_value FROM audit_logs WHERE action='Booking Withdrawn'")).rows;
+    assert.deepEqual(audit,[{actor_id:f.actor.id,entity_type:'venue_booking',entity_id:id,event_id:f.event,field_changed:'status',old_value:'pending',new_value:'released'}]);
+    const delivered = (await f.q("SELECT n.user_id,d.id FROM notifications n JOIN notification_deliveries d ON d.notification_id=n.id WHERE n.message LIKE '%withdrew a Pending%'")).rows;
+    assert.equal(delivered.length,1); assert.equal(delivered[0].user_id,f.staff);
+    assert.equal((await f.q('SELECT count(*)::int AS n FROM notifications')).rows[0].n,notices+1);
+    await assert.rejects(withdrawBooking(f.pool,f.actor,{booking_id:id}),{status:409});
+    assert.equal((await f.q("SELECT count(*)::int AS n FROM audit_logs WHERE action='Booking Withdrawn'")).rows[0].n,1);
+    // Freed occupancy permits an ordinary request over the same slot.
+    await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=true WHERE id=$1",[other.body.booking.id]);
+    await assert.rejects(withdrawBooking(f.pool,f.actor,{booking_id:other.body.booking.id}),{status:409});
+    assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[other.body.booking.id])).rows[0].is_primary,true);
+  } finally { await f.close(); }
+});
+
+test('TC_E06S03_11 withdrawal outbox failure rolls back status, audit and notification', async () => {
+  const f = await fixture();
+  try {
+    const saved = await submitBooking(f.pool,f.actor,f.input,randomUUID(),f.options);
+    await f.q(`CREATE FUNCTION refuse_withdrawal_delivery() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic outbox failure'; END $$`);
+    await f.q('CREATE TRIGGER refuse_withdrawal_delivery BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION refuse_withdrawal_delivery()');
+    const count = (await f.q('SELECT count(*)::int AS n FROM notifications')).rows[0].n;
+    await assert.rejects(withdrawBooking(f.pool,f.actor,{booking_id:saved.body.booking.id},f.options),/Synthetic outbox failure/);
+    assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[saved.body.booking.id])).rows[0].status,'pending');
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Booking Withdrawn'")).rows.length,0);
+    assert.equal((await f.q('SELECT count(*)::int AS n FROM notifications')).rows[0].n,count);
+  } finally { await f.close(); }
+});
+
+test('TC_E06S03_12 TC_E06S03_13 Released replacement permits a fresh attempt; Rejected follows only its own suggestion', async () => {
+  const f = await fixture();
+  try {
+    const rejected = randomUUID();
+    await f.q(`INSERT INTO venue_bookings(id,event_id,venue_id,booking_range,status,suggested_venue_id)
+      VALUES($1,$2,$3,tstzrange($4,$5,'[)'),'rejected',$6)`,[rejected,f.event,f.venues[0],f.input.starts_at,f.input.ends_at,f.venues[1]]);
+    const input = {...f.input,venue_id:f.venues[1],replaces_booking_id:rejected};
+    const key = randomUUID();
+    const first = await submitBooking(f.pool,f.actor,input,key,f.options);
+    await withdrawBooking(f.pool,f.actor,{booking_id:first.body.booking.id},f.options);
+    assert.equal((await listBookingRequests(f.q,f.actor,f.event)).bookings.find(b=>b.id===rejected)?.has_replacement,false);
+    const replay = await submitBooking(f.pool,f.actor,input,key,f.options);
+    assert.equal(replay.body.booking.id,first.body.booking.id); assert.equal(replay.body.booking.status,'released');
+    const attempts = await Promise.allSettled([submitBooking(f.pool,f.actor,input,randomUUID(),f.options),submitBooking(f.pool,f.actor,input,randomUUID(),f.options)]);
+    assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1);
+    assert.equal(attempts.filter(r=>r.status==='rejected' && r.reason.status===409).length,1);
+    let latest = (await f.q("SELECT id FROM venue_bookings WHERE replaces_booking_id=$1 AND status='pending'",[rejected])).rows[0].id;
+    // More than two switches: every next link uses the latest rejection, never A again.
+    for (let n=0;n<3;n++) {
+      const venue = f.venues[n%2]!;
+      await f.q("UPDATE venue_bookings SET status='rejected',suggested_venue_id=$2 WHERE id=$1",[latest,venue]);
+      await assert.rejects(submitBooking(f.pool,f.actor,input,randomUUID(),f.options),{status:409});
+      const next = await submitBooking(f.pool,f.actor,{...f.input,venue_id:venue,replaces_booking_id:latest},randomUUID(),f.options);
+      assert.equal(next.body.booking.replaces_booking_id,latest); latest=next.body.booking.id;
+    }
+    await f.q("UPDATE venue_bookings SET status='rejected',suggested_venue_id=NULL WHERE id=$1",[latest]);
+    await assert.rejects(submitBooking(f.pool,f.actor,{...f.input,replaces_booking_id:latest},randomUUID(),f.options),{status:409});
+    assert.equal((await f.q('SELECT count(*)::int AS n FROM venue_bookings WHERE replaces_booking_id=$1',[rejected])).rows[0].n,2);
+    // Rejected replacements remain protected even for writers bypassing service checks.
+    await assert.rejects(f.q(`INSERT INTO venue_bookings(event_id,venue_id,booking_range,status,replaces_booking_id)
+      SELECT event_id,venue_id,booking_range,'rejected',replaces_booking_id FROM venue_bookings WHERE replaces_booking_id=$1 AND status='rejected'`,[rejected]),{code:'23505'});
+  } finally { await f.close(); }
+});
+
+async function waitForBlockedWriter(query: Query, blocker: number) {
+  for (let attempt=0;attempt<200;attempt++) {
+    const row=(await query<{ blocked: boolean }>('SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1=ANY(pg_blocking_pids(pid))) AS blocked',[blocker])).rows[0];
+    if (row?.blocked) return;
+    await delay(10);
+  }
+  assert.fail('The competing writer never waited on the held venue lock');
+}
+
+test('TC_E06S03_10 decision winning the venue lock prevents withdrawal from overwriting its result', async () => {
+  for (const decision of ['confirmed','rejected']) {
+    const f = await fixture();
+    const client = await f.pool.connect();
+    try {
+      const saved = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+      await client.query('BEGIN');
+      await client.query('SELECT id FROM venues WHERE id=$1 FOR NO KEY UPDATE',[f.venues[0]]);
+      await client.query('SELECT id FROM venue_bookings WHERE id=$1 FOR UPDATE',[saved.body.booking.id]);
+      const withdrawal = withdrawBooking(f.pool,f.actor,{booking_id:saved.body.booking.id});
+      // Attach rejection handling immediately; commit below releases the venue.
+      const refused = assert.rejects(withdrawal,{status:409});
+      const pid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+      await waitForBlockedWriter(f.q,pid);
+      await client.query('UPDATE venue_bookings SET status=$2 WHERE id=$1',[saved.body.booking.id,decision]);
+      await client.query('COMMIT'); await refused;
+      assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[saved.body.booking.id])).rows[0].status,decision);
+    } finally { await client.query('ROLLBACK'); client.release(); await f.close(); }
+  }
+});
+
+test('TC_E06S03_10 withdrawal winning exposes Released to the waiting decision writer', async () => {
+  const f = await fixture();
+  try {
+    const saved = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    let reached!: () => void, resume!: () => void;
+    const locked = new Promise<void>(resolve => { reached=resolve; });
+    const proceed = new Promise<void>(resolve => { resume=resolve; });
+    let pid=0;
+    const withdrawal = withdrawBooking(f.pool,f.actor,{booking_id:saved.body.booking.id},{resolveVenueStaff:async client=>{pid=(await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;reached();await proceed;return [];}});
+    await locked;
+    const decision = inDecisionTransaction();
+    try { await waitForBlockedWriter(f.q,pid); } finally { resume(); }
+    await withdrawal;
+    assert.equal(await decision,0);
+    async function inDecisionTransaction() {
+      const client = await f.pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query('SELECT id FROM venues WHERE id=$1 FOR NO KEY UPDATE',[f.venues[0]]);
+        await client.query('SELECT id FROM venue_bookings WHERE id=$1 FOR UPDATE',[saved.body.booking.id]);
+        const update=await client.query("UPDATE venue_bookings SET status='confirmed' WHERE id=$1 AND status='pending'",[saved.body.booking.id]);
+        await client.query('COMMIT'); return update.rowCount;
+      } finally { await client.query('ROLLBACK');client.release(); }
+    }
+  } finally { await f.close(); }
+});
+
+test('TC_E06S03_10 event-first submission cannot deadlock venue-first withdrawal', async () => {
+  const f = await fixture();
+  const client = await f.pool.connect();
+  try {
+    const saved = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    await client.query('BEGIN');
+    await client.query('SELECT id FROM events WHERE id=$1 FOR NO KEY UPDATE',[f.event]);
+    await assert.rejects(withdrawBooking(f.pool,f.actor,{booking_id:saved.body.booking.id}),{status:409});
+    assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[saved.body.booking.id])).rows[0].status,'pending');
+  } finally { await client.query('ROLLBACK');client.release();await f.close(); }
+});
+
+test('TC_E06S03_12 upgrading the existing replacement index preserves Released history and uniqueness', async () => {
+  const f = await fixture();
+  try {
+    // Model a database already on 0019, with a Released historical replacement.
+    await f.q('DROP INDEX venue_booking_replacement_idx');
+    await f.q('CREATE UNIQUE INDEX venue_booking_replacement_idx ON venue_bookings(replaces_booking_id) WHERE replaces_booking_id IS NOT NULL');
+    const source=randomUUID(),released=randomUUID();
+    await f.q(`INSERT INTO venue_bookings(id,event_id,venue_id,booking_range,status)
+      VALUES($1,$2,$3,tstzrange($4,$5,'[)'),'rejected')`,[source,f.event,f.venues[0],f.input.starts_at,f.input.ends_at]);
+    await f.q(`INSERT INTO venue_bookings(id,event_id,venue_id,booking_range,status,replaces_booking_id)
+      VALUES($1,$2,$3,tstzrange($4,$5,'[)'),'released',$6)`,[released,f.event,f.venues[1],f.input.starts_at,f.input.ends_at,source]);
+    const before=(await f.q('SELECT * FROM venue_bookings ORDER BY id')).rows;
+    await f.q(await readFile(new URL('../database/migrations/0020_released_booking_replacement_retry.sql',import.meta.url),'utf8'));
+    assert.deepEqual((await f.q('SELECT * FROM venue_bookings ORDER BY id')).rows,before);
+    await f.q(`INSERT INTO venue_bookings(event_id,venue_id,booking_range,status,replaces_booking_id)
+      VALUES($1,$2,tstzrange($3,$4,'[)'),'rejected',$5)`,[f.event,f.venues[1],f.input.starts_at,f.input.ends_at,source]);
+    await assert.rejects(f.q(`INSERT INTO venue_bookings(event_id,venue_id,booking_range,status,replaces_booking_id)
+      VALUES($1,$2,tstzrange($3,$4,'[)'),'rejected',$5)`,[f.event,f.venues[1],f.input.starts_at,f.input.ends_at,source]),{code:'23505'});
+  } finally { await f.close(); }
+});
+
+test('TC_E06S03_07 selecting another Confirmed primary changes no lifecycle/occupancy/history',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id}),{status:409});
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    await assert.rejects(setPrimaryBooking(f.pool,{...f.actor,id:f.other},{booking_id:second.body.booking.id}),{status:404});
+    const before=(await f.q('SELECT id,event_id,venue_id,booking_range,status,expires_at FROM venue_bookings ORDER BY id')).rows;
+    const selected=await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal(selected.body.replayed,false);
+    assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE event_id=$1 AND is_primary',[f.event])).rows,[{id:second.body.booking.id}]);
+    assert.deepEqual((await f.q('SELECT id,event_id,venue_id,booking_range,status,expires_at FROM venue_bookings ORDER BY id')).rows,before);
+    assert.equal((await f.q('SELECT status FROM events WHERE id=$1',[f.event])).rows[0].status,'planning');
+    assert.equal((await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id})).body.replayed,true);
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Primary Venue Changed'")).rows.length,1);
+    // Selection remains permitted for assigned Confirmed events.
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id});
+    const race=await Promise.all([setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id})]);
+    assert.ok(race.every(r=>r.status===200));
+    assert.equal((await f.q('SELECT id FROM venue_bookings WHERE event_id=$1 AND is_primary',[f.event])).rows.length,1);
+  } finally {await f.close();}
+});
+
+test('TC_E06S03_07 selecting primary rolls back both flags when audit persistence fails',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    await f.q("CREATE FUNCTION refuse_primary_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action='Primary Venue Changed' THEN RAISE EXCEPTION 'Synthetic primary audit failure'; END IF; RETURN NEW; END $$");
+    await f.q('CREATE TRIGGER refuse_primary_audit BEFORE INSERT ON audit_logs FOR EACH ROW EXECUTE FUNCTION refuse_primary_audit()');
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id}),/Synthetic primary audit failure/);
+    assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE is_primary')).rows,[{id:first.body.booking.id}]);
+  } finally {await f.close();}
+});
+
+
+test('TC_E06S03_07 Completed and Cancelled Events preserve primary flags and audit history',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    const flags=(await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows;
+    const audit=(await f.q('SELECT id FROM audit_logs ORDER BY id')).rows;
+    for(const status of ['completed','cancelled']) {
+      await f.q('UPDATE events SET status=$1 WHERE id=$2',[status,f.event]);
+      for(const booking_id of [first.body.booking.id,second.body.booking.id])
+        await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id}),{status:409});
+      assert.deepEqual((await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows,flags);
+      assert.deepEqual((await f.q('SELECT id FROM audit_logs ORDER BY id')).rows,audit);
+    }
   } finally {await f.close();}
 });
