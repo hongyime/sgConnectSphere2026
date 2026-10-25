@@ -34,7 +34,7 @@ test('TC_E09S05_01 — withdrawal requires a reason before recording', async ({ 
   await expect(page.getByRole('status')).toContainText('withdrawal has been recorded');
 });
 
-test('TC_E09S06_01 — feedback requires a rating', async ({ page }) => {
+test('feedback requires a rating', async ({ page }) => {
   await page.goto('/attendee/feedback/EVT-A03');
   const send = page.getByRole('button', { name: 'Send feedback' });
   await expect(send).toBeDisabled();
