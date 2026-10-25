@@ -122,8 +122,11 @@ test('E05-S06 Scenario 1: a Blocked period shows its reason category before the 
     { state: 'blocked', kind: 'block', start: '2026-11-20T00:00:00.000Z', end: '2026-11-20T10:00:00.000Z',
       reasonCategory: 'equipment_failure', reason: 'Projector rig fault' },
     { state: 'blocked', kind: 'block', start: '2026-11-21T00:00:00.000Z', end: '2026-11-21T10:00:00.000Z', reasonCategory: 'other', reason: '' },
+    // A block with neither (older data) reads simply as a maintenance block.
+    { state: 'blocked', kind: 'block', start: '2026-11-23T00:00:00.000Z', end: '2026-11-23T10:00:00.000Z' },
   ]) });
   renderCalendar();
+  expect(within(await dayItem(/23 Nov 2026/)).getByText('Blocked').closest('li')).toHaveTextContent(/Maintenance block$/);
   const entry = within(await dayItem(/20 Nov 2026/)).getByText('Blocked').closest('li') as HTMLElement;
   expect(entry).toHaveTextContent('08:00–18:00');
   expect(entry).toHaveTextContent('Maintenance block · Equipment failure · Projector rig fault');

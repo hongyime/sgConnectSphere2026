@@ -784,45 +784,303 @@ test.describe("E05-S05 — Week 7 case scaffolds", () => {
 
 });
 
-test.describe("E05-S06 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_01).
-    void page;
+test.describe("E05-S06", () => {
+
+  // E05-S06 (SCRUM-152) against mocked GET/POST /api/venues replies shaped
+  // like backend/src/modules/venueBooking/blocks.ts and bookingRequests.ts.
+  // These cases check the screens; the rules themselves (which bookings become
+  // Conflicting, restoring, notifications, history rows) are proved against a
+  // real database in backend/tests/venueUnavailability.integration.test.ts.
+  // Times are UTC; 08:00 in Singapore is 00:00Z.
+  const venue = { id: 'v-1', name: 'Riverside Hall', location: 'L1', max_capacity: 200, opens_at: '08:00', closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] };
+  const block = (overrides: Record<string, unknown> = {}) => ({
+    id: 'blk-1', venueId: 'v-1', from: '2027-01-15', to: '2027-01-15', reasonCategory: 'maintenance', reason: 'Floor resurfacing',
+    startsAt: '2027-01-15T00:00:00.000Z', endsAt: '2027-01-15T10:00:00.000Z', ...overrides,
+  });
+  type Reply = { status?: number; json: unknown };
+  type Blockout = {
+    blocks: (url: URL) => unknown[];
+    post?: (body: Record<string, unknown>) => Reply;
+    history?: unknown[];
+    calendar?: unknown[];
+  };
+
+  async function openBlockout(page: Page, mock: Blockout) {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'venue_staff');
+    const posts: Record<string, unknown>[] = [];
+    await page.route(url => url.pathname === '/api/venues', async route => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() as Record<string, unknown>;
+        posts.push(body);
+        const reply = mock.post?.(body) ?? { status: 400, json: { error: 'Unexpected request' } };
+        return route.fulfill({ status: reply.status ?? 200, json: reply.json });
+      }
+      if (url.searchParams.get('calendar') === '1') {
+        return route.fulfill({ json: { venue: { id: venue.id, name: venue.name, opens_at: '08:00', closes_at: '22:00', is_active: true },
+          from: url.searchParams.get('from'), to: url.searchParams.get('to'), timezone: 'Asia/Singapore', entries: mock.calendar ?? [] } });
+      }
+      if (url.searchParams.get('history')) return route.fulfill({ json: { history: mock.history ?? [] } });
+      if (url.searchParams.get('blocks') === '1') return route.fulfill({ json: { blocks: mock.blocks(url) } });
+      return route.fulfill({ json: { venues: [venue] } });
+    });
+    await page.goto('/venue/blockout');
+    return posts;
+  }
+
+  async function fillUnavailability(page: Page, fields: { startDate?: string; startTime?: string; endDate?: string; endTime?: string; category?: string; note?: string }) {
+    if (fields.startDate !== undefined) await page.getByLabel('Start date').fill(fields.startDate);
+    if (fields.startTime !== undefined) await page.getByLabel('Start time').fill(fields.startTime);
+    if (fields.endDate !== undefined) await page.getByLabel('End date (optional)').fill(fields.endDate);
+    if (fields.endTime !== undefined) await page.getByLabel('End time (optional)').fill(fields.endTime);
+    if (fields.category !== undefined) await page.getByLabel('Reason category').selectOption(fields.category);
+    if (fields.note !== undefined) await page.getByLabel('Note').fill(fields.note);
+  }
+
+  const save = (page: Page, name: RegExp) => page.getByRole('button', { name }).click();
+
+  /**
+   * TC_E05S06_01
+   * AC:      E05-S06 — Scenario 1 (Unavailability recorded with a reason)
+   * Test data: Period 20/01/2027 08:00-18:00 | Category: Equipment failure | Note: Projector rig fault
+   */
+  test("TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked", async ({ page }) => {
+    const saved = block({ from: '2027-01-20', to: '2027-01-20', reasonCategory: 'equipment_failure', reason: 'Projector rig fault',
+      startsAt: '2027-01-20T00:00:00.000Z', endsAt: '2027-01-20T10:00:00.000Z' });
+    let created = false;
+    const posts = await openBlockout(page, {
+      blocks: () => (created ? [saved] : []),
+      post: () => { created = true; return { status: 201, json: { block: saved, affectedEvents: [], notifiedEventCount: 0 } }; },
+      calendar: [{ state: 'blocked', kind: 'block', start: saved.startsAt, end: saved.endsAt, reasonCategory: 'equipment_failure', reason: 'Projector rig fault' }],
+    });
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
+    await fillUnavailability(page, { startDate: '2027-01-20', startTime: '08:00', endDate: '2027-01-20', endTime: '18:00', category: 'equipment_failure', note: 'Projector rig fault' });
+    await save(page, /Save unavailability/);
+    await expect(page.getByText('Unavailability saved.', { exact: true })).toBeVisible();
+    expect(posts).toEqual([{ action: 'block', id: 'v-1', starts_at: '2027-01-20T08:00:00+08:00', ends_at: '2027-01-20T18:00:00+08:00', reason_category: 'equipment_failure', reason: 'Projector rig fault' }]);
+    const row = page.getByRole('row').filter({ hasText: 'Projector rig fault' });
+    await expect(row).toContainText('Equipment failure');
+    await expect(row).toContainText('20 Jan 2027, 8:00 am');
+
+    // The calendar shows the period as Blocked with its category.
+    await page.clock.setFixedTime(new Date('2027-01-10T04:00:00Z'));
+    await page.goto('/venue/availability');
+    const entry = page.locator('.calendar-entry.entry-blocked');
+    await expect(entry).toContainText('08:00–18:00');
+    await expect(entry).toContainText('Maintenance block · Equipment failure · Projector rig fault');
   });
 
-  test.fixme("TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events on save, release neither and return the Confirmed event to Planning", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_02).
-    void page;
+  /**
+   * TC_E05S06_02
+   * AC:      E05-S06 — Scenarios 2 and 3 (Overlapping bookings become Conflicting; a Confirmed event returns to Planning)
+   */
+  test("TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events on save, release neither and return the Confirmed event to Planning", async ({ page }) => {
+    await openBlockout(page, {
+      blocks: () => [],
+      post: () => ({ status: 201, json: { block: block({ reasonCategory: 'safety_concern', reason: 'Ceiling inspection' }), notifiedEventCount: 2, affectedEvents: [
+        { eventId: 'e-1', eventCode: 'EVT-101', title: 'Alumni Dinner', returnedToPlanning: false, coordinatorNotified: true },
+        { eventId: 'e-2', eventCode: 'EVT-102', title: 'Tech Conference 2026', returnedToPlanning: true, coordinatorNotified: true },
+      ] } }),
+    });
+    await fillUnavailability(page, { startDate: '2027-01-15', startTime: '08:00', endDate: '2027-01-15', endTime: '18:00', category: 'safety_concern', note: 'Ceiling inspection' });
+    await save(page, /Save unavailability/);
+    await expect(page.getByText(/These 2 events have bookings in this period, now marked Conflicting\. Nothing was cancelled\./)).toBeVisible();
+    const items = page.getByRole('list', { name: 'Affected events' }).getByRole('listitem');
+    await expect(items.nth(0)).toContainText('Alumni Dinner (EVT-101)');
+    await expect(items.nth(0)).not.toContainText('Returned to Planning');
+    await expect(items.nth(1)).toContainText('Tech Conference 2026 (EVT-102)');
+    await expect(items.nth(1)).toContainText('Returned to Planning');
   });
 
-  test.fixme("TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason and event", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_03).
-    void page;
+  /**
+   * TC_E05S06_03
+   * AC:      E05-S06 — Scenario 4 (Affected Coordinators informed)
+   * The email itself is checked by the backend database test (TC_E05S06_03);
+   * here the Coordinator sees the in-app notice and the flag on the event.
+   */
+  test("TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason and event", async ({ page }) => {
+    const { signInAs } = await import('./helpers/fakeSession');
+    await signInAs(page, 'event_coordinator', { notifications: [{
+      id: 'n-1', title: 'Venue unavailable', is_read: false, read_at: null, created_at: '2027-01-02T00:00:00.000Z', event_id: 'evt-1',
+      message: 'Riverside Hall is unavailable 15 Jan 2027, 8:00 am to 15 Jan 2027, 6:00 pm (Safety concern: Ceiling inspection). This affects the venue booking for "Alumni Dinner". Alternative arrangements are required.',
+    }] });
+    await page.route('**/api/events?*', route => route.fulfill({ json: { event: {
+      id: 'evt-1', event_code: 'EVT-101', title: 'Alumni Dinner', status: 'planning', status_changed_at: '2027-01-02T00:00:00.000Z',
+      starts_at: '2027-01-15T06:00:00.000Z', ends_at: '2027-01-15T08:00:00.000Z', expected_attendance: 80,
+      coordinator_assigned_at: '2026-12-01T00:00:00.000Z', organiser_name: 'Organiser A', organiser_email: 'organiser_a@clienta.com',
+      description: 'Dinner', purpose: null, venue_requirements: null, accessibility_note: null, equipment_requirements: null,
+      layout_preference: null, registration_setup: null, coordinator_id: 'test-event_coordinator', coordinator_name: 'Coordinator B',
+      pendingReassignment: null, outstandingQuestions: [],
+    } } }));
+    await page.route(url => url.pathname === '/api/venues', route => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('mode') !== 'booking_requests') return route.fulfill({ status: 404, json: { error: 'Not mocked' } });
+      return route.fulfill({ json: { event: { id: 'evt-1', event_code: 'EVT-101', title: 'Alumni Dinner', status: 'planning' }, bookings: [{
+        id: 'b-1', venue_id: 'v-1', venue_name: 'Riverside Hall', location: 'L1', status: 'conflicting', starts_at: '2027-01-15T06:00:00.000Z',
+        ends_at: '2027-01-15T08:00:00.000Z', created_at: '2026-12-01T00:00:00.000Z', decision_reason: null, status_before_conflict: 'pending',
+        conflict_reason_category: 'safety_concern', conflict_note: 'Ceiling inspection', conflict_starts_at: '2027-01-15T00:00:00.000Z', conflict_ends_at: '2027-01-15T10:00:00.000Z',
+      }] } });
+    });
+    await page.goto('/coordinator/events/EVT-101');
+    const flag = page.getByRole('alert').filter({ hasText: 'Venue unavailable' });
+    await expect(flag).toContainText('Riverside Hall — Safety concern');
+    await expect(flag).toContainText('Alternative arrangements are required.');
+
+    await page.getByRole('link', { name: 'Notifications, 1 unread' }).click();
+    await expect(page.getByText(/Riverside Hall is unavailable 15 Jan 2027, 8:00 am .*Safety concern.*Alumni Dinner.*Alternative arrangements are required/)).toBeVisible();
   });
 
-  test.fixme("TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_04).
-    void page;
+  /**
+   * TC_E05S06_04
+   * AC:      E05-S06 — Scenario 5 (Open-ended unavailability); T-80
+   */
+  test("TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted", async ({ page }) => {
+    const open = block({ from: '2027-01-20', to: null, endsAt: null, startsAt: '2027-01-20T00:00:00.000Z', reasonCategory: 'renovation', reason: 'Roof works' });
+    let created = false;
+    const posts = await openBlockout(page, {
+      blocks: () => (created ? [open] : []),
+      post: () => { created = true; return { status: 201, json: { block: open, affectedEvents: [] } }; },
+    });
+    await expect(page.getByLabel('End date (optional)')).toBeVisible();
+    await fillUnavailability(page, { startDate: '2027-01-20', startTime: '08:00', category: 'renovation', note: 'Roof works' });
+    await save(page, /Save unavailability/);
+    await expect(page.getByText('Unavailability saved.', { exact: true })).toBeVisible();
+    expect(posts[0]?.ends_at).toBeNull();
+    await expect(page.getByRole('row').filter({ hasText: 'Roof works' })).toContainText('Until lifted');
   });
 
-  test.fixme("TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bookings it no longer touches", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_05).
-    void page;
+  /**
+   * TC_E05S06_05
+   * AC:      E05-S06 — Scenarios 5 and 6 (Extended, then shortened)
+   */
+  test("TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bookings it no longer touches", async ({ page }) => {
+    const posts = await openBlockout(page, {
+      blocks: () => [block()],
+      post: body => ({ json: String(body.ends_at).startsWith('2027-01-15T20:00')
+        ? { block: block(), affectedEvents: [{ eventId: 'e-1', eventCode: 'EVT-101', title: 'Alumni Dinner', returnedToPlanning: false, coordinatorNotified: true }], restoredEvents: [] }
+        : { block: block(), affectedEvents: [], restoredEvents: [{ eventId: 'e-1', eventCode: 'EVT-101', title: 'Alumni Dinner', coordinatorNotified: true }] } }),
+    });
+    await page.getByRole('button', { name: /Edit/ }).click();
+    await fillUnavailability(page, { endTime: '20:00' });
+    await save(page, /Save changes/);
+    await expect(page.getByText('Unavailability changed. 1 event is newly marked Conflicting.')).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Affected events' })).toContainText('Alumni Dinner (EVT-101)');
+
+    await page.getByRole('button', { name: /Edit/ }).click();
+    await fillUnavailability(page, { endTime: '14:00' });
+    await save(page, /Save changes/);
+    await expect(page.getByText('Unavailability changed. 1 booking has its earlier status back.')).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Restored events' })).toContainText('Alumni Dinner (EVT-101) Booking restored');
+    expect(posts.map(body => [body.action, body.ends_at])).toEqual([
+      ['edit_block', '2027-01-15T20:00:00+08:00'], ['edit_block', '2027-01-15T14:00:00+08:00'],
+    ]);
   });
 
-  test.fixme("TC_E05S06_06 — Verify that E05-S04's block, shorten and remove behaviour still works for periods with no bookings after this story", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_06).
-    void page;
+  /**
+   * TC_E05S06_06
+   * AC:      E05-S06 — Checklist (E05-S04 regression per T-74)
+   * Block a free period, shorten it, remove it: each still works.
+   */
+  test("TC_E05S06_06 — Verify that E05-S04's block, shorten and remove behaviour still works for periods with no bookings after this story", async ({ page }) => {
+    let state: 'none' | 'full' | 'short' = 'none';
+    const full = block({ from: '2027-01-05', to: '2027-01-07', startsAt: '2027-01-04T16:00:00.000Z', endsAt: '2027-01-07T16:00:00.000Z', reason: 'Annual fire safety inspection' });
+    const short = { ...full, to: '2027-01-05', endsAt: '2027-01-05T16:00:00.000Z' };
+    const posts = await openBlockout(page, {
+      blocks: () => (state === 'full' ? [full] : state === 'short' ? [short] : []),
+      post: body => {
+        if (body.action === 'block') { state = 'full'; return { status: 201, json: { block: full, affectedEvents: [] } }; }
+        if (body.action === 'edit_block') { state = 'short'; return { json: { block: short, affectedEvents: [], restoredEvents: [] } }; }
+        state = 'none';
+        return { json: { block: short, lifted: true, restoredEvents: [] } };
+      },
+    });
+    await fillUnavailability(page, { startDate: '2027-01-05', startTime: '00:00', endDate: '2027-01-08', endTime: '00:00', category: 'maintenance', note: 'Annual fire safety inspection' });
+    await save(page, /Save unavailability/);
+    await expect(page.getByRole('row').filter({ hasText: 'Annual fire safety inspection' })).toContainText('8 Jan 2027, 12:00 am');
+    await page.getByRole('button', { name: /Edit/ }).click();
+    await fillUnavailability(page, { endDate: '2027-01-06' });
+    await save(page, /Save changes/);
+    await expect(page.getByRole('row').filter({ hasText: 'Annual fire safety inspection' })).toContainText('6 Jan 2027, 12:00 am');
+    await page.getByRole('button', { name: /Lift/ }).click();
+    await page.getByRole('button', { name: 'Lift unavailability' }).click();
+    await expect(page.getByText('No current or upcoming blocks')).toBeVisible();
+    expect(posts.map(body => body.action)).toEqual(['block', 'edit_block', 'lift_block']);
   });
 
-  test.fixme("TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_07).
-    void page;
+  /**
+   * TC_E05S06_07
+   * AC:      E05-S06 — Scenarios 6 and 7 (Edits and lifts keep their history); T-91
+   */
+  test("TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted", async ({ page }) => {
+    const created = { startsAt: '2027-01-15T00:00:00.000Z', endsAt: '2027-01-15T10:00:00.000Z', reasonCategory: 'maintenance', reason: 'Floor resurfacing' };
+    const edited = { ...created, endsAt: '2027-01-15T12:00:00.000Z', reason: 'Floor resurfacing, second coat' };
+    let lifted = false;
+    await openBlockout(page, {
+      blocks: url => (!lifted ? [block()] : url.searchParams.get('lifted') === '1'
+        ? [block({ ...edited, liftedAt: '2027-01-14T06:00:00.000Z', liftedBy: 'Venue Staff One' })] : []),
+      post: body => {
+        if (body.action === 'edit_block') return { json: { block: block(edited), affectedEvents: [], restoredEvents: [] } };
+        lifted = true;
+        return { json: { block: block(edited), lifted: true, notifiedEventCount: 1,
+          restoredEvents: [{ eventId: 'e-1', eventCode: 'EVT-101', title: 'Alumni Dinner', coordinatorNotified: true }] } };
+      },
+      history: [
+        { action: 'created', changedAt: '2027-01-14T01:00:00.000Z', actor: 'Venue Staff One', previous: null, next: created },
+        { action: 'edited', changedAt: '2027-01-14T02:00:00.000Z', actor: 'Venue Staff One', previous: created, next: edited },
+        { action: 'lifted', changedAt: '2027-01-14T06:00:00.000Z', actor: 'Venue Staff One', previous: edited, next: null },
+      ],
+    });
+    await page.getByRole('button', { name: /Edit/ }).click();
+    await fillUnavailability(page, { endTime: '20:00', note: 'Floor resurfacing, second coat' });
+    await save(page, /Save changes/);
+    await expect(page.getByText('Unavailability changed.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: /Lift/ }).click();
+    await page.getByRole('button', { name: 'Lift unavailability' }).click();
+    await expect(page.getByRole('list', { name: 'Restored events' })).toContainText('Alumni Dinner (EVT-101) Booking restored Coordinator notified');
+
+    await page.getByLabel('Show lifted').check();
+    const row = page.getByRole('row').filter({ hasText: 'Floor resurfacing, second coat' });
+    await expect(row).toContainText('Lifted');
+    await expect(row).toContainText('by Venue Staff One, 14 Jan 2027, 2:00 pm');
+    await row.getByRole('button', { name: /History/ }).click();
+    const history = page.getByRole('table', { name: 'Changes to this unavailability, oldest first' });
+    // Rows are matched by their content: the phone layout has no header row.
+    const change = (name: string) => history.getByRole('row').filter({ has: page.getByRole('cell', { name, exact: true }) });
+    await expect(change('Created')).toContainText('15 Jan 2027, 8:00 am – 6:00 pm · Maintenance · Floor resurfacing');
+    await expect(change('Edited')).toContainText('15 Jan 2027, 8:00 am – 6:00 pm · Maintenance · Floor resurfacing');
+    await expect(change('Edited')).toContainText('15 Jan 2027, 8:00 am – 8:00 pm · Maintenance · Floor resurfacing, second coat');
+    await expect(change('Lifted')).toContainText('Venue Staff One');
+    await expect(change('Lifted')).toContainText('14 Jan 2027, 2:00 pm');
   });
 
-  test.fixme("TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coordinator, and restore it when the unavailability is lifted", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S06_08).
-    void page;
+  /**
+   * TC_E05S06_08
+   * AC:      E05-S06 — Scenarios 2, 4 and 6 for a Tentative hold (C-111)
+   * Test data: Hold 22/01/2027 10:00-12:00, Tentative, unexpired | Unavailability: whole day 22/01/2027
+   */
+  test("TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coordinator, and restore it when the unavailability is lifted", async ({ page }) => {
+    const whole = block({ from: '2027-01-22', to: '2027-01-22', startsAt: '2027-01-21T16:00:00.000Z', endsAt: '2027-01-22T16:00:00.000Z', reason: 'Lighting rig repair' });
+    let created = false;
+    await openBlockout(page, {
+      blocks: () => (created ? [whole] : []),
+      post: body => {
+        if (body.action === 'block') {
+          created = true;
+          return { status: 201, json: { block: whole, notifiedEventCount: 1,
+            affectedEvents: [{ eventId: 'e-3', eventCode: 'EVT-103', title: 'Spring Gala', returnedToPlanning: false, coordinatorNotified: true }] } };
+        }
+        created = false;
+        return { json: { block: whole, lifted: true, restoredEvents: [{ eventId: 'e-3', eventCode: 'EVT-103', title: 'Spring Gala', coordinatorNotified: true }] } };
+      },
+    });
+    await fillUnavailability(page, { startDate: '2027-01-22', startTime: '00:00', endDate: '2027-01-23', endTime: '00:00', category: 'maintenance', note: 'Lighting rig repair' });
+    await save(page, /Save unavailability/);
+    await expect(page.getByText(/This event has a booking in this period, now marked Conflicting\. Nothing was cancelled\./)).toBeVisible();
+    await expect(page.getByRole('list', { name: 'Affected events' })).toContainText('Spring Gala (EVT-103) Coordinator notified');
+    await page.getByRole('button', { name: /Lift/ }).click();
+    await page.getByRole('button', { name: 'Lift unavailability' }).click();
+    await expect(page.getByRole('list', { name: 'Restored events' })).toContainText('Spring Gala (EVT-103) Booking restored');
   });
 
 });

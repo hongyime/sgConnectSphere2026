@@ -14,7 +14,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test } from 'vitest';
 import { VenueBlockout } from './VenueBlockout';
-import { stubApi, type FakeHandler } from '../../testing/fakeApi';
+import { deferred, stubApi, type FakeHandler } from '../../testing/fakeApi';
 
 afterEach(cleanup);
 
@@ -449,6 +449,23 @@ test('an open-ended unavailability lists as until lifted, edits with an empty en
   fireEvent.click(screen.getByRole('button', { name: 'Lift unavailability' }));
   expect(await screen.findByText('Unavailability lifted. It stays in the history.')).toBeInTheDocument();
   expect(screen.queryByRole('list', { name: 'Restored events' })).not.toBeInTheDocument();
+});
+
+test('a lift in flight is sent only once, even if the confirmation is submitted again', async () => {
+  const reply = deferred<{ body: unknown }>();
+  const calls = renderPage({
+    'GET /api/venues?q=': { body: { venues } },
+    'GET /api/venues?id=v-1&blocks=1': { body: { blocks: [existingBlock] } },
+    'POST /api/venues': () => reply.promise,
+  });
+  const row = (await screen.findByText('Annual fire safety inspection')).closest('tr') as HTMLElement;
+  fireEvent.click(within(row).getByRole('button', { name: /Lift/ }));
+  const form = screen.getByRole('form', { name: /^Lift the / });
+  fireEvent.submit(form);
+  fireEvent.submit(form);
+  reply.resolve({ body: { block: existingBlock, lifted: true, restoredEvents: [] } });
+  expect(await screen.findByText('Unavailability lifted. It stays in the history.')).toBeInTheDocument();
+  expect(posted(calls)).toHaveLength(1);
 });
 
 test('a failed lift shows the server message and closes the confirmation', async () => {

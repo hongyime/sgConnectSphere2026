@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **378**
 - Automated (explicit TC_ID in an active test title): **240** (63.5%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+  - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **202**
+  - Live-assertion (other active tests): **204**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **103** (27.2%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
@@ -1438,6 +1438,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an edit that would overlap another unavailability is refused and names it
 - lifting goes through ConfirmPanel, lists the restored bookings and reloads the list (Scenario 6)
 - an open-ended unavailability lists as until lifted, edits with an empty end, and lifts with nothing to restore (T-80)
+- a lift in flight is sent only once, even if the confirmation is submitted again
 - a failed lift shows the server message and closes the confirmation
 - a lifted row with no recorded lifter, a block with no history yet, and an open-ended entry with no category read clearly
 - a history that fails to load offers Try again
@@ -1517,6 +1518,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - liftUnavailability sends lift_block and returns the restored events (Scenario 6)
 - getBlockHistory reads one block history and refuses safely (Scenario 7)
 - listBlocks asks for lifted blocks only when requested (Scenario 7)
+- listBlocks passes a refusal through and reads a reply without a list as empty; overlappingBlocks does the same
 
 ### `frontend/src/features/venue/calendarDates.test.ts`
 

@@ -6,7 +6,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import {
   CATEGORY_LABELS, REASON_CATEGORIES, createUnavailability, editUnavailability, getBlockHistory, liftUnavailability, listBlocks,
-  type UnavailabilityInput,
+  overlappingBlocks, type UnavailabilityInput,
 } from './blocksApi';
 import { stubApi } from '../../testing/fakeApi';
 
@@ -106,4 +106,13 @@ test('listBlocks asks for lifted blocks only when requested (Scenario 7)', async
 
   await listBlocks('v-1');
   expect(calls.at(-1)?.url.searchParams.has('lifted')).toBe(false);
+});
+
+test('listBlocks passes a refusal through and reads a reply without a list as empty; overlappingBlocks does the same', async () => {
+  stubApi({ 'GET /api/venues?id=v-1&blocks=1': { status: 403, body: { error: 'Access denied.' } } });
+  expect(await listBlocks('v-1')).toMatchObject({ ok: false, status: 403 });
+  stubApi({ 'GET /api/venues?id=v-1&blocks=1': { body: {} } });
+  expect(await listBlocks('v-1')).toEqual({ ok: true, data: [] });
+  expect(overlappingBlocks(undefined)).toEqual([]);
+  expect(overlappingBlocks({ overlappingBlocks: [block] })).toEqual([block]);
 });
