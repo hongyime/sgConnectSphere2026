@@ -1412,6 +1412,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the approval message falls back when the Coordinator name is missing
 - when the venue list cannot load, the reason can still be sent without a suggestion
 - a request that is no longer pending has nothing to decide
+- E05-S06: a Conflicting booking says the venue was marked unavailable and offers no decision
 - an unknown request on the decision page shows the server message
 
 ### `frontend/src/features/venue/TentativeHolds.test.tsx`
@@ -1454,6 +1455,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
+- E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
