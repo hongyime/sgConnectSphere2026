@@ -159,10 +159,13 @@ test('E09-S01: register once for a Confirmed Event, selecting Sessions, on real 
     assert.equal(listed.status, 200); assert.equal(listed.body.events[0].myRegistrationStatus, 'registered');
     const shown = await call(api, { method: 'GET', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie } });
     assert.equal(shown.status, 200); assert.equal(shown.body.sessions.length, 2); assert.equal(shown.headers['Cache-Control'], 'private, no-store');
-    const posted = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie }, body: { sessionIds: [sessionB] } });
+    const origin = 'https://app.example.test';
+    const foreign = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie, origin: 'https://evil.example.test' }, body: { sessionIds: [sessionB] } });
+    assert.equal(foreign.status, 403); assert.equal(foreign.body.error, 'Request origin not allowed.');
+    const posted = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie, origin }, body: { sessionIds: [sessionB] } });
     assert.equal(posted.status, 409); assert.equal(posted.body.error, "You're already registered for this event.");
     assert.equal((await call(api, { method: 'PUT', url: '/api/attendee/events', headers: { cookie } })).status, 405);
-    assert.equal((await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: {}, body: { sessionIds: [sessionB] } })).status, 401);
+    assert.equal((await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { origin }, body: { sessionIds: [sessionB] } })).status, 401);
   } finally {
     if (closeRuntime) await closeRuntime();
     if (pool) await pool.end();
