@@ -23,6 +23,7 @@ test('TC_E11S01_10: approved recipient matrix distinguishes internal decisions f
     [{kind:'status',from:'confirmed',to:'completed'}, ['o','c','v','t','r','w']],
     [{kind:'status',from:'confirmed',to:'cancelled'}, ['o','c','v','t','r','w']],
     [{kind:'booking_requested'}, ['v']],
+    [{kind:'booking_withdrawn'}, ['v']],
     [{kind:'booking_decided',decision:'confirmed'}, ['c']],
     [{kind:'booking_decided',decision:'rejected'}, ['c']],
     [{kind:'booking_decided',decision:'released'}, ['c']],

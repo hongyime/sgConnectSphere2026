@@ -10,6 +10,14 @@ import { ActivityLog, describeAction, describeChange, type ActivityEntry } from 
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
+test('TC_E06S03_07: primary venue activity names the designation and preserves venue names', () => {
+  const primary = { ...approved, action: 'Primary Venue Changed', field_changed: 'primary_venue',
+    old_value: 'Orchid Hall', new_value: 'Jasmine Hall', entity_type: 'venue_booking', venue_name: 'Jasmine Hall' };
+  expect(describeChange(primary)).toBe('Primary venue: Orchid Hall → Jasmine Hall');
+  expect(describeChange({ ...primary, old_value: null })).toBe('Primary venue: Jasmine Hall');
+  expect(describeChange({ ...primary, new_value: null })).toBe('Primary venue');
+});
+
 const approved: ActivityEntry = {
   occurred_at: '2026-10-08T02:30:00.000Z', action: 'Status changed to approved', field_changed: 'status',
   old_value: 'under_review', new_value: 'approved', actor_name: 'Coordinator B',
