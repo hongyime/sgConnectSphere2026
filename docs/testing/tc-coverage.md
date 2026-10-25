@@ -763,11 +763,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - the migration selector is optional and accepts one exact available filename
 - the migration selector rejects malformed arguments and unknown or path-like filenames
+- guarded migration sessions pin and verify the public search path
 - the default selection returns every pending file in filename order
 - an explicit selection returns only that pending migration
 - an explicit selection already in the ledger returns an empty list
 - an explicit filename outside the migration directory is rejected
 - the runner applies only the selected migration and records only that filename
+- guarded migration runner requires an existing ledger and never creates one
+- guarded migration runner refuses a selection that is not the next pending migration
+- guarded migration runner refuses to start when the advisory lock is held
+- guarded migration runner releases the advisory lock when a migration fails
+- guarded migration runner rejects an already-applied selected migration
 - the runner preserves all-pending behavior without a selector
 - an already-applied selected migration reports a no-op without opening a transaction
 - an unknown selected filename is rejected before any database query
@@ -805,6 +811,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - ADDITIONAL_ALLOWED_ORIGINS accepts comma-separated local dev hosts and ignores blanks
 - the allowed set deduplicates identical origins from multiple env vars
 - does not accept an origin that only matches a superstring of an allowed value
+
+### `backend/tests/productionMigrationGuard.test.ts`
+
+- production URL guard accepts the configured PostgreSQL target and rejects other targets
+- guarded database config ignores URL parameters and forces verified TLS
+- precheck accepts only the next pending migration in repository order
+- postcheck requires only the selected migration to be newly recorded
 
 ### `backend/tests/profile.integration.test.ts`
 
@@ -1049,6 +1062,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - anonymous, wrong-role and inactive users cannot assess venues
 - missing identifiers and invalid event requirements are rejected
 - missing/draft event and missing/retired venue return not found
+
+### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
+
+- a block written the pre-0025 way still saves, as maintenance and active
+- an unavailability may be open-ended but must have a start, and only a lifted one records who lifted it
+- an active unavailability refuses an overlapping booking; a lifted one does not; an open-ended one refuses later dates
+- a booking remembers its earlier status and the unavailability that flagged it, for restoring
+- the primary booking stays primary while Conflicting and when restored, but no other status may be primary
+- unavailability history is append-only, keeps its shape per action, and follows its venue when deleted
 
 ### `backend/tests/verificationEmail.test.ts`
 
