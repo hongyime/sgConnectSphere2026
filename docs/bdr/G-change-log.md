@@ -341,3 +341,33 @@ and delivered in #247, is now in the release and product backlogs with five
 scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
 which stays Done (T-74): the Organiser could not edit the registration setup,
 and the registration date labels were laid out wrongly.
+
+## 24 October 2026: E05-S06 and E10-S05 aligned with the venue-loss decisions
+
+E05-S06 (SCRUM-152) and E10-S05 (SCRUM-74) still carried the Week 7 defaults
+for O-23 and O-24 because both were labelled Sprint 3 when the Week 9 answers
+arrived, and active sprint scope was not edited (T-73). Neither story has been
+started, so their criteria are updated in place (T-74) to decisions already
+recorded; no decision is new or changed.
+
+- E05-S06: an unavailability may be open-ended until lifted, with no buffers
+  around it (T-80); a Confirmed event whose active booking is lost returns to
+  Planning and is not cancelled (C-120, T-81); only the Coordinator is told at
+  the loss (C-121); shortening or lifting restores a booking that was not
+  replaced or cancelled (C-122). New Scenario 7 keeps a history of each edit
+  and lift and notifies affected Coordinators on a lift (T-91).
+- E10-S05: Scenario 1 returns a Confirmed event to Planning (T-81); Scenario 4
+  notifies the Organiser and Attendees when the replacement is confirmed
+  (C-121).
+- Test cases follow: TC_E05S06_02 to _05 and TC_E10S05_01, _03 and _04 are
+  updated, TC_E05S06_04 now checks an open-ended save instead of a refusal, and
+  TC_E05S06_07 is added.
+- C-111 also says affected existing bookings are flagged. Only its open-ended
+  part had been used (T-80), so no story covered an unexpired Tentative hold
+  inside a new unavailability. E05-S06 Scenario 2 now flags such a hold
+  Conflicting without releasing it, Scenario 6 restores it (or marks it Expired
+  if its expiry passed meanwhile), the booking contract's Conflicting
+  transition includes holds, and TC_E05S06_08 is added.
+
+One interpretation for review: a restored booking does not return its event
+straight to Confirmed; the event follows E08-S04 Scenario 4.
