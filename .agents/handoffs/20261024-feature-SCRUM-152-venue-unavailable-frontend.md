@@ -22,7 +22,13 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - [x] 6. Re-targeted: the Venue Staff queue lists Pending only, so the flag went on the Coordinator's venue bookings page (`VenueBookingRequests.tsx`), which already receives the conflict fields: warning "Conflicting" label + "Venue unavailable" flag with category, note, period / until lifted, earlier status. `BookingRequests.tsx` decide page explains a Conflicting booking can't be decided. `f7b1069`.
 - [x] 7. Coordinator event view: venue-conflict flag with reason category (Scenario 3). `b57b287`: the event page showed only "Planning"; new `VenueConflictFlag` reuses the booking_requests list (no backend change) and names each Conflicting venue + category with a link to venue bookings; silent on refusal. E07-S06 `TechnicalSupport.test.tsx` allow-list extended for this card (intent unchanged).
 - [x] 8. Unit tests, 100% of changed code; update tests the old Shorten/Remove buttons break; regenerate `tc-coverage.md` if needed. `d00af8c`: TC_E05S06_01–08 Playwright cases live (mocked API; _03 email stays with the backend DB test); every added/changed line in the 9 frontend source files covered (checked against the vitest JSON report); full Playwright 368 passed, 0 failed.
-- [ ] 9. `scripts/check.py`, frontend tests, T-65 record, draft PR.
+- [x] 9. `scripts/check.py`, frontend tests, T-65 record, draft PR. Evidence at `86666e4`: `20261025-134344-lexinphun2024-debug-frontend-vitest.md` (571/571, changed lines fully covered), `20261025-134418-lexinphun2024-debug-frontend-e2e.md` (368 passed, 0 failed), `20261025-134629-lexinphun2024-debug-tooling.md` (14 known Windows-only `test_worktree_hygiene` failures). Draft PR opened against the backend branch; #348's description now asks for this PR to merge straight after it.
+
+## Next steps
+
+- Reviews of #345, #348 and this PR.
+- Manual end-to-end runs of TC_E05S06_01–08 with the tester's own screenshots (T-93) before the Sprint Review, recorded under `docs/testing/runs/`.
+- After #348 merges: retarget this PR to `main`, re-run CI, merge promptly (calendar crash risk above).
 
 ## Decisions for the reviewer
 
