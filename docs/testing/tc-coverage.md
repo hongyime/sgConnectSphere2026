@@ -1227,6 +1227,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a booking decision missing its venue or earlier status is still described
 - booking entries show hold expiry or a generic booking label without internal IDs
 
+### `frontend/src/features/events/ActivityReleaseReference.test.tsx`
+
+- same-venue releases identify each booking when actor and time coincide
+- event and legacy hold entries do not invent a booking reference
+
 ### `frontend/src/features/events/EventCompletion.test.tsx`
 
 - Non-Confirmed states and missing event code are displayed without an action
