@@ -135,6 +135,28 @@ def changed_files(*, staged: bool, base: str | None, head: str | None) -> list[t
     return parse_diff(output)
 
 
+def exists_in_merge_base(path: str) -> bool:
+    """Return whether a path is already present in the branch's merge base."""
+
+    try:
+        merge_base = subprocess.check_output(
+            ["git", "merge-base", "HEAD", "origin/main"], cwd=ROOT, text=True
+        ).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return True
+    try:
+        subprocess.run(
+            ["git", "cat-file", "-e", f"{merge_base}:{path}"],
+            cwd=ROOT,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except subprocess.CalledProcessError:
+        return False
+    return True
+
+
 def atomicity_errors(changes: Iterable[tuple[str, list[str]]], *, staged: bool) -> list[str]:
     change_map = {path: status for status, paths in changes for path in paths}
     errors: list[str] = []
@@ -143,6 +165,8 @@ def atomicity_errors(changes: Iterable[tuple[str, list[str]]], *, staged: bool) 
         if status != "A":
             for path in paths:
                 if RECORD_RE.fullmatch(path):
+                    if status == "D" and staged and not exists_in_merge_base(path):
+                        continue
                     errors.append(f"{path}: merged test-run records are immutable; add a new session file")
             continue
         for path in paths:

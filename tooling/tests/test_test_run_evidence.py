@@ -1,6 +1,7 @@
 import importlib.util
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -82,6 +83,14 @@ class EvidenceTests(unittest.TestCase):
         errors = MODULE.atomicity_errors(
             [("A", [relative_record]), ("A", [relative_image])], staged=True
         )
+        self.assertEqual(errors, [])
+
+    def test_atomicity_allows_removing_unmerged_record(self):
+        with mock.patch.object(MODULE, "exists_in_merge_base", return_value=False):
+            errors = MODULE.atomicity_errors(
+                [("D", ["docs/testing/runs/20261026-222548-testuser-tooling.md"])],
+                staged=True,
+            )
         self.assertEqual(errors, [])
 
 

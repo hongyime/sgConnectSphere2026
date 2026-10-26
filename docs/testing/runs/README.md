@@ -284,7 +284,7 @@ is needed.
 ## Human procedure
 
 1. Run your test command. Wait for it to finish.
-2. Note the current HEAD commit: `git rev-parse --short HEAD`.
+2. Note the current HEAD commit: `git rev-parse --short=7 HEAD`.
 3. Note the current time in Singapore (UTC+8).
 4. Create a file in `docs/testing/runs/` using the filename convention above.
 5. Copy the frontmatter template from `TEMPLATE.md` and fill in every required
@@ -311,7 +311,7 @@ After a test run that is used as evidence, create exactly one session record fil
   or the authenticated GitHub login for this repository. Use the correct login
   for the person on whose behalf the tests are being run. Contributor logins are
   listed in `.github/CODEOWNERS`.
-- Derive `commit` from `git rev-parse --short HEAD` at the moment the run
+- Derive `commit` from `git rev-parse --short=7 HEAD` at the moment the run
   finishes.
 - Derive `date` from the actual clock time (UTC+8) at the moment the run
   finishes. Never fabricate a date.
