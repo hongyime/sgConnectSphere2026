@@ -1,3 +1,4 @@
+import { publishEvent, attendeeEvents } from '../src/modules/attendeeVisibility/service.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -454,5 +455,101 @@ test('TC_E06S03_07 Completed and Cancelled Events preserve primary flags and aud
       assert.deepEqual((await f.q('SELECT id,status,is_primary FROM venue_bookings ORDER BY id')).rows,flags);
       assert.deepEqual((await f.q('SELECT id FROM audit_logs ORDER BY id')).rows,audit);
     }
+  } finally {await f.close();}
+});
+
+
+test('TC_E06S03_07 publication follows exactly the selected primary and switches atomically',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    const attendee=randomUUID();
+    await f.q("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic Attendee','attendee')",[attendee,`${attendee}@example.test`]);
+    await f.q('INSERT INTO event_registrations(event_id,attendee_id) VALUES($1,$2)',[f.event,attendee]);
+    const reader={...f.actor,id:attendee,role:'attendee' as const};
+    await publishEvent(f.q,f.actor,f.event);
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 0');
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    await publishEvent(f.q,f.actor,f.event); // Two Confirmed rows must not collide on publication key.
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,1);
+    await f.q("CREATE FUNCTION reject_primary_publication() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic publication failure'; END $$");
+    await f.q('CREATE TRIGGER reject_primary_publication BEFORE UPDATE ON event_publications FOR EACH ROW EXECUTE FUNCTION reject_primary_publication()');
+    const audits=(await f.q("SELECT id FROM audit_logs WHERE action='Primary Venue Changed'")).rows.length;
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),/Synthetic publication failure/);
+    assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE is_primary')).rows,[{id:second.body.booking.id}]);
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Primary Venue Changed'")).rows.length,audits);
+    await f.q('DROP TRIGGER reject_primary_publication ON event_publications');
+    await f.q('UPDATE venue_bookings SET requires_reconfirmation=true WHERE id=$1',[first.body.booking.id]);
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),{status:409});
+    await f.q('UPDATE venue_bookings SET requires_reconfirmation=false WHERE id=$1',[first.body.booking.id]);
+    await f.q("UPDATE events SET status='planning' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id});
+    assert.equal((await attendeeEvents(f.q,reader,f.event))[0].venue_name,'Synthetic Hall 1');
+    await f.q('DELETE FROM event_publications WHERE event_id=$1',[f.event]);
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,0);
+    await f.q('UPDATE venue_bookings SET is_primary=false WHERE event_id=$1',[f.event]);
+    await assert.rejects(publishEvent(f.q,f.actor,f.event),{status:403});
+    assert.equal((await f.q('SELECT * FROM event_publications')).rows.length,0);
+  } finally {await f.close();}
+});
+
+
+test('TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically',async()=>{
+  const f=await fixture();
+  try {
+    const first=await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const second=await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID());
+    await f.q("UPDATE venue_bookings SET status='confirmed',is_primary=(id=$1) WHERE event_id=$2",[first.body.booking.id,f.event]);
+    await f.q("UPDATE events SET status='confirmed',title='PRIVATE planning title' WHERE id=$1",[f.event]);
+    await publishEvent(f.q,f.actor,f.event);
+    await f.q("UPDATE event_publications SET name='Public notification event' WHERE event_id=$1",[f.event]);
+    const ids=Object.fromEntries(['newStaff','tech','registered','waitlisted','withdrawn','inactive','unrelated','thirdVenue','request'].map(k=>[k,randomUUID()]));
+    for(const [key,role] of Object.entries({newStaff:'venue_staff',tech:'technical_support_staff',registered:'attendee',waitlisted:'attendee',withdrawn:'attendee',inactive:'venue_staff',unrelated:'venue_staff'}))
+      await f.q("INSERT INTO users(id,email,password_hash,full_name,role,is_active) VALUES($1,$2,'unused','Synthetic routing user',$3,$4)",[ids[key],`${ids[key]}@example.test`,role,key!=='inactive']);
+    await f.q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,'Unrelated Venue','Campus',100,'08:00','22:00')",[ids.thirdVenue]);
+    for(const [venue,staff] of [[f.venues[0],f.staff],[f.venues[1],ids.newStaff],[f.venues[1],f.staff],[f.venues[0],ids.inactive],[ids.thirdVenue,ids.unrelated]])
+      await f.q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)',[venue,staff]);
+    await f.q("INSERT INTO tech_support_requests(id,event_id,support_range,requested_by) SELECT $1,id,event_range,$3 FROM events WHERE id=$2",[ids.request,f.event,f.actor.id]);
+    await f.q("INSERT INTO tech_staff_assignments(request_id,event_id,staff_id,assignment_range) SELECT $1,id,$3,event_range FROM events WHERE id=$2",[ids.request,f.event,ids.tech]);
+    for(const [key,status] of Object.entries({registered:'registered',waitlisted:'waitlisted',withdrawn:'withdrawn'}))
+      await f.q('INSERT INTO event_registrations(event_id,attendee_id,status) VALUES($1,$2,$3)',[f.event,ids[key],status]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    const notices=()=>f.q("SELECT n.id,n.user_id,n.message,d.id AS delivery_id FROM notifications n JOIN notification_deliveries d ON d.notification_id=n.id WHERE n.event_id=$1 AND n.message LIKE '%Event venue changed.%'",[f.event]);
+    const rows=(await notices()).rows;
+    assert.deepEqual(new Set(rows.map(r=>r.user_id)),new Set([f.organiser,f.staff,ids.newStaff,ids.tech,ids.registered,ids.waitlisted]));
+    assert.equal(rows.length,6); // Shared old/new staff member deduplicated; actor, inactive, withdrawn and stranger excluded.
+    for(const row of rows.filter(r=>[ids.registered,ids.waitlisted].includes(r.user_id))){
+      assert.ok(row.message.startsWith('Public notification event:'));assert.ok(!row.message.includes('PRIVATE'));
+    }
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await notices()).rows.length,6); // Replay emits nothing.
+    const snapshot=(await f.q('SELECT * FROM event_publications WHERE event_id=$1',[f.event])).rows;
+    const audits=(await f.q("SELECT id FROM audit_logs WHERE event_id=$1 AND action='Primary Venue Changed'",[f.event])).rows;
+    await f.q("CREATE FUNCTION fail_primary_outbox() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic primary outbox failure'; END $$");
+    await f.q('CREATE TRIGGER fail_primary_outbox BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION fail_primary_outbox()');
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id}),/Synthetic primary outbox failure/);
+    assert.deepEqual((await f.q('SELECT * FROM event_publications WHERE event_id=$1',[f.event])).rows,snapshot);
+    assert.deepEqual((await f.q('SELECT id FROM venue_bookings WHERE event_id=$1 AND is_primary',[f.event])).rows,[{id:second.body.booking.id}]);
+    assert.deepEqual((await f.q("SELECT id FROM audit_logs WHERE event_id=$1 AND action='Primary Venue Changed'",[f.event])).rows,audits);
+    assert.equal((await notices()).rows.length,6);
+    await f.q('DROP TRIGGER fail_primary_outbox ON notification_deliveries');
+    const sameVenue=randomUUID();
+    await f.q("INSERT INTO venue_bookings(id,event_id,venue_id,booking_range,status) VALUES($1,$2,$3,'[2027-01-15T15:00:00+08,2027-01-15T16:00:00+08)','confirmed')",[sameVenue,f.event,f.venues[1]]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:sameVenue});
+    assert.equal((await notices()).rows.length,6); // Different booking, same venue is not a venue change.
+    await f.q("UPDATE events SET status='planning' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:first.body.booking.id});
+    assert.equal((await notices()).rows.length,6);
+    await f.q('DELETE FROM event_publications WHERE event_id=$1',[f.event]);
+    await f.q("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    await setPrimaryBooking(f.pool,f.actor,{booking_id:second.body.booking.id});
+    assert.equal((await notices()).rows.length,6);
   } finally {await f.close();}
 });
