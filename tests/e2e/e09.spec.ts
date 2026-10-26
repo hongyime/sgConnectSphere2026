@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { fakeRegistrationBackend, registrationForm, registrationEvent } from './helpers/registrationBackend';
+import {
+  fakeOrganiserRegistrations, fakeRegistrationBackend, organiserRegistrations, registrationEvent, registrationForm, registrationSessions,
+} from './helpers/registrationBackend';
 
 // E09 - 36 cases. Source: docs/testing/cases/E09.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -111,90 +113,130 @@ test.describe("E09-S02", () => {
 
   /**
    * TC_E09S02_03
-   * AC:      E09-S02 - Scenario 2 (Simultaneous final registration)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s event has exactly 1 place remaining
-   *
-   * Test data:
-   *   1 place remaining | 2 simultaneous attempts
-   *
+   * AC:      E09-S02 - Scenario 4 (Concurrent submissions do not overbook)
    * Expected result:
-   *   Exactly one of the two registrations succeeds; the other is told the event is full
+   *   At most one submission is confirmed; any submission exceeding either cap is retained as Pending for Organiser review
+   *
+   * Two real submissions racing for the last place need a real database and its
+   * locks, so this is proven in backend/tests/attendeeCapacity.integration.test.ts
+   * (and the manual run); a fake backend in the browser can't show it.
    */
-  test.fixme("TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Have attendee_g@example.com and attendee_h@example.com submit registration for the same event at the same moment
-    // 2. Check both outcomes
+  test.fixme("TC_E09S02_03 - Concurrent registration attempts should not exceed a Session or combined Event capacity", async ({ page }) => {
     void page;
   });
 
-  /**
-   * TC_E09S02_04
-   * AC:      E09-S02 - Scenario 3 (Full event offers the waiting list)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s event is full (5 of 5 places taken); the waiting list is enabled for this event
-   *
-   * Test data:
-   *   Event: full | Waiting list: enabled
-   *
-   * Expected result:
-   *   Registration is shown as closed, and the option to join the waiting list is offered
-   */
-  test.fixme("TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_i@example.com
-    // 2. Open the registration page for "Community Meetup"
-    void page;
+  test("TC_E09S02_04 - A full combined Event should offer its enabled Event-level waiting list", async ({ page }) => {
+    await fakeRegistrationBackend(page, { form: { json: registrationForm({
+      capacity: { eventFull: true, waitlistEnabled: true, fullSessionIds: ['s-a', 's-b'] },
+    }) } });
+    await page.goto('/attendee/register/EVT-TECH');
+    await expect(page.getByText('This event is full')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Join the waiting list' })).toHaveAttribute('href', '/attendee/waitlist/EVT-TECH');
+    // One Event-level list only; no per-Session waiting list (T-98, O-50).
+    await expect(page.getByRole('link', { name: /waiting list/i })).toHaveCount(1);
   });
 
-  /**
-   * TC_E09S02_06
-   * AC:      E09-S02 - Scenario 4 (VIP added beyond normal registration)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event EVT-2001 is Confirmed with Orchid Hall booked, venue capacity 200. Normal registration has closed at 199 registrations. Coordinator coord_a@connectsphere.com is signed in
-   *
-   * Test data:
-   *   Venue capacity: 200 - Current registrations: 199 - Added: 1
-   *
-   * Expected result:
-   *   The registration is created, total registrations reach 200, and the record is marked as a manual addition distinguishable from a normal registration
-   */
-  test.fixme("TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event EVT-2001
-    // 2. Select Add attendee manually
-    // 3. Enter attendee_v@example.com
-    // 4. Confirm the addition
-    void page;
+  test("TC_E09S02_06 - An Organiser may manually add an attendee only when both capacities have room", async ({ page }) => {
+    const posts = await fakeOrganiserRegistrations(page, { post: () => ({ status: 201, json: organiserRegistrations({
+      capacity: { capacity: 120, registered: 100 },
+      sessions: [{ ...registrationSessions[0], capacity: 80, registered: 80 }, { ...registrationSessions[1], capacity: 40, registered: 20 }],
+    }) }) });
+    await page.goto('/organiser/requests/EVT-2001/registrations');
+    await expect(page.getByText('99 of 120 taken')).toBeVisible();
+    await page.getByLabel("Attendee's account email").fill('attendee_v@example.com');
+    await page.getByRole('checkbox', { name: /Session B/ }).check();
+    await page.getByRole('button', { name: 'Add attendee' }).click();
+    await expect(page.getByText('attendee_v@example.com is registered and marked as a manual addition.')).toBeVisible();
+    await expect(page.getByText('100 of 120 taken')).toBeVisible();
+    expect(posts).toEqual([{ action: 'add', email: 'attendee_v@example.com', sessionIds: ['s-b'] }]);
   });
 
-  /**
-   * TC_E09S02_07
-   * AC:      E09-S02 - Scenario 5 (VIP blocked at venue capacity)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event EVT-2001 is Confirmed with Orchid Hall booked, venue capacity 200, and 200 registrations already recorded. Coordinator coord_a@connectsphere.com is signed in
-   *
-   * Test data:
-   *   Venue capacity: 200 - Current registrations: 200
-   *
-   * Expected result:
-   *   The addition is blocked with a message stating the booked venue capacity has been reached. No registration is created
-   */
-  test.fixme("TC_E09S02_07 - Verify that a manual VIP addition is blocked once total registrations equal venue capacity", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event EVT-2001
-    // 2. Select Add attendee manually
-    // 3. Enter attendee_w@example.com
-    // 4. Confirm the addition
-    void page;
+  test("TC_E09S02_07 - A manual addition should be blocked when either capacity is full", async ({ page }) => {
+    const refusal = `Can't add them. "Session A" is full (80 of 80 places).`;
+    await fakeOrganiserRegistrations(page, { post: () => ({ status: 409, json: { error: refusal } }) });
+    await page.goto('/organiser/requests/EVT-2001/registrations');
+    await page.getByLabel("Attendee's account email").fill('attendee_w@example.com');
+    await page.getByRole('checkbox', { name: /Session A/ }).check();
+    await page.getByRole('button', { name: 'Add attendee' }).click();
+    await expect(page.getByText(refusal)).toBeVisible();
+    await expect(page.getByText('99 of 120 taken')).toBeVisible();
+  });
+
+  test("TC_E09S02_08 - A registration should be confirmed up to the approved capacity of every selected Session", async ({ page }) => {
+    const posts = await fakeRegistrationBackend(page);
+    await page.goto('/attendee/register/EVT-TECH');
+    await page.getByRole('checkbox', { name: /Session A/ }).check();
+    await page.getByRole('button', { name: 'Confirm registration' }).click();
+    await expect(page.getByText("You're registered")).toBeVisible();
+    expect(posts).toEqual([{ sessionIds: ['s-a'] }]);
+  });
+
+  test("TC_E09S02_09 - A registration exceeding a selected Session capacity should remain Pending", async ({ page }) => {
+    await fakeRegistrationBackend(page, {
+      form: { json: registrationForm({ capacity: { eventFull: false, waitlistEnabled: true, fullSessionIds: ['s-a'] } }) },
+      post: request => ({ status: 201, json: {
+        registration: { id: 'r-1', status: 'pending', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: request.postDataJSON().sessionIds },
+        event: registrationEvent, sessions: [registrationSessions[0]],
+      } }),
+    });
+    await page.goto('/attendee/register/EVT-TECH');
+    await page.getByRole('checkbox', { name: /Session A/ }).check();
+    // No per-Session waiting list: the full Session goes to the Organiser instead (T-98).
+    await expect(page.getByRole('link', { name: /waiting list/i })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Send request for review' }).click();
+    await expect(page.getByText('Request sent for review')).toBeVisible();
+  });
+
+  test("TC_E09S02_10 - A registration exceeding combined Event capacity should remain Pending", async ({ page }) => {
+    await fakeRegistrationBackend(page, {
+      form: { json: registrationForm({ capacity: { eventFull: true, waitlistEnabled: false, fullSessionIds: [] } }) },
+      post: request => ({ status: 201, json: {
+        registration: { id: 'r-1', status: 'pending', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: request.postDataJSON().sessionIds },
+        event: registrationEvent, sessions: [registrationSessions[1]],
+      } }),
+    });
+    await page.goto('/attendee/register/EVT-TECH');
+    await expect(page.getByText('You can still send a registration request. The organiser reviews requests over capacity.')).toBeVisible();
+    await page.getByRole('checkbox', { name: /Session B/ }).check();
+    await page.getByRole('button', { name: 'Send request for review' }).click();
+    await expect(page.getByText('Request sent for review')).toBeVisible();
+  });
+
+  test("TC_E09S02_11 - An Organiser should approve a Pending request only if both capacity limits still allow it", async ({ page }) => {
+    const casey = { id: 'r-9', name: 'Casey Tan', email: 'attendee_c@example.com', requestedAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+    let view: unknown = organiserRegistrations({ pending: [{ ...casey, overCapacity: '"Session A" is full (80 of 80 places).' }] });
+    const roomy = organiserRegistrations({
+      sessions: [{ ...registrationSessions[0], capacity: 100, registered: 80 }, { ...registrationSessions[1], capacity: 40, registered: 19 }],
+      capacity: { capacity: 140, registered: 99 }, pending: [{ ...casey, overCapacity: null }],
+    });
+    const posts = await fakeOrganiserRegistrations(page, {
+      view: () => view,
+      post: () => ({ json: { ...roomy, capacity: { capacity: 140, registered: 100 }, pending: [] } }),
+    });
+    await page.goto('/organiser/requests/EVT-2001/registrations');
+    const row = page.getByRole('row', { name: /Casey Tan/ });
+    await expect(row).toContainText('"Session A" is full (80 of 80 places).');
+    await expect(row.getByRole('button', { name: 'Approve' })).toBeDisabled();
+
+    // After an arrangement change adds places to Session A, the request fits and approval succeeds.
+    view = roomy;
+    await page.reload();
+    await page.getByRole('row', { name: /Casey Tan/ }).getByRole('button', { name: 'Approve' }).click();
+    await expect(page.getByText('Casey Tan is now registered.')).toBeVisible();
+    await expect(page.getByText('100 of 140 taken')).toBeVisible();
+    expect(posts).toEqual([{ action: 'approve', registrationId: 'r-9' }]);
+  });
+
+  test("TC_E09S02_12 - Combined Event capacity should reflect confirmed Session layout capacities", async ({ page }) => {
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({
+      capacity: { capacity: 120, registered: 0 },
+      sessions: [{ ...registrationSessions[0], capacity: 80, registered: 0 }, { ...registrationSessions[1], capacity: 40, registered: 0 }],
+    }) });
+    await page.goto('/organiser/requests/EVT-2001/registrations');
+    await expect(page.getByText('0 of 120 taken')).toBeVisible();
+    const table = page.getByRole('table', { name: 'Places by Session' });
+    await expect(table.getByRole('row', { name: /Session A/ })).toContainText('0 of 80');
+    await expect(table.getByRole('row', { name: /Session B/ })).toContainText('0 of 40');
   });
 
 });

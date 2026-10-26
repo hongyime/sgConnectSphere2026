@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **236** (62.4%)
+- Automated (explicit TC_ID in an active test title): **244** (64.6%)
   - Real-database (`.integration.test` / `.db.test`): **36**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **199**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **106** (28.0%)
-- No test yet (no test file mentions the TC_ID): **36** (9.5%)
+  - Live-assertion (other active tests): **207**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **103** (27.2%)
+- No test yet (no test file mentions the TC_ID): **31** (8.2%)
 
 ## Coverage by epic
 
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 11 | 24 | 9 |
+| E09 | 44 | 19 | 21 | 4 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **236** | **106** | **36** |
+| **Total** | **378** | **244** | **103** | **31** |
 
 ## Case-by-case status
 
@@ -363,15 +363,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_07 — one submission creates one Event registration with both Sessions; frontend/src/features/attendee/EventRegistration.test.tsx: |
 | `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ❌ none | — |
 | `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ❌ none | — |
-| `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
-| `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
-| `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
-| `TC_E09S02_07` | E09-S02 | A manual addition should be blocked when either capacity is full | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_07 - Verify that a manual VIP addition is blocked once total registrations equal venue capacity |
-| `TC_E09S02_08` | E09-S02 | A registration should be confirmed up to the approved capacity of every selected | ❌ none | — |
-| `TC_E09S02_09` | E09-S02 | A registration exceeding a selected Session capacity should remain Pending | ❌ none | — |
-| `TC_E09S02_10` | E09-S02 | A registration exceeding combined Event capacity should remain Pending | ❌ none | — |
-| `TC_E09S02_11` | E09-S02 | An Organiser should approve a Pending request only if both capacity limits still | ❌ none | — |
-| `TC_E09S02_12` | E09-S02 | Combined Event capacity should reflect confirmed Session layout capacities | ❌ none | — |
+| `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Concurrent registration attempts should not exceed a Session or combined Event capacity |
+| `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_04 - A full combined Event should offer its enabled Event-level waiting list; frontend/src/features/attendee/EventRegistration.test.tsx: TC_E09S02_ |
+| `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations adds an attendee manually within both limits (TC_E09S02_06); tests/e2e/e09.spec.ts: TC_E09S02_06 - An Organiser may manu |
+| `TC_E09S02_07` | E09-S02 | A manual addition should be blocked when either capacity is full | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations blocks a manual addition at either limit and other refusals (TC_E09S02_07); tests/e2e/e09.spec.ts: TC_E09S02_07 - A manu |
+| `TC_E09S02_08` | E09-S02 | A registration should be confirmed up to the approved capacity of every selected | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent confirms the last place in a Session and the Event (TC_E09S02_08); tests/e2e/e09.spec.ts: TC_E09S02_08 - A registration |
+| `TC_E09S02_09` | E09-S02 | A registration exceeding a selected Session capacity should remain Pending | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent keeps an over-capacity request Pending with its own notice (TC_E09S02_09, _10); tests/e2e/e09.spec.ts: TC_E09S02_09 - A |
+| `TC_E09S02_10` | E09-S02 | A registration exceeding combined Event capacity should remain Pending | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_10 - A registration exceeding combined Event capacity should remain Pending |
+| `TC_E09S02_11` | E09-S02 | An Organiser should approve a Pending request only if both capacity limits still | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations approves a Pending request only while both limits allow it (TC_E09S02_11); tests/e2e/e09.spec.ts: TC_E09S02_11 - An Orga |
+| `TC_E09S02_12` | E09-S02 | Combined Event capacity should reflect confirmed Session layout capacities | ✅ active | backend/tests/attendeeCapacity.test.ts: eventCapacity sums Session capacities and counts registered places only (TC_E09S02_12); tests/e2e/e09.spec.ts: TC_E09S02_12 - Combined Event |
 | `TC_E09S03_01` | E09-S03 | Verify that an Event Organiser should be able to set the registration opening an | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_01 - Verify that an Event Organiser should be able to set the registration opening and closing dates for an event |
 | `TC_E09S03_02` | E09-S03 | Verify that an Event Organiser should be able to set a withdrawal deadline for a | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event |
 | `TC_E09S03_03` | E09-S03 | Verify that an Attendee viewing an event before its registration opening date sh | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date s |
@@ -484,6 +484,20 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 The following tests are actively running (not `test.fixme`) but their titles do not embed a TC_ID. They still contribute to Q1/Q2 coverage; they just don't show up in the counts above. Add a TC_XX reference to the test title if you want the auditor to pick it up next run. Blank sections mean every active test in that file already has a TC_ID.
 
+### `backend/tests/attendeeCapacity.integration.test.ts`
+
+- E09-S02: Session and Event capacity, Pending requests and manual additions on real PostgreSQL
+
+### `backend/tests/attendeeCapacity.test.ts`
+
+- overCapacity names each full chosen Session, then a full Event, else null
+- getEventRegistrations shows capacity per Session and why each Pending request does not fit
+- getEventRegistrations is for the Event
+- parseAction accepts approve, reject and add, and names what is wrong otherwise
+- manageRegistrations rejects a Pending request without a capacity check
+- manageRegistrations refuses unknown, decided and unconfirmed cases
+- manageRegistrations maps a busy account and a lost unique race, and rethrows other failures
+
 ### `backend/tests/attendeeRegistration.integration.test.ts`
 
 - E09-S01: register once for a Confirmed Event, selecting Sessions, on real PostgreSQL
@@ -499,6 +513,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registerForEvent names missing account details and refuses inactive accounts (Scenario 3)
 - registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
 - registerForEvent maps a lost unique race, a busy account and rethrows other failures
+- getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)
 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
@@ -1142,6 +1157,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the server’s missing-details refusal is shown when the form had none missing
 - an existing registration, a closed window and other refusals are shown before or after submitting
 - leaving the form while registering drops the late reply
+- a full event with its waiting list off offers only a request for review, on the event page too
+- a Pending request is described as waiting for the organiser, on the event page and the form
 
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 
@@ -1280,6 +1297,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/organiser/ConfirmedArrangements.test.tsx`
 
 - SCRUM-60 fix (a) - equipment recorded as none required reads
+
+### `frontend/src/features/organiser/EventRegistrations.test.tsx`
+
+- the server refusing an approval is shown and the list is left as it was
+- declining asks once more, can be kept, and then declines the request
+- a failed decline keeps the confirm step open
+- an unconfirmed event, an empty list and a load failure are each explained
+- leaving the page while an approval is saving drops the late reply
 
 ### `frontend/src/features/organiser/Organiser.test.tsx`
 

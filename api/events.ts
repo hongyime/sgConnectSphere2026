@@ -35,6 +35,8 @@ import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '..
 // cover POST/PATCH/DELETE and the GET-mine branch. One auth mechanism now.
 
 import { sendJson } from '../backend/src/http.js';
+import { isAllowedOrigin } from '../backend/src/config.js';
+import { getEventRegistrations, manageRegistrations } from '../backend/src/modules/attendeeRegistration/organiser.js';
 import { getDatabasePool } from '../backend/src/database/client.js';
 import {
   getAssignedEvent,
@@ -90,6 +92,11 @@ import type { VercelRequest, VercelResponse } from '../backend/src/vercel.js';
 const repository = new PostgresEventLifecycleRepository();
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  const registrations = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (registrations.get('registrations') === '1' && (request.method === 'GET' || request.method === 'POST')) {
+    await handleRegistrations(request, response, registrations.get('id') || '');
+    return;
+  }
   if (request.method === 'GET') {
     await handleGet(request, response);
     return;
@@ -154,6 +161,20 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   response.setHeader('allow', 'GET, POST, PATCH, DELETE');
   sendJson(response, 405, { error: 'method_not_allowed' });
+}
+
+// E09-S02: the Organiser's capacity view, Pending decisions and manual additions.
+//   GET  /api/events?registrations=1&id=<event id or code>
+//   POST /api/events?registrations=1&id=  { action: 'approve' | 'reject', registrationId } | { action: 'add', email, sessionIds }
+async function handleRegistrations(request: VercelRequest, response: VercelResponse, id: string) {
+  if (request.method === 'GET') {
+    await respond(response, async () => getEventRegistrations(query, await currentUser(request), id));
+    return;
+  }
+  await respondWithResult(response, async () => {
+    if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+    return manageRegistrations(getDatabasePool(), await currentUser(request), id, request.body);
+  });
 }
 
 async function handleInformationPatch(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {

@@ -215,3 +215,7 @@
   color: var(--red);
 }
 .organiser-cancelled-banner p { margin: 0; font-size: 0.95rem; color: var(--ink); }
+
+/* E09-S02 registrations: Approve/Decline sit side by side and wrap on phones. */
+.registration-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+.registration-reason { color: var(--amber-ink); font-size: 0.9rem; }
