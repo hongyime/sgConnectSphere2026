@@ -237,6 +237,61 @@ test('Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, wh
   assert.match(again[0]!.message, /still needs your attention/);
 }));
 
+// #348 review: one booking covered by two separate unavailabilities stays
+// Conflicting until both are gone, whichever is lifted first. The booking
+// remembers only the first block, so lifting that one hands it to the other.
+async function twoBlocksOverOneBooking(f: Fixture) {
+  const workshop = await f.book('Long Workshop', f.ids.coordinator1, 'confirmed', 'confirmed', '2027-01-26', '09:00', '17:00');
+  const blockA = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-26T10:00:00+08:00', ends_at: '2027-01-26T11:00:00+08:00', reason_category: 'maintenance', reason: 'Fire door check',
+  });
+  const blockB = await createVenueBlock(f.pool, f.staff, f.ids.venue, {
+    starts_at: '2027-01-26T13:00:00+08:00', ends_at: '2027-01-26T14:00:00+08:00', reason_category: 'equipment_failure', reason: 'Projector swap',
+  });
+  assert.equal(blockA.status, 201);
+  assert.equal(blockB.status, 201);
+  const a = (blockA.body as EditBody).block.id;
+  const b = (blockB.body as EditBody).block.id;
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: a });
+  return { workshop, a, b };
+}
+
+test('#348 review: lifting the first of two unavailabilities over a booking keeps it Conflicting under the second, and lifting the second restores it', () => withFixture(async f => {
+  const { workshop, a, b } = await twoBlocksOverOneBooking(f);
+
+  const firstLift = await liftVenueBlock(f.pool, f.staff, f.ids.venue, a);
+  assert.equal(firstLift.status, 200);
+  assert.deepEqual((firstLift.body as LiftBody).restoredEvents, []);
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: b });
+
+  const secondLift = await liftVenueBlock(f.pool, f.staff, f.ids.venue, b);
+  assert.deepEqual((secondLift.body as LiftBody).restoredEvents.map(event => event.title), ['Long Workshop']);
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'confirmed', status_before_conflict: null, conflict_block_id: null });
+}));
+
+test('#348 review: lifting the second of two unavailabilities over a booking leaves it Conflicting, and lifting the first restores it', () => withFixture(async f => {
+  const { workshop, a, b } = await twoBlocksOverOneBooking(f);
+
+  const firstLift = await liftVenueBlock(f.pool, f.staff, f.ids.venue, b);
+  assert.deepEqual((firstLift.body as LiftBody).restoredEvents, []);
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: a });
+
+  const secondLift = await liftVenueBlock(f.pool, f.staff, f.ids.venue, a);
+  assert.deepEqual((secondLift.body as LiftBody).restoredEvents.map(event => event.title), ['Long Workshop']);
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'confirmed', status_before_conflict: null, conflict_block_id: null });
+}));
+
+test('#348 review: shortening the first of two unavailabilities off a booking hands it to the second', () => withFixture(async f => {
+  const { workshop, a, b } = await twoBlocksOverOneBooking(f);
+
+  const shorter = await editVenueBlock(f.pool, f.staff, f.ids.venue, a, {
+    starts_at: '2027-01-26T06:00:00+08:00', ends_at: '2027-01-26T07:00:00+08:00', reason_category: 'maintenance', reason: 'Fire door check',
+  });
+  assert.equal(shorter.status, 200);
+  assert.deepEqual((shorter.body as EditBody).restoredEvents, []);
+  assert.deepEqual(await f.booking(workshop.bookingId), { status: 'conflicting', status_before_conflict: 'confirmed', conflict_block_id: b });
+}));
+
 const coordinatorUser = (id: string): AuthenticatedUser => ({ id, email: `${id}@example.test`, role: 'event_coordinator', isActive: true, failedLoginCount: 0 });
 const queryOf = (f: Fixture) => ((sql: string, values?: unknown[]) => f.pool.query(sql, values)) as never;
 

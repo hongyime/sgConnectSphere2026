@@ -276,6 +276,21 @@ test('Scenarios 6 and 7: lifting keeps the block, restores what it flagged and t
   assert.equal(new Set(ids).size, ids.length);
 });
 
+test('#348 review: a booking another unavailability still covers is handed to it, not restored', async () => {
+  const db = fakeDatabase([
+    ...venueAndBlock,
+    ['vb.conflict_block_id::text = $1', [flagged('bk-covered', 'workshop', COORD_A), flagged('bk-free', 'dinner', COORD_B)]],
+    ['UPDATE venue_blocks SET lifted_at', [{ lifted_at: NOW }]],
+    ['WITH other AS', (values) => (values?.[0] === 'bk-covered' ? [{}] : [])],
+  ]);
+  const result = await liftVenueBlock(db.pool, staff, VENUE, BLOCK);
+  const body = result.body as { restoredEvents: Array<Record<string, unknown>> };
+  assert.deepEqual(body.restoredEvents.map(event => event.title), ['dinner']);
+  assert.deepEqual(db.valuesOf('WITH other AS'), [['bk-covered', BLOCK], ['bk-free', BLOCK]]);
+  assert.deepEqual(db.valuesOf('status_before_conflict = NULL').map(values => values?.[0]), ['bk-free']);
+  assert.match(notifications(db).find(notice => notice.user === COORD_A)!.message, /still needs your attention/);
+});
+
 test('E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found', async () => {
   const db = fakeDatabase([...venueAndBlock, ['UPDATE venue_blocks SET lifted_at', [{ lifted_at: NOW }]]]);
   const result = await removeVenueBlock(db.pool, staff, VENUE, BLOCK);
