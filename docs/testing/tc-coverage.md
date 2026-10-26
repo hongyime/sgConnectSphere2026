@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **240** (63.5%)
+- Automated (explicit TC_ID in an active test title): **242** (64.0%)
   - Real-database (`.integration.test` / `.db.test`): **35**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **204**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **103** (27.2%)
+  - Live-assertion (other active tests): **206**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **101** (26.7%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 8 | 28 | 8 |
+| E09 | 44 | 10 | 26 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
 | E11 | 15 | 12 | 3 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **240** | **103** | **35** |
+| **Total** | **378** | **242** | **101** | **35** |
 
 ## Case-by-case status
 
@@ -354,11 +354,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_01 — event discovery lists published events with capacity |
+| `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent creates one registration with the selected Sessions and a confirmation (TC_E09S01_01, _07); tests/e2e/attendee-registra |
 | `TC_E09S01_02` | E09-S01 | [RETIRED — T-79 restores Sessions under one Event; selecting Sessions is covered | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
 | `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
-| `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submitting registration with a required field empty should block registration and identify the missing fields |
-| `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_05 - Verify that attempting to register for an event that is not Confirmed should be refused |
+| `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ✅ active | backend/tests/attendeeRegistration.test.ts: missingDetails names every blank or missing account detail (TC_E09S01_04, T-32); tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submi |
+| `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ✅ active | backend/tests/attendeeRegistration.test.ts: getRegistrationForm refuses unconfirmed, unknown and registration-free events (TC_E09S01_05); tests/e2e/e09.spec.ts: TC_E09S01_05 - Veri |
 | `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue |
 | `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ❌ none | — |
 | `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit |
@@ -483,6 +483,22 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 ## Active tests that cover behaviour without an explicit TC reference
 
 The following tests are actively running (not `test.fixme`) but their titles do not embed a TC_ID. They still contribute to Q1/Q2 coverage; they just don't show up in the counts above. Add a TC_XX reference to the test title if you want the auditor to pick it up next run. Blank sections mean every active test in that file already has a TC_ID.
+
+### `backend/tests/attendeeRegistration.integration.test.ts`
+
+- E09-S01: register once for a Confirmed Event, selecting Sessions, on real PostgreSQL
+
+### `backend/tests/attendeeRegistration.test.ts`
+
+- registrationState: both window ends are inclusive and unset ends are unbounded
+- parseSessionIds accepts one to fifty Session ids, de-duplicates them and says why it refuses
+- listOpenEvents returns public fields and the signed-in Attendee registration status only
+- getRegistrationForm shows Sessions with their own venues, account details and any active registration
+- registerForEvent refuses before touching the database when the body or role is wrong
+- registerForEvent refuses unconfirmed events and closed or not-yet-open windows (Scenario 4, E09-S03)
+- registerForEvent names missing account details and refuses inactive accounts (Scenario 3)
+- registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
+- registerForEvent maps a lost unique race, a busy account and rethrows other failures
 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
@@ -763,11 +779,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - the migration selector is optional and accepts one exact available filename
 - the migration selector rejects malformed arguments and unknown or path-like filenames
+- guarded migration sessions pin and verify the public search path
 - the default selection returns every pending file in filename order
 - an explicit selection returns only that pending migration
 - an explicit selection already in the ledger returns an empty list
 - an explicit filename outside the migration directory is rejected
 - the runner applies only the selected migration and records only that filename
+- guarded migration runner requires an existing ledger and never creates one
+- guarded migration runner refuses a selection that is not the next pending migration
+- guarded migration runner refuses to start when the advisory lock is held
+- guarded migration runner releases the advisory lock when a migration fails
+- guarded migration runner rejects an already-applied selected migration
 - the runner preserves all-pending behavior without a selector
 - an already-applied selected migration reports a no-op without opening a transaction
 - an unknown selected filename is rejected before any database query
@@ -805,6 +827,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - ADDITIONAL_ALLOWED_ORIGINS accepts comma-separated local dev hosts and ignores blanks
 - the allowed set deduplicates identical origins from multiple env vars
 - does not accept an origin that only matches a superstring of an allowed value
+
+### `backend/tests/productionMigrationGuard.test.ts`
+
+- production URL guard accepts the configured PostgreSQL target and rejects other targets
+- guarded database config ignores URL parameters and forces verified TLS
+- precheck accepts only the next pending migration in repository order
+- postcheck requires only the selected migration to be newly recorded
 
 ### `backend/tests/profile.integration.test.ts`
 
