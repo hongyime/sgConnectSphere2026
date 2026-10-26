@@ -92,18 +92,26 @@ test('E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable f
   } finally { await f.close(); }
 });
 
-test('E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking', async () => {
+// TC_E05S04_02's refusal is superseded by E05-S06 (T-67, TC_E05S06_02): the
+// block now saves and the confirmed booking becomes Conflicting, not released.
+test('E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it', async () => {
   const f = await fixture();
   try {
-    await f.book('Charity Run', 'confirmed', '2027-01-15', '2027-01-15');
+    const eventId = await f.book('Charity Run', 'confirmed', '2027-01-15', '2027-01-15');
+    await f.pool.query(`UPDATE events SET status = 'confirmed' WHERE id = $1`, [eventId]);
     const result = await createVenueBlock(f.pool, f.staff, f.ids.venue,
       { from: '2027-01-14', to: '2027-01-16', reason: 'Flooring replacement' });
-    assert.equal(result.status, 409);
-    const body = result.body as { error: string; conflictingBookings: Array<{ eventCode: string; title: string }> };
-    assert.equal(body.error, 'booking_conflict');
-    assert.deepEqual(body.conflictingBookings.map(booking => booking.title), ['Charity Run']);
-    const saved = await f.pool.query(`SELECT count(*)::int AS count FROM venue_blocks WHERE venue_id = $1`, [f.ids.venue]);
-    assert.equal(saved.rows[0].count, 0, 'the block must not take effect until the conflict is resolved');
+    assert.equal(result.status, 201);
+    const body = result.body as { affectedEvents: Array<{ title: string; returnedToPlanning: boolean; coordinatorNotified: boolean }> };
+    assert.deepEqual(body.affectedEvents.map(({ title, returnedToPlanning, coordinatorNotified }) => ({ title, returnedToPlanning, coordinatorNotified })),
+      [{ title: 'Charity Run', returnedToPlanning: true, coordinatorNotified: true }]);
+    const bookings = await f.pool.query(`SELECT status::text, status_before_conflict::text FROM venue_bookings WHERE venue_id = $1`, [f.ids.venue]);
+    assert.deepEqual(bookings.rows, [{ status: 'conflicting', status_before_conflict: 'confirmed' }]);
+    // T-81: back to Planning, not cancelled. C-121: only the Coordinator is told.
+    const event = await f.pool.query(`SELECT status::text FROM events WHERE id = $1`, [eventId]);
+    assert.equal(event.rows[0].status, 'planning');
+    const recipients = await f.pool.query(`SELECT user_id FROM notifications WHERE event_id = $1`, [eventId]);
+    assert.deepEqual(recipients.rows.map(row => row.user_id), [f.ids.coordinator]);
   } finally { await f.close(); }
 });
 
@@ -119,8 +127,11 @@ test('E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies it
       FROM notifications n LEFT JOIN notification_deliveries d ON d.notification_id = n.id WHERE n.event_id = $1`, [eventId]);
     assert.equal(messages.rows.length, 1);
     assert.equal(messages.rows[0].user_id, f.ids.coordinator);
-    assert.equal(messages.rows[0].title, 'Venue blocked');
-    assert.match(messages.rows[0].message, /Riverside Hall is blocked from 2027-01-20 to 2027-01-25 \(Renovation\)/);
+    // E05-S06 Scenario 4 wording: the whole-day form is read as maintenance
+    // with its reason as the note.
+    assert.equal(messages.rows[0].title, 'Venue unavailable');
+    assert.match(messages.rows[0].message, /Riverside Hall is unavailable 20 Jan 2027, 12:00 am to 26 Jan 2027, 12:00 am \(Maintenance: Renovation\)/);
+    assert.match(messages.rows[0].message, /Alternative arrangements are required\./);
     assert.ok(messages.rows[0].delivery_id, 'an email delivery job is queued with the in-app notification');
   } finally { await f.close(); }
 });

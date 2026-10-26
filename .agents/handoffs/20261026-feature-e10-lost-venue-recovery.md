@@ -23,6 +23,18 @@ The original CI fixture repair (2e7b5803) preserves pre-migration rows and the 0
 
 ## Still pending
 
-E05-S06 application PRs #348/#349 own detection and Confirmed-to-Planning. Recovery tests start with a Conflicting fixture; they do not prove that trigger or the combined lift interaction. Ji Ning will integrate dependencies, fix any findings and run human TC_E10S05_01-04 with hand-taken screenshots in a separate follow-up PR. Product Owner or documented delegate acceptance is needed before story Done. Do not auto-close parent/subtasks from this implementation PR.
+E05-S06 backend PR #348 is now merged in main fe9c5484 and included by the 27 October conflict resolution; #349 frontend integration and the combined recovery/lift checks remain follow-up work. E05-S06 owns detection and Confirmed-to-Planning. Recovery tests start with a Conflicting fixture; they do not prove that trigger or the combined lift interaction. Ji Ning will integrate dependencies, fix any findings and run human TC_E10S05_01-04 with hand-taken screenshots in a separate follow-up PR. Product Owner or documented delegate acceptance is needed before story Done. Do not auto-close parent/subtasks from this implementation PR.
 
-Jira estimate is restored to 3. Separate PR #356 proposes 5 with team/PO basis confirmation pending. Only reconcile Jira to 5 after that backlog PR merges. Earlier implementation records describe historical estimates and must not be rewritten.
+Estimate PR #356 merged as 9ff84453. Jira was subsequently reconciled from 3 to 5, recorded in PR #358. Earlier implementation records describe historical estimates and must not be rewritten.
+
+
+## 27 October merge conflict resolution
+
+Merged main fe9c5484 (E05-S06 backend #348) into recovery head 51224aed. Resolved backend/package.json by retaining both recovery and unavailability selectors; retained both formatSgt and confirmLostVenueReplacement imports; reader emits both conflict-detail alias conventions without duplicating timestamps; legacy fixture retains all ordered migrations and backfill assertions; regenerated the coverage inventory (246 automated / 378 cases).
+
+Initial combined DB run exposed the legacy reader's concurrent extension-creation race. Reused ensureTestExtensions before BEGIN and reran on a fresh disposable database: 89 passed, zero failures/skips. Backend units 520 passed, venue UI 121 passed across 15 files, both typechecks passed. New immutable records:
+- docs/testing/runs/20261027-001457-jininggg-backend-db.md
+- docs/testing/runs/20261027-001457-jininggg-backend-unit.md
+- docs/testing/runs/20261027-001457-jininggg-frontend-vitest.md
+
+Repository hygiene/record checks passed; the same 3 failures and 11 errors remain in 163 Windows tooling tests. Record: docs/testing/runs/20261027-001555-jininggg-tooling.md. New-head CI pending. No full E05-S06-to-recovery or lift integration acceptance is claimed. Main's restoreFlagged checks direct active replacements; the rejected retry-chain/lift interaction specifically remains to verify in the planned integration follow-up. Preserve implementation-only scope and all earlier immutable evidence. Root staged notes untouched.

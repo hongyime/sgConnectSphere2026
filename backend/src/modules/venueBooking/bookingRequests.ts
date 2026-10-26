@@ -24,6 +24,7 @@ export async function listBookingRequests(query: Query, user: AuthenticatedUser 
   const bookings = (await query(`SELECT b.id, b.venue_id, v.name AS venue_name, v.location,
     b.status, lower(b.booking_range) AS starts_at, upper(b.booking_range) AS ends_at,
     b.conflict_block_id,b.status_before_conflict,block.reason_category AS conflict_category,block.reason AS conflict_reason,
+    block.reason_category AS conflict_reason_category,block.reason AS conflict_note,
     lower(block.block_range) AS conflict_starts_at,upper(block.block_range) AS conflict_ends_at,
     b.created_at, b.decision_reason, b.suggested_venue_id, suggested.name AS suggested_venue_name, b.replaces_booking_id,
     EXISTS(SELECT 1 FROM venue_bookings replacement WHERE replacement.replaces_booking_id=b.id AND replacement.status<>'released') AS has_replacement, b.purpose, b.headcount, b.is_primary, b.requires_reconfirmation, b.suitability_snapshot

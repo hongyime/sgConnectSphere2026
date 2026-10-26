@@ -177,6 +177,15 @@ test('compiled primary selection protects origin and requires a signed-in actor'
   }
 });
 
+test('compiled venue block history and lifted list require a signed-in actor (E05-S06, T-91)', () => {
+  const venue = '00000000-0000-4000-8000-000000000001';
+  for (const url of [`/api/venues?id=${venue}&blocks=1&history=${venue}`, `/api/venues?id=${venue}&blocks=1&lifted=1`]) {
+    const result = invoke('api/venues/index.js', 'GET', { url }, { APP_URL: 'https://app.example.test' });
+    assert.equal(result.status, 401);
+    assert.equal(result.body.error, 'Sign in to continue.');
+  }
+});
+
 // E08-S05 completion dispatch must authenticate before touching PostgreSQL.
 for (const method of ['GET','POST']) test(`completion ${method} refuses a missing session before database access`,()=>{
  const response=invoke('api/events.js',method,{url:'/api/events?completion=1&id=COMP-1'});

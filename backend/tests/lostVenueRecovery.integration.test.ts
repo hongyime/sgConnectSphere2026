@@ -39,6 +39,9 @@ test('TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publis
   try {
     const list=await listBookingRequests(f.q,f.actor,f.event);
     assert.equal(list.bookings[0].conflict_reason,'Roof unsafe');
+    assert.equal(list.bookings[0].conflict_note,'Roof unsafe');
+    assert.equal(list.bookings[0].conflict_category,'safety_concern');
+    assert.equal(list.bookings[0].conflict_reason_category,'safety_concern');
     await assert.rejects(cancelLostVenueBooking(f.pool,f.actor,{booking_id:f.lost}),{status:409});
     const submitted=await submitBooking(f.pool,f.actor,f.input,randomUUID());
     const replacement=submitted.body.booking.id;

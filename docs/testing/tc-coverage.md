@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **238** (63.0%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+- Automated (explicit TC_ID in an active test title): **246** (65.1%)
+  - Real-database (`.integration.test` / `.db.test`): **45**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **200**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **105** (27.8%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (25.7%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
@@ -22,7 +22,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 39 | 30 | 9 | 0 |
+| E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **238** | **105** | **35** |
+| **Total** | **378** | **246** | **97** | **35** |
 
 ## Case-by-case status
 
@@ -208,7 +208,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
 | `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
 | `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable for those dates; tests/e2e/e05.spec.ts: TC_E05S04_01 - Verif |
-| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
+| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; tests/e2e/e05.spec.ts: TC_E05S0 |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
 | `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail; tests/e2e/e05.spec.ts: TC_E05S05_01 — Verify th |
@@ -218,14 +218,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently; tests/e2e/e05.spec. |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private; backend/tes |
-| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked |
-| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events  |
-| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason |
-| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted |
-| `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bo |
-| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
-| `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted |
-| `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coord |
+| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_01: marking a free period unavailable with a reason category saves it and shows the period as Blocked; tests/e2e/e0 |
+| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; backend/tests/venueUnavailabili |
+| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period |
+| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted; tests/e2e/e05.spec.ts: TC |
+| `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_05: extending by one minute over a booking flags it, and ending at its start again restores it; tests/e2e/e05.spec. |
+| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_06: E05-S04; tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
+| `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_07: editing and lifting keep a history, the lifted block is kept, and its Coordinator is told on lift; tests/e2e/e0 |
+| `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_08: an unexpired tentative hold is flagged without being released, its Coordinator told, and restored on lift; test |
 
 ### E06
 
@@ -928,10 +928,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateBlockInput requires a reason (E05-S04 checklist: recorded reason)
 - validateBlockInput rejects malformed, impossible and reversed dates
 - validateBlockInput makes the reason optional only when shortening
+- validateUnavailabilityInput reads a timed, categorised period with a note
+- validateUnavailabilityInput leaves the end open when it is missing, null or empty, and the note optional
+- validateUnavailabilityInput reads the E05-S04 whole-day form as maintenance
+- validateUnavailabilityInput refuses a missing object, bad times, a reversed or zero-length period, an unknown category and a bad note
 - block changes require a signed-in Venue Staff member
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
-- createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window
+- createVenueBlock finds affected bookings on the raw advertised booking range, not the buffered window (T-80)
 
 ### `backend/tests/venueBookingDecisions.integration.test.ts`
 
@@ -974,6 +978,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection without a suggested venue says nothing about an alternative
 - a clash names a pending booking or a hold, with or without an event code
 - an approval over a maintenance block is blocked and names the block
+- an approval over an open-ended unavailability says it lasts until lifted (E05-S06, T-80)
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
@@ -1000,6 +1005,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - parseCalendarRange lists every Singapore day in an inclusive range
 - parseCalendarRange rejects missing, malformed, impossible, reversed and oversized ranges
 - an unassigned event is Unavailable to every Coordinator but visible to Venue Staff
+- a Conflicting booking shows inside the Blocked period with its unavailability category
 - Free periods skip overlapping bookings and blocks and stay within opening hours
 - a retired venue shows its bookings and blocks but no Free period
 - a day fully covered by a block has no Free period
@@ -1088,6 +1094,33 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - anonymous, wrong-role and inactive users cannot assess venues
 - missing identifiers and invalid event requirements are rejected
 - missing/draft event and missing/retired venue return not found
+
+### `backend/tests/venueUnavailability.integration.test.ts`
+
+- Scenario 5: removing the end of an unavailability flags bookings far in the future
+- Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
+- Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one
+- #348 review: lifting the first of two unavailabilities over a booking keeps it Conflicting under the second, and lifting the second restores it
+- #348 review: lifting the second of two unavailabilities over a booking leaves it Conflicting, and lifting the first restores it
+- #348 review: shortening the first of two unavailabilities off a booking hands it to the second
+- Scenario 6 with a primary booking: editing over it and lifting restore it Confirmed and still primary
+
+### `backend/tests/venueUnavailability.test.ts`
+
+- Scenarios 2 to 4: creating flags every overlapping booking and hold, returns only the Confirmed event to Planning and tells each Coordinator once
+- Scenarios 1 and 5: an open-ended unavailability without a note says
+- creating refuses invalid input before a transaction, an overlapping unavailability, and an unknown venue
+- a booking that appears after the first read is locked without waiting, and a busy event asks staff to try again
+- Scenarios 5 to 7: editing restores bookings it no longer covers, skips replaced ones, flags new ones and keeps history
+- editing needs a start, valid input and a free period, and does not hide other restore errors
+- E05-S04 shorten still only shortens, keeps the category and note, and now restores what it releases
+- Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
+- #348 review: a booking another unavailability still covers is handed to it, not restored
+- E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
+- the block list shows an open-ended block with no end and hides lifted ones in its query
+- Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only
+- Scenario 7: block history returns each create, edit and lift with the earlier and new period, category, note, actor and time
+- Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read
 
 ### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
 
@@ -1477,6 +1510,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loads the current month for the first venue
 - labels free, tentative, confirmed and blocked entries distinctly
 - shows a maintenance block with its reason and never as a booking
+- E05-S06 Scenario 1: a Blocked period shows its reason category before the note
+- E05-S06 Scenario 2: a Conflicting booking stays visible inside the Blocked period with its own label and the reason
+- E05-S06: the legend lists all six states, Conflicting included
+- E05-S06 Scenario 1 (T-80): an open-ended block, clipped by the server to the range, shows as Blocked on every day
 - shows an unavailable period without any event details
 - expands a permitted booking to show event, code, date and time
 - navigates to the next month and then to a custom range

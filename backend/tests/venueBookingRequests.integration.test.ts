@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
+import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
@@ -13,6 +14,9 @@ test('TC_E06S03_05: PostgreSQL request list isolates assigned events and preserv
   const client = new Client({ connectionString, connectionTimeoutMillis: 8000 });
   await client.connect();
   try {
+    // Prepare shared extensions before the transaction so parallel suites cannot
+    // race migration 0001's CREATE EXTENSION inside a transaction.
+    await ensureTestExtensions(client);
     await client.query('BEGIN');
     await client.query('SET LOCAL statement_timeout=15000');
     const schema = `booking_requests_${randomUUID().replaceAll('-', '')}`;

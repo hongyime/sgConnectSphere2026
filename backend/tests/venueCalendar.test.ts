@@ -149,6 +149,21 @@ test('an unassigned event is Unavailable to every Coordinator but visible to Ven
   assert.equal(staffEntry.event?.title, 'Unassigned');
 });
 
+// E05-S06 Scenario 2 / TC_E05S06_02: a booking an unavailability flagged stays
+// visible as Conflicting inside the Blocked period, with the block's category;
+// a Coordinator not assigned to it still sees only Unavailable.
+test('a Conflicting booking shows inside the Blocked period with its unavailability category', async () => {
+  const flagged = [{ ...booking('confirmed', '2026-11-13T09:00', '2026-11-13T12:00', 'Charity Run', 'coord-1'), status: 'conflicting', conflict_category: 'safety_concern' }];
+  const rows = { bookings: flagged, blocks: [{ ...blocks[0], reason_category: 'safety_concern' }] };
+  const calendar = await getVenueCalendar(calendarQuery(rows), coordinator, 'venue-1', '2026-11-13', '2026-11-13');
+  assert.deepEqual(calendar.entries.map(entry => [entry.kind, entry.state, entry.reasonCategory, entry.event?.title]), [
+    ['block', 'blocked', 'safety_concern', undefined],
+    ['booking', 'conflicting', 'safety_concern', 'Charity Run'],
+  ]);
+  const other = await getVenueCalendar(calendarQuery(rows), otherCoordinator, 'venue-1', '2026-11-13', '2026-11-13');
+  assert.deepEqual(other.entries.find(entry => entry.kind === 'booking'), { state: 'unavailable', kind: 'booking', start: '2026-11-13T01:00:00.000Z', end: '2026-11-13T04:00:00.000Z' });
+});
+
 test('Free periods skip overlapping bookings and blocks and stay within opening hours', async () => {
   const calendar = await getVenueCalendar(calendarQuery({
     bookings: [
