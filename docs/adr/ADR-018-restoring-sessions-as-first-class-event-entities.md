@@ -1,7 +1,7 @@
 # ADR-018 — Restore Sessions as first-class Event entities
 
 - **Status:** Accepted — team decision recorded 13 October 2026
-- **Related BDR:** C-62, C-107, T-48, T-79, T-85, O-10, O-50, O-51
+- **Related BDR:** C-62, C-107, T-48, T-79, T-85, T-98, T-99, O-10, O-50, O-51
 - **Supersedes:** the Release 1 retirement of Sessions in ADR-004 and ADR-005
 
 ### Context
@@ -26,9 +26,11 @@ foreign key.
 Event status and lifecycle, registration windows, and technical-support
 requests/assignments remain Event-level. An attendee has one active registration
 per Event and selects one or more Sessions in that registration. Per-Session
-and combined Event capacity are enforced as recorded in T-85. The per-Session
-waitlist behavior remains the explicit assumption O-50; copied transactional
-data remains the explicit assumption O-51.
+and combined Event capacity are enforced as recorded in T-85. T-98 closes O-50:
+the Event-level waitlist remains available for combined Event capacity, with no
+per-Session waitlist. T-99 closes O-51: copying an Event copies its requirements
+and Session structure, clears dates/times, and omits bookings, equipment
+reservations and registrations.
 
 ### Alternatives considered
 
