@@ -21,7 +21,7 @@ from typing import Any, Iterable
 
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / ".github" / "settings" / "pr-guardrails.json"
-REFERENCE_SUFFIXES = {".docx", ".pptx", ".xlsx"}
+REFERENCE_SUFFIXES = {".docx", ".pdf", ".pptx", ".xlsx"}
 
 
 def load_policy() -> dict[str, Any]:

@@ -21,6 +21,10 @@ class ReferenceArtifactTests(unittest.TestCase):
         self.assertEqual(len(errors), 1)
         self.assertIn("read-only", errors[0])
 
+    def test_modified_pdf_is_rejected(self):
+        changes = [("M", ["docs/bdr/customer-sources/briefing.pdf"])]
+        self.assertEqual(len(MODULE.reference_artifact_errors(changes)), 1)
+
     def test_renamed_reference_file_is_rejected(self):
         changes = [
             (

@@ -8,8 +8,8 @@ to `main` and its required checks are green there.
 
 ## Decision
 
-Professor-provided Word, Excel, and PowerPoint files are context inputs, not
-working files. Existing files under `docs/` with `.docx`, `.xlsx`, or `.pptx`
+Professor-provided Word, PDF, Excel, and PowerPoint files are context inputs, not
+working files. Existing files under `docs/` with `.docx`, `.pdf`, `.xlsx`, or `.pptx`
 extensions are immutable in pull requests. A new input may be added under a
 unique filename; an existing input must never be edited, deleted, or renamed.
 Team decisions and derived working content belong in the canonical Markdown
