@@ -17,7 +17,7 @@ test('E09-S03: the Organiser sets one Event-level registration period that Atten
   assert.ok(process.env.TEST_DATABASE_URL, 'Use a disposable TEST_DATABASE_URL');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL }); await db.connect();
   const schema = `period_${randomUUID().replaceAll('-', '')}`;
-  const [org, organiser, coordinator, attendee, meetup, hall] = Array.from({ length: 6 }, () => randomUUID());
+  const [org, organiser, coordinator, attendee, meetup, hall, seminar] = Array.from({ length: 7 }, () => randomUUID());
   let pool: Pool | undefined;
   try {
     await ensureTestExtensions(db);
@@ -32,17 +32,22 @@ test('E09-S03: the Organiser sets one Event-level registration period that Atten
       await db.query(`INSERT INTO users(id,client_org_id,email,password_hash,full_name,role,contact_number,email_verified_at)
         VALUES ($1,$2,$3,'x',$4,$5,'+65 8000 0000',now())`, [id, role === 'attendee' ? null : org, email, `Synthetic ${role}`, role]);
     }
-    await db.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,'Grand Auditorium','Level 1',200,'07:00','23:00')", [hall]);
-    // A Confirmed event 30 days out, taking registrations, with no period set yet.
+    // Each Session has its own venue, so the venue buffer guard has nothing to refuse.
+    for (const [id, name] of [[hall, 'Grand Auditorium'], [seminar, 'Seminar Room B']]) {
+      await db.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,$2,'Level 1',200,'07:00','23:00')", [id, name]);
+    }
+    // A Confirmed event 30 days out, 02:00-10:00Z (10 am-6 pm Singapore) whatever time the test runs,
+    // taking registrations, with no period set yet.
     await db.query(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,status,event_range,expected_attendance,registration_enabled)
       VALUES ($1,'EVT-PERIOD',$2,$3,$4,'Community Meetup','confirmed',
-        tstzrange(date_trunc('minute', now()) + interval '30 days', date_trunc('minute', now()) + interval '30 days 8 hours','[)'),50,true)`,
+        tstzrange(date_trunc('day', now()) + interval '30 days 2 hours', date_trunc('day', now()) + interval '30 days 10 hours','[)'),50,true)`,
     [meetup, organiser, coordinator, org]);
     const sessionA = (await db.query("UPDATE sessions SET title='Morning' WHERE event_id=$1 RETURNING id", [meetup])).rows[0].id as string;
     const sessionB = (await db.query(`INSERT INTO sessions(event_id,title,session_range,expected_attendance)
       SELECT id,'Afternoon',tstzrange(upper(event_range) - interval '3 hours', upper(event_range),'[)'),20 FROM events WHERE id=$1 RETURNING id`, [meetup])).rows[0].id as string;
     await db.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary)
-      SELECT $1,$2,s.id,s.session_range,'confirmed',s.id=$3 FROM sessions s WHERE s.event_id=$2`, [hall, meetup, sessionA]);
+      SELECT CASE WHEN s.id=$3 THEN $1::uuid ELSE $4::uuid END,$2,s.id,s.session_range,'confirmed',s.id=$3
+      FROM sessions s WHERE s.event_id=$2`, [hall, meetup, sessionA, seminar]);
     await db.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
       SELECT id,title,lower(event_range),upper(event_range),'Grand Auditorium','Level 1' FROM events WHERE id=$1`, [meetup]);
 
