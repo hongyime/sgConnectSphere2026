@@ -48,8 +48,8 @@ class PullRequestPolicyTests(unittest.TestCase):
         "max_open_prs": 10,
         "max_open_prs_per_author": 2,
         "max_changed_files": 40,
-        "max_additions": 1500,
-        "max_deletions": 1000,
+        "max_additions": 1800,
+        "max_deletions": 1500,
     }
 
     def test_old_pr_is_grandfathered(self):
@@ -77,8 +77,8 @@ class PullRequestPolicyTests(unittest.TestCase):
             "createdAt": "2026-10-27T12:00:00Z",
             "author": {"login": "agent-user"},
             "changedFiles": 41,
-            "additions": 1501,
-            "deletions": 1001,
+            "additions": 1801,
+            "deletions": 1501,
         }
         errors = MODULE.pr_size_errors(current, self.POLICY)
         self.assertEqual(len(errors), 3)

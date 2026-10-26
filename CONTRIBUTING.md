@@ -97,8 +97,8 @@ queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 
 The `pr-guardrails` check keeps integration work small and protects professor
-reference material. New PRs are limited to 40 changed files, 1,500 additions,
-and 1,000 deletions; the repository allows at most 10 open PRs and 2 open PRs
+reference material. New PRs are limited to 40 changed files, 1,800 additions,
+and 1,500 deletions; the repository allows at most 10 open PRs and 2 open PRs
 per author. Existing PRs opened before the policy date are grandfathered so the
 team can close or split them without making the whole backlog unmergeable.
 Existing `.docx`, `.pdf`, `.xlsx`, and `.pptx` files under `docs/` are read-only: a PR

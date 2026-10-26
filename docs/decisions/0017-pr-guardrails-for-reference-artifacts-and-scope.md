@@ -15,7 +15,7 @@ unique filename; an existing input must never be edited, deleted, or renamed.
 Team decisions and derived working content belong in the canonical Markdown
 files.
 
-New pull requests are limited to 40 changed files, 1,500 additions, and 1,000
+New pull requests are limited to 40 changed files, 1,800 additions, and 1,500
 deletions. The repository allows at most 10 open pull requests and at most 2
 open pull requests per author. Pull requests opened before 27 October 2026 are
 grandfathered for the size and open-count limits so the existing backlog can be

@@ -3,6 +3,6 @@
   "max_open_prs": 10,
   "max_open_prs_per_author": 2,
   "max_changed_files": 40,
-  "max_additions": 1500,
-  "max_deletions": 1000
+  "max_additions": 1800,
+  "max_deletions": 1500
 }
