@@ -39,6 +39,8 @@ stories, of which 47 are in Release 1.
 The [canonical shared DoD](../CONTRIBUTING.md#definition-of-done) records the
 PO-approved clarification and the instructor floor. PR #312 is retained only as
 proposal provenance, not as an independent policy source.
+The team confirmed on 26 October 2026 that the PO/delegate acceptance receipt
+is a team-wide Definition of Done gate, not a PR-specific preference.
 The instructor floor takes precedence over its proposed false-Done reopening
 exception; T-65's evidence-only recording scope is unchanged.
 

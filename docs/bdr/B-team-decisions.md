@@ -5,6 +5,8 @@
 The historical rows below are retained verbatim. The PO-approved clarification
 in the [canonical DoD](../../CONTRIBUTING.md#definition-of-done) is the team's
 current policy, subject to the instructor floor below.
+The team confirmed on 26 October 2026 that the PO/delegate acceptance receipt
+is a team-wide Definition of Done gate, not a PR-specific preference.
 Under the [6 October instructor rule](../plans/instructor-guidance-2026-10-06.md),
 T-74's reopening exception is superseded prospectively: any story marked Done
 stays Done, including mistaken completion. Record the gap, cause and prevention
