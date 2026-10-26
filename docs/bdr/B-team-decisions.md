@@ -1,5 +1,21 @@
 # B. Team decisions
 
+## Prospective precedence note, 21 October 2026
+
+The historical rows below are retained verbatim. The PO-approved clarification
+in the [canonical DoD](../../CONTRIBUTING.md#definition-of-done) is the team's
+current policy, subject to the instructor floor below.
+The team confirmed on 26 October 2026 that the PO/delegate acceptance receipt
+is a team-wide Definition of Done gate, not a PR-specific preference.
+Under the [6 October instructor rule](../plans/instructor-guidance-2026-10-06.md),
+T-74's reopening exception is superseded prospectively: any story marked Done
+stays Done, including mistaken completion. Record the gap, cause and prevention
+in a new linked follow-up classified under the current ticket rules, rather
+than reopening history. T-51's three-second target remains a team quality
+target outside the mandatory DoD; only its historical placement in the DoD is
+superseded. No performance target is retired and no public-deployment gate is
+added. T-65 and T-93 remain unchanged.
+
 Decisions the team took, each naming what it follows from. A decision listed here is ours, not the customer's, and can be revisited.
 
 | ID | Decision | Rationale | Affects | Follows from |
