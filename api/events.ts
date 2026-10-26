@@ -78,7 +78,7 @@ import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eve
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
-import { currentUser, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
+import { currentUser, databasePool, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
 import {
   AccessError,
   createEventComment,
@@ -173,7 +173,8 @@ async function handleRegistrations(request: VercelRequest, response: VercelRespo
   }
   await respondWithResult(response, async () => {
     if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
-    return manageRegistrations(getDatabasePool(), await currentUser(request), id, request.body);
+    // The same pool as Attendee registration (api/attendee/events.ts), so both lock the Event row alike.
+    return manageRegistrations(databasePool(), await currentUser(request), id, request.body);
   });
 }
 
