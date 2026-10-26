@@ -127,110 +127,110 @@ test.describe("E06-S06", () => {
 
   /**
    * TC_E06S06_01
-   * AC:      E06-S06 - Scenario 1 (Overlapping approval blocked)
+   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   "Riverside Hall" has a confirmed booking for "Charity Run" on 15/01/2027, 09:00-17:00. A second pending request for "Riverside Hall" on 15/01/2027, 14:00-18:00 exists for event "Product Expo 2026"
+   *   Orchid Hall had setup/turnaround 0 when confirmed Charity Run (09:00-11:00) and Pending Product Expo (11:00-13:00) were accepted; after setup changed to 30 minutes, both remain and only Pending Product Expo has buffer_conflict true
    *
    * Test data:
-   *   Existing confirmed booking: Charity Run, 15/01/2027 09:00-17:00 | Conflicting request: Product Expo 2026, 15/01/2027 14:00-18:00
+   *   Before: adjacent advertised intervals, both buffers 0 | After: setup 30 creates buffered overlap from 10:30-11:00
    *
    * Expected result:
-   *   Approval is blocked, and the message identifies the existing confirmed "Charity Run" booking as the conflict
+   *   Approval rechecks current buffers and is refused; Confirmed Charity Run remains unflagged and Pending Product Expo retains buffer_conflict true
    */
-  test.fixme("TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflicting booking identified", async ({ page }) => {
+  test.fixme("TC_E06S06_01 - T-100: Verify approval rechecks a confirmed booking after buffer growth", async ({ page }) => {
     // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Open the pending request for "Product Expo 2026"
-    // 3. Attempt to click "Approve"
+    // 1. Set Orchid Hall's setup and turnaround to 0; accept the two adjacent bookings.
+    // 2. Increase setup to 30; confirm both bookings stay present, Charity Run remains unflagged, and Product Expo has buffer_conflict true.
+    // 3. Attempt to approve Product Expo; verify the current conflict blocks approval.
     void page;
   });
 
   /**
    * TC_E06S06_02
-   * AC:      E06-S06 - Scenario 2 (Competing request flagged)
+   * AC:      E06-S06 - Scenario 2 (Later overlapping claim refused)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Two pending requests exist for "Riverside Hall" on 20/01/2027, both 09:00-12:00: Request A ("Tech Conference 2026") and Request B ("Product Expo 2026")
+   *   A Pending Charity Run claim (09:00-11:00) is active on Orchid Hall with 30-minute setup and 45-minute turnaround
    *
    * Test data:
-   *   Request A: Tech Conference 2026 (approved) | Request B: Product Expo 2026 (same venue, overlapping time)
+   *   Attempt a normal Product Expo request for 10:00-12:00 on the same venue
    *
    * Expected result:
-   *   Request B is now flagged as conflicting and cannot be approved until the conflict is resolved
+   *   The new overlapping request is refused while Charity Run remains active and unchanged
    */
-  test.fixme("TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting", async ({ page }) => {
+  test.fixme("TC_E06S06_02 - T-100: Verify a later overlapping request is refused while the first claim remains active", async ({ page }) => {
     // Steps from the specification:
-    // 1. Log in as venue_staff_1@connectsphere.com
-    // 2. Approve Request A ("Tech Conference 2026")
-    // 3. Open Request B ("Product Expo 2026")
+    // 1. Submit the first request and confirm it is accepted.
+    // 2. Submit a normal overlapping request for the same venue.
+    // 3. Verify refusal, explain the occupied buffered window without other event details, and confirm the first request is unchanged.
     void page;
   });
 
   /**
    * TC_E06S06_03
-   * AC:      E06-S06 - Scenario 3 (Simultaneous approval fails safely)
+   * AC:      E06-S06 - Scenario 3 (Concurrent claims fail safely)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Two pending requests exist for "Riverside Hall" on 25/01/2027, overlapping times. venue_staff_2@connectsphere.com approves one of them a moment before venue_staff_1@connectsphere.com processes the other
+   *   Orchid Hall has no active booking. Two Coordinators submit overlapping claims concurrently for separate Approved events
    *
    * Test data:
-   *   Request A approved by venue_staff_2@connectsphere.com just before venue_staff_1@connectsphere.com's attempt on Request B
+   *   Charity Run 09:00-11:00 and Product Expo 10:00-12:00 target Orchid Hall with 30/45-minute buffers
    *
    * Expected result:
-   *   venue_staff_1@connectsphere.com's approval attempt fails safely, with a message stating the venue has just been taken by another approval
+   *   Exactly one request is accepted; the loser receives 409 and creates no row, status change, notification or audit effect
    */
-  test.fixme("TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely and inform the user the venue has just been taken", async ({ page }) => {
+  test.fixme("TC_E06S06_03 - T-100: Verify concurrent overlapping new claims accept only one request", async ({ page }) => {
     // Steps from the specification:
-    // 1. As venue_staff_2@connectsphere.com, approve Request A for "Riverside Hall" on 25/01/2027
-    // 2. Immediately as venue_staff_1@connectsphere.com, attempt to approve the conflicting Request B for the same venue and overlapping time
+    // 1. Submit both requests in parallel transactions.
+    // 2. Verify one accepted response and one 409 response.
+    // 3. Verify only the winner's row and effects exist.
     void page;
   });
 
   /**
    * TC_E06S06_04
-   * AC:      E06-S06 - Scenario 1 (Overlapping approval blocked)
+   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Venue Orchid Hall has a confirmed booking for 2026-11-10 09:00:00 to 2026-11-10 11:00:00. A pending request exists for the same venue for 2026-11-10 11:00:00 to 2026-11-10 13:00:00
+   *   Orchid Hall has zero setup and turnaround; a Confirmed booking is 09:00-11:00 and an accepted Pending request is 11:00-13:00
    *
    * Test data:
-   *   Existing: 09:00-11:00 - Requested: 11:00-13:00 - Shared boundary: 11:00
+   *   Both buffers: 0 | Existing: 09:00-11:00 | Requested: 11:00-13:00 | Shared boundary: 11:00
    *
    * Expected result:
-   *   The approval succeeds and both bookings show as Confirmed on the venue calendar. Ranges are half-open, so touching at the boundary is not an overlap
+   *   Approval succeeds; half-open buffered intervals touching at the exact boundary do not overlap
    */
-  test.fixme("TC_E06S06_04 - Verify that a booking beginning exactly when another ends is not treated as a conflict", async ({ page }) => {
+  test.fixme("TC_E06S06_04 - T-100: Verify exact half-open buffered adjacency with zero buffers", async ({ page }) => {
     // Steps from the specification:
-    // 1. Sign in as Venue Staff
-    // 2. Open the pending request for 11:00-13:00
-    // 3. Approve it
+    // 1. Confirm both venue buffers are 0.
+    // 2. Open the accepted Pending request beginning at 11:00.
+    // 3. Approve it and verify both bookings are Confirmed.
     void page;
   });
 
   /**
    * TC_E06S06_05
-   * AC:      E06-S06 - Scenario 1 (Overlapping approval blocked)
+   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
    * Sprint:  3.0
    *
    * Pre-conditions:
-   *   Venue Orchid Hall has a confirmed booking for 2026-11-10 09:00:00 to 2026-11-10 11:00:00. A pending request exists for the same venue for 2026-11-10 10:59:00 to 2026-11-10 13:00:00
+   *   Orchid Hall has zero setup and turnaround and one active Confirmed booking for 09:00-11:00; no conflicting Pending fixture exists
    *
    * Test data:
-   *   Existing: 09:00-11:00 - Requested: 10:59-13:00 - Overlap: 1 minute
+   *   Existing claim: 09:00-11:00 | Attempted request: 10:59-13:00 | Overlap: 1 minute | Both buffers: 0
    *
    * Expected result:
-   *   Approval is blocked and the conflicting 09:00-11:00 booking is identified. The venue never holds two confirmed bookings over the same period
+   *   Submission is refused before inserting a conflicting Pending row; the existing claim remains unchanged and is identified
    */
-  test.fixme("TC_E06S06_05 - Verify that a booking overlapping an existing one by a single minute is blocked", async ({ page }) => {
+  test.fixme("TC_E06S06_05 - T-100: Verify a one-minute overlap is refused before insertion", async ({ page }) => {
     // Steps from the specification:
-    // 1. Sign in as Venue Staff
-    // 2. Open the pending request for 10:59-13:00
-    // 3. Attempt to approve it
+    // 1. Submit a new request for 10:59-13:00 while the 09:00-11:00 claim is active.
+    // 2. Verify refusal without creating an impossible overlapping fixture.
     void page;
   });
 
@@ -283,13 +283,15 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
 });
 
 test.describe("E06-S06 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at the same moment", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S06_06).
+  test.fixme("TC_E06S06_06 — T-100: Verify buffer-growth conflicts block approvals until explicit resolution", async ({ page }) => {
+    // Start with valid adjacent 0/0 Pending claims; grow buffers; verify both remain, earlier Charity Run is unflagged, later Alumni Dinner has buffer_conflict true, and both approvals fail while conflict remains.
+    // Primary resolution: Venue Staff reject one Pending request with a reason, then approve the other still-Pending request.
+    // Alternative: an authorized Coordinator withdraws/replans one request; approve only remaining requests that are Pending and conflict-free.
     void page;
   });
 
-  test.fixme("TC_E06S06_07 — Verify that approving two requests from the same event on two different venues over the same period should confirm both", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S06_07).
+  test.fixme("TC_E06S06_07 — T-100: Verify one event may confirm overlapping bookings at different venues", async ({ page }) => {
+    // Implement from docs/testing/cases/E06.md (TC_E06S06_07); E06-S03 multi-venue semantics remain unchanged.
     void page;
   });
 

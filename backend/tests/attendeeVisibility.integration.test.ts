@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
 import { hashPassword, verifyPassword } from '../src/modules/accessControl/passwords';
 import { attendeeEvents, publishEvent } from '../src/modules/attendeeVisibility/service';
@@ -22,7 +22,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
   try {
     await ensureTestExtensions(db);
     await db.query(`CREATE SCHEMA ${schema}`); await db.query(`SET search_path TO ${schema}, public`);
-    for (const migration of ['0001_connectsphere_schema.sql', '0002_event_visibility.sql', '0003_auth_sessions.sql', '0004_attendee_visibility.sql']) {
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort()) {
       await db.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
     }
     const credential = randomUUID();
@@ -40,7 +40,7 @@ test('E01-S03: real PostgreSQL sign-in, published fields, registration isolation
       await db.query(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,description,purpose,decision_reason,status,event_range,expected_attendance,layout_id)
         VALUES ($1,$2,$3,$4,$5,$6,'PRIVATE_DESCRIPTION','PRIVATE_PURPOSE','PRIVATE_DECISION','confirmed','[2027-01-01 09:00Z,2027-01-01 10:00Z)',20,$7)`, [id,code,organiser,coordinator,org,title,layout]);
     }
-    await db.query(`INSERT INTO venue_bookings(venue_id,event_id,booking_range,status,decision_reason) VALUES ($1,$2,'[2027-01-01 09:00Z,2027-01-01 10:00Z)','confirmed','PRIVATE_BOOKING')`, [venue,event]);
+    await db.query(`INSERT INTO venue_bookings(venue_id,event_id,booking_range,status,is_primary,decision_reason) VALUES ($1,$2,'[2027-01-01 09:00Z,2027-01-01 10:00Z)','confirmed',true,'PRIVATE_BOOKING')`, [venue,event]);
     await db.query(`INSERT INTO event_threads(event_id,author_id,type,body) VALUES ($1,$2,'comment','PRIVATE_COMMENT')`, [event,coordinator]);
     await db.query('INSERT INTO event_registrations(event_id,attendee_id) VALUES ($1,$2)', [event,attendee]);
     const query: Query = (sql, values) => db.query(sql, values);

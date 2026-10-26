@@ -102,25 +102,6 @@ shared branches or hide failures with `--no-verify`.
 
 ## Definition of Done
 
-### Prospective authority and effective date
-
-The Product Owner approved this prospective clarification on 21 October 2026.
-Repository adoption takes effect only when this change is reviewed and merged
-into `main`; this branch is not adopted policy. It carries forward Bryan's
-[PR #312 proposal](https://github.com/hongyime/sgConnectSphere2026/pull/312),
-head `e520e61977506e2dc8da3ad7324561d1af1e3633`, subject to the
-[6 October instructor guidance](docs/plans/instructor-guidance-2026-10-06.md).
-A merge into #312's dependency branch is not adoption on `main`. Prior closed
-PR checklists, merged run records, Done flags, dates and estimates stay unchanged.
-This is the canonical shared DoD; Jira links here rather than maintaining a
-second checklist as policy.
-
-Publication readback: #312 is closed unmerged and its proposal continues in
-[#329](https://github.com/hongyime/sgConnectSphere2026/pull/329). This canonical
-patch does not duplicate those proposal/audit documents. Reviewers must reconcile
-the alternatives before adoption: this patch preserves T-65's evidence-only scope
-and the instructor's no-reopening floor, rather than #329's proposed exceptions.
-
 A product backlog item is considered done only when all of these conditions are met:
 
 - Acceptance criteria stated in the user story are satisfied.
@@ -178,10 +159,8 @@ merge queue checks the latest `main` and preceding queued changes.
 
 An explicitly partial PR may merge before full story acceptance when its merge
 gates are satisfied. List each open acceptance item and its owner; the parent
-story remains not Done. This doesn't waive a documented story-specific hold:
-[#298](https://github.com/hongyime/sgConnectSphere2026/pull/298) remains held for
-TC_E06S04_07's confirmed-cancellation `Booking Released` evidence and its
-recorded PO/dependency gates. Pending withdrawal isn't a substitute.
+story remains not Done. This doesn't waive a documented story-specific hold or
+replace its required acceptance evidence with a partial-merge decision.
 
 Pre-Review regression is separate from first acceptance. T-93's required
 Sprint 3 reruns add new evidence without reopening Done stories or editing old
