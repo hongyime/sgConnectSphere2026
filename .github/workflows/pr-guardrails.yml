@@ -1,0 +1,43 @@
+name: PR guardrails
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  merge_group:
+    types: [checks_requested]
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-guardrails:
+    name: pr-guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Check reference binaries and PR limits
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            python scripts/check_pr_guardrails.py \
+              --base "${{ github.event.pull_request.base.sha }}" \
+              --head "${{ github.event.pull_request.head.sha }}" \
+              --pr-number "${{ github.event.pull_request.number }}"
+          else
+            python scripts/check_pr_guardrails.py \
+              --base "${{ github.event.merge_group.base_sha }}" \
+              --head "${{ github.sha }}" \
+              --merge-group
+          fi

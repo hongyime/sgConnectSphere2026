@@ -36,11 +36,11 @@ Reviewable payloads:
   merges, PR title/body as squash message, delete merged branches, allow updating
   feature branches, and enable issues.
 - [Main ruleset](../.github/settings/main-ruleset.json): require the repository
-  checks, one approval, stale-approval dismissal, resolved conversations, linear
-  history and a merge queue (squash, all-green grouping, 30-minute check
-  timeout, groups of up to five); disallow force pushes/deletion; no bypass
-  actors (rules apply to everyone including admins). Branches need not be up
-  to date with `main`; the queue tests each PR against the latest `main`.
+  checks, `pr-guardrails`, one approval, stale-approval dismissal, resolved
+  conversations, linear history and a merge queue (squash, all-green grouping,
+  30-minute check timeout, groups of up to five); disallow force pushes/deletion;
+  no bypass actors (rules apply to everyone including admins). Branches need not
+  be up to date with `main`; the queue tests each PR against the latest `main`.
 
 ### Order of operations when the ruleset payload changes CI behaviour
 
@@ -74,7 +74,8 @@ disabling these protections for later work.
 
 ## Verify enforcement
 
-Open a small PR from a correctly named branch. Confirm the required checks run.
+Open a small PR from a correctly named branch. Confirm the required checks,
+including `pr-guardrails`, run.
 Change its title to an invalid title and verify `pr-conventions` fails, then
 correct it and verify it reruns successfully. Make a check fail and confirm merge
 is blocked. Confirm an otherwise green PR still needs another person's approval.

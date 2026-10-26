@@ -92,8 +92,19 @@ own changes before asking for review. You no longer have to merge `main` in
 first; that was the step that forced repeat approvals in Sprint 2.
 
 Required checks are `repository-checks`, `pr-conventions`, `lfs-guard` and
-`application-checks`. They run on the PR and again on its queue merge commit.
+`application-checks`, plus `pr-guardrails`. They run on the PR and again on its
+queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
+
+The `pr-guardrails` check keeps integration work small and protects professor
+reference material. New PRs are limited to 40 changed files, 1,500 additions,
+and 1,000 deletions; the repository allows at most 10 open PRs and 6 open PRs
+per author. Existing PRs opened before the policy date are grandfathered so the
+team can close or split them without making the whole backlog unmergeable.
+Existing `.docx`, `.xlsx`, and `.pptx` files under `docs/` are read-only: a PR
+may add a new uniquely named source file, but may not modify, delete, or rename
+one already in the repository. The check is required by the `main-protection`
+ruleset after this workflow has landed on `main`.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
 allow `main` with a notice; enforced direct-push prevention belongs to GitHub.
