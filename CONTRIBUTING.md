@@ -98,13 +98,19 @@ See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 
 The `pr-guardrails` check keeps integration work small and protects professor
 reference material. New PRs are limited to 40 changed files, 1,500 additions,
-and 1,000 deletions; the repository allows at most 10 open PRs and 6 open PRs
+and 1,000 deletions; the repository allows at most 10 open PRs and 2 open PRs
 per author. Existing PRs opened before the policy date are grandfathered so the
 team can close or split them without making the whole backlog unmergeable.
 Existing `.docx`, `.xlsx`, and `.pptx` files under `docs/` are read-only: a PR
 may add a new uniquely named source file, but may not modify, delete, or rename
 one already in the repository. The check is required by the `main-protection`
 ruleset after this workflow has landed on `main`.
+
+The author resolves merge conflicts and the reviewer approves the final commit.
+If the reviewer resolves a conflict, another teammate reviews that new commit.
+The weekly cleanup workflow reports drafts unchanged for more than seven days
+and open PRs without an assigned owner; it does not close or reassign work
+automatically.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
 allow `main` with a notice; enforced direct-push prevention belongs to GitHub.

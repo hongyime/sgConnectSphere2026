@@ -1,7 +1,7 @@
 {
   "effective_after": "2026-10-27T00:00:00Z",
   "max_open_prs": 10,
-  "max_open_prs_per_author": 6,
+  "max_open_prs_per_author": 2,
   "max_changed_files": 40,
   "max_additions": 1500,
   "max_deletions": 1000
