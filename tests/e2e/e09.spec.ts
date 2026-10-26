@@ -263,7 +263,8 @@ test.describe("E09-S03", () => {
     await fakeOrganiserRegistrations(page);
     const saves = await fakePeriodSave(page);
     await page.goto(periodPage);
-    await page.getByLabel('Withdrawal deadline (optional)').fill('2026-11-12T17:00');
+    // 9 am is 12 Nov in both UTC (CI's browser) and Singapore (how the page displays dates).
+    await page.getByLabel('Withdrawal deadline (optional)').fill('2026-11-12T09:00');
     await page.getByRole('button', { name: 'Save registration period' }).click();
     await expect(page.getByText('Registration period saved.')).toBeVisible();
     await expect(page.getByText(/withdrawals until 12 Nov 2026/)).toBeVisible();
