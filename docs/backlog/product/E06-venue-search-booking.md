@@ -314,7 +314,7 @@ Given a hold expires at 10:00:00 When the expiry job runs at 09:59:59 Then the h
 
 - **Sprint**:
 - **Points**: 5
-- **BDR references**: C-46, T-22, C-65, T-66, C-67, T-68
+- **BDR references**: C-01, C-16, C-46, T-22, C-60, C-65, T-66, C-67, T-68, C-109, T-100
 - **Owner**:
 
 ### User story
@@ -323,31 +323,35 @@ As a Venue Staff member, I want to be blocked from approving a booking that over
 
 ### Acceptance criteria
 
-#### Scenario 1 — Overlapping approval blocked
+**PO interpretation, 22 October 2026 (T-100):** The first successfully accepted hold or booking request claims the venue's buffered slot. Pending, Confirmed and unexpired Tentative bookings count as active claims; converting a hold to a request keeps the same claim. A later overlapping hold or request is refused while that claim is active. Approval rechecks current availability, concurrency and current buffer values. If a later buffer change creates a conflict, C-109 applies: retain and flag the affected bookings, and refuse approval while the conflict remains. Resolve it through Venue Staff rejection or Coordinator withdrawal/replan. There is no queue or first-approval-wins rule. This interpretation applies to E06-S06 and leaves E06-S03's multi-venue semantics unchanged.
 
-Given a venue has a confirmed booking When I attempt to approve another request overlapping that period Then approval is blocked and the conflicting booking is identified
+#### Scenario 1 — First accepted claim reserves the buffered slot
 
-#### Scenario 2 — Competing request flagged
+Given a venue has no active overlapping Pending, Confirmed or unexpired Tentative booking When a hold or booking request is successfully accepted Then its current buffered window is claimed for that venue
 
-Given two pending requests cover the same venue and overlapping times When I approve one of them Then the other is flagged as conflicting and cannot be approved until the conflict is resolved
+#### Scenario 2 — Later overlapping claim refused
 
-#### Scenario 3 — Simultaneous approval fails safely
+Given an active claim reserves a venue's buffered window When another hold or booking request overlaps it Then the new claim is refused, the ordinary Coordinator response identifies the occupied buffered window as unavailable without disclosing another event's title or private booking details, and the active claim remains unchanged
 
-Given another Venue Staff member approves a conflicting request moments before me When my approval is processed Then it fails and I am told the venue has just been taken
+#### Scenario 3 — Concurrent claims fail safely
 
-#### Scenario 4 — Buffered windows are what must not overlap
+Given two new holds or booking requests concurrently claim overlapping buffered windows on one venue When both are processed Then exactly one claim is accepted and the other receives 409 without an extra row or side effects
 
-Given two pending requests on one venue whose advertised times do not overlap but whose buffered occupancy windows do When both are approved at the same moment Then at most one approval succeeds and the other fails safely, because the database-level conflict check operates on the buffered window (C-65, T-66, ADR-003)
+#### Scenario 4 — Approval rechecks current buffered availability
+
+Given a request was accepted while its buffered window was available and the venue buffers later change When Venue Staff attempt approval Then current availability, concurrency and buffer values are rechecked; C-109 conflicts stay flagged and retained, and approval is blocked until Venue Staff reject one conflicting Pending request with a reason or an authorized Coordinator withdraws/replans one request. The remaining now-free Pending request may then be approved; a Rejected request is terminal and is never approved. No claim is silently released or selected as a winner. Exactly adjacent half-open buffered windows remain available.
 
 #### Scenario 5 — Conflicts are per venue, not per event
 
-Given one event has Pending requests on two different venues over the same period When both are approved Then both become Confirmed, because double-booking is detected per venue and an event may legitimately occupy several venues at once (C-67, T-68)
+Given one event has claims on two different venues over the same period When both requests are approved Then both become Confirmed, because conflict detection is per venue and an event may legitimately occupy several venues at once (C-67, T-68)
 
 ### Checklist
 
-- Be blocked from approving a request overlapping an existing confirmed booking
-- See which existing booking is causing the conflict
-- Confirm a competing pending request is flagged as conflicting once one is approved
-- Confirm a simultaneous approval by another Venue Staff member fails safely
-- Be told the venue has been taken when a simultaneous approval wins
-- Confirm no venue ever holds two confirmed bookings over the same period
+- Confirm the first successfully accepted hold or request claims its venue's buffered slot
+- Be refused a later overlapping hold or request while the first claim remains active
+- Confirm concurrent overlapping new claims yield one accepted claim and one 409 with no extra row or side effects
+- Recheck current availability, concurrency and buffer values at approval
+- Retain and flag bookings under C-109 after a later buffer change; block approval while the conflict remains
+- Resolve a conflict explicitly by rejection, withdrawal or replan before a later approval succeeds
+- Allow exact adjacency of half-open buffered windows and refuse a one-minute overlap
+- Confirm conflicts are per venue, so one event may confirm overlapping bookings on different venues
