@@ -172,7 +172,7 @@ Given the Event has Pending change requests When cancellation completes Then eac
 ## E10-S05 — Handle a venue lost from a confirmed event
 
 - **Sprint**:
-- **Points**: 3
+- **Points**: 5
 - **BDR references**: C-66, C-61, C-120, C-121, T-28, T-67, T-73, T-74, T-81, O-24, O-25
 - **Owner**:
 
@@ -180,7 +180,7 @@ Given the Event has Pending change requests When cancellation completes Then eac
 
 As an Event Coordinator, I want to be alerted when a venue becomes unavailable for one of my events and to find and request a replacement from the event itself, so that I can arrange an alternative before Attendees are affected while the original event information is preserved.
 
-Returned to Release 1 by the Week 7 Customer Changes (C-66, T-67). The three-point estimate is carried from the original backlog and re-estimated at Sprint 3 planning (T-73). The alert itself is raised by E05-S06; this story is what the Coordinator does with it.
+Returned to Release 1 by the Week 7 Customer Changes (C-66, T-67). The original estimate was three points. Re-estimated to five points on 26 October 2026 at the story owner's request, with the change recorded for teammate review through the estimate PR. The four current scenarios include lost-booking context and same-event replacement search, linked replacement requests, explicit cancellation only after confirmation, and effective-change publication/notification timing with integration and rollback testing. This is the whole-story estimate, not remaining work or elapsed waiting time. E05-S06 still owns the unavailability trigger and Confirmed-to-Planning transition; that implementation is not counted again here.
 
 Updated on 23 October 2026, before any work on the story started, to the Week 9 decisions that closed O-24 and O-25; an incomplete story's criteria are updated in place (T-74). T-81 returns a Confirmed event that loses its venue to Planning without cancelling it (C-120), replacing the earlier "status unchanged" default in Scenario 1. C-121 confirms the Scenario 4 notification rule.
 
