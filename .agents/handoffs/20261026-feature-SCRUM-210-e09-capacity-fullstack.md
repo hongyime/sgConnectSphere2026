@@ -1,4 +1,4 @@
-# feature/SCRUM-210-SCRUM-211-e09-capacity
+# feature/SCRUM-210-e09-capacity-fullstack
 
 Build E09-S02 "Enforce registration capacity" (story SCRUM-64) as one full-stack
 PR: backend subtask SCRUM-210 and frontend subtask SCRUM-211. Each selected
