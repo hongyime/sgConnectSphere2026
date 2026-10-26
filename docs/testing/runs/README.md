@@ -245,11 +245,13 @@ happened, so a new run cannot change what those sprints showed. If one is
 re-run for another reason (for example a release regression), record the real
 `date`, never backdate, and follow the same failure rule.
 
-**Not enforced by tooling yet.** `scripts/check_test_run_records.py` does not
-check the `## Screenshots` section, one image per PASS/FAIL row, or that the
-linked files exist, and the 1000 KB limit runs only in local pre-commit, not
-in CI, so an image uploaded through the GitHub web UI skips it. Reviewers
-check these by hand until the checker is extended.
+**Enforced for new records.** The `test-evidence` CI check validates new manual
+records before review: it requires the `## Screenshots` section, one linked
+PNG/JPG under 1000 KB for every PASS/FAIL row, matching filenames, and files
+that exist under the record's evidence folder. It also requires the record and
+screenshots to be added in the same pull request. The local
+`test-run-evidence` pre-commit hook applies the same atomicity rule to staged
+files. Existing merged records remain immutable and are not retrofitted.
 
 ## Design decisions
 

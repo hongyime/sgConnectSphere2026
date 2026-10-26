@@ -91,9 +91,9 @@ Branch protection still dismisses approvals after new commits, so finish your
 own changes before asking for review. You no longer have to merge `main` in
 first; that was the step that forced repeat approvals in Sprint 2.
 
-Required checks are `repository-checks`, `pr-conventions`, `lfs-guard` and
-`application-checks`, plus `pr-guardrails`. They run on the PR and again on its
-queue merge commit.
+Required checks are `repository-checks`, `pr-conventions`, `lfs-guard`,
+`application-checks`, `pr-guardrails`, and `test-evidence`. They run on the PR
+and again on its queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 
 The `pr-guardrails` check keeps integration work small and protects professor

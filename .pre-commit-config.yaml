@@ -74,3 +74,10 @@ repos:
         stages: [pre-commit]
         pass_filenames: false
         always_run: true
+      - id: test-run-evidence
+        name: Test-run records and screenshots stay together
+        entry: python scripts/check_test_evidence.py --staged
+        language: system
+        stages: [pre-commit]
+        pass_filenames: false
+        always_run: true

@@ -47,3 +47,9 @@ pull requests and merge groups. `.github/settings/main-ruleset.json` adds the
 following `docs/github-owner-setup.md`.
 
 `.github/workflows/weekly-pr-cleanup.yml` produces the weekly cleanup report.
+
+The `test-evidence` check and the local `test-run-evidence` pre-commit hook
+enforce T-65/T-93 for new manual records: every PASS/FAIL row needs a linked,
+existing PNG/JPG under its record folder, and the record plus those images must
+be added together. Automated runs, SKIP/N/A rows, and old merged records are
+not forced to acquire screenshots retroactively.

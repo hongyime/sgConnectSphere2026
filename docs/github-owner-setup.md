@@ -36,7 +36,7 @@ Reviewable payloads:
   merges, PR title/body as squash message, delete merged branches, allow updating
   feature branches, and enable issues.
 - [Main ruleset](../.github/settings/main-ruleset.json): require the repository
-  checks, `pr-guardrails`, one approval, stale-approval dismissal, resolved
+  checks, `pr-guardrails`, `test-evidence`, one approval, stale-approval dismissal, resolved
   conversations, linear history and a merge queue (squash, all-green grouping,
   30-minute check timeout, groups of up to five); disallow force pushes/deletion;
   no bypass actors (rules apply to everyone including admins). Branches need not
