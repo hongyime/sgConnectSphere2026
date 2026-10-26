@@ -4,7 +4,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 
 // E14-S02 Scenario 2: a role-mismatch denial has no specific event to attach
 // to, so it's logged against the screen the caller was trying to reach.
-async function requireAttendee(query: Query, user: AuthenticatedUser) {
+export async function requireAttendee(query: Query, user: AuthenticatedUser) {
   if (!canActAsRole(user, ['attendee']).allowed) {
     await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
       VALUES ($1, 'screen', gen_random_uuid(), 'Access Denied', 'attendee_events')`, [user.id]);
