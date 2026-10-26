@@ -31,7 +31,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | status | booking_status, required, default Pending | Pending, Tentative, Confirmed, Rejected, Released, Conflicting, or Expired; hold creation explicitly sets Tentative. |
 | purpose | text, nullable, at most 80 characters | Per-booking label such as Main programme or Breakout A. |
 | headcount | integer, nullable, positive when present | Per-booking suitability input; null means use linked Session expected attendance. |
-| is_primary | boolean, required, default false | True only on one Confirmed booking per event. |
+| is_primary | boolean, required, default false | True only on one Confirmed booking per event; it stays true while an unavailability holds that booking Conflicting (E05-S06, migration 0025) and the booking is restored as primary. |
 | requested_by | uuid foreign key, nullable for legacy rows | Coordinator who submitted the formal request; the service requires it for every new Pending request. |
 | requested_at | timestamptz, nullable for Tentative rows | Time the formal request was submitted. |
 | submission_key | uuid, nullable | Direct-request idempotency key; unique with requested_by when present. |
@@ -42,7 +42,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state; capacity review remains separate from the buffer flag. |
 | created_at | timestamptz, required | Row creation time; remains the hold creation time after conversion. |
 
-Database invariants: is_primary implies status = Confirmed; at most one primary row exists per event; headcount is null or positive; the occupancy exclusion covers only Tentative, Pending, and Confirmed rows. A booking's Session must belong to its Event, and its range must be within the Session period. The requester and timestamps may be null on legacy/unsubmitted records, while the application requires requester and request time on every newly submitted request.
+Database invariants: is_primary implies status = Confirmed, or Conflicting while an unavailability holds it (0025); readers that display or publish the venue must still require Confirmed; at most one primary row exists per event; headcount is null or positive; the occupancy exclusion covers only Tentative, Pending, and Confirmed rows. A booking's Session must belong to its Event, and its range must be within the Session period. The requester and timestamps may be null on legacy/unsubmitted records, while the application requires requester and request time on every newly submitted request.
 
 At PR #231 head on 9 October ([PR #231](https://github.com/hongyime/sgConnectSphere2026/pull/231)), 0011_venue_setup_turnaround_buffers.sql adds venues.setup_time_minutes, venues.turnaround_time_minutes, and the occupied_window(range, setup, turnaround) function. That migration does **not** yet add booking columns or change the booking exclusion constraint. Keep those buffer additions in PR #231; the shared contract migration consumes them and must not recreate or overwrite them.
 
