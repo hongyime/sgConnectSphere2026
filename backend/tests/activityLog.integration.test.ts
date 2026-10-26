@@ -106,7 +106,7 @@ test('TC_E14S02_01: a status change is recorded and the assigned Coordinator rea
   const coordinatorView = activityOf(await getAssignedEvent(f.pool, f.user(f.ids.coordB), 'EVT-2003'));
   assert.deepEqual(coordinatorView, [{
     occurred_at: stored!.occurred_at, action: 'Status changed to approved', field_changed: 'status', entity_type: 'event',
-    old_value: 'under_review', new_value: 'approved', actor_name: 'Coordinator B', venue_name: null,
+    old_value: 'under_review', new_value: 'approved', actor_name: 'Coordinator B', venue_name: null, booking_id: null,
   }]);
   const organiserView = activityOf(await getEvent(f.query, f.user(f.ids.organiserC), 'EVT-2003'));
   // Same event entries; only the Coordinator view adds booking decisions (E06-S04), and this event has none.

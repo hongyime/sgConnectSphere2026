@@ -350,7 +350,7 @@ classDiagram
     CapacityService ..> Session : checks each selected capacity
     CapacityService ..> Event : checks combined capacity
 
-    note for EventRegistration "Tables EVENT_REGISTRATIONS and EVENT_REGISTRATION_SESSIONS. One active registration per account/Event selects one or more Sessions. Pending over-capacity submissions do not occupy approved seats; approval rechecks both limits (T-85). Event-level waitlist remains for combined capacity; per-Session waitlist is open under O-50."
+    note for EventRegistration "Tables EVENT_REGISTRATIONS and EVENT_REGISTRATION_SESSIONS. One active registration per account/Event selects one or more Sessions. Pending over-capacity submissions do not occupy approved seats; approval rechecks both limits (T-85). Event-level waitlist remains for combined capacity; there is no per-Session waitlist (T-98)."
     note for CapacityService "Session capacity is derived from confirmed Session layout capacity. Combined Event capacity is derived from confirmed Session layout capacities. The limits are enforced atomically across concurrent registration/approval writes (T-85)."
 ```
 
