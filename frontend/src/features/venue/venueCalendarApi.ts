@@ -5,8 +5,11 @@
 // event's assigned Coordinator; anyone else gets an 'unavailable' entry with
 // no event attached. This client renders whatever it is given.
 import { apiCall, type ApiResult } from '../../shared';
+import type { ReasonCategory } from './blocksApi';
 
-export type CalendarState = 'free' | 'tentative' | 'confirmed' | 'blocked' | 'unavailable';
+// E05-S06 (SCRUM-152): 'conflicting' is a booking or hold an unavailability
+// has flagged; it stays visible inside the Blocked period.
+export type CalendarState = 'free' | 'tentative' | 'confirmed' | 'conflicting' | 'blocked' | 'unavailable';
 
 export type CalendarEntry = {
   state: CalendarState;
@@ -17,6 +20,8 @@ export type CalendarEntry = {
   end: string;
   event?: { id: string; code: string | null; title: string };
   reason?: string;
+  // E05-S06: the unavailability's category, on a block and on a booking it made Conflicting.
+  reasonCategory?: ReasonCategory;
   bufferConflict?: boolean;
 };
 
