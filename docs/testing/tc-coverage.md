@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **242** (64.0%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+- Automated (explicit TC_ID in an active test title): **243** (64.3%)
+  - Real-database (`.integration.test` / `.db.test`): **44**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **198**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **101** (26.7%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (26.5%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
@@ -28,10 +28,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 44 | 10 | 26 | 8 |
 | E10 | 29 | 9 | 12 | 8 |
-| E11 | 15 | 12 | 3 | 0 |
+| E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **242** | **101** | **35** |
+| **Total** | **378** | **243** | **100** | **35** |
 
 ## Case-by-case status
 
@@ -267,13 +267,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S06_01` | E06-S06 | Verify that attempting to approve a request that overlaps an existing confirmed  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - Verify that attempting to approve a request that overlaps an existing confirmed booking for the same venue should be blocked with the conflict |
-| `TC_E06S06_02` | E06-S06 | Verify that approving one of two pending requests for the same venue and overlap | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - Verify that approving one of two pending requests for the same venue and overlapping times should flag the other as conflicting |
-| `TC_E06S06_03` | E06-S06 | Verify that if another Venue Staff member approves a conflicting request moments | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - Verify that if another Venue Staff member approves a conflicting request moments earlier, a simultaneous approval attempt should fail safely a |
-| `TC_E06S06_04` | E06-S06 | Verify that a booking beginning exactly when another ends is not treated as a co | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - Verify that a booking beginning exactly when another ends is not treated as a conflict |
-| `TC_E06S06_05` | E06-S06 | Verify that a booking overlapping an existing one by a single minute is blocked | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - Verify that a booking overlapping an existing one by a single minute is blocked |
-| `TC_E06S06_06` | E06-S06 | Verify that two approvals whose advertised times do not overlap but whose buffer | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — Verify that two approvals whose advertised times do not overlap but whose buffered windows do should let at most one succeed when processed at |
-| `TC_E06S06_07` | E06-S06 | Verify that approving two requests from the same event on two different venues o | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_07 — Verify that approving two requests from the same event on two different venues over the same period should confirm both |
+| `TC_E06S06_01` | E06-S06 | Verify approval rechecks a confirmed booking after buffer growth | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - T-100: Verify approval rechecks a confirmed booking after buffer growth |
+| `TC_E06S06_02` | E06-S06 | Verify a later overlapping request is refused while the first claim remains acti | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - T-100: Verify a later overlapping request is refused while the first claim remains active |
+| `TC_E06S06_03` | E06-S06 | Verify concurrent overlapping new claims accept only one request | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - T-100: Verify concurrent overlapping new claims accept only one request |
+| `TC_E06S06_04` | E06-S06 | Verify exact half-open buffered adjacency is allowed with zero buffers | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - T-100: Verify exact half-open buffered adjacency with zero buffers |
+| `TC_E06S06_05` | E06-S06 | Verify a one-minute overlap is refused before an impossible fixture is inserted | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - T-100: Verify a one-minute overlap is refused before insertion |
+| `TC_E06S06_06` | E06-S06 | Verify buffer-growth conflicts block approvals until an explicit resolution | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — T-100: Verify buffer-growth conflicts block approvals until explicit resolution |
+| `TC_E06S06_07` | E06-S06 | Verify one event may confirm overlapping bookings at different venues | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_07 — T-100: Verify one event may confirm overlapping bookings at different venues |
 
 ### E07
 
@@ -438,8 +438,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
 | `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
-| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; tests/e2e/e11.spec.ts: |
-| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_03 - Verify that a user whose responsibilities are unaffected by a change should not be notified |
+| `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E11S01_02 published primary change captures both scoped audiences; self-only audiences emit nothing; backend/tests/bookingSubmission.integr |
+| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically; tests/e2e/e11.spec.ts: |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
@@ -1041,6 +1041,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - updateVenue returns the updated buffer values (E05-S05 Scenario 1)
 - buffer overflow is a 400, other database errors survive, and every failed edit rolls back
 
+### `backend/tests/venueClaimPolicy.integration.test.ts`
+
+- an accepted pending request refuses its competitor without business, audit or outbox changes
+- a hold blocks a later request, and a pending request blocks a later hold
+- concurrent overlapping requests leave exactly one accepted claim
+- buffered adjacency is accepted while a one-minute overlap is refused
+- later buffer growth blocks both approvals until Venue Staff rejects one active request
+- one event can confirm overlapping requests at different venues
+- converting a hold keeps its venue claim active against another request
+
 ### `backend/tests/venueHolds.integration.test.ts`
 
 - maintenance blocks notify a live hold\
@@ -1255,6 +1265,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a status change with no previous status shows only the new status
 - a booking decision missing its venue or earlier status is still described
 - booking entries show hold expiry or a generic booking label without internal IDs
+
+### `frontend/src/features/events/ActivityReleaseReference.test.tsx`
+
+- same-venue releases identify each booking when actor and time coincide
+- event and legacy hold entries do not invent a booking reference
 
 ### `frontend/src/features/events/EventCompletion.test.tsx`
 

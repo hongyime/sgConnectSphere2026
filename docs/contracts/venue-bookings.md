@@ -339,6 +339,34 @@ agreement, and the story owner's notification/retry/chain confirmations in the
 15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
 database migration, staff-routing verification and human manual run remain pending.
 
+## E06-S06 rule B: first accepted claim and approval recheck (T-100, 22 October 2026)
+
+The Product Owner approved this interpretation of C-01, C-16, C-46, C-60 and
+C-65. It is a PO interpretation, not a new customer quote. It applies to
+E06-S06 and does not change E06-S03's multiple-venue semantics.
+
+- A claim is active while its booking is Pending, Confirmed, or Tentative with
+  an expiry in the future. Converting an unexpired Tentative hold to a Pending
+  request changes the same claim; it does not create a second reservation.
+- The first successfully accepted hold or request reserves that venue's current
+  buffered window. A later overlapping hold or request is refused while the
+  first claim remains active. Concurrent overlapping new claims serialize: one
+  is accepted, and the losing request returns 409 without a new row or effects.
+- Approval rechecks live availability, concurrency and current buffer values.
+  If a later buffer edit creates a conflict, apply C-109 and the existing
+  `buffer_conflict` flag: save the edit, retain the affected bookings and flag
+  them for review. Refuse approval while the conflict remains. Do not silently
+  release a claim or treat the first approval as the winner. An explicit
+  rejection by Venue Staff or Coordinator withdrawal/replan must resolve the
+  conflict before later approval succeeds.
+- Occupancy uses half-open buffered intervals, so exact adjacency is allowed.
+  Conflict checks remain per venue: the same event may hold or confirm
+  overlapping bookings at different venues (C-67, T-68).
+
+This decision creates no queue, status, schema or migration change. It does not
+rewrite migration 0016 or adopt migration 0021. The open-choice snapshot in #338
+is superseded prospectively; the proposal associated with #308 is not adopted
+and remains untouched. This contract note does not assert that #308 has merged.
 ### Withdrawal implementation branch (16 October 2026)
 
 The E06-S03 withdrawal branch implements the preceding contract with
@@ -363,3 +391,13 @@ acceptance result or whole-story Done claim. Full E06-S04 decision integration
 and human manual verification must still be observed against the merged flow.
 
 Activity log visibility: PR #298 is merged (9c8a37f, 24 October); its Coordinator read query now includes `entity_type=venue_booking`. PR #299 integration preserves the primary-specific formatter before generic booking status formatting. The eight actual-service combined race cases now run in the existing CI booking command; they no longer skip for a missing dependency. Fresh human combined-flow/Activity checks remain separate from automated evidence.
+
+
+### E06-S03 attendee primary publication follow-up (#299)
+
+Explicit publication selects only the primary Confirmed booking, excluding rows requiring reconfirmation. Missing eligible primary is refused rather than selecting an arbitrary booking. Several Confirmed bookings therefore still produce one publication.
+
+Changing primary updates only the venue name/location and publication timestamp of an existing publication when the Event is Confirmed, in the same transaction as both primary flags and the audit. It never creates a publication or exposes Planning/Approved/Safety Review arrangements. A primary requiring reconfirmation cannot be selected on a Confirmed Event. Attendees continue to read only the published snapshot and must remain registered. Other published fields, booking statuses and periods stay unchanged. The dedicated CI booking selector also runs the attendee publication integration test.
+
+
+Effective primary venue changes on an existing Confirmed publication use the shared T-64 arrangement notification hook in that same transaction. Capture scoped old/new venue staff plus current assigned technical staff, organiser and Coordinator; registered/waitlisted Attendees receive public-name wording. Exclude the actor, inactive/unrelated/withdrawn users and duplicate memberships. The primary audit ID is the durable notification change ID. A replay or another booking at the same venue emits no venue-change notice. Outbox failure rolls back primary flags, publication, audit and inbox/outbox together. Planning/unpublished selections remain internal and emit no effective-public-venue notice. This implements a caller, not proof of provider or actual mailbox receipt.
