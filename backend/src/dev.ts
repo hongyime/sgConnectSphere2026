@@ -19,7 +19,7 @@ const routes: Record<string, Record<string, typeof register>> = {
   '/api/auth/reset-password': { POST: session },
   '/api/account/profile': { GET: profile, PUT: profile, DELETE: profile },
   '/api/events': { GET: events, POST: events, PATCH: events, DELETE: events },
-  '/api/attendee/events': { GET: attendeeEvents },
+  '/api/attendee/events': { GET: attendeeEvents, POST: attendeeEvents },
   '/api/internal/planning': { GET: internalPlanning },
   '/api/equipment': { GET: venues, POST: venues },
   '/api/venues': { GET: venues, POST: venues },
