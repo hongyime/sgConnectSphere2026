@@ -8,18 +8,22 @@ to `main` and its required checks are green there.
 
 ## Decision
 
-Professor-provided Word, PDF, Excel, and PowerPoint files are context inputs, not
-working files. Existing files under `docs/` with `.docx`, `.pdf`, `.xlsx`, or `.pptx`
-extensions are immutable in pull requests. A new input may be added under a
-unique filename; an existing input must never be edited, deleted, or renamed.
-Team decisions and derived working content belong in the canonical Markdown
-files.
+Professor-provided Word, PDF, Excel, and PowerPoint files under
+`docs/bdr/customer-sources/` are context inputs, not working files. Existing
+files there with `.docx`, `.pdf`, `.xlsx`, or `.pptx` extensions are immutable in
+pull requests. A new input may be added under a unique filename; an existing
+input must never be edited, deleted, or renamed. Generated exports elsewhere
+under `docs/` remain writable through their generators. Team decisions and
+derived working content belong in the canonical Markdown files.
 
 New pull requests are limited to 40 changed files, 1,800 additions, and 1,500
 deletions. The repository allows at most 10 open pull requests and at most 2
 open pull requests per author. Pull requests opened before 27 October 2026 are
-grandfathered for the size and open-count limits so the existing backlog can be
-closed or split deliberately. The immutable-binary check applies to every PR.
+grandfathered and do not consume the new WIP budget. For a new PR, only active-
+policy PRs opened no later than that PR are counted, so later PRs cannot make an
+earlier check fail. The team-wide cap is intentionally a queue cap rather than
+six times the per-author allowance. The immutable-binary check applies to every
+PR.
 
 ## Rationale
 
@@ -46,7 +50,8 @@ pull requests and merge groups. `.github/settings/main-ruleset.json` adds the
 `python scripts/configure_github.py --apply` after this workflow is on `main`,
 following `docs/github-owner-setup.md`.
 
-`.github/workflows/weekly-pr-cleanup.yml` produces the weekly cleanup report.
+`.github/workflows/weekly-pr-cleanup.yml` produces the weekly cleanup report;
+the PR author is the default owner when no explicit GitHub assignee is set.
 
 The `test-evidence` check and the local `test-run-evidence` pre-commit hook
 enforce T-65/T-93 for new manual records: every PASS/FAIL row needs a linked,

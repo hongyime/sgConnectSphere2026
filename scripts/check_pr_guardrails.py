@@ -1,10 +1,11 @@
-"""Enforce small pull requests and immutable reference documents.
+"""Enforce small pull requests and immutable customer source documents.
 
-Professor-provided Word, Excel, and PowerPoint files are context inputs.  A
-pull request may add a new reference file, but it must not modify, delete, or
-rename an existing one.  The PR size and open-PR limits are grandfathered for
-pull requests opened before the policy date so adoption does not strand the
-current backlog.
+Professor-provided Word, Excel, PDF, and PowerPoint files under
+``docs/bdr/customer-sources/`` are context inputs. A pull request may add a new
+source file, but it must not modify, delete, or rename an existing one. Generated
+exports elsewhere under ``docs/`` remain writable through their generators. The
+PR size and open-PR limits are grandfathered for pull requests opened before the
+policy date so adoption does not strand the current backlog.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from typing import Any, Iterable
 ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / ".github" / "settings" / "pr-guardrails.json"
 REFERENCE_SUFFIXES = {".docx", ".pdf", ".pptx", ".xlsx"}
+REFERENCE_ROOT = "docs/bdr/customer-sources/"
 
 
 def load_policy() -> dict[str, Any]:
@@ -42,7 +44,7 @@ def parse_changed_files(output: str) -> list[tuple[str, list[str]]]:
 
 def is_reference_artifact(path: str) -> bool:
     normalized = path.replace("\\", "/").lower()
-    return normalized.startswith("docs/") and Path(normalized).suffix in REFERENCE_SUFFIXES
+    return normalized.startswith(REFERENCE_ROOT) and Path(normalized).suffix in REFERENCE_SUFFIXES
 
 
 def reference_artifact_errors(changes: Iterable[tuple[str, list[str]]]) -> list[str]:
@@ -67,6 +69,23 @@ def policy_is_active(created_at: str, policy: dict[str, Any]) -> bool:
     return parse_timestamp(created_at) >= parse_timestamp(policy["effective_after"])
 
 
+def counted_open_prs(
+    *,
+    current: dict[str, Any],
+    open_prs: list[dict[str, Any]],
+    policy: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Count active-policy PRs that existed when the current PR opened."""
+
+    current_created = parse_timestamp(current["createdAt"])
+    return [
+        pr
+        for pr in open_prs
+        if policy_is_active(pr["createdAt"], policy)
+        and parse_timestamp(pr["createdAt"]) <= current_created
+    ]
+
+
 def pr_limit_errors(
     *,
     current: dict[str, Any],
@@ -76,16 +95,17 @@ def pr_limit_errors(
     if not policy_is_active(current["createdAt"], policy):
         return []
 
+    counted_prs = counted_open_prs(current=current, open_prs=open_prs, policy=policy)
     errors: list[str] = []
     max_open = int(policy["max_open_prs"])
-    if len(open_prs) > max_open:
+    if len(counted_prs) > max_open:
         errors.append(
-            f"{len(open_prs)} open PRs exceeds the limit of {max_open}; "
+            f"{len(counted_prs)} policy-counted open PRs exceeds the limit of {max_open}; "
             "close or split an existing PR before opening another"
         )
 
     author = current["author"]["login"]
-    author_count = sum(1 for pr in open_prs if pr.get("author", {}).get("login") == author)
+    author_count = sum(1 for pr in counted_prs if pr.get("author", {}).get("login") == author)
     max_per_author = int(policy["max_open_prs_per_author"])
     if author_count > max_per_author:
         errors.append(

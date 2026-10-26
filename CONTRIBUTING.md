@@ -99,18 +99,23 @@ See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
 The `pr-guardrails` check keeps integration work small and protects professor
 reference material. New PRs are limited to 40 changed files, 1,800 additions,
 and 1,500 deletions; the repository allows at most 10 open PRs and 2 open PRs
-per author. Existing PRs opened before the policy date are grandfathered so the
-team can close or split them without making the whole backlog unmergeable.
-Existing `.docx`, `.pdf`, `.xlsx`, and `.pptx` files under `docs/` are read-only: a PR
-may add a new uniquely named source file, but may not modify, delete, or rename
-one already in the repository. The check is required by the `main-protection`
-ruleset after this workflow has landed on `main`.
+per author. The team-wide cap is intentionally lower than six members times two:
+it is a queue cap, not a promise that every member may hold two PRs at once.
+PRs opened before the policy date are grandfathered; they do not consume the
+new WIP budget, and later PRs cannot change an earlier PR's count. If a PR's
+count changes because another PR closes, rerun its failed check from Actions.
+Existing `.docx`, `.pdf`, `.xlsx`, and `.pptx` files under
+`docs/bdr/customer-sources/` are read-only: a PR may add a new uniquely named
+source file there, but may not modify, delete, or rename one already in the
+repository. Generated exports elsewhere under `docs/` remain writable through
+their generators. The check is required by the `main-protection` ruleset after
+this workflow has landed on `main`.
 
 The author resolves merge conflicts and the reviewer approves the final commit.
 If the reviewer resolves a conflict, another teammate reviews that new commit.
-The weekly cleanup workflow reports drafts unchanged for more than seven days
-and open PRs without an assigned owner; it does not close or reassign work
-automatically.
+The weekly cleanup workflow reports drafts unchanged for more than seven days.
+The PR author is the default owner when no explicit assignee is set; the report
+does not close or reassign work automatically.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
 allow `main` with a notice; enforced direct-push prevention belongs to GitHub.

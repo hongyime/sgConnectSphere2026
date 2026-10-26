@@ -16,10 +16,14 @@ class ReferenceArtifactTests(unittest.TestCase):
         self.assertEqual(MODULE.reference_artifact_errors(changes), [])
 
     def test_modified_reference_file_is_rejected(self):
-        changes = [("M", ["docs/BACKLOG DECISION REVIEW CAA 261026.docx"])]
+        changes = [("M", ["docs/bdr/customer-sources/Week 4 Project Instructions.docx"])]
         errors = MODULE.reference_artifact_errors(changes)
         self.assertEqual(len(errors), 1)
         self.assertIn("read-only", errors[0])
+
+    def test_generated_export_outside_customer_sources_is_allowed(self):
+        changes = [("M", ["docs/BACKLOG DECISION REVIEW CAA 261026.docx"])]
+        self.assertEqual(MODULE.reference_artifact_errors(changes), [])
 
     def test_modified_pdf_is_rejected(self):
         changes = [("M", ["docs/bdr/customer-sources/briefing.pdf"])]
@@ -30,8 +34,8 @@ class ReferenceArtifactTests(unittest.TestCase):
             (
                 "R100",
                 [
-                    "docs/old.xlsx",
-                    "docs/new.xlsx",
+                    "docs/bdr/customer-sources/old.xlsx",
+                    "docs/bdr/customer-sources/new.xlsx",
                 ],
             )
         ]
@@ -70,6 +74,25 @@ class PullRequestPolicyTests(unittest.TestCase):
         open_prs = [current] * 11
         errors = MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY)
         self.assertTrue(any("open PRs" in error for error in errors))
+
+    def test_old_and_later_prs_do_not_consume_current_wip_budget(self):
+        current = {
+            "number": 11,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+        }
+        old = {
+            "number": 1,
+            "createdAt": "2026-10-26T12:00:00Z",
+            "author": {"login": "other-user"},
+        }
+        later = {
+            "number": 12,
+            "createdAt": "2026-10-27T13:00:00Z",
+            "author": {"login": "other-user"},
+        }
+        open_prs = [old] * 20 + [current] + [later] * 20
+        self.assertEqual(MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY), [])
 
     def test_new_pr_hits_size_limit(self):
         current = {
