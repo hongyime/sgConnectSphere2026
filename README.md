@@ -47,6 +47,8 @@ setup after cloning, moving the repository, or changing the tooling dependencies
 - [Security policy](SECURITY.md): how to report vulnerabilities and handle secrets.
 - [Architecture boundary](docs/architecture.md) and
   [initial decision record](docs/decisions/0001-repository-foundation.md).
+- [Decision register](docs/decisions/README.md): a single index to customer and
+  team backlog decisions, architecture records, and repository decisions.
 
 ## What exists today
 

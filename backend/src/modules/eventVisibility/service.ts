@@ -97,6 +97,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
   const targets = options.includeBookings ? `a.entity_type IN ('event', 'venue_booking')` : `a.entity_type = 'event'`;
   return query(`SELECT a.occurred_at, a.action, a.field_changed, a.entity_type,
+      CASE WHEN a.entity_type = 'venue_booking' THEN a.entity_id END AS booking_id,
       coalesce(was.full_name, a.old_value) AS old_value,
       coalesce(now_is.full_name, a.new_value) AS new_value, u.full_name AS actor_name, bv.name AS venue_name
     FROM audit_logs a

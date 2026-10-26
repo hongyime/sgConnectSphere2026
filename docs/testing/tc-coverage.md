@@ -1035,6 +1035,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - updateVenue returns the updated buffer values (E05-S05 Scenario 1)
 - buffer overflow is a 400, other database errors survive, and every failed edit rolls back
 
+### `backend/tests/venueClaimPolicy.integration.test.ts`
+
+- an accepted pending request refuses its competitor without business, audit or outbox changes
+- a hold blocks a later request, and a pending request blocks a later hold
+- concurrent overlapping requests leave exactly one accepted claim
+- buffered adjacency is accepted while a one-minute overlap is refused
+- later buffer growth blocks both approvals until Venue Staff rejects one active request
+- one event can confirm overlapping requests at different venues
+- converting a hold keeps its venue claim active against another request
+
 ### `backend/tests/venueHolds.integration.test.ts`
 
 - maintenance blocks notify a live hold\
@@ -1226,6 +1236,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a status change with no previous status shows only the new status
 - a booking decision missing its venue or earlier status is still described
 - booking entries show hold expiry or a generic booking label without internal IDs
+
+### `frontend/src/features/events/ActivityReleaseReference.test.tsx`
+
+- same-venue releases identify each booking when actor and time coincide
+- event and legacy hold entries do not invent a booking reference
 
 ### `frontend/src/features/events/EventCompletion.test.tsx`
 
