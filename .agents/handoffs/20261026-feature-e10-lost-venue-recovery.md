@@ -13,3 +13,8 @@ Verification: backend units497PASS; focused real-PostgreSQL regression56PASS (in
 Next: finish repository checks, commit/publish draft, inspect CI and dependency integration. Do not mark parent/subtasks Done. Final human E05-S06 trigger-to-recovery run and lift interaction require dependency integration; current DB tests begin with Conflicting fixture and prove no E05 trigger. Estimate remains3points; suggested5notapplied. Intentional worktree retained for review/manual work. Root staged notes untouched.
 
 Repository check completed: hygiene, secret scan and record validation passed; tooling suite163tests had3failures11errors in Windows worktree tests. Do not claim repository-check success. Both application typechecks passed again. Jira parent74and subtasks228/229/230moved In Progress; none Done.
+
+
+PR355published as draft atb0f0dc63. Application run40331728045failed in E06-S03 acceptance because venueBookingRequests.integration.test.ts built only0001+0019, missing conflict_block_id0025nowread by listBookingRequests. Repair preserves pre-migration legacy rows and0019requested_bybackfill assertion, applies every remaining migration in order before calling reader. Exact full CI booking suite must run; previous56testfocusedselection omitted this legacy reader test. Separate re-estimate PR356updates estimate3to5and Jira now5; old estimate notes above are historical. No Done claim.
+
+Repair verification: focused legacy reader1PASS; exact CI8-filebookingcommand71PASS0fail0skip using native disposable loopbackPG. Inventory regenerated with no contentdiff. New records20261026-215233-jininggg-backend-db.md and backend-api.md retain localPASS and observedpriorCI failure separately. PendingnewheadCI.

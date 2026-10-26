@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Client } from 'pg';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -35,7 +35,12 @@ test('TC_E06S03_05: PostgreSQL request list isolates assigned events and preserv
       [venue, event, status, `2027-01-15T${String(9 + index).padStart(2, '0')}:00:00+08`, `2027-01-01T00:00:0${index}Z`]);
     }
     await client.query("INSERT INTO venue_bookings(venue_id,event_id,status,booking_range,decision_reason) VALUES($1,$2,'rejected','[2027-01-15T09:00:00+08,2027-01-15T10:00:00+08)','PRIVATE OTHER REASON')", [venue, other]);
-    await client.query(await readFile(new URL('../database/migrations/0019_venue_bookings_contract.sql', import.meta.url), 'utf8'));
+    // Keep legacy rows inserted before migrations so 0019 backfill remains tested.
+    // The live request reader also consumes later conflict/reconfirmation columns.
+    const migrations = new URL('../database/migrations/', import.meta.url);
+    for (const name of (await readdir(migrations)).filter(name => name.endsWith('.sql') && !name.startsWith('0001_')).sort()) {
+      await client.query(await readFile(new URL(name, migrations), 'utf8'));
+    }
     assert.equal((await client.query('SELECT requested_by FROM venue_bookings LIMIT 1')).rows[0].requested_by, null);
     for (const identifier of [event, 'EVT-REQUESTS']) {
       const result = await listBookingRequests(query, user, identifier);
