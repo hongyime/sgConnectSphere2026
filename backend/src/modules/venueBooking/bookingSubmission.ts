@@ -121,7 +121,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         && occupied_window(tstzrange($2,$3,'[)'),v.setup_time_minutes,v.turnaround_time_minutes) LIMIT 1`,
       [input!.venue_id,input!.starts_at,input!.ends_at,hold?.id ?? null])).rows[0];
       if (clash) throw new AccessError(409, `This venue is unavailable from ${formatSgt(clash.starts_at)} to ${formatSgt(clash.ends_at)}, including setup and turnaround.`);
-      const block = (await client.query('SELECT id FROM venue_blocks WHERE venue_id=$1 AND block_range && tstzrange($2,$3,\'[)\') LIMIT 1', [input!.venue_id,input!.starts_at,input!.ends_at])).rows[0];
+      const block = (await client.query('SELECT id FROM venue_blocks WHERE venue_id=$1 AND lifted_at IS NULL AND block_range && tstzrange($2,$3,\'[)\') LIMIT 1', [input!.venue_id,input!.starts_at,input!.ends_at])).rows[0];
       if (block) throw new AccessError(409, 'This venue is blocked during the requested period.');
       const params = new URLSearchParams({ event_id: event.id, search: '1', start: input!.starts_at, end: input!.ends_at });
       if (input!.headcount !== null) { params.set('attendance', String(input!.headcount)); params.set('capacity', String(input!.headcount)); }

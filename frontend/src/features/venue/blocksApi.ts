@@ -6,6 +6,16 @@
 // inclusive, so the UI can send and show them without any timezone maths.
 import { apiCall, jsonRequest, type ApiResult } from '../../shared';
 
+// E05-S06 (SCRUM-152): the reason categories the calendar names on Blocked
+// periods and Conflicting bookings.
+export const REASON_CATEGORIES = ['maintenance', 'equipment_failure', 'renovation', 'safety_concern', 'other'] as const;
+export type ReasonCategory = typeof REASON_CATEGORIES[number];
+
+export const CATEGORY_LABELS: Record<ReasonCategory, string> = {
+  maintenance: 'Maintenance', equipment_failure: 'Equipment failure', renovation: 'Renovation',
+  safety_concern: 'Safety concern', other: 'Other',
+};
+
 export type VenueBlock = {
   id: string;
   venueId: string;

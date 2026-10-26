@@ -18,14 +18,20 @@ async function assignedEvent(query: Query, user: AuthenticatedUser, identifier: 
   return event;
 }
 
+// E05-S06 Scenario 3 / E10-S05 Scenario 2: a booking an unavailability made
+// Conflicting carries that unavailability's category, note and period, for the
+// event's venue-conflict flag.
 export async function listBookingRequests(query: Query, user: AuthenticatedUser | undefined, identifier: string) {
   const actor = await requireCoordinator(user);
   const event = await assignedEvent(query, actor, identifier);
   const bookings = (await query(`SELECT b.id, b.venue_id, v.name AS venue_name, v.location,
     b.status, lower(b.booking_range) AS starts_at, upper(b.booking_range) AS ends_at,
     b.created_at, b.decision_reason, b.suggested_venue_id, suggested.name AS suggested_venue_name, b.replaces_booking_id,
-    EXISTS(SELECT 1 FROM venue_bookings replacement WHERE replacement.replaces_booking_id=b.id AND replacement.status<>'released') AS has_replacement, b.purpose, b.headcount, b.is_primary, b.suitability_snapshot
+    EXISTS(SELECT 1 FROM venue_bookings replacement WHERE replacement.replaces_booking_id=b.id AND replacement.status<>'released') AS has_replacement, b.purpose, b.headcount, b.is_primary, b.suitability_snapshot,
+    b.status_before_conflict, cb.reason_category AS conflict_reason_category, cb.reason AS conflict_note,
+    lower(cb.block_range) AS conflict_starts_at, upper(cb.block_range) AS conflict_ends_at
     FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
+    LEFT JOIN venue_blocks cb ON cb.id=b.conflict_block_id
     LEFT JOIN venues suggested ON suggested.id=b.suggested_venue_id
     JOIN events e ON e.id=b.event_id
     WHERE b.event_id=$1 AND e.coordinator_id=$2
