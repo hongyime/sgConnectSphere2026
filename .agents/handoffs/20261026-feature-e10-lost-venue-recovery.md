@@ -1,20 +1,28 @@
-Implement E10-S05 / SCRUM-74 recovery under subtasks228backend/229frontend/230tests, preserving the owning E05-S06 trigger. User authorised implementation26October and asked about estimate; clarified original3pts remains unchanged, no re-estimation applied. Isolated branch from b0145df3; root staged review notes untouched.
+Implement E10-S05 / SCRUM-74 lost-venue recovery in implementation-only PR #355, covering SCRUM-228 backend, SCRUM-229 frontend and automated tests in SCRUM-230. Dependency integration and human manual acceptance belong in a later PR, as Ji Ning requested. The parent story and acceptance work remain open.
 
-Read README/CONTRIBUTING/DoD/setup/STATE/source-of-truth/instructor guidance and handoffs. Main has0025schema but LeXin348/349application unmerged; inspect shared contract, do not duplicate trigger. Planned: expose lost-booking context; link replacement via replaces_booking_id; transfer primary/publication and effective notices only at real approval; explicit old cancellation after confirmed replacement. Reuse current routes/search/booking/notifications. No new route function/schema planned. Formal E05-S06 human integration remains dependent. Native isolated loopback DB only; no production/email actions. No parent/subtask completion claim.
+## Current review fixes
 
+Le Xin requested changes at review 5653949411 on head 23794b8b. Addressed:
 
-Implementation now includes conflict context, dedicated recovery route, source-linked search/form submission, approval primary/publication transfer and atomic E11 effects, plus explicit cancellation after a Confirmed eligible replacement. No new schema or trigger duplication. Existing single-Session booking restriction retained.
+1. Recovery creates its own Lost Venue Replaced audit and uses that ID for arrangement notices. The separate Booking Approved audit still delivers the Coordinator decision notice; coordinatorNotified is true. Primary transfer/publication refresh are auditable and transactional.
+2. Rejected attempts keep their status and T-96 predecessor slot. Retrying a lost original extends its terminal Rejected attempt; staff suggestions continue that chain. Approval and original cancellation trace the same-Event chain. No index change or migration. UI follows descendants and restores search after rejection.
+3. Replacement status uses an ASCII dash instead of a literal question mark.
+4. Secondary-room recovery does not notify Attendees when publication is unchanged; internal notices still go out.
+5. Imports grouped with external imports first; lostVenueRecovery.ts expanded into readable blocks.
+6. Added early 401/403/400 unit guard tests. SQL orchestration coverage still uses real PostgreSQL; no 100% unit-coverage claim. Le Xin reviewed the stated exception.
 
-Verification: backend units497PASS; focused real-PostgreSQL regression56PASS (including3new recovery tests); dedicated recovery UI5PASS plus existing venue UI24PASS; both typechecksPASS. Coverage gap remains for new SQL orchestration unit branches (real DB tests are used instead, no100%claim). Test records:
-- 20261026-213116-jininggg-backend-db.md
-- 20261026-213116-jininggg-frontend-vitest.md
-- 20261026-213116-jininggg-backend-unit.md
+## Verification in progress
 
-Next: finish repository checks, commit/publish draft, inspect CI and dependency integration. Do not mark parent/subtasks Done. Final human E05-S06 trigger-to-recovery run and lift interaction require dependency integration; current DB tests begin with Conflicting fixture and prove no E05 trigger. Estimate remains3points; suggested5notapplied. Intentional worktree retained for review/manual work. Root staged notes untouched.
+Both typechecks passed. Backend unit suite: 500 passed. Exact eight-file CI booking acceptance suite: 74 passed, zero failures/skips. Includes direct Coordinator notice assertions, distinct audit IDs, rejected retry followed by suggested approval, retained history, secondary-room publication suppression, and rollback when the later approval-notice outbox insert fails. Final focused frontend regression: 42 tests passed in six files. Inventory regenerated. Fresh T-65 records:
+- docs/testing/runs/20261026-231507-jininggg-backend-db.md
+- docs/testing/runs/20261026-231507-jininggg-backend-unit.md
+- docs/testing/runs/20261026-231507-jininggg-frontend-vitest.md
+Repository hygiene and record checks passed; 163 tooling tests retain the known 3 failures and 11 errors in Windows worktree fixtures. Tooling record: docs/testing/runs/20261026-231625-jininggg-tooling.md. New-head CI remains pending.
 
-Repository check completed: hygiene, secret scan and record validation passed; tooling suite163tests had3failures11errors in Windows worktree tests. Do not claim repository-check success. Both application typechecks passed again. Jira parent74and subtasks228/229/230moved In Progress; none Done.
+The original CI fixture repair (2e7b5803) preserves pre-migration rows and the 0019 backfill assertion while applying all current migrations. Root staged review notes remain untouched.
 
+## Still pending
 
-PR355published as draft atb0f0dc63. Application run40331728045failed in E06-S03 acceptance because venueBookingRequests.integration.test.ts built only0001+0019, missing conflict_block_id0025nowread by listBookingRequests. Repair preserves pre-migration legacy rows and0019requested_bybackfill assertion, applies every remaining migration in order before calling reader. Exact full CI booking suite must run; previous56testfocusedselection omitted this legacy reader test. Separate re-estimate PR356updates estimate3to5and Jira now5; old estimate notes above are historical. No Done claim.
+E05-S06 application PRs #348/#349 own detection and Confirmed-to-Planning. Recovery tests start with a Conflicting fixture; they do not prove that trigger or the combined lift interaction. Ji Ning will integrate dependencies, fix any findings and run human TC_E10S05_01-04 with hand-taken screenshots in a separate follow-up PR. Product Owner or documented delegate acceptance is needed before story Done. Do not auto-close parent/subtasks from this implementation PR.
 
-Repair verification: focused legacy reader1PASS; exact CI8-filebookingcommand71PASS0fail0skip using native disposable loopbackPG. Inventory regenerated with no contentdiff. New records20261026-215233-jininggg-backend-db.md and backend-api.md retain localPASS and observedpriorCI failure separately. PendingnewheadCI.
+Jira estimate is restored to 3. Separate PR #356 proposes 5 with team/PO basis confirmation pending. Only reconcile Jira to 5 after that backlog PR merges. Earlier implementation records describe historical estimates and must not be rewritten.

@@ -1,4 +1,3 @@
-import { getVenueBookingRequests } from './venueBookingRequestsApi';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -6,6 +5,8 @@ import {
   Alert, Button, ButtonLink, Card, EmptyState, ErrorState, FactList, FormActions, FormField,
   FormSection, LoadingState, PageLayout, StatusPill, apiCall, useLoad,
 } from '../../shared';
+import { getVenueBookingRequests } from './venueBookingRequestsApi';
+import { lostVenueRecoveryState } from './lostVenueRecoveryState';
 import './venue.css';
 
 type Option = { id: string; label: string };
@@ -35,7 +36,7 @@ function VenueSearchPage({ eventCode, replacementId }: { eventCode?: string; rep
     if (!setup.ok || !replacementId || !eventCode) return setup;
     const bookings = await getVenueBookingRequests(eventCode, signal);
     if (!bookings.ok) return bookings;
-    const source = bookings.data.bookings.find(b => b.id === replacementId && b.status === 'conflicting' && b.conflict_block_id && !b.has_replacement);
+    const source = bookings.data.bookings.find(b => b.id === replacementId && b.status === 'conflicting' && b.conflict_block_id && lostVenueRecoveryState(bookings.data.bookings, b).canRequest);
     if (!source) return { ok: false as const, status: 409, message: 'This lost booking is no longer available for replacement.' };
     return { ...setup, data: { ...setup.data, defaults: { ...setup.data.defaults, start: source.starts_at, end: source.ends_at, attendance: source.headcount ?? setup.data.defaults.attendance } } };
   }, [eventCode, replacementId]);

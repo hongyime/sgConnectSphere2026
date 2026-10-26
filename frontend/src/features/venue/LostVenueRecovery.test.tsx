@@ -33,7 +33,7 @@ test('TC_E10S05_03: Pending replacement cannot cancel original; Confirmed requir
 
 test('TC_E10S05_03: Pending or reconfirmation-required replacements do not expose cancellation', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(data('pending')))); mount();
-  expect(await screen.findByText('Replacement: New Hall ? pending')).toBeInTheDocument();
+  expect(await screen.findByText('Replacement: New Hall - pending')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Cancel original booking' })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'Search for a replacement venue' })).not.toBeInTheDocument();
 });
@@ -57,4 +57,30 @@ test('TC_E10S05_03: suitability preserves replacement context and submits the or
   expect(await screen.findByText('Booking request submitted')).toBeInTheDocument();
   const call = fetcher.mock.calls.find(([, init]) => init?.method === 'POST');
   expect(JSON.parse(String(call?.[1]?.body))).toMatchObject({ replaces_booking_id: 'original', event_id: 'event', venue_id: 'new', purpose: 'Programme', headcount: 40 });
+});
+
+test('TC_E10S05_03: rejected recovery retains history and offers same-event search again', async () => {
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response(data('rejected')))); mount();
+  expect(await screen.findByText('Replacement: New Hall - rejected')).toBeInTheDocument();
+  expect(screen.getByRole('link',{name:'Search for a replacement venue'})).toHaveAttribute('href','/coordinator/events/EVT-1/venues?replaces_booking_id=original');
+  expect(screen.queryByRole('button',{name:'Cancel original booking'})).not.toBeInTheDocument();
+});
+
+test('TC_E10S05_03: confirmed suggested descendant permits original cancellation without another search', async () => {
+  const chain=data('rejected');
+  chain.bookings.push({id:'descendant',venue_name:'Suggested Hall',status:'confirmed',replaces_booking_id:'replacement'});
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response(chain))); mount();
+  expect(await screen.findByText('Replacement: Suggested Hall - confirmed')).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Cancel original booking'})).toBeInTheDocument();
+  expect(screen.queryByRole('link',{name:'Search for a replacement venue'})).not.toBeInTheDocument();
+});
+
+test('TC_E10S05_03: suitability permits a new linked request after a rejected recovery attempt', async () => {
+  vi.stubGlobal('fetch',vi.fn(async (url:string)=>{
+    if(String(url).includes('booking_requests'))return response(data('rejected'));
+    return response({event:{id:'event',title:'Same Event',status:'planning',start:original.starts_at,end:original.ends_at},assessment:{name:'New Hall',location:'Campus',suitable:true,mismatches:[],comparisons:[]}});
+  }));
+  render(<MemoryRouter initialEntries={['/events/EVT-1/venues/new?replaces_booking_id=original']}><Routes><Route path="/events/:eventCode/venues/:venueId" element={<VenueSuitability/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByText('Request replacement venue')).toBeInTheDocument();
+  expect(screen.getByRole('button',{name:'Submit booking request'})).toBeInTheDocument();
 });

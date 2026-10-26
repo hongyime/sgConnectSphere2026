@@ -50,6 +50,16 @@ test('TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publis
     await assert.rejects(cancelLostVenueBooking(f.pool,f.actor,{booking_id:f.lost}),{status:409});
     const decision=await decideBooking(f.pool,f.decider,replacement,{decision:'approve'});
     assert.equal(decision.status,200);
+    assert.equal(decision.body.coordinatorNotified, true);
+    const coordinatorNotices = (await f.q('SELECT title FROM notifications WHERE user_id=$1', [f.actor.id])).rows;
+    assert.equal(coordinatorNotices.filter(n => n.title === 'Venue booking approved').length, 1);
+    assert.equal(coordinatorNotices.filter(n => n.title === 'Event update').length, 1);
+    const approvalAudits = (await f.q("SELECT id,action,new_value FROM audit_logs WHERE entity_id=$1 AND action IN ('Booking Approved','Lost Venue Replaced')", [replacement])).rows;
+    assert.equal(approvalAudits.length, 2);
+    assert.notEqual(approvalAudits[0].id, approvalAudits[1].id);
+    const recoveryAudit = approvalAudits.find(a => a.action === 'Lost Venue Replaced');
+    assert.equal(JSON.parse(recoveryAudit.new_value).publication_updated, true);
+    assert.equal(JSON.parse(recoveryAudit.new_value).is_primary, true);
     const original=(await f.q('SELECT status,is_primary FROM venue_bookings WHERE id=$1',[f.lost])).rows[0];
     assert.deepEqual(original,{status:'conflicting',is_primary:false});
     assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[replacement])).rows[0].is_primary,true);
@@ -88,6 +98,8 @@ test('TC_E10S05_04: outbox failure rolls back approval, publication, primary tra
     assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[id])).rows[0].status,'pending');
     assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[f.lost])).rows[0].is_primary,true);
     assert.equal((await f.q('SELECT venue_name FROM event_publications')).rows[0].venue_name,'Original Hall');
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE entity_id=$1 AND action IN ('Booking Approved','Lost Venue Replaced')", [id])).rowCount, 0);
+    assert.equal((await f.q('SELECT id FROM notifications WHERE user_id IN ($1,$2)', [f.organiser,f.attendee])).rowCount, 0);
     await f.q('DROP TRIGGER reject_recovery_outbox ON notification_deliveries');
     await decideBooking(f.pool,f.decider,id,{decision:'approve'});
     await f.q('CREATE TRIGGER reject_recovery_outbox BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION reject_recovery_outbox()');
@@ -95,4 +107,82 @@ test('TC_E10S05_04: outbox failure rolls back approval, publication, primary tra
     assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[f.lost])).rows[0].status,'conflicting');
     assert.equal((await f.q("SELECT id FROM audit_logs WHERE action='Lost Venue Booking Cancelled'")).rowCount,0);
   }finally{await f.close();}
+});
+
+async function anotherVenue(f: Awaited<ReturnType<typeof fixture>>, name: string) {
+  const id = randomUUID();
+  await f.q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,$2,'Test campus',100,'00:00','23:59')", [id,name]);
+  await f.q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [id,f.staff]);
+  return id;
+}
+
+test('TC_E10S05_03 TC_E10S05_04: rejected retries and staff suggestions preserve the lost original across the chain', async () => {
+  const f = await fixture();
+  try {
+    const first = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    await decideBooking(f.pool,f.decider,first.body.booking.id,{decision:'reject',reason:'Room unsuitable'});
+    const venueB = await anotherVenue(f,'Second recovery hall');
+    const retryInput = {...f.input,venue_id:venueB};
+    const key = randomUUID();
+    const second = await submitBooking(f.pool,f.actor,retryInput,key);
+    assert.equal(second.body.booking.replaces_booking_id,first.body.booking.id);
+    assert.equal((await submitBooking(f.pool,f.actor,retryInput,key)).body.booking.id,second.body.booking.id);
+    await assert.rejects(submitBooking(f.pool,f.actor,retryInput,randomUUID()),{status:409});
+    await assert.rejects(cancelLostVenueBooking(f.pool,f.actor,{booking_id:f.lost}),{status:409});
+    const venueC = await anotherVenue(f,'Suggested recovery hall');
+    await decideBooking(f.pool,f.decider,second.body.booking.id,{decision:'reject',reason:'Use another room',suggested_venue_id:venueC});
+    const final = await submitBooking(f.pool,f.actor,{...f.input,venue_id:venueC,replaces_booking_id:second.body.booking.id},randomUUID());
+    assert.equal(final.body.booking.replaces_booking_id,second.body.booking.id);
+    assert.equal((await f.q('SELECT id FROM notifications WHERE user_id IN ($1,$2)',[f.organiser,f.attendee])).rowCount,0);
+    const approved = await decideBooking(f.pool,f.decider,final.body.booking.id,{decision:'approve'});
+    assert.equal(approved.body.coordinatorNotified,true);
+    assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[final.body.booking.id])).rows[0].is_primary,true);
+    assert.equal((await f.q('SELECT venue_name FROM event_publications')).rows[0].venue_name,'Suggested recovery hall');
+    assert.equal((await f.q("SELECT id FROM venue_bookings WHERE id IN ($1,$2) AND status='rejected'",[first.body.booking.id,second.body.booking.id])).rowCount,2);
+    assert.equal((await f.q('SELECT id FROM notifications WHERE user_id IN ($1,$2)',[f.organiser,f.attendee])).rowCount,2);
+    assert.equal((await cancelLostVenueBooking(f.pool,f.actor,{booking_id:f.lost})).status,200);
+  } finally { await f.close(); }
+});
+
+test('TC_E10S05_04: secondary-room recovery audits internally without changing publication or notifying Attendees', async () => {
+  const f = await fixture();
+  try {
+    await f.q('UPDATE venue_bookings SET is_primary=false WHERE id=$1',[f.lost]);
+    const primaryVenue = await anotherVenue(f,'Unaffected primary hall');
+    await f.q(`INSERT INTO venue_bookings(event_id,venue_id,booking_range,status,is_primary)
+      VALUES($1,$2,'[2027-01-15T01:00Z,2027-01-15T04:00Z)','confirmed',true)`,[f.event,primaryVenue]);
+    await f.q("UPDATE event_publications SET venue_name='Unaffected primary hall' WHERE event_id=$1",[f.event]);
+    const publication = (await f.q('SELECT * FROM event_publications')).rows;
+    const submitted = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const approved = await decideBooking(f.pool,f.decider,submitted.body.booking.id,{decision:'approve'});
+    assert.equal(approved.body.coordinatorNotified,true);
+    assert.deepEqual((await f.q('SELECT * FROM event_publications')).rows,publication);
+    assert.equal((await f.q('SELECT id FROM notifications WHERE user_id=$1',[f.attendee])).rowCount,0);
+    assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[submitted.body.booking.id])).rows[0].is_primary,false);
+    const audit=(await f.q("SELECT new_value FROM audit_logs WHERE action='Lost Venue Replaced'")).rows[0];
+    assert.equal(JSON.parse(audit.new_value).publication_updated,false);
+    assert.equal(JSON.parse(audit.new_value).is_primary,false);
+  } finally { await f.close(); }
+});
+
+test('TC_E10S05_04: failure queuing the Coordinator decision notice rolls back the earlier venue-change effects', async () => {
+  const f = await fixture();
+  try {
+    const submitted = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    const id = submitted.body.booking.id;
+    const baseline = (await f.q('SELECT id FROM notifications ORDER BY id')).rows;
+    await f.q(`CREATE FUNCTION reject_approval_outbox() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF EXISTS(SELECT 1 FROM notifications WHERE id=NEW.notification_id AND title='Venue booking approved') THEN
+        RAISE EXCEPTION 'Approval outbox failure';
+      END IF;
+      RETURN NEW;
+    END $$`);
+    await f.q('CREATE TRIGGER reject_approval_outbox BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION reject_approval_outbox()');
+    await assert.rejects(decideBooking(f.pool,f.decider,id,{decision:'approve'}),/Approval outbox failure/);
+    assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1',[id])).rows[0].status,'pending');
+    assert.equal((await f.q('SELECT is_primary FROM venue_bookings WHERE id=$1',[f.lost])).rows[0].is_primary,true);
+    assert.equal((await f.q('SELECT venue_name FROM event_publications')).rows[0].venue_name,'Original Hall');
+    assert.equal((await f.q("SELECT id FROM audit_logs WHERE entity_id=$1 AND action IN ('Booking Approved','Lost Venue Replaced')",[id])).rowCount,0);
+    assert.deepEqual((await f.q('SELECT id FROM notifications ORDER BY id')).rows,baseline);
+  } finally { await f.close(); }
 });

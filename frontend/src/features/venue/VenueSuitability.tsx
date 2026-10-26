@@ -1,7 +1,8 @@
-import { getVenueBookingRequests } from './venueBookingRequestsApi';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Alert, ButtonLink, Card, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDateRange, useLoad } from '../../shared';
 import { getVenueSuitability } from './venueSuitabilityApi';
+import { getVenueBookingRequests } from './venueBookingRequestsApi';
+import { lostVenueRecoveryState } from './lostVenueRecoveryState';
 import { VenueBookingForm } from './VenueBookingForm';
 
 export function VenueSuitability() {
@@ -9,7 +10,9 @@ export function VenueSuitability() {
   const [params] = useSearchParams();
   const replacementId = params.get('replaces_booking_id') ?? '';
   const recovery = useLoad(signal => replacementId ? getVenueBookingRequests(eventCode, signal) : Promise.resolve({ ok: true as const, data: { event: { id: eventCode, event_code: eventCode, title: '', status: '' }, bookings: [] } }), [eventCode, replacementId]);
-  const source = recovery.result.state === 'ready' ? recovery.result.data.bookings.find(b => b.id === replacementId && b.status === 'conflicting' && b.conflict_block_id && !b.has_replacement) : undefined;
+  const recoveryBookings = recovery.result.state === 'ready' ? recovery.result.data.bookings : [];
+  const source = recoveryBookings.find(b => b.id === replacementId && b.status === 'conflicting' && b.conflict_block_id
+    && lostVenueRecoveryState(recoveryBookings, b).canRequest);
   const { result, reload } = useLoad(signal => getVenueSuitability(eventCode, venueId, signal), [eventCode, venueId]);
   const data = result.state === 'ready' ? result.data : null;
   const backTo = `/coordinator/events/${encodeURIComponent(eventCode)}/venues${replacementId ? `?replaces_booking_id=${encodeURIComponent(replacementId)}` : ''}`;

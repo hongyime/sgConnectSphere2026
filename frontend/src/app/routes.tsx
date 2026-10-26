@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+import { Navigate } from 'react-router-dom';
 import { LostVenueRecovery } from '../features/venue/LostVenueRecovery';
 import { EventAttendance } from '../features/coordinator/EventAttendance';
 import { EventCompletion } from '../features/events/EventCompletion';
@@ -22,8 +24,6 @@ import { MarkUnavailablePage } from '../features/support/EquipmentUnavailability
 //
 // Role home pages and header links live in roles.ts; routes.test.tsx checks
 // they all point at routes registered here.
-import type { ReactElement } from 'react';
-import { Navigate } from 'react-router-dom';
 import { LandingPage } from '../features/landing/LandingPage';
 import { LoginPage } from '../features/accessControl/LoginPage';
 import { PasswordRecovery } from '../features/accessControl/PasswordRecovery';
