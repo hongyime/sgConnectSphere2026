@@ -399,6 +399,16 @@ async function restoreFlagged(client: PoolClient, actorId: string, venueName: st
   const restored: FlaggedRow[] = [];
   for (const booking of flagged) {
     if (booking.replaced) continue;
+    // Another unavailability still covering the booking takes it over, so the
+    // booking stays Conflicting and lifting that one restores it (#348 review).
+    const handedOver = await client.query(`
+      WITH other AS (
+        SELECT b.id FROM venue_bookings vb JOIN venue_blocks b ON b.venue_id = vb.venue_id
+        WHERE vb.id = $1 AND b.id::text <> $2 AND b.lifted_at IS NULL AND b.block_range && vb.booking_range
+        ORDER BY lower(b.block_range), b.id LIMIT 1)
+      UPDATE venue_bookings SET conflict_block_id = other.id FROM other WHERE venue_bookings.id = $1`,
+    [booking.booking_id, blockId]);
+    if (handedOver.rowCount) continue;
     const status = booking.expired ? 'expired' : booking.status_before_conflict;
     // Another booking may have taken the slot's buffers meanwhile (0016); that
     // booking then stays Conflicting for staff to resolve, and the rest of the

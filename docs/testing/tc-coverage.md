@@ -1100,6 +1100,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenario 5: removing the end of an unavailability flags bookings far in the future
 - Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
 - Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one
+- #348 review: lifting the first of two unavailabilities over a booking keeps it Conflicting under the second, and lifting the second restores it
+- #348 review: lifting the second of two unavailabilities over a booking leaves it Conflicting, and lifting the first restores it
+- #348 review: shortening the first of two unavailabilities off a booking hands it to the second
 - Scenario 6 with a primary booking: editing over it and lifting restore it Confirmed and still primary
 
 ### `backend/tests/venueUnavailability.test.ts`
@@ -1112,6 +1115,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - editing needs a start, valid input and a free period, and does not hide other restore errors
 - E05-S04 shorten still only shortens, keeps the category and note, and now restores what it releases
 - Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
+- #348 review: a booking another unavailability still covers is handed to it, not restored
 - E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
 - the block list shows an open-ended block with no end and hides lifted ones in its query
 - Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only
