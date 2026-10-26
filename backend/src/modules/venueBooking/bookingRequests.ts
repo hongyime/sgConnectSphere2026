@@ -23,9 +23,12 @@ export async function listBookingRequests(query: Query, user: AuthenticatedUser 
   const event = await assignedEvent(query, actor, identifier);
   const bookings = (await query(`SELECT b.id, b.venue_id, v.name AS venue_name, v.location,
     b.status, lower(b.booking_range) AS starts_at, upper(b.booking_range) AS ends_at,
+    b.conflict_block_id,b.status_before_conflict,block.reason_category AS conflict_category,block.reason AS conflict_reason,
+    lower(block.block_range) AS conflict_starts_at,upper(block.block_range) AS conflict_ends_at,
     b.created_at, b.decision_reason, b.suggested_venue_id, suggested.name AS suggested_venue_name, b.replaces_booking_id,
-    EXISTS(SELECT 1 FROM venue_bookings replacement WHERE replacement.replaces_booking_id=b.id AND replacement.status<>'released') AS has_replacement, b.purpose, b.headcount, b.is_primary, b.suitability_snapshot
+    EXISTS(SELECT 1 FROM venue_bookings replacement WHERE replacement.replaces_booking_id=b.id AND replacement.status<>'released') AS has_replacement, b.purpose, b.headcount, b.is_primary, b.requires_reconfirmation, b.suitability_snapshot
     FROM venue_bookings b JOIN venues v ON v.id=b.venue_id
+    LEFT JOIN venue_blocks block ON block.id=b.conflict_block_id
     LEFT JOIN venues suggested ON suggested.id=b.suggested_venue_id
     JOIN events e ON e.id=b.event_id
     WHERE b.event_id=$1 AND e.coordinator_id=$2

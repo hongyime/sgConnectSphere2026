@@ -1,3 +1,4 @@
+import { confirmLostVenueReplacement } from './lostVenueRecovery.js';
 import type { Pool, PoolClient } from 'pg';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
@@ -309,6 +310,8 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
         (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
       VALUES ($1, 'venue_booking', $2, $3, $4, 'status', 'pending', $5) RETURNING id, occurred_at`,
     [staff.id, row.id, row.event_id, decision.decision === 'approve' ? 'Booking Approved' : 'Booking Rejected', newStatus]);
+
+    if (decision.decision === 'approve') await confirmLostVenueReplacement(client,row.id,staff.id,audit.rows[0]);
 
     // The audit ID is the change ID (T-64), so a retried decision cannot send
     // the Coordinator a second notice. An event with no assigned Coordinator

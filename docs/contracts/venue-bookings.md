@@ -401,3 +401,16 @@ Changing primary updates only the venue name/location and publication timestamp 
 
 
 Effective primary venue changes on an existing Confirmed publication use the shared T-64 arrangement notification hook in that same transaction. Capture scoped old/new venue staff plus current assigned technical staff, organiser and Coordinator; registered/waitlisted Attendees receive public-name wording. Exclude the actor, inactive/unrelated/withdrawn users and duplicate memberships. The primary audit ID is the durable notification change ID. A replay or another booking at the same venue emits no venue-change notice. Outbox failure rolls back primary flags, publication, audit and inbox/outbox together. Planning/unpublished selections remain internal and emit no effective-public-venue notice. This implements a caller, not proof of provider or actual mailbox receipt.
+
+
+### E10-S05 lost-venue recovery (SCRUM-74)
+
+E05-S06 owns unavailability detection, Conflicting status, Coordinator notification and Confirmed-to-Planning. Recovery consumes its migration-0025 `conflict_block_id` / `status_before_conflict` contract; it does not duplicate the trigger. The assigned Coordinator's booking list includes the block category, reason and unavailable range, plus `requires_reconfirmation`.
+
+`request_booking` accepts `replaces_booking_id` for a same-event Conflicting source caused by loss of a Pending/Confirmed booking. Search and suitability carry this link and prefill the original period, purpose and headcount. Existing rejected/suggested replacement rules and the non-Released unique index remain unchanged. Existing single-Session submission restrictions still apply; this increment does not add multi-Session booking selection.
+
+When Venue Staff approves the replacement, the transaction transfers an original primary designation to the replacement and refreshes only the venue in an existing publication. The Event remains Planning; recovery does not reconfirm it. E11 routing captures old/new venue audiences, excludes the actor, and queues Organiser/registered Attendee notices only at effective confirmation. Original booking, audit, publication and inbox/outbox effects roll back together on failure. An unlinked approval is unchanged.
+
+The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_booking` and `booking_id` explicitly releases it only for its current assigned active Coordinator and only with a same-event linked Confirmed replacement not requiring reconfirmation. It audits the cancellation and notifies the original venue's assigned staff. Released retries do not duplicate effects. Closed Events refuse recovery. The existing same-origin/session handler is reused; no new serverless function or migration is needed.
+
+The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Automated recovery evidence uses the Conflicting fixture precondition. Final E05-S06 trigger/lift integration and human manual acceptance must be completed after the dependent application code is integrated.

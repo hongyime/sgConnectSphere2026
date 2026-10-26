@@ -99,12 +99,13 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         }
       }
       if (input!.replaces_booking_id) {
-        const rejected = (await client.query<{ status: string; event_id: string; suggested_venue_id: string | null }>(
-          'SELECT status,event_id,suggested_venue_id FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
-        if (!rejected || rejected.event_id !== event.id || rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)
-          throw new AccessError(409, 'This rejected booking has no matching suggested venue.');
+        const rejected = (await client.query<{ status: string; event_id: string; suggested_venue_id: string | null; conflict_block_id: string | null; status_before_conflict: string | null }>(
+          'SELECT status,event_id,suggested_venue_id,conflict_block_id,status_before_conflict FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
+        const lost = rejected?.status === 'conflicting' && rejected.conflict_block_id && ['pending','confirmed'].includes(rejected.status_before_conflict ?? '');
+        if (!rejected || rejected.event_id !== event.id || (!lost && (rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)))
+          throw new AccessError(409, 'This booking has no valid suggested or lost-venue replacement context.');
         if ((await client.query("SELECT id FROM venue_bookings WHERE replaces_booking_id=$1 AND status<>'released'", [input!.replaces_booking_id])).rows.length)
-          throw new AccessError(409, 'A replacement request already exists for this rejection.');
+          throw new AccessError(409, 'A replacement request already exists for this booking.');
       }
       if (!['approved', 'planning'].includes(event.status)) throw new AccessError(409, 'Booking requests require an Approved or Planning event.');
       if (new Date(input!.starts_at) < event.starts_at || new Date(input!.ends_at) > event.ends_at) throw new AccessError(400, 'The booking period must fall within the event.');
