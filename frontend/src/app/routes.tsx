@@ -45,6 +45,7 @@ import { NotificationInbox } from '../features/notifications/NotificationInbox';
 import { ChangeRequests } from '../features/events/ChangeRequests';
 import { AnswerQuestions } from '../features/organiser/AnswerQuestions';
 import { EventRegistrationsPage } from '../features/organiser/EventRegistrations';
+import { RegistrationPeriodPage } from '../features/organiser/RegistrationPeriod';
 import { RequestClarification } from '../features/coordinator/RequestClarification';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
@@ -136,6 +137,7 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode/change', <ChangeRequests />, 'live', 'E10-S01'),
   page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
   page('/organiser/requests/:eventCode/registrations', <EventRegistrationsPage />, 'live', 'E09-S02'),
+  page('/organiser/requests/:eventCode/registration-period', <RegistrationPeriodPage />, 'live', 'E09-S03'),
   page('/change-requests/new', <ChangeRequests />, 'live', 'E10-S01'),
   page('/coordinator/events/:eventCode/changes', <ChangeRequests coordinator />, 'live', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),

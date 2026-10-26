@@ -61,6 +61,8 @@ test('TC_E08S03_05 - once confirmed, the Organiser sees every confirmed venue wi
   expect(document.querySelector('.ui-page-heading .status-pill')).toHaveTextContent('Confirmed');
   // E09-S02: a Confirmed event links to its registrations.
   expect(screen.getByRole('link', { name: 'Registrations' }).getAttribute('href')).toMatch(/^\/organiser\/requests\/[^/]+\/registrations$/);
+  // E09-S03: and to its registration period.
+  expect(screen.getByRole('link', { name: 'Registration period' }).getAttribute('href')).toMatch(/\/registration-period$/);
 });
 
 test('TC_E08S03_05 - a confirmed event with none required, no support and no venue rows says so in words', async () => {
@@ -100,6 +102,7 @@ test('SCRUM-60 fix (a) - equipment recorded as none required reads "None require
   expect(screen.queryByText('none_required')).not.toBeInTheDocument();
   expect(screen.queryByRole('region', { name: 'Confirmed arrangements' })).not.toBeInTheDocument();
   expect(screen.queryByRole('link', { name: 'Registrations' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Registration period' })).toBeInTheDocument();
 });
 
 test('TC_E08S03_08 - an event in Safety Review loads, with its pill and what happens next', async () => {

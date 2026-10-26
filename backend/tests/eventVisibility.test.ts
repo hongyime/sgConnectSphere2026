@@ -262,3 +262,51 @@ test('notifications without an authorised database record cannot be delivered', 
   assert.equal(await permittedDelivery(denyQuery, undefined, user.email), null);
   assert.equal(await permittedDelivery(async () => ({ rows: [] }), 'foreign-event-notification', user.email), null);
 });
+
+// E09-S03 (SCRUM-213): the registration period the Organiser sets after approval.
+function periodQuery(status = 'confirmed', calls: { sql: string; values?: unknown[] }[] = []): Query {
+  return async (sql, values) => {
+    calls.push({ sql, values });
+    if (sql.includes('SELECT id, status')) {
+      return { rows: [{ id: 'event-a', status, organiser_id: user.id, coordinator_id: 'coord-a', client_org_id: 'client-a', starts_at: new Date('2026-11-15T01:00:00Z') }] };
+    }
+    return { rows: [] };
+  };
+}
+
+test('TC_E09S03_01, _02, _06 - after approval the Organiser sets the window, withdrawal deadline and waiting list directly', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  const result = await updateEventInformation(periodQuery('confirmed', calls), user, 'EVT-A01', {
+    registrationDates: { opensAt: '2026-10-01T01:00:00Z', closesAt: '2026-11-10T09:00:00Z' },
+    withdrawalDeadline: '2026-11-12T09:00:00Z', waitlistEnabled: true,
+  });
+  assert.deepEqual(result.fields, ['registrationDates', 'withdrawalDeadline', 'waitlistEnabled']);
+  const update = calls.find(call => call.sql.startsWith('UPDATE events SET'))!;
+  assert.match(update.sql, /registration_opens_at = \$1, registration_closes_at = \$2, withdrawal_deadline = \$3, waitlist_enabled = \$4/);
+  assert.deepEqual(update.values, ['2026-10-01T01:00:00Z', '2026-11-10T09:00:00Z', '2026-11-12T09:00:00Z', true, 'event-a']);
+  assert.equal(calls.filter(call => call.sql.includes('INSERT INTO audit_logs')).length, 3);
+});
+
+test('E09-S03 - the withdrawal deadline can be cleared, and bad values are refused', async () => {
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  await updateEventInformation(periodQuery('planning', calls), user, 'EVT-A01', { withdrawalDeadline: null, waitlistEnabled: false });
+  assert.deepEqual(calls.find(call => call.sql.startsWith('UPDATE events SET'))!.values, [null, false, 'event-a']);
+  await assert.rejects(updateEventInformation(periodQuery(), user, 'EVT-A01', { withdrawalDeadline: 'soon' }), { status: 400, message: 'withdrawalDeadline must be a valid date or null.' });
+  await assert.rejects(updateEventInformation(periodQuery(), user, 'EVT-A01', { withdrawalDeadline: 5 }), { status: 400 });
+  await assert.rejects(updateEventInformation(periodQuery(), user, 'EVT-A01', { waitlistEnabled: 'yes' }), { status: 400, message: 'waitlistEnabled must be true or false.' });
+});
+
+test('TC_E09S03_05 - a closing date after the event starts needs confirming before it is saved', async () => {
+  const late = { registrationDates: { opensAt: '2026-10-01T01:00:00Z', closesAt: '2026-11-20T01:00:00Z' } };
+  const calls: { sql: string; values?: unknown[] }[] = [];
+  await assert.rejects(updateEventInformation(periodQuery('confirmed', calls), user, 'EVT-A01', late),
+    { status: 428, message: 'Registration would close after the event starts on 15 Nov 2026, 9:00 am. Confirm to save it anyway.' });
+  assert.equal(calls.some(call => call.sql.startsWith('UPDATE events SET')), false);
+  const confirmed = await updateEventInformation(periodQuery(), user, 'EVT-A01', { ...late, confirmLateClose: true });
+  assert.deepEqual(confirmed.fields, ['registrationDates']);
+  // Closing exactly at the start is not after it.
+  await updateEventInformation(periodQuery(), user, 'EVT-A01', { registrationDates: { opensAt: '2026-10-01T01:00:00Z', closesAt: '2026-11-15T01:00:00Z' } });
+  // Before approval, a new start date in the same save is the one compared.
+  await assert.rejects(updateEventInformation(periodQuery('under_review'), user, 'EVT-A01',
+    { startAt: '2026-11-01T01:00:00Z', registrationDates: { opensAt: '2026-10-01T01:00:00Z', closesAt: '2026-11-05T01:00:00Z' } }), { status: 428 });
+});

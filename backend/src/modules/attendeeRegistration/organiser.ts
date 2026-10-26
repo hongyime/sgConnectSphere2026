@@ -20,6 +20,7 @@ import {
 type OrganiserEvent = {
   id: string; event_code: string | null; title: string; status: string;
   waitlist_enabled: boolean; organiser_id: string; starts_at: Date; ends_at: Date;
+  registration_enabled: boolean; opens_at: Date | null; closes_at: Date | null; withdrawal_deadline: Date | null;
 };
 type PendingRow = { id: string; full_name: string | null; email: string; registered_at: Date; session_ids: string[] };
 type Result = { status: number; body: Record<string, unknown> };
@@ -35,7 +36,8 @@ async function organiserEvent(query: Query, user: AuthenticatedUser, ref: string
   identifier(ref);
   if (!canActAsRole(user, ['event_organiser']).allowed) throw new AccessError(403, 'Only the Event Organiser can manage registrations.');
   const event = (await query(`SELECT id, event_code, title, status, waitlist_enabled, organiser_id,
-      lower(event_range) AS starts_at, upper(event_range) AS ends_at
+      lower(event_range) AS starts_at, upper(event_range) AS ends_at, registration_enabled,
+      registration_opens_at AS opens_at, registration_closes_at AS closes_at, withdrawal_deadline
     FROM events WHERE id::text = $1 OR event_code = $1${lock ? ' FOR UPDATE' : ''}`, [ref])).rows[0] as OrganiserEvent | undefined;
   // Another Organiser's event looks the same as a missing one.
   if (!event || event.organiser_id !== user.id) throw new AccessError(404, 'Event not found.');
@@ -50,7 +52,13 @@ function snapshot(event: OrganiserEvent, capacity: EventCapacity, sessions: Sess
   const names = sessionNames(sessions);
   const places = new Map(capacity.sessions.map(session => [session.sessionId, session]));
   return {
-    event: { id: event.id, eventCode: event.event_code, name: event.title, status: event.status, waitlistEnabled: event.waitlist_enabled },
+    event: {
+      id: event.id, eventCode: event.event_code, name: event.title, status: event.status, waitlistEnabled: event.waitlist_enabled,
+      // E09-S03: the registration period the Organiser sets.
+      startsAt: event.starts_at.toISOString(), endsAt: event.ends_at.toISOString(), registrationEnabled: event.registration_enabled,
+      opensAt: event.opens_at?.toISOString() ?? null, closesAt: event.closes_at?.toISOString() ?? null,
+      withdrawalDeadline: event.withdrawal_deadline?.toISOString() ?? null,
+    },
     capacity: { capacity: capacity.capacity, registered: capacity.registered },
     sessions: sessions.map(session => ({
       ...publicSession(session),
@@ -71,7 +79,8 @@ async function pendingRequests(query: Query, eventId: string) {
     ORDER BY r.registered_at, r.id`, [eventId])).rows as PendingRow[];
 }
 
-// GET: what the Organiser needs to decide (TC_E09S02_11, _12).
+// GET: what the Organiser needs to decide (TC_E09S02_11, _12), and the
+// registration period they set (E09-S03).
 export async function getEventRegistrations(query: Query, user: AuthenticatedUser, ref: string) {
   const event = await organiserEvent(query, user, ref);
   const [capacity, sessions, pending] = await Promise.all([
