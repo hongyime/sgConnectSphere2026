@@ -4,7 +4,7 @@ import { ActivityLog } from './ActivityLog';
 
 afterEach(cleanup);
 
-test('TC_E06S04_07 same-venue releases identify each booking when actor and time coincide', () => {
+test('same-venue releases identify each booking when actor and time coincide', () => {
   const bookingIds = ['11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222'];
   const entries = bookingIds.map(booking_id => ({
     occurred_at: '2026-10-21T11:00:00.000Z', action: 'Booking Released', field_changed: 'status',
