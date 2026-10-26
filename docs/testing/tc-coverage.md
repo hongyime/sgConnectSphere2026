@@ -1506,6 +1506,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loads the current month for the first venue
 - labels free, tentative, confirmed and blocked entries distinctly
 - shows a maintenance block with its reason and never as a booking
+- E05-S06 Scenario 1: a Blocked period shows its reason category before the note
+- E05-S06 Scenario 2: a Conflicting booking stays visible inside the Blocked period with its own label and the reason
+- E05-S06: the legend lists all six states, Conflicting included
+- E05-S06 Scenario 1 (T-80): an open-ended block, clipped by the server to the range, shows as Blocked on every day
 - shows an unavailable period without any event details
 - expands a permitted booking to show event, code, date and time
 - navigates to the next month and then to a custom range

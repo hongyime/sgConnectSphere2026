@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Clock, Lock, Wrench, type LucideIcon,
+  AlertTriangle, CalendarCheck, CheckCircle2, ChevronLeft, ChevronRight, Clock, Lock, Wrench, type LucideIcon,
 } from 'lucide-react';
+import { CATEGORY_LABELS, type ReasonCategory } from './blocksApi';
 import {
   Alert, Button, Card, EmptyState, ErrorState, FormField, LoadingState, PageLayout, useLoad, type ApiResult,
 } from '../../shared';
@@ -22,16 +23,23 @@ import './venue.css';
 // come from the shared blocks (ADR-017); the calendar itself is its own.
 
 // Each state carries an icon and a text label as well as a colour, so the
-// four states can be told apart without relying on colour (Scenario 1).
+// states can be told apart without relying on colour (Scenario 1).
+// E05-S06 adds Conflicting: a booking or hold an unavailability has flagged.
 const stateMeta: Record<CalendarState, { label: string; icon: LucideIcon }> = {
   free:        { label: 'Free',        icon: CheckCircle2 },
   tentative:   { label: 'Tentative',   icon: Clock },
   confirmed:   { label: 'Confirmed',   icon: CalendarCheck },
+  conflicting: { label: 'Conflicting', icon: AlertTriangle },
   blocked:     { label: 'Blocked',     icon: Wrench },
   unavailable: { label: 'Unavailable', icon: Lock },
 };
 
-const legendOrder: CalendarState[] = ['free', 'tentative', 'confirmed', 'blocked', 'unavailable'];
+const legendOrder: CalendarState[] = ['free', 'tentative', 'confirmed', 'conflicting', 'blocked', 'unavailable'];
+
+// "Equipment failure · Projector rig fault": the category, then the note.
+function reasonText(entry: { reasonCategory?: ReasonCategory; reason?: string }): string {
+  return [entry.reasonCategory ? CATEGORY_LABELS[entry.reasonCategory] : '', entry.reason ?? ''].filter(Boolean).join(' · ');
+}
 
 type Period = { from: string; to: string; mode: 'month' | 'custom' };
 
@@ -125,7 +133,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
 
   return (
     <PageLayout eyebrow={audience === 'venue' ? 'Venue staff' : 'Event coordinator'} title="Availability calendar">
-      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance. Times are Singapore time. Free periods allow for setup and turnaround; booking segments label those buffers separately.</p>
+      <p className="calendar-intro">See when a venue is free, tentatively held, confirmed or blocked for maintenance, and which bookings are Conflicting because the venue became unavailable. Times are Singapore time. Free periods allow for setup and turnaround; booking segments label those buffers separately.</p>
 
       <Card label="Calendar controls">
         {options.result.state === 'error' && !selectedId ? (
@@ -202,7 +210,7 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
                             <StateBadge state={entry.state} />
                             {entry.kind === 'block' ? (
                               <span className="calendar-text">
-                                Maintenance block{entry.reason ? <> · <span className="calendar-reason">{entry.reason}</span></> : null}
+                                Maintenance block{reasonText(entry) ? <> · <span className="calendar-reason">{reasonText(entry)}</span></> : null}
                               </span>
                             ) : entry.event ? (
                               <>
@@ -210,7 +218,11 @@ export function VenueCalendar({ audience }: { audience: 'venue' | 'coordinator' 
                                   type="button" className="calendar-event-toggle" aria-expanded={expanded === key}
                                   aria-controls={detailsId} onClick={() => setExpanded(current => (current === key ? null : key))}
                                 >
-                                  {entry.event.title}{entry.reason ? ` · ${entry.reason}` : ''}{entry.bufferConflict ? ' · Buffer conflict — needs review' : ''}
+                                  {entry.event.title}
+                                  {entry.state === 'conflicting'
+                                    ? ` · Venue unavailable — needs an alternative${entry.reasonCategory ? ` · ${CATEGORY_LABELS[entry.reasonCategory]}` : ''}`
+                                    : entry.reason ? ` · ${entry.reason}` : ''}
+                                  {entry.bufferConflict ? ' · Buffer conflict — needs review' : ''}
                                 </button>
                                 {expanded === key ? (
                                   <dl id={detailsId} className="calendar-details">
