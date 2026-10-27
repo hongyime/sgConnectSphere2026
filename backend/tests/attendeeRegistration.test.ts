@@ -5,6 +5,7 @@ import type { Pool } from 'pg';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import {
   getRegistrationForm, listOpenEvents, missingDetails, parseSessionIds, registerForEvent, registrationState,
+  withdrawalOpen, withdrawRegistration,
 } from '../src/modules/attendeeRegistration/service.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 
@@ -23,6 +24,9 @@ type State = {
   sessions?: Record<string, unknown>[];
   capacity?: Record<string, unknown>[];
   eventRegistered?: number;
+  withdrawable?: { id: string; status: string } | null;
+  contact?: string;
+  waitlisted?: string[];
   failAt?: string;
   failure?: Error;
 };
@@ -54,6 +58,11 @@ function script(state: State = {}) {
     } else if (sql.includes('SELECT r.event_id, r.status')) rows = state.mine ?? [];
     else if (sql.includes('contact_number FROM users')) rows = state.details === null ? [] : [state.details ?? { full_name: 'Casey Tan', email: 'casey@example.test', contact_number: '+65 8123 4567' }];
     else if (sql.includes('FROM event_registrations r WHERE r.event_id')) rows = state.existing ? [state.existing] : [];
+    else if (sql.includes('SELECT id, status FROM event_registrations')) rows = state.withdrawable ? [state.withdrawable] : [];
+    else if (sql.includes('AS contact')) rows = [{ contact: state.contact ?? 'help@client.example.test' }];
+    else if (sql.includes('AS coordinator_id')) rows = [{ id: eventId, title: 'Private title', public_name: 'Community Meetup', status: 'confirmed',
+      starts_at: at('2027-04-01T01:00:00Z'), ends_at: at('2027-04-01T09:00:00Z'), organiser_id: null, coordinator_id: null }];
+    else if (sql.includes('SELECT r.attendee_id, r.status')) rows = (state.waitlisted ?? []).map(id => ({ attendee_id: id, status: 'waitlisted' }));
     else if (sql.includes('AS session_capacity')) rows = state.capacity ?? [
       { session_id: sessionA, session_capacity: 10, registered: 0 }, { session_id: sessionB, session_capacity: 10, registered: 0 }];
     else if (sql.includes('AS registered FROM event_registrations')) rows = [{ registered: state.eventRegistered ?? 0 }];
@@ -102,10 +111,13 @@ test('listOpenEvents returns public fields and the signed-in Attendee registrati
   const events = await listOpenEvents(query, attendee);
   assert.equal(events.length, 1);
   assert.deepEqual(Object.keys(events[0]!).sort(), ['closesAt', 'endsAt', 'eventCode', 'id', 'myRegistrationStatus', 'name',
-    'opensAt', 'registrationState', 'startsAt', 'venueLocation', 'venueName']);
+    'opensAt', 'registrationState', 'startsAt', 'venueLocation', 'venueName', 'withdrawalDeadline']);
   assert.equal(events[0]!.myRegistrationStatus, 'registered');
   assert.equal(events[0]!.registrationState, 'open');
-  assert.ok(calls[0]!.sql.includes("e.status = 'confirmed' AND e.registration_enabled"));
+  assert.ok(calls[0]!.sql.includes("e.status = 'confirmed' AND ((e.registration_enabled"));
+  // D105: the Attendee's own active registrations stay listed after registration closes, until the event starts.
+  assert.match(calls[0]!.sql, /OR \(lower\(e\.event_range\) > clock_timestamp\(\)\s+AND EXISTS \(SELECT 1 FROM event_registrations r/);
+  assert.deepEqual(calls[0]!.values, [attendee.id]);
   const unregistered = await listOpenEvents(script().query, attendee);
   assert.equal(unregistered[0]!.myRegistrationStatus, null);
   await assert.rejects(listOpenEvents(script().query, { ...attendee, role: 'event_organiser' }), { status: 403 });
@@ -238,4 +250,103 @@ test('registerForEvent keeps an over-capacity request Pending with its own notic
     assert.equal(notice.values![2], 'Registration request received');
     assert.match(String(notice.values![3]), /your choice is at capacity, so the organiser will review your request for Morning/);
   }
+});
+
+// ─── E09-S05 Withdraw my registration ─────────────────────────────────────
+
+test('withdrawalOpen: the deadline binds approved places only and is inclusive (TC_E09S05_04, D88)', () => {
+  const deadline = at('2027-03-25T15:59:59Z');
+  const event = { status: 'confirmed', withdrawal_deadline: deadline, starts_at: at('2027-04-01T01:00:00Z') };
+  assert.equal(withdrawalOpen(event, 'registered', deadline), true);
+  assert.equal(withdrawalOpen(event, 'registered', at('2027-03-25T16:00:00Z')), false);
+  for (const status of ['pending', 'waitlisted']) assert.equal(withdrawalOpen(event, status, at('2027-03-30T00:00:00Z')), true);
+  // No deadline: until the Event starts, for every status.
+  const noDeadline = { ...event, withdrawal_deadline: null };
+  assert.equal(withdrawalOpen(noDeadline, 'registered', at('2027-04-01T00:59:59Z')), true);
+  assert.equal(withdrawalOpen(noDeadline, 'registered', at('2027-04-01T01:00:00Z')), false);
+  assert.equal(withdrawalOpen(noDeadline, 'pending', at('2027-04-01T01:00:00Z')), false);
+  for (const status of ['cancelled', 'completed']) assert.equal(withdrawalOpen({ ...noDeadline, status }, 'registered', now), false);
+});
+
+test('withdrawRegistration releases an approved place and tells the waiting list (TC_E09S05_01, _04, _05)', async () => {
+  const registration = { id: randomUUID(), status: 'registered' };
+  const waiting = [randomUUID(), randomUUID()];
+  const { pool, calls } = script({ event: eventRow({ withdrawal_deadline: now }), withdrawable: registration, waitlisted: waiting, eventRegistered: 19 });
+  const result = await withdrawRegistration(pool, attendee, 'EVT-9001');
+  assert.deepEqual(result, { status: 200, body: { registration: { id: registration.id, status: 'withdrawn', withdrawnAt: now.toISOString() } } });
+  // Lock order Event -> Account -> Registration.
+  const order = ['FOR UPDATE OF e', 'FOR SHARE NOWAIT', 'LIMIT 1 FOR UPDATE'].map(lock => calls.findIndex(call => call.sql.includes(lock)));
+  assert.ok(order[0]! >= 0);
+  assert.deepEqual([...order].sort((a, b) => a - b), order);
+  const update = calls.find(call => call.sql.includes("SET status = 'withdrawn'"))!;
+  assert.deepEqual(update.values, [registration.id, now]);
+  const notices = calls.filter(call => call.sql.includes('INSERT INTO notifications'));
+  assert.deepEqual(notices.map(call => call.values![0]), waiting);
+  assert.match(String(notices[0]!.values![3]), /^Community Meetup: A place is available\. Apply on a first-come basis; no place has been reserved for you\./);
+  assert.ok(calls.some(call => call.sql === 'COMMIT'));
+});
+
+test('withdrawRegistration tells nobody when the Event is still full or the row held no place (D82, D88)', async () => {
+  const full = script({ withdrawable: { id: randomUUID(), status: 'registered' }, waitlisted: [randomUUID()], eventRegistered: 20 });
+  assert.equal((await withdrawRegistration(full.pool, attendee, eventId)).status, 200);
+  assert.equal(full.calls.some(call => call.sql.includes('INSERT INTO notifications')), false);
+  // A Pending request leaves after the deadline (AC 5); a waiting-list entry too, for E09-S04.
+  for (const status of ['pending', 'waitlisted']) {
+    const { pool, calls } = script({ event: eventRow({ withdrawal_deadline: at('2027-02-01T00:00:00Z') }), withdrawable: { id: randomUUID(), status }, waitlisted: [randomUUID()] });
+    assert.equal((await withdrawRegistration(pool, attendee, eventId)).status, 200);
+    assert.equal(calls.some(call => call.sql.includes('AS session_capacity') || call.sql.includes('INSERT INTO notifications')), false);
+  }
+});
+
+test('withdrawRegistration refuses after the deadline with a contact, and changes nothing (TC_E09S05_03, D89)', async () => {
+  const { pool, calls } = script({ event: eventRow({ withdrawal_deadline: at('2027-02-28T15:59:59Z') }), withdrawable: { id: randomUUID(), status: 'registered' }, contact: 'events@client.example.test' });
+  assert.deepEqual(await withdrawRegistration(pool, attendee, eventId), { status: 409, body: {
+    error: 'Withdrawal has closed. For help, contact events@client.example.test.', contact: 'events@client.example.test' } });
+  assert.equal(calls.some(call => call.sql.includes('UPDATE event_registrations')), false);
+  const contactQuery = calls.find(call => call.sql.includes('AS contact'))!;
+  assert.ok(contactQuery.sql.includes("coalesce(nullif(trim(c.contact_email), ''), o.email)"));
+});
+
+test('withdrawRegistration answers a missing, repeated or foreign withdrawal without writing (AC 6)', async () => {
+  const cases: [State, unknown][] = [
+    [{ event: null }, { status: 404, body: { error: "You don't have a registration for this event." } }],
+    [{ withdrawable: null }, { status: 404, body: { error: "You don't have a registration for this event." } }],
+    [{ withdrawable: { id: randomUUID(), status: 'withdrawn' } }, { status: 409, body: { error: "You've already withdrawn from this event." } }],
+  ];
+  for (const [state, expected] of cases) {
+    const { pool, calls } = script(state);
+    assert.deepEqual(await withdrawRegistration(pool, attendee, eventId), expected);
+    assert.equal(calls.some(call => call.sql.includes('UPDATE event_registrations')), false);
+  }
+  // Only the signed-in Attendee's own row is ever looked up.
+  const own = script({ withdrawable: { id: randomUUID(), status: 'registered' } });
+  await withdrawRegistration(own.pool, attendee, eventId);
+  assert.deepEqual(own.calls.find(call => call.sql.includes('SELECT id, status FROM event_registrations'))!.values, [eventId, attendee.id]);
+  await assert.rejects(withdrawRegistration(script().pool, { ...attendee, role: 'event_organiser' }, eventId), { status: 403 });
+  await assert.rejects(withdrawRegistration(script().pool, attendee, ''), { status: 400 });
+  await assert.rejects(withdrawRegistration(script({ details: null }).pool, attendee, eventId), { status: 403 });
+});
+
+test('withdrawRegistration maps a busy account and rethrows other failures', async () => {
+  const busy = Object.assign(new Error('lock'), { code: '55P03' });
+  await assert.rejects(withdrawRegistration(script({ failAt: 'FOR SHARE NOWAIT', failure: busy }).pool, attendee, eventId),
+    { status: 409, message: 'Your account is being updated. Please try again.' });
+  const broken = new Error('connection lost');
+  const { pool, calls } = script({ withdrawable: { id: randomUUID(), status: 'registered' }, failAt: "SET status = 'withdrawn'", failure: broken });
+  await assert.rejects(withdrawRegistration(pool, attendee, eventId), broken);
+  assert.ok(calls.some(call => call.sql === 'ROLLBACK'));
+});
+
+test('getRegistrationForm says whether a registration can still be withdrawn, and who to contact (D101, D105)', async () => {
+  const existing = { id: randomUUID(), status: 'registered', registered_at: now, session_ids: [sessionA] };
+  const open = await getRegistrationForm(script({ existing, event: eventRow({ withdrawal_deadline: at('2027-03-25T15:59:59Z') }) }).query, attendee, eventId);
+  assert.deepEqual(open.withdrawal, { open: true, contact: null });
+  assert.equal(open.event.withdrawalDeadline, '2027-03-25T15:59:59.000Z');
+  const closed = await getRegistrationForm(script({ existing, event: eventRow({ withdrawal_deadline: at('2027-02-01T00:00:00Z') }) }).query, attendee, eventId);
+  assert.deepEqual(closed.withdrawal, { open: false, contact: 'help@client.example.test' });
+  // D105: registration switched off, but the Attendee's own registration keeps the page.
+  const off = await getRegistrationForm(script({ existing, event: eventRow({ registration_enabled: false }) }).query, attendee, eventId);
+  assert.equal(off.registration!.id, existing.id);
+  await assert.rejects(getRegistrationForm(script({ existing, event: eventRow({ status: 'cancelled' }) }).query, attendee, eventId), { status: 409 });
+  assert.equal((await getRegistrationForm(script().query, attendee, eventId)).withdrawal, null);
 });
