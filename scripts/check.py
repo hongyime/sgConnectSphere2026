@@ -1,5 +1,6 @@
 """Run repository hygiene and tooling checks, independently of application checks."""
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -26,8 +27,10 @@ def main() -> int:
         [str(tool_python), "scripts/generate_env_template.py", "--check"],
         [str(tool_python), "-m", "unittest", "discover", "-s", "tooling/tests", "-v"],
     ]
+    tool_env = os.environ.copy()
+    tool_env["PATH"] = str(tool_python.parent) + os.pathsep + tool_env.get("PATH", "")
     for command in commands:
-        result = subprocess.run(command, cwd=ROOT, check=False)
+        result = subprocess.run(command, cwd=ROOT, check=False, env=tool_env)
         if result.returncode:
             return result.returncode
     print("PASS: repository hygiene and tooling tests.")

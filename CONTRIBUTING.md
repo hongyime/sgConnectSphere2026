@@ -110,6 +110,8 @@ source file there, but may not modify, delete, or rename one already in the
 repository. Generated exports elsewhere under `docs/` remain writable through
 their generators. The check is required by the `main-protection` ruleset after
 this workflow has landed on `main`.
+Dependabot PRs are excluded from the WIP counts because they are automated
+dependency maintenance rather than team-owned work.
 
 The author resolves merge conflicts and the reviewer approves the final commit.
 If the reviewer resolves a conflict, another teammate reviews that new commit.

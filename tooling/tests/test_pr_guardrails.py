@@ -94,6 +94,20 @@ class PullRequestPolicyTests(unittest.TestCase):
         open_prs = [old] * 20 + [current] + [later] * 20
         self.assertEqual(MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY), [])
 
+    def test_dependabot_prs_do_not_consume_current_wip_budget(self):
+        current = {
+            "number": 11,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+        }
+        dependabot = {
+            "number": 12,
+            "createdAt": "2026-10-27T11:00:00Z",
+            "author": {"login": "dependabot[bot]"},
+        }
+        open_prs = [current] + [dependabot] * 20
+        self.assertEqual(MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY), [])
+
     def test_new_pr_hits_size_limit(self):
         current = {
             "number": 12,

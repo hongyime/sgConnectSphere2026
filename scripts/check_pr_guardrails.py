@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY_PATH = ROOT / ".github" / "settings" / "pr-guardrails.json"
 REFERENCE_SUFFIXES = {".docx", ".pdf", ".pptx", ".xlsx"}
 REFERENCE_ROOT = "docs/bdr/customer-sources/"
+AUTOMATION_AUTHORS = {"dependabot[bot]"}
 
 
 def load_policy() -> dict[str, Any]:
@@ -83,6 +84,7 @@ def counted_open_prs(
         for pr in open_prs
         if policy_is_active(pr["createdAt"], policy)
         and parse_timestamp(pr["createdAt"]) <= current_created
+        and pr.get("author", {}).get("login") not in AUTOMATION_AUTHORS
     ]
 
 
@@ -93,6 +95,9 @@ def pr_limit_errors(
     policy: dict[str, Any],
 ) -> list[str]:
     if not policy_is_active(current["createdAt"], policy):
+        return []
+
+    if current["author"]["login"] in AUTOMATION_AUTHORS:
         return []
 
     counted_prs = counted_open_prs(current=current, open_prs=open_prs, policy=policy)

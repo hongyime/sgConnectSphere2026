@@ -7,6 +7,20 @@ on:
   merge_group:
     types: [checks_requested]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Open PR number to backfill
+        required: true
+        type: string
+      base_sha:
+        description: PR base commit SHA
+        required: true
+        type: string
+      head_sha:
+        description: PR head commit SHA
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -35,6 +49,11 @@ jobs:
               --base "${{ github.event.pull_request.base.sha }}" \
               --head "${{ github.event.pull_request.head.sha }}" \
               --pr-number "${{ github.event.pull_request.number }}"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            python scripts/check_pr_guardrails.py \
+              --base "${{ inputs.base_sha }}" \
+              --head "${{ inputs.head_sha }}" \
+              --pr-number "${{ inputs.pr_number }}"
           else
             python scripts/check_pr_guardrails.py \
               --base "${{ github.event.merge_group.base_sha }}" \
@@ -62,6 +81,10 @@ jobs:
             python scripts/check_test_evidence.py \
               --base "${{ github.event.pull_request.base.sha }}" \
               --head "${{ github.event.pull_request.head.sha }}"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            python scripts/check_test_evidence.py \
+              --base "${{ inputs.base_sha }}" \
+              --head "${{ inputs.head_sha }}"
           else
             python scripts/check_test_evidence.py --merge-group
           fi

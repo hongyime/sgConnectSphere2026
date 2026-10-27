@@ -54,6 +54,14 @@ then run `--apply`. The script's own pre-check (all required checks green on
 the current `main`) enforces the second half of that order; the first half is
 yours. See [decision 0012](decisions/0012-merge-queue.md).
 
+Before applying the ruleset, backfill the new checks for any already-open PRs
+that will remain in flight. In Actions, run **PR guardrails** with
+`workflow_dispatch` for each PR and provide its number, base SHA and head SHA.
+This produces `pr-guardrails` and `test-evidence` without pushing a commit, so
+`dismiss_stale_reviews_on_push` does not discard an existing approval. If the
+team chooses not to backfill, wait until those in-flight PRs have merged or
+closed before applying the new required checks.
+
 The historical classic-protection payload is preserved at
 `.github/settings/main-protection.json` for reference but is no longer used by
 the script.
