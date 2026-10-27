@@ -18,8 +18,11 @@ const bookingLink = (booking: BookingRequest) => `${QUEUE}/${encodeURIComponent(
 // Confirmed and Rejected are record statuses (design.md section 7); a booking
 // still waiting for Venue Staff has no record status of its own, so it uses
 // the warning tone with the backlog's word for it.
+// E05-S06: Conflicting has no record-status colour either, so it shares the warning tone.
 export function BookingStatusPill({ status }: { status: BookingStatus }) {
-  return status === 'pending' ? <StatusPill status="warning" label="Pending" /> : <StatusPill status={status} />;
+  if (status === 'pending') return <StatusPill status="warning" label="Pending" />;
+  if (status === 'conflicting') return <StatusPill status="warning" label="Conflicting" />;
+  return <StatusPill status={status} />;
 }
 
 function eventName(booking: BookingRequest) {
@@ -184,7 +187,12 @@ export function BookingDecision() {
           <Card title="What you're deciding"><FactList items={requestFacts(booking)} /></Card>
           <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? (
-            done ? null : <Alert tone="info">This request is {booking.status}, so there's nothing to decide.</Alert>
+            done ? null : booking.status === 'conflicting' ? (
+              // E05-S06: the server refuses a decision on a Conflicting booking.
+              <Alert tone="warning">
+                This booking is Conflicting because the venue was marked unavailable. It can't be decided while the unavailability covers it.
+              </Alert>
+            ) : <Alert tone="info">This request is {booking.status}, so there's nothing to decide.</Alert>
           ) : choice ? (
             <ConfirmPanel
               title={choice === 'approve' ? 'Approve this booking request?' : 'Reject this booking request?'}

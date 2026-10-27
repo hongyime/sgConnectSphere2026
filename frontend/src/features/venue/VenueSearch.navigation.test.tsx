@@ -106,3 +106,23 @@ test('event-scoped results offer Hold this venue only for an available venue', a
   expect(free.querySelector('a[href="/coordinator/events/A/venues/v-free/hold"]')?.textContent).toBe('Hold this venue');
   expect(busy.querySelector('a[href$="/hold"]')).toBeNull();
 });
+
+test('TC_E10S05_03: a rejected replacement reopens search with the lost booking period and preserves its link', async () => {
+  const fetcher=vi.fn(async(input:string)=>{
+    const url=new URL(input,'http://localhost');
+    const body=url.searchParams.get('mode')==='booking_requests'
+      ? {event:{id:'A'},bookings:[{id:'lost',status:'conflicting',conflict_block_id:'block',has_replacement:true,starts_at:'2027-01-15T01:00:00Z',ends_at:'2027-01-15T02:00:00Z',headcount:40},{id:'rejected',status:'rejected',replaces_booking_id:'lost'}]}
+      : url.searchParams.get('search')==='1' ? results('A') : defaults('A');
+    return {ok:true,json:async()=>body};
+  });
+  vi.stubGlobal('fetch',fetcher);
+  render(<MemoryRouter initialEntries={['/coordinator/events/A/venues?replaces_booking_id=lost']}><Routes><Route path="/coordinator/events/:eventCode/venues" element={<VenueSearch/>}/></Routes></MemoryRouter>);
+  expect(await screen.findByRole('heading',{name:'Event A'})).toBeInTheDocument();
+  expect(screen.getByLabelText('Expected attendance (required)')).toHaveValue(40);
+  fireEvent.click(screen.getByRole('button',{name:'Search venues'}));
+  const link=await screen.findByRole('link',{name:'Check recorded event requirements'});
+  expect(link).toHaveAttribute('href','/coordinator/events/A/venues/v-A/suitability?replaces_booking_id=lost');
+  const search=fetcher.mock.calls.map(([input])=>new URL(input,'http://localhost')).find(url=>url.searchParams.get('search')==='1');
+  expect(search?.searchParams.get('start')).toBe('2027-01-15T01:00:00.000Z');
+  expect(search?.searchParams.get('end')).toBe('2027-01-15T02:00:00.000Z');
+});
