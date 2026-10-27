@@ -214,6 +214,8 @@ export function SubmittedDetail() {
         <span className="organiser-status">
           {['approved', 'planning', 'safety_review', 'confirmed', 'completed', 'cancelled'].includes(request.status) ?
             <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/change`}>Change requests</ButtonLink> : null}
+          {['approved', 'planning', 'safety_review', 'confirmed'].includes(request.status) ?
+            <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/registration-period`}>Registration period</ButtonLink> : null}
           {request.status === 'confirmed' ?
             <ButtonLink to={`/organiser/requests/${encodeURIComponent(identifier)}/registrations`}>Registrations</ButtonLink> : null}
           <StatusPill status={request.status} />

@@ -138,16 +138,22 @@ export async function createEventComment(query: Query, user: AuthenticatedUser, 
   return { ...commentResult.rows[0], author_name: author.rows[0]?.full_name ?? user.email, author_email: user.email };
 }
 
-const unrestrictedAfterApproval = new Set(['title', 'description', 'purpose', 'registrationDates']);
-const editableFields = new Set(['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates']);
+// E09-S03: the withdrawal deadline and the waiting list sit with the registration
+// dates as the Organiser's own settings after approval (C-24, C-44, T-16).
+const unrestrictedAfterApproval = new Set(['title', 'description', 'purpose', 'registrationDates', 'withdrawalDeadline', 'waitlistEnabled']);
+const editableFields = new Set(['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates', 'withdrawalDeadline', 'waitlistEnabled']);
+
+const STARTS = new Intl.DateTimeFormat('en-SG', {
+  timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
+});
 
 export async function updateEventInformation(query: Query, user: AuthenticatedUser, identifier: string, input: unknown) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AccessError(400, 'invalid_payload');
   const patch = input as Record<string, unknown>;
   const org = user.clientOrgId;
   if (user.role !== 'event_organiser' && user.role !== 'event_coordinator') throw new AccessError(403, 'Edit access denied.');
-  const result = await query<{ id: string; status: string; organiser_id: string; coordinator_id: string | null; client_org_id: string }>(
-    `SELECT id, status, organiser_id, coordinator_id, client_org_id FROM events
+  const result = await query<{ id: string; status: string; organiser_id: string; coordinator_id: string | null; client_org_id: string; starts_at: Date }>(
+    `SELECT id, status, organiser_id, coordinator_id, client_org_id, lower(event_range) AS starts_at FROM events
      WHERE id::text = $1 OR event_code = $1`, [identifier]);
   const event = result.rows[0];
   if (!event || (user.role === 'event_organiser' && (!org || event.client_org_id !== org || event.organiser_id !== user.id))) {
@@ -192,7 +198,21 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
       assignments.push(`registration_opens_at = $${values.length + 1}, registration_closes_at = $${values.length + 2}`);
       values.push(dates.opensAt, dates.closesAt);
       audit.push({ field: 'registrationDates', value: `${dates.opensAt} to ${dates.closesAt}` });
+    } else if (field === 'withdrawalDeadline') {
+      // null clears the deadline.
+      if (value !== null && (typeof value !== 'string' || Number.isNaN(Date.parse(value)))) throw new AccessError(400, 'withdrawalDeadline must be a valid date or null.');
+      add(`withdrawal_deadline = $${values.length + 1}`, value, field);
+    } else if (field === 'waitlistEnabled') {
+      if (typeof value !== 'boolean') throw new AccessError(400, 'waitlistEnabled must be true or false.');
+      add(`waitlist_enabled = $${values.length + 1}`, value, field);
     }
+  }
+  // E09-S03 Scenario 3: a closing date after the event starts is saved only once
+  // confirmed. 428 keeps it apart from the 409s that offer a change request.
+  const closesAt = (patch.registrationDates as { closesAt?: string } | undefined)?.closesAt;
+  const eventStart = typeof patch.startAt === 'string' ? new Date(patch.startAt) : event.starts_at;
+  if (closesAt && eventStart && new Date(closesAt) > eventStart && patch.confirmLateClose !== true) {
+    throw new AccessError(428, `Registration would close after the event starts on ${STARTS.format(eventStart)}. Confirm to save it anyway.`);
   }
   const startAt = patch.startAt as string | undefined;
   const endAt = patch.endAt as string | undefined;

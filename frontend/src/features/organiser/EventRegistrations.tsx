@@ -34,7 +34,7 @@ export function EventRegistrationsPage() {
   return (
     <PageLayout eyebrow={view ? (view.event.eventCode ?? view.event.name) : 'Event organiser'}
       title={view ? `Registrations · ${view.event.name}` : result.state === 'error' ? 'Registrations unavailable' : 'Loading registrations…'}
-      actions={<ButtonLink to={back}>Back to the event</ButtonLink>}>
+      actions={<><ButtonLink to={`${back}/registration-period`}>Registration period</ButtonLink><ButtonLink to={back}>Back to the event</ButtonLink></>}>
       {result.state === 'loading' ? <LoadingState label="Loading registrations…" rows={3} /> : null}
       {result.state === 'error' ? <ErrorState failure={result.failure} context="registrations" onRetry={reload} backTo={back} backLabel="Back to the event" /> : null}
       {view ? <RegistrationsBody key={eventCode} initial={view} eventRef={eventCode} /> : null}

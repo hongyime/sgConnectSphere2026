@@ -22,7 +22,9 @@ const dana = { id: 'r-2', name: null, email: 'dana@example.test', requestedAt: '
 
 function view(overrides: Partial<EventRegistrations> = {}): EventRegistrations {
   return {
-    event: { id: 'e-1', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: true },
+    event: { id: 'e-1', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: true,
+      startsAt: '2027-04-01T01:00:00.000Z', endsAt: '2027-04-01T09:00:00.000Z', registrationEnabled: true,
+      opensAt: null, closesAt: null, withdrawalDeadline: null },
     capacity: { capacity: 120, registered: 92 }, sessions, pending: [casey, dana], ...overrides,
   };
 }

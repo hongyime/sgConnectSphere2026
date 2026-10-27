@@ -36,7 +36,8 @@ function script(state: State = {}) {
     if (sql.includes('FROM events WHERE id::text')) {
       rows = state.event === null ? [] : [{
         id: eventId, event_code: 'EVT-2001', title: 'Community Meetup', status: 'confirmed', waitlist_enabled: false,
-        organiser_id: organiser.id, starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'), ...state.event,
+        organiser_id: organiser.id, starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'),
+        registration_enabled: true, opens_at: null, closes_at: new Date('2027-03-30T00:00:00Z'), withdrawal_deadline: null, ...state.event,
       }];
     } else if (sql.includes('AS session_capacity')) rows = state.capacity ?? roomy;
     else if (sql.includes('AS registered FROM event_registrations')) rows = [{ registered: state.eventRegistered ?? 4 }];
@@ -83,7 +84,9 @@ test('overCapacity names each full chosen Session, then a full Event, else null'
 test('getEventRegistrations shows capacity per Session and why each Pending request does not fit', async () => {
   const pending = [{ id: requestId, full_name: 'Casey Tan', email: 'casey@example.test', registered_at: now, session_ids: [sessionA] }];
   const view = await getEventRegistrations(script({ pending, capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }] }).query, organiser, 'EVT-2001');
-  assert.deepEqual(view.event, { id: eventId, eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: false });
+  assert.deepEqual(view.event, { id: eventId, eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: false,
+    startsAt: '2027-04-01T01:00:00.000Z', endsAt: '2027-04-01T09:00:00.000Z', registrationEnabled: true,
+    opensAt: null, closesAt: '2027-03-30T00:00:00.000Z', withdrawalDeadline: null });
   assert.deepEqual(view.capacity, { capacity: 10, registered: 4 });
   assert.deepEqual(view.sessions.map(session => [session.id, session.capacity, session.registered]), [[sessionA, 10, 10], [sessionB, 0, 0]]);
   assert.deepEqual(view.pending, [{ id: requestId, name: 'Casey Tan', email: 'casey@example.test', requestedAt: now.toISOString(),
@@ -187,4 +190,14 @@ test('manageRegistrations maps a busy account and a lost unique race, and rethro
   const { pool, calls } = script({ failAt: 'INSERT INTO audit_logs', failure: broken });
   await assert.rejects(manageRegistrations(pool, organiser, eventId, add), broken);
   assert.ok(calls.some(call => call.sql === 'ROLLBACK'));
+});
+
+test('getEventRegistrations returns the registration period the Organiser set (E09-S03)', async () => {
+  const view = await getEventRegistrations(script({ event: {
+    opens_at: new Date('2027-02-01T00:00:00Z'), closes_at: null, withdrawal_deadline: new Date('2027-03-25T00:00:00Z'), registration_enabled: false,
+  } }).query, organiser, 'EVT-2001');
+  assert.equal(view.event.opensAt, '2027-02-01T00:00:00.000Z');
+  assert.equal(view.event.closesAt, null);
+  assert.equal(view.event.withdrawalDeadline, '2027-03-25T00:00:00.000Z');
+  assert.equal(view.event.registrationEnabled, false);
 });

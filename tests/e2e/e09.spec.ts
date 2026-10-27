@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
-  fakeOrganiserRegistrations, fakeRegistrationBackend, organiserRegistrations, registrationEvent, registrationForm, registrationSessions,
+  fakeOrganiserRegistrations, fakePeriodSave, fakeRegistrationBackend, organiserRegistrations, registrationEvent, registrationForm,
+  registrationSessions,
 } from './helpers/registrationBackend';
 
 // E09 - 36 cases. Source: docs/testing/cases/E09.md.
@@ -242,179 +243,123 @@ test.describe("E09-S02", () => {
 });
 
 test.describe("E09-S03", () => {
+  const periodPage = '/organiser/requests/EVT-2001/registration-period';
 
-  /**
-   * TC_E09S03_01
-   * AC:      E09-S03 (checklist: set registration opening/closing dates)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in; event "Community Meetup" has no registration dates set
-   *
-   * Test data:
-   *   Opens: 01/10/2026 | Closes: 01/12/2026
-   *
-   * Expected result:
-   *   The registration opening and closing dates are saved as entered
-   */
-  test.fixme("TC_E09S03_01 - Verify that an Event Organiser should be able to set the registration opening and closing dates for an event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event "Community Meetup"
-    // 2. Set Registration Opens: 01/10/2026, Registration Closes: 01/12/2026
-    // 3. Save
-    void page;
+  test("TC_E09S03_01 - Verify that an Event Organiser should be able to set the registration opening and closing dates for an event", async ({ page }) => {
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({ event: { ...organiserRegistrations().event, opensAt: null, closesAt: null } }) });
+    const saves = await fakePeriodSave(page);
+    await page.goto(periodPage);
+    await expect(page.getByText(/no registration window set/)).toBeVisible();
+    await page.getByLabel('Registration opens').fill('2026-10-01T09:00');
+    await page.getByLabel('Registration closes').fill('2026-11-01T09:00');
+    await page.getByRole('button', { name: 'Save registration period' }).click();
+    await expect(page.getByText('Registration period saved.')).toBeVisible();
+    await expect(page.getByText(/open from 1 Oct 2026/)).toBeVisible();
+    expect(saves).toHaveLength(1);
+    expect(Object.keys(saves[0])).toEqual(['registrationDates']);
+  });
+
+  test("TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event", async ({ page }) => {
+    await fakeOrganiserRegistrations(page);
+    const saves = await fakePeriodSave(page);
+    await page.goto(periodPage);
+    // 9 am is 12 Nov in both UTC (CI's browser) and Singapore (how the page displays dates).
+    await page.getByLabel('Withdrawal deadline (optional)').fill('2026-11-12T09:00');
+    await page.getByRole('button', { name: 'Save registration period' }).click();
+    await expect(page.getByText('Registration period saved.')).toBeVisible();
+    await expect(page.getByText(/withdrawals until 12 Nov 2026/)).toBeVisible();
+    expect(Object.keys(saves[0])).toEqual(['withdrawalDeadline']);
+  });
+
+  test("TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date stated", async ({ page }) => {
+    await fakeRegistrationBackend(page, { form: { json: registrationForm({
+      event: { ...registrationEvent, registrationState: 'not_yet_open', opensAt: '2026-10-01T01:00:00.000Z' },
+    }) } });
+    await page.goto('/attendee/discover/EVT-TECH');
+    await expect(page.getByText('Opening soon').first()).toBeVisible();
+    await expect(page.getByText(/^Registration opens on 1 Oct 2026/)).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Register' })).toHaveCount(0);
+  });
+
+  test("TC_E09S03_04 - Verify that an Attendee trying to register after the registration closing date has passed should be refused", async ({ page }) => {
+    const posts = await fakeRegistrationBackend(page, {
+      post: () => ({ status: 409, json: { error: 'Registration for this event has closed.', registrationState: 'closed' } }),
+    });
+    // The page loaded while open; the closing date passes before the Attendee submits.
+    await page.goto('/attendee/register/EVT-TECH');
+    await page.getByRole('checkbox', { name: /Session A/ }).check();
+    await page.getByRole('button', { name: 'Confirm registration' }).click();
+    await expect(page.getByText('Registration for this event has closed.')).toBeVisible();
+    await expect(page.getByText("You're registered")).toHaveCount(0);
+    expect(posts).toHaveLength(1);
+  });
+
+  test("TC_E09S03_05 - Verify that setting a registration closing date that falls after the event has started should warn the Organiser and ask them to confirm", async ({ page }) => {
+    await fakeOrganiserRegistrations(page);
+    const saves = await fakePeriodSave(page, body => body.confirmLateClose
+      ? { json: { updated: true, fields: ['registrationDates'] } }
+      : { status: 428, json: { error: 'Registration would close after the event starts on 15 Nov 2026, 9:00 am. Confirm to save it anyway.' } });
+    await page.goto(periodPage);
+    await page.getByLabel('Registration closes').fill('2026-11-20T17:00');
+    await page.getByRole('button', { name: 'Save registration period' }).click();
+    await expect(page.getByText('Confirm the closing date')).toBeVisible();
+    await expect(page.getByText('Registration period saved.')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Save anyway' }).click();
+    await expect(page.getByText('Registration period saved.')).toBeVisible();
+    expect(saves.map(body => body.confirmLateClose)).toEqual([undefined, true]);
+  });
+
+  test("TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full", async ({ page }) => {
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({ event: { ...organiserRegistrations().event, waitlistEnabled: false } }) });
+    const saves = await fakePeriodSave(page);
+    await page.goto(periodPage);
+    await page.getByRole('checkbox', { name: /Offer a waiting list/ }).check();
+    await page.getByRole('button', { name: 'Save registration period' }).click();
+    await expect(page.getByText('Registration period saved.')).toBeVisible();
+    expect(saves).toEqual([{ waitlistEnabled: true }]);
+
+    // Once the event is full, an Attendee is offered the waiting list.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await fakeRegistrationBackend(page, { form: { json: registrationForm({
+      capacity: { eventFull: true, waitlistEnabled: true, fullSessionIds: ['s-a', 's-b'] },
+    }) } });
+    await page.goto('/attendee/register/EVT-TECH');
+    await expect(page.getByRole('link', { name: 'Join the waiting list' })).toBeVisible();
   });
 
   /**
-   * TC_E09S03_02
-   * AC:      E09-S03 (checklist: set a withdrawal deadline)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is signed in; event "Community Meetup" has no withdrawal deadline set
-   *
-   * Test data:
-   *   Withdrawal Deadline: 10/12/2026
-   *
-   * Expected result:
-   *   The withdrawal deadline is saved as 10/12/2026
-   */
-  test.fixme("TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event "Community Meetup"
-    // 2. Set Withdrawal Deadline: 10/12/2026
-    // 3. Save
-    void page;
-  });
-
-  /**
-   * TC_E09S03_03
-   * AC:      E09-S03 - Scenario 1 (Before registration opens)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s registration opening date (01/10/2026) has not yet been reached
-   *
-   * Test data:
-   *   Opening date: 01/10/2026 (not reached)
-   *
-   * Expected result:
-   *   Registration is shown as "Not yet open", with the message stating it opens on 01/10/2026
-   */
-  test.fixme("TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date stated", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Open event "Community Meetup"
-    void page;
-  });
-
-  /**
-   * TC_E09S03_04
-   * AC:      E09-S03 - Scenario 2 (After registration closes)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s registration closing date (01/12/2026) has passed
-   *
-   * Test data:
-   *   Closing date: 01/12/2026 (passed)
-   *
-   * Expected result:
-   *   Registration is refused, since the closing date has passed
-   */
-  test.fixme("TC_E09S03_04 - Verify that an Attendee trying to register after the registration closing date has passed should be refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Attempt to register for "Community Meetup"
-    void page;
-  });
-
-  /**
-   * TC_E09S03_05
-   * AC:      E09-S03 - Scenario 3 (Closing date after event start warned)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is editing event "Community Meetup", which starts on 15/11/2026
-   *
-   * Test data:
-   *   Closing date: 20/11/2026 (after event start 15/11/2026)
-   *
-   * Expected result:
-   *   A warning is shown asking the Organiser to confirm this is intended, before the closing date is saved
-   */
-  test.fixme("TC_E09S03_05 - Verify that setting a registration closing date that falls after the event has started should warn the Organiser and ask them to confirm", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Set Registration Closes: 20/11/2026 (after the event's start date)
-    // 2. Click "Save"
-    void page;
-  });
-
-  /**
-   * TC_E09S03_06
-   * AC:      E09-S03 - Scenario 4 (Waiting list enabled)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com is about to enable the waiting list for event "Community Meetup"
-   *
-   * Test data:
-   *   Waiting List: Enabled
-   *
-   * Expected result:
-   *   Once the event is full, the further registration attempt is offered the waiting list instead of being simply refused
-   */
-  test.fixme("TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Open event "Community Meetup"
-    // 2. Toggle "Enable Waiting List" on
-    // 3. Save
-    // 4. Fill the event to capacity and attempt a further registration
-    void page;
-  });
-
-  /**
-   * TC_E09S03_07
-   * AC:      E09-S03 - Scenario 1 (Before registration opens)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event EVT-2001 is Confirmed with registration opening at 2026-10-01 09:00:00 +08:00. Attendee attendee_a@example.com is signed in. Event EVT-2001 has places remaining
-   *
-   * Test data:
-   *   Registration opens: 2026-10-01 09:00:00 +08:00 - Attempt at: 2026-10-01 09:00:00 +08:00
-   *
-   * Expected result:
-   *   Registration succeeds and a place is reserved. The opening moment is inclusive: registration is open at, not after, the opening timestamp
+   * TC_E09S03_07 / TC_E09S03_08: both window ends are inclusive. The decision
+   * uses the database clock, which a browser test against a fake backend can't
+   * set, so the exact instants are proven in backend/tests/attendeeRegistration.test.ts
+   * ("registrationState: both window ends are inclusive") and on real PostgreSQL
+   * in backend/tests/registrationPeriod.integration.test.ts.
    */
   test.fixme("TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Set the system clock to exactly 2026-10-01 09:00:00 +08:00
-    // 2. Open event EVT-2001
-    // 3. Select event EVT-2001 and submit registration
     void page;
   });
 
-  /**
-   * TC_E09S03_08
-   * AC:      E09-S03 - Scenario 2 (After registration closes)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event EVT-2001 is Confirmed with registration closing at 2026-10-20 17:00:00 +08:00. Attendee attendee_b@example.com is signed in. Event EVT-2001 has places remaining
-   *
-   * Test data:
-   *   Registration closes: 2026-10-20 17:00:00 +08:00 - Attempt at: 2026-10-20 17:00:00 +08:00
-   *
-   * Expected result:
-   *   Registration succeeds. The acceptance criterion refuses registration once the closing date "has passed", so at the exact closing instant it has not yet passed. One second later the same attempt must be refused
-   */
   test.fixme("TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Set the system clock to exactly 2026-10-20 17:00:00 +08:00
-    // 2. Open event EVT-2001
-    // 3. Select event EVT-2001 and submit registration
     void page;
+  });
+
+  test("TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions", async ({ page }) => {
+    let state = 'not_yet_open';
+    await fakeRegistrationBackend(page, { form: { json: registrationForm({ event: { ...registrationEvent, registrationState: 'not_yet_open' } }) } });
+    await page.goto('/attendee/register/EVT-TECH');
+    // Before the window: no Session can be chosen on its own.
+    await expect(page.getByText(/^Registration opens on/)).toBeVisible();
+    await expect(page.getByRole('checkbox')).toHaveCount(0);
+
+    // During the window: both Sessions are selectable in one registration.
+    state = 'open';
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    const posts = await fakeRegistrationBackend(page, { form: { json: registrationForm({ event: { ...registrationEvent, registrationState: state } }) } });
+    await page.reload();
+    await page.getByRole('checkbox', { name: /Session A/ }).check();
+    await page.getByRole('checkbox', { name: /Session B/ }).check();
+    await page.getByRole('button', { name: 'Confirm registration' }).click();
+    await expect(page.getByText("You're registered")).toBeVisible();
+    expect(posts).toEqual([{ sessionIds: ['s-a', 's-b'] }]);
   });
 
 });

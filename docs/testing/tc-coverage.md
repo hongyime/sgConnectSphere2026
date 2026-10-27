@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **255** (67.5%)
+- Automated (explicit TC_ID in an active test title): **262** (69.3%)
   - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **217**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **92** (24.3%)
-- No test yet (no test file mentions the TC_ID): **31** (8.2%)
+  - Live-assertion (other active tests): **224**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **86** (22.8%)
+- No test yet (no test file mentions the TC_ID): **30** (7.9%)
 
 ## Coverage by epic
 
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 19 | 21 | 4 |
+| E09 | 44 | 26 | 15 | 3 |
 | E10 | 29 | 12 | 9 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **255** | **92** | **31** |
+| **Total** | **378** | **262** | **86** | **30** |
 
 ## Case-by-case status
 
@@ -372,15 +372,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S02_10` | E09-S02 | A registration exceeding combined Event capacity should remain Pending | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_10 - A registration exceeding combined Event capacity should remain Pending |
 | `TC_E09S02_11` | E09-S02 | An Organiser should approve a Pending request only if both capacity limits still | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations approves a Pending request only while both limits allow it (TC_E09S02_11); tests/e2e/e09.spec.ts: TC_E09S02_11 - An Orga |
 | `TC_E09S02_12` | E09-S02 | Combined Event capacity should reflect confirmed Session layout capacities | ✅ active | backend/tests/attendeeCapacity.test.ts: eventCapacity sums Session capacities and counts registered places only (TC_E09S02_12); tests/e2e/e09.spec.ts: TC_E09S02_12 - Combined Event |
-| `TC_E09S03_01` | E09-S03 | Verify that an Event Organiser should be able to set the registration opening an | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_01 - Verify that an Event Organiser should be able to set the registration opening and closing dates for an event |
-| `TC_E09S03_02` | E09-S03 | Verify that an Event Organiser should be able to set a withdrawal deadline for a | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event |
-| `TC_E09S03_03` | E09-S03 | Verify that an Attendee viewing an event before its registration opening date sh | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date s |
-| `TC_E09S03_04` | E09-S03 | Verify that an Attendee trying to register after the registration closing date h | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_04 - Verify that an Attendee trying to register after the registration closing date has passed should be refused |
-| `TC_E09S03_05` | E09-S03 | Verify that setting a registration closing date that falls after the event has s | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_05 - Verify that setting a registration closing date that falls after the event has started should warn the Organiser and ask them to confirm |
-| `TC_E09S03_06` | E09-S03 | Verify that enabling the waiting list for an event should offer it to Attendees  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full |
+| `TC_E09S03_01` | E09-S03 | Verify that an Event Organiser should be able to set the registration opening an | ✅ active | backend/tests/eventVisibility.test.ts: TC_E09S03_01, _02, _06 - after approval the Organiser sets the window, withdrawal deadline and waiting list directly; tests/e2e/e09.spec.ts:  |
+| `TC_E09S03_02` | E09-S03 | Verify that an Event Organiser should be able to set a withdrawal deadline for a | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_02 - Verify that an Event Organiser should be able to set a withdrawal deadline for an event |
+| `TC_E09S03_03` | E09-S03 | Verify that an Attendee viewing an event before its registration opening date sh | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_03 - Verify that an Attendee viewing an event before its registration opening date should see registration as not yet open, with the opening date s |
+| `TC_E09S03_04` | E09-S03 | Verify that an Attendee trying to register after the registration closing date h | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_04 - Verify that an Attendee trying to register after the registration closing date has passed should be refused |
+| `TC_E09S03_05` | E09-S03 | Verify that setting a registration closing date that falls after the event has s | ✅ active | backend/tests/eventVisibility.test.ts: TC_E09S03_05 - a closing date after the event starts needs confirming before it is saved; tests/e2e/e09.spec.ts: TC_E09S03_05 - Verify that s |
+| `TC_E09S03_06` | E09-S03 | Verify that enabling the waiting list for an event should offer it to Attendees  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full |
 | `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
 | `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
-| `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ❌ none | — |
+| `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions |
 | `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_01 - Verify that joining the waiting list for a full event with the list enabled should add the Attendee and confirm their position |
 | `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_02 - Verify that when a place is released in a event with a waiting list, all waitlisted Attendees should be notified and the place claimed on a fi |
 | `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
@@ -497,6 +497,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - manageRegistrations rejects a Pending request without a capacity check
 - manageRegistrations refuses unknown, decided and unconfirmed cases
 - manageRegistrations maps a busy account and a lost unique race, and rethrows other failures
+- getEventRegistrations returns the registration period the Organiser set (E09-S03)
 
 ### `backend/tests/attendeeRegistration.integration.test.ts`
 
@@ -773,6 +774,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - organiser post-approval unrestricted edits are audited
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
+- E09-S03 - the withdrawal deadline can be cleared, and bad values are refused
 
 ### `backend/tests/loginRecovery.integration.test.ts`
 
@@ -872,6 +874,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - duplicate email creates only one record
 - rejects invalid email and reports all password corrections
 - endpoint returns method, validation, creation and safe failure responses
+
+### `backend/tests/registrationPeriod.integration.test.ts`
+
+- E09-S03: the Organiser sets one Event-level registration period that Attendees are held to
 
 ### `backend/tests/sessions.test.ts`
 
@@ -1398,6 +1404,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `frontend/src/features/organiser/RegistrationPeriod.test.tsx`
+
+- periodPatch sends only what changed, both window ends together, and names bad dates
+- bad dates are caught before sending, and server refusals are shown
+- an event not taking registrations points to a change request; a cancelled one is read-only
+- a load failure is explained, and leaving mid-save drops the late reply
+- saving only the waiting list keeps the stored window as current
 
 ### `frontend/src/features/organiser/RejectedRequest.test.tsx`
 

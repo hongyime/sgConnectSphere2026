@@ -56,7 +56,9 @@ export async function fakeRegistrationBackend(page: Page, options: {
 // E09-S02 Organiser view: Session A 80 places, Session B 40, so 120 in all.
 export function organiserRegistrations(overrides: Record<string, unknown> = {}) {
   return {
-    event: { id: 'e-2001', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: true },
+    event: { id: 'e-2001', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: true,
+      startsAt: '2026-11-15T01:00:00.000Z', endsAt: '2026-11-15T09:00:00.000Z', registrationEnabled: true,
+      opensAt: '2026-10-01T01:00:00.000Z', closesAt: '2026-11-10T09:00:00.000Z', withdrawalDeadline: null },
     capacity: { capacity: 120, registered: 99 },
     sessions: [
       { ...registrationSessions[0], capacity: 80, registered: 80 },
@@ -82,4 +84,15 @@ export async function fakeOrganiserRegistrations(page: Page, options: { view?: u
     return route.fulfill({ json: current() });
   });
   return posts;
+}
+
+// E09-S03: answers PATCH /api/events?edit=1 (the registration period save) and records each body.
+export async function fakePeriodSave(page: Page, reply: (body: any) => Reply = () => ({ json: { updated: true, fields: [] } })) {
+  const saves: any[] = [];
+  await page.route('**/api/events?edit=1*', route => {
+    if (route.request().method() !== 'PATCH') return route.fallback();
+    saves.push(route.request().postDataJSON());
+    return route.fulfill(reply(route.request().postDataJSON()));
+  });
+  return saves;
 }
