@@ -129,7 +129,10 @@ def changed_files(*, staged: bool, base: str | None, head: str | None) -> list[t
     else:
         if not base or not head:
             raise ValueError("--base and --head are required outside staged mode")
-        command = ["git", "diff", "--name-status", "--find-renames", base, head]
+        merge_base = subprocess.check_output(
+            ["git", "merge-base", base, head], cwd=ROOT, text=True
+        ).strip()
+        command = ["git", "diff", "--name-status", "--find-renames", merge_base, head]
     command.extend(["--", "docs/testing/runs"])
     output = subprocess.check_output(command, cwd=ROOT, text=True)
     return parse_diff(output)

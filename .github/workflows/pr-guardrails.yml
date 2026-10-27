@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, synchronize, ready_for_review]
+  push:
+    branches: [main]
   merge_group:
     types: [checks_requested]
     branches: [main]
@@ -24,6 +26,7 @@ on:
 
 permissions:
   contents: read
+  checks: write
   pull-requests: read
 
 jobs:
@@ -51,6 +54,9 @@ jobs:
           DISPATCH_PR_NUMBER: ${{ inputs.pr_number }}
           MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
           MERGE_GROUP_HEAD_SHA: ${{ github.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        id: guardrails
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             python scripts/check_pr_guardrails.py \
@@ -62,12 +68,32 @@ jobs:
               --base "$DISPATCH_BASE_SHA" \
               --head "$DISPATCH_HEAD_SHA" \
               --pr-number "$DISPATCH_PR_NUMBER"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            python scripts/check_pr_guardrails.py \
+              --base "$PUSH_BASE_SHA" \
+              --head "$PUSH_HEAD_SHA"
           else
             python scripts/check_pr_guardrails.py \
               --base "$MERGE_GROUP_BASE_SHA" \
               --head "$MERGE_GROUP_HEAD_SHA" \
               --merge-group
           fi
+
+      - name: Publish backfill check on PR head
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ inputs.head_sha }}
+          BACKFILL_CONCLUSION: ${{ steps.guardrails.outcome == 'success' && 'success' || 'failure' }}
+        run: |
+          gh api --method POST "repos/$REPOSITORY/check-runs" \
+            -f name=pr-guardrails \
+            -f "head_sha=$PR_HEAD_SHA" \
+            -f status=completed \
+            -f "conclusion=$BACKFILL_CONCLUSION" \
+            -f 'output[title]=PR guardrails backfill' \
+            -f 'output[summary]=Validated the requested PR head without pushing a commit.'
 
   test-evidence:
     name: test-evidence
@@ -89,6 +115,9 @@ jobs:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           DISPATCH_BASE_SHA: ${{ inputs.base_sha }}
           DISPATCH_HEAD_SHA: ${{ inputs.head_sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+        id: evidence
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             python scripts/check_test_evidence.py \
@@ -98,6 +127,26 @@ jobs:
             python scripts/check_test_evidence.py \
               --base "$DISPATCH_BASE_SHA" \
               --head "$DISPATCH_HEAD_SHA"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            python scripts/check_test_evidence.py \
+              --base "$PUSH_BASE_SHA" \
+              --head "$PUSH_HEAD_SHA"
           else
             python scripts/check_test_evidence.py --merge-group
           fi
+
+      - name: Publish evidence backfill check on PR head
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ inputs.head_sha }}
+          BACKFILL_CONCLUSION: ${{ steps.evidence.outcome == 'success' && 'success' || 'failure' }}
+        run: |
+          gh api --method POST "repos/$REPOSITORY/check-runs" \
+            -f name=test-evidence \
+            -f "head_sha=$PR_HEAD_SHA" \
+            -f status=completed \
+            -f "conclusion=$BACKFILL_CONCLUSION" \
+            -f 'output[title]=Test evidence backfill' \
+            -f 'output[summary]=Validated the requested PR head without pushing a commit.'

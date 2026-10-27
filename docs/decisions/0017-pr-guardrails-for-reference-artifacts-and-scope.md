@@ -45,16 +45,19 @@ auto-close work or assign people without a team decision.
 ## Enforcement
 
 `.github/workflows/pr-guardrails.yml` runs `scripts/check_pr_guardrails.py` on
-pull requests, merge groups and manual backfills. `.github/settings/main-ruleset.json` adds the
+pull requests, `main` pushes, merge groups and manual backfills. The manual
+backfill publishes check runs explicitly on the requested PR head, while the
+workflow job itself runs on the dispatch ref. `.github/settings/main-ruleset.json` adds the
 `pr-guardrails` status to the required checks. An administrator must run
 `python scripts/configure_github.py --apply` after this workflow is on `main`,
 following `docs/github-owner-setup.md`.
 
 Before activation, existing open PRs can be backfilled through the workflow's
-manual dispatch using their base and head SHAs. This avoids pushing an empty
-commit merely to create the new checks and therefore avoids dismissing a valid
-approval. The alternative is to activate the ruleset only after the current
-in-flight PRs have merged or closed.
+manual dispatch using their base and head SHAs. Confirm the explicit check runs
+appear on each PR head before applying the ruleset. This avoids pushing an
+empty commit merely to create the new checks and therefore avoids dismissing a
+valid approval. The alternative is to activate the ruleset only after the
+current in-flight PRs have merged or closed.
 
 `.github/workflows/weekly-pr-cleanup.yml` produces the weekly cleanup report;
 the PR author is the default owner when no explicit GitHub assignee is set.

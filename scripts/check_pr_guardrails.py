@@ -141,8 +141,15 @@ def run(command: list[str]) -> str:
     return subprocess.check_output(command, cwd=ROOT, text=True).strip()
 
 
+def comparison_base(base: str, head: str) -> str:
+    """Return the common ancestor used for a pull-request file comparison."""
+
+    return run(["git", "merge-base", base, head])
+
+
 def git_changes(base: str, head: str) -> list[tuple[str, list[str]]]:
-    output = run(["git", "diff", "--name-status", "--find-renames", base, head, "--", "docs"])
+    merge_base = comparison_base(base, head)
+    output = run(["git", "diff", "--name-status", "--find-renames", merge_base, head, "--", "docs"])
     return parse_changed_files(output)
 
 

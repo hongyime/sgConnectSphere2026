@@ -1,5 +1,6 @@
 import importlib.util
 import unittest
+from unittest import mock
 from pathlib import Path
 
 
@@ -11,6 +12,25 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReferenceArtifactTests(unittest.TestCase):
+    def test_git_changes_uses_merge_base_so_newer_main_files_are_not_deletions(self):
+        with mock.patch.object(
+            MODULE,
+            "run",
+            side_effect=["merge-base-sha", "A\tdocs/notes/branch-only.md"],
+        ) as run:
+            changes = MODULE.git_changes("main-tip", "feature-tip")
+        self.assertEqual(changes, [("A", ["docs/notes/branch-only.md"])])
+        self.assertEqual(
+            run.call_args_list,
+            [
+                mock.call(["git", "merge-base", "main-tip", "feature-tip"]),
+                mock.call([
+                    "git", "diff", "--name-status", "--find-renames",
+                    "merge-base-sha", "feature-tip", "--", "docs",
+                ]),
+            ],
+        )
+
     def test_new_reference_file_is_allowed(self):
         changes = [("A", ["docs/bdr/customer-sources/Week 10.xlsx"])]
         self.assertEqual(MODULE.reference_artifact_errors(changes), [])

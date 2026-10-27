@@ -93,6 +93,29 @@ class EvidenceTests(unittest.TestCase):
             )
         self.assertEqual(errors, [])
 
+    def test_changed_files_uses_merge_base_for_pull_request_comparisons(self):
+        with mock.patch.object(
+            MODULE.subprocess,
+            "check_output",
+            side_effect=["merge-base-sha\n", "A\tdocs/testing/runs/new-record.md\n"],
+        ) as check_output:
+            changes = MODULE.changed_files(staged=False, base="main-tip", head="feature-tip")
+        self.assertEqual(changes, [("A", ["docs/testing/runs/new-record.md"])])
+        self.assertEqual(
+            check_output.call_args_list,
+            [
+                mock.call(["git", "merge-base", "main-tip", "feature-tip"], cwd=MODULE.ROOT, text=True),
+                mock.call(
+                    [
+                        "git", "diff", "--name-status", "--find-renames",
+                        "merge-base-sha", "feature-tip", "--", "docs/testing/runs",
+                    ],
+                    cwd=MODULE.ROOT,
+                    text=True,
+                ),
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
