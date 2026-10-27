@@ -333,3 +333,12 @@ test('a Pending request is described as waiting for the organiser, on the event 
   renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration: pending }) } });
   expect(await screen.findByText('You already have a request waiting for the organiser')).toBeInTheDocument();
 });
+
+test('a waitlisted registration is described consistently on the event page and form', async () => {
+  const waitlisted = { id: 'r-1', status: 'waitlisted', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration: waitlisted }) } });
+  expect(await screen.findByText("You're on the waiting list")).toBeInTheDocument();
+  cleanup();
+  renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration: waitlisted }) } });
+  expect(await screen.findByText("You're already on the waiting list for this event")).toBeInTheDocument();
+});
