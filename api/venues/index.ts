@@ -25,7 +25,7 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  if (request.method === 'POST' && ['request_booking', 'withdraw_booking', 'set_primary'].includes(String((request.body as Record<string, unknown> | undefined)?.action))) {
+  if (request.method === 'POST' && ['request_booking', 'withdraw_booking', 'set_primary', 'cancel_lost_booking'].includes(String((request.body as Record<string, unknown> | undefined)?.action))) {
     await bookingSubmissionHandler(request, response); return;
   }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('mode') === 'booking_requests') {

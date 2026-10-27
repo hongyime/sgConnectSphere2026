@@ -7,6 +7,7 @@ import { writeEventNotification } from '../eventNotifications/service.js';
 import { formatEventDates } from '../equipmentSupport/reservations.js';
 import type { VenueErrors } from './catalogue.js';
 import { holdsVenue } from './holds.js';
+import { confirmLostVenueReplacement } from './lostVenueRecovery.js';
 import { formatSgt } from './bookingShared.js';
 
 // E06-S04 "Decide on a venue booking request" (SCRUM-48). Venue Staff approve
@@ -311,6 +312,8 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
         (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
       VALUES ($1, 'venue_booking', $2, $3, $4, 'status', 'pending', $5) RETURNING id, occurred_at`,
     [staff.id, row.id, row.event_id, decision.decision === 'approve' ? 'Booking Approved' : 'Booking Rejected', newStatus]);
+
+    if (decision.decision === 'approve') await confirmLostVenueReplacement(client, row.id, staff.id);
 
     // The audit ID is the change ID (T-64), so a retried decision cannot send
     // the Coordinator a second notice. An event with no assigned Coordinator

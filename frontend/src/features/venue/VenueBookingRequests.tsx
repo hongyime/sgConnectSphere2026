@@ -55,6 +55,7 @@ export function VenueBookingRequests() {
       <Card title={result.data.event.title} actions={<StatusPill status={result.data.event.status} />}>
         <p>Each booking has its own period and status. A Pending request is awaiting a decision; it is not a confirmed booking.</p>
         <ButtonLink to={backTo}>Search venues for this event</ButtonLink>
+        {result.data.bookings.some(b => b.status === 'conflicting' && b.conflict_block_id) && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-recovery`}>Recover a lost venue</ButtonLink>}
       </Card>
       {result.data.bookings.length === 0 && <EmptyState title="No venue bookings recorded">This event has no recorded venue bookings.</EmptyState>}
       {result.data.bookings.map(booking => <Card key={booking.id} title={booking.venue_name} actions={booking.status === 'conflicting'
