@@ -35,6 +35,7 @@ export type EventChange =
   | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[] }
   | { kind: 'booking_requested' }
   | { kind: 'booking_withdrawn' }
+  | { kind: 'lost_venue_cancelled' }
   | { kind: 'booking_decided'; decision: 'confirmed' | 'rejected' | 'released' }
   | { kind: 'equipment_changed'; venueAffected: boolean; technicalAffected: boolean }
   | { kind: 'place_released' }
@@ -103,7 +104,8 @@ function groupsFor(change: EventChange): Group[] {
         ? everyone : ['organiser','coordinator'];
     case 'arrangements': return change.fields.length ? everyone : [];
     case 'booking_requested':
-    case 'booking_withdrawn': return ['venueStaff'];
+    case 'booking_withdrawn':
+    case 'lost_venue_cancelled': return ['venueStaff'];
     case 'booking_decided': return ['coordinator'];
     case 'equipment_changed': return ['coordinator', ...(change.venueAffected ? ['venueStaff' as const] : []), ...(change.technicalAffected ? ['technicalStaff' as const] : [])];
     case 'place_released': return ['waitlisted'];
@@ -141,6 +143,7 @@ function description(change: EventChange): string {
     case 'status': return change.from==='confirmed' && change.to==='planning' ? 'Previously confirmed arrangements are being revised.' : `Event status changed to ${change.to.replaceAll('_',' ')}.`;
     case 'arrangements': return `Event ${[...new Set(change.fields)].join(', ')} changed.`;
     case 'booking_requested': return 'A venue booking request needs a decision.';
+    case 'lost_venue_cancelled': return 'The Coordinator cancelled the original lost venue booking after confirming a replacement.';
     case 'booking_withdrawn': return 'The Coordinator withdrew a Pending venue booking request. There is no longer a request to decide.';
     case 'booking_decided': return `The venue booking was ${change.decision}.`;
     case 'equipment_changed': return 'Equipment arrangements or availability changed; review the affected work.';

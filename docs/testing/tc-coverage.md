@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **243** (64.3%)
-  - Real-database (`.integration.test` / `.db.test`): **44**
+- Automated (explicit TC_ID in an active test title): **246** (65.1%)
+  - Real-database (`.integration.test` / `.db.test`): **45**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **198**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **100** (26.5%)
+  - Live-assertion (other active tests): **200**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (25.7%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 44 | 10 | 26 | 8 |
-| E10 | 29 | 9 | 12 | 8 |
+| E10 | 29 | 12 | 9 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **243** | **100** | **35** |
+| **Total** | **378** | **246** | **97** | **35** |
 
 ## Case-by-case status
 
@@ -429,9 +429,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
-| `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue se |
-| `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking |
-| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_04 — Verify that the Organiser and registered Attendees should be notified of the venue change only when the replacement is confirmed, not when the |
+| `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
 
 ### E11
 
@@ -1463,6 +1463,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - when the venue list cannot load, the reason can still be sent without a suggestion
 - a request that is no longer pending has nothing to decide
 - an unknown request on the decision page shows the server message
+
+### `frontend/src/features/venue/LostVenueRecovery.test.tsx`
+
+- empty recovery uses shared state
 
 ### `frontend/src/features/venue/TentativeHolds.test.tsx`
 
