@@ -26,13 +26,14 @@ ADR-017.
 | Coordinator planning (E06/E07/E08) | Event detail grouped by Session; venue/equipment planning per Session; event-level support | Keep lifecycle and registration windows at Event level. Show separate booking and equipment state for each Session, then transition automatically to Safety Review when all required arrangements confirm. |
 | Venue operations (E05/E06) | Open-ended block editor, edit history, lift confirmation, hold configuration/extension | Allow no end date; show history and actor; lifting notifies affected Coordinator. Show per-hold expiry and warning values without defaults; require a reason and show remaining extensions (maximum two). Do not show buffer shading around maintenance blocks. |
 | Safety review (E08-S03/S06) | Safety Officer queue, event/session arrangement summary, factor checklist, decision/comments | Queue appears automatically after arrangements confirm. Record overall decision and comments plus the team's in-system checklist. The Coordinator has no submit-for-review control. |
-| Attendee registration (E09-S01/S02/S03/S05) | Public Event detail, Session selection, capacity summary, Pending state, Organiser review | One registration selects one or more Sessions. Explain Session and combined Event capacity; show Pending for Organiser review when a limit is exceeded. Keep Event-level waitlist behavior. Do not add a per-Session waitlist while O-50 is open. |
+| Attendee registration (E09-S01/S02/S03/S05) | Public Event detail, Session selection, capacity summary, Pending state, Organiser review | One registration selects one or more Sessions. Explain Session and combined Event capacity; show Pending for Organiser review when a limit is exceeded. Keep Event-level waitlist behavior; T-98 closes O-50 with no per-Session waitlist. |
 | Lead assignment (E03-S08/S09/S10) | Unassigned queue, direct reassignment confirmation, oversight list | Lead-only queue. Lead assignment/reassignment takes effect directly; remove Coordinator reassignment-request and incoming-acceptance screens. |
 | Multi-role account (E01 access) | Role-aware shell and route/navigation states | One account may have multiple role grants. Seed data still has one; no dedicated role-switching screen is assumed. Show only routes/actions granted to the account and preserve server-side authorization. |
 
-O-50 (per-Session waitlist) and O-51 (exact copied data) are team assumptions,
-not customer statements. Keep both visible in the relevant states and copy; do
-not present either as settled customer behavior.
+O-50 (per-Session waitlist) and O-51 (exact copied data) were team assumptions,
+not customer statements. The team has since closed them as T-98 and T-99; use
+those selected behaviors in current designs without attributing them to the
+customer.
 
 ## What exists in Figma now
 
@@ -119,8 +120,10 @@ Recommended system:
 
 Work in Figma should happen in controlled batches to avoid API/rate-limit waste:
 
-1. Ask the designer or product owner to select the exact frame for each priority
-   screen and copy frame-specific Figma links with `node-id=...`.
+1. Each story owner selects the exact frame for their priority screen and copies
+   a frame-specific Figma link with `node-id=...`, coordinating cross-story
+   layout and consistency with Amareet. Ask the product owner about unresolved
+   product behavior.
 2. Create or update a Figma page named `High-fi proposal`.
 3. Add a small design-token area with colors, type scale, spacing, radius, and
    status chip examples.
@@ -310,3 +313,22 @@ To produce high-fi Figma updates safely, the next input should be one of:
 
 The current page-root link is useful for orientation, but not enough for exact
 screen-by-screen refinement.
+
+## 18 October 2026 decision update (T-98 / T-99)
+
+The earlier Week 9 notes above recorded O-50 and O-51 as open team assumptions.
+The team has since adopted them as T-98 and T-99; they remain team decisions,
+not customer statements. The registration design should show no per-Session
+waitlist: a full selected Session follows the Pending Organiser decision path,
+and the Event-level waitlist remains available when combined Event capacity is
+full and the list is enabled. The copy-event design should retain requirements
+and Session structure, clear Event/Session dates and times, and omit bookings,
+equipment reservations and registrations.
+
+The actual Figma file still needs a frame-specific design pass. The shared link
+in this plan opens the file root, not a selected screen, and a previous connector
+write attempt returned `INVALID_ARGUMENT`; no live Figma frame was changed by
+this decision update. Each story owner selects, updates and reviews the frames
+for their story, then exports accepted screens and links those frames from the
+affected stories. Amareet coordinates the shared Figma workspace and cross-story
+consistency; see repository decision 0016.

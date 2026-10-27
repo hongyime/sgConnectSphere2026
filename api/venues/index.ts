@@ -16,7 +16,7 @@ import {
 import { getVenueCalendar } from '../../backend/src/modules/venueBooking/calendar.js';
 import { listAccessibilityFeatures } from '../../backend/src/modules/venueBooking/matchAccessibility.js';
 import {
-  createVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
+  createVenueBlock, editVenueBlock, getVenueBlockHistory, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../../backend/src/modules/venueBooking/blocks.js';
 import { decideBooking, getBooking, listPendingBookings } from '../../backend/src/modules/venueBooking/decisions.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
@@ -25,7 +25,7 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
-  if (request.method === 'POST' && (request.body as Record<string, unknown> | undefined)?.action === 'request_booking') {
+  if (request.method === 'POST' && ['request_booking', 'withdraw_booking', 'set_primary', 'cancel_lost_booking'].includes(String((request.body as Record<string, unknown> | undefined)?.action))) {
     await bookingSubmissionHandler(request, response); return;
   }
   if (new URL(request.url || '/', 'http://localhost').searchParams.get('mode') === 'booking_requests') {
@@ -83,8 +83,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
         return await getVenueCalendar(query, user, id.slice(0, 240), params.get('from'), params.get('to'));
       }
       // E05-S04: a venue's current and upcoming maintenance blocks, with the
-      // ids staff need to shorten or remove one.
-      if (id && params.get('blocks') === '1') return listVenueBlocks(query, user, id.slice(0, 240));
+      // ids staff need to shorten or remove one. E05-S06: one block's history,
+      // or the list with lifted blocks kept, for Venue Staff (T-91).
+      if (id && params.get('blocks') === '1') {
+        const history = params.get('history');
+        if (history) return getVenueBlockHistory(query, user, id.slice(0, 240), history.slice(0, 64));
+        return listVenueBlocks(query, user, id.slice(0, 240), { includeLifted: params.get('lifted') === '1' });
+      }
       if (id) return { venue: await getVenue(query, user, id.slice(0, 240)) };
 
       const layout = params.get('layout') || undefined;
@@ -138,7 +143,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
         : removeVenueLayout(databasePool(), user, id, label);
     }
 
-    if (action === 'block' || action === 'shorten_block' || action === 'remove_block') {
+    if (action === 'block' || action === 'edit_block' || action === 'shorten_block' || action === 'lift_block' || action === 'remove_block') {
       const { id, block_id: blockId, ...rest } = fields;
       if (typeof id !== 'string' || !id) {
         return { status: 400, body: { error: 'validation_failed', errors: { id: ['A venue id is required.'] } } };
@@ -147,6 +152,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
       if (typeof blockId !== 'string' || !blockId) {
         return { status: 400, body: { error: 'validation_failed', errors: { block_id: ['A block id is required.'] } } };
       }
+      if (action === 'edit_block') return editVenueBlock(databasePool(), user, id, blockId, rest);
+      if (action === 'lift_block') return liftVenueBlock(databasePool(), user, id, blockId);
       return action === 'shorten_block'
         ? shortenVenueBlock(databasePool(), user, id, blockId, rest)
         : removeVenueBlock(databasePool(), user, id, blockId);
@@ -160,7 +167,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
 
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'shorten_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'edit_block', 'shorten_block', 'lift_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
     } };
   });
 }

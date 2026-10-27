@@ -9,6 +9,7 @@ import { applyEventStatusChange } from '../eventLifecycle/repository.js';
 import { EXPIRED, holdsVenue, formatSgt } from './bookingShared.js';
 import { venueSearch } from './search.js';
 import { assessEventVenue } from './suitability.js';
+import { lostVenueRetryParent } from './lostVenueRecovery.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type BookingInput = { event_id: string; venue_id: string; starts_at: string; ends_at: string; purpose: string | null; headcount: number | null; replaces_booking_id?: string };
@@ -98,13 +99,16 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
           return { status: 200, body: { booking, suitability: booking.suitability, event_status: event.status, replayed: true } };
         }
       }
+      let replacementParentId = input!.replaces_booking_id;
       if (input!.replaces_booking_id) {
-        const rejected = (await client.query<{ status: string; event_id: string; suggested_venue_id: string | null }>(
-          'SELECT status,event_id,suggested_venue_id FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
-        if (!rejected || rejected.event_id !== event.id || rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)
-          throw new AccessError(409, 'This rejected booking has no matching suggested venue.');
-        if ((await client.query('SELECT id FROM venue_bookings WHERE replaces_booking_id=$1', [input!.replaces_booking_id])).rows.length)
-          throw new AccessError(409, 'A replacement request already exists for this rejection.');
+        const rejected = (await client.query<{ status: string; event_id: string; suggested_venue_id: string | null; conflict_block_id: string | null; status_before_conflict: string | null }>(
+          'SELECT status,event_id,suggested_venue_id,conflict_block_id,status_before_conflict FROM venue_bookings WHERE id=$1 FOR UPDATE', [input!.replaces_booking_id])).rows[0];
+        const lost = rejected?.status === 'conflicting' && rejected.conflict_block_id && ['pending','confirmed'].includes(rejected.status_before_conflict ?? '');
+        if (!rejected || rejected.event_id !== event.id || (!lost && (rejected.status !== 'rejected' || rejected.suggested_venue_id !== input!.venue_id)))
+          throw new AccessError(409, 'This booking has no valid suggested or lost-venue replacement context.');
+        if (lost) replacementParentId = await lostVenueRetryParent(client, input!.replaces_booking_id, event.id);
+        if ((await client.query("SELECT id FROM venue_bookings WHERE replaces_booking_id=$1 AND status<>'released'", [replacementParentId])).rows.length)
+          throw new AccessError(409, 'A replacement request already exists for this booking.');
       }
       if (!['approved', 'planning'].includes(event.status)) throw new AccessError(409, 'Booking requests require an Approved or Planning event.');
       if (new Date(input!.starts_at) < event.starts_at || new Date(input!.ends_at) > event.ends_at) throw new AccessError(400, 'The booking period must fall within the event.');
@@ -121,7 +125,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         && occupied_window(tstzrange($2,$3,'[)'),v.setup_time_minutes,v.turnaround_time_minutes) LIMIT 1`,
       [input!.venue_id,input!.starts_at,input!.ends_at,hold?.id ?? null])).rows[0];
       if (clash) throw new AccessError(409, `This venue is unavailable from ${formatSgt(clash.starts_at)} to ${formatSgt(clash.ends_at)}, including setup and turnaround.`);
-      const block = (await client.query('SELECT id FROM venue_blocks WHERE venue_id=$1 AND block_range && tstzrange($2,$3,\'[)\') LIMIT 1', [input!.venue_id,input!.starts_at,input!.ends_at])).rows[0];
+      const block = (await client.query('SELECT id FROM venue_blocks WHERE venue_id=$1 AND lifted_at IS NULL AND block_range && tstzrange($2,$3,\'[)\') LIMIT 1', [input!.venue_id,input!.starts_at,input!.ends_at])).rows[0];
       if (block) throw new AccessError(409, 'This venue is blocked during the requested period.');
       const params = new URLSearchParams({ event_id: event.id, search: '1', start: input!.starts_at, end: input!.ends_at });
       if (input!.headcount !== null) { params.set('attendance', String(input!.headcount)); params.set('capacity', String(input!.headcount)); }
@@ -137,7 +141,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         suitability_snapshot=$3 WHERE id=$1`, [id,user.id,JSON.stringify(suitability)]);
       else await client.query(`INSERT INTO venue_bookings(id,event_id,session_id,venue_id,booking_range,status,purpose,headcount,requested_by,requested_at,submission_key,submission_payload,suitability_snapshot,replaces_booking_id)
         VALUES($1,$2,$3,$4,tstzrange($5,$6,'[)'),'pending',$7,$8,$9,clock_timestamp(),$10,$11,$12,$13)`,
-      [id,event.id,sessions[0]!.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability),input!.replaces_booking_id ?? null]);
+      [id,event.id,sessions[0]!.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability),replacementParentId ?? null]);
       if (event.status === 'approved') await applyEventStatusChange(client, event.id, 'planning', user.id, { notificationOptions: options });
       const auditId = randomUUID();
       await client.query(`INSERT INTO audit_logs(id,actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)

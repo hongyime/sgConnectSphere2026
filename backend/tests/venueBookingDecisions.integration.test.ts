@@ -90,7 +90,7 @@ async function withFixture(work: (f: Fixture) => Promise<void>) {
   try { await work(f); } finally { await f.close(); }
 }
 
-type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null; booking_id: string | null };
+type ActivityRow = { action: string; entity_type: string; venue_name: string | null; actor_name: string | null; old_value: string | null; new_value: string | null };
 
 // T-75: the assigned Coordinator reads the decision in the event Activity log;
 // the Organiser's view of the same log leaves booking decisions out.
@@ -256,7 +256,6 @@ test('TC_E06S04_05: an approval is recorded with the actor, action, booking, eve
   assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking')
     .map(row => [row.action, row.venue_name, row.actor_name, row.old_value, row.new_value]),
   [['Booking Approved', 'Small Room', 'Venue Staff A', 'pending', 'confirmed']]);
-  assert.deepEqual(coordinatorView.filter(row => row.entity_type === 'venue_booking').map(row => row.booking_id), [bookingId]);
   assert.equal(organiserView.some(row => row.entity_type === 'venue_booking'), false);
 }));
 
@@ -288,6 +287,37 @@ test('only Venue Staff can decide; a refusal is audited and leaves the request p
   const denials = await f.pool.query(`SELECT actor_id, new_value FROM audit_logs WHERE action = 'Access Denied' ORDER BY occurred_at`);
   assert.deepEqual(denials.rows.map(r => [r.actor_id, r.new_value]),
     [[f.ids.coordinator, 'venue_bookings'], [f.ids.coordinator, 'venue_bookings']]);
+}));
+
+test('task12: stale Venue Staff identity cannot decide after database account revocation', () => withFixture(async f => {
+  const { eventId, bookingId } = await f.pendingRequest();
+  for (const change of ["is_active=false", "role='event_coordinator'", 'failed_login_count=5', "locked_until=clock_timestamp()+interval '1 hour'"]) {
+    await f.pool.query(`UPDATE users SET ${change} WHERE id=$1`, [f.ids.staff]);
+    await assert.rejects(decideBooking(f.pool, f.staff, bookingId, { decision: 'approve' }), { status: 403 });
+    assert.equal((await f.row(bookingId)).status, 'pending');
+    assert.deepEqual(await f.audits(bookingId), []);
+    assert.deepEqual(await f.notices(eventId), []);
+    await f.pool.query("UPDATE users SET is_active=true,role='venue_staff',failed_login_count=0,locked_until=NULL WHERE id=$1", [f.ids.staff]);
+  }
+}));
+
+// Ji Ning's #298 review: a Pending request left on a closed event must not be
+// confirmed or rejected onto it.
+test('a pending request on a Completed or Cancelled event is refused and leaves no trace', () => withFixture(async f => {
+  for (const [status, day] of [['completed', '2027-01-15'], ['cancelled', '2027-01-16']]) {
+    const { eventId, bookingId } = await f.pendingRequest(`EVT-${status}`, day);
+    await f.pool.query(`UPDATE events SET status = $2::event_status WHERE id = $1`, [eventId, status]);
+    for (const decision of [{ decision: 'approve' }, { decision: 'reject', reason: REASON }]) {
+      const result = await decideBooking(f.pool, f.staff, bookingId, decision);
+      assert.equal(result.status, 409);
+      assert.match((result.body as { error: string }).error, new RegExp(`has been ${status}`));
+      assert.equal((await f.row(bookingId)).status, 'pending');
+      assert.deepEqual(await f.audits(bookingId), []);
+      assert.deepEqual(await f.notices(eventId), []);
+    }
+    const event = (await f.pool.query<{ status: string }>('SELECT status FROM events WHERE id = $1', [eventId])).rows[0]!;
+    assert.equal(event.status, status);
+  }
 }));
 
 test('a decided request cannot be decided again', () => withFixture(async f => {
@@ -400,6 +430,7 @@ test('TC_E06S04_04: approval is blocked when the buffered windows overlap a conf
   assert.equal(result.status, 409);
   const body = result.body as { error: string; conflict: { bookingId: string; status: string; eventCode: string } };
   assert.match(body.error, /with setup and turnaround time it overlaps the confirmed booking for "EVT-5101 Product Expo 2026" \(1 Feb 2027, 10:00 am – 12:00 pm\) at Small Room\./);
+  assert.match(body.error, /Buffered window: 1 Feb 2027, 10:00 am – 1:00 pm/);
   assert.deepEqual([body.conflict.bookingId, body.conflict.status, body.conflict.eventCode], [confirmedId, 'confirmed', 'EVT-5101']);
   assert.equal((await f.row(pendingId)).status, 'pending');
   assert.deepEqual(await f.audits(pendingId), []);

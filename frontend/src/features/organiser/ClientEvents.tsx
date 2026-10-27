@@ -1,15 +1,17 @@
+import { CancellationNotice } from '../events/EventCancellation';
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { PencilLine } from 'lucide-react';
 import { EventEditForm } from '../events/EventEditForm';
 import type { EditableField } from '../events/eventEditApi';
 import { fieldList } from '../events/eventEditFields';
+import { formatEditedValue } from '../events/ActivityLog';
 import { Alert } from '../../shared/feedback';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
 type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
-type Event = { id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
+type Event = { cancellation_reason?: string | null; id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canRequestCancellation?: boolean; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
 type Notification = { id: string; title: string; message: string };
 
 function plainStatus(status: string) {
@@ -114,6 +116,8 @@ export function ClientEvents() {
         </section>
       </>}
       {!busy && !error && event && <article><div className="organiser-event-heading"><div><h2>{event.title}</h2><p>{event.event_code} · {plainStatus(event.status)}</p></div>{event.canEdit ? <button type="button" className="secondary-action" onClick={() => { setEditing(true); setSaved(null); }}><PencilLine size={14} aria-hidden="true" /> Edit event</button> : null}</div>
+        {event.status==='cancelled' ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
+        {event.canRequestCancellation ? <Link to={`/organiser/requests/${encodeURIComponent(event.event_code || event.id)}/cancel`}>Request cancellation</Link> : null}
         {saved ? <Alert tone="success">{saved}</Alert> : null}
         {editing ? <EventEditForm
           eventId={event.id}
@@ -139,7 +143,7 @@ export function ClientEvents() {
           {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}
         </section>
         <section aria-labelledby="event-activity-heading"><h3 id="event-activity-heading">Activity log</h3>
-          {event.activityLog?.length ? <ol>{event.activityLog.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}><strong>{entry.action}</strong>{entry.field_changed ? ` · ${entry.field_changed}` : ''} — {plainDate(entry.occurred_at)}{entry.actor_name ? ` by ${entry.actor_name}` : ''}{entry.new_value ? ` (${entry.new_value})` : ''}</li>)}</ol> : <p>No activity recorded yet.</p>}
+          {event.activityLog?.length ? <ol>{event.activityLog.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}><strong>{entry.action}</strong>{entry.field_changed ? ` · ${entry.field_changed}` : ''} — {plainDate(entry.occurred_at)}{entry.actor_name ? ` by ${entry.actor_name}` : ''}{entry.new_value ? ` (${formatEditedValue(entry.field_changed, entry.new_value)})` : ''}</li>)}</ol> : <p>No activity recorded yet.</p>}
         </section>
         <section aria-labelledby="event-comments-heading"><h3 id="event-comments-heading">Comments</h3>
           {event.comments?.length ? <ol>{event.comments.map(item => <li key={item.id}><p>{item.body}</p><small>{item.author_name} · {new Date(item.created_at).toLocaleString()}</small></li>)}</ol> : <p>No comments yet.</p>}

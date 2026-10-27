@@ -6,8 +6,8 @@ must still run it and record every actual outcome, including passes.
 
 ## Set up first
 
-Use fresh disposable **native loopback PostgreSQL**, migrated through 0016
-including 0015. Follow the current [seed convention](../../contributing/seed-data-convention.md)
+Use fresh disposable **native loopback PostgreSQL**, migrated through this branch's
+0020 (including 0018 assignments and 0019 booking fields). Follow the current [seed convention](../../contributing/seed-data-convention.md)
 and [database safety guidance](../supabase-test-schema.md). Never reset shared
 Supabase. The older E06-S02 Docker instructions are superseded by AGENTS.md.
 
@@ -43,7 +43,7 @@ status-notice inbox/outbox. A converted Pending row must not be expired by the w
 
 ## Pending checks
 
-Venue Staff inbox receipt can be checked once SCRUM-189 (#272) is merged: a
+SCRUM-189 (#272) is merged. Check Venue Staff inbox receipt using current assignments: a
 request for Orchid Hall reaches `venue_a`. Decision presentation remains an
 E06-S04 check; mark it blocked until that workflow lands. The
 injected-resolver database tests do not prove production assignments or actual
@@ -79,3 +79,60 @@ were not manually exercised; their automated evidence is distinct.
    the request notice. Do not claim this production default integration before then.
 
 These steps are pending human execution; the earlier screenshots predate the fixes.
+
+The [16 October partial run](../runs/20261016-162300-jininggg-frontend-e2e.md)
+subsequently exercised suggested-venue submission/retry/chain, default staff
+inbox receipt, withdrawal, converted-hold history and Confirmed-event navigation.
+It documents its exact PASS limits/SKIPs and the two UI fixes found and retested;
+it does not evidence every preceding step or the actual staff decision UI.
+
+## Withdrawal and replacement follow-up (T-94 to T-96)
+
+These are expected results for a **new human run**, not passing execution claims.
+Prepare synthetic local fixtures with two independent bookings, a live hold that
+can be converted, and a Rejected request with a suggested venue. Use the seeded
+assignment rows for the requested venue. Do not change production data. If the
+staff decision UI is unavailable, record that integration as blocked; direct SQL
+fixtures and automated competing writers do not prove the complete staff UI.
+
+| Case | Human action | Expected result |
+| --- | --- | --- |
+| TC_E06S03_08 | Open a Pending card, choose **Withdraw request**, cancel once, then confirm. Refresh the list/calendar. | Cancel changes nothing. Confirmation shows Released; the other bookings and event status stay unchanged. Only this request's occupancy is freed, subject to other bookings/buffers/blocks. |
+| TC_E06S03_09 | Check a Confirmed card and sign in as another Coordinator. Attempt the withdrawal API with the other identity. | No Confirmed withdrawal control. Server refuses the foreign request without exposing its details; Confirmed status/primary stay intact. |
+| TC_E06S03_10 | With the E06-S04 owner, approve/reject while withdrawing the same Pending request in another browser. | Exactly one wins; losing withdrawal shows a conflict and **Refresh booking list**. Losing staff decision refuses the Released request. An event/account update in progress may also require refresh/retry. |
+| TC_E06S03_11 | Withdraw a converted hold. Check the assigned requested-venue staff inbox and authorised local audit/outbox queries. | Booking becomes Released with null expiry; no hold returns. Booking Withdrawn audit is Pending to Released. Only current active staff for that venue receive a notice and queued delivery. Queued email is not provider receipt. |
+| TC_E06S03_12 | Request a rejection's suggestion; withdraw that replacement, refresh, request the suggestion again and retry the same network submission. | Old Released row remains. Original suggestion action returns; a fresh submission creates a new Pending row. Network retry reuses its existing result, not another request. |
+| TC_E06S03_13 | Reject a replacement and suggest a third venue; follow that latest suggestion, continuing beyond two links if available. Also inspect a rejection without a suggestion. | Old source stays consumed; next request links to the latest rejection only. No fixed two-attempt cap; no suggestion control without a suggestion. Ordinary venue search remains available. |
+
+Record observed outcomes in a fresh T-65 record. Save the tester's hand-taken
+images under `runs/evidence/<new-record-basename>/TC_ID-sequence.png` (or JPG),
+each below 1000 KB, and link them from the record's `## Screenshots`. Do not
+reuse the 15 October archive as proof of these changes. Races and outbox rollback
+also have separate automated real-database checks; label those separately.
+
+## Explicit primary selection (Scenario 3c, E06-S03 ownership)
+
+This is a new interaction added after the 16 October partial manual run.
+Do not amend that immutable record to claim it was exercised there.
+
+1. In a disposable local setup with E06-S04 available, have staff approve two
+   independent venue bookings for the same assigned event. Observe the first
+   Confirmed booking become primary automatically (E06-S04 ownership).
+2. As the assigned Coordinator, use the event page's **Venue bookings** link.
+   The existing primary shows **Primary venue**; another Confirmed booking shows
+   **Set as primary venue**. Pending/Released/Rejected bookings offer no such action.
+3. Choose the other Confirmed booking and cancel confirmation. Flags and statuses
+   remain unchanged. Confirm again using **Set primary venue**; expect the success
+   notice, the target's primary label and the old primary's selection action.
+4. Refresh and verify exactly one primary, retained booking periods/statuses and
+   unchanged event status. Repeat on an assigned Confirmed event; viewing and
+   primary selection are allowed even though new booking submission is not.
+5. Corroborate the local `Primary Venue Changed` audit if authorised. Direct
+   replay of the current choice should create no repeated audit. Another
+   Coordinator or a non-Confirmed target must be refused by the API, regardless
+   of hidden controls. Label agent/API checks separately from human UI actions.
+
+Record a fresh human run and TC_E06S03_07-sequence screenshots for this Scenario
+3c follow-up; do not overwrite earlier images. Real-service approval/withdrawal
+races and primary-assignment races also have their separate deterministic
+PostgreSQL tests. Coordinate human integration review with Le Xin before sign-off.

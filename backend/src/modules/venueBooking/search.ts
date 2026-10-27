@@ -60,8 +60,19 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
   if (criteria.q.length > 240) errors.q = ['Search must be at most 240 characters.'];
   if (Object.keys(errors).length) return { errors };
   const result = await query<Candidate>(`SELECT v.id, v.name, v.location, v.max_capacity,
-    NOT EXISTS (SELECT 1 FROM venue_blocks b WHERE b.venue_id=v.id AND b.block_range && tstzrange($1::timestamptz,$2::timestamptz,'[)'))
+    NOT EXISTS (SELECT 1 FROM venue_blocks b WHERE b.venue_id=v.id AND b.lifted_at IS NULL AND b.block_range && tstzrange($1::timestamptz,$2::timestamptz,'[)'))
     AND NOT EXISTS (SELECT 1 FROM venue_bookings b WHERE b.venue_id=v.id AND ${holdsVenue('b', 'now()')} AND occupied_window(b.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) && occupied_window(tstzrange($1::timestamptz,$2::timestamptz,'[)'), v.setup_time_minutes, v.turnaround_time_minutes)) AS available,
+    -- E05-S05 Scenario 7: the earliest clashing booking's buffered window, cut
+    -- to the requested period; if they meet only buffer to buffer, cut to the
+    -- requested period's own buffered window instead.
+    (SELECT jsonb_build_object('starts_at', lower(o.overlap), 'ends_at', upper(o.overlap))
+      FROM venue_bookings b
+      CROSS JOIN LATERAL (SELECT occupied_window(b.booking_range, v.setup_time_minutes, v.turnaround_time_minutes) AS taken,
+        tstzrange($1::timestamptz,$2::timestamptz,'[)') AS asked) w
+      CROSS JOIN LATERAL (SELECT CASE WHEN w.taken && w.asked THEN w.taken * w.asked
+        ELSE w.taken * occupied_window(w.asked, v.setup_time_minutes, v.turnaround_time_minutes) END AS overlap) o
+      WHERE b.venue_id=v.id AND ${holdsVenue('b', 'now()')} AND w.taken && occupied_window(w.asked, v.setup_time_minutes, v.turnaround_time_minutes)
+      ORDER BY lower(w.taken), b.id LIMIT 1) AS booking_overlap,
     coalesce((SELECT jsonb_agg(jsonb_build_object('id',r.id,'label',r.label,'capacity',vl.capacity) ORDER BY r.label) FROM venue_supported_layouts vl JOIN room_layouts r ON r.id=vl.layout_id WHERE vl.venue_id=v.id),'[]') AS layouts,
     coalesce((SELECT jsonb_agg(jsonb_build_object('id',a.id,'label',a.label) ORDER BY a.label) FROM venue_accessibility_features va JOIN accessibility_features a ON a.id=va.feature_id WHERE va.venue_id=v.id),'[]') AS accessibility,
     coalesce((SELECT jsonb_agg(jsonb_build_object('id',f.id,'label',f.label) ORDER BY f.label) FROM venue_facilities vf JOIN facilities f ON f.id=vf.facility_id WHERE vf.venue_id=v.id),'[]') AS facilities

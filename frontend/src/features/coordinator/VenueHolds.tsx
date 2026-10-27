@@ -23,7 +23,7 @@ import { eventRef, getAssignedEvent } from './coordinatorApi';
 import './coordinator.css';
 
 // Holds are placed while approved or planning; afterwards the card still shows them.
-export const HOLDS_VISIBLE = ['approved', 'planning', 'confirmed'];
+export const HOLDS_VISIBLE = ['approved', 'planning', 'safety_review', 'confirmed'];
 const HOLDABLE = ['approved', 'planning'];
 
 const eventPath = (eventCode: string) => `/coordinator/events/${encodeURIComponent(eventCode)}`;

@@ -6,14 +6,15 @@
 //     code or status date, and lookup by uuid only.
 //   GET /api/events?id=<uuid or code>   - the organisation-wide read (SCRUM-18),
 //     which adds the event code, status history and comments (snake_case),
-//     and the E03-S03 (SCRUM-34) decision with its reason and date.
+//     the E03-S03 (SCRUM-34) decision with its reason and date, and the
+//     E08-S03 (SCRUM-60) confirmed arrangements.
 // Requests go through the shared apiCall (session cookie, ADR-015).
 import { apiCall, type ApiFailure, type ApiResult } from '../../shared';
 import { readQuestions, type OutstandingQuestion } from '../events/clarificationApi';
 
 export type EventStatus =
   | 'draft' | 'submitted' | 'under_review' | 'awaiting_clarification' | 'rejected'
-  | 'approved' | 'planning' | 'confirmed' | 'cancelled' | 'completed';
+  | 'approved' | 'planning' | 'safety_review' | 'confirmed' | 'cancelled' | 'completed';
 
 export type OwnRequest = {
   id: string;
@@ -37,7 +38,18 @@ export type RequestComment = { id: string; body: string; created_at: string; aut
 // rejection, and seeded rejections can have none (D30).
 export type RequestDecision = { outcome: 'approved' | 'rejected'; reason: string | null; decidedAt: string };
 
+// E08-S03 (SCRUM-60) Scenario 6: what was confirmed, once the event is
+// Confirmed (null before then).
+export type ConfirmedArrangements = {
+  venues: { venueName: string; purpose: string | null; startsAt: string; endsAt: string }[];
+  equipment: { name: string; quantity: number }[];
+  support: { description: string; startsAt: string; endsAt: string }[];
+  equipmentNoneRequired: boolean;
+};
+
 export type RequestDetail = OwnRequest & {
+  canRequestCancellation?: boolean;
+  cancellationReason?: string | null;
   eventCode: string | null;
   statusChangedAt: string | null;
   statusHistory: StatusHistoryEntry[];
@@ -45,6 +57,7 @@ export type RequestDetail = OwnRequest & {
   // E03-S02: unanswered clarification questions (empty unless awaiting clarification).
   outstandingQuestions: OutstandingQuestion[];
   decision: RequestDecision | null;
+  arrangements: ConfirmedArrangements | null;
 };
 
 // E03-S02 (SCRUM-33) answer screen. `owner` is false for a colleague in the
@@ -69,7 +82,7 @@ const NOT_FOUND: ApiFailure = {
 
 const EVENT_STATUSES: readonly string[] = [
   'draft', 'submitted', 'under_review', 'awaiting_clarification', 'rejected',
-  'approved', 'planning', 'confirmed', 'cancelled', 'completed',
+  'approved', 'planning', 'safety_review', 'confirmed', 'cancelled', 'completed',
 ];
 
 // The fields every screen relies on; anything else is optional display data.
@@ -80,6 +93,17 @@ function isOwnRequest(value: unknown): value is OwnRequest {
     && typeof candidate.title === 'string'
     && typeof candidate.status === 'string'
     && EVENT_STATUSES.includes(candidate.status);
+}
+
+// Keeps the arrangements only if they are well formed, as for the decision below.
+function readArrangements(value: unknown): ConfirmedArrangements | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const candidate = value as Record<string, unknown>;
+  if (!Array.isArray(candidate.venues) || !Array.isArray(candidate.equipment) || !Array.isArray(candidate.support)) return null;
+  return {
+    venues: candidate.venues, equipment: candidate.equipment, support: candidate.support,
+    equipmentNoneRequired: candidate.equipmentNoneRequired === true,
+  } as ConfirmedArrangements;
 }
 
 // Keeps the decision only if it is well formed, so a partial read never breaks the screen.
@@ -124,12 +148,15 @@ export async function getRequestDetail(identifier: string, signal?: AbortSignal)
     ok: true,
     data: {
       ...own.data.event,
+      cancellationReason: event.cancellation_reason ?? null,
+      canRequestCancellation: event.canRequestCancellation === true,
       eventCode: event.event_code ?? null,
       statusChangedAt: event.status_changed_at ?? null,
       statusHistory: Array.isArray(event.statusHistory) ? event.statusHistory : [],
       comments: Array.isArray(event.comments) ? event.comments : [],
       outstandingQuestions: readQuestions(event.outstandingQuestions),
       decision: readDecision(event.decision),
+      arrangements: readArrangements(event.arrangements),
     },
   };
 }

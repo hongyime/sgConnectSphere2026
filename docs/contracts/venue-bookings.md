@@ -31,7 +31,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | status | booking_status, required, default Pending | Pending, Tentative, Confirmed, Rejected, Released, Conflicting, or Expired; hold creation explicitly sets Tentative. |
 | purpose | text, nullable, at most 80 characters | Per-booking label such as Main programme or Breakout A. |
 | headcount | integer, nullable, positive when present | Per-booking suitability input; null means use linked Session expected attendance. |
-| is_primary | boolean, required, default false | True only on one Confirmed booking per event. |
+| is_primary | boolean, required, default false | True only on one Confirmed booking per event; it stays true while an unavailability holds that booking Conflicting (E05-S06, migration 0025) and the booking is restored as primary. |
 | requested_by | uuid foreign key, nullable for legacy rows | Coordinator who submitted the formal request; the service requires it for every new Pending request. |
 | requested_at | timestamptz, nullable for Tentative rows | Time the formal request was submitted. |
 | submission_key | uuid, nullable | Direct-request idempotency key; unique with requested_by when present. |
@@ -42,7 +42,7 @@ The current table is created in backend/database/migrations/0001_connectsphere_s
 | requires_reconfirmation, decision_reason, suggested_venue_id, decided_by, decided_at | existing fields | Venue decision and follow-up state; capacity review remains separate from the buffer flag. |
 | created_at | timestamptz, required | Row creation time; remains the hold creation time after conversion. |
 
-Database invariants: is_primary implies status = Confirmed; at most one primary row exists per event; headcount is null or positive; the occupancy exclusion covers only Tentative, Pending, and Confirmed rows. A booking's Session must belong to its Event, and its range must be within the Session period. The requester and timestamps may be null on legacy/unsubmitted records, while the application requires requester and request time on every newly submitted request.
+Database invariants: is_primary implies status = Confirmed, or Conflicting while an unavailability holds it (0025); readers that display or publish the venue must still require Confirmed; at most one primary row exists per event; headcount is null or positive; the occupancy exclusion covers only Tentative, Pending, and Confirmed rows. A booking's Session must belong to its Event, and its range must be within the Session period. The requester and timestamps may be null on legacy/unsubmitted records, while the application requires requester and request time on every newly submitted request.
 
 At PR #231 head on 9 October ([PR #231](https://github.com/hongyime/sgConnectSphere2026/pull/231)), 0011_venue_setup_turnaround_buffers.sql adds venues.setup_time_minutes, venues.turnaround_time_minutes, and the occupied_window(range, setup, turnaround) function. That migration does **not** yet add booking columns or change the booking exclusion constraint. Keep those buffer additions in PR #231; the shared contract migration consumes them and must not recreate or overwrite them.
 
@@ -130,6 +130,20 @@ POST /api/venues:
 
 Only the assigned Coordinator may select a booking for the event, and the target must be Confirmed. In one transaction, clear the previous primary and set the target. A Pending booking returns 409. First confirmation automatically sets primary only when the event has no primary; concurrent confirmations serialize on the event row.
 
+E06-S03 owns this explicit selection service/API and the Coordinator booking-list
+control. E06-S04 owns automatic first-confirmed assignment. `set_primary` locks
+the event `FOR NO KEY UPDATE` first, then rechecks account/assignment and locks
+the selected/existing-primary bookings. It is permitted on assigned Confirmed
+events as well as Approved, Planning and Safety Review events; it is not a new booking submission. Completed, Cancelled and pre-approval Events return 409 before flag changes or replay success, checked under the Event lock. It clears
+the old flag before setting the target to preserve the immediate unique index.
+Booking statuses, periods, expiry and event status are unchanged. It writes a
+transactional `Primary Venue Changed` audit (`entity_type=venue_booking`,
+`field_changed=primary_venue`, previous/new venue names). Re-selecting the current
+primary is a successful no-op without another audit. No migration is required.
+Malformed UUID is 400, inaccessible booking is 404, invalid role/account is
+403, and non-Confirmed or busy-account conflict is 409. Returns 200
+`{ booking: { id, status, is_primary }, replayed }`.
+
 GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes purpose, headcount, is_primary, and both intervals. Attendee event views use the primary Confirmed booking as the displayed venue. Other Confirmed bookings may be exposed separately according to the E09-S01 response shape.
 
 ### Errors
@@ -148,7 +162,7 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 - Pending → Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
 - Confirmed → Released: event workflow releases the booking.
 - E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
-- Pending or Confirmed → Conflicting: E05-S06 marks a booking affected by an unavailability; its resolution flow restores the applicable status. Venue Staff cannot approve/reject a booking while it is Conflicting.
+- Pending, Confirmed or unexpired Tentative → Conflicting: E05-S06 marks a booking or hold affected by an unavailability (C-111); its resolution flow restores the applicable status, and a hold whose expiry has passed meanwhile becomes Expired. Venue Staff cannot approve/reject a booking while it is Conflicting.
 
 Every submission path uses one shared service and transaction. It authorizes the assigned Coordinator; locks the event and (for conversion) the hold; checks event status, range containment, venue block, suitability inputs, and expiry; writes the booking and any Approved-to-Planning transition; then persists audit and notification/outbox records. Any failure rolls the transaction back. The database exclusion constraint remains the final guard against concurrent occupancy conflicts. **Proposal:** Booking/block writes serialize on the venue so a concurrent block cannot slip past the block check. Hold creation follows the same block and occupancy checks; the event-status submission gate is checked again when a hold is converted.
 
@@ -233,7 +247,11 @@ Requests return 201 (new direct request) or 200 (conversion/retry), including
 same saved assessment and does not repeat effects. Booking-request notifications
 resolve staff for the requested venue only, from `venue_staff_assignments`
 (SCRUM-189, #271/#272); a venue with no current assignment is reported explicitly.
-Primary confirmation/selection and staff assessment presentation remain E06-S04.
+E06-S04 owns confirmation, automatic first-confirmed primary assignment and
+staff assessment presentation. E06-S03 owns explicit Coordinator selection of
+another Confirmed primary on the booking list (Scenario 3c / T-78), as agreed
+with E06-S04's owner on 16 October. Selection locks the event row first to
+serialize with automatic assignment in `decideBooking`.
 
 
 ### Review coordination update (15 October 2026)
@@ -320,3 +338,79 @@ Source: Product Owner clarification relayed by the story owner, E06-S04 owner
 agreement, and the story owner's notification/retry/chain confirmations in the
 15 October working conversation. See T-94/T-95/T-96 for attribution. The code,
 database migration, staff-routing verification and human manual run remain pending.
+
+## E06-S06 rule B: first accepted claim and approval recheck (T-100, 22 October 2026)
+
+The Product Owner approved this interpretation of C-01, C-16, C-46, C-60 and
+C-65. It is a PO interpretation, not a new customer quote. It applies to
+E06-S06 and does not change E06-S03's multiple-venue semantics.
+
+- A claim is active while its booking is Pending, Confirmed, or Tentative with
+  an expiry in the future. Converting an unexpired Tentative hold to a Pending
+  request changes the same claim; it does not create a second reservation.
+- The first successfully accepted hold or request reserves that venue's current
+  buffered window. A later overlapping hold or request is refused while the
+  first claim remains active. Concurrent overlapping new claims serialize: one
+  is accepted, and the losing request returns 409 without a new row or effects.
+- Approval rechecks live availability, concurrency and current buffer values.
+  If a later buffer edit creates a conflict, apply C-109 and the existing
+  `buffer_conflict` flag: save the edit, retain the affected bookings and flag
+  them for review. Refuse approval while the conflict remains. Do not silently
+  release a claim or treat the first approval as the winner. An explicit
+  rejection by Venue Staff or Coordinator withdrawal/replan must resolve the
+  conflict before later approval succeeds.
+- Occupancy uses half-open buffered intervals, so exact adjacency is allowed.
+  Conflict checks remain per venue: the same event may hold or confirm
+  overlapping bookings at different venues (C-67, T-68).
+
+This decision creates no queue, status, schema or migration change. It does not
+rewrite migration 0016 or adopt migration 0021. The open-choice snapshot in #338
+is superseded prospectively; the proposal associated with #308 is not adopted
+and remains untouched. This contract note does not assert that #308 has merged.
+### Withdrawal implementation branch (16 October 2026)
+
+The E06-S03 withdrawal branch implements the preceding contract with
+`POST /api/venues`, `action: withdraw_booking`, UUID `booking_id`. The server
+rechecks assigned Coordinator/account authority and Pending status. Success
+returns the Released booking and `unresolved_venue_ids`; non-Pending/busy
+event or account returns 409, and inaccessible requests return 404.
+
+Venue is locked before Booking. Afterwards Event and account use
+`FOR SHARE NOWAIT` to protect authority without waiting on an event-first
+submission/reassignment transaction while holding Venue. A lock conflict rolls
+back and asks the caller to refresh/retry. No event status change occurs.
+The new `booking_withdrawn` category targets only the requested venue's current
+active staff, distinct from Coordinator-facing `booking_decided: released`.
+Audit, inbox and email outbox persistence share the withdrawal transaction.
+
+Migration `0020_released_booking_replacement_retry.sql` supersedes 0019's
+all-status replacement index with a non-Released predicate, retaining every
+historical row and the other constraints. Service/list predicates match it.
+This is local branch implementation, not a production migration, human
+acceptance result or whole-story Done claim. Full E06-S04 decision integration
+and human manual verification must still be observed against the merged flow.
+
+Activity log visibility: PR #298 is merged (9c8a37f, 24 October); its Coordinator read query now includes `entity_type=venue_booking`. PR #299 integration preserves the primary-specific formatter before generic booking status formatting. The eight actual-service combined race cases now run in the existing CI booking command; they no longer skip for a missing dependency. Fresh human combined-flow/Activity checks remain separate from automated evidence.
+
+
+### E06-S03 attendee primary publication follow-up (#299)
+
+Explicit publication selects only the primary Confirmed booking, excluding rows requiring reconfirmation. Missing eligible primary is refused rather than selecting an arbitrary booking. Several Confirmed bookings therefore still produce one publication.
+
+Changing primary updates only the venue name/location and publication timestamp of an existing publication when the Event is Confirmed, in the same transaction as both primary flags and the audit. It never creates a publication or exposes Planning/Approved/Safety Review arrangements. A primary requiring reconfirmation cannot be selected on a Confirmed Event. Attendees continue to read only the published snapshot and must remain registered. Other published fields, booking statuses and periods stay unchanged. The dedicated CI booking selector also runs the attendee publication integration test.
+
+
+Effective primary venue changes on an existing Confirmed publication use the shared T-64 arrangement notification hook in that same transaction. Capture scoped old/new venue staff plus current assigned technical staff, organiser and Coordinator; registered/waitlisted Attendees receive public-name wording. Exclude the actor, inactive/unrelated/withdrawn users and duplicate memberships. The primary audit ID is the durable notification change ID. A replay or another booking at the same venue emits no venue-change notice. Outbox failure rolls back primary flags, publication, audit and inbox/outbox together. Planning/unpublished selections remain internal and emit no effective-public-venue notice. This implements a caller, not proof of provider or actual mailbox receipt.
+
+
+### E10-S05 lost-venue recovery (SCRUM-74)
+
+E05-S06 owns unavailability detection, Conflicting status, Coordinator notification and Confirmed-to-Planning. Recovery consumes its migration-0025 `conflict_block_id` / `status_before_conflict` contract; it does not duplicate the trigger. The assigned Coordinator's booking list includes the block category, reason and unavailable range, plus `requires_reconfirmation`.
+
+`request_booking` accepts `replaces_booking_id` for a same-event Conflicting source caused by loss of a Pending/Confirmed booking. Search and suitability carry this link and prefill the original period, purpose and headcount. Rejected attempts retain their status and predecessor slot under T-96. Retrying from a lost original links the new request to the terminal Rejected attempt; following a staff suggestion links to that Rejected attempt as usual. Approval and cancellation follow the same-event chain back to the lost original, so recovery continues after rejection without deleting history or changing the non-Released unique index. Search remains available while the chain contains only Rejected attempts; active Pending/Confirmed descendants prevent duplicate recovery requests. Existing single-Session submission restrictions still apply; this increment does not add multi-Session booking selection.
+
+When Venue Staff approves the replacement, the transaction transfers an original primary designation to the replacement and refreshes only the venue in an existing publication. The Event remains Planning; recovery does not reconfirm it. A separate Lost Venue Replaced audit records the selected booking, primary designation and whether publication changed. Its ID is distinct from the Booking Approved audit so the Coordinator receives both the decision notice and the internal arrangement notice. E11 routing captures old/new venue audiences and excludes the actor. Registered/waitlisted Attendees receive a venue-change notice only when the published venue actually changes; a secondary-room replacement stays internal. Original booking, audit, publication and inbox/outbox effects roll back together on failure. An unlinked approval is unchanged.
+
+The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_booking` and `booking_id` explicitly releases it only for its current assigned active Coordinator and only with a same-event linked Confirmed replacement not requiring reconfirmation. It audits the cancellation and notifies the original venue's assigned staff. Released retries do not duplicate effects. Closed Events refuse recovery. The existing same-origin/session handler is reused; no new serverless function or migration is needed.
+
+The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Automated recovery evidence uses the Conflicting fixture precondition. Final E05-S06 trigger/lift integration and human manual acceptance must be completed after the dependent application code is integrated.

@@ -1,3 +1,5 @@
+import { runEventMaintenance } from '../../backend/src/modules/eventLifecycle/maintenance.js';
+import { evaluateCompletions } from '../../backend/src/modules/eventLifecycle/completion.js';
 import { requireEnv, runtimeConfig } from '../../backend/src/config.js';
 import { hasInternalSecret, requireMethod, sendJson } from '../../backend/src/http.js';
 import { notificationDatabase } from '../../backend/src/database/pool.js';
@@ -40,16 +42,22 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return;
   }
 
+  // E08-S05: protected on-demand evaluation, shared with daily maintenance.
+  if (task === 'completion') {
+    try { sendJson(response, 200, await evaluateCompletions(notificationDatabase())); }
+    catch { sendJson(response, 503, { error: 'event_completion_unavailable' }); }
+    return;
+  }
+
   // E06-S05: mark tentative holds whose expiry has passed as expired and tell
   // their Coordinator. A passed hold already stops holding the venue without
   // this (holds.ts), so a late run only delays the status change and notice.
   if (task === 'holds') {
-    try {
-      const result = await expireHolds(notificationDatabase());
-      sendJson(response, 200, { holds_expired: result.holdsExpired, notified: result.notified });
-    } catch {
-      sendJson(response, 503, { error: 'hold_expiry_unavailable' });
-    }
+    const result = await runEventMaintenance(
+      () => expireHolds(notificationDatabase()),
+      () => evaluateCompletions(notificationDatabase()),
+    );
+    sendJson(response, result.status, result.body);
     return;
   }
 

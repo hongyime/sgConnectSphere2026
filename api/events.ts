@@ -1,4 +1,9 @@
+import { getAttendance, recordAttendance } from '../backend/src/modules/eventAttendance/service.js';
+import { getCompletion, completeEvent } from '../backend/src/modules/eventLifecycle/completion.js';
+import { inTransaction } from '../backend/src/database/pool.js';
+import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
+import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../backend/src/modules/changeManagement/requests.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -19,6 +24,11 @@ import { updateEventInformationWithNotifications } from '../backend/src/modules/
 // SCRUM-34 (E03-S03) adds the Coordinator's approve/reject decision and the
 // decision on the Organiser's event read. Its rejected-request check runs
 // inside the information edit's transaction. The rules are in decision.ts.
+//
+// SCRUM-60 (E08-S03) adds the readiness read, the submission for Safety
+// Review, the Safety Officer-only confirm refusal, and the confirmed
+// arrangements on the Organiser's event read. The rules are in
+// backend/src/modules/eventReadiness/.
 //
 // Auth: every branch reads the cookie session via currentUser(). Post-ADR-015
 // consolidation removed the Supabase Auth bearer-token path that used to
@@ -46,6 +56,13 @@ import {
   withDecision,
 } from '../backend/src/modules/eventLifecycle/decision.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
+import { withArrangements } from '../backend/src/modules/eventReadiness/arrangements.js';
+import {
+  confirmEvent,
+  getEventReadiness,
+  ReadinessBlockedError,
+  submitForSafetyReview,
+} from '../backend/src/modules/eventReadiness/submission.js';
 import {
   createEventRequest,
   deleteEventRequest,
@@ -55,7 +72,7 @@ import {
   updateEventRequest,
 } from '../backend/src/modules/eventLifecycle/service.js';
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
-import { isEventStatus } from '../backend/src/modules/eventLifecycle/status.js';
+import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
@@ -79,6 +96,26 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
+    if (params.get('attendance') === '1') {
+      await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
+        await currentUser(request), params.get('id') || '', request.body) }));
+      return;
+    }
+    if (params.has('changeRequests')) {
+      await handleChangeRequests(request, response, params);
+      return;
+    }
+    if (params.get('completion') === '1') {
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { completion: await completeEvent(getDatabasePool(), user, params.get('id') || '') };
+      });
+      return;
+    }
+    if (params.get('cancellation') === '1') {
+      await respond(response, async () => ({ cancellation: await cancelEvent(getDatabasePool(), await currentUser(request), params.get('id') || '', request.body) }));
+      return;
+    }
     if (params.get('comment') === '1') {
       await handleCommentPost(request, response, params);
       return;
@@ -93,6 +130,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('decide') === '1') {
       await handleDecisionPost(request, response, params);
+      return;
+    }
+    if (params.get('safetyReview') === '1' || params.get('confirm') === '1') {
+      await handleSafetyReviewPost(request, response, params);
       return;
     }
     await handlePost(request, response);
@@ -205,6 +246,32 @@ async function handleDecisionPost(request: VercelRequest, response: VercelRespon
   });
 }
 
+// SCRUM-60 (E08-S03) Scenarios 1 to 5 and 7; every rule is enforced in
+// eventReadiness/submission.ts.
+//   POST /api/events?safetyReview=1&id=<event id or code>
+//     -> 200 { submission }
+//     -> 409 { error, readiness } when an arrangement is outstanding
+//   POST /api/events?confirm=1&id=<event id or code>
+//     -> 403 for anyone but a Safety Officer, recorded in the Activity log
+//     -> 409 for a Safety Officer: approval is E08-S06's (D60)
+async function handleSafetyReviewPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    if (params.get('confirm') === '1') return await confirmEvent(getDatabasePool(), user, eventId.slice(0, 240));
+    try {
+      const submission = await submitForSafetyReview(getDatabasePool(), user, eventId.slice(0, 240));
+      return { status: 200, body: { submission } };
+    } catch (error) {
+      if (error instanceof ReadinessBlockedError) {
+        return { status: error.status, body: { error: error.message, readiness: error.readiness } };
+      }
+      throw error;
+    }
+  });
+}
+
 async function handleCommentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   try {
     const user = await currentUser(request);
@@ -213,7 +280,9 @@ async function handleCommentPost(request: VercelRequest, response: VercelRespons
       sendJson(response, 400, { error: 'invalid_payload' });
       return;
     }
-    const comment = await createEventComment(query, user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
+    const comment = await inTransaction(getDatabasePool(), async client => {
+      return createEventComment((sql, values) => client.query(sql, values), user, eventId.slice(0, 240), (request.body as { body?: unknown }).body);
+    });
     sendJson(response, 201, { comment });
   } catch (error) {
     if (error instanceof AccessError) { sendJson(response, error.status, { error: error.message }); return; }
@@ -266,13 +335,33 @@ async function requireOrganiserWithClient(request: VercelRequest): Promise<Authe
 // one. Same cookie-session auth as every other branch.
 async function handleGet(request: VercelRequest, response: VercelResponse) {
   const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.get('attendance') === '1') {
+    await respond(response, async () => ({ attendance: await getAttendance(getDatabasePool(),
+      await currentUser(request), params.get('id') || '') }));
+    return;
+  }
+  if (params.has('changeRequests')) {
+    await handleChangeRequests(request, response, params);
+    return;
+  }
+  if (params.get('completion') === '1') {
+    await respond(response, async () => {
+      const user = await currentUser(request);
+      return { completion: await getCompletion(getDatabasePool(), user, params.get('id') || '') };
+    });
+    return;
+  }
+  if (params.get('cancellation') === '1') {
+    await respond(response, async () => ({ cancellation: await getCancellation(getDatabasePool(), await currentUser(request), params.get('id') || '') }));
+    return;
+  }
 
   if (params.get('mine') === '1') {
     await handleGetMine(request, response, params);
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -282,12 +371,26 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
     await requireOrganiser(query, user, 'events');
-    if (id) return { event: await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240)))) };
+    if (id) return { event: await withArrangements(query, await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240))))) };
     return {
       events: await listEvents(query, user, params.get('q') || ''),
       notifications: await listNotifications(query, user),
       organisationId: user.clientOrgId,
     };
+  });
+}
+
+// SCRUM-202: same authenticated serverless handler, no extra deployment slot.
+async function handleChangeRequests(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const pool = getDatabasePool();
+    if (request.method === 'GET') return { status: 200, body: await listChangeRequests(pool, user, identifier) };
+    const requestId = params.get('requestId');
+    if (requestId !== null) return { status: 200, body: { request: await decideChangeRequest(pool, user, identifier, requestId, request.body) } };
+    return { status: 201, body: { request: await submitChangeRequest(pool, user, identifier, request.body) } };
   });
 }
 
@@ -298,14 +401,19 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
 //                                                    and outstandingQuestions (SCRUM-33)
 //   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
 //   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
+//   GET /api/events?readiness=1&id=<id or code>   -> { readiness } (SCRUM-60, E08-S03)
 async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   await respond(response, async () => {
     const user = await currentUser(request);
     const database = getDatabasePool();
+    if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');
-    if (id) return { event: await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240))) };
+    if (id) {
+      const event = await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240)));
+      return { event: { ...event, canCancel: (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String((event as Record<string, unknown>).status)) } };
+    }
     return { events: await listAssignedEvents(database, user, params.get('status')) };
   });
 }
