@@ -98,6 +98,14 @@ branch that:
    previous case. Do not assume a zero-minute starting value after another case
    has set 45 minutes.
 
+An isolated fixture may be prepared with disclosed SQL before execution, without
+bypassing booking guards. Record its starting buffers, booking periods and setup
+method. That setup alone doesn't invalidate a calendar, search or conflict
+consumer check. It never proves the venue-form edit/save action: execute that
+action in the browser when the case requires it. For TC_E05S05_03, create both
+bookings with setup 30 or less (the recorded run used 30) and turnaround at 0, then change turnaround to 45 through
+the venue form. Don't insert already-overlapping active bookings.
+
 Once those prerequisites exist, record only observed results under T-65 using
 [`docs/testing/runs/README.md`](../runs/README.md) and the run-record template.
 For manual runs, include the actual result for every row. Do not mark this
