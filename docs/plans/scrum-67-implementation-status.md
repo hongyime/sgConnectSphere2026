@@ -86,11 +86,99 @@ Every gate must pass, and be recorded in the Run log, before the PR opens.
 
 ## Click-through script
 
-To be written with the preconditions SQL
-(`docs/testing/manual/E09-S05-preconditions.sql`) before the manual run: the
-seed's E09 events are dated October 2026 and its registrations have no
-Sessions, so the cases' events, Sessions, deadlines and waiting list are set
-up by SQL (D84), as setup and never as a test step.
+**Setup, by SQL, never a test step (D84).** The seed's E09 events are dated
+October 2026 and its registrations have no Sessions, and the cases name
+accounts (`attendee_c`, `attendee_d`) and events ("Community Meetup", "Tech
+Conference 2026") the seed doesn't have. So
+`docs/testing/manual/E09-S05-preconditions.sql` makes them on the local
+Docker database `connectsphere_dev_stack`, in three stages: `setup` before
+the run, `tc04` just before TC_04, `tc03` just before TC_03. Its header lists
+everything each stage makes. Every account uses the seed's public password
+(`tests/seed/SEED_DATA.md`).
+
+**Before step 1:**
+- Reset and seed `connectsphere_dev_stack`, run stage `setup`, start the API
+  and `npm run dev`; open `http://localhost:5173`.
+- One browser window is enough: the cases run one account at a time, so sign
+  out between them.
+- **Screenshots:** the whole browser window, with the address bar and the
+  signed-in role visible; bookmarks bar hidden (Ctrl + Shift + B); zoom out
+  rather than crop. Name each one as below, under
+  `docs/testing/runs/evidence/<record>/`. One per case is required (T-93);
+  the ones marked *optional* only if the PR stays under 40 files.
+
+### TC_E09S05_01: withdraw once, both Sessions released (attendee_a)
+
+1. Sign in as `attendee_a@example.com`; open **Discover**, then **Community
+   Meetup**.
+2. Check: "You're registered for this event"; both Sessions read
+   **Selected**; the card **Your registration** reads "You can withdraw until
+   5 Dec 2026, 6:00 pm".
+3. Click **Withdraw…**. The panel **Withdraw your registration?** says "Your
+   place in every Session you chose is released for someone else. This cannot
+   be undone." Click **Withdraw registration**.
+4. Check: "Registration withdrawn. Your place in every Session you chose has
+   been released."; the pill reads **Open for registration**; no Session reads
+   Selected. **Screenshot `TC_E09S05_01-1.png`.**
+5. *Optional:* sign in as `organiser_a@clienta.com`, open
+   `/organiser/requests/EVT-9101/registrations`: **Places by Session** reads
+   Morning keynote 2 of 120, Afternoon workshops 0 of 120; Event 2 of 240
+   (before: 3, 1 and 3). `TC_E09S05_01-2.png`.
+
+### TC_E09S05_05: three full Sessions released together (attendee_b)
+
+1. Sign in as `attendee_b@example.com`; open **Three-Session Workshop**
+   (Sessions 1, 2 and 3 all Selected).
+2. **Withdraw…**, then **Withdraw registration**; check the success message.
+3. Sign in as `organiser_a@clienta.com`, open
+   `/organiser/requests/EVT-9103/registrations`: Session 1, 2 and 3 each read
+   **0 of 1** (they were 1 of 1, Full) and the Event **0 of 3**.
+   **Screenshot `TC_E09S05_05-1.png`.**
+
+### TC_E09S05_02: leave one event, keep the other (attendee_d)
+
+1. Sign in as `attendee_d@example.com`; open **Community Meetup**;
+   **Withdraw…**, then **Withdraw registration**; check the success message.
+2. Open **My events** (`/attendee/events`): **Tech Conference 2026** is still
+   listed, Community Meetup isn't. **Screenshot `TC_E09S05_02-1.png`.**
+
+### TC_E09S05_04: withdraw just before the deadline; the waiting list hears (attendee_a, attendee_i)
+
+1. **Claude runs stage `tc04`**: EVT-2001's deadline becomes 10 minutes from
+   now, and the time is noted.
+2. Sign in as `attendee_a@example.com`; open **EVT-2001 Confirmed
+   Registration Event**: the card reads "You can withdraw until <that time>".
+3. **Withdraw…**, then **Withdraw registration**, before that time. Check the
+   success message. **Screenshot `TC_E09S05_04-1.png`.** The record says the
+   withdrawal was shortly before the deadline: the exact instant is proved by
+   the automated test with a fixed clock (D84).
+4. Sign in as `attendee_i@example.com` (on the waiting list); open
+   **Notifications** and click the **Event update** title for EVT-2001: "EVT-2001
+   Confirmed Registration Event: A place is available. Apply on a first-come
+   basis; no place has been reserved for you." **Screenshot
+   `TC_E09S05_04-2.png`.** (`attendee_j` gets the same notice; checked in the
+   database afterwards.)
+
+### TC_E09S05_03: after the deadline, refused with a contact (attendee_c)
+
+1. **Claude runs stage `tc03`**: Community Meetup's deadline becomes one
+   minute ago.
+2. Sign in as `attendee_c@example.com`; open **Community Meetup**.
+3. Check: no Withdraw button; instead **Withdrawal has closed**, "For help,
+   contact events@clienta.com" (a mail link). The registration still reads
+   "You're registered for this event". **Screenshot `TC_E09S05_03-1.png`.**
+
+### After the run (Claude, by SQL)
+
+- Statuses: attendee_a (Community Meetup, EVT-2001), attendee_b (Workshop) and
+  attendee_d (Community Meetup) `withdrawn` with `withdrawn_at`; attendee_c
+  and attendee_d's Tech Conference 2026 still `registered`.
+- `place_released` notices: attendee_j for the Workshop; attendee_i and
+  attendee_j for EVT-2001; none for Community Meetup (nobody waiting); none to
+  the withdrawing Attendees or the Organiser (D98, D104).
+
+The automated dry run of these steps through the API (Run log, 27 Oct
+≈23:25) gave exactly the counts, messages and notices above.
 
 ## Known limits
 
@@ -122,3 +210,6 @@ fix gets its own row.
 | 2026-10-27 ≈22:56 | `7b5a2f5+local` | 3 | _01, _03, _04, _05 | `npx c8 --include=src/modules/attendeeRegistration/service.ts npx tsx --test tests/attendeeRegistration.test.ts`; `npx vitest run --coverage` on `EventRegistration.test.tsx` | local | service.ts 100% lines and branches; `EventRegistration.tsx` and `registrationApi.ts` 100% | one uncovered fallback (`?? ''` for the contact) removed as dead code, since the server always sends one | Claude (for Aaron) |
 | 2026-10-27 ≈22:58 | `7b5a2f5+local` | 4, 5 | _01, _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism` (frontend) | local | typecheck clean; 626/626 passed in 63 files | — | Claude (for Aaron) |
 | 2026-10-27 ≈23:10 | `7b5a2f5+local` (committed as `35a0bb8`) | 1, 2 | _01, _03, _04, _05 | `npx tsx --test tests/attendeeRegistration.test.ts`; `npx tsx --test tests/attendeeRegistration.integration.test.ts tests/attendeeVisibility.integration.test.ts` | local, Docker `postgres:17`, `connectsphere_notification_test` | 22/22; 2/2 passed | rerun after the review fix: Discover keeps a registered event only until it starts | Claude (for Aaron) |
+| 2026-10-27 ≈23:18 | `577cf0d+local` (committed as `83620e3`) | 3, 4, 5 | _01, _03 | `npx vitest run --no-file-parallelism --coverage src/features/attendee/EventRegistration.test.tsx`; `npm run typecheck` (root) | local | 26/26 passed; `EventRegistration.tsx` 100%; typecheck clean | after review fixes 1-3: a deadline after the event start reads "until the event starts" | Claude (for Aaron) |
+| 2026-10-27 ≈23:20 | `577cf0d+local` (committed as `83620e3`) | 5 | — | `npx playwright test tests/e2e/attendee-registration.spec.ts tests/e2e/e09.spec.ts tests/e2e/layout-and-focus.spec.ts` | local, Vite on 5173 started by Playwright, fake API | 60 passed, 26 skipped (other stories' `test.fixme`), 0 failed | the edited files still pass on desktop and mobile after the mock page's removal | Claude (for Aaron) |
+| 2026-10-27 ≈23:25 | `83620e3` | 7 (dry run) | _01–_05 | `E09-S05-preconditions.sql` stages `setup`, `tc04`, `tc03`, then an API script signing in as each account (scratchpad, not committed) | local API on 3001, Docker `postgres:17`, `connectsphere_dev_stack` | all as expected | TC_01 Event 3→2 of 240, Morning 3→2, Afternoon 1→0 of 120; repeat 409. TC_05 Sessions 1/1→0/1 each, Event 1→0 of 3; attendee_j notified. TC_02 "My events" keeps Tech Conference 2026. TC_04 withdrawn 10 min before the deadline; attendee_i and attendee_j notified. TC_03 `{open:false, contact:"events@clienta.com"}`; POST 409 "Withdrawal has closed. For help, contact events@clienta.com."; counts unchanged. Database reset afterwards | Claude (for Aaron) |
