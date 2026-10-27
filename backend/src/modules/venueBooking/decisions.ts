@@ -7,6 +7,8 @@ import { writeEventNotification } from '../eventNotifications/service.js';
 import { formatEventDates } from '../equipmentSupport/reservations.js';
 import type { VenueErrors } from './catalogue.js';
 import { holdsVenue } from './holds.js';
+import { confirmLostVenueReplacement } from './lostVenueRecovery.js';
+import { formatSgt } from './bookingShared.js';
 
 // E06-S04 "Decide on a venue booking request" (SCRUM-48). Venue Staff approve
 // or reject a Pending booking (Scenarios 1 to 3). Each decision is recorded in
@@ -194,16 +196,17 @@ async function approvalClash(client: PoolClient, row: BookingRow) {
       },
     };
   }
-  // Maintenance blocks use the advertised times, as the 0016 guard does.
-  const block = (await client.query<{ reason: string; starts_at: Date; ends_at: Date }>(`SELECT reason,
+  // Maintenance blocks use the advertised times, as the 0016 guard does. A
+  // lifted block no longer counts, and an open-ended one has no end (T-80, T-91).
+  const block = (await client.query<{ reason: string; starts_at: Date; ends_at: Date | null }>(`SELECT reason,
       lower(block_range) AS starts_at, upper(block_range) AS ends_at
-    FROM venue_blocks WHERE venue_id = $1 AND block_range && tstzrange($2, $3, '[)')
+    FROM venue_blocks WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2, $3, '[)')
     ORDER BY lower(block_range) LIMIT 1`, [row.venue_id, row.starts_at, row.ends_at])).rows[0];
   if (block) {
+    const period = block.ends_at ? formatEventDates(block.starts_at, block.ends_at) : `from ${formatSgt(block.starts_at)}, until lifted`;
     return {
-      error: `This can't be approved: ${row.venue_name} is blocked for "${block.reason}" `
-        + `(${formatEventDates(block.starts_at, block.ends_at)}).`,
-      conflict: { block: { reason: block.reason, startsAt: block.starts_at.toISOString(), endsAt: block.ends_at.toISOString() } },
+      error: `This can't be approved: ${row.venue_name} is blocked for "${block.reason}" (${period}).`,
+      conflict: { block: { reason: block.reason, startsAt: block.starts_at.toISOString(), endsAt: block.ends_at?.toISOString() ?? null } },
     };
   }
   return null;
@@ -309,6 +312,8 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
         (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
       VALUES ($1, 'venue_booking', $2, $3, $4, 'status', 'pending', $5) RETURNING id, occurred_at`,
     [staff.id, row.id, row.event_id, decision.decision === 'approve' ? 'Booking Approved' : 'Booking Rejected', newStatus]);
+
+    if (decision.decision === 'approve') await confirmLostVenueReplacement(client, row.id, staff.id);
 
     // The audit ID is the change ID (T-64), so a retried decision cannot send
     // the Coordinator a second notice. An event with no assigned Coordinator

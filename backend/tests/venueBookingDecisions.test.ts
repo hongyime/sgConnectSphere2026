@@ -370,6 +370,19 @@ test('an approval over a maintenance block is blocked and names the block', asyn
   assert.equal(has(calls, 'UPDATE venue_bookings'), false);
 });
 
+test('an approval over an open-ended unavailability says it lasts until lifted (E05-S06, T-80)', async () => {
+  const { pool } = fakeDatabase(sql => {
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow()];
+    if (sql.includes('FROM venue_blocks')) return [{ reason: 'Roof works', starts_at: new Date('2027-01-14T16:00:00Z'), ends_at: null }];
+    return undefined;
+  });
+  const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
+  assert.equal(result.status, 409);
+  const body = result.body as { error: string; conflict: { block: Record<string, string | null> } };
+  assert.equal(body.error, 'This can\'t be approved: Small Room is blocked for "Roof works" (from 15 Jan 2027, 12:00 am, until lifted).');
+  assert.deepEqual(body.conflict.block, { reason: 'Roof works', startsAt: '2027-01-14T16:00:00.000Z', endsAt: null });
+});
+
 test('a rejection is not checked for clashes', async () => {
   const { pool, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE OF vb') ? [bookingRow()] : sql.includes('occupied_window') ? [clashRow()] : undefined));
   const result = await decideBooking(pool, staff, bookingId, { decision: 'reject', reason: 'Too small' });

@@ -1,3 +1,6 @@
+import type { ReactElement } from 'react';
+import { Navigate } from 'react-router-dom';
+import { LostVenueRecovery } from '../features/venue/LostVenueRecovery';
 import { EventAttendance } from '../features/coordinator/EventAttendance';
 import { EventCompletion } from '../features/events/EventCompletion';
 import { EventCancellation } from '../features/events/EventCancellation';
@@ -21,8 +24,6 @@ import { MarkUnavailablePage } from '../features/support/EquipmentUnavailability
 //
 // Role home pages and header links live in roles.ts; routes.test.tsx checks
 // they all point at routes registered here.
-import type { ReactElement } from 'react';
-import { Navigate } from 'react-router-dom';
 import { LandingPage } from '../features/landing/LandingPage';
 import { LoginPage } from '../features/accessControl/LoginPage';
 import { PasswordRecovery } from '../features/accessControl/PasswordRecovery';
@@ -176,6 +177,7 @@ export const routes: AppRoute[] = [
   page('/coordinator/venues/:venueId/calendar', <VenueCalendar audience="coordinator" />, 'live', 'E05-S03'),
   page('/coordinator/venues', <VenueSearch />, 'live', 'E06-S01'),
   page('/coordinator/events/:eventCode/venues', <VenueSearch />, 'live', 'E06-S01'),
+  page('/coordinator/events/:eventCode/venue-recovery', <LostVenueRecovery />, 'live', 'E10-S05'),
   page('/coordinator/events/:eventCode/venue-bookings', <VenueBookingRequests />, 'live', 'E06-S03'),
   page('/coordinator/events/:eventCode/venues/:venueId/suitability', <VenueSuitability />, 'live', 'E06-S02'),
   page('/coordinator/events/:eventCode/venues/:venueId/hold', <HoldVenueForm />, 'live', 'E06-S05'),

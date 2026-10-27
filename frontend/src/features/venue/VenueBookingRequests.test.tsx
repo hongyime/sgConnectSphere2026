@@ -188,3 +188,28 @@ test.each(['completed','cancelled'])('TC_E06S03_07 primary selection is hidden f
   await screen.findByText('Main Hall');
   expect(screen.queryByRole('button',{name:'Set as primary venue'})).not.toBeInTheDocument();
 });
+
+test('TC_E05S06_02 E05-S06 Scenario 3: a Conflicting booking shows the venue-conflict flag with category, note, period and earlier status', async () => {
+  const conflicting = { ...data.bookings[1], status: 'conflicting', status_before_conflict: 'confirmed', conflict_reason_category: 'safety_concern',
+    conflict_note: 'Ceiling inspection', conflict_starts_at: '2027-01-15T00:00:00.000Z', conflict_ends_at: '2027-01-15T10:00:00.000Z' };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...data, bookings: [conflicting] }) }));
+  mount();
+  const flag = await screen.findByRole('alert');
+  expect(flag).toHaveTextContent('Venue unavailable');
+  expect(flag).toHaveTextContent('Safety concern · Ceiling inspection, 15 Jan 2027, 8:00 am – 6:00 pm. Alternative arrangements are required. Before this it was Confirmed.');
+  expect(screen.getByText('Conflicting', { exact: true })).toHaveClass('status-warning');
+  // The event itself is back in Planning, not cancelled (T-81).
+  expect(screen.getByText('Planning', { exact: true })).toBeInTheDocument();
+});
+
+test('E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed', async () => {
+  const base = { ...data.bookings[0], status: 'conflicting' };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ...data, bookings: [
+    { ...base, status_before_conflict: 'tentative', conflict_reason_category: 'renovation', conflict_note: '', conflict_starts_at: '2027-01-15T00:00:00.000Z', conflict_ends_at: null },
+    { ...base, id: 'bare', venue_name: 'Annex', status_before_conflict: null, conflict_reason_category: null, conflict_note: null, conflict_starts_at: null, conflict_ends_at: null },
+  ] }) }));
+  mount();
+  const [open, bare] = await screen.findAllByRole('alert');
+  expect(open).toHaveTextContent('Renovation, from 15 Jan 2027, 8:00 am until lifted. Alternative arrangements are required. Before this it was Tentative.');
+  expect(bare).toHaveTextContent(/^Venue unavailableAlternative arrangements are required\.$/);
+});
