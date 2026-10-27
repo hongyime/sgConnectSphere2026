@@ -24,7 +24,8 @@ const sessions = [
 const details = { name: 'Casey Tan', email: 'casey@example.test', contactNumber: '+65 8123 4567' };
 
 function form(overrides: Partial<RegistrationForm> = {}): RegistrationForm {
-  return { event, sessions, details, missingDetails: [], registration: null, ...overrides };
+  return { event, sessions, details, missingDetails: [], registration: null,
+    capacity: { eventFull: false, waitlistEnabled: false, fullSessionIds: [] }, ...overrides };
 }
 
 const FORM_URL = 'GET /api/attendee/events?registration=1&id=EVT-9001';
@@ -279,27 +280,65 @@ test.each([
   expect(screen.queryByText('Event A failed')).not.toBeInTheDocument();
 });
 
-// Aaron's review on #327: the banner follows the registration's status, like the pill.
-test.each([
-  ['registered', "You're registered for this event", 'Registered'],
-  ['waitlisted', "You're on the waiting list", 'On the waiting list'],
-  ['pending', 'Your request is waiting for the organiser', 'Pending review'],
-])('the event page banner matches a %s registration', async (status, banner, pill) => {
-  const registration = { id: 'r-1', status, registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
-  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration }) } });
-  expect(await screen.findByText(banner)).toBeInTheDocument();
-  expect(screen.getAllByText(pill).length).toBeGreaterThan(0);
-  for (const other of ["You're registered for this event", "You're on the waiting list", 'Your request is waiting for the organiser'].filter(text => text !== banner)) {
-    expect(screen.queryByText(other)).not.toBeInTheDocument();
-  }
+// ─── E09-S02 capacity (SCRUM-211) ───────────────────────────────────────
+
+test('TC_E09S02_09 - choosing a full Session marks it and sends the request for review, then says it is Pending', async () => {
+  const calls = renderAt('/attendee/register/EVT-9001', {
+    [FORM_URL]: { body: form({ capacity: { eventFull: false, waitlistEnabled: false, fullSessionIds: ['s-a'] } }) },
+    [POST_URL]: { status: 201, body: {
+      registration: { id: 'r-1', status: 'pending', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] }, event, sessions: [sessions[0]],
+    } },
+  });
+  const group = await screen.findByRole('group', { name: 'Choose your Sessions' });
+  const morning = within(group).getByRole('checkbox', { name: /Morning keynote/ });
+  expect(morning.closest('label')).toHaveTextContent('Full');
+  expect(within(group).getByRole('checkbox', { name: /Session 2/ }).closest('label')).not.toHaveTextContent('Full');
+  expect(screen.getByRole('button', { name: 'Confirm registration' })).toBeInTheDocument();
+  fireEvent.click(morning);
+  expect(screen.getByText('A Session you chose is full, so your request goes to the organiser to review.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Send request for review' }));
+  expect(await screen.findByText('Request sent for review')).toBeInTheDocument();
+  expect(screen.queryByText("You're registered")).not.toBeInTheDocument();
+  expect(calls.filter(call => call.method === 'POST')[0]!.body).toEqual({ sessionIds: ['s-a'] });
 });
 
-test.each([
-  ['registered', "You're already registered for this event"],
-  ['waitlisted', "You're already on the waiting list for this event"],
-  ['pending', 'You already have a request waiting for the organiser'],
-])('the form names an existing %s registration correctly', async (status, title) => {
-  const registration = { id: 'r-1', status, registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
-  renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration }) } });
-  expect(await screen.findByText(title)).toBeInTheDocument();
+test('TC_E09S02_04 - a full event with its waiting list on offers the list alongside a request for review', async () => {
+  renderAt('/attendee/register/EVT-9001', {
+    [FORM_URL]: { body: form({ capacity: { eventFull: true, waitlistEnabled: true, fullSessionIds: ['s-a', 's-b'] } }) },
+  });
+  expect(await screen.findByText('This event is full')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Join the waiting list' })).toHaveAttribute('href', '/attendee/waitlist/EVT-9001');
+  // No per-Session waiting list (T-98, O-50): only the Event-level link.
+  expect(screen.getAllByRole('link', { name: /waiting list/i })).toHaveLength(1);
+  expect(screen.getByRole('button', { name: 'Send request for review' })).toBeInTheDocument();
+  expect(screen.queryByText('A Session you chose is full, so your request goes to the organiser to review.')).not.toBeInTheDocument();
+});
+
+test('a full event with its waiting list off offers only a request for review, on the event page too', async () => {
+  renderAt('/attendee/discover/EVT-9001', {
+    [FORM_URL]: { body: form({ capacity: { eventFull: true, waitlistEnabled: false, fullSessionIds: ['s-a', 's-b'] } }) },
+  });
+  expect(await screen.findByText('This event is full')).toBeInTheDocument();
+  expect(screen.getByText('You can still send a registration request. The organiser reviews requests over capacity.')).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Join the waiting list' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Register' })).toBeInTheDocument();
+});
+
+test('a Pending request is described as waiting for the organiser, on the event page and the form', async () => {
+  const pending = { id: 'r-1', status: 'pending', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration: pending, capacity: { eventFull: true, waitlistEnabled: true, fullSessionIds: [] } }) } });
+  expect(await screen.findByText('Your request is waiting for the organiser')).toBeInTheDocument();
+  expect(screen.queryByText('This event is full')).not.toBeInTheDocument();
+  cleanup();
+  renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration: pending }) } });
+  expect(await screen.findByText('You already have a request waiting for the organiser')).toBeInTheDocument();
+});
+
+test('a waitlisted registration is described consistently on the event page and form', async () => {
+  const waitlisted = { id: 'r-1', status: 'waitlisted', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration: waitlisted }) } });
+  expect(await screen.findByText("You're on the waiting list")).toBeInTheDocument();
+  cleanup();
+  renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration: waitlisted }) } });
+  expect(await screen.findByText("You're already on the waiting list for this event")).toBeInTheDocument();
 });

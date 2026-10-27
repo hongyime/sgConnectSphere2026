@@ -3,6 +3,10 @@
 // one or more of its Sessions. Their name, email and contact number come from
 // their account (T-32, O-05); the Event shows its primary venue and each
 // Session its own (C-67, T-78, T-79).
+// E09-S02 (SCRUM-211): a request over a Session's or the Event's capacity is
+// still sent, and waits as Pending for the Organiser (T-85, C-98). A full Event
+// offers its Event-level waiting list where enabled; there's no per-Session
+// list (T-98, O-50).
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarCheck, Search, Ticket } from 'lucide-react';
@@ -114,6 +118,7 @@ export function EventDetail() {
       {form ? (
         <>
           {form.registration ? <RegistrationAlert status={form.registration.status} /> : null}
+          {!form.registration && form.event.registrationState === 'open' ? <FullNotice form={form} /> : null}
           <Card title="Event"><EventFacts event={form.event} /></Card>
           <Card title="Sessions">
             {form.sessions.length > 0
@@ -134,34 +139,41 @@ export function EventDetail() {
   );
 }
 
-// The banner follows the registration's status, like the pill (MY_STATUS): only
-// a registered Attendee is told they're registered (Aaron's review on #327).
-function RegistrationAlert({ status }: { status: string }) {
-  if (status === 'pending') {
-    return (
-      <Alert tone="warning" title="Your request is waiting for the organiser">
-        Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
-      </Alert>
-    );
-  }
-  if (status === 'waitlisted') {
-    return (
-      <Alert tone="info" title="You're on the waiting list">
-        We'll let you know if a place comes up. Your Sessions are marked below.
-      </Alert>
-    );
-  }
+function waitlistLink(event: PublicEvent) {
+  return `/attendee/waitlist/${encodeURIComponent(eventRef(event))}`;
+}
+
+// Scenario 5 (TC_E09S02_04): a full Event offers its waiting list where enabled.
+function FullNotice({ form }: { form: RegistrationForm }) {
+  if (!form.capacity.eventFull) return null;
   return (
-    <Alert tone="success" title="You're registered for this event">
-      Your Sessions are marked below. A confirmation is in your notifications.
+    <Alert tone="info" title="This event is full"
+      action={form.capacity.waitlistEnabled ? <ButtonLink to={waitlistLink(form.event)}>Join the waiting list</ButtonLink> : undefined}>
+      {form.capacity.waitlistEnabled
+        ? 'You can join the waiting list, or send a registration request for the organiser to review.'
+        : 'You can still send a registration request. The organiser reviews requests over capacity.'}
     </Alert>
   );
 }
 
-const ALREADY: Record<string, string> = {
-  pending: 'You already have a request waiting for the organiser',
-  waitlisted: "You're already on the waiting list for this event",
-};
+// Keep the event banner aligned with the registration status. Capacity remains
+// handled by FullNotice and the form below; this status banner is only for an
+// existing registration (including a waitlisted one).
+function RegistrationAlert({ status }: { status: string }) {
+  if (status === 'pending') {
+    return <Alert tone="warning" title="Your request is waiting for the organiser">
+      Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
+    </Alert>;
+  }
+  if (status === 'waitlisted') {
+    return <Alert tone="info" title="You're on the waiting list">
+      We'll let you know if a place comes up. Your Sessions are marked below.
+    </Alert>;
+  }
+  return <Alert tone="success" title="You're registered for this event">
+    Your Sessions are marked below. A confirmation is in your notifications.
+  </Alert>;
+}
 
 function ClosedNotice({ form }: { form: RegistrationForm }) {
   if (form.registration || form.event.registrationState === 'open') return null;
@@ -194,12 +206,15 @@ function backToEvent(event: PublicEvent) {
 function RegistrationBody({ form }: { form: RegistrationForm }) {
   const [done, setDone] = useState<{ registration: Registration; sessions: SessionChoice[] } | null>(null);
   const [already, setAlready] = useState<Registration | null>(form.registration);
-  if (done) return <Confirmation event={form.event} sessions={done.sessions} allSessions={form.sessions} />;
+  if (done) return <Confirmation event={form.event} status={done.registration.status} sessions={done.sessions} allSessions={form.sessions} />;
   if (already) {
     const chosen = form.sessions.filter(session => already.sessionIds.includes(session.id));
     return (
       <>
-        <Alert tone="info" title={ALREADY[already.status] ?? "You're already registered for this event"}>
+        <Alert tone="info" title={already.status === 'pending'
+          ? 'You already have a request waiting for the organiser'
+          : already.status === 'waitlisted' ? "You're already on the waiting list for this event"
+          : "You're already registered for this event"}>
           You can only have one active registration for an event, so nothing was changed.
           {chosen.length ? ` Your Sessions: ${chosen.map(session => sessionName(session, form.sessions.indexOf(session))).join(', ')}.` : ''}
         </Alert>
@@ -266,10 +281,14 @@ function RegistrationFormView({ form, onDone, onAlready }: {
   }
 
   const errorId = sessionError ? 'session-choice-error' : undefined;
+  const full = form.capacity.fullSessionIds;
+  // Over either limit, the request goes to the Organiser instead (Scenario 2).
+  const forReview = form.capacity.eventFull || selected.some(id => full.includes(id));
   return (
     <Card>
       <form onSubmit={submit} noValidate className="ui-form">
         {serverError ? <Alert tone="error">{serverError}</Alert> : null}
+        <FullNotice form={form} />
         <FactList columns={2} items={[
           ['Event', form.event.name],
           ['When', formatDateRange(form.event.startsAt, form.event.endsAt)],
@@ -289,11 +308,15 @@ function RegistrationFormView({ form, onDone, onAlready }: {
                   <span>
                     <strong>{sessionName(session, index)}</strong>
                     {` · ${formatDateRange(session.startsAt, session.endsAt)} · ${venueText(session.venueName, session.venueLocation)}`}
+                    {full.includes(session.id) ? <> <StatusPill status="warning" label="Full" /></> : null}
                   </span>
                 </label>
               ))}
             </div>
             {sessionError ? <small id={errorId}>{sessionError}</small> : null}
+            {forReview && !form.capacity.eventFull ? (
+              <p className="field-hint">A Session you chose is full, so your request goes to the organiser to review.</p>
+            ) : null}
           </div>
         </FormSection>
         <FormSection title="Your details">
@@ -316,24 +339,33 @@ function RegistrationFormView({ form, onDone, onAlready }: {
         </FormSection>
         <FormActions>
           <ButtonLink to={backToEvent(form.event)}>Cancel</ButtonLink>
-          <Button type="submit" variant="primary" busy={saving} busyLabel="Registering…"
-            icon={<CalendarCheck size={14} aria-hidden="true" />}>Confirm registration</Button>
+          <Button type="submit" variant="primary" busy={saving} busyLabel={forReview ? 'Sending…' : 'Registering…'}
+            icon={<CalendarCheck size={14} aria-hidden="true" />}>{forReview ? 'Send request for review' : 'Confirm registration'}</Button>
         </FormActions>
       </form>
     </Card>
   );
 }
 
-function Confirmation({ event, sessions, allSessions }: { event: PublicEvent; sessions: SessionChoice[]; allSessions: SessionChoice[] }) {
+function Confirmation({ event, status, sessions, allSessions }: {
+  event: PublicEvent; status: string; sessions: SessionChoice[]; allSessions: SessionChoice[];
+}) {
   const heading = useRef<HTMLDivElement>(null);
   useEffect(() => { heading.current?.focus(); }, []);
   const ordered = sessions.map(session => ({ ...session, title: sessionName(session, allSessions.findIndex(item => item.id === session.id)) }));
   return (
     <>
       <div ref={heading} tabIndex={-1}>
-        <Alert tone="success" title="You're registered">
-          We've sent a confirmation to your notifications and by email.
-        </Alert>
+        {status === 'pending' ? (
+          <Alert tone="warning" title="Request sent for review">
+            Your choice is at capacity, so the organiser will review your request. We'll tell you their decision in your
+            notifications and by email.
+          </Alert>
+        ) : (
+          <Alert tone="success" title="You're registered">
+            We've sent a confirmation to your notifications and by email.
+          </Alert>
+        )}
       </div>
       <Card title={event.name}>
         <FactList columns={2} items={[

@@ -1,4 +1,4 @@
-// E09-S01 attendee registration API (api/attendee/events.ts). See
+// E09-S01/S02 attendee registration API (api/attendee/events.ts). See
 // docs/api-changes-week7.md for the endpoint shapes.
 import { apiCall, jsonRequest } from '../../shared';
 
@@ -36,6 +36,8 @@ export type RegistrationForm = {
   details: { name: string | null; email: string | null; contactNumber: string | null };
   missingDetails: string[];
   registration: Registration | null;
+  // E09-S02: a full Session or Event still takes a request, which waits for the Organiser.
+  capacity: { eventFull: boolean; waitlistEnabled: boolean; fullSessionIds: string[] };
 };
 
 export type RegisterResult = { registration: Registration; event: PublicEvent; sessions: SessionChoice[] };

@@ -21,13 +21,15 @@ type State = {
   existing?: Record<string, unknown> | null;
   mine?: { event_id: string; status: string }[];
   sessions?: Record<string, unknown>[];
+  capacity?: Record<string, unknown>[];
+  eventRegistered?: number;
   failAt?: string;
   failure?: Error;
 };
 
 function eventRow(overrides: Record<string, unknown> = {}) {
   return {
-    id: eventId, event_code: 'EVT-9001', name: 'Community Meetup', status: 'confirmed', registration_enabled: true,
+    id: eventId, event_code: 'EVT-9001', name: 'Community Meetup', status: 'confirmed', registration_enabled: true, waitlist_enabled: false,
     opens_at: at('2027-02-01T00:00:00Z'), closes_at: at('2027-03-30T00:00:00Z'),
     starts_at: at('2027-04-01T01:00:00Z'), ends_at: at('2027-04-01T09:00:00Z'),
     venue_name: 'Grand Auditorium', venue_location: 'Level 1', now, ...overrides,
@@ -52,8 +54,11 @@ function script(state: State = {}) {
     } else if (sql.includes('SELECT r.event_id, r.status')) rows = state.mine ?? [];
     else if (sql.includes('contact_number FROM users')) rows = state.details === null ? [] : [state.details ?? { full_name: 'Casey Tan', email: 'casey@example.test', contact_number: '+65 8123 4567' }];
     else if (sql.includes('FROM event_registrations r WHERE r.event_id')) rows = state.existing ? [state.existing] : [];
+    else if (sql.includes('AS session_capacity')) rows = state.capacity ?? [
+      { session_id: sessionA, session_capacity: 10, registered: 0 }, { session_id: sessionB, session_capacity: 10, registered: 0 }];
+    else if (sql.includes('AS registered FROM event_registrations')) rows = [{ registered: state.eventRegistered ?? 0 }];
     else if (sql.includes('FROM sessions s')) rows = state.sessions ?? sessionRows();
-    else if (sql.includes('INSERT INTO event_registrations')) rows = [{ id: randomUUID(), status: 'registered', registered_at: now }];
+    else if (sql.includes('INSERT INTO event_registrations')) rows = [{ id: randomUUID(), status: values?.[2] ?? 'registered', registered_at: now }];
     else if (sql.includes('INSERT INTO notifications')) rows = [{ id: randomUUID() }];
     else if (sql.includes('INSERT INTO notification_deliveries')) rows = [{ id: randomUUID() }];
     else if (sql.includes('SELECT d.delivery_status')) rows = [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null, email: 'casey@example.test', title: 'Registration confirmed', message: 'Synthetic notice' }];
@@ -199,4 +204,38 @@ test('registerForEvent maps a lost unique race, a busy account and rethrows othe
   const { pool, calls } = script({ failAt: 'INSERT INTO event_registration_sessions', failure: broken });
   await assert.rejects(registerForEvent(pool, attendee, eventId, { sessionIds: [sessionA] }), broken);
   assert.ok(calls.some(call => call.sql === 'ROLLBACK'));
+});
+
+test('getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)', async () => {
+  const open = await getRegistrationForm(script().query, attendee, eventId);
+  assert.deepEqual(open.capacity, { eventFull: false, waitlistEnabled: false, fullSessionIds: [] });
+  const full = await getRegistrationForm(script({
+    event: eventRow({ waitlist_enabled: true }), eventRegistered: 20,
+    capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }, { session_id: sessionB, session_capacity: 10, registered: 10 }],
+  }).query, attendee, eventId);
+  assert.deepEqual(full.capacity, { eventFull: true, waitlistEnabled: true, fullSessionIds: [sessionA, sessionB] });
+});
+
+test('registerForEvent confirms the last place in a Session and the Event (TC_E09S02_08)', async () => {
+  // Session A 9/10 and the Event 99/100, so both limits are reached but not passed.
+  const { pool, calls } = script({ eventRegistered: 99, capacity: [
+    { session_id: sessionA, session_capacity: 10, registered: 9 }, { session_id: sessionB, session_capacity: 90, registered: 90 }] });
+  const result = await registerForEvent(pool, attendee, eventId, { sessionIds: [sessionA] });
+  assert.equal((result.body.registration as { status: string }).status, 'registered');
+  assert.equal(calls.find(call => call.sql.includes('INSERT INTO event_registrations'))!.values![2], 'registered');
+});
+
+test('registerForEvent keeps an over-capacity request Pending with its own notice (TC_E09S02_09, _10)', async () => {
+  for (const state of [
+    { eventRegistered: 8, capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }] },
+    { eventRegistered: 20, capacity: [{ session_id: sessionA, session_capacity: 10, registered: 4 }] },
+  ]) {
+    const { pool, calls } = script(state);
+    const result = await registerForEvent(pool, attendee, eventId, { sessionIds: [sessionA] });
+    assert.equal(result.status, 201);
+    assert.equal((result.body.registration as { status: string }).status, 'pending');
+    const notice = calls.find(call => call.sql.includes('INSERT INTO notifications'))!;
+    assert.equal(notice.values![2], 'Registration request received');
+    assert.match(String(notice.values![3]), /your choice is at capacity, so the organiser will review your request for Morning/);
+  }
 });

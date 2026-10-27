@@ -5,6 +5,7 @@ import { formatEventDates } from '../equipmentSupport/reservations.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { inTransaction } from '../../database/pool.js';
+import { eventCapacity, fullSessionIds, overCapacity } from './capacity.js';
 
 // E09-S01: an Attendee registers once for a published, Confirmed Event and
 // selects one or more of its Sessions (T-79, T-85). Responses carry public
@@ -20,6 +21,7 @@ type EventRow = {
   name: string;
   status: string;
   registration_enabled: boolean;
+  waitlist_enabled: boolean;
   opens_at: Date | null;
   closes_at: Date | null;
   starts_at: Date;
@@ -39,7 +41,7 @@ export type SessionChoice = {
 };
 
 type Details = { full_name: string | null; email: string | null; contact_number: string | null };
-type Existing = { id: string; status: string; registered_at: Date; session_ids: string[] };
+export type Existing = { id: string; status: string; registered_at: Date; session_ids: string[] };
 type Result = { status: number; body: Record<string, unknown> };
 
 const REQUIRED_DETAILS = [['full_name', 'Name'], ['email', 'Email'], ['contact_number', 'Contact number']] as const;
@@ -50,7 +52,7 @@ const ACTIVE = "r.status NOT IN ('withdrawn', 'rejected')";
 
 // The primary Confirmed booking is the Event's venue (O-30, T-78); the
 // publication's venue is the fallback for events published before 0019.
-const EVENT = `SELECT e.id, e.event_code, p.name, e.status, e.registration_enabled,
+const EVENT = `SELECT e.id, e.event_code, p.name, e.status, e.registration_enabled, e.waitlist_enabled,
     e.registration_opens_at AS opens_at, e.registration_closes_at AS closes_at,
     lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
     coalesce(pv.name, p.venue_name) AS venue_name, coalesce(pv.location, p.venue_location) AS venue_location,
@@ -71,7 +73,7 @@ export function missingDetails(details: Details): string[] {
 }
 
 const NO_SESSION = 'Choose at least one Session.';
-const INVALID_SESSIONS = 'Choose valid Sessions from this event.';
+export const INVALID_SESSIONS = 'Choose valid Sessions from this event.';
 
 // Nothing chosen and an unusable choice get different messages; more than 50
 // or a malformed id can only come from a direct API call, not the form.
@@ -82,7 +84,7 @@ export function parseSessionIds(body: unknown): { ids: string[] } | { error: str
   return { ids: [...new Set((raw as string[]).map(id => id.toLowerCase()))] };
 }
 
-function identifier(value: string) {
+export function identifier(value: string) {
   if (!value || value.length > 240) throw new AccessError(400, 'An event id or code is required.');
 }
 
@@ -111,7 +113,7 @@ function publicEvent(event: EventRow) {
   };
 }
 
-function publicSession(session: SessionChoice) {
+export function publicSession(session: SessionChoice) {
   return {
     id: session.id, title: session.title,
     startsAt: session.starts_at.toISOString(), endsAt: session.ends_at.toISOString(),
@@ -125,7 +127,7 @@ function publicRegistration(existing: Existing) {
 
 // Each Session shows its own Confirmed venue; a primary booking wins if a
 // Session has several (T-78, T-79). Venues are never separate registrations.
-async function sessionsFor(query: Query, eventId: string) {
+export async function sessionsFor(query: Query, eventId: string) {
   const rows = (await query(`SELECT DISTINCT ON (s.id) s.id, s.title, lower(s.session_range) AS starts_at,
       upper(s.session_range) AS ends_at, v.name AS venue_name, v.location AS venue_location
     FROM sessions s
@@ -136,7 +138,7 @@ async function sessionsFor(query: Query, eventId: string) {
   return rows.sort((a, b) => a.starts_at.getTime() - b.starts_at.getTime() || a.id.localeCompare(b.id));
 }
 
-async function activeRegistration(query: Query, eventId: string, attendeeId: string) {
+export async function activeRegistration(query: Query, eventId: string, attendeeId: string) {
   return (await query(`SELECT r.id, r.status, r.registered_at,
       array(SELECT rs.session_id::text FROM event_registration_sessions rs WHERE rs.registration_id = r.id ORDER BY rs.session_id) AS session_ids
     FROM event_registrations r WHERE r.event_id = $1 AND r.attendee_id = $2 AND ${ACTIVE}`, [eventId, attendeeId])).rows[0] as Existing | undefined;
@@ -166,8 +168,17 @@ export async function getRegistrationForm(query: Query, user: AuthenticatedUser,
   if (!offered(event)) throw new AccessError(409, NOT_OFFERED);
   const details = (await query('SELECT full_name, email, contact_number FROM users WHERE id = $1', [user.id])).rows[0] as Details;
   const existing = await activeRegistration(query, event.id, user.id);
+  const capacity = await eventCapacity(query, event.id);
   return {
     event: publicEvent(event),
+    // E09-S02: full Sessions and a full Event still accept a request, which
+    // waits as Pending for the Organiser; the Event-level waiting list is
+    // offered where enabled (T-85, T-98; no per-Session list, O-50).
+    capacity: {
+      eventFull: capacity.registered >= capacity.capacity,
+      waitlistEnabled: event.waitlist_enabled,
+      fullSessionIds: fullSessionIds(capacity),
+    },
     sessions: (await sessionsFor(query, event.id)).map(publicSession),
     details: { name: details.full_name, email: details.email, contactNumber: details.contact_number },
     missingDetails: missingDetails(details),
@@ -184,8 +195,11 @@ async function lockAccount(client: PoolClient, user: AuthenticatedUser) {
 }
 
 // One Event-level registration selecting Sessions (E09-S01 Scenarios 1-4). The
-// Event row lock serialises registrations for the Event, which E09-S02's
-// capacity checks build on; the partial unique index backs Scenario 2.
+// Event row lock serialises registrations for the Event, so the E09-S02
+// capacity check can't be raced (TC_E09S02_03): a registration that fits every
+// chosen Session and the Event is registered, otherwise it waits as Pending for
+// the Organiser and takes no place (T-85). The partial unique index backs
+// E09-S01 Scenario 2.
 export async function registerForEvent(database: Pool, user: AuthenticatedUser, ref: string, body: unknown): Promise<Result> {
   identifier(ref);
   await requireAttendee((sql, values) => database.query(sql, values), user);
@@ -211,16 +225,20 @@ export async function registerForEvent(database: Pool, user: AuthenticatedUser, 
       }
       const sessions = (await sessionsFor(query, event.id)).filter(session => sessionIds.includes(session.id));
       if (sessions.length !== sessionIds.length) return { status: 400, body: { error: INVALID_SESSIONS } };
+      const pending = overCapacity(await eventCapacity(query, event.id), sessionIds) !== null;
       const registration = (await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status)
-        VALUES ($1, $2, 'registered') RETURNING id, status, registered_at`, [event.id, user.id])).rows[0] as Existing;
+        VALUES ($1, $2, $3) RETURNING id, status, registered_at`, [event.id, user.id, pending ? 'pending' : 'registered'])).rows[0] as Existing;
       await client.query(`INSERT INTO event_registration_sessions (registration_id, event_id, session_id, selected_at)
         SELECT $1, $2, unnest($3::uuid[]), $4`, [registration.id, event.id, sessions.map(session => session.id), registration.registered_at]);
       const chosen = sessions.map(session =>
         `${session.title ?? 'Session'} (${formatEventDates(session.starts_at, session.ends_at)}${session.venue_name ? `, ${session.venue_name}` : ''})`);
       await writeEventNotification(client, {
         eventId: event.id, changeId: `registration:${registration.id}`, userId: user.id,
-        occurredAt: registration.registered_at, title: 'Registration confirmed',
-        message: `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: you're registered for ${chosen.join('; ')}.`,
+        occurredAt: registration.registered_at,
+        title: pending ? 'Registration request received' : 'Registration confirmed',
+        message: pending
+          ? `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: your choice is at capacity, so the organiser will review your request for ${chosen.join('; ')}.`
+          : `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: you're registered for ${chosen.join('; ')}.`,
       });
       return {
         status: 201,
