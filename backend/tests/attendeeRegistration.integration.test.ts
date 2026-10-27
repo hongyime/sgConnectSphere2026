@@ -5,18 +5,19 @@ import { readFile, readdir } from 'node:fs/promises';
 import { Client, Pool } from 'pg';
 import { hashPassword } from '../src/modules/accessControl/passwords';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
-import { getRegistrationForm, listOpenEvents, registerForEvent } from '../src/modules/attendeeRegistration/service';
+import { eventCapacity } from '../src/modules/attendeeRegistration/capacity';
+import { getRegistrationForm, listOpenEvents, registerForEvent, withdrawRegistration } from '../src/modules/attendeeRegistration/service';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
 // E09-S01 on real PostgreSQL: every migration up to 0024, an isolated schema in
 // the disposable TEST_DATABASE_URL, and the real API handler with a session cookie.
-test('E09-S01: register once for a Confirmed Event, selecting Sessions, on real PostgreSQL', async () => {
+test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_01, TC_E09S05_03, TC_E09S05_04, TC_E09S05_05)', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Use a disposable TEST_DATABASE_URL');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL }); await db.connect();
   const schema = `registration_${randomUUID().replaceAll('-', '')}`;
-  const [org, organiser, coordinator, casey, dana, eli] = Array.from({ length: 6 }, () => randomUUID());
+  const [org, organiser, coordinator, casey, dana, eli, fay] = Array.from({ length: 7 }, () => randomUUID());
   const [meetup, planning, closed, layout, hall, seminar] = Array.from({ length: 6 }, () => randomUUID());
   const savedEnv = { ...process.env };
   let pool: Pool | undefined;
@@ -38,6 +39,7 @@ test('E09-S01: register once for a Confirmed Event, selecting Sessions, on real 
       [casey, 'attendee', 'casey@example.test', '+65 8000 0001'],
       [dana, 'attendee', 'dana@example.test', '+65 8000 0002'],
       [eli, 'attendee', 'eli@example.test', null],
+      [fay, 'attendee', 'fay@example.test', '+65 8000 0004'],
     ]) {
       await db.query(`INSERT INTO users(id,client_org_id,email,password_hash,full_name,role,contact_number,email_verified_at)
         VALUES ($1,$2,$3,$4,$5,$6,$7,now())`,
@@ -166,6 +168,63 @@ test('E09-S01: register once for a Confirmed Event, selecting Sessions, on real 
     assert.equal(posted.status, 409); assert.equal(posted.body.error, "You're already registered for this event.");
     assert.equal((await call(api, { method: 'PUT', url: '/api/attendee/events', headers: { cookie } })).status, 405);
     assert.equal((await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { origin }, body: { sessionIds: [sessionB] } })).status, 401);
+
+    // ─── E09-S05 (SCRUM-67): withdraw a registration ───
+    await db.query("UPDATE client_organisations SET contact_email='events@client.example.test' WHERE id=$1", [org]);
+    await db.query("INSERT INTO event_registrations(event_id,attendee_id,status) VALUES ($1,$2,'waitlisted')", [meetup, eli]);
+    const placeNotices = async () => (await db.query(`SELECT n.message, d.channel FROM notifications n
+      JOIN notification_deliveries d ON d.notification_id=n.id WHERE n.user_id=$1 AND n.title='Event update'`, [eli])).rows;
+    const counts = async () => {
+      const capacity = await eventCapacity(query, meetup);
+      return [capacity.registered, ...capacity.sessions.map(session => session.registered)];
+    };
+    const fayUser = as(fay, 'fay@example.test');
+
+    // TC_E09S05_01 and _05: one withdrawal releases the place in both selected Sessions and the Event, and
+    // nobody else's registration changes. The Event has room again, so the waiting list hears (TC_E09S05_04).
+    const fayRegistration = (await registerForEvent(pool, fayUser, 'EVT-REG-1', { sessionIds: [sessionA, sessionB] })).body.registration as { id: string };
+    const before = await counts();
+    const others = (await db.query("SELECT id, status FROM event_registrations WHERE attendee_id<>$1 ORDER BY id", [fay])).rows;
+    const withdrawn = await withdrawRegistration(pool, fayUser, 'EVT-REG-1');
+    assert.equal(withdrawn.status, 200);
+    assert.deepEqual(await counts(), before.map(count => count - 1));
+    const fayRow = (await db.query('SELECT status, withdrawn_at FROM event_registrations WHERE id=$1', [fayRegistration.id])).rows[0];
+    assert.equal(fayRow.status, 'withdrawn'); assert.ok(fayRow.withdrawn_at);
+    assert.deepEqual((await db.query("SELECT id, status FROM event_registrations WHERE attendee_id<>$1 ORDER BY id", [fay])).rows, others);
+    const firstNotices = await placeNotices();
+    assert.equal(firstNotices.length, 1); assert.equal(firstNotices[0].channel, 'email');
+    assert.match(firstNotices[0].message, /^Community Meetup: A place is available\. Apply on a first-come basis; no place has been reserved for you\./);
+    // AC 6: a repeat is refused clearly and releases nothing more.
+    assert.deepEqual(await withdrawRegistration(pool, fayUser, 'EVT-REG-1'), { status: 409, body: { error: "You've already withdrawn from this event." } });
+    assert.deepEqual(await counts(), before.map(count => count - 1));
+
+    // The real handler: a foreign origin is refused; two simultaneous withdrawals serialise on the Event row.
+    const withdrawUrl = '/api/attendee/events?registration=1&withdraw=1&id=EVT-REG-1';
+    assert.equal((await call(api, { method: 'POST', url: withdrawUrl, headers: { cookie, origin: 'https://evil.example.test' } })).status, 403);
+    const both = await Promise.all([1, 2].map(() => call(api, { method: 'POST', url: withdrawUrl, headers: { cookie, origin } })));
+    assert.deepEqual(both.map(result => result.status).sort(), [200, 409]);
+    assert.equal((await placeNotices()).length, 2);
+
+    // TC_E09S05_03: after the deadline an approved place is refused with the client's contact, then the
+    // Organiser's email when the client has none (D89); nothing changes.
+    await db.query("UPDATE events SET withdrawal_deadline=now() - interval '1 minute' WHERE id=$1", [meetup]);
+    assert.deepEqual(await withdrawRegistration(pool, caseyUser, 'EVT-REG-1'), { status: 409, body: {
+      error: 'Withdrawal has closed. For help, contact events@client.example.test.', contact: 'events@client.example.test' } });
+    await db.query("UPDATE client_organisations SET contact_email='' WHERE id=$1", [org]);
+    assert.equal((await withdrawRegistration(pool, caseyUser, 'EVT-REG-1')).body.contact, 'organiser@example.test');
+    assert.equal((await db.query("SELECT count(*)::int AS n FROM event_registrations WHERE attendee_id=$1 AND status='registered'", [casey])).rows[0].n, 1);
+
+    // D105: with registration closed and switched off, Casey still finds the event and sees why she can't withdraw.
+    await db.query("UPDATE events SET registration_enabled=false, registration_closes_at=now() - interval '1 minute' WHERE id=$1", [meetup]);
+    assert.deepEqual((await listOpenEvents(query, caseyUser)).map(event => event.eventCode), ['EVT-REG-1']);
+    assert.deepEqual((await getRegistrationForm(query, caseyUser, 'EVT-REG-1')).withdrawal, { open: false, contact: 'organiser@example.test' });
+    assert.deepEqual(await listOpenEvents(query, fayUser), []);
+    await assert.rejects(getRegistrationForm(query, fayUser, 'EVT-REG-1'), { status: 409 });
+
+    // D88: a Pending request holds no place, so it can be withdrawn after the deadline and tells nobody.
+    await db.query("INSERT INTO event_registrations(event_id,attendee_id,status) VALUES ($1,$2,'pending')", [meetup, fay]);
+    assert.equal((await withdrawRegistration(pool, fayUser, 'EVT-REG-1')).status, 200);
+    assert.equal((await placeNotices()).length, 2);
   } finally {
     if (closeRuntime) await closeRuntime();
     if (pool) await pool.end();

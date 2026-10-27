@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 378 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 379 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **262** (69.3%)
+- Total test cases: **379**
+- Automated (explicit TC_ID in an active test title): **265** (69.9%)
   - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **224**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **86** (22.8%)
+  - Live-assertion (other active tests): **227**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **84** (22.2%)
 - No test yet (no test file mentions the TC_ID): **30** (7.9%)
 
 ## Coverage by epic
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 26 | 15 | 3 |
+| E09 | 45 | 29 | 13 | 3 |
 | E10 | 29 | 12 | 9 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **262** | **86** | **30** |
+| **Total** | **379** | **265** | **84** | **30** |
 
 ## Case-by-case status
 
@@ -386,10 +386,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
-| `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S05_01 — withdrawal requires a reason before recording |
-| `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance |
-| `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline |
-| `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ❌ none | — |
+| `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
+| `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
+| `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
+| `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
+| `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S06_01` | E09-S06 | Verify that marking a registered Attendee as attended for a event after the even | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_03 — all non-Completed statuses block writes, server capability matches; missing, foreign and inactive registrations re |
@@ -499,10 +500,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - manageRegistrations maps a busy account and a lost unique race, and rethrows other failures
 - getEventRegistrations returns the registration period the Organiser set (E09-S03)
 
-### `backend/tests/attendeeRegistration.integration.test.ts`
-
-- E09-S01: register once for a Confirmed Event, selecting Sessions, on real PostgreSQL
-
 ### `backend/tests/attendeeRegistration.test.ts`
 
 - registrationState: both window ends are inclusive and unset ends are unbounded
@@ -515,6 +512,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
 - registerForEvent maps a lost unique race, a busy account and rethrows other failures
 - getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)
+- withdrawRegistration tells nobody when the Event is still full or the row held no place (D82, D88)
+- withdrawRegistration answers a missing, repeated or foreign withdrawal without writing (AC 6)
+- withdrawRegistration maps a busy account and rethrows other failures
+- getRegistrationForm says whether a registration can still be withdrawn, and who to contact (D101, D105)
 
 ### `backend/tests/attendeeVisibility.integration.test.ts`
 
@@ -1209,6 +1210,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a full event with its waiting list off offers only a request for review, on the event page too
 - a Pending request is described as waiting for the organiser, on the event page and the form
 - a waitlisted registration is described consistently on the event page and form
+- an approved place shows the deadline, asks to confirm, then reads as not registered (D100, D101, D102)
+- a Pending request can be withdrawn until the event starts, with its own wording (D88, D106)
+- a refused withdrawal shows the server sentence in the panel, and Cancel goes back
+- withdrawing works under StrictMode, and leaving the page drops a late reply
 
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 

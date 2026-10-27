@@ -3,6 +3,7 @@
 // The server owns the rules (Confirmed only, one active registration, account
 // details); these tests check the screens show its answers faithfully.
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { StrictMode } from 'react';
 import { MemoryRouter, Link, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { EventDetail, EventDiscovery, RegisterForEvent, missingMessage, windowText } from './EventRegistration';
@@ -15,7 +16,7 @@ const event: PublicEvent = {
   id: 'e-1', eventCode: 'EVT-9001', name: 'Community Meetup',
   startsAt: '2027-04-01T01:00:00.000Z', endsAt: '2027-04-01T09:00:00.000Z',
   venueName: 'Grand Auditorium', venueLocation: 'Level 1',
-  registrationState: 'open', opensAt: '2027-02-01T00:00:00.000Z', closesAt: '2027-03-30T00:00:00.000Z',
+  registrationState: 'open', opensAt: '2027-02-01T00:00:00.000Z', closesAt: '2027-03-30T00:00:00.000Z', withdrawalDeadline: null,
 };
 const sessions = [
   { id: 's-a', title: 'Morning keynote', startsAt: '2027-04-01T01:00:00.000Z', endsAt: '2027-04-01T04:00:00.000Z', venueName: 'Grand Auditorium', venueLocation: 'Level 1' },
@@ -25,7 +26,7 @@ const details = { name: 'Casey Tan', email: 'casey@example.test', contactNumber:
 
 function form(overrides: Partial<RegistrationForm> = {}): RegistrationForm {
   return { event, sessions, details, missingDetails: [], registration: null,
-    capacity: { eventFull: false, waitlistEnabled: false, fullSessionIds: [] }, ...overrides };
+    capacity: { eventFull: false, waitlistEnabled: false, fullSessionIds: [] }, withdrawal: null, ...overrides };
 }
 
 const FORM_URL = 'GET /api/attendee/events?registration=1&id=EVT-9001';
@@ -341,4 +342,113 @@ test('a waitlisted registration is described consistently on the event page and 
   cleanup();
   renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration: waitlisted }) } });
   expect(await screen.findByText("You're already on the waiting list for this event")).toBeInTheDocument();
+});
+
+// ─── E09-S05 withdrawal (SCRUM-220) ─────────────────────────────────────
+
+// More specific than POST_URL, so it must come first in each stub (stubApi matches by parameters).
+const WITHDRAW_URL = 'POST /api/attendee/events?registration=1&withdraw=1&id=EVT-9001';
+const registered = { id: 'r-1', status: 'registered', registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a', 's-b'] };
+const withdrawnReply = { body: { registration: { id: 'r-1', status: 'withdrawn', withdrawnAt: '2027-03-02T00:00:00.000Z' } } };
+
+test('an approved place shows the deadline, asks to confirm, then reads as not registered (D100, D101, D102)', async () => {
+  const calls = renderAt('/attendee/discover/EVT-9001', {
+    [WITHDRAW_URL]: withdrawnReply,
+    [FORM_URL]: { body: form({ registration: registered, event: { ...event, withdrawalDeadline: '2027-03-25T15:59:59.000Z' },
+      withdrawal: { open: true, contact: null } }) },
+  });
+  expect(await screen.findByText(/^You can withdraw until 25 Mar 2027/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw…' }));
+  const panel = screen.getByRole('form', { name: 'Withdraw your registration?' });
+  expect(within(panel).getByText(/Your place in every Session you chose is released/)).toBeInTheDocument();
+  fireEvent.click(within(panel).getByRole('button', { name: 'Withdraw registration' }));
+  expect(await screen.findByText('Registration withdrawn. Your place in every Session you chose has been released.')).toBeInTheDocument();
+  expect(calls.filter(call => call.method === 'POST').map(call => call.url.search)).toEqual(['?registration=1&withdraw=1&id=EVT-9001']);
+  expect(screen.queryByText("You're registered for this event")).not.toBeInTheDocument();
+  expect(screen.queryByText('Selected')).not.toBeInTheDocument();
+  expect(screen.getByText('Open for registration')).toBeInTheDocument();
+  // The capacity on screen predates the withdrawal, so Register stays hidden until the page is reopened.
+  expect(screen.queryByRole('link', { name: /^Register$/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Withdraw…' })).not.toBeInTheDocument();
+});
+
+test('a Pending request can be withdrawn until the event starts, with its own wording (D88, D106)', async () => {
+  const pending = { ...registered, status: 'pending' };
+  renderAt('/attendee/discover/EVT-9001', {
+    [WITHDRAW_URL]: withdrawnReply,
+    [FORM_URL]: { body: form({ registration: pending, event: { ...event, withdrawalDeadline: '2027-02-01T00:00:00.000Z' },
+      withdrawal: { open: true, contact: null } }) },
+  });
+  expect(await screen.findByText('You can withdraw until the event starts.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw request…' }));
+  fireEvent.click(within(screen.getByRole('form', { name: 'Withdraw your request?' })).getByRole('button', { name: 'Withdraw request' }));
+  expect(await screen.findByText('Request withdrawn. The organiser will not review it.')).toBeInTheDocument();
+});
+
+test('after the deadline the contact replaces the button; a waitlisted entry gets no button here (TC_E09S05_03 screen, D89)', async () => {
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration: registered,
+    event: { ...event, registrationState: 'closed' }, withdrawal: { open: false, contact: 'events@client.example.test' } }) } });
+  expect(await screen.findByText('Withdrawal has closed')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'events@client.example.test' })).toHaveAttribute('href', 'mailto:events@client.example.test');
+  expect(screen.queryByRole('button', { name: /^Withdraw/ })).not.toBeInTheDocument();
+  cleanup(); vi.unstubAllGlobals();
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration: { ...registered, status: 'waitlisted' },
+    withdrawal: { open: true, contact: null } }) } });
+  expect(await screen.findByText("You're on the waiting list")).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^Withdraw/ })).not.toBeInTheDocument();
+});
+
+test('a refused withdrawal shows the server sentence in the panel, and Cancel goes back', async () => {
+  renderAt('/attendee/discover/EVT-9001', {
+    [WITHDRAW_URL]: { status: 409, body: { error: 'Withdrawal has closed. For help, contact events@client.example.test.' } },
+    // A deadline after the start isn't promised: the server closes withdrawal at the start.
+    [FORM_URL]: { body: form({ registration: registered, event: { ...event, withdrawalDeadline: '2027-04-02T00:00:00.000Z' },
+      withdrawal: { open: true, contact: null } }) },
+  });
+  expect(await screen.findByText('You can withdraw until the event starts.')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw…' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw registration' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Withdrawal has closed. For help, contact events@client.example.test.');
+  expect(screen.getByText("You're registered for this event")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('button', { name: 'Withdraw…' })).toBeInTheDocument();
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+});
+
+test('withdrawing works under StrictMode, and leaving the page drops a late reply', async () => {
+  let release!: () => void;
+  const renderStrict = () => {
+    const calls = stubApi({
+      [WITHDRAW_URL]: () => new Promise(resolve => { release = () => resolve(withdrawnReply); }),
+      [FORM_URL]: { body: form({ registration: registered, withdrawal: { open: true, contact: null } }) },
+    }, { role: 'attendee' });
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/attendee/discover/EVT-9001']}>
+          <Link to="/elsewhere">Leave</Link>
+          <Routes>
+            <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
+            <Route path="/elsewhere" element={<h1>Elsewhere</h1>} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    return calls;
+  };
+  const calls = renderStrict();
+  fireEvent.click(await screen.findByRole('button', { name: 'Withdraw…' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw registration' }));
+  await waitFor(() => expect(calls.some(call => call.method === 'POST')).toBe(true));
+  expect(screen.getByRole('button', { name: 'Withdrawing…' })).toBeInTheDocument();
+  await act(async () => { release(); });
+  expect(await screen.findByText(/^Registration withdrawn\./)).toBeInTheDocument();
+  // Second round: leave while the reply is outstanding.
+  cleanup(); vi.unstubAllGlobals();
+  renderStrict();
+  fireEvent.click(await screen.findByRole('button', { name: 'Withdraw…' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Withdraw registration' }));
+  fireEvent.click(screen.getByText('Leave'));
+  await act(async () => { release(); });
+  expect(screen.getByRole('heading', { name: 'Elsewhere' })).toBeInTheDocument();
+  expect(screen.queryByText(/^Registration withdrawn\./)).not.toBeInTheDocument();
 });

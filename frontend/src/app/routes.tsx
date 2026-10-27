@@ -39,7 +39,7 @@ import {
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
-  WithdrawFromEvent, EventFeedback,
+  EventFeedback,
 } from '../features/attendee/AttendeeRegistration';
 import { EventDiscovery, EventDetail, RegisterForEvent } from '../features/attendee/EventRegistration';
 import { NotificationInbox } from '../features/notifications/NotificationInbox';
@@ -153,7 +153,6 @@ export const routes: AppRoute[] = [
   page('/attendee/discover', <EventDiscovery />, 'live', 'E09-S01'),
   page('/attendee/discover/:eventCode', <EventDetail />, 'live', 'E09-S01'),
   page('/attendee/register/:eventCode', <RegisterForEvent />, 'live', 'E09-S01'),
-  page('/attendee/withdraw/:eventCode', <WithdrawFromEvent />, 'mock', 'E09-S05'),
   page('/attendee/feedback/:eventCode', <EventFeedback />, 'mock'),
   page('/attendee/waitlist/:eventCode', (
     <ComingSoon story="E09-S04" title="Waiting list"

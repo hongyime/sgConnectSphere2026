@@ -1,6 +1,6 @@
-// Attendee withdrawal + feedback screens (E09-S05, E09-S06), still mock.
-// Discover, the event page and registration are live in EventRegistration.tsx
-// (E09-S01). These use a mock event fixture; backend calls are not wired here,
+// Attendee feedback screen (E09-S06), still mock. Discover, the event page,
+// registration and withdrawal are live in EventRegistration.tsx (E09-S01,
+// E09-S05). These use a mock event fixture; backend calls are not wired here,
 // so the forms record a mock success via role="status" once the user confirms.
 
 import { useState, type FormEvent } from 'react';
@@ -28,46 +28,6 @@ const events: AttendeeEvent[] = [
 
 function findEvent(code: string) {
   return events.find(event => event.eventCode === code);
-}
-
-export function WithdrawFromEvent() {
-  const { eventCode } = useParams();
-  const event = findEvent(eventCode ?? '');
-  const [confirmed, setConfirmed] = useState(false);
-  const [reason, setReason] = useState('');
-  if (!event) return <NotFound eventCode={eventCode} />;
-  function submit(formEvent: FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault();
-    if (!reason.trim()) return;
-    setConfirmed(true);
-  }
-  return (
-    <main className="attendee-registration-page">
-      <header className="attendee-registration-heading">
-        <p className="eyebrow">{event.eventCode}</p>
-        <h1>Withdraw</h1>
-      </header>
-      <p>Withdrawing releases your place. If the withdrawal deadline has passed, the seat is not returned automatically.</p>
-      {confirmed ? (
-        <p role="status" className="attendee-registration-ok">
-          <CheckCircle2 size={16} aria-hidden="true" />
-          Your withdrawal has been recorded.
-        </p>
-      ) : (
-        <form onSubmit={submit} className="attendee-registration-form">
-          <label htmlFor="withdraw-reason">Reason (required)</label>
-          <textarea
-            id="withdraw-reason"
-            rows={4}
-            required
-            value={reason}
-            onChange={changeEvent => setReason(changeEvent.target.value)}
-          />
-          <button type="submit" className="primary-action" disabled={!reason.trim()}>Confirm withdrawal</button>
-        </form>
-      )}
-    </main>
-  );
 }
 
 export function EventFeedback() {

@@ -1,8 +1,9 @@
 // Playwright tests for the attendee registration flow. Discover, the event page
 // and registration (/attendee/discover, /attendee/discover/:eventCode,
 // /attendee/register/:eventCode) are live for E09-S01 and run against a fake
-// api/attendee/events.ts. Withdrawal and feedback (/attendee/withdraw/:eventCode,
-// /attendee/feedback/:eventCode) are still mock screens with fixture data.
+// api/attendee/events.ts. Withdrawal (E09-S05) is on the event page, tested in
+// EventRegistration.test.tsx and the backend; feedback (/attendee/feedback/:eventCode)
+// is still a mock screen with fixture data.
 import { test, expect } from '@playwright/test';
 import { fakeRegistrationBackend } from './helpers/registrationBackend';
 
@@ -36,16 +37,6 @@ test('TC_E09S01_07 — one submission creates one Event registration with both S
   await expect(page.getByRole('link', { name: 'View my events' })).toBeVisible();
   expect(posts).toHaveLength(1);
   expect(posts[0]).toEqual({ sessionIds: ['s-a', 's-b'] });
-});
-
-test('TC_E09S05_01 — withdrawal requires a reason before recording', async ({ page }) => {
-  await page.goto('/attendee/withdraw/EVT-A03');
-  const submit = page.getByRole('button', { name: 'Confirm withdrawal' });
-  await expect(submit).toBeDisabled();
-  await page.getByLabel('Reason (required)').fill('Cannot attend anymore.');
-  await expect(submit).toBeEnabled();
-  await submit.click();
-  await expect(page.getByRole('status')).toContainText('withdrawal has been recorded');
 });
 
 test('feedback requires a rating', async ({ page }) => {
