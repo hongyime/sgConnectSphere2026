@@ -136,7 +136,7 @@ export function EventDetail() {
               : <p>This event has no Sessions to choose from yet.</p>}
           </Card>
           {registration ? <Withdrawal form={form} registration={registration} onWithdrawn={setWithdrawn} /> : null}
-          {withdrawn ? null : <ClosedNotice form={form} />}
+          <ClosedNotice form={form} />
           <FormActions>
             <ButtonLink to="/attendee/discover">Back to Discover</ButtonLink>
             {canRegister ? (
@@ -227,7 +227,9 @@ function Withdrawal({ form, registration, onWithdrawn }: {
         danger busy={busy} error={error} onConfirm={confirm} onCancel={() => { setOpen(false); setError(undefined); }} />
     );
   }
-  const deadline = !pending && form.event.withdrawalDeadline;
+  // The server also closes withdrawal at the start, so a later deadline isn't shown (both are ISO strings).
+  const { withdrawalDeadline, startsAt } = form.event;
+  const deadline = !pending && withdrawalDeadline && withdrawalDeadline < startsAt ? withdrawalDeadline : null;
   return (
     <Card title={pending ? 'Your request' : 'Your registration'}>
       <p>{deadline ? `You can withdraw until ${formatDate(deadline, true)}.` : 'You can withdraw until the event starts.'}</p>

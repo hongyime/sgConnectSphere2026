@@ -401,7 +401,9 @@ test('after the deadline the contact replaces the button; a waitlisted entry get
 test('a refused withdrawal shows the server sentence in the panel, and Cancel goes back', async () => {
   renderAt('/attendee/discover/EVT-9001', {
     [WITHDRAW_URL]: { status: 409, body: { error: 'Withdrawal has closed. For help, contact events@client.example.test.' } },
-    [FORM_URL]: { body: form({ registration: registered, withdrawal: { open: true, contact: null } }) },
+    // A deadline after the start isn't promised: the server closes withdrawal at the start.
+    [FORM_URL]: { body: form({ registration: registered, event: { ...event, withdrawalDeadline: '2027-04-02T00:00:00.000Z' },
+      withdrawal: { open: true, contact: null } }) },
   });
   expect(await screen.findByText('You can withdraw until the event starts.')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Withdraw…' }));
@@ -415,21 +417,25 @@ test('a refused withdrawal shows the server sentence in the panel, and Cancel go
 
 test('withdrawing works under StrictMode, and leaving the page drops a late reply', async () => {
   let release!: () => void;
-  const calls = stubApi({
-    [WITHDRAW_URL]: () => new Promise(resolve => { release = () => resolve(withdrawnReply); }),
-    [FORM_URL]: { body: form({ registration: registered, withdrawal: { open: true, contact: null } }) },
-  }, { role: 'attendee' });
-  render(
-    <StrictMode>
-      <MemoryRouter initialEntries={['/attendee/discover/EVT-9001']}>
-        <Link to="/elsewhere">Leave</Link>
-        <Routes>
-          <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
-          <Route path="/elsewhere" element={<h1>Elsewhere</h1>} />
-        </Routes>
-      </MemoryRouter>
-    </StrictMode>,
-  );
+  const renderStrict = () => {
+    const calls = stubApi({
+      [WITHDRAW_URL]: () => new Promise(resolve => { release = () => resolve(withdrawnReply); }),
+      [FORM_URL]: { body: form({ registration: registered, withdrawal: { open: true, contact: null } }) },
+    }, { role: 'attendee' });
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={['/attendee/discover/EVT-9001']}>
+          <Link to="/elsewhere">Leave</Link>
+          <Routes>
+            <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
+            <Route path="/elsewhere" element={<h1>Elsewhere</h1>} />
+          </Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    return calls;
+  };
+  const calls = renderStrict();
   fireEvent.click(await screen.findByRole('button', { name: 'Withdraw…' }));
   fireEvent.click(screen.getByRole('button', { name: 'Withdraw registration' }));
   await waitFor(() => expect(calls.some(call => call.method === 'POST')).toBe(true));
@@ -438,21 +444,7 @@ test('withdrawing works under StrictMode, and leaving the page drops a late repl
   expect(await screen.findByText(/^Registration withdrawn\./)).toBeInTheDocument();
   // Second round: leave while the reply is outstanding.
   cleanup(); vi.unstubAllGlobals();
-  stubApi({
-    [WITHDRAW_URL]: () => new Promise(resolve => { release = () => resolve(withdrawnReply); }),
-    [FORM_URL]: { body: form({ registration: registered, withdrawal: { open: true, contact: null } }) },
-  }, { role: 'attendee' });
-  render(
-    <StrictMode>
-      <MemoryRouter initialEntries={['/attendee/discover/EVT-9001']}>
-        <Link to="/elsewhere">Leave</Link>
-        <Routes>
-          <Route path="/attendee/discover/:eventCode" element={<EventDetail />} />
-          <Route path="/elsewhere" element={<h1>Elsewhere</h1>} />
-        </Routes>
-      </MemoryRouter>
-    </StrictMode>,
-  );
+  renderStrict();
   fireEvent.click(await screen.findByRole('button', { name: 'Withdraw…' }));
   fireEvent.click(screen.getByRole('button', { name: 'Withdraw registration' }));
   fireEvent.click(screen.getByText('Leave'));
