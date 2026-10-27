@@ -477,52 +477,7 @@ test.describe("E09-S04", () => {
 
 });
 
-test.describe("E09-S05", () => {
-
-  /**
-   * TC_E09S05_03
-   * AC:      E09-S05 - Scenario 2 (Withdrawal after deadline refused)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s withdrawal deadline (10/12/2026) has passed
-   *
-   * Test data:
-   *   Withdrawal deadline: 10/12/2026 (passed)
-   *
-   * Expected result:
-   *   Withdrawal is refused with the message "Withdrawal has closed" and a contact is provided for assistance
-   */
-  test.fixme("TC_E09S05_03 - Verify that attempting to withdraw after the withdrawal deadline has passed should be refused, with a contact provided for assistance", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_c@example.com
-    // 2. Attempt to withdraw from "Community Meetup"
-    void page;
-  });
-
-  /**
-   * TC_E09S05_04
-   * AC:      E09-S05 - Scenario 2 (Withdrawal after deadline refused)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Attendee attendee_a@example.com is registered for event EVT-2001. The withdrawal deadline for event EVT-2001 is 2026-10-25 23:59:59 +08:00
-   *
-   * Test data:
-   *   Withdrawal deadline: 2026-10-25 23:59:59 +08:00 - Attempt at: 2026-10-25 23:59:59 +08:00
-   *
-   * Expected result:
-   *   The withdrawal succeeds, the registration status becomes Withdrawn and the place is released. Every waitlisted Attendee for EVT-2001 is notified that a place is available
-   */
-  test.fixme("TC_E09S05_04 - Verify that withdrawal succeeds at the exact withdrawal deadline", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Set the system clock to exactly 2026-10-25 23:59:59 +08:00
-    // 2. Sign in as attendee_a@example.com
-    // 3. Open the registration for EVT-2001 and select Withdraw
-    void page;
-  });
-
-});
+// E09-S05 live withdrawal coverage: EventRegistration.test.tsx and backend attendeeRegistration suites.
 
 // E09-S06 live attendance coverage: event-attendance.spec.ts and backend eventAttendance suites.
 
