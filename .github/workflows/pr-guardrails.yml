@@ -43,21 +43,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          DISPATCH_BASE_SHA: ${{ inputs.base_sha }}
+          DISPATCH_HEAD_SHA: ${{ inputs.head_sha }}
+          DISPATCH_PR_NUMBER: ${{ inputs.pr_number }}
+          MERGE_GROUP_BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          MERGE_GROUP_HEAD_SHA: ${{ github.sha }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             python scripts/check_pr_guardrails.py \
-              --base "${{ github.event.pull_request.base.sha }}" \
-              --head "${{ github.event.pull_request.head.sha }}" \
-              --pr-number "${{ github.event.pull_request.number }}"
+              --base "$PR_BASE_SHA" \
+              --head "$PR_HEAD_SHA" \
+              --pr-number "$PR_NUMBER"
           elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             python scripts/check_pr_guardrails.py \
-              --base "${{ inputs.base_sha }}" \
-              --head "${{ inputs.head_sha }}" \
-              --pr-number "${{ inputs.pr_number }}"
+              --base "$DISPATCH_BASE_SHA" \
+              --head "$DISPATCH_HEAD_SHA" \
+              --pr-number "$DISPATCH_PR_NUMBER"
           else
             python scripts/check_pr_guardrails.py \
-              --base "${{ github.event.merge_group.base_sha }}" \
-              --head "${{ github.sha }}" \
+              --base "$MERGE_GROUP_BASE_SHA" \
+              --head "$MERGE_GROUP_HEAD_SHA" \
               --merge-group
           fi
 
@@ -76,15 +84,20 @@ jobs:
       - name: Install evidence-check dependency
         run: python -m pip install --disable-pip-version-check PyYAML==6.0.3
       - name: Check manual-run evidence atomicity
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DISPATCH_BASE_SHA: ${{ inputs.base_sha }}
+          DISPATCH_HEAD_SHA: ${{ inputs.head_sha }}
         run: |
           if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
             python scripts/check_test_evidence.py \
-              --base "${{ github.event.pull_request.base.sha }}" \
-              --head "${{ github.event.pull_request.head.sha }}"
+              --base "$PR_BASE_SHA" \
+              --head "$PR_HEAD_SHA"
           elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             python scripts/check_test_evidence.py \
-              --base "${{ inputs.base_sha }}" \
-              --head "${{ inputs.head_sha }}"
+              --base "$DISPATCH_BASE_SHA" \
+              --head "$DISPATCH_HEAD_SHA"
           else
             python scripts/check_test_evidence.py --merge-group
           fi
