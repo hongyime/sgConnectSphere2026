@@ -1,0 +1,56 @@
+name: Weekly PR cleanup report
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  report:
+    name: Report stale and unowned PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Build weekly report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          gh pr list --repo "$REPOSITORY" --state open --limit 100 \
+            --json number,title,author,isDraft,updatedAt,assignees > open-prs.json
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+
+          with open("open-prs.json", encoding="utf-8") as handle:
+              prs = json.load(handle)
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+          stale_drafts = [
+              pr for pr in prs
+              if pr["isDraft"] and datetime.fromisoformat(pr["updatedAt"].replace("Z", "+00:00")) < cutoff
+          ]
+          unassigned = [pr for pr in prs if not pr["assignees"]]
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+              summary.write("## Weekly PR cleanup\n\n")
+              summary.write(f"Open PRs: **{len(prs)}** (drafts included in WIP limits).\n\n")
+              summary.write("### Drafts unchanged for more than 7 days\n\n")
+              if stale_drafts:
+                  for pr in stale_drafts:
+                      summary.write(f"- #{pr['number']} — {pr['title']} (@{pr['author']['login']})\n")
+              else:
+                  summary.write("- None\n")
+              summary.write("\n### PR ownership\n\n")
+              summary.write("The PR author is the default owner; explicit assignees indicate a handoff.\n\n")
+              if unassigned:
+                  for pr in unassigned:
+                      summary.write(f"- #{pr['number']} — {pr['title']} (@{pr['author']['login']}) has no explicit assignee\n")
+              else:
+                  summary.write("- No PRs need an explicit owner assignment.\n")
+          PY

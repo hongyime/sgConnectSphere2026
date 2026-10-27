@@ -411,3 +411,12 @@ recorded; no decision is new or changed.
 
 One interpretation for review: a restored booking does not return its event
 straight to Confirmed; the event follows E08-S04 Scenario 4.
+## 26 October 2026: T-65/T-93 evidence enforcement
+
+The T-65 execution-record schema remains the source of truth for runs used as
+evidence, and T-93 remains the rule for hand-taken screenshots on manual runs.
+The new `test-evidence` CI check and local pre-commit hook enforce those rules
+for new records: PASS/FAIL rows need linked existing screenshots, screenshots
+must be stored under the matching evidence folder, and the record plus images
+must arrive together. Automated runs and SKIP/N/A rows do not require images;
+old merged records are not rewritten.
