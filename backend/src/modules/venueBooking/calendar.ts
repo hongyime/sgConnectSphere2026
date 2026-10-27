@@ -10,7 +10,9 @@ import { holdsVenue } from './bookingShared.js';
 // Calendar days are Singapore days (UTC+08:00, no daylight saving), the same
 // offset every seeded booking and block range uses.
 
-export type CalendarState = 'free' | 'tentative' | 'confirmed' | 'blocked' | 'unavailable';
+// 'conflicting' is a booking or hold an unavailability has flagged (E05-S06
+// Scenario 2): it stays visible inside the Blocked period, not released.
+export type CalendarState = 'free' | 'tentative' | 'confirmed' | 'conflicting' | 'blocked' | 'unavailable';
 
 export type CalendarEntry = {
   state: CalendarState;
@@ -21,6 +23,8 @@ export type CalendarEntry = {
   end: string;
   event?: { id: string; code: string | null; title: string };
   reason?: string;
+  // E05-S06: the unavailability's category, on a block and on a booking it made Conflicting.
+  reasonCategory?: string;
   bufferConflict?: boolean;
 };
 
@@ -59,12 +63,13 @@ export function parseCalendarRange(from: unknown, to: unknown): { start: number;
 }
 
 type BookingRow = {
-  status: 'pending' | 'tentative' | 'confirmed';
+  status: 'pending' | 'tentative' | 'confirmed' | 'conflicting';
   starts_at: Date; ends_at: Date;
   buffer_conflict?: boolean;
+  conflict_category?: string | null;
   event_id: string; event_code: string | null; title: string; coordinator_id: string | null;
 };
-type BlockRow = { reason: string; starts_at: Date; ends_at: Date };
+type BlockRow = { reason: string; reason_category: string; starts_at: Date; ends_at: Date };
 
 // E05-S03 Scenario 2, following TC_E05S03_02/05: Venue Staff maintain every
 // booking, and a Coordinator sees the details of events assigned to them.
@@ -77,9 +82,10 @@ function bookingEntry(user: AuthenticatedUser, booking: BookingRow): CalendarEnt
   const period = { kind: 'booking' as const, start: booking.starts_at.toISOString(), end: booking.ends_at.toISOString() };
   if (!canSeeEventDetails(user, booking)) return { state: 'unavailable', ...period };
   return {
-    state: booking.status === 'confirmed' ? 'confirmed' : 'tentative',
+    state: booking.status === 'confirmed' || booking.status === 'conflicting' ? booking.status : 'tentative',
     ...period,
     event: { id: booking.event_id, code: booking.event_code, title: booking.title },
+    ...(booking.conflict_category ? { reasonCategory: booking.conflict_category } : {}),
     ...(booking.buffer_conflict ? { bufferConflict: true } : {}),
   };
 }
@@ -135,7 +141,7 @@ export async function getVenueCalendar(
     buffered_end: Date;
     unavailable_start?: Date; unavailable_end?: Date;
   }>(`
-    SELECT vb.status, vb.buffer_conflict,
+    SELECT vb.status, vb.buffer_conflict, cb.reason_category AS conflict_category,
       greatest(lower(vb.booking_range), $2::timestamptz) AS starts_at,
       least(upper(vb.booking_range), $3::timestamptz) AS ends_at,
       greatest(lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)), $2::timestamptz) AS buffered_start,
@@ -144,15 +150,16 @@ export async function getVenueCalendar(
       least(upper(occupied_window(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes), v.turnaround_time_minutes, v.setup_time_minutes)), $3::timestamptz) AS unavailable_end,
       e.id AS event_id, e.event_code, e.title, e.coordinator_id
     FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
-    WHERE vb.venue_id = $1 AND ${holdsVenue('vb', 'now()')}
+      LEFT JOIN venue_blocks cb ON cb.id = vb.conflict_block_id
+    WHERE vb.venue_id = $1 AND (${holdsVenue('vb', 'now()')} OR vb.status = 'conflicting')
       AND occupied_window(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes), v.turnaround_time_minutes, v.setup_time_minutes) && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(vb.booking_range)`, window);
   const blocks = await query<BlockRow>(`
-    SELECT reason,
+    SELECT reason, reason_category,
       greatest(lower(block_range), $2::timestamptz) AS starts_at,
       least(upper(block_range), $3::timestamptz) AS ends_at
     FROM venue_blocks
-    WHERE venue_id = $1 AND block_range && tstzrange($2::timestamptz, $3::timestamptz)
+    WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2::timestamptz, $3::timestamptz)
     ORDER BY lower(block_range)`, window);
 
   const occupied: Array<[number, number]> = [
@@ -178,7 +185,7 @@ export async function getVenueCalendar(
       return segments;
     }),
     ...blocks.rows.map(row => ({
-      state: 'blocked' as const, kind: 'block' as const, reason: row.reason,
+      state: 'blocked' as const, kind: 'block' as const, reason: row.reason, reasonCategory: row.reason_category,
       start: new Date(row.starts_at).toISOString(), end: new Date(row.ends_at).toISOString(),
     })),
     // A retired venue cannot take new bookings, so none of its time is Free.

@@ -5,7 +5,10 @@ import { currentUser, databasePool, respondWithResult } from '../eventVisibility
 import { isAllowedOrigin } from '../../config.js';
 import { sendJson } from '../../http.js';
 import type { VercelRequest, VercelResponse } from '../../vercel.js';
+import { cancelLostVenueBooking } from './lostVenueRecovery.js';
 import { submitBooking } from './bookingSubmission.js';
+import { withdrawBooking } from './bookingWithdrawal.js';
+import { setPrimaryBooking } from './bookingPrimary.js';
 import type { NotificationOptions } from '../eventNotifications/service.js';
 
 export function createBookingSubmissionHandler(deps: {
@@ -17,6 +20,12 @@ export function createBookingSubmissionHandler(deps: {
     await respondWithResult(response, async () => {
       if (!deps.allowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       const user = await deps.authenticate(request);
+      if ((request.body as Record<string, unknown> | undefined)?.action === 'cancel_lost_booking')
+        return cancelLostVenueBooking(deps.pool(), user, request.body, deps.notifications);
+      if ((request.body as Record<string, unknown> | undefined)?.action === 'set_primary')
+        return setPrimaryBooking(deps.pool(), user, request.body);
+      if ((request.body as Record<string, unknown> | undefined)?.action === 'withdraw_booking')
+        return withdrawBooking(deps.pool(), user, request.body, deps.notifications);
       const key = request.headers['idempotency-key'];
       return submitBooking(deps.pool(), user, request.body, typeof key === 'string' ? key : undefined, deps.notifications);
     });

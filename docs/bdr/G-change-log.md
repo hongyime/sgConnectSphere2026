@@ -286,6 +286,38 @@ New TC_E06S03_09 to _13 keep the parent story's current Sprint 3 metadata.
 The scheduling question recorded during review is resolved by the Product Owner's
 16 October confirmation below. They remain unimplemented, not delivered.
 
+## 16 October 2026: Product Owner approvals (T-97)
+
+Recorded the Product Owner's bounded demo-account risk acceptance and approved
+procedure for the single existing Safety Officer seed profile. The current seed
+already defines that account and the Coordinator Lead; only this one approved
+missing profile may be provisioned after reviewed procedure and read-only
+precheck. No seed code change or other account creation is authorised. The
+existing public/shared credential has no selected rotation or access restriction;
+this is not a security-safety or real-data approval. No production account write
+was performed here.
+
+Selected E14-S03 and E03-S12 as Sprint 3 follow-ups, still unestimated and not
+Done, for separate refinement. E14-S03 addresses the confirmed display defect:
+the current Organiser and assigned Coordinator Activity logs expose raw UTC
+edited date/time values; the new story will show readable Singapore time.
+UTC storage, audit permissions and access
+remain unchanged; notifications, unrelated labels, global viewing and before/
+after history are excluded. E03-S12 replaces the current plain success paragraph
+with the shared success Alert, retaining its existing status semantics and
+field-specific messages while preserving error, save,
+persistence and permission behavior. E14-S02, E03-S07 and E03-S11 remain Done.
+T-97 supersedes T-74's historical reopening exception under the current
+Definition of Done and 6 October instructor guidance; T-74's history remains
+unchanged. This is planning approval, not a claim of story delivery.
+
+Recorded Bryan as accountable PO for the SCRUM-75 Venue Staff mapping follow-up.
+The separate Jira subtask SCRUM-195 is assigned to Bryan as accountable PO.
+This decision approves no roster mapping or load. Only the deploy owner may apply an actual approved mapping
+with pre/post records, and Ji Ning verifies delivery. PR #272's merged routing
+code is independent of the mapping; no assignments are authorised until
+approval. T-89's no-roster-screen decision remains.
+
 ## 16 October 2026 ? PO Sprint 3 confirmation and current-main integration
 
 The Product Owner confirmed: keep the new cases under E06-S03's current Sprint 3
@@ -309,3 +341,73 @@ and delivered in #247, is now in the release and product backlogs with five
 scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
 which stays Done (T-74): the Organiser could not edit the registration setup,
 and the registration date labels were laid out wrongly.
+
+## 18 October 2026: O-50 and O-51 resolved as team decisions
+
+Recorded T-98 and T-99, closing O-50 and O-51. E09-S02/S04 now state that a
+full selected Session follows the Pending decision path and has no per-Session
+waitlist; the Event-level list remains available when combined Event capacity
+is full. E02-S05 now records the accepted copy behavior: retain requirements
+and Session structure, clear Event/Session dates and times, and do not copy
+bookings, equipment reservations or registrations. Updated the corresponding
+product/release backlog entries, canonical test case references, and the dated
+Figma handoff note. These remain team decisions, not customer statements.
+
+The 18 October entries were numbered T-98 and T-99 before merge because the
+16 October PO-decision PR #293 already uses T-97. This preserves the earlier
+identifier and decision date while keeping the 18 October decision wording and
+date unchanged. The earlier draft identifiers in PR #316 were T-97 and T-98.
+
+## 22 October 2026: PO interpretation of venue claim rule B (T-100)
+
+The Product Owner approved a prospective interpretation of C-01, C-16, C-46,
+C-60 and C-65: the first successfully accepted hold or request claims its
+venue's buffered slot; later overlapping claims are refused while that claim is
+active. Hold conversion keeps the same claim. Approval rechecks current
+availability, concurrency and current buffers. C-109 continues to govern later
+buffer edits: retain affected bookings and flag conflicts; do not release a
+claim silently. Approval waits until the conflict is explicitly rejected,
+withdrawn or replanned. This is a PO interpretation, not a new customer quote.
+
+T-100 resolves the open choice recorded in #338 prospectively. It does not adopt
+the first-approval proposal associated with #308; that proposal remains
+untouched, and this addendum makes no claim that #308 has merged. Reconcile only
+E06-S06 in both backlog views and its seven existing cases, plus the shared
+contract and matching scaffold descriptions. Preserve E06-S03's multi-venue
+semantics and all IDs, estimates, sprint assignments, owners and Done flags.
+The decision does not rewrite migration 0016 or adopt migration 0021. Product
+adoption, implementation, evidence and human review gates remain in force.
+
+Regenerate the CAA 221026 backlog and test-case workbooks, refresh the legacy
+test-case compatibility input from the generated workbook, rebuild the coverage
+inventory, and regenerate the BDR Word export. Keep older dated exports and all
+T-65 records as historical evidence.
+## 24 October 2026: E05-S06 and E10-S05 aligned with the venue-loss decisions
+
+E05-S06 (SCRUM-152) and E10-S05 (SCRUM-74) still carried the Week 7 defaults
+for O-23 and O-24 because both were labelled Sprint 3 when the Week 9 answers
+arrived, and active sprint scope was not edited (T-73). Neither story has been
+started, so their criteria are updated in place (T-74) to decisions already
+recorded; no decision is new or changed.
+
+- E05-S06: an unavailability may be open-ended until lifted, with no buffers
+  around it (T-80); a Confirmed event whose active booking is lost returns to
+  Planning and is not cancelled (C-120, T-81); only the Coordinator is told at
+  the loss (C-121); shortening or lifting restores a booking that was not
+  replaced or cancelled (C-122). New Scenario 7 keeps a history of each edit
+  and lift and notifies affected Coordinators on a lift (T-91).
+- E10-S05: Scenario 1 returns a Confirmed event to Planning (T-81); Scenario 4
+  notifies the Organiser and Attendees when the replacement is confirmed
+  (C-121).
+- Test cases follow: TC_E05S06_02 to _05 and TC_E10S05_01, _03 and _04 are
+  updated, TC_E05S06_04 now checks an open-ended save instead of a refusal, and
+  TC_E05S06_07 is added.
+- C-111 also says affected existing bookings are flagged. Only its open-ended
+  part had been used (T-80), so no story covered an unexpired Tentative hold
+  inside a new unavailability. E05-S06 Scenario 2 now flags such a hold
+  Conflicting without releasing it, Scenario 6 restores it (or marks it Expired
+  if its expiry passed meanwhile), the booking contract's Conflicting
+  transition includes holds, and TC_E05S06_08 is added.
+
+One interpretation for review: a restored booking does not return its event
+straight to Confirmed; the event follows E08-S04 Scenario 4.

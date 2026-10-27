@@ -47,7 +47,7 @@ sequenceDiagram
         EO->>UI: Choose one of my past requests
         UI->>EVT: Copy event details and Session structure
         EVT->>DB: Create a new draft with dates/times cleared
-        Note over EVT,DB: Do not copy bookings, equipment reservations or registrations under O-51
+        Note over EVT,DB: Under T-99, do not copy bookings, equipment reservations or registrations
     end
 
     EO->>UI: Track request status
@@ -317,7 +317,7 @@ sequenceDiagram
         REG->>DB: Write Pending decision notification
         REG-->>UI: Display Pending status, not an approved seat
     end
-    Note over REG: No independent per-Session waitlist is assumed while O-50 remains open
+    Note over REG: T-98 keeps the waitlist at Event level; a full Session follows Pending review
 
     opt Attendee withdraws
         AT->>UI: Withdraw registration

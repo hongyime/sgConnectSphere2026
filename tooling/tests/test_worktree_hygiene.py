@@ -20,6 +20,20 @@ from scripts.check_worktrees import (
 )
 
 
+def link_dir(link, target):
+    """Create a directory symlink, skipping the test where the OS refuses.
+
+    Windows needs Developer Mode or an elevated shell for symlinks
+    (WinError 1314); CI on Linux still runs these tests.
+    """
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as error:
+        if getattr(error, "winerror", None) == 1314:
+            raise unittest.SkipTest("symlinks need Developer Mode or admin rights on Windows") from error
+        raise
+
+
 def result(stdout="", returncode=0, stderr=""):
     return SimpleNamespace(stdout=stdout, returncode=returncode, stderr=stderr)
 
@@ -171,7 +185,7 @@ class WorktreeHygieneTests(unittest.TestCase):
                 target.mkdir()
                 link = worktree / relative
                 link.parent.mkdir(parents=True, exist_ok=True)
-                link.symlink_to(target, target_is_directory=True)
+                link_dir(link, target)
                 with patch(
                     "scripts.check_worktrees.subprocess.run",
                     side_effect=[
@@ -202,7 +216,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             worktree.mkdir()
             target = root / "user-data"
             target.mkdir()
-            (worktree / "user-data-link").symlink_to(target, target_is_directory=True)
+            link_dir(worktree / "user-data-link", target)
             safe, reason = worktree_is_safe_to_remove(worktree)
         self.assertFalse(safe)
         self.assertIn("ignored files", reason)
@@ -250,7 +264,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             target = root / "target"
             target.mkdir()
             link = root / "link"
-            link.symlink_to(target, target_is_directory=True)
+            link_dir(link, target)
             self.assertTrue(is_link_or_junction(link))
             self.assertFalse(is_link_or_junction(target))
 
@@ -276,9 +290,9 @@ class WorktreeHygieneTests(unittest.TestCase):
             marker = target / "keep.txt"
             marker.write_text("target remains")
             dependency_link = worktree / "node_modules"
-            dependency_link.symlink_to(target, target_is_directory=True)
+            link_dir(dependency_link, target)
             user_link = worktree / "user-data-link"
-            user_link.symlink_to(target, target_is_directory=True)
+            link_dir(user_link, target)
 
             ok, messages = unlink_directory_links(worktree)
 
@@ -299,7 +313,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             marker = target / "keep.txt"
             marker.write_text("safe")
             link = worktree / "node_modules"
-            link.symlink_to(target, target_is_directory=True)
+            link_dir(link, target)
             ok, messages = unlink_directory_links(worktree, force=True)
             self.assertTrue(ok)
             self.assertEqual(len(messages), 1)
@@ -310,7 +324,7 @@ class WorktreeHygieneTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             worktree = Path(tmp)
             candidate = worktree / "node_modules"
-            candidate.symlink_to(worktree, target_is_directory=True)
+            link_dir(candidate, worktree)
             with (
                 patch("scripts.check_worktrees.is_link_or_junction", side_effect=lambda path: path == candidate),
                 patch.object(Path, "unlink", side_effect=OSError("access denied")),
@@ -330,7 +344,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             marker = target / "keep.txt"
             marker.write_text("target remains")
             link = worktree / "node_modules"
-            link.symlink_to(target, target_is_directory=True)
+            link_dir(link, target)
 
             with (
                 patch("scripts.check_worktrees.os.name", "nt"),
@@ -353,7 +367,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             target = root / "target"
             target.mkdir()
             link = worktree / "node_modules"
-            link.symlink_to(target, target_is_directory=True)
+            link_dir(link, target)
 
             ok, messages = unlink_directory_links(worktree)
 
@@ -391,7 +405,7 @@ class WorktreeHygieneTests(unittest.TestCase):
     def test_clean_removes_safe_worktree(self, run, _safety, _unlink):
         rc = clean_worktrees([{"worktree": "/repo"}, {"worktree": "/repo/scratch"}], cwd=Path("/repo"))
         self.assertEqual(rc, 0)
-        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", "/repo/scratch"])
+        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", str(Path("/repo/scratch"))])
 
     @patch("scripts.check_worktrees.unlink_directory_links", return_value=(True, []))
     @patch("scripts.check_worktrees.worktree_is_safe_to_remove")
@@ -400,7 +414,7 @@ class WorktreeHygieneTests(unittest.TestCase):
         rc = clean_worktrees([{"worktree": "/repo"}, {"worktree": "/repo/scratch"}], force=True)
         self.assertEqual(rc, 0)
         safety.assert_not_called()
-        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", "--force", "/repo/scratch"])
+        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", "--force", str(Path("/repo/scratch"))])
 
     @patch("scripts.check_worktrees.unlink_directory_links", return_value=(False, ["link could not be removed"]))
     @patch("scripts.check_worktrees.worktree_is_safe_to_remove", return_value=(True, "clean and fully pushed"))
@@ -422,7 +436,7 @@ class WorktreeHygieneTests(unittest.TestCase):
     def test_clean_reports_git_remove_failure(self, run, _safety, _unlink):
         with contextlib.redirect_stdout(io.StringIO()):
             self.assertEqual(clean_worktrees([{"worktree": "/repo"}, {"worktree": "/repo/scratch"}]), 1)
-        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", "/repo/scratch"])
+        self.assertEqual(run.call_args_list[0].args[0], ["git", "worktree", "remove", str(Path("/repo/scratch"))])
         self.assertEqual(run.call_args_list[0].kwargs["check"], False)
 
     @patch("scripts.check_worktrees.list_worktrees", return_value=[{"worktree": "/repo"}])

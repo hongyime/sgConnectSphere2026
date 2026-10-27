@@ -1,3 +1,4 @@
+import { CancellationNotice } from '../events/EventCancellation';
 // Live E03-S01 (SCRUM-32) Coordinator screens: workload dashboard, review
 // queue, assigned-event detail with reassignment, and the reassignment inbox.
 // Data comes from coordinatorApi.ts. The decision page is DecisionPanel.tsx
@@ -23,6 +24,7 @@ import {
 } from './coordinatorApi';
 import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
 import { HOLDS_VISIBLE, VenueHoldsCard } from './VenueHolds';
+import { CONFLICT_VISIBLE, VenueConflictFlag } from './VenueConflictFlag';
 import './coordinator.css';
 
 // A refused read sends the Coordinator back to their dashboard.
@@ -203,6 +205,7 @@ export function RequestDetail() {
       title={event?.title ?? (result.state === 'error' ? 'Event unavailable' : 'Loading event…')}
       actions={event ? (
         <>
+          {event.canCancel ? <ButtonLink to={`${eventLink(event)}/cancel`}>Cancel event</ButtonLink> : null}
           {event.status === 'under_review' ? (
             <>
               <ButtonLink to={`${eventLink(event)}/clarify`} icon={<MessageCircleQuestion size={14} aria-hidden="true" />}>Request clarification</ButtonLink>
@@ -210,11 +213,15 @@ export function RequestDetail() {
               <ButtonLink to={`${eventLink(event)}/decide`} variant="primary" icon={<Gavel size={14} aria-hidden="true" />}>Decide on request</ButtonLink>
             </>
           ) : null}
+          <ButtonLink to={`${eventLink(event)}/venue-bookings`}>Venue bookings</ButtonLink>
           {['approved', 'planning', 'safety_review', 'confirmed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/equipment`}>Equipment requests</ButtonLink> : null}
+          {['approved', 'planning', 'safety_review', 'confirmed', 'completed', 'cancelled'].includes(event.status) ?
+            <ButtonLink to={`${eventLink(event)}/changes`}>Change requests</ButtonLink> : null}
           {/* E08-S03 (SCRUM-60): navigation, so no ellipsis. */}
           {READINESS_VISIBLE.includes(event.status) ? (
             <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
           ) : null}
+          {['confirmed', 'completed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/complete`}>Event completion</ButtonLink> : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}
@@ -224,8 +231,11 @@ export function RequestDetail() {
       {event ? (
         <>
           {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
+          {/* E05-S06 (SCRUM-152) Scenario 3: a venue lost to an unavailability is flagged on the event. */}
+          {CONFLICT_VISIBLE.includes(event.status) ? <VenueConflictFlag key={`conflict-${event.id}`} eventCode={eventRef(event)} /> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>
           <OutstandingQuestions questions={event.outstandingQuestions ?? []} />
+          <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventRef(event))}/attendance`}>Record attendance</ButtonLink>
           <section className="coordinator-detail-grid" aria-label="Event summary">
             <Card title="Summary">
               <FactList
@@ -240,6 +250,7 @@ export function RequestDetail() {
             </Card>
             <ReassignPanel key={event.id} event={event} onChanged={reload} />
           </section>
+          {event.status === 'cancelled' ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
           {/* E07-S06 (SCRUM-146): request technical support, or mark the event as needing none. */}
           {HOLDS_VISIBLE.includes(event.status) ? <VenueHoldsCard key={`holds-${event.id}`} eventCode={eventRef(event)} /> : null}
@@ -305,7 +316,7 @@ function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onS
           {saved ? <Alert tone="success">{saved}</Alert> : null}
         </div>
         {!canEdit ? (
-          <p className="coordinator-subtle">You can edit these details once the event is approved. Until then, the Organiser keeps them up to date.</p>
+          <p className="coordinator-subtle">{event.status === 'cancelled' ? 'Cancelled events are read-only.' : 'You can edit these details once the event is approved. Until then, the Organiser keeps them up to date.'}</p>
         ) : null}
         <FactList
           columns={2}
