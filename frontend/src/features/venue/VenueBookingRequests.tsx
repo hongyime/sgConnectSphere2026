@@ -1,8 +1,22 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Alert, Button, ButtonLink, Card, ConfirmPanel, EmptyState, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDateRange, useLoad } from '../../shared';
+import { Alert, Button, ButtonLink, Card, ConfirmPanel, EmptyState, ErrorState, FactList, LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, statusLabel, useLoad } from '../../shared';
 import { VenueBookingForm } from './VenueBookingForm';
-import { getVenueBookingRequests, setPrimaryVenueBooking, withdrawVenueBooking } from './venueBookingRequestsApi';
+import { CATEGORY_LABELS } from './blocksApi';
+import { getVenueBookingRequests, setPrimaryVenueBooking, withdrawVenueBooking, type ConflictDetails } from './venueBookingRequestsApi';
+
+// E05-S06 Scenario 3: the venue-conflict flag names the reason category, the
+// note and the period, says what is needed, and the status before the conflict.
+function conflictText(booking: ConflictDetails): string {
+  const reason = [booking.conflict_reason_category ? CATEGORY_LABELS[booking.conflict_reason_category] : '', booking.conflict_note ?? '']
+    .filter(Boolean).join(' · ');
+  const period = !booking.conflict_starts_at ? ''
+    : booking.conflict_ends_at ? formatDateRange(booking.conflict_starts_at, booking.conflict_ends_at)
+      : `from ${formatDate(booking.conflict_starts_at, true)} until lifted`;
+  const what = [reason, period].filter(Boolean).join(', ');
+  const before = booking.status_before_conflict ? ` Before this it was ${statusLabel(booking.status_before_conflict)}.` : '';
+  return `${what ? `${what}. ` : ''}Alternative arrangements are required.${before}`;
+}
 
 export function VenueBookingRequests() {
   const { eventCode = '' } = useParams();
@@ -44,10 +58,12 @@ export function VenueBookingRequests() {
         {result.data.bookings.some(b => b.status === 'conflicting' && b.conflict_block_id) && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-recovery`}>Recover a lost venue</ButtonLink>}
       </Card>
       {result.data.bookings.length === 0 && <EmptyState title="No venue bookings recorded">This event has no recorded venue bookings.</EmptyState>}
-      {result.data.bookings.map(booking => <Card key={booking.id} title={booking.venue_name} actions={<StatusPill status={booking.status} />}>
+      {result.data.bookings.map(booking => <Card key={booking.id} title={booking.venue_name} actions={booking.status === 'conflicting'
+        ? <StatusPill status="warning" label="Conflicting" /> : <StatusPill status={booking.status} />}>
         <FactList columns={2} items={[
           ['Location', booking.location], ['Booking period', formatDateRange(booking.starts_at, booking.ends_at)],
         ]} />
+        {booking.status === 'conflicting' && <Alert tone="warning" title="Venue unavailable">{conflictText(booking)}</Alert>}
         {booking.purpose && <p><strong>Purpose:</strong> {booking.purpose}</p>}
         {booking.headcount != null && <p><strong>Booking headcount:</strong> {booking.headcount}</p>}
         {booking.is_primary && <p>Primary venue</p>}

@@ -327,6 +327,15 @@ test('a request that is no longer pending has nothing to decide', async () => {
   expect(screen.queryByRole('button', { name: 'Approve…' })).toBeNull();
 });
 
+test('E05-S06: a Conflicting booking says the venue was marked unavailable and offers no decision', async () => {
+  stubApi({ 'GET /api/venues?booking=b-1': { body: { booking: booking({ status: 'conflicting' }) } } }, { role: 'venue_staff' });
+  renderAt('/venue/bookings/b-1/decide');
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    "This booking is Conflicting because the venue was marked unavailable. It can't be decided while the unavailability covers it.");
+  expect(screen.getByText('Conflicting', { exact: true })).toHaveClass('status-warning');
+  expect(screen.queryByRole('button', { name: 'Approve…' })).toBeNull();
+});
+
 test('an unknown request on the decision page shows the server message', async () => {
   stubApi({ 'GET /api/venues?booking=missing': { status: 404, body: { error: 'Booking not found.' } } }, { role: 'venue_staff' });
   renderAt('/venue/bookings/missing/decide');

@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **378**
 - Automated (explicit TC_ID in an active test title): **246** (65.1%)
-  - Real-database (`.integration.test` / `.db.test`): **45**
+  - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **200**
+  - Live-assertion (other active tests): **208**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (25.7%)
 - No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
@@ -1246,6 +1246,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
 
+### `frontend/src/features/coordinator/VenueConflictFlag.test.tsx`
+
+- no flag when no booking is Conflicting
+- a refused booking list shows no flag and no error
+- an event past the stages where a venue can be lost does not ask for its bookings
+
 ### `frontend/src/features/coordinator/VenueHolds.test.tsx`
 
 - the card lists live and expired holds with their expiry, and links to venue search
@@ -1462,6 +1468,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the approval message falls back when the Coordinator name is missing
 - when the venue list cannot load, the reason can still be sent without a suggestion
 - a request that is no longer pending has nothing to decide
+- E05-S06: a Conflicting booking says the venue was marked unavailable and offers no decision
 - an unknown request on the decision page shows the server message
 
 ### `frontend/src/features/venue/LostVenueRecovery.test.tsx`
@@ -1478,7 +1485,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
-- removing a block goes through ConfirmPanel and reloads the list on success
+- the end needs both a date and a time, and must be after the start, before any POST is sent
+- server field errors show next to their fields, and other failures show the server message
+- an overlap with another unavailability is refused and names that unavailability
+- removing the end of an unavailability makes it open-ended, and Cancel closes the edit form (Scenario 5)
+- an edit that would overlap another unavailability is refused and names it
+- lifting goes through ConfirmPanel, lists the restored bookings and reloads the list (Scenario 6)
+- an open-ended unavailability lists as until lifted, edits with an empty end, and lifts with nothing to restore (T-80)
+- a lift in flight is sent only once, even if the confirmation is submitted again
+- a failed lift shows the server message and closes the confirmation
+- a lifted row with no recorded lifter, a block with no history yet, and an open-ended entry with no category read clearly
+- a history that fails to load offers Try again
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
@@ -1499,6 +1516,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
+- E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1543,6 +1561,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request form is available only for Approved or Planning assessments
 - shows server error and retry recovers
 - route change discards a late result for the previous venue
+
+### `frontend/src/features/venue/blocksApi.test.ts`
+
+- every reason category has a label (Scenario 1)
+- createUnavailability sends the timed body and returns the affected events (Scenarios 1 and 2)
+- an empty end is sent as null so the venue stays unavailable until lifted (Scenario 5)
+- createUnavailability keeps field errors and replaces a network failure with a service message
+- editUnavailability sends edit_block and returns flagged and restored events (Scenarios 5 and 6)
+- liftUnavailability sends lift_block and returns the restored events (Scenario 6)
+- getBlockHistory reads one block history and refuses safely (Scenario 7)
+- listBlocks asks for lifted blocks only when requested (Scenario 7)
+- listBlocks passes a refusal through and reads a reply without a list as empty; overlappingBlocks does the same
 
 ### `frontend/src/features/venue/calendarDates.test.ts`
 
