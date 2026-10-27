@@ -268,7 +268,7 @@ test('withdrawalOpen: the deadline binds approved places only and is inclusive (
   for (const status of ['cancelled', 'completed']) assert.equal(withdrawalOpen({ ...noDeadline, status }, 'registered', now), false);
 });
 
-test('withdrawRegistration releases an approved place and tells the waiting list (TC_E09S05_01, _04, _05)', async () => {
+test('withdrawRegistration releases an approved place and tells the waiting list (TC_E09S05_01, TC_E09S05_04, TC_E09S05_05)', async () => {
   const registration = { id: randomUUID(), status: 'registered' };
   const waiting = [randomUUID(), randomUUID()];
   const { pool, calls } = script({ event: eventRow({ withdrawal_deadline: now }), withdrawable: registration, waitlisted: waiting, eventRegistered: 19 });
