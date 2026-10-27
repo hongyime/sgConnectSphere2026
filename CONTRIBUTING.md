@@ -178,10 +178,8 @@ merge queue checks the latest `main` and preceding queued changes.
 
 An explicitly partial PR may merge before full story acceptance when its merge
 gates are satisfied. List each open acceptance item and its owner; the parent
-story remains not Done. This doesn't waive a documented story-specific hold:
-[#298](https://github.com/hongyime/sgConnectSphere2026/pull/298) remains held for
-TC_E06S04_07's confirmed-cancellation `Booking Released` evidence and its
-recorded PO/dependency gates. Pending withdrawal isn't a substitute.
+story remains not Done. This doesn't waive a documented story-specific hold or
+replace its required acceptance evidence with a partial-merge decision.
 
 Pre-Review regression is separate from first acceptance. T-93's required
 Sprint 3 reruns add new evidence without reopening Done stories or editing old

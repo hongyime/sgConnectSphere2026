@@ -15,6 +15,7 @@ erDiagram
     VENUES ||--o{ VENUE_BOOKINGS : "hosts"
     VENUES ||--o{ VENUE_BLOCKS : "unavailable_during"
     VENUE_BLOCKS ||--o{ VENUE_BLOCK_HISTORY : "change_history"
+    VENUE_BLOCKS |o--o{ VENUE_BOOKINGS : "holds_conflicting"
     VENUE_BOOKINGS ||--o{ VENUE_HOLD_EXTENSIONS : "extended_by"
     VENUES ||--o{ VENUE_STAFF_ASSIGNMENTS : "routed_to"
     USERS ||--o{ VENUE_STAFF_ASSIGNMENTS : "assigned_to"
@@ -206,9 +207,11 @@ erDiagram
         tstzrange booking_range "within the linked Session's period"
         tstzrange occupancy_range "application-maintained: booking_range widened by the venue's setup and turnaround at write time; the EXCLUDE constraint keys on this (ADR-003)"
         booking_status status "pending, tentative, confirmed, rejected, released, conflicting, expired"
+        booking_status status_before_conflict "set while an unavailability holds the booking Conflicting: pending, confirmed or tentative (C-111, C-122)"
+        uuid conflict_block_id FK "the unavailability that made it Conflicting"
         text purpose "Week 7 C-67; e.g. Main programme, Breakout A"
         int headcount "Week 7 C-67; governs suitability for this venue, falls back to SESSIONS.expected_attendance (T-79)"
-        boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30)"
+        boolean is_primary "Week 7 C-67; only a Confirmed booking may be primary (O-30), kept while an unavailability holds it Conflicting (E05-S06)"
         uuid requested_by FK "Coordinator who submitted the formal request; null for legacy/unsubmitted rows"
         timestamptz requested_at "when a tentative hold became a formal request or direct request was submitted"
         uuid submission_key "idempotency key for a direct request; null for legacy/hold rows"
@@ -241,6 +244,8 @@ erDiagram
         varchar action "created, edited, lifted"
         tstzrange previous_range "null for creation"
         tstzrange new_range "null for lift"
+        unavailability_reason previous_category
+        unavailability_reason new_category
         varchar previous_reason
         varchar new_reason
         uuid actor_id FK "null only for system-originated changes"
@@ -475,6 +480,16 @@ erDiagram
   roster-management screen is in Release 1 (T-89). Venue-block edits and lifts
   append `VENUE_BLOCK_HISTORY` snapshots; a lift retains the block row, attributes
   the actor/time and notifies each affected Coordinator (T-91).
+  Migration `0025_venue_unavailability.sql` adds `reason_category`, `lifted_at`,
+  `lifted_by` and a required start to `VENUE_BLOCKS`, the append-only
+  `VENUE_BLOCK_HISTORY` table (edits and deletes refused, as for `AUDIT_LOGS`),
+  and `status_before_conflict` / `conflict_block_id` on `VENUE_BOOKINGS`, so a
+  booking or unexpired hold flagged by an unavailability returns to its earlier
+  status when the unavailability is shortened or lifted (E05-S06, C-111, C-122).
+  It also widens 0019's `venue_bookings_primary_confirmed` so the event's primary
+  booking stays primary while Conflicting, keeping the original venue (E10-S05)
+  and restoring it as it was; readers that show or publish the venue still require
+  Confirmed. The 0016 write guard ignores lifted unavailability.
 - Registration remains one row per attendee/Event. A partial unique constraint
   allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
   and Organiser-`rejected` rows are not active, so the account may register
@@ -482,9 +497,9 @@ erDiagram
   records one or more attendee-selected Sessions. Approved registrations occupy
   one place in every selected Session and one place against combined Event
   capacity, derived from confirmed Session layout capacities. Over-capacity
-  submissions are `pending` for Organiser review; the current working assumption
-  has no per-Session waitlist (O-50). The existing Event-level waitlist remains for
-  combined Event capacity. This distinction is not a new customer answer.
+  submissions are `pending` for Organiser review; T-98 sets no per-Session waitlist.
+  The existing Event-level waitlist remains for combined Event capacity. This is
+  a team decision, not a new customer answer.
 - When required venue/equipment/support arrangements become complete, the system
   creates the safety review, moves the Event from Planning to Safety Review, and
   notifies the Safety Officer. The factor checklist and overall decision/comments

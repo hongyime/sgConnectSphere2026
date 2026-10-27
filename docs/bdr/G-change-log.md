@@ -342,6 +342,46 @@ scenarios and test cases TC_E03S11_01 to _05. It fixes two gaps in E03-S07,
 which stays Done (T-74): the Organiser could not edit the registration setup,
 and the registration date labels were laid out wrongly.
 
+## 18 October 2026: O-50 and O-51 resolved as team decisions
+
+Recorded T-98 and T-99, closing O-50 and O-51. E09-S02/S04 now state that a
+full selected Session follows the Pending decision path and has no per-Session
+waitlist; the Event-level list remains available when combined Event capacity
+is full. E02-S05 now records the accepted copy behavior: retain requirements
+and Session structure, clear Event/Session dates and times, and do not copy
+bookings, equipment reservations or registrations. Updated the corresponding
+product/release backlog entries, canonical test case references, and the dated
+Figma handoff note. These remain team decisions, not customer statements.
+
+The 18 October entries were numbered T-98 and T-99 before merge because the
+16 October PO-decision PR #293 already uses T-97. This preserves the earlier
+identifier and decision date while keeping the 18 October decision wording and
+date unchanged. The earlier draft identifiers in PR #316 were T-97 and T-98.
+
+## 22 October 2026: PO interpretation of venue claim rule B (T-100)
+
+The Product Owner approved a prospective interpretation of C-01, C-16, C-46,
+C-60 and C-65: the first successfully accepted hold or request claims its
+venue's buffered slot; later overlapping claims are refused while that claim is
+active. Hold conversion keeps the same claim. Approval rechecks current
+availability, concurrency and current buffers. C-109 continues to govern later
+buffer edits: retain affected bookings and flag conflicts; do not release a
+claim silently. Approval waits until the conflict is explicitly rejected,
+withdrawn or replanned. This is a PO interpretation, not a new customer quote.
+
+T-100 resolves the open choice recorded in #338 prospectively. It does not adopt
+the first-approval proposal associated with #308; that proposal remains
+untouched, and this addendum makes no claim that #308 has merged. Reconcile only
+E06-S06 in both backlog views and its seven existing cases, plus the shared
+contract and matching scaffold descriptions. Preserve E06-S03's multi-venue
+semantics and all IDs, estimates, sprint assignments, owners and Done flags.
+The decision does not rewrite migration 0016 or adopt migration 0021. Product
+adoption, implementation, evidence and human review gates remain in force.
+
+Regenerate the CAA 221026 backlog and test-case workbooks, refresh the legacy
+test-case compatibility input from the generated workbook, rebuild the coverage
+inventory, and regenerate the BDR Word export. Keep older dated exports and all
+T-65 records as historical evidence.
 ## 24 October 2026: E05-S06 and E10-S05 aligned with the venue-loss decisions
 
 E05-S06 (SCRUM-152) and E10-S05 (SCRUM-74) still carried the Week 7 defaults

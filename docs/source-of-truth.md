@@ -8,12 +8,13 @@ Word exports, Figma notes, and PostPlans follow those sources.
 
 | Domain | Authority | Export / history |
 | --- | --- | --- |
-| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 241026.xlsx` |
+| Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 261026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
-| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 241026.docx` (BDR refreshed 2026-10-24; older dated exports remain history) |
+| Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 261026.docx` (BDR refreshed 2026-10-26; older dated exports remain history) |
 | Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 241026.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 261026.xlsx` |
+| Decision index | `docs/decisions/README.md` | Links to the authoritative records above; does not duplicate their text |
 | Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Shared venue booking interface | `docs/contracts/venue-bookings.md` | Shared schema, API, lifecycle and migration ownership for E06-S03/S04/S05/S06 |
 | Sprint 1 delivery and contribution evidence | [Sprint 1 delivery ledger](backlog/sprint-1-delivery.md) | [Sprint review and retrospective](plans/sprint-1-retrospective.md) |
@@ -37,9 +38,10 @@ stories, of which 47 are in Release 1.
 ## Authority order
 
 The [canonical shared DoD](../CONTRIBUTING.md#definition-of-done) records the
-21 October 2026 PO-approved prospective clarification and its effective-date
-condition: reviewed merge into `main`, not this branch or #312's stacked base.
-PR #312 supplies proposal provenance, not independently adopted policy.
+PO-approved clarification and the instructor floor. PR #312 is retained only as
+proposal provenance, not as an independent policy source.
+The team confirmed on 26 October 2026 that the PO/delegate acceptance receipt
+is a team-wide Definition of Done gate, not a PR-specific preference.
 The instructor floor takes precedence over its proposed false-Done reopening
 exception; T-65's evidence-only recording scope is unchanged.
 
@@ -92,6 +94,15 @@ refines _08. Its regenerated CAA 161026 testcase workbook also refreshes the
 legacy compatibility input, so the generated inventory includes these unexecuted
 cases. This records requirements and traceability, not passing test evidence.
 
+The 22 October venue claim rule B decision (T-100) updates only E06-S06 in the
+release and product backlogs, its seven existing acceptance cases and the shared
+venue-bookings contract. See
+[`venue-claim-rule-b-20261022.md`](plans/venue-claim-rule-b-20261022.md) for
+the PO choice and remaining adoption and implementation gates. The CAA 221026
+exports reflect these canonical sources; the legacy testcase workbook is
+refreshed from the generated testcase export before the coverage audit. Older
+dated exports and every existing T-65 session record remain unchanged.
+
 ## Requirement changes flow downstream
 
 1. Amend canonical backlog Markdown and record scope decisions in `docs/bdr/`.
@@ -139,8 +150,9 @@ exact tested tree, real integration/manual acceptance evidence and independent
 human code and test review receipt in the current issue or linked PR. Manual
 acceptance precedes Done and is due no later than Review. Partial PR merge,
 story acceptance and pre-Review regression are different checkpoints; a generic
-partial-merge allowance never clears #298's TC_E06S04_07 hold. Jira links to
-the canonical DoD; it doesn't define a competing completion policy.
+partial-merge allowance never substitutes for current acceptance evidence and
+human review. Jira links to the canonical DoD; it doesn't define a competing
+completion policy.
 
 ## Design and access practices
 
@@ -151,7 +163,10 @@ disagree, the difference is raised in `design.md` and resolved in review
 (ADR-017). Figma boards are proposals derived from these sources. Link them to
 stories, batch related screens, preserve existing boards, and pair
 desktop/mobile variants where appropriate. Keep role-specific flows
-identifiable.
+identifiable. Each story owner owns the design and implementation for that
+story, including selecting and linking its Figma frames. Amareet Kaur Madas
+coordinates cross-story Figma organization and consistency; this does not make
+her the sole designer for every story (repository decision 0016).
 
 Each teammate uses their own Jira account or token. Keep real credentials,
 personal configuration, raw private API responses and machine-specific paths out
@@ -162,6 +177,7 @@ The E07-S09 stock/withdrawal follow-up regenerates the CAA 141026 backlog and te
 
 The E03-S11 backlog entry (SCRUM-176, 16 October 2026) regenerates the CAA 161026 backlog, test-case and BDR exports and refreshes the legacy coverage input from the generated test-case workbook. The ADR export is unchanged.
 
+The 18 October 2026 T-98/T-99 decision update regenerated the CAA 181026 backlog and test-case workbooks and the ADR/BDR Word exports. No test-case IDs changed, so the legacy coverage input and generated coverage inventory did not need refreshing.
 The E05-S06 and E10-S05 venue-loss alignment (SCRUM-152, SCRUM-74, 23–24 October 2026) updates both stories and their test cases in place to the existing decisions T-80, T-81 and T-91 (C-111, C-120, C-121, C-122), adds TC_E05S06_07 and TC_E05S06_08, and aligns the booking contract's Conflicting transition with C-111. It regenerates the CAA 241026 backlog, test-case and BDR exports (the test-case export also carries main's CAA 211026 E08 changes) and refreshes the legacy coverage input from that test-case workbook. The alignment is logged in `docs/bdr/G-change-log.md`; no decision changes and the ADR export is unchanged.
 
 The 16 October Product Owner approvals in T-97 update the canonical BDR and

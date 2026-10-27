@@ -2,9 +2,9 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Alert, Button, ButtonLink, Card, FormActions, FormField, FormSection, apiCall, jsonRequest } from '../../shared';
 import { toLocalInput } from '../events/EventEditForm';
 
-type Props = { eventId: string; eventCode: string; venueId: string; start: string; end: string; onSubmitted?: () => void; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
+type Props = { eventId: string; eventCode: string; venueId: string; start: string; end: string; onSubmitted?: () => void; replacementLabel?: string; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
 type Result = { booking: { id: string }; suitability: { suitable: boolean; mismatches: string[] } };
-export function VenueBookingForm({ eventId, eventCode, venueId, start, end, replacement, onSubmitted }: Props) {
+export function VenueBookingForm({ eventId, eventCode, venueId, start, end, replacement, replacementLabel, onSubmitted }: Props) {
   const [fields, setFields] = useState({ starts_at: toLocalInput(replacement?.starts_at ?? start), ends_at: toLocalInput(replacement?.ends_at ?? end), purpose: replacement?.purpose ?? '', headcount: replacement?.headcount == null ? '' : String(replacement.headcount) });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [failure, setFailure] = useState('');
@@ -36,7 +36,7 @@ export function VenueBookingForm({ eventId, eventCode, venueId, start, end, repl
     {!!saved.suitability.mismatches.length && <><h3>Advisory unmet requirements</h3><ul>{saved.suitability.mismatches.map(message => <li key={message}>{message}</li>)}</ul></>}
     <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-bookings`}>View venue booking requests</ButtonLink>
   </Card>;
-  return <Card title={replacement ? "Request suggested venue" : "Request this venue"}><p>Suitability is advisory. The submitted period must be within the event; availability is checked again when you submit.</p>
+  return <Card title={replacement ? (replacementLabel ?? "Request suggested venue") : "Request this venue"}><p>Suitability is advisory. The submitted period must be within the event; availability is checked again when you submit.</p>
     {failure && <Alert tone="error">{failure}</Alert>}
     <form aria-label="Request venue booking" onSubmit={submit} noValidate>
       <FormSection title="Booking details">
