@@ -6,8 +6,8 @@ SCRUM-48 / PR #298, following task 8 of the sprint recovery audit and
 
 ## Proposed changes
 
-- TC_E05S05_03 now starts with both buffers at 0 before creating its two bookings.
-- TC_E06S06_04 now explicitly uses 0/0 buffers for advertised-time adjacency.
+- TC_E05S05_03 now starts with setup 30 or less (the recorded run used 30) and turnaround at 0 before creating its two bookings.
+- TC_E06S06_04 now explicitly uses 0/0 buffers before either booking is created.
 - TC_E06S04_04 creates both rows at 0/0 before increasing buffers to 30/45.
 - The E05-S05 manual guide distinguishes disclosed isolated SQL setup from the
   browser edit/save action. Neither SQL setup nor this audit proves UI acceptance.
@@ -42,18 +42,12 @@ workbook input and regenerate `scripts/tc_coverage_audit.py` outputs if that inp
 changes, updating export references through the serialized docs lane. No backlog,
 environment or skip/live declaration changed, so their generators aren't needed.
 
-## Task 19A Publication
+## Review reconciliation (27 October)
 
-Task-18 hashes matched before preparation. Current-main `56d7117` backlog export
-reference and E10-S01 estimate 8 are preserved. Task 18 generated CAA 211026 and
-the byte-identical legacy workbook; all 376 IDs/results stay unchanged. Only
-three preconditions change. This lane doesn't duplicate #311's hold correction:
-#311 remains on #298's feature base and needs that reviewed path to main. The
-independent cancellation/human/T-93/PO hold remains.
-
-Fresh repository checks passed 158 tooling tests and delivery-file hooks. First
-120-second attempt timed out during secret scanning; longer retry completed.
-No runtime code changed: app tests/build and unit coverage are N/A. This draft
-follows the policy branch so source-of-truth retains the policy BDR export and
-main backlog reference. Human fixture review and execution remain pending. Five
-contradictory double-booking cases stay blocked; no result or guard is weakened.
+Reconciled review feedback from Aaron (@Bl0oper) for PR #332:
+- Restored `CONTRIBUTING.md` and historical `PROJECT TEST CASES CAA 241026.xlsx` to match `main`.
+- Reconciled TC_E06S06_04 precondition with `main`'s post-#339 text, adding only "before either booking is created".
+- Updated TC_E05S05_03 precondition and `E05-S05-click-through.md` to state Setup time 30 or less (the recorded run used 30) and Turnaround time 0 before either booking is created.
+- Exported fresh `PROJECT TEST CASES CAA 271026.xlsx`, synchronized `PROJECT TEST CASES.xlsx`, and regenerated `docs/testing/tc-coverage.md`.
+- Updated landing path directly to `main` (branch base is `main`).
+- Only human code/docs review approval remains for landing.

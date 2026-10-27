@@ -103,7 +103,7 @@ bypassing booking guards. Record its starting buffers, booking periods and setup
 method. That setup alone doesn't invalidate a calendar, search or conflict
 consumer check. It never proves the venue-form edit/save action: execute that
 action in the browser when the case requires it. For TC_E05S05_03, create both
-bookings with setup and turnaround at 0, then change turnaround to 45 through
+bookings with setup 30 or less (the recorded run used 30) and turnaround at 0, then change turnaround to 45 through
 the venue form. Don't insert already-overlapping active bookings.
 
 Once those prerequisites exist, record only observed results under T-65 using
