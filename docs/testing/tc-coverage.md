@@ -1208,6 +1208,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - leaving the form while registering drops the late reply
 - a full event with its waiting list off offers only a request for review, on the event page too
 - a Pending request is described as waiting for the organiser, on the event page and the form
+- a waitlisted registration is described consistently on the event page and form
 
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 

@@ -117,15 +117,7 @@ export function EventDetail() {
       ) : null}
       {form ? (
         <>
-          {form.registration?.status === 'pending' ? (
-            <Alert tone="warning" title="Your request is waiting for the organiser">
-              Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
-            </Alert>
-          ) : form.registration ? (
-            <Alert tone="success" title="You're registered for this event">
-              Your Sessions are marked below. A confirmation is in your notifications.
-            </Alert>
-          ) : null}
+          {form.registration ? <RegistrationAlert status={form.registration.status} /> : null}
           {!form.registration && form.event.registrationState === 'open' ? <FullNotice form={form} /> : null}
           <Card title="Event"><EventFacts event={form.event} /></Card>
           <Card title="Sessions">
@@ -162,6 +154,25 @@ function FullNotice({ form }: { form: RegistrationForm }) {
         : 'You can still send a registration request. The organiser reviews requests over capacity.'}
     </Alert>
   );
+}
+
+// Keep the event banner aligned with the registration status. Capacity remains
+// handled by FullNotice and the form below; this status banner is only for an
+// existing registration (including a waitlisted one).
+function RegistrationAlert({ status }: { status: string }) {
+  if (status === 'pending') {
+    return <Alert tone="warning" title="Your request is waiting for the organiser">
+      Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
+    </Alert>;
+  }
+  if (status === 'waitlisted') {
+    return <Alert tone="info" title="You're on the waiting list">
+      We'll let you know if a place comes up. Your Sessions are marked below.
+    </Alert>;
+  }
+  return <Alert tone="success" title="You're registered for this event">
+    Your Sessions are marked below. A confirmation is in your notifications.
+  </Alert>;
 }
 
 function ClosedNotice({ form }: { form: RegistrationForm }) {
@@ -201,7 +212,9 @@ function RegistrationBody({ form }: { form: RegistrationForm }) {
     return (
       <>
         <Alert tone="info" title={already.status === 'pending'
-          ? 'You already have a request waiting for the organiser' : "You're already registered for this event"}>
+          ? 'You already have a request waiting for the organiser'
+          : already.status === 'waitlisted' ? "You're already on the waiting list for this event"
+          : "You're already registered for this event"}>
           You can only have one active registration for an event, so nothing was changed.
           {chosen.length ? ` Your Sessions: ${chosen.map(session => sessionName(session, form.sessions.indexOf(session))).join(', ')}.` : ''}
         </Alert>
