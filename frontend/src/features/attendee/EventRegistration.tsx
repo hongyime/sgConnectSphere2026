@@ -113,11 +113,7 @@ export function EventDetail() {
       ) : null}
       {form ? (
         <>
-          {form.registration ? (
-            <Alert tone="success" title="You're registered for this event">
-              Your Sessions are marked below. A confirmation is in your notifications.
-            </Alert>
-          ) : null}
+          {form.registration ? <RegistrationAlert status={form.registration.status} /> : null}
           <Card title="Event"><EventFacts event={form.event} /></Card>
           <Card title="Sessions">
             {form.sessions.length > 0
@@ -137,6 +133,35 @@ export function EventDetail() {
     </PageLayout>
   );
 }
+
+// The banner follows the registration's status, like the pill (MY_STATUS): only
+// a registered Attendee is told they're registered (Aaron's review on #327).
+function RegistrationAlert({ status }: { status: string }) {
+  if (status === 'pending') {
+    return (
+      <Alert tone="warning" title="Your request is waiting for the organiser">
+        Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
+      </Alert>
+    );
+  }
+  if (status === 'waitlisted') {
+    return (
+      <Alert tone="info" title="You're on the waiting list">
+        We'll let you know if a place comes up. Your Sessions are marked below.
+      </Alert>
+    );
+  }
+  return (
+    <Alert tone="success" title="You're registered for this event">
+      Your Sessions are marked below. A confirmation is in your notifications.
+    </Alert>
+  );
+}
+
+const ALREADY: Record<string, string> = {
+  pending: 'You already have a request waiting for the organiser',
+  waitlisted: "You're already on the waiting list for this event",
+};
 
 function ClosedNotice({ form }: { form: RegistrationForm }) {
   if (form.registration || form.event.registrationState === 'open') return null;
@@ -174,7 +199,7 @@ function RegistrationBody({ form }: { form: RegistrationForm }) {
     const chosen = form.sessions.filter(session => already.sessionIds.includes(session.id));
     return (
       <>
-        <Alert tone="info" title="You're already registered for this event">
+        <Alert tone="info" title={ALREADY[already.status] ?? "You're already registered for this event"}>
           You can only have one active registration for an event, so nothing was changed.
           {chosen.length ? ` Your Sessions: ${chosen.map(session => sessionName(session, form.sessions.indexOf(session))).join(', ')}.` : ''}
         </Alert>

@@ -278,3 +278,28 @@ test.each([
   expect(screen.queryByText('Event A')).not.toBeInTheDocument();
   expect(screen.queryByText('Event A failed')).not.toBeInTheDocument();
 });
+
+// Aaron's review on #327: the banner follows the registration's status, like the pill.
+test.each([
+  ['registered', "You're registered for this event", 'Registered'],
+  ['waitlisted', "You're on the waiting list", 'On the waiting list'],
+  ['pending', 'Your request is waiting for the organiser', 'Pending review'],
+])('the event page banner matches a %s registration', async (status, banner, pill) => {
+  const registration = { id: 'r-1', status, registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+  renderAt('/attendee/discover/EVT-9001', { [FORM_URL]: { body: form({ registration }) } });
+  expect(await screen.findByText(banner)).toBeInTheDocument();
+  expect(screen.getAllByText(pill).length).toBeGreaterThan(0);
+  for (const other of ["You're registered for this event", "You're on the waiting list", 'Your request is waiting for the organiser'].filter(text => text !== banner)) {
+    expect(screen.queryByText(other)).not.toBeInTheDocument();
+  }
+});
+
+test.each([
+  ['registered', "You're already registered for this event"],
+  ['waitlisted', "You're already on the waiting list for this event"],
+  ['pending', 'You already have a request waiting for the organiser'],
+])('the form names an existing %s registration correctly', async (status, title) => {
+  const registration = { id: 'r-1', status, registeredAt: '2027-03-01T02:00:00.000Z', sessionIds: ['s-a'] };
+  renderAt('/attendee/register/EVT-9001', { [FORM_URL]: { body: form({ registration }) } });
+  expect(await screen.findByText(title)).toBeInTheDocument();
+});
