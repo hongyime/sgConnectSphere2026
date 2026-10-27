@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **378**
-- Automated (explicit TC_ID in an active test title): **236** (62.4%)
-  - Real-database (`.integration.test` / `.db.test`): **36**
+- Automated (explicit TC_ID in an active test title): **246** (65.1%)
+  - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **199**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **106** (28.0%)
-- No test yet (no test file mentions the TC_ID): **36** (9.5%)
+  - Live-assertion (other active tests): **208**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **97** (25.7%)
+- No test yet (no test file mentions the TC_ID): **35** (9.3%)
 
 ## Coverage by epic
 
@@ -22,16 +22,16 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
-| E05 | 39 | 30 | 9 | 0 |
+| E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 44 | 11 | 24 | 9 |
-| E10 | 29 | 9 | 12 | 8 |
+| E09 | 44 | 10 | 26 | 8 |
+| E10 | 29 | 12 | 9 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **378** | **236** | **106** | **36** |
+| **Total** | **378** | **246** | **97** | **35** |
 
 ## Case-by-case status
 
@@ -208,7 +208,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
 | `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
 | `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable for those dates; tests/e2e/e05.spec.ts: TC_E05S04_01 - Verif |
-| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02: a block over a confirmed booking is refused and names the booking; tests/e2e/e05.spec.ts: TC_E05S04_02 - Verify |
+| `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; tests/e2e/e05.spec.ts: TC_E05S0 |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
 | `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail; tests/e2e/e05.spec.ts: TC_E05S05_01 — Verify th |
@@ -218,14 +218,14 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently; tests/e2e/e05.spec. |
 | `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private; backend/tes |
-| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_01 — Verify that marking a venue unavailable with a reason category over a period with no bookings should save and show the period as Blocked |
-| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_02 — Verify that marking a venue unavailable over a Pending request and a Confirmed booking should mark both Conflicting, list the affected events  |
-| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_03 — Verify that each Coordinator whose booking became Conflicting should receive an in-app and email notification naming the venue, period, reason |
-| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_04 — Verify that an unavailability with no end date and time should be saved as open-ended and stay in force until lifted |
-| `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_05 — Verify that extending an unavailability should flag bookings newly inside the longer period and that shortening it should clear the flag on bo |
-| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
-| `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_07 — Verify that editing and lifting an unavailability should keep a history of each change and notify the affected Coordinator when it is lifted |
-| `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S06_08 — Verify that marking a venue unavailable over an unexpired tentative hold should flag the hold Conflicting without releasing it, tell its Coord |
+| `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_01: marking a free period unavailable with a reason category saves it and shows the period as Blocked; tests/e2e/e0 |
+| `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; backend/tests/venueUnavailabili |
+| `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period |
+| `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted; tests/e2e/e05.spec.ts: TC |
+| `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_05: extending by one minute over a booking flags it, and ending at its start again restores it; tests/e2e/e05.spec. |
+| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_06: E05-S04; tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
+| `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_07: editing and lifting keep a history, the lifted block is kept, and its Coordinator is told on lift; tests/e2e/e0 |
+| `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_08: an unexpired tentative hold is flagged without being released, its Coordinator told, and restored on lift; test |
 
 ### E06
 
@@ -356,13 +356,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E09S01_01` | E09-S01 | Submitting an open Event registration should reserve one place in each selected  | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent creates one registration with the selected Sessions and a confirmation (TC_E09S01_01, _07); tests/e2e/attendee-registra |
 | `TC_E09S01_02` | E09-S01 | [RETIRED — T-79 restores Sessions under one Event; selecting Sessions is covered | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event |
-| `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ✅ active | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate; frontend/src/feat |
+| `TC_E09S01_03` | E09-S01 | A second active registration for the same account and Event should be prevented | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_03 - Verify that attempting to register again for a event already registered for should be told so, without creating a duplicate |
 | `TC_E09S01_04` | E09-S01 | Verify that submitting registration with a required field empty should block reg | ✅ active | backend/tests/attendeeRegistration.test.ts: missingDetails names every blank or missing account detail (TC_E09S01_04, T-32); tests/e2e/e09.spec.ts: TC_E09S01_04 - Verify that submi |
 | `TC_E09S01_05` | E09-S01 | Verify that attempting to register for an event that is not Confirmed should be  | ✅ active | backend/tests/attendeeRegistration.test.ts: getRegistrationForm refuses unconfirmed, unknown and registration-free events (TC_E09S01_05); tests/e2e/e09.spec.ts: TC_E09S01_05 - Veri |
-| `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ✅ active | tests/e2e/e09.spec.ts: TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue; frontend/src/features/attendee/EventRegistration.test.t |
-| `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_07 — one submission creates one Event registration with both Sessions; frontend/src/features/attendee/EventRegistration.test.tsx: |
-| `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ❌ none | — |
-| `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ❌ none | — |
+| `TC_E09S01_06` | E09-S01 | The Event summary should show its primary venue while selected Sessions show the | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue |
+| `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ❌ none | — |
+| `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_01 — registration confirms with a mock success on submit |
+| `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S02_02 — full event routes registration into a waitlist join |
 | `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Verify that when only one place remains, two simultaneous registration attempts should result in exactly one success |
 | `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_04 - Verify that opening the registration page for a full event should close registration and offer the waiting list where enabled |
 | `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_06 - Verify that a VIP can be added manually when normal registration is full but venue capacity is not reached |
@@ -429,9 +429,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
-| `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue se |
-| `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking |
-| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_04 — Verify that the Organiser and registered Attendees should be notified of the venue change only when the replacement is confirmed, not when the |
+| `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
 
 ### E11
 
@@ -928,10 +928,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateBlockInput requires a reason (E05-S04 checklist: recorded reason)
 - validateBlockInput rejects malformed, impossible and reversed dates
 - validateBlockInput makes the reason optional only when shortening
+- validateUnavailabilityInput reads a timed, categorised period with a note
+- validateUnavailabilityInput leaves the end open when it is missing, null or empty, and the note optional
+- validateUnavailabilityInput reads the E05-S04 whole-day form as maintenance
+- validateUnavailabilityInput refuses a missing object, bad times, a reversed or zero-length period, an unknown category and a bad note
 - block changes require a signed-in Venue Staff member
 - listing blocks is limited to the venue catalogue roles
 - invalid input is rejected before a transaction opens
-- createVenueBlock compares maintenance blocks against the raw advertised booking range, not the buffered window
+- createVenueBlock finds affected bookings on the raw advertised booking range, not the buffered window (T-80)
 
 ### `backend/tests/venueBookingDecisions.integration.test.ts`
 
@@ -974,6 +978,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection without a suggested venue says nothing about an alternative
 - a clash names a pending booking or a hold, with or without an event code
 - an approval over a maintenance block is blocked and names the block
+- an approval over an open-ended unavailability says it lasts until lifted (E05-S06, T-80)
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
@@ -1000,6 +1005,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - parseCalendarRange lists every Singapore day in an inclusive range
 - parseCalendarRange rejects missing, malformed, impossible, reversed and oversized ranges
 - an unassigned event is Unavailable to every Coordinator but visible to Venue Staff
+- a Conflicting booking shows inside the Blocked period with its unavailability category
 - Free periods skip overlapping bookings and blocks and stay within opening hours
 - a retired venue shows its bookings and blocks but no Free period
 - a day fully covered by a block has no Free period
@@ -1089,6 +1095,33 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - missing identifiers and invalid event requirements are rejected
 - missing/draft event and missing/retired venue return not found
 
+### `backend/tests/venueUnavailability.integration.test.ts`
+
+- Scenario 5: removing the end of an unavailability flags bookings far in the future
+- Scenario 6: a restored hold whose expiry passed meanwhile becomes Expired, and a replaced booking stays Conflicting
+- Scenarios 6 and 7: lifting tells the Coordinator of a replaced booking, which stays Conflicting, and never restores a cancelled one
+- #348 review: lifting the first of two unavailabilities over a booking keeps it Conflicting under the second, and lifting the second restores it
+- #348 review: lifting the second of two unavailabilities over a booking leaves it Conflicting, and lifting the first restores it
+- #348 review: shortening the first of two unavailabilities off a booking hands it to the second
+- Scenario 6 with a primary booking: editing over it and lifting restore it Confirmed and still primary
+
+### `backend/tests/venueUnavailability.test.ts`
+
+- Scenarios 2 to 4: creating flags every overlapping booking and hold, returns only the Confirmed event to Planning and tells each Coordinator once
+- Scenarios 1 and 5: an open-ended unavailability without a note says
+- creating refuses invalid input before a transaction, an overlapping unavailability, and an unknown venue
+- a booking that appears after the first read is locked without waiting, and a busy event asks staff to try again
+- Scenarios 5 to 7: editing restores bookings it no longer covers, skips replaced ones, flags new ones and keeps history
+- editing needs a start, valid input and a free period, and does not hide other restore errors
+- E05-S04 shorten still only shortens, keeps the category and note, and now restores what it releases
+- Scenarios 6 and 7: lifting keeps the block, restores what it flagged and tells every affected Coordinator once
+- #348 review: a booking another unavailability still covers is handed to it, not restored
+- E05-S04 remove now lifts and keeps its reply; a lifted or unknown block is not found
+- the block list shows an open-ended block with no end and hides lifted ones in its query
+- Scenario 7: on request the block list keeps lifted blocks, marked lifted with who lifted them, for Venue Staff only
+- Scenario 7: block history returns each create, edit and lift with the earlier and new period, category, note, actor and time
+- Scenario 3 support: applyEventStatusChange can skip the generic notices and the audience read
+
 ### `backend/tests/venueUnavailabilitySchema.integration.test.ts`
 
 - a block written the pre-0025 way still saves, as maintenance and active
@@ -1140,18 +1173,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - submits the four required fields as JSON and shows the success message on 201
 - marks the offending field aria-invalid when the server returns a 400 error
 - disables the submit button while the request is in flight
-
-### `frontend/src/features/attendee/EventRegistration.test.tsx`
-
-- windowText and missingMessage describe the window and missing details in plain words
-- Discover lists open events with the registration state and links to each event
-- Discover shows an empty state and a retryable error
-- the event page marks a registered Attendee’s Sessions and explains a closed or unopened window
-- choosing no Session blocks registration without calling the server
-- every blank account detail reads Missing, and a Session without a venue says so
-- the server’s missing-details refusal is shown when the form had none missing
-- an existing registration, a closed window and other refusals are shown before or after submitting
-- leaving the form while registering drops the late reply
 
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 
@@ -1224,6 +1245,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the card is not shown before approval, so no support request is loaded
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
 - the notified sentence handles none, one and several
+
+### `frontend/src/features/coordinator/VenueConflictFlag.test.tsx`
+
+- no flag when no booking is Conflicting
+- a refused booking list shows no flag and no error
+- an event past the stages where a venue can be lost does not ask for its bookings
 
 ### `frontend/src/features/coordinator/VenueHolds.test.tsx`
 
@@ -1441,7 +1468,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the approval message falls back when the Coordinator name is missing
 - when the venue list cannot load, the reason can still be sent without a suggestion
 - a request that is no longer pending has nothing to decide
+- E05-S06: a Conflicting booking says the venue was marked unavailable and offers no decision
 - an unknown request on the decision page shows the server message
+
+### `frontend/src/features/venue/LostVenueRecovery.test.tsx`
+
+- empty recovery uses shared state
 
 ### `frontend/src/features/venue/TentativeHolds.test.tsx`
 
@@ -1453,7 +1485,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/venue/VenueBlockout.test.tsx`
 
-- removing a block goes through ConfirmPanel and reloads the list on success
+- the end needs both a date and a time, and must be after the start, before any POST is sent
+- server field errors show next to their fields, and other failures show the server message
+- an overlap with another unavailability is refused and names that unavailability
+- removing the end of an unavailability makes it open-ended, and Cancel closes the edit form (Scenario 5)
+- an edit that would overlap another unavailability is refused and names it
+- lifting goes through ConfirmPanel, lists the restored bookings and reloads the list (Scenario 6)
+- an open-ended unavailability lists as until lifted, edits with an empty end, and lifts with nothing to restore (T-80)
+- a lift in flight is sent only once, even if the confirmation is submitted again
+- a failed lift shows the server message and closes the confirmation
+- a lifted row with no recorded lifter, a block with no history yet, and an open-ended entry with no category read clearly
+- a history that fails to load offers Try again
 - loading state renders while blocks are in flight
 - client validation refuses an empty form before any POST is sent
 
@@ -1474,6 +1516,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - existing replacement or ineligible event suppresses the suggested-venue action
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
+- E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1485,6 +1528,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - loads the current month for the first venue
 - labels free, tentative, confirmed and blocked entries distinctly
 - shows a maintenance block with its reason and never as a booking
+- E05-S06 Scenario 1: a Blocked period shows its reason category before the note
+- E05-S06 Scenario 2: a Conflicting booking stays visible inside the Blocked period with its own label and the reason
+- E05-S06: the legend lists all six states, Conflicting included
+- E05-S06 Scenario 1 (T-80): an open-ended block, clipped by the server to the range, shows as Blocked on every day
 - shows an unavailable period without any event details
 - expands a permitted booking to show event, code, date and time
 - navigates to the next month and then to a custom range
@@ -1514,6 +1561,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - request form is available only for Approved or Planning assessments
 - shows server error and retry recovers
 - route change discards a late result for the previous venue
+
+### `frontend/src/features/venue/blocksApi.test.ts`
+
+- every reason category has a label (Scenario 1)
+- createUnavailability sends the timed body and returns the affected events (Scenarios 1 and 2)
+- an empty end is sent as null so the venue stays unavailable until lifted (Scenario 5)
+- createUnavailability keeps field errors and replaces a network failure with a service message
+- editUnavailability sends edit_block and returns flagged and restored events (Scenarios 5 and 6)
+- liftUnavailability sends lift_block and returns the restored events (Scenario 6)
+- getBlockHistory reads one block history and refuses safely (Scenario 7)
+- listBlocks asks for lifted blocks only when requested (Scenario 7)
+- listBlocks passes a refusal through and reads a reply without a list as empty; overlappingBlocks does the same
 
 ### `frontend/src/features/venue/calendarDates.test.ts`
 
@@ -1624,7 +1683,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - keyboard focus outline is visible against the page (WCAG 3:1)
 - decision page /coordinator/events/EVT-C01/decide is one centred column
-- register page /attendee/register/EVT-TECH is one centred column
 - fields side by side keep their controls level when only one has a hint
 
 ### `tests/e2e/organiser.spec.ts`
