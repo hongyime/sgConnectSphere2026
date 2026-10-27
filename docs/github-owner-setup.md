@@ -36,11 +36,11 @@ Reviewable payloads:
   merges, PR title/body as squash message, delete merged branches, allow updating
   feature branches, and enable issues.
 - [Main ruleset](../.github/settings/main-ruleset.json): require the repository
-  checks, one approval, stale-approval dismissal, resolved conversations, linear
-  history and a merge queue (squash, all-green grouping, 30-minute check
-  timeout, groups of up to five); disallow force pushes/deletion; no bypass
-  actors (rules apply to everyone including admins). Branches need not be up
-  to date with `main`; the queue tests each PR against the latest `main`.
+  checks, `pr-guardrails`, `test-evidence`, one approval, stale-approval dismissal, resolved
+  conversations, linear history and a merge queue (squash, all-green grouping,
+  30-minute check timeout, groups of up to five); disallow force pushes/deletion;
+  no bypass actors (rules apply to everyone including admins). Branches need not
+  be up to date with `main`; the queue tests each PR against the latest `main`.
 
 ### Order of operations when the ruleset payload changes CI behaviour
 
@@ -53,6 +53,17 @@ Merge the workflow PR, wait for the required checks on the new `main` commit,
 then run `--apply`. The script's own pre-check (all required checks green on
 the current `main`) enforces the second half of that order; the first half is
 yours. See [decision 0012](decisions/0012-merge-queue.md).
+
+Before applying the ruleset, backfill the new checks for any already-open PRs
+that will remain in flight. In Actions, run **PR guardrails** with
+`workflow_dispatch` for each PR and provide its number, base SHA and head SHA.
+The workflow validates that requested head and publishes explicit
+`pr-guardrails` and `test-evidence` check runs on that PR head; the dispatch
+job's own check runs are only audit records on the selected workflow ref. This
+avoids pushing an empty commit and therefore avoids dismissing a valid
+approval. Verify the check runs appear on the PR head before applying the
+ruleset. If the team chooses not to backfill, wait until those in-flight PRs
+have merged or closed before applying the new required checks.
 
 The historical classic-protection payload is preserved at
 `.github/settings/main-protection.json` for reference but is no longer used by
@@ -74,7 +85,8 @@ disabling these protections for later work.
 
 ## Verify enforcement
 
-Open a small PR from a correctly named branch. Confirm the required checks run.
+Open a small PR from a correctly named branch. Confirm the required checks,
+including `pr-guardrails`, run.
 Change its title to an invalid title and verify `pr-conventions` fails, then
 correct it and verify it reruns successfully. Make a check fail and confirm merge
 is blocked. Confirm an otherwise green PR still needs another person's approval.

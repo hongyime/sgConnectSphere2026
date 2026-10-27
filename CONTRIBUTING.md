@@ -91,9 +91,33 @@ Branch protection still dismisses approvals after new commits, so finish your
 own changes before asking for review. You no longer have to merge `main` in
 first; that was the step that forced repeat approvals in Sprint 2.
 
-Required checks are `repository-checks`, `pr-conventions`, `lfs-guard` and
-`application-checks`. They run on the PR and again on its queue merge commit.
+Required checks are `repository-checks`, `pr-conventions`, `lfs-guard`,
+`application-checks`, `pr-guardrails`, and `test-evidence`. They run on the PR
+and again on its queue merge commit.
 See [the owner setup](docs/github-owner-setup.md) for the exact GitHub settings.
+
+The `pr-guardrails` check keeps integration work small and protects professor
+reference material. New PRs are limited to 40 changed files, 1,800 additions,
+and 1,500 deletions; the repository allows at most 10 open PRs and 2 open PRs
+per author. The team-wide cap is intentionally lower than six members times two:
+it is a queue cap, not a promise that every member may hold two PRs at once.
+PRs opened before the policy date are grandfathered; they do not consume the
+new WIP budget, and later PRs cannot change an earlier PR's count. If a PR's
+count changes because another PR closes, rerun its failed check from Actions.
+Existing `.docx`, `.pdf`, `.xlsx`, and `.pptx` files under
+`docs/bdr/customer-sources/` are read-only: a PR may add a new uniquely named
+source file there, but may not modify, delete, or rename one already in the
+repository. Generated exports elsewhere under `docs/` remain writable through
+their generators. The check is required by the `main-protection` ruleset after
+this workflow has landed on `main`.
+Dependabot PRs are excluded from the WIP counts because they are automated
+dependency maintenance rather than team-owned work.
+
+The author resolves merge conflicts and the reviewer approves the final commit.
+If the reviewer resolves a conflict, another teammate reviews that new commit.
+The weekly cleanup workflow reports drafts unchanged for more than seven days.
+The PR author is the default owner when no explicit assignee is set; the report
+does not close or reassign work automatically.
 
 The initial empty-repository bootstrap is pushed directly to `main`. Local hooks
 allow `main` with a notice; enforced direct-push prevention belongs to GitHub.
