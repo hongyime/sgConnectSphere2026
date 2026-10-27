@@ -43,8 +43,10 @@ Build E09-S05 "Withdraw my registration" (SCRUM-67) as one full-stack PR: backen
 
 - Regenerate the test-case workbook on the PR's day (today's dated file
   already exists on `main`), copy it over the undated one.
-- Preconditions SQL for the manual run, then Aaron's manual run
-  (TC_E09S05_01 to _05), T-65 records, `tc-coverage.md` last, then the PR.
+- Aaron's manual run (TC_E09S05_01 to _05) with
+  `docs/testing/manual/E09-S05-preconditions.sql` and the click-through
+  script in `docs/plans/scrum-67-implementation-status.md`; T-65 records;
+  `tc-coverage.md` last; then the PR.
 
 ## Blockers
 
