@@ -19,7 +19,9 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUNS_DIR = ROOT / "docs" / "testing" / "runs"
+GIT_ROOT = ROOT
+CONTENT_ROOT = ROOT
+RUNS_DIR = CONTENT_ROOT / "docs" / "testing" / "runs"
 MAX_SCREENSHOT_BYTES = 1000 * 1024
 SCREENSHOT_SUFFIXES = {".jpg", ".jpeg", ".png"}
 FRONTMATTER_RE = re.compile(r"\A---\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)", re.DOTALL)
@@ -130,11 +132,11 @@ def changed_files(*, staged: bool, base: str | None, head: str | None) -> list[t
         if not base or not head:
             raise ValueError("--base and --head are required outside staged mode")
         merge_base = subprocess.check_output(
-            ["git", "merge-base", base, head], cwd=ROOT, text=True
+            ["git", "merge-base", base, head], cwd=GIT_ROOT, text=True
         ).strip()
         command = ["git", "diff", "--name-status", "--find-renames", merge_base, head]
     command.extend(["--", "docs/testing/runs"])
-    output = subprocess.check_output(command, cwd=ROOT, text=True)
+    output = subprocess.check_output(command, cwd=GIT_ROOT, text=True)
     return parse_diff(output)
 
 
@@ -143,14 +145,14 @@ def exists_in_merge_base(path: str) -> bool:
 
     try:
         merge_base = subprocess.check_output(
-            ["git", "merge-base", "HEAD", "origin/main"], cwd=ROOT, text=True
+            ["git", "merge-base", "HEAD", "origin/main"], cwd=GIT_ROOT, text=True
         ).strip()
     except (OSError, subprocess.CalledProcessError):
         return True
     try:
         subprocess.run(
             ["git", "cat-file", "-e", f"{merge_base}:{path}"],
-            cwd=ROOT,
+            cwd=GIT_ROOT,
             check=True,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -174,7 +176,7 @@ def atomicity_errors(changes: Iterable[tuple[str, list[str]]], *, staged: bool) 
             continue
         for path in paths:
             if RECORD_RE.fullmatch(path):
-                added_records.append(ROOT / path)
+                added_records.append(CONTENT_ROOT / path)
 
     for record in added_records:
         errors.extend(evidence_errors(record))
@@ -195,7 +197,16 @@ def main() -> int:
     parser.add_argument("--base")
     parser.add_argument("--head")
     parser.add_argument("--merge-group", action="store_true")
+    parser.add_argument(
+        "--content-root",
+        help="Read changed test-run records from this checkout while using the current Git repository for the diff",
+    )
     args = parser.parse_args()
+
+    global CONTENT_ROOT, RUNS_DIR
+    if args.content_root:
+        CONTENT_ROOT = Path(args.content_root).resolve()
+        RUNS_DIR = CONTENT_ROOT / "docs" / "testing" / "runs"
 
     if args.merge_group:
         print("Test evidence: each queued PR was validated before entering the merge group")

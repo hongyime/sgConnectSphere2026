@@ -36,14 +36,20 @@ commit: 1234567
 class EvidenceTests(unittest.TestCase):
     def setUp(self):
         self.original_root = MODULE.ROOT
+        self.original_git_root = MODULE.GIT_ROOT
+        self.original_content_root = MODULE.CONTENT_ROOT
         self.original_runs_dir = MODULE.RUNS_DIR
         self.temp = tempfile.TemporaryDirectory()
         MODULE.ROOT = Path(self.temp.name)
+        MODULE.GIT_ROOT = MODULE.ROOT
+        MODULE.CONTENT_ROOT = MODULE.ROOT
         MODULE.RUNS_DIR = MODULE.ROOT / "docs" / "testing" / "runs"
         MODULE.RUNS_DIR.mkdir(parents=True)
 
     def tearDown(self):
         MODULE.ROOT = self.original_root
+        MODULE.GIT_ROOT = self.original_git_root
+        MODULE.CONTENT_ROOT = self.original_content_root
         MODULE.RUNS_DIR = self.original_runs_dir
         self.temp.cleanup()
 
