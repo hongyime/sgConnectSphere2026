@@ -40,3 +40,8 @@ Goal: the screens for E05-S06 "Mark a venue temporarily unavailable over existin
 - The timed form replaces E05-S04's whole-day form. No decision, design note or case asks to keep both; a whole day is still entered as 00:00 to 00:00 the next day. TC_E05S06_06 (E05-S04 regression on free periods) still applies.
 - The note is required on the form although the backend accepts an empty one: Scenario 1 marks only the end as optional and saves "the period, the category, the note"; TC_E05S06_01 enters one; a note explains "Other". The page title and menu label stay "Maintenance blocks" for now.
 - The history view is in scope: T-91 names the UI, the Figma refinement plan says "show history and actor", and TC_E05S06_07 opens it.
+
+## 27 Oct: main merged after #348, check.py fixed on Windows
+
+- `1141ffd`: merged `main` after #348 was squash-merged. Conflicts: `blocksApi.ts` (comment only, kept this branch's header) and `tc-coverage.md` (regenerated).
+- `69bb234`: `tooling/tests/test_worktree_hygiene.py` now passes on Windows: OS-specific path in the expected `git worktree remove` call, and symlink fixtures skip on WinError 1314. `python scripts/check.py` passes locally (163 tests, 11 skipped); record `docs/testing/runs/20261027-101814-lexinphun2024-debug-tooling.md`.
