@@ -2,6 +2,7 @@
 // The API is stubbed; these check presentation only.
 import { expect, test, type Page } from '@playwright/test';
 import { signInAs } from './helpers/fakeSession';
+import { fakeRegistrationBackend } from './helpers/registrationBackend';
 
 const venue = { id: 'V-01', name: 'Grand Ballroom', location: 'Level 1', max_capacity: 300, opens_at: '08:00',
   closes_at: '22:00', facilities: [], accessibility_features: [], supported_layouts: [] };
@@ -46,7 +47,7 @@ test('keyboard focus outline is visible against the page (WCAG 3:1)', async ({ p
 });
 
 const singleFormPages = [
-  '/attendee/register/EVT-A01', '/attendee/withdraw/EVT-A01', '/attendee/feedback/EVT-A01',
+  '/attendee/withdraw/EVT-A01', '/attendee/feedback/EVT-A01',
   '/venue/inventory/new', '/venue/inventory/V-01/edit', '/admin/users/U-01/role',
 ];
 
@@ -68,6 +69,24 @@ test('decision page /coordinator/events/EVT-C01/decide is one centred column', a
   await page.goto('/coordinator/events/EVT-C01/decide');
   const card = page.locator('main .card').first();
   await expect(card).toBeVisible();
+  const { viewport, cardBox, headingLeft } = await page.evaluate(() => {
+    const box = document.querySelector('main .card')!.getBoundingClientRect();
+    return {
+      viewport: document.documentElement.clientWidth,
+      cardBox: { left: box.left, right: box.right },
+      headingLeft: document.querySelector('main h1')!.getBoundingClientRect().left,
+    };
+  });
+  expect(Math.abs(cardBox.left - (viewport - cardBox.right))).toBeLessThanOrEqual(2);
+  expect(Math.abs(headingLeft - cardBox.left)).toBeLessThanOrEqual(2);
+});
+
+// The register page (E09-S01) is live: its form sits in the narrow PageLayout's
+// card, like the decide page above, so the card is what must be centred.
+test('register page /attendee/register/EVT-TECH is one centred column', async ({ page }) => {
+  await fakeRegistrationBackend(page);
+  await page.goto('/attendee/register/EVT-TECH');
+  await expect(page.locator('main .card form')).toBeVisible();
   const { viewport, cardBox, headingLeft } = await page.evaluate(() => {
     const box = document.querySelector('main .card')!.getBoundingClientRect();
     return {
