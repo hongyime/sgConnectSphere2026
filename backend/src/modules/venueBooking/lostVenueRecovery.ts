@@ -31,7 +31,7 @@ export async function lostVenueRetryParent(client: PoolClient, originalId: strin
 // ancestors; find the nearest still-Conflicting lost booking on this same Event.
 export async function confirmLostVenueReplacement(client: PoolClient, bookingId: string, actorId: string) {
   const pair = (await client.query<{
-    event_id: string; old_id: string; old_venue: string; new_venue: string; was_primary: boolean; new_primary: boolean;
+    event_id: string; old_id: string; old_venue: string; new_venue: string; new_venue_name: string; was_primary: boolean; new_primary: boolean;
   }>(`WITH RECURSIVE ancestors AS (
       SELECT id,event_id,replaces_booking_id,ARRAY[id] AS path FROM venue_bookings WHERE id=$1
       UNION ALL
@@ -39,8 +39,9 @@ export async function confirmLostVenueReplacement(client: PoolClient, bookingId:
       JOIN ancestors a ON p.id=a.replaces_booking_id AND p.event_id=a.event_id WHERE NOT p.id=ANY(a.path)
     )
     SELECT n.event_id,o.id AS old_id,o.venue_id AS old_venue,n.venue_id AS new_venue,
-      o.is_primary AS was_primary,n.is_primary AS new_primary
-    FROM venue_bookings n JOIN ancestors a ON a.event_id=n.event_id JOIN venue_bookings o ON o.id=a.id
+      o.is_primary AS was_primary,n.is_primary AS new_primary,v.name AS new_venue_name
+    FROM venue_bookings n JOIN venues v ON v.id=n.venue_id
+    JOIN ancestors a ON a.event_id=n.event_id JOIN venue_bookings o ON o.id=a.id
     WHERE n.id=$1 AND n.status='confirmed' AND o.status='conflicting'
       AND o.conflict_block_id IS NOT NULL AND o.status_before_conflict IN ('pending','confirmed')
     ORDER BY cardinality(a.path) LIMIT 1 FOR UPDATE OF o`, [bookingId])).rows[0];
@@ -78,7 +79,7 @@ export async function confirmLostVenueReplacement(client: PoolClient, bookingId:
   }
   await notifyEventChange(client, {
     changeId: audit.id, occurredAt: audit.occurred_at, actorId, before, after,
-    change: { kind: 'arrangements', fields: ['venue'] },
+    change: { kind: 'arrangements', fields: ['venue'], venueName: pair.new_venue_name },
   });
 }
 

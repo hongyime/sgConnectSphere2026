@@ -47,3 +47,7 @@ Merge main 7deec73 normally into PR #365. Resolve only .gitignore and generated
 coverage: retain both SCRUM-205 and SCRUM-206 artifact exceptions; regenerate
 inventory from the combined source/workbook. Preserve merged run records and
 screenshots unchanged. No feature code changes or acceptance-state changes.
+
+Main advanced during verification: #367 merged at 657add6 after the first
+resolution 953664b, leaving only generated coverage conflicted again. Merge
+that main update normally and regenerate against the new combined tree.
