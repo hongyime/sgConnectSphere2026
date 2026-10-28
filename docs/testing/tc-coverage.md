@@ -896,6 +896,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - hasInternalSecret: authenticates valid secret via Bearer token in authorization header
 - hasInternalSecret: supports array header values
 - hasInternalSecret: rejects when headers are missing or mismatched
+- eventsHandler and venuesHandler: reject mutating requests from unauthorized origins with 403
 
 ### `backend/tests/sessions.test.ts`
 

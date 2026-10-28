@@ -82,9 +82,9 @@ for (const [path, method, expected, expectedError] of [
   // "without invoking a provider" invariant still holds. PUT stays
   // genuinely unsupported, covering the 405 branch.
   ['api/events.js', 'GET', 401, 'Sign in to continue.'],
-  ['api/events.js', 'POST', 403, 'Request origin not allowed.'],
-  ['api/events.js', 'PATCH', 403, 'Request origin not allowed.'],
-  ['api/events.js', 'DELETE', 403, 'Request origin not allowed.'],
+  ['api/events.js', 'POST', 401, 'Sign in to continue.'],
+  ['api/events.js', 'PATCH', 401, 'Sign in to continue.'],
+  ['api/events.js', 'DELETE', 401, 'Sign in to continue.'],
   ['api/events.js', 'PUT', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'GET', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'POST', 401, 'unauthorized'],
@@ -97,6 +97,14 @@ for (const [path, method, expected, expectedError] of [
     assert.equal(response.body.error, expectedError);
   });
 }
+
+test('compiled api/events.js rejects mutating requests from unauthorized origins with 403', () => {
+  for (const method of ['POST', 'PATCH', 'DELETE']) {
+    const response = invoke('api/events.js', method, { headers: { origin: 'https://evil.attacker.com' } });
+    assert.equal(response.status, 403);
+    assert.equal(response.body.error, 'Request origin not allowed.');
+  }
+});
 
 // GET ?mine=1 dispatches to handleGetMine instead of the default browse
 // branch. Both go through currentUser() (post-ADR-015 unified cookie auth)
@@ -187,13 +195,9 @@ test('compiled venue block history and lifted list require a signed-in actor (E0
 });
 
 // E08-S05 completion dispatch must authenticate before touching PostgreSQL.
-for (const [method, expectedStatus, expectedError] of [
-  ['GET', 401, 'Sign in to continue.'],
-  ['POST', 403, 'Request origin not allowed.'],
-]) test(`completion ${method} refuses unauthorized request before database access`, () => {
-  const response = invoke('api/events.js', method, { url: '/api/events?completion=1&id=COMP-1' });
-  assert.equal(response.status, expectedStatus);
-  assert.equal(response.body.error, expectedError);
+for (const method of ['GET','POST']) test(`completion ${method} refuses a missing session before database access`,()=>{
+ const response=invoke('api/events.js',method,{url:'/api/events?completion=1&id=COMP-1'});
+ assert.equal(response.status,401);assert.equal(response.body.error,'Sign in to continue.');
 });
 test('completion evaluator rejects missing internal credentials in production',()=>{
  const response=invoke('api/cron/outbox-relay.js','GET',{url:'/api/cron/outbox-relay?task=completion'});

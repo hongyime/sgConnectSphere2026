@@ -208,3 +208,25 @@ test('hasInternalSecret: rejects when headers are missing or mismatched', () => 
 
   assert.equal(hasInternalSecret(mismatchedRequest, validSecret), false);
 });
+
+test('eventsHandler and venuesHandler: reject mutating requests from unauthorized origins with 403', async () => {
+  const { default: eventsHandler } = await import('../../api/events.js');
+  const { default: venuesHandler } = await import('../../api/venues/index.js');
+  for (const handler of [eventsHandler, venuesHandler]) {
+    for (const method of ['POST', 'PATCH', 'DELETE']) {
+      let status = 0;
+      let body: unknown;
+      const headers: Record<string, unknown> = {};
+      const res: VercelResponse = {
+        setHeader: (k, v) => { headers[k] = v; },
+        status: c => { status = c; return { json: v => { body = v; } }; },
+        json: v => { body = v; },
+      };
+      await handler({ method, url: '/', headers: { origin: 'https://evil.example.com' }, body: {} } as VercelRequest, res);
+      assert.equal(status, 403);
+      assert.deepEqual(body, { error: 'Request origin not allowed.' });
+      assert.equal(headers['Cache-Control'], 'private, no-store');
+      assert.equal(headers['Vary'], 'Cookie');
+    }
+  }
+});

@@ -27,7 +27,7 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (['POST', 'PATCH', 'DELETE'].includes(request.method || '')) {
-    if (!isAllowedOrigin(request.headers.origin)) {
+    if (request.headers.origin && !isAllowedOrigin(request.headers.origin)) {
       response.setHeader('Cache-Control', 'private, no-store');
       response.setHeader('Vary', 'Cookie');
       sendJson(response, 403, { error: 'Request origin not allowed.' });
