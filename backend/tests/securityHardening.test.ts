@@ -230,3 +230,67 @@ test('eventsHandler and venuesHandler: reject mutating requests from unauthorize
     }
   }
 });
+
+test('eventsHandler registrations: rejects mutating request from unauthorized origin with 403 but allows missing origin header', async () => {
+  const { default: eventsHandler } = await import('../../api/events.js');
+  let status = 0;
+  let body: unknown;
+  const res: VercelResponse = {
+    setHeader: () => {},
+    status: c => { status = c; return { json: v => { body = v; } }; },
+    json: v => { body = v; },
+  };
+
+  // With unauthorized origin -> 403
+  await eventsHandler({
+    method: 'POST',
+    url: '/api/events?registrations=1&id=EVT-TEST',
+    headers: { origin: 'https://evil.example.com' },
+    body: {},
+  } as VercelRequest, res);
+  assert.equal(status, 403);
+  assert.deepEqual(body, { error: 'Request origin not allowed.' });
+
+  // Without origin header -> passes origin check and reaches session auth (401 Sign in to continue.)
+  status = 0;
+  body = undefined;
+  await eventsHandler({
+    method: 'POST',
+    url: '/api/events?registrations=1&id=EVT-TEST',
+    headers: {},
+    body: {},
+  } as VercelRequest, res);
+  assert.equal(status, 401);
+  assert.deepEqual(body, { error: 'Sign in to continue.' });
+});
+
+test('getDatabasePool: evaluates dynamic environment, wraps end idempotently, and drains previous pool on URL change', async () => {
+  const saved = { ...process.env };
+  try {
+    process.env.DATABASE_URL = 'postgres://127.0.0.1:5432/db1';
+    delete process.env.DATABASE_POOLER_URL;
+    const { getDatabasePool } = await import('../src/database/client.js');
+    const pool1 = getDatabasePool();
+    assert.ok(pool1);
+
+    // Same URL returns identical pool instance
+    const pool1Again = getDatabasePool();
+    assert.equal(pool1, pool1Again);
+
+    // Changing target URL creates a new pool and drains previous
+    process.env.DATABASE_URL = 'postgres://127.0.0.1:5432/db2';
+    const pool2 = getDatabasePool();
+    assert.ok(pool2);
+    assert.notEqual(pool1, pool2);
+
+    // Ending pool1 multiple times is idempotent and does not throw
+    await pool1.end();
+    await pool1.end();
+
+    // Ending pool2 multiple times is idempotent
+    await pool2.end();
+    await pool2.end();
+  } finally {
+    process.env = saved;
+  }
+});

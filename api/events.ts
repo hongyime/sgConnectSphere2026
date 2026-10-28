@@ -112,8 +112,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
     if (params.get('attendance') === '1') {
-      await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
-        await currentUser(request), params.get('id') || '', request.body) }));
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { attendance: await recordAttendance(getDatabasePool(), user, params.get('id') || '', request.body) };
+      });
       return;
     }
     if (params.has('changeRequests')) {
@@ -128,7 +130,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return;
     }
     if (params.get('cancellation') === '1') {
-      await respond(response, async () => ({ cancellation: await cancelEvent(getDatabasePool(), await currentUser(request), params.get('id') || '', request.body) }));
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { cancellation: await cancelEvent(getDatabasePool(), user, params.get('id') || '', request.body) };
+      });
       return;
     }
     if (params.get('comment') === '1') {
@@ -180,9 +185,10 @@ async function handleRegistrations(request: VercelRequest, response: VercelRespo
     return;
   }
   await respondWithResult(response, async () => {
-    if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+    if (request.headers.origin && !isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+    const user = await currentUser(request);
     // The same pool as Attendee registration (api/attendee/events.ts), so both lock the Event row alike.
-    return manageRegistrations(getDatabasePool(), await currentUser(request), id, request.body);
+    return manageRegistrations(getDatabasePool(), user, id, request.body);
   });
 }
 

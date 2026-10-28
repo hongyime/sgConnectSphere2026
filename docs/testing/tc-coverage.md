@@ -897,6 +897,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - hasInternalSecret: supports array header values
 - hasInternalSecret: rejects when headers are missing or mismatched
 - eventsHandler and venuesHandler: reject mutating requests from unauthorized origins with 403
+- eventsHandler registrations: rejects mutating request from unauthorized origin with 403 but allows missing origin header
+- getDatabasePool: evaluates dynamic environment, wraps end idempotently, and drains previous pool on URL change
 
 ### `backend/tests/sessions.test.ts`
 

@@ -13,9 +13,10 @@ export function getDatabasePool(): pg.Pool {
     if (!targetUrl || targetUrl === currentConnectionString) {
       return pool;
     }
+    pool.end().catch(() => {});
   }
 
-  if (pool && ((pool as any).ended || (pool as any).ending) && !targetUrl) {
+  if (pool && !targetUrl) {
     return pool;
   }
 
@@ -31,9 +32,10 @@ export function getDatabasePool(): pg.Pool {
     application_name: 'connectsphere-api',
   });
 
-  const originalEnd = pool.end.bind(pool);
-  pool.end = async (...args: any[]) => {
-    if ((pool as any).ended || (pool as any).ending) {
+  const instance = pool;
+  const originalEnd = instance.end.bind(instance);
+  instance.end = async (...args: any[]) => {
+    if ((instance as any).ended || (instance as any).ending) {
       const cb = typeof args[0] === 'function' ? args[0] : undefined;
       if (cb) cb();
       return Promise.resolve();
