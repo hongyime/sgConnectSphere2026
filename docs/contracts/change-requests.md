@@ -155,3 +155,26 @@ Read listing uses a plain Event SELECT, not a retained row lock. Mutations still
 lock Event before request. canSubmit requires both the owning Organiser and an
 assigned Coordinator; history remains readable without one. Approval confirmation
 explains the entire mixed request waits, matching the backend atomic behaviour.
+
+## Refused-edit handoff (SCRUM-205)
+
+The owning Organiser's event edit form keeps post-approval restricted fields
+read-only. Each field's request link opens the existing form with that field
+selected and its current value populated. If approval occurs while an edit
+form is open, a refused PATCH with HTTP 409 and `changeRequestUrl` offers an
+explicit recovery link. The rejected PATCH does not save Event details.
+
+The recovery link accepts only the API's relative `/change-requests/new` route
+for the same Event. Its `event` and `fields` query parameters identify the Event
+and restricted fields. Proposed values travel in router navigation state,
+scoped to that Event, rather than in the URL or persistent local storage.
+Absent/invalid values fall back to the current authenticated read. Unknown
+fields and state for other Events are ignored. Opening a form never submits it:
+the Organiser reviews the proposed value, describes the change and sends it.
+Existing server authorization, lifecycle restrictions and validation still apply.
+Coordinator edit screens do not offer this Organiser-only recovery.
+
+Frontend component and intercepted desktop/mobile browser tests validate this
+handoff. They are not evidence of real-database persistence or human execution.
+Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
+this frontend increment does not close parent SCRUM-70.

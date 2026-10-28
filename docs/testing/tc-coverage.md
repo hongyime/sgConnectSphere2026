@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **265** (69.9%)
+- Automated (explicit TC_ID in an active test title): **266** (70.2%)
   - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **227**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **84** (22.2%)
+  - Live-assertion (other active tests): **228**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **83** (21.9%)
 - No test yet (no test file mentions the TC_ID): **30** (7.9%)
 
 ## Coverage by epic
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 29 | 13 | 3 |
-| E10 | 29 | 12 | 9 | 8 |
+| E10 | 29 | 13 | 8 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **265** | **84** | **30** |
+| **Total** | **379** | **266** | **83** | **30** |
 
 ## Case-by-case status
 
@@ -406,7 +406,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E10S01_01` | E10-S01 | Verify that submitting a change request on an approved or confirmed event should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
-| `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled wit |
+| `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ✅ active | tests/e2e/e10.spec.ts: TC_E10S01_03 - a refused restricted edit carries its proposed attendance into the change-request form; tests/e2e/e10.spec.ts: TC_E10S01_03 - a Confirmed Even |
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/e2e/e10.spec.ts: TC_E10S01_05 - Verify that |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ❌ none | — |
@@ -1342,6 +1342,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
 - registration date inputs describe the validation error after an invalid save
+
+### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
+
+- Editing a refused draft clears its stale recovery link
+- The Coordinator edit form never offers the Organiser-only recovery
+
+### `frontend/src/features/events/changeRequestPrefill.test.ts`
+
+- Field links encode the Event and select only known fields once
+- No offer without an explicit server link or a restricted edit
+- Every restricted field keeps its typed proposed value; unrelated draft keys are ignored
+- Invalid dates do not break the form
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 

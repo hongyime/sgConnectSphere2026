@@ -1,5 +1,6 @@
+import { readChangeRequestPrefill, type ChangeRequestPrefill } from './changeRequestPrefill';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useSearchParams } from 'react-router-dom';
 import {
   Alert, Button, ButtonLink, Card, ConfirmPanel, DataTable, EmptyState, ErrorState,
   FormActions, FormField, FormSection, LoadingState, PageLayout, StatusPill, formatDate, useLoad,
@@ -24,14 +25,25 @@ function dateInput(value: string) {
   return new Date(new Date(value).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 16);
 }
 
+function fieldInput(key: ChangeField, value: ChangeValues[ChangeField]) {
+  if (['startAt', 'endAt', 'withdrawalDeadline'].includes(key) && value) return dateInput(String(value));
+  if (Array.isArray(value)) return value.join(',');
+  if (key === 'registrationDates') {
+    const dates = value as { opensAt: string | null; closesAt: string | null } | undefined;
+    return `${dates?.opensAt ? dateInput(dates.opensAt) : ''}|${dates?.closesAt ? dateInput(dates.closesAt) : ''}`;
+  }
+  return String(value ?? '');
+}
+
 export function ChangeRequests({ coordinator = false }: { coordinator?: boolean }) {
   const { eventCode } = useParams();
   const [params] = useSearchParams();
+  const location = useLocation();
   const identifier = eventCode ?? params.get('event') ?? '';
-  return <RequestPage key={`${coordinator}:${identifier}`} identifier={identifier} coordinator={coordinator} />;
+  return <RequestPage key={`${coordinator}:${identifier}:${location.key}`} identifier={identifier} coordinator={coordinator} params={params} navigationState={location.state} />;
 }
 
-function RequestPage({ identifier, coordinator }: { identifier: string; coordinator: boolean }) {
+function RequestPage({ identifier, coordinator, params, navigationState }: { identifier: string; coordinator: boolean; params: URLSearchParams; navigationState: unknown }) {
   const { result, reload } = useLoad(signal => identifier ? getChangeRequests(identifier, signal)
     : Promise.resolve({ ok: false as const, status: 400, message: 'Choose an Event before requesting a change.' }), [identifier]);
   const view = result.state === 'ready' ? result.data : null;
@@ -47,7 +59,7 @@ function RequestPage({ identifier, coordinator }: { identifier: string; coordina
     {done ? <div ref={success} tabIndex={-1}><Alert tone="success">{done}</Alert></div> : null}
     {view ? <>
       {!active ? <Alert tone="info">This Event is {view.event.status.replaceAll('_', ' ')}. Change requests cannot be submitted or decided.</Alert> : null}
-      {!coordinator && active && view.permissions.canSubmit ? <RequestForm key={view.event.id} view={view} onSent={() => {
+      {!coordinator && active && view.permissions.canSubmit ? <RequestForm key={view.event.id} view={view} prefill={readChangeRequestPrefill(params, navigationState, view.event.id)} onSent={() => {
         setDone('Change request sent for Coordinator review. Current Event details stay unchanged.'); reload();
       }} /> : null}
       <Card title="Recorded change requests">
@@ -59,9 +71,11 @@ function RequestPage({ identifier, coordinator }: { identifier: string; coordina
   </PageLayout>;
 }
 
-function RequestForm({ view, onSent }: { view: ChangeRequestView; onSent: () => void }) {
-  const [selected, setSelected] = useState<ChangeField[]>([]);
-  const [values, setValues] = useState<Partial<Record<ChangeField, string>>>({});
+function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefill: ChangeRequestPrefill; onSent: () => void }) {
+  const [selected, setSelected] = useState<ChangeField[]>(prefill.fields);
+  const [values, setValues] = useState<Partial<Record<ChangeField, string>>>(() => Object.fromEntries(
+    prefill.fields.map(key => [key, fieldInput(key, prefill.changes[key] ?? view.current[key])]),
+  ));
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -72,14 +86,7 @@ function RequestForm({ view, onSent }: { view: ChangeRequestView; onSent: () => 
   useEffect(() => { if (error) { refusal.current?.focus(); refusal.current?.scrollIntoView?.({ block: 'nearest' }); } }, [error]);
   function select(key: ChangeField, checked: boolean) {
     setSelected(current => checked ? [...current, key] : current.filter(field => field !== key));
-    const value = view.current[key];
-    let raw = String(value ?? '');
-    if (['startAt', 'endAt', 'withdrawalDeadline'].includes(key) && value) raw = dateInput(String(value));
-    if (Array.isArray(value)) raw = value.join(',');
-    if (key === 'registrationDates') {
-      const dates = value as { opensAt: string | null; closesAt: string | null } | undefined;
-      raw = `${dates?.opensAt ? dateInput(dates.opensAt) : ''}|${dates?.closesAt ? dateInput(dates.closesAt) : ''}`;
-    }
+    const raw = fieldInput(key, view.current[key]);
     setValues(current => ({ ...current, [key]: raw }));
     setError(null);
   }

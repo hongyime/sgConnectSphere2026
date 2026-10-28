@@ -7,6 +7,8 @@
 // how the Organiser's post-approval restrictions (Scenario 4) will render
 // once the Organiser read exposes these fields.
 import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+import { refusedEditOffer } from './changeRequestPrefill';
 import { Lock, Save } from 'lucide-react';
 import { Alert, Button, FormActions, FormSection } from '../../shared';
 import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
@@ -122,11 +124,12 @@ export function buildPatch(initial: Draft, draft: Draft): { patch: EventPatch; e
   return { patch, errors };
 }
 
-export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, onCancel, intro }: {
+export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, onCancel, intro, offerChangeRequest = false }: {
   eventId: string;
   values: EventEditValues;
   editable: ReadonlySet<EditableField>;
-  lockedNote?: ReactNode;
+  lockedNote?: ReactNode | ((field: EditableField) => ReactNode);
+  offerChangeRequest?: boolean;
   onSaved: (fields: string[]) => void;
   onCancel: () => void;
   intro?: ReactNode;
@@ -135,6 +138,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const [draft, setDraft] = useState<Draft>(initial);
   const [errors, setErrors] = useState<Partial<Record<EditableField, string>>>({});
   const [serverError, setServerError] = useState<string | null>(null);
+  const [changeOffer, setChangeOffer] = useState<ReturnType<typeof refusedEditOffer>>(null);
   const [saving, setSaving] = useState(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
@@ -152,6 +156,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     setDraft(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
     setServerError(null);
+    setChangeOffer(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -165,9 +170,14 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     if (Object.keys(patch).length === 0) return;
     setSaving(true);
     setServerError(null);
+    setChangeOffer(null);
     const result = await updateEventInformation(eventId, patch);
     setSaving(false);
-    if (!result.ok) { setServerError(result.message); return; }
+    if (!result.ok) {
+      setServerError(result.message);
+      setChangeOffer(offerChangeRequest ? refusedEditOffer(result, eventId, patch) : null);
+      return;
+    }
     onSaved(result.fields);
   }
 
@@ -186,7 +196,10 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
         {intro}
       </div>
       {serverError ? (
-        <div ref={alertRef} tabIndex={-1} className="event-edit-alert"><Alert tone="error">{serverError}</Alert></div>
+        <div ref={alertRef} tabIndex={-1} className="event-edit-alert"><Alert tone="error">{serverError}</Alert>
+          {changeOffer ? <p>Your Event details have not changed. Continue with the restricted changes in a request for Coordinator review.{' '}
+            <Link to={changeOffer.to} state={changeOffer.state}>Request a change</Link>
+          </p> : null}</div>
       ) : null}
       {visibleSections.map(section => (
         <FormSection key={section.title} title={section.title}>
@@ -203,7 +216,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
             };
             const lock = locked ? <Lock size={12} aria-hidden="true" /> : null;
             const state = `${error ? ' field-invalid' : ''}${locked ? ' event-edit-locked' : ''}`;
-            const lockedHint = locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{lockedNote}</p> : null;
+            const lockedHint = locked && lockedNote ? <p id={`${id}-locked`} className="field-hint">{typeof lockedNote === 'function' ? lockedNote(spec.field) : lockedNote}</p> : null;
             const errorText = error ? <small id={`${id}-error`}>{error}</small> : null;
             if (spec.field === 'registrationDates') {
               // Two ordinary fields side by side in the section grid, rather

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SCRUM-205 · Recover a refused edit</title>
+<style>body{background:#101820;color:#e6edf3;font:18px/1.6 system-ui;margin:40px auto;max-width:960px;padding:0 24px}h1,h2{color:#63dbc0}section{margin:48px 0}table{border-collapse:collapse;width:100%}td,th{padding:12px;text-align:left;border-bottom:1px solid #344651}svg{width:100%;height:auto}small{color:#b4c6ce}</style>
+<h1>SCRUM-205 · Recover a refused edit</h1>
+<small>E10-S01 Scenario 3 · TC_E10S01_03 · SCRUM-70 is parent context</small>
+<section id="overview"><h2>Keep the attempted change for review</h2>
+<p>After a refused restricted edit, the Organiser can explicitly open Ji Ning's existing change-request form with the field and proposed value already filled.</p>
+<svg viewBox="0 0 900 120" role="img" aria-labelledby="flow-title flow-desc"><title id="flow-title">Refused-edit recovery</title><desc id="flow-desc">The API refuses a restricted edit. The Organiser follows a recovery link to a pre-filled request, then reviews and explicitly submits it.</desc>
+<g fill="#1d3b40" stroke="#63dbc0"><rect x="5" y="20" width="260" height="70" rx="10"/><rect x="320" y="20" width="260" height="70" rx="10"/><rect x="635" y="20" width="260" height="70" rx="10"/></g>
+<g fill="#e6edf3" font-size="20" text-anchor="middle"><text x="135" y="62">Edit refused · 409</text><text x="450" y="62">Open pre-filled request</text><text x="765" y="62">Review, describe, send</text><text x="293" y="62">→</text><text x="608" y="62">→</text></g></svg>
+<p>Confirmed Event fields remain read-only. Their individual links select that field and its current value. Opening either route never submits a request.</p></section>
+<section id="details"><h2>Verified behavior and limits</h2>
+<table><tr><th>Check</th><th>Result</th></tr><tr><td>Full frontend suite</td><td>671 passed</td></tr><tr><td>Focused handoff / helper slice</td><td>90 passed; helper coverage 100%</td></tr><tr><td>Desktop and mobile browser checks</td><td>6 passed, intercepted API fixtures</td></tr><tr><td>Frontend typecheck and build</td><td>Passed</td></tr></table>
+<p>Proposed values travel in Event-scoped navigation state, outside the URL and persistent browser storage. The helper accepts only the server's explicit 409 offer for the same Event. Unknown fields, external URLs and malformed or cross-Event drafts are ignored. Existing submit permissions, terminal-state restrictions and server validation remain authoritative. Coordinator edit screens retain ordinary errors.</p>
+<p>Four committed screenshots are labelled automated fixture output in the immutable frontend/e2e record. They do not prove database persistence or human acceptance. No backend, API, migration or dependency change.</p></section>
+<section id="next-steps"><h2>Review and acceptance</h2><ol><li>Obtain independent human code/test review and passing final-head CI.</li><li>Execute and record the canonical human TC_E10S01_03 flow.</li><li>Merge this frontend increment; keep parent SCRUM-70 open until its remaining acceptance gates are met.</li></ol></section>
+</html>
