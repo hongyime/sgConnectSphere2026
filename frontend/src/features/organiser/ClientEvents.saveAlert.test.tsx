@@ -123,7 +123,7 @@ test('TC_E03S12_05 - cancelling an approved event\'s edit confirms nothing, and 
   fireEvent.click(await screen.findByRole('button', { name: 'Edit event' }, { timeout: 2000 }));
 
   expect(screen.getByLabelText(/^Start/)).toHaveAttribute('readonly');
-  expect(screen.getAllByRole('link', { name: 'Request a change' })[0]).toHaveAttribute('href', '/change-requests/new?event=evt-plan');
+  expect(screen.getAllByRole('link', { name: 'Request a change' })[0]).toHaveAttribute('href', '/change-requests/new?event=evt-plan&fields=startAt');
 
   fireEvent.change(screen.getByLabelText('Event name'), { target: { value: 'Not kept' } });
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
