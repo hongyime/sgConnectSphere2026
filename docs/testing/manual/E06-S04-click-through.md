@@ -34,10 +34,9 @@ Every seeded account uses the seed password, `seedCredential` in
 ## Set up first (about 5 minutes)
 
 **Prerequisites:** Node.js 22 or newer, dependencies installed once with
-`npm install` at the repo root, and a **local** PostgreSQL 17 server listening
-only on your own machine (a native install, or an existing local container such
-as `connectsphere-db`). Never use the shared database: the run resets the
-database.
+`npm install` at the repo root, and a **native** local PostgreSQL 17 server on
+your own machine (127.0.0.1; do not start Docker Desktop, per AGENTS.md).
+Never use the shared database: the run resets the database.
 
 You need three Git Bash terminals at the repo root. Each keeps its own
 variables, so set `LOCAL_DB` in terminals 1 and 2, to the same value.
@@ -197,16 +196,27 @@ Orchid Hall Confirmed (step 3); to run it on its own, reset the database and
 do step 3 first.
 
 19. Private window (`coord_a`): open
-    http://127.0.0.1:5173/coordinator/events/EVT-3003, click **Cancel
-    event**, enter a reason and confirm. Expect the pill **Cancelled** and
-    **"Event cancelled. Session arrangements have been released and
-    notifications queued."**
+    http://127.0.0.1:5173/coordinator/events/EVT-3003 and click **Cancel
+    event**, which opens the cancel page. Click **Cancel event…**, enter a
+    reason in **Cancellation reason** and click **Cancel event**. Expect the
+    pill **Cancelled** and **"Event cancelled. Session arrangements have been
+    released and notifications queued."**
 20. Open http://127.0.0.1:5173/coordinator/events/EVT-3003 again. The
     **Activity log** has **Booking released**, **Orchid Hall: Released**, by
     **Coordinator A**, with today's time; every other booking still Pending or
-    Confirmed at that moment gets its own **Booking released** row too.
-21. Terminal 1, read-only: run step 18's query again. Each **Booking
-    Released** row names Coordinator A, the venue, EVT-3003 and a time
+    Confirmed at that moment gets its own **Booking released** row too. Each
+    booking row also shows **Booking reference:** followed by the booking's
+    id, so two releases at the same venue can be told apart; the Orchid Hall
+    release shows the same reference as its approval in step 6.
+21. Terminal 1, read-only: run this query, step 18's with the booking id
+    added:
+
+    ```bash
+    psql "$LOCAL_DB" -c "SELECT to_char(a.occurred_at AT TIME ZONE 'Asia/Singapore', 'HH24:MI:SS') AS sgt, u.full_name, a.action, v.name AS venue, e.event_code, b.id AS booking_id, a.old_value, a.new_value FROM audit_logs a JOIN users u ON u.id = a.actor_id JOIN venue_bookings b ON b.id = a.entity_id JOIN venues v ON v.id = b.venue_id JOIN events e ON e.id = a.event_id WHERE a.entity_type = 'venue_booking' ORDER BY a.occurred_at"
+    ```
+
+    Each **Booking Released** row names Coordinator A, the venue, EVT-3003,
+    a `booking_id` matching the **Booking reference** in step 20, and a time
     matching step 20.
 
 ## Results table
