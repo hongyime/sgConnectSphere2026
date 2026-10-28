@@ -11,9 +11,9 @@ Word exports, Figma notes, and PostPlans follow those sources.
 | Release 1 requirements, estimates and planned sprint | `docs/backlog/release-1/` | `docs/CONNECTSPHERE BACKLOGS CAA 261026.xlsx` |
 | Wider product backlog | `docs/backlog/product/` | Same backlog workbook |
 | Backlog decisions and clarifications | `docs/bdr/` | `docs/BACKLOG DECISION REVIEW CAA 261026.docx` (BDR refreshed 2026-10-26; older dated exports remain history) |
-| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 141026.docx` |
+| Architecture decisions | `docs/adr/` and accepted repository decisions in `docs/decisions/` | `docs/ARCHITECTURE DECISION RECORDS CAA 261026.docx` |
 | Frontend design language | `design.md` (SCRUM-117, implemented by the shared skeleton per ADR-017) | Rendered at `/ui-kit` in the running frontend |
-| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 261026.xlsx` |
+| Acceptance test cases | `docs/testing/cases/` | `docs/testing/PROJECT TEST CASES CAA 281026.xlsx` |
 | Decision index | `docs/decisions/README.md` | Links to the authoritative records above; does not duplicate their text |
 | Architecture views (ERD, C4, modules, user flows, class diagram, API changes) | `docs/db_schema.md`, `docs/c4-diagrams.md`, `docs/modular-monolith-architecture.md`, `docs/dynamic-user-flows.md`, `docs/class-diagram.md`, `docs/api-changes-week7.md` | Markdown only; amended ADRs cross-reference them |
 | Shared venue booking interface | `docs/contracts/venue-bookings.md` | Shared schema, API, lifecycle and migration ownership for E06-S03/S04/S05/S06 |
@@ -68,10 +68,11 @@ python scripts/export_adr_bdr_docx.py
 ```
 
 Use the repository tooling environment when the system Python lacks the pinned
-document libraries. Do not hand-edit exported workbooks or Word files. Retain
-older dated copies as history. A new export uses today's `CAA DDMMYY` suffix;
-same-day regeneration replaces that day's export. Update the table above in the
-same PR when publishing a new dated export. A newer export date does not make a
+document libraries. Do not hand-edit exported workbooks or Word files. Exports
+represent milestone packages for Release 1 submissions. Historical versions are
+tracked and preserved in Git commit history rather than retaining multiple dated
+duplicate binary files in the working tree. Update the table above when
+publishing an export for a release milestone. A newer export date does not make a
 binary file higher authority than its Markdown source.
 
 The legacy `docs/testing/PROJECT TEST CASES.xlsx` remains the current input of

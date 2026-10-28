@@ -30,6 +30,8 @@
         "required_status_checks": [
           {"context": "repository-checks", "integration_id": 15368},
           {"context": "pr-conventions", "integration_id": 15368},
+          {"context": "pr-guardrails", "integration_id": 15368},
+          {"context": "test-evidence", "integration_id": 15368},
           {"context": "lfs-guard", "integration_id": 15368},
           {"context": "application-checks", "integration_id": 15368}
         ]

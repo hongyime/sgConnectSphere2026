@@ -39,11 +39,14 @@ import {
 } from '../features/organiser/Organiser';
 import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
 import {
-  EventDiscovery, EventDetail, RegisterForEvent, WithdrawFromEvent, EventFeedback,
+  EventFeedback,
 } from '../features/attendee/AttendeeRegistration';
+import { EventDiscovery, EventDetail, RegisterForEvent } from '../features/attendee/EventRegistration';
 import { NotificationInbox } from '../features/notifications/NotificationInbox';
 import { ChangeRequests } from '../features/events/ChangeRequests';
 import { AnswerQuestions } from '../features/organiser/AnswerQuestions';
+import { EventRegistrationsPage } from '../features/organiser/EventRegistrations';
+import { RegistrationPeriodPage } from '../features/organiser/RegistrationPeriod';
 import { RequestClarification } from '../features/coordinator/RequestClarification';
 import {
   CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
@@ -134,6 +137,8 @@ export const routes: AppRoute[] = [
   page('/organiser/requests/:eventCode/clarify', <AnswerQuestions />, 'live', 'E03-S02'),
   page('/organiser/requests/:eventCode/change', <ChangeRequests />, 'live', 'E10-S01'),
   page('/organiser/requests/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
+  page('/organiser/requests/:eventCode/registrations', <EventRegistrationsPage />, 'live', 'E09-S02'),
+  page('/organiser/requests/:eventCode/registration-period', <RegistrationPeriodPage />, 'live', 'E09-S03'),
   page('/change-requests/new', <ChangeRequests />, 'live', 'E10-S01'),
   page('/coordinator/events/:eventCode/changes', <ChangeRequests coordinator />, 'live', 'E10-S01'),
   page('/organiser/new-request', <OrganiserRequestFlow />, 'live', 'E02-S01'),
@@ -145,10 +150,9 @@ export const routes: AppRoute[] = [
   // Without this route, event detail links and denied deep links fall through to the landing page.
   page('/attendee/events/*', <AttendeeEvents />, 'live', 'E01-S03'),
   page('/internal/*', <AttendeeEvents />, 'live', 'E01-S03'),
-  page('/attendee/discover', <EventDiscovery />, 'mock', 'E09-S01'),
-  page('/attendee/discover/:eventCode', <EventDetail />, 'mock', 'E09-S01'),
-  page('/attendee/register/:eventCode', <RegisterForEvent />, 'mock', 'E09-S01'),
-  page('/attendee/withdraw/:eventCode', <WithdrawFromEvent />, 'mock', 'E09-S05'),
+  page('/attendee/discover', <EventDiscovery />, 'live', 'E09-S01'),
+  page('/attendee/discover/:eventCode', <EventDetail />, 'live', 'E09-S01'),
+  page('/attendee/register/:eventCode', <RegisterForEvent />, 'live', 'E09-S01'),
   page('/attendee/feedback/:eventCode', <EventFeedback />, 'mock'),
   page('/attendee/waitlist/:eventCode', (
     <ComingSoon story="E09-S04" title="Waiting list"

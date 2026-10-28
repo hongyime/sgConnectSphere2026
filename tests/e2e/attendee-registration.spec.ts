@@ -1,37 +1,42 @@
-// Playwright tests for the attendee registration flow (/attendee/discover,
-// /attendee/register/:eventCode, /attendee/withdraw/:eventCode,
-// /attendee/feedback/:eventCode) added by SCRUM-105 for frontend coverage.
-// Backed by mock fixtures inside AttendeeRegistration.tsx; no backend hit.
+// Playwright tests for the attendee registration flow. Discover, the event page
+// and registration (/attendee/discover, /attendee/discover/:eventCode,
+// /attendee/register/:eventCode) are live for E09-S01 and run against a fake
+// api/attendee/events.ts. Withdrawal (E09-S05) is on the event page, tested in
+// EventRegistration.test.tsx and the backend; feedback (/attendee/feedback/:eventCode)
+// is still a mock screen with fixture data.
 import { test, expect } from '@playwright/test';
+import { fakeRegistrationBackend } from './helpers/registrationBackend';
 
-test('TC_E09S01_01 — event discovery lists published events with capacity', async ({ page }) => {
+test('TC_E09S01_01 — Discover, open an event and register for Sessions A and B with a confirmation', async ({ page }) => {
+  const posts = await fakeRegistrationBackend(page);
   await page.goto('/attendee/discover');
   await expect(page.getByRole('heading', { name: 'Discover events' })).toBeVisible();
-  await expect(page.getByText('Sustainability Forum')).toBeVisible();
-  await expect(page.getByText('100 / 220 seats')).toBeVisible();
+  await expect(page.getByText('Open for registration')).toBeVisible();
+  await page.getByRole('link', { name: 'Tech Summit' }).click();
+  await expect(page.getByRole('heading', { name: 'Tech Summit' })).toBeVisible();
+  await page.getByRole('link', { name: 'Register' }).click();
+  const sessions = page.getByRole('group', { name: 'Choose your Sessions' });
+  await sessions.getByRole('checkbox', { name: /Session A/ }).check();
+  await sessions.getByRole('checkbox', { name: /Session B/ }).check();
+  await page.getByRole('button', { name: 'Confirm registration' }).click();
+  await expect(page.getByText("You're registered", { exact: true })).toBeVisible();
+  await expect(page.getByText("We've sent a confirmation to your notifications and by email.")).toBeVisible();
+  const yours = page.getByRole('table', { name: 'Sessions' });
+  await expect(yours.getByText('Session A')).toBeVisible();
+  await expect(yours.getByText('Seminar Room B, Level 2')).toBeVisible();
+  expect(posts).toEqual([{ sessionIds: ['s-a', 's-b'] }]);
 });
 
-test('TC_E09S02_01 — registration confirms with a mock success on submit', async ({ page }) => {
-  await page.goto('/attendee/register/EVT-A03');
-  await expect(page.getByRole('heading', { name: 'Register for the event' })).toBeVisible();
-  await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: /Confirm registration/ }).click();
-  await expect(page.getByRole('status')).toContainText('You are registered');
-});
-
-test('TC_E09S02_02 — full event routes registration into a waitlist join', async ({ page }) => {
-  await page.goto('/attendee/register/EVT-A01');
-  await expect(page.getByRole('heading', { name: 'Join the waitlist' })).toBeVisible();
-});
-
-test('TC_E09S05_01 — withdrawal requires a reason before recording', async ({ page }) => {
-  await page.goto('/attendee/withdraw/EVT-A03');
-  const submit = page.getByRole('button', { name: 'Confirm withdrawal' });
-  await expect(submit).toBeDisabled();
-  await page.getByLabel('Reason (required)').fill('Cannot attend anymore.');
-  await expect(submit).toBeEnabled();
-  await submit.click();
-  await expect(page.getByRole('status')).toContainText('withdrawal has been recorded');
+test('TC_E09S01_07 — one submission creates one Event registration with both Sessions', async ({ page }) => {
+  const posts = await fakeRegistrationBackend(page);
+  await page.goto('/attendee/register/EVT-TECH');
+  const sessions = page.getByRole('group', { name: 'Choose your Sessions' });
+  await sessions.getByRole('checkbox', { name: /Session A/ }).check();
+  await sessions.getByRole('checkbox', { name: /Session B/ }).check();
+  await page.getByRole('button', { name: 'Confirm registration' }).click();
+  await expect(page.getByRole('link', { name: 'View my events' })).toBeVisible();
+  expect(posts).toHaveLength(1);
+  expect(posts[0]).toEqual({ sessionIds: ['s-a', 's-b'] });
 });
 
 test('feedback requires a rating', async ({ page }) => {
