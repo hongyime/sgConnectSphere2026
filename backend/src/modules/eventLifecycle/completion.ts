@@ -1,3 +1,4 @@
+import { obsoletePendingChangeRequests } from "./obsoleteChangeRequests.js";
 import type { Pool, PoolClient } from "pg";
 import { inTransaction } from "../../database/pool.js";
 import { canActAsRole } from "../accessControl/service.js";
@@ -117,22 +118,8 @@ async function transition(
       ? "Status changed to completed"
       : "Automatically completed event",
     beforeNotify: async () => {
-      // C-77/T-88: Pending only; Approved/Declined/Applied remain untouched.
-      const requests = (
-        await client.query<{ id: string }>(
-          `UPDATE change_requests
-        SET status='obsolete',reviewed_by=$2,reviewed_at=now(),decision_reason='Event completed'
-        WHERE event_id=$1 AND status='pending' RETURNING id`,
-          [event.id, actorId],
-        )
-      ).rows;
-      for (const request of requests)
-        await client.query(
-          `INSERT INTO audit_logs
-        (actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
-        VALUES($1,'change_request',$2,$3,'Change request became Obsolete','status','pending','obsolete')`,
-          [actorId, request.id, event.id],
-        );
+      // C-77/T-88: Obsolete is distinct from a Coordinator rejection.
+      await obsoletePendingChangeRequests(client, event.id, actorId, "completed");
     },
   });
 }

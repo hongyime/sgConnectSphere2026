@@ -54,7 +54,7 @@ async function fixture() {
   }
 }
 
-test("TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries", async () => {
+test("TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries", async () => {
   const f = await fixture();
   try {
     const id = await f.event();
@@ -131,6 +131,19 @@ test("TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/aud
       ).rows[0].n,
       2,
     );
+    const history = (await f.q(
+      `SELECT a.actor_id,a.occurred_at,c.reviewed_at,c.decision_reason
+       FROM audit_logs a JOIN change_requests c ON c.id=a.entity_id
+       WHERE a.event_id=$1 AND a.entity_type='change_request' AND a.new_value='obsolete'`,
+      [id],
+    )).rows;
+    assert.equal(history.length, 2);
+    for (const row of history) {
+      assert.equal(row.actor_id, f.coord);
+      assert.ok(row.occurred_at instanceof Date);
+      assert.ok(row.reviewed_at instanceof Date);
+      assert.equal(row.decision_reason, "Event completed");
+    }
     const counts = await f.q(
       "SELECT (SELECT count(*) FROM notifications WHERE event_id=$1) n,(SELECT count(*) FROM notification_deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.event_id=$1) d",
       [id],
@@ -150,6 +163,9 @@ test("TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/aud
       ).rows,
       counts.rows,
     );
+    assert.equal((await f.q(
+      "SELECT count(*)::int n FROM audit_logs WHERE event_id=$1 AND entity_type='change_request' AND new_value='obsolete'", [id],
+    )).rows[0].n, 2);
     const view = await getCompletion(f.pool, f.actor, id);
     assert.equal(view.canComplete, false);
     assert.equal(view.status, "completed");
@@ -166,7 +182,7 @@ test("TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/aud
   }
 });
 
-test("TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit", async () => {
+test("TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit", async () => {
   const f = await fixture();
   try {
     const id = await f.event(),
@@ -230,6 +246,15 @@ test("TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes 
     assert.deepEqual(await evaluateCompletions(f.pool, { clock: () => END }), {
       completed: 0,
     });
+    const requestHistory = (await f.q(
+      `SELECT actor_id,old_value,new_value,occurred_at FROM audit_logs
+       WHERE event_id=$1 AND entity_type='change_request'`, [id],
+    )).rows;
+    assert.equal(requestHistory.length, 1);
+    assert.equal(requestHistory[0].actor_id, null);
+    assert.equal(requestHistory[0].old_value, "pending");
+    assert.equal(requestHistory[0].new_value, "obsolete");
+    assert.ok(requestHistory[0].occurred_at instanceof Date);
     // Runtime uses actual PostgreSQL time, never a request-supplied clock.
     await f.event(
       "confirmed",

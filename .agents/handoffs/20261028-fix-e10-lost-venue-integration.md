@@ -24,4 +24,8 @@ Separate synthetic EVT-E10-MESSAGE is ready in the local manual stack: Pending M
 
 ## Current delivery state
 
-All 22 supplied screenshots are collected across the two immutable manual records. Final branch is expected to contain 38 changed files (including two follow-up images and record), below the 40-file cap. Human code/test review, CI and PO/delegate acceptance remain outstanding. Canonical equipment/staff, non-default requirements, second Attendee and intercepted email coverage is automated; do not claim those were all manually exercised. No PR has been opened by this branch yet.
+All 22 supplied screenshots are collected across the two immutable manual records. Final branch is expected to contain 38 changed files (including two follow-up images and record), below the 40-file cap. Human code/test review, CI and PO/delegate acceptance remain outstanding. Canonical equipment/staff, non-default requirements, second Attendee and intercepted email coverage is automated; do not claim those were all manually exercised. PR #367 is open and ready for review. PostPlan upload requires local CLI authentication; HTML is prepared in ignored artifacts.
+
+## PR #367 conflict resolution
+
+Merged main 93d85dff (#363 terminal-request obsolescence refactor). Only conflict was docs/testing/tc-coverage.md, regenerated from combined source tests (267 automated / 379). No application-code conflict edits. Verification: 552 backend units, 19 recovery/completion/cancellation PostgreSQL tests, backend typecheck and repository checks all passed. Evidence: docs/testing/runs/20261028-143000-jininggg-full-regression.md. Final PR size is expected to be 39 files, below the 40-file cap. Current-head CI must rerun; independent human review and acceptance remain pending.
