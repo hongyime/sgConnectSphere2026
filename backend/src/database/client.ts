@@ -30,6 +30,17 @@ export function getDatabasePool(): pg.Pool {
     query_timeout: 6000,
     application_name: 'connectsphere-api',
   });
+
+  const originalEnd = pool.end.bind(pool);
+  pool.end = async (...args: any[]) => {
+    if ((pool as any).ended || (pool as any).ending) {
+      const cb = typeof args[0] === 'function' ? args[0] : undefined;
+      if (cb) cb();
+      return Promise.resolve();
+    }
+    return (originalEnd as any)(...args);
+  };
+
   currentConnectionString = connectionString;
 
   return pool;
