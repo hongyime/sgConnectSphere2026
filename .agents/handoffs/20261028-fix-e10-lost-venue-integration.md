@@ -15,3 +15,9 @@ Finish repository checks and record observed runs. Human TC_E10S05_01-04 with ha
 ## Human evidence collected
 
 Manual record: docs/testing/runs/20261028-133021-jininggg-frontend-e2e.md. Twenty screenshots. Combined change about 29 files, under PR limits. Remaining canonical gaps: equipment/staff preservation, non-default layout/accessibility, second Attendee, intercepted emails, and venue-change inbox content naming the actual new venue (current screenshot is generic). Do not claim TC_04 fully accepted or story Done. No screenshots substituted by agent. Local database directories and runtime env file are untracked and must never be staged.
+
+## Acceptance-gap follow-up
+
+Fixed recovery messages to include the confirmed venue name, sourced from the booking venue row. Shared arrangement messages retain their prior fallback when no name is supplied. Added formatting unit tests and a combined real-database test with projector reservation, assigned technical staff, Theatre layout, wheelchair requirement, two Attendees and intercepted durable email dispatch. These remain unchanged after loss/replacement; inbox and prepared email each name Replacement Hall exactly once after approval and not before. Full DB 92/92, final targeted DB 9/9, units 546/546 and backend typecheck passed; new full-regression record documents the scope. Original manual record remains immutable.
+
+Separate synthetic EVT-E10-MESSAGE is ready in the local manual stack: Pending Manual Hall 3 replacing conflicting Hall 1 on 2 March 2027, with two Attendees and missing preconditions populated. API restarted with current source. Human message-content follow-up remains pending. No real provider delivery is claimed; intercepted provider boundary is tested automatically.

@@ -32,7 +32,7 @@ export type EventAudience = {
 };
 export type EventChange =
   | { kind: 'status'; from: EventStatus; to: EventStatus }
-  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[] }
+  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[]; venueName?: string }
   | { kind: 'booking_requested' }
   | { kind: 'booking_withdrawn' }
   | { kind: 'lost_venue_cancelled' }
@@ -138,10 +138,14 @@ export function selectEventRecipients(before: EventAudience, after: EventAudienc
   };
 }
 
-function description(change: EventChange): string {
+export function describeEventChange(change: EventChange): string {
   switch (change.kind) {
     case 'status': return change.from==='confirmed' && change.to==='planning' ? 'Previously confirmed arrangements are being revised.' : `Event status changed to ${change.to.replaceAll('_',' ')}.`;
-    case 'arrangements': return `Event ${[...new Set(change.fields)].join(', ')} changed.`;
+    case 'arrangements': {
+      const summary = `Event ${[...new Set(change.fields)].join(', ')} changed.`;
+      return change.fields.includes('venue') && change.venueName?.trim()
+        ? `${summary} New venue: ${change.venueName.trim()}.` : summary;
+    }
     case 'booking_requested': return 'A venue booking request needs a decision.';
     case 'lost_venue_cancelled': return 'The Coordinator cancelled the original lost venue booking after confirming a replacement.';
     case 'booking_withdrawn': return 'The Coordinator withdrew a Pending venue booking request. There is no longer a request to decide.';
@@ -188,7 +192,7 @@ export async function notifyEventChange(client: PoolClient, input: {
     const publicName = change.kind==='status' && change.to==='cancelled' ? before.publicName : after.publicName;
     const eventName = audience==='attendee' ? (publicName ?? (change.kind==='status' && change.to==='cancelled' ? 'Your event' : null)) : after.title;
     if (!eventName) throw new Error('public_notification_name_missing');
-    const message = `${eventName}: ${description(change)} Changed at ${occurredAt.toISOString()}.`;
+    const message = `${eventName}: ${describeEventChange(change)} Changed at ${occurredAt.toISOString()}.`;
     const id = await writeEventNotification(client, {eventId:after.eventId,changeId,userId,occurredAt,title:'Event update',message});
     if (id) inserted.push(id);
   }

@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **265** (69.9%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+- Automated (explicit TC_ID in an active test title): **266** (70.2%)
+  - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **227**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **84** (22.2%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **83** (21.9%)
 - No test yet (no test file mentions the TC_ID): **30** (7.9%)
 
 ## Coverage by epic
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 29 | 13 | 3 |
-| E10 | 29 | 12 | 9 | 8 |
+| E10 | 29 | 13 | 8 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **265** | **84** | **30** |
+| **Total** | **379** | **266** | **83** | **30** |
 
 ## Case-by-case status
 
@@ -429,10 +429,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
-| `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
+| `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_01 TC_E10S05_02 TC_E10S05_04: real loss preserves arrangements and confirmed venue reaches two Attendees and intercep |
 | `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
 | `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
-| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/eventNotifications.test.ts: TC_E10S05_04: venue change descriptions name the confirmed replacement without changing other messages; backend/tests/lostVenueRecovery.in |
 
 ### E11
 

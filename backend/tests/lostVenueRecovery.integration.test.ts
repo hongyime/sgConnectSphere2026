@@ -8,6 +8,10 @@ import { decideBooking } from '../src/modules/venueBooking/decisions.js';
 import { cancelLostVenueBooking } from '../src/modules/venueBooking/lostVenueRecovery.js';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
 import { createVenueBlock, liftVenueBlock, editVenueBlock } from '../src/modules/venueBooking/blocks.js';
+import { venueSearch } from '../src/modules/venueBooking/search.js';
+import { postgresDeliveryStore } from '../src/modules/notificationDispatcher/postgres.js';
+import { dispatchCommittedDeliveries, publishCommittedDeliveries } from '../src/modules/notificationDispatcher/dispatch.js';
+import type { SendLease } from '../src/modules/notificationDispatcher/durable.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
 async function fixture(realLoss = false) {
@@ -158,6 +162,87 @@ for (const ending of ['lift', 'edit'] as const) {
     } finally { await f.close(); }
   });
 }
+
+test('TC_E10S05_01 TC_E10S05_02 TC_E10S05_04: real loss preserves arrangements and confirmed venue reaches two Attendees and intercepted email', async () => {
+  const f = await fixture(true);
+  try {
+    const layout = randomUUID(), access = randomUUID(), equipment = randomUUID();
+    const request = randomUUID(), support = randomUUID(), technician = randomUUID(), secondAttendee = randomUUID();
+    await f.q("INSERT INTO room_layouts(id,code,label) VALUES($1,'recovery_theatre','Theatre')", [layout]);
+    await f.q("INSERT INTO accessibility_features(id,code,label) VALUES($1,'recovery_wheelchair','Wheelchair access')", [access]);
+    await f.q("UPDATE events SET status='confirmed',layout_id=$2,accessibility_note='Wheelchair access required' WHERE id=$1", [f.event,layout]);
+    await f.q('INSERT INTO event_accessibility_needs(event_id,feature_id) VALUES($1,$2)', [f.event,access]);
+    for (const venue of [f.old,f.input.venue_id]) {
+      await f.q('INSERT INTO venue_supported_layouts(venue_id,layout_id,capacity) VALUES($1,$2,100)', [venue,layout]);
+      await f.q('INSERT INTO venue_accessibility_features(venue_id,feature_id) VALUES($1,$2)', [venue,access]);
+    }
+    await f.q("INSERT INTO equipment(id,name,category,total_quantity) VALUES($1,'Recovery projector','Video',1)", [equipment]);
+    await f.q('INSERT INTO equipment_requests(id,event_id,equipment_id,quantity_requested,requested_by) VALUES($1,$2,$3,1,$4)', [request,f.event,equipment,f.actor.id]);
+    await f.q("INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range) VALUES($1,$2,$3,1,'[2027-01-15T01:00Z,2027-01-15T04:00Z)')", [request,f.event,equipment]);
+    for (const [id,role] of [[technician,'technical_support_staff'],[secondAttendee,'attendee']]) {
+      await f.q("INSERT INTO users(id,email,password_hash,full_name,role,email_verified_at) VALUES($1,$2,'unused','Recovery participant',$3,now())", [id,`${id}@example.test`,role]);
+    }
+    await f.q('INSERT INTO event_registrations(event_id,attendee_id) VALUES($1,$2)', [f.event,secondAttendee]);
+    await f.q("INSERT INTO tech_support_requests(id,event_id,support_range,requested_by) VALUES($1,$2,'[2027-01-15T01:00Z,2027-01-15T04:00Z)',$3)", [support,f.event,f.actor.id]);
+    await f.q("INSERT INTO tech_staff_assignments(request_id,event_id,staff_id,assignment_range) VALUES($1,$2,$3,'[2027-01-15T01:00Z,2027-01-15T04:00Z)')", [support,f.event,technician]);
+    const arrangements = async () => ({
+      reservations: (await f.q('SELECT * FROM equipment_reservations WHERE event_id=$1', [f.event])).rows,
+      assignments: (await f.q('SELECT * FROM tech_staff_assignments WHERE event_id=$1', [f.event])).rows,
+    });
+    const before = await arrangements();
+    const params = new URLSearchParams({event_id:f.event});
+    const defaults = (await venueSearch(f.q,f.actor,params,true)).defaults;
+    const recipients = [f.organiser,f.attendee,secondAttendee];
+    const queue = new Set<string>();
+    const delivered: SendLease[] = [];
+    const transport = {
+      async publish(id: string) { queue.add(id); },
+      async peek(limit: number) { return [...queue].slice(0,limit); },
+      async acknowledge(id: string) { queue.delete(id); },
+      async defer() {},
+    };
+    const store = postgresDeliveryStore(f.pool);
+    const relay = async () => {
+      for (let batch=0; batch<10; batch++) {
+        const published = await publishCommittedDeliveries(store,transport,5);
+        await dispatchCommittedDeliveries(store,transport,async lease => {
+          delivered.push(lease);
+          return {kind:'sent',messageId:`intercepted-${lease.id}`};
+        },5);
+        if (!published.published && !queue.size) return;
+      }
+      assert.fail('Test relay did not drain');
+    };
+    await createVenueBlock(f.pool,f.decider,f.old,{
+      starts_at:'2027-01-15T00:00:00Z',ends_at:'2027-01-16T00:00:00Z',reason_category:'safety_concern',reason:'Roof unsafe',
+    });
+    assert.deepEqual(await arrangements(),before);
+    assert.deepEqual((await venueSearch(f.q,f.actor,params,true)).defaults, {...defaults,status:'planning'});
+    await relay();
+    assert.ok(delivered.every(email => !email.html.includes('New venue:')));
+    assert.equal((await f.q("SELECT id FROM notifications WHERE user_id=ANY($1::uuid[]) AND message ILIKE '%venue%'", [recipients])).rowCount,0);
+    assert.ok(delivered.filter(email => recipients.some(id => email.to===`${id}@example.test`))
+      .every(email => !email.html.includes('Event venue changed')));
+    const submitted = await submitBooking(f.pool,f.actor,f.input,randomUUID());
+    await relay();
+    assert.equal((await f.q("SELECT id FROM notifications WHERE user_id=ANY($1::uuid[]) AND message LIKE '%New venue:%'", [recipients])).rowCount,0);
+    assert.equal((await f.q("SELECT id FROM notifications WHERE user_id=ANY($1::uuid[]) AND message ILIKE '%venue%'", [recipients])).rowCount,0);
+    await decideBooking(f.pool,f.decider,submitted.body.booking.id,{decision:'approve'});
+    await relay();
+    await relay(); // Retry cannot resend committed deliveries.
+    assert.deepEqual(await arrangements(),before);
+    assert.deepEqual((await venueSearch(f.q,f.actor,params,true)).defaults, {...defaults,status:'planning'});
+    for (const id of recipients) {
+      const notices = (await f.q("SELECT message FROM notifications WHERE user_id=$1 AND message LIKE '%New venue:%'", [id])).rows;
+      assert.equal(notices.length,1);
+      assert.match(notices[0].message,/New venue: Replacement Hall\./);
+      const emails = delivered.filter(email => email.to===`${id}@example.test` && email.html.includes('New venue:'));
+      assert.equal(emails.length,1);
+      assert.match(emails[0].html,/Replacement Hall/);
+      assert.equal((await f.q("SELECT d.id FROM notification_deliveries d JOIN notifications n ON n.id=d.notification_id WHERE n.user_id=$1 AND n.message LIKE '%New venue:%' AND d.delivery_status='sent'", [id])).rowCount,1);
+    }
+  } finally { await f.close(); }
+});
 
 test('TC_E10S05_03 TC_E10S05_04: rejected retries and staff suggestions preserve the lost original across the chain', async () => {
   const f = await fixture();
