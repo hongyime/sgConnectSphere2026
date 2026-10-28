@@ -52,7 +52,6 @@ const OrganiserDashboard = lazy(() => import('../features/organiser/Organiser').
 const OrganiserRequestList = lazy(() => import('../features/organiser/Organiser').then(m => ({ default: m.RequestList })));
 const SubmittedDetail = lazy(() => import('../features/organiser/Organiser').then(m => ({ default: m.SubmittedDetail })));
 const AttendeeEvents = lazy(() => import('../features/attendee/AttendeeEvents').then(m => ({ default: m.AttendeeEvents })));
-const WithdrawFromEvent = lazy(() => import('../features/attendee/AttendeeRegistration').then(m => ({ default: m.WithdrawFromEvent })));
 const EventFeedback = lazy(() => import('../features/attendee/AttendeeRegistration').then(m => ({ default: m.EventFeedback })));
 const EventDiscovery = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDiscovery })));
 const EventDetail = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDetail })));
@@ -194,7 +193,6 @@ export const routes: AppRoute[] = [
   page('/attendee/discover', <EventDiscovery />, 'live', 'E09-S01'),
   page('/attendee/discover/:eventCode', <EventDetail />, 'live', 'E09-S01'),
   page('/attendee/register/:eventCode', <RegisterForEvent />, 'live', 'E09-S01'),
-  page('/attendee/withdraw/:eventCode', <WithdrawFromEvent />, 'mock', 'E09-S05'),
   page('/attendee/feedback/:eventCode', <EventFeedback />, 'mock'),
   page('/attendee/waitlist/:eventCode', (
     <ComingSoon story="E09-S04" title="Waiting list"

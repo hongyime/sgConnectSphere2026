@@ -15,6 +15,7 @@ export type PublicEvent = {
   registrationState: RegistrationState;
   opensAt: string | null;
   closesAt: string | null;
+  withdrawalDeadline: string | null;
 };
 
 export type OpenEvent = PublicEvent & { myRegistrationStatus: string | null };
@@ -38,6 +39,8 @@ export type RegistrationForm = {
   registration: Registration | null;
   // E09-S02: a full Session or Event still takes a request, which waits for the Organiser.
   capacity: { eventFull: boolean; waitlistEnabled: boolean; fullSessionIds: string[] };
+  // E09-S05: set with a registration; the contact is given once withdrawal has closed.
+  withdrawal: { open: boolean; contact: string | null } | null;
 };
 
 export type RegisterResult = { registration: Registration; event: PublicEvent; sessions: SessionChoice[] };
@@ -59,4 +62,10 @@ export function getRegistrationForm(ref: string, signal?: AbortSignal) {
 export function register(ref: string, sessionIds: string[]) {
   return apiCall<RegisterResult>(`/api/attendee/events?registration=1&id=${encodeURIComponent(ref)}`,
     jsonRequest('POST', { sessionIds }), 'Unable to register. Please try again.');
+}
+
+export function withdraw(ref: string) {
+  return apiCall<{ registration: { id: string; status: string; withdrawnAt: string } }>(
+    `/api/attendee/events?registration=1&withdraw=1&id=${encodeURIComponent(ref)}`,
+    jsonRequest('POST'), 'Unable to withdraw. Please try again.');
 }

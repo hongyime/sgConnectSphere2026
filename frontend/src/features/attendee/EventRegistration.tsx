@@ -7,15 +7,18 @@
 // still sent, and waits as Pending for the Organiser (T-85, C-98). A full Event
 // offers its Event-level waiting list where enabled; there's no per-Session
 // list (T-98, O-50).
+// E09-S05 (SCRUM-220): an approved place or a Pending request is withdrawn
+// from the event page through a ConfirmPanel (D100, D106); the deadline shows
+// until it passes, then the contact replaces the button (D101).
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { CalendarCheck, Search, Ticket } from 'lucide-react';
 import {
-  Alert, Button, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FormActions, FormSection,
+  Alert, Button, ButtonLink, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FactList, FormActions, FormSection,
   LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, useLoad, type Column,
 } from '../../shared';
 import {
-  eventRef, getRegistrationForm, listOpenEvents, register,
+  eventRef, getRegistrationForm, listOpenEvents, register, withdraw,
   type OpenEvent, type PublicEvent, type Registration, type RegistrationForm, type SessionChoice,
 } from './registrationApi';
 
@@ -106,29 +109,37 @@ function EventFacts({ event }: { event: PublicEvent }) {
 export function EventDetail() {
   const { eventCode = '' } = useParams();
   const { result, reload } = useLoad(signal => getRegistrationForm(eventCode, signal), [eventCode]);
+  // After a withdrawal the page reads as not registered (D102). The capacity it
+  // loaded is now out of date, so the full notice and Register stay hidden.
+  const [withdrawn, setWithdrawn] = useState<string | null>(null);
+  useEffect(() => setWithdrawn(null), [eventCode]);
   const form = result.state === 'ready' ? result.data : null;
+  const registration = withdrawn ? null : form?.registration ?? null;
+  const canRegister = !!form && !registration && !withdrawn && form.event.registrationState === 'open';
   return (
     <PageLayout eyebrow={form?.event.eventCode ?? 'Event'}
       title={form?.event.name ?? (result.state === 'error' ? 'Event unavailable' : 'Loading event…')}
-      actions={form ? <RegistrationPill event={form.event} status={form.registration?.status ?? null} /> : undefined}>
+      actions={form ? <RegistrationPill event={form.event} status={registration?.status ?? null} /> : undefined}>
       {result.state === 'loading' ? <LoadingState label="Loading event…" /> : null}
       {result.state === 'error' ? (
         <ErrorState failure={result.failure} context="this event" onRetry={reload} backTo="/attendee/discover" backLabel="Back to Discover" />
       ) : null}
+      {withdrawn ? <Alert tone="success">{withdrawn}</Alert> : null}
       {form ? (
         <>
-          {form.registration ? <RegistrationAlert status={form.registration.status} /> : null}
-          {!form.registration && form.event.registrationState === 'open' ? <FullNotice form={form} /> : null}
+          {registration ? <RegistrationAlert status={registration.status} /> : null}
+          {canRegister ? <FullNotice form={form} /> : null}
           <Card title="Event"><EventFacts event={form.event} /></Card>
           <Card title="Sessions">
             {form.sessions.length > 0
-              ? <SessionTable sessions={form.sessions} chosen={form.registration?.sessionIds} />
+              ? <SessionTable sessions={form.sessions} chosen={registration?.sessionIds} />
               : <p>This event has no Sessions to choose from yet.</p>}
           </Card>
+          {registration ? <Withdrawal form={form} registration={registration} onWithdrawn={setWithdrawn} /> : null}
           <ClosedNotice form={form} />
           <FormActions>
             <ButtonLink to="/attendee/discover">Back to Discover</ButtonLink>
-            {!form.registration && form.event.registrationState === 'open' ? (
+            {canRegister ? (
               <ButtonLink to={`/attendee/register/${encodeURIComponent(eventRef(form.event))}`} variant="primary"
                 icon={<Ticket size={14} aria-hidden="true" />}>Register</ButtonLink>
             ) : null}
@@ -173,6 +184,58 @@ function RegistrationAlert({ status }: { status: string }) {
   return <Alert tone="success" title="You're registered for this event">
     Your Sessions are marked below. A confirmation is in your notifications.
   </Alert>;
+}
+
+// D88: the deadline binds approved places only; a Pending request can be
+// withdrawn until the event starts. Waitlisted rows leave the list in E09-S04.
+function Withdrawal({ form, registration, onWithdrawn }: {
+  form: RegistrationForm; registration: Registration; onWithdrawn: (message: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string>();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  if (!form.withdrawal || registration.status === 'waitlisted') return null;
+  const pending = registration.status === 'pending';
+  if (!form.withdrawal.open) {
+    // The server always names a contact once withdrawal has closed (D89).
+    const contact = form.withdrawal.contact;
+    return <Alert tone="info" title="Withdrawal has closed">
+      For help, contact <a href={`mailto:${contact}`}>{contact}</a>.
+    </Alert>;
+  }
+  async function confirm() {
+    setBusy(true);
+    setError(undefined);
+    const result = await withdraw(eventRef(form.event));
+    if (!mounted.current) return;
+    setBusy(false);
+    if (!result.ok) { setError(result.message); return; }
+    onWithdrawn(pending ? 'Request withdrawn. The organiser will not review it.'
+      : 'Registration withdrawn. Your place in every Session you chose has been released.');
+  }
+  if (open) {
+    return (
+      <ConfirmPanel title={pending ? 'Withdraw your request?' : 'Withdraw your registration?'}
+        description={pending ? 'The organiser will no longer review your request.'
+          : 'Your place in every Session you chose is released for someone else. This cannot be undone.'}
+        confirmLabel={pending ? 'Withdraw request' : 'Withdraw registration'} busyLabel="Withdrawing…"
+        danger busy={busy} error={error} onConfirm={confirm} onCancel={() => { setOpen(false); setError(undefined); }} />
+    );
+  }
+  // The server also closes withdrawal at the start, so a later deadline isn't shown (both are ISO strings).
+  const { withdrawalDeadline, startsAt } = form.event;
+  const deadline = !pending && withdrawalDeadline && withdrawalDeadline < startsAt ? withdrawalDeadline : null;
+  return (
+    <Card title={pending ? 'Your request' : 'Your registration'}>
+      <p>{deadline ? `You can withdraw until ${formatDate(deadline, true)}.` : 'You can withdraw until the event starts.'}</p>
+      <Button variant="danger" onClick={() => setOpen(true)}>{pending ? 'Withdraw request…' : 'Withdraw…'}</Button>
+    </Card>
+  );
 }
 
 function ClosedNotice({ form }: { form: RegistrationForm }) {

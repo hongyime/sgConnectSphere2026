@@ -79,7 +79,7 @@ in the second table below.
 | E09-S02 | Enforce registration capacity | Event Organiser | Sprint 4 | — | none | Other | Backend rule; capacity reached surfaces in `/attendee/discover/:eventCode` and `/attendee/register/:eventCode`. |
 | E09-S03 | Control the registration period | Event Organiser | Sprint 4 | — | none | Form | Expected to surface inside the Organiser request flow or request detail. |
 | E09-S04 | Join the waiting list | Attendee | Sprint 4 | `/attendee/waitlist/:eventCode` | coming-soon | Detail | Placeholder page shows the standard ComingSoon summary. |
-| E09-S05 | Withdraw my registration | Attendee | Sprint 4 | `/attendee/withdraw/:eventCode` | mock | Decision | Withdrawal confirmation. |
+| E09-S05 | Withdraw my registration | Attendee | Sprint 4 | `/attendee/discover/:eventCode` | live | Decision | "Withdraw…" and its confirm panel on the event page, with the withdrawal deadline; after the deadline, the contact replaces the button. The mock `/attendee/withdraw/:eventCode` was removed. |
 | E09-S06 | Record attendance | Event Coordinator | Sprint 4 | — | none | Form | Expected to live under `/coordinator/events/:eventCode` as an attendance panel. |
 | E09-S07 | View registrations for my event | Event Organiser | Sprint 4 | — | none | List | Expected to live under `/organiser/requests/:eventCode` or a dedicated roster screen. |
 | E10-S01 | Request a change after submission | Event Organiser | Sprint 4 | `/change-requests/new`, `/organiser/requests/:eventCode/change` | coming-soon, mock | Form | `/change-requests/new` is where restricted edits and the edit API's 409 `changeRequestUrl` send the Organiser until E10-S01 builds the form (#175). |

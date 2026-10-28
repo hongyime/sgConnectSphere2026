@@ -47,7 +47,7 @@ test('keyboard focus outline is visible against the page (WCAG 3:1)', async ({ p
 });
 
 const singleFormPages = [
-  '/attendee/withdraw/EVT-A01', '/attendee/feedback/EVT-A01',
+  '/attendee/feedback/EVT-A01',
   '/venue/inventory/new', '/venue/inventory/V-01/edit', '/admin/users/U-01/role',
 ];
 
