@@ -40,3 +40,10 @@ changing the test. Use fixed 01:30Z inside the Event range, render it through
 the edit form's local input conversion, and assert exact PATCH ISO plus the
 fixed Singapore request input 09:30. No product code or validation weakened.
 Verify UTC, Asia/Singapore and America/Los_Angeles; keep prior records immutable.
+
+## Main integration after #363 and #366
+
+Merge main 7deec73 normally into PR #365. Resolve only .gitignore and generated
+coverage: retain both SCRUM-205 and SCRUM-206 artifact exceptions; regenerate
+inventory from the combined source/workbook. Preserve merged run records and
+screenshots unchanged. No feature code changes or acceptance-state changes.

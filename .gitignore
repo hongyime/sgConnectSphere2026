@@ -90,3 +90,6 @@ artifacts/sbom/*
 
 # Durable SCRUM-205 review artifact
 !artifacts/scrum-205-refused-edit.html
+
+# Durable SCRUM-206 review artifact
+!artifacts/scrum-206-completion-obsolete.html
