@@ -24,20 +24,26 @@ test('TC_E10S01_01: reject malformed, empty, unsafe or oversized changes before 
 });
 
 test('TC_E10S01_01: GET and POST dispatch refuse missing cookie sessions with private responses', async () => {
-  for (const method of ['GET', 'POST']) {
-    let status = 0;
-    let body: unknown;
-    const headers: Record<string, unknown> = {};
-    const response: VercelResponse = {
-      setHeader: (key, value) => { headers[key] = value; },
-      status: code => { status = code; return { json: value => { body = value; } }; },
-      json: value => { body = value; },
-    };
-    await handler({ method, url: '/api/events?changeRequests=1&id=EVT-CHANGE', headers: {} }, response);
-    assert.equal(status, 401);
-    assert.deepEqual(body, { error: 'Sign in to continue.' });
-    assert.equal(headers['Cache-Control'], 'private, no-store');
-    assert.equal(headers.Vary, 'Cookie');
+  const origin = 'https://app.example.test';
+  process.env.PUBLIC_SITE_URL = origin;
+  try {
+    for (const method of ['GET', 'POST']) {
+      let status = 0;
+      let body: unknown;
+      const headers: Record<string, unknown> = {};
+      const response: VercelResponse = {
+        setHeader: (key, value) => { headers[key] = value; },
+        status: code => { status = code; return { json: value => { body = value; } }; },
+        json: value => { body = value; },
+      };
+      await handler({ method, url: '/api/events?changeRequests=1&id=EVT-CHANGE', headers: { origin } }, response);
+      assert.equal(status, 401);
+      assert.deepEqual(body, { error: 'Sign in to continue.' });
+      assert.equal(headers['Cache-Control'], 'private, no-store');
+      assert.equal(headers.Vary, 'Cookie');
+    }
+  } finally {
+    delete process.env.PUBLIC_SITE_URL;
   }
 });
 

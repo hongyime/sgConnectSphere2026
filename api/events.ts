@@ -78,7 +78,7 @@ import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eve
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
-import { currentUser, databasePool, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
+import { currentUser, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
 import {
   AccessError,
   createEventComment,
@@ -92,6 +92,14 @@ import type { VercelRequest, VercelResponse } from '../backend/src/vercel.js';
 const repository = new PostgresEventLifecycleRepository();
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (['POST', 'PATCH', 'DELETE'].includes(request.method || '')) {
+    if (!isAllowedOrigin(request.headers.origin)) {
+      response.setHeader('Cache-Control', 'private, no-store');
+      response.setHeader('Vary', 'Cookie');
+      sendJson(response, 403, { error: 'Request origin not allowed.' });
+      return;
+    }
+  }
   const registrations = new URL(request.url || '/', 'http://localhost').searchParams;
   if (registrations.get('registrations') === '1' && (request.method === 'GET' || request.method === 'POST')) {
     await handleRegistrations(request, response, registrations.get('id') || '');
@@ -104,8 +112,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
   if (request.method === 'POST') {
     const params = new URL(request.url || '/', 'http://localhost').searchParams;
     if (params.get('attendance') === '1') {
-      await respond(response, async () => ({ attendance: await recordAttendance(getDatabasePool(),
-        await currentUser(request), params.get('id') || '', request.body) }));
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { attendance: await recordAttendance(getDatabasePool(), user, params.get('id') || '', request.body) };
+      });
       return;
     }
     if (params.has('changeRequests')) {
@@ -120,7 +130,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       return;
     }
     if (params.get('cancellation') === '1') {
-      await respond(response, async () => ({ cancellation: await cancelEvent(getDatabasePool(), await currentUser(request), params.get('id') || '', request.body) }));
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { cancellation: await cancelEvent(getDatabasePool(), user, params.get('id') || '', request.body) };
+      });
       return;
     }
     if (params.get('comment') === '1') {
@@ -173,8 +186,9 @@ async function handleRegistrations(request: VercelRequest, response: VercelRespo
   }
   await respondWithResult(response, async () => {
     if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+    const user = await currentUser(request);
     // The same pool as Attendee registration (api/attendee/events.ts), so both lock the Event row alike.
-    return manageRegistrations(databasePool(), await currentUser(request), id, request.body);
+    return manageRegistrations(getDatabasePool(), user, id, request.body);
   });
 }
 

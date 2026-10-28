@@ -7,6 +7,7 @@ import { bookingRequestsHandler } from '../../backend/src/modules/venueBooking/b
 import { bookingSubmissionHandler } from '../../backend/src/modules/venueBooking/bookingSubmissionHandler.js';
 import { venueSearch } from '../../backend/src/modules/venueBooking/search.js';
 import { sendJson } from '../../backend/src/http.js';
+import { isAllowedOrigin } from '../../backend/src/config.js';
 import { AccessError } from '../../backend/src/modules/eventVisibility/service.js';
 import { currentUser, databasePool, query, respond, respondWithResult } from '../../backend/src/modules/eventVisibility/runtime.js';
 import {
@@ -25,6 +26,14 @@ import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js'
 // dispatched by body.action) to stay within the Vercel Hobby plan's
 // serverless function limit.
 export default async function handler(request: VercelRequest, response: VercelResponse) {
+  if (['POST', 'PATCH', 'DELETE'].includes(request.method || '')) {
+    if (!isAllowedOrigin(request.headers.origin)) {
+      response.setHeader('Cache-Control', 'private, no-store');
+      response.setHeader('Vary', 'Cookie');
+      sendJson(response, 403, { error: 'Request origin not allowed.' });
+      return;
+    }
+  }
   if (request.method === 'POST' && ['request_booking', 'withdraw_booking', 'set_primary', 'cancel_lost_booking'].includes(String((request.body as Record<string, unknown> | undefined)?.action))) {
     await bookingSubmissionHandler(request, response); return;
   }

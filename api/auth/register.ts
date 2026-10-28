@@ -1,24 +1,19 @@
-import { Pool } from 'pg';
+import type { Pool } from 'pg';
 import { requireMethod, sendJson } from '../../backend/src/http.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 import { registerAccount, type AccountInsert, type AccountRepository } from '../../backend/src/modules/accessControl/registration.js';
 import { createAccountRepository } from '../../backend/src/modules/accessControl/postgresRepository.js';
 import { sendVerificationEmail } from '../../backend/src/modules/accessControl/verificationEmail.js';
 import { runtimeConfig, requireEnv } from '../../backend/src/config.js';
+import { getDatabasePool } from '../../backend/src/database/client.js';
 
-let pool: Pool | undefined;
-function databasePool(): Pool {
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not configured');
-  pool ??= new Pool({ connectionString: process.env.DATABASE_URL, max: 4 });
-  return pool;
-}
 const repository: AccountRepository = {
   async createAttendee(input: AccountInsert) {
-    return createAccountRepository(databasePool()).createAttendee(input);
+    return createAccountRepository(getDatabasePool()).createAttendee(input);
   },
 };
 
-export function createRegistrationHandler(accounts: AccountRepository, poolFactory: () => Pool = databasePool) {
+export function createRegistrationHandler(accounts: AccountRepository, poolFactory: () => Pool = getDatabasePool) {
   return async (request: VercelRequest, response: VercelResponse) => {
     response.setHeader('cache-control', 'no-store');
     if (!requireMethod(request, response, 'POST')) return;

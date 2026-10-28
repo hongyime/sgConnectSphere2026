@@ -176,7 +176,7 @@ export async function evaluateCompletions(
     return (
       await client.query<{ id: string }>(
         `SELECT id FROM events WHERE status='confirmed'
-      AND upper(event_range) <= $1 ORDER BY upper(event_range),id`,
+      AND upper(event_range) <= $1 ORDER BY upper(event_range),id LIMIT 50`,
         [now],
       )
     ).rows;
