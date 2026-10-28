@@ -9,11 +9,11 @@ This contract records the PO-confirmed rules relayed on 9 October (SCRUM-47 / E0
 
 | Rule | Contract |
 |---|---|
-| O-27 — purpose and headcount | Each booking may have its own optional purpose and headcount. Suitability uses the booking headcount when present, otherwise the linked Session's expected attendance (T-79). This check is advisory; an unsuitable venue may still be requested. |
-| O-29 — booking window | Each booking is linked to a Session and its requested interval must be inside that Session's start/end. Setup and turnaround buffers may extend outside the Session interval and still reserve the venue. |
-| O-30 — primary venue | The first booking to become Confirmed for an event becomes primary if none is already primary. An assigned Coordinator may select another Confirmed booking. Pending bookings cannot be primary. |
+| O-27 â€” purpose and headcount | Each booking may have its own optional purpose and headcount. Suitability uses the booking headcount when present, otherwise the linked Session's expected attendance (T-79). This check is advisory; an unsuitable venue may still be requested. |
+| O-29 â€” booking window | Each booking is linked to a Session and its requested interval must be inside that Session's start/end. Setup and turnaround buffers may extend outside the Session interval and still reserve the venue. |
+| O-30 â€” primary venue | The first booking to become Confirmed for an event becomes primary if none is already primary. An assigned Coordinator may select another Confirmed booking. Pending bookings cannot be primary. |
 | Submission eligibility | Only the event's assigned Event Coordinator may submit a formal request, while the event is Approved or Planning. A Confirmed event must first return to Planning through the existing event workflow. |
-| O-32 — hold conversion | Submitting a formal request ends the hold expiry. A hold whose expiry has passed cannot be converted. Conversion changes the existing hold row to Pending. |
+| O-32 â€” hold conversion | Submitting a formal request ends the hold expiry. A hold whose expiry has passed cannot be converted. Conversion changes the existing hold row to Pending. |
 
 ## Existing schema and migration ownership
 
@@ -62,7 +62,7 @@ Migration 0019 should:
 - Add submission_key uuid for direct-request retry safety, with a partial unique index on (requested_by, submission_key) when the key is present.
 - Replace the current exclusion constraint with one on (venue_id, occupancy_range), where status is `tentative`, `pending`, or `confirmed`. Keep the existing constraint name if practical so the database error mapper has one stable target. This predicate uses the new `tentative` value, so create it only in migration 0019, after 0013 commits.
 
-The occupancy exclusion is per venue, not per event: one event may reserve multiple venues at the same time. Two active reservations for the same venue may not overlap after buffers are applied. The half-open occupancy interval is [booking start − setup, booking end + turnaround).
+The occupancy exclusion is per venue, not per event: one event may reserve multiple venues at the same time. Two active reservations for the same venue may not overlap after buffers are applied. The half-open occupancy interval is [booking start âˆ’ setup, booking end + turnaround).
 
 The requested booking_range must not overlap an active venue_blocks.block_range. Maintenance blocks may have no end time; they remain active until lifted. Setup/turnaround buffers are checked between event uses and holds only, not around maintenance blocks (T-80). Editing a block stores the old and new range/reason and actor; lifting it retains history and notifies each affected Coordinator (T-91).
 
@@ -85,7 +85,7 @@ POST /api/venues, authenticated cookie session, assigned Event Coordinator:
       "headcount": 120
     }
 
-**Proposal — direct retry safety:** Require an Idempotency-Key UUID header. The server derives requested_by from the session; clients cannot choose the requester or set status, is_primary, occupancy_range, or expires_at. The service validates that `session_id` belongs to `event_id`, uses the Session's date/time, and keeps omitted purpose and headcount null. The new row is Pending and not primary.
+**Proposal â€” direct retry safety:** Require an Idempotency-Key UUID header. The server derives requested_by from the session; clients cannot choose the requester or set status, is_primary, occupancy_range, or expires_at. The service validates that `session_id` belongs to `event_id`, uses the Session's date/time, and keeps omitted purpose and headcount null. The new row is Pending and not primary.
 
 Return 201 with the booking, event status, and advisory suitability result. The booking includes id, event_id, session_id, venue_id, status, purpose, nullable headcount, requested_by, requested_at, is_primary, booking_range, occupancy_range, and expires_at. Suitability reports the booking headcount or linked Session expected attendance and failed criteria, but an unsuitable result does not reject submission. Replaying the same key and payload returns the existing booking without repeating audit or notification effects; reusing a key with a different payload returns 409.
 
@@ -148,21 +148,21 @@ GET /api/events?id=<event-id> returns venue_bookings: [...]; each item includes 
 
 ### Errors
 
-**Proposal — response codes:** Use 400 for malformed intervals, an interval outside the Session, missing required decision reason, or invalid field values (`validation_failed`, matching repo convention); 403 for an authenticated user who is not authorized (e.g. not the assigned Coordinator or not Venue Staff); 404 for an unknown booking, Session or event; and 409 for an event in an ineligible state, an expired/non-convertible hold, attempting to decide a conflicting booking, a venue block, an active occupancy conflict, or a reused idempotency key with different content. Conflict responses identify the blocking booking and its buffered occupancy_range, or the overlapping venue block. Translate PostgreSQL exclusion violation SQLSTATE 23P01 to the same 409 booking-conflict response.
+**Proposal â€” response codes:** Use 400 for malformed intervals, an interval outside the Session, missing required decision reason, or invalid field values (`validation_failed`, matching repo convention); 403 for an authenticated user who is not authorized (e.g. not the assigned Coordinator or not Venue Staff); 404 for an unknown booking, Session or event; and 409 for an event in an ineligible state, an expired/non-convertible hold, attempting to decide a conflicting booking, a venue block, an active occupancy conflict, or a reused idempotency key with different content. Conflict responses identify the blocking booking and its buffered occupancy_range, or the overlapping venue block. Translate PostgreSQL exclusion violation SQLSTATE 23P01 to the same 409 booking-conflict response.
 
 ## State and transaction rules
 
-- No row → Pending: direct request.
-- No row → Tentative: hold created by the E06-S05 flow.
-- Tentative → Pending: assigned Coordinator submits before expiry; same row is reused.
-- Tentative → Expired: expiry is at or before current time.
-- Tentative → Released: Coordinator releases the hold.
-- Pending → Confirmed: Venue Staff approves.
-- Pending → Rejected: Venue Staff rejects.
-- Pending → Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
-- Confirmed → Released: event workflow releases the booking.
+- No row â†’ Pending: direct request.
+- No row â†’ Tentative: hold created by the E06-S05 flow.
+- Tentative â†’ Pending: assigned Coordinator submits before expiry; same row is reused.
+- Tentative â†’ Expired: expiry is at or before current time.
+- Tentative â†’ Released: Coordinator releases the hold.
+- Pending â†’ Confirmed: Venue Staff approves.
+- Pending â†’ Rejected: Venue Staff rejects.
+- Pending â†’ Released: assigned Coordinator withdraws a Pending request only (T-94/T-95).
+- Confirmed â†’ Released: event workflow releases the booking.
 - E05-S05 buffer change: set `buffer_conflict`, retaining Confirmed/Pending/Tentative status and occupancy. Re-evaluate after buffers change; never release bookings to resolve a buffer conflict automatically.
-- Pending, Confirmed or unexpired Tentative → Conflicting: E05-S06 marks a booking or hold affected by an unavailability (C-111); its resolution flow restores the applicable status, and a hold whose expiry has passed meanwhile becomes Expired. Venue Staff cannot approve/reject a booking while it is Conflicting.
+- Pending, Confirmed or unexpired Tentative â†’ Conflicting: E05-S06 marks a booking or hold affected by an unavailability (C-111); its resolution flow restores the applicable status, and a hold whose expiry has passed meanwhile becomes Expired. Venue Staff cannot approve/reject a booking while it is Conflicting.
 
 Every submission path uses one shared service and transaction. It authorizes the assigned Coordinator; locks the event and (for conversion) the hold; checks event status, range containment, venue block, suitability inputs, and expiry; writes the booking and any Approved-to-Planning transition; then persists audit and notification/outbox records. Any failure rolls the transaction back. The database exclusion constraint remains the final guard against concurrent occupancy conflicts. **Proposal:** Booking/block writes serialize on the venue so a concurrent block cannot slip past the block check. Hold creation follows the same block and occupancy checks; the event-status submission gate is checked again when a hold is converted.
 
@@ -409,8 +409,8 @@ E05-S06 owns unavailability detection, Conflicting status, Coordinator notificat
 
 `request_booking` accepts `replaces_booking_id` for a same-event Conflicting source caused by loss of a Pending/Confirmed booking. Search and suitability carry this link and prefill the original period, purpose and headcount. Rejected attempts retain their status and predecessor slot under T-96. Retrying from a lost original links the new request to the terminal Rejected attempt; following a staff suggestion links to that Rejected attempt as usual. Approval and cancellation follow the same-event chain back to the lost original, so recovery continues after rejection without deleting history or changing the non-Released unique index. Search remains available while the chain contains only Rejected attempts; active Pending/Confirmed descendants prevent duplicate recovery requests. Existing single-Session submission restrictions still apply; this increment does not add multi-Session booking selection.
 
-When Venue Staff approves the replacement, the transaction transfers an original primary designation to the replacement and refreshes only the venue in an existing publication. The Event remains Planning; recovery does not reconfirm it. A separate Lost Venue Replaced audit records the selected booking, primary designation and whether publication changed. Its ID is distinct from the Booking Approved audit so the Coordinator receives both the decision notice and the internal arrangement notice. E11 routing captures old/new venue audiences and excludes the actor. Registered/waitlisted Attendees receive a venue-change notice only when the published venue actually changes; a secondary-room replacement stays internal. Original booking, audit, publication and inbox/outbox effects roll back together on failure. An unlinked approval is unchanged.
+When Venue Staff approves the replacement, the transaction transfers an original primary designation to the replacement and refreshes only the venue in an existing publication. The Event remains Planning; recovery does not reconfirm it. A separate Lost Venue Replaced audit records the selected booking, primary designation and whether publication changed. Its ID is distinct from the Booking Approved audit so the Coordinator receives both the decision notice and the internal arrangement notice. E11 routing captures old/new venue audiences and excludes the actor. Recovery notices name the confirmed replacement venue using the authoritative venue row; the same message is prepared for email. Registered/waitlisted Attendees receive a venue-change notice only when the published venue actually changes; a secondary-room replacement stays internal. Original booking, audit, publication and inbox/outbox effects roll back together on failure. An unlinked approval is unchanged.
 
 The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_booking` and `booking_id` explicitly releases it only for its current assigned active Coordinator and only with a same-event linked Confirmed replacement not requiring reconfirmation. It audits the cancellation and notifies the original venue's assigned staff. Released retries do not duplicate effects. Closed Events refuse recovery. The existing same-origin/session handler is reused; no new serverless function or migration is needed.
 
-The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Automated recovery evidence uses the Conflicting fixture precondition. Final E05-S06 trigger/lift integration and human manual acceptance must be completed after the dependent application code is integrated.
+The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Lifting or shortening unavailability follows same-event replacement descendants through rejected attempts. An active descendant prevents restoring the original; a Released attempt ends that path. This preserves explicit original cancellation after a successful retry. Database integration tests exercise real E05-S06 loss, recovery approval, publication/notification timing and block lifting/editing. Human manual acceptance remains required.
