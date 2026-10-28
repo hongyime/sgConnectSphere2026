@@ -5,7 +5,7 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
 ## Done so far
 
 - **Security & Access Control Hardening**:
-  - `api/events.ts` and `api/venues/index.ts`: Enforced CSRF origin checks using `isAllowedOrigin()` on mutating HTTP methods (POST, PATCH, DELETE) whenever an `Origin` header is provided, returning HTTP 403 (`Request origin not allowed.`) for unauthorized foreign origins. In-process test runners and server calls without an origin header continue through standard auth and request validation.
+  - `api/events.ts` and `api/venues/index.ts`: Enforced strict, fail-closed CSRF origin checks using `isAllowedOrigin()` on mutating HTTP methods (POST, PATCH, DELETE) and `handleRegistrations`, rejecting missing or disallowed `Origin` headers with HTTP 403 (`Request origin not allowed.`), matching `main` and write routes in `api/attendee/events.ts`, `api/auth/session.ts`, and `backend/src/config.ts`.
   - `backend/src/modules/eventVisibility/runtime.ts`: Updated `currentUser()` to reject inactive accounts (`isActive = false`) with HTTP 403 (`Account is inactive.`). Per Aaron's review, dropped the active session lockout check to prevent third parties from terminating active attendee sessions.
   - `backend/src/http.ts`: Enforced strict cron authorization in `hasInternalSecret()` requiring a matching bearer/header secret and returning `false` whenever `expectedSecret` is undefined or blank.
 
@@ -13,7 +13,7 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
   - `backend/src/modules/accessControl/sessions.ts`: Moved scrypt password verification outside the database transaction row-lock so connection pool resources and table locks are not held during CPU-intensive hashing. Direct `pool.query` used without mock branches.
   - `api/cron/outbox-relay.ts`: Default cron run performs publication only (`publishCommittedDeliveries`), keeping email dispatch guarded under the worker task and delivery switch.
   - Unified database connection pool: Replaced separate `Pool` instances with `getDatabasePool` from `backend/src/database/client.ts`. Per Amareet's review, `getDatabasePool` reads `process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL` dynamically on first use/recreation so integration tests and dynamic env setups do not fail with 503. Wrapped `pool.end()` so multiple closures across consumers (e.g. `eventReadinessRoutes.integration.test.ts`) are safely idempotent, scoped to `instance` rather than module-global state, drain superseded pools when switching connection strings, and preserve open/ending pool instances when test teardown unsets environment variables.
-  - `api/events.ts`: Evaluated `currentUser(request)` before database pool acquisition in `handleRegistrations`, `attendance`, and `cancellation` so unauthenticated requests answer 401 without touching the database pool. Guarded nested origin check in `handleRegistrations` to allow callers without an Origin header.
+  - `api/events.ts`: Evaluated `currentUser(request)` before database pool acquisition in `handleRegistrations`, `attendance`, and `cancellation` so unauthenticated requests answer 401 without touching the database pool.
   - `backend/src/modules/eventLifecycle/completion.ts`: Added `LIMIT 50` to the candidate query to prevent timeouts on unbounded event rows.
 
 - **Frontend Bundle Optimization & Code Splitting**:
@@ -31,7 +31,8 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
 
 - **Test Alignment & Tooling**:
   - Added `backend/tests/securityHardening.test.ts` to `backend/package.json` `"test"` script so tests run in CI.
-  - Added tests for CSRF origin rejection, registrations origin allowance, and `getDatabasePool` lifecycle in `backend/tests/securityHardening.test.ts` and `tests/runtime/api-runtime.test.mjs`.
+  - Updated test requests in `tests/runtime/api-runtime.test.mjs`, `backend/tests/changeRequests.test.ts`, `backend/tests/eventAttendanceRoutes.integration.test.ts`, and `backend/tests/eventReadinessRoutes.integration.test.ts` to supply an allowed Origin header and configure test origins, simulating valid browser clients.
+  - Added explicit test cases in `backend/tests/securityHardening.test.ts` and `tests/runtime/api-runtime.test.mjs` verifying that missing and unauthorized Origin headers are rejected with 403 on mutating routes (`POST`, `PATCH`, `DELETE`).
   - Fixed Windows `os.rmdir` mock in `tooling/tests/test_worktree_hygiene.py`.
   - Regenerated `docs/testing/tc-coverage.md` via `scripts/tc_coverage_audit.py`.
   - Verified `.env.template` via `scripts/generate_env_template.py`.
@@ -41,7 +42,7 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
 - `python scripts/check.py`: 182 tooling tests, 711 test records validated, pre-commit hygiene clean.
 - `npm run typecheck`: Passed cleanly across both frontend and backend workspaces.
 - `npm test --workspace backend`: All 553 backend unit tests pass (including 16 tests in `securityHardening.test.ts`).
-- `npm run test:runtime`: All 24 runtime smoke tests pass (including explicit CSRF origin rejection).
+- `npm run test:runtime`: All 26 runtime smoke tests pass (including explicit CSRF origin rejection for missing and disallowed origins).
 - `node --import tsx --test tests/notifications/providers.test.ts`: All 11 notification provider tests pass.
 - `node --import tsx --test backend/tests/securityHardening.test.ts`: All 16 security hardening tests pass.
 - `node --import tsx --test backend/tests/sessions.test.ts`: All 8 session tests pass.

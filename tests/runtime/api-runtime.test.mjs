@@ -15,7 +15,9 @@ const environment = {
   ...Object.fromEntries(Object.entries(process.env).filter(([name]) => allowedEnvironment.has(name.toUpperCase()))),
   NODE_ENV: 'production',
   APP_ENV: 'runtime-test',
+  APP_URL: 'https://connectsphere.example.com',
 };
+const allowedOriginHeader = { origin: 'https://connectsphere.example.com' };
 let output;
 
 before(async () => {
@@ -73,7 +75,7 @@ test('compiled health handler loads under Node and reports configuration without
   });
 });
 
-for (const [path, method, expected, expectedError] of [
+for (const [path, method, expected, expectedError, request] of [
   // Consolidated /api/events serves GET (browse), POST (create), PATCH (edit
   // draft), and DELETE (delete draft) from one file. Post-ADR-015 every
   // branch reads the same cookie session via currentUser() and throws
@@ -82,9 +84,9 @@ for (const [path, method, expected, expectedError] of [
   // "without invoking a provider" invariant still holds. PUT stays
   // genuinely unsupported, covering the 405 branch.
   ['api/events.js', 'GET', 401, 'Sign in to continue.'],
-  ['api/events.js', 'POST', 401, 'Sign in to continue.'],
-  ['api/events.js', 'PATCH', 401, 'Sign in to continue.'],
-  ['api/events.js', 'DELETE', 401, 'Sign in to continue.'],
+  ['api/events.js', 'POST', 401, 'Sign in to continue.', { headers: allowedOriginHeader }],
+  ['api/events.js', 'PATCH', 401, 'Sign in to continue.', { headers: allowedOriginHeader }],
+  ['api/events.js', 'DELETE', 401, 'Sign in to continue.', { headers: allowedOriginHeader }],
   ['api/events.js', 'PUT', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'GET', 405, 'method_not_allowed'],
   ['api/notifications/send.js', 'POST', 401, 'unauthorized'],
@@ -92,7 +94,7 @@ for (const [path, method, expected, expectedError] of [
   ['api/cron/outbox-relay.js', 'GET', 401, 'unauthorized'],
 ]) {
   test(`compiled ${path} rejects ${method} without invoking a provider`, () => {
-    const response = invoke(path, method);
+    const response = invoke(path, method, request);
     assert.equal(response.status, expected);
     assert.equal(response.body.error, expectedError);
   });
@@ -101,6 +103,14 @@ for (const [path, method, expected, expectedError] of [
 test('compiled api/events.js rejects mutating requests from unauthorized origins with 403', () => {
   for (const method of ['POST', 'PATCH', 'DELETE']) {
     const response = invoke('api/events.js', method, { headers: { origin: 'https://evil.attacker.com' } });
+    assert.equal(response.status, 403);
+    assert.equal(response.body.error, 'Request origin not allowed.');
+  }
+});
+
+test('compiled api/events.js rejects mutating requests with missing origin with 403', () => {
+  for (const method of ['POST', 'PATCH', 'DELETE']) {
+    const response = invoke('api/events.js', method, { headers: {} });
     assert.equal(response.status, 403);
     assert.equal(response.body.error, 'Request origin not allowed.');
   }
@@ -164,6 +174,8 @@ test('compiled venue booking submission rejects origin and anonymous actors befo
   const environment = { APP_URL: 'https://app.example.test' };
   const denied = invoke('api/venues/index.js', 'POST', { headers: { origin: 'https://other.example.test' }, body: { action: 'request_booking' } }, environment);
   assert.equal(denied.status, 403);
+  const missing = invoke('api/venues/index.js', 'POST', { headers: {}, body: { action: 'request_booking' } }, environment);
+  assert.equal(missing.status, 403);
   const anonymous = invoke('api/venues/index.js', 'POST', { headers: { origin: 'https://app.example.test' }, body: { action: 'request_booking' } }, environment);
   assert.equal(anonymous.status, 401);
   assert.equal(anonymous.body.error, 'Sign in to continue.');
@@ -196,8 +208,16 @@ test('compiled venue block history and lifted list require a signed-in actor (E0
 
 // E08-S05 completion dispatch must authenticate before touching PostgreSQL.
 for (const method of ['GET','POST']) test(`completion ${method} refuses a missing session before database access`,()=>{
- const response=invoke('api/events.js',method,{url:'/api/events?completion=1&id=COMP-1'});
+ const request = method === 'POST'
+   ? { url: '/api/events?completion=1&id=COMP-1', headers: allowedOriginHeader }
+   : { url: '/api/events?completion=1&id=COMP-1' };
+ const response=invoke('api/events.js',method,request);
  assert.equal(response.status,401);assert.equal(response.body.error,'Sign in to continue.');
+});
+test('completion POST rejects missing origin before database access', () => {
+ const response = invoke('api/events.js', 'POST', { url: '/api/events?completion=1&id=COMP-1', headers: {} });
+ assert.equal(response.status, 403);
+ assert.equal(response.body.error, 'Request origin not allowed.');
 });
 test('completion evaluator rejects missing internal credentials in production',()=>{
  const response=invoke('api/cron/outbox-relay.js','GET',{url:'/api/cron/outbox-relay?task=completion'});

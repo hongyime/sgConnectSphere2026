@@ -70,7 +70,7 @@ test('TC_E08S03_08 and TC_E08S03_09: the readiness, submission and confirm route
         status(code) { status = code; return { json(value) { body = value as typeof body; } }; },
         json(value) { body = value as typeof body; },
       };
-      await handler({ method, url, headers: { cookie }, body: {} } as VercelRequest, response);
+      await handler({ method, url, headers: { cookie, origin: 'https://app.example.test' }, body: {} } as VercelRequest, response);
       return { status, body };
     }
 

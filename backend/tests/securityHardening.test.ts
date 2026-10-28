@@ -209,29 +209,31 @@ test('hasInternalSecret: rejects when headers are missing or mismatched', () => 
   assert.equal(hasInternalSecret(mismatchedRequest, validSecret), false);
 });
 
-test('eventsHandler and venuesHandler: reject mutating requests from unauthorized origins with 403', async () => {
+test('eventsHandler and venuesHandler: reject mutating requests from unauthorized or missing origins with 403', async () => {
   const { default: eventsHandler } = await import('../../api/events.js');
   const { default: venuesHandler } = await import('../../api/venues/index.js');
   for (const handler of [eventsHandler, venuesHandler]) {
     for (const method of ['POST', 'PATCH', 'DELETE']) {
-      let status = 0;
-      let body: unknown;
-      const headers: Record<string, unknown> = {};
-      const res: VercelResponse = {
-        setHeader: (k, v) => { headers[k] = v; },
-        status: c => { status = c; return { json: v => { body = v; } }; },
-        json: v => { body = v; },
-      };
-      await handler({ method, url: '/', headers: { origin: 'https://evil.example.com' }, body: {} } as VercelRequest, res);
-      assert.equal(status, 403);
-      assert.deepEqual(body, { error: 'Request origin not allowed.' });
-      assert.equal(headers['Cache-Control'], 'private, no-store');
-      assert.equal(headers['Vary'], 'Cookie');
+      for (const headers of [{ origin: 'https://evil.example.com' }, {}]) {
+        let status = 0;
+        let body: unknown;
+        const responseHeaders: Record<string, unknown> = {};
+        const res: VercelResponse = {
+          setHeader: (k, v) => { responseHeaders[k] = v; },
+          status: c => { status = c; return { json: v => { body = v; } }; },
+          json: v => { body = v; },
+        };
+        await handler({ method, url: '/', headers, body: {} } as VercelRequest, res);
+        assert.equal(status, 403);
+        assert.deepEqual(body, { error: 'Request origin not allowed.' });
+        assert.equal(responseHeaders['Cache-Control'], 'private, no-store');
+        assert.equal(responseHeaders['Vary'], 'Cookie');
+      }
     }
   }
 });
 
-test('eventsHandler registrations: rejects mutating request from unauthorized origin with 403 but allows missing origin header', async () => {
+test('eventsHandler registrations: rejects mutating request from unauthorized or missing origin with 403 and allows valid origin', async () => {
   const { default: eventsHandler } = await import('../../api/events.js');
   let status = 0;
   let body: unknown;
@@ -251,7 +253,7 @@ test('eventsHandler registrations: rejects mutating request from unauthorized or
   assert.equal(status, 403);
   assert.deepEqual(body, { error: 'Request origin not allowed.' });
 
-  // Without origin header -> passes origin check and reaches session auth (401 Sign in to continue.)
+  // Without origin header -> 403 (fail closed)
   status = 0;
   body = undefined;
   await eventsHandler({
@@ -260,8 +262,26 @@ test('eventsHandler registrations: rejects mutating request from unauthorized or
     headers: {},
     body: {},
   } as VercelRequest, res);
-  assert.equal(status, 401);
-  assert.deepEqual(body, { error: 'Sign in to continue.' });
+  assert.equal(status, 403);
+  assert.deepEqual(body, { error: 'Request origin not allowed.' });
+
+  // With valid origin header -> passes origin check and reaches session auth (401 Sign in to continue.)
+  const origin = 'https://app.example.test';
+  process.env.PUBLIC_SITE_URL = origin;
+  try {
+    status = 0;
+    body = undefined;
+    await eventsHandler({
+      method: 'POST',
+      url: '/api/events?registrations=1&id=EVT-TEST',
+      headers: { origin },
+      body: {},
+    } as VercelRequest, res);
+    assert.equal(status, 401);
+    assert.deepEqual(body, { error: 'Sign in to continue.' });
+  } finally {
+    delete process.env.PUBLIC_SITE_URL;
+  }
 });
 
 test('getDatabasePool: evaluates dynamic environment, wraps end idempotently, and drains previous pool on URL change', async () => {

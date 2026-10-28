@@ -93,7 +93,7 @@ const repository = new PostgresEventLifecycleRepository();
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (['POST', 'PATCH', 'DELETE'].includes(request.method || '')) {
-    if (request.headers.origin && !isAllowedOrigin(request.headers.origin)) {
+    if (!isAllowedOrigin(request.headers.origin)) {
       response.setHeader('Cache-Control', 'private, no-store');
       response.setHeader('Vary', 'Cookie');
       sendJson(response, 403, { error: 'Request origin not allowed.' });
@@ -185,7 +185,7 @@ async function handleRegistrations(request: VercelRequest, response: VercelRespo
     return;
   }
   await respondWithResult(response, async () => {
-    if (request.headers.origin && !isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
+    if (!isAllowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
     const user = await currentUser(request);
     // The same pool as Attendee registration (api/attendee/events.ts), so both lock the Event row alike.
     return manageRegistrations(getDatabasePool(), user, id, request.body);
