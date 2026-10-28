@@ -382,11 +382,23 @@ type FlaggedRow = {
 // Conflicting that no longer overlap `$2`-`$3` (pass NULL, NULL... via
 // restoreAll for a lift). A hold whose expiry has passed meanwhile is
 // restored as Expired (E06-S05). A booking the Coordinator has replaced (an
-// active booking points at it through replaces_booking_id) is not restored.
+// active descendant points back through replaces_booking_id) is not restored.
+// Rejected attempts retain their predecessor slot, so retries may be deeper
+// in the chain. Released attempts end that recovery path.
 const flaggedSql = (lock: string, restoreAll: boolean) => `
   SELECT vb.id AS booking_id, vb.status_before_conflict::text AS status_before_conflict,
     (vb.status_before_conflict::text = 'tentative' AND vb.expires_at <= now()) AS expired,
-    EXISTS (SELECT 1 FROM venue_bookings r WHERE r.replaces_booking_id = vb.id AND ${holdsVenue('r', 'now()')}) AS replaced,
+    EXISTS (
+      WITH RECURSIVE replacements AS (
+        SELECT r.id, r.status, r.expires_at FROM venue_bookings r
+        WHERE r.replaces_booking_id = vb.id AND r.event_id = vb.event_id AND r.status <> 'released'
+        UNION
+        SELECT r.id, r.status, r.expires_at FROM venue_bookings r
+        JOIN replacements parent ON r.replaces_booking_id = parent.id
+        WHERE r.event_id = vb.event_id AND r.status <> 'released'
+      )
+      SELECT 1 FROM replacements r WHERE ${holdsVenue('r', 'now()')}
+    ) AS replaced,
     e.id AS event_id, e.event_code, e.title, e.coordinator_id
   FROM venue_bookings vb JOIN events e ON e.id = vb.event_id
   WHERE vb.conflict_block_id::text = $1 AND vb.status = 'conflicting'
