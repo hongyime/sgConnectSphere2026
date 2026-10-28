@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { stubApi } from '../../testing/fakeApi';
-import { EventEditForm } from './EventEditForm';
+import { EventEditForm, toLocalInput } from './EventEditForm';
 import { ChangeRequests } from './ChangeRequests';
 
 const values = { title: 'Community Meetup', description: null, purpose: null, starts_at: '2027-03-01T01:00:00.000Z', ends_at: '2027-03-01T04:00:00.000Z', expected_attendance: 40, venue_requirements: 'Hall', accessibility_note: null, equipment_requirements: null, layout_preference: null };
@@ -43,13 +43,15 @@ test('TC_E10S01_03: refused save offers an explicit link, preserves attempted at
 test('TC_E10S01_03: an attempted date is transferred as the proposed Singapore-time input', async () => {
   const calls = stubApi({ [patch]: { status: 409, body: { error: 'Restricted after approval.', changeRequestUrl: '/change-requests/new?event=event-a' } }, [read]: { body: view } });
   mount();
-  const attempted = '2027-03-01T09:30';
+  // A fixed local 09:30 is after the 04:00 end on UTC CI. Choose a real
+  // instant inside the Event range, then render the edit form's local input.
+  const attemptedIso = '2027-03-01T01:30:00.000Z';
+  const attempted = toLocalInput(attemptedIso);
   fireEvent.change(screen.getByLabelText('Starts'), { target: { value: attempted } });
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
   fireEvent.click(await screen.findByRole('link', { name: 'Request a change' }));
-  const iso = new Date(attempted).toISOString();
-  const singapore = new Date(Date.parse(iso) + 8 * 3600000).toISOString().slice(0, 16);
-  expect(await screen.findByLabelText('New start date and time')).toHaveValue(singapore);
+  expect(calls.find(call => call.method === 'PATCH')?.body).toEqual({ startAt: attemptedIso });
+  expect(await screen.findByLabelText('New start date and time')).toHaveValue('2027-03-01T09:30');
   expect(calls.filter(call => call.method === 'POST')).toHaveLength(0);
 });
 test('Editing a refused draft clears its stale recovery link', async () => {

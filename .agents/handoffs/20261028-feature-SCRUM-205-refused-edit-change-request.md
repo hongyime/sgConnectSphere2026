@@ -30,3 +30,13 @@ Independent human code/test review and canonical manual TC_E10S01_03 remain
 open; parent SCRUM-70 and whole-story SCRUM-204 evidence are not completed by
 this frontend increment. PostPlan HTML will be committed; hosting requires CLI
 authentication that was missing during SCRUM-206. Keep original run records.
+
+## PR #365 CI follow-up
+
+Application run 40636788676 failed only the date-prefill component test. A fixed
+local 09:30 becomes after the Event's 04:00 end on UTC CI, so correct validation
+blocks the PATCH and no recovery link appears. Reproduced under TZ=UTC before
+changing the test. Use fixed 01:30Z inside the Event range, render it through
+the edit form's local input conversion, and assert exact PATCH ISO plus the
+fixed Singapore request input 09:30. No product code or validation weakened.
+Verify UTC, Asia/Singapore and America/Los_Angeles; keep prior records immutable.
