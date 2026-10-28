@@ -1,14 +1,8 @@
-import type { ReactElement } from 'react';
+import { lazy, Suspense, type ReactElement } from 'react';
 import { Navigate } from 'react-router-dom';
-import { LostVenueRecovery } from '../features/venue/LostVenueRecovery';
-import { EventAttendance } from '../features/coordinator/EventAttendance';
-import { EventCompletion } from '../features/events/EventCompletion';
-import { EventCancellation } from '../features/events/EventCancellation';
-import { MySchedule, StaffingQueue, StaffingRequestPage } from '../features/support/TechnicianStaffing';
-import { EquipmentAvailability } from '../features/support/EquipmentAvailability';
-import { EquipmentRequests, EquipmentRequestFormPage, EquipmentRequestEvents } from '../features/support/EquipmentRequests';
-import { EquipmentCatalogue, EquipmentFormPage, EquipmentDetail } from '../features/support/EquipmentCatalogue';
-import { MarkUnavailablePage } from '../features/support/EquipmentUnavailability';
+import { Loader2 } from 'lucide-react';
+import '../shared/shared.css';
+
 // The single route table for the app (ADR-017 skeleton, SCRUM-116).
 //
 // To add a page: add one entry here. `access: 'signed-in'` pages render inside
@@ -24,61 +18,93 @@ import { MarkUnavailablePage } from '../features/support/EquipmentUnavailability
 //
 // Role home pages and header links live in roles.ts; routes.test.tsx checks
 // they all point at routes registered here.
-import { LandingPage } from '../features/landing/LandingPage';
-import { LoginPage } from '../features/accessControl/LoginPage';
-import { PasswordRecovery } from '../features/accessControl/PasswordRecovery';
-import { VerifyPage } from '../features/accessControl/VerifyPage';
-import { RegisterForm } from '../features/accessControl/RegisterForm';
-import { ProfileForm } from '../features/accessControl/ProfileForm';
-import { PermissionDenied } from '../features/access/PermissionDenied';
-import { ClientEvents } from '../features/organiser/ClientEvents';
-import { OrganiserRequestFlow } from '../features/organiser/OrganiserRequestFlow';
-import { OrganiserDrafts, OrganiserDraftEdit } from '../features/organiser/OrganiserDrafts';
-import {
-  OrganiserDashboard, RequestList as OrganiserRequestList, SubmittedDetail,
-} from '../features/organiser/Organiser';
-import { AttendeeEvents } from '../features/attendee/AttendeeEvents';
-import {
-  WithdrawFromEvent, EventFeedback,
-} from '../features/attendee/AttendeeRegistration';
-import { EventDiscovery, EventDetail, RegisterForEvent } from '../features/attendee/EventRegistration';
-import { NotificationInbox } from '../features/notifications/NotificationInbox';
-import { ChangeRequests } from '../features/events/ChangeRequests';
-import { AnswerQuestions } from '../features/organiser/AnswerQuestions';
-import { EventRegistrationsPage } from '../features/organiser/EventRegistrations';
-import { RegistrationPeriodPage } from '../features/organiser/RegistrationPeriod';
-import { RequestClarification } from '../features/coordinator/RequestClarification';
-import {
-  CoordinatorHome, ReviewQueue as CoordinatorReviewQueue, RequestDetail as CoordinatorRequestDetail,
-  Reassignments as CoordinatorReassignments,
-} from '../features/coordinator/CoordinatorWorkspace';
-import { SupportRequestForm } from '../features/coordinator/TechnicalSupport';
-import { PlanningWorkspace } from '../features/coordinator/Coordinator';
-import { ConfirmRedirect, EventReadiness } from '../features/coordinator/EventReadiness';
-import { DecisionPanel } from '../features/coordinator/DecisionPanel';
-import { VenueSuitability } from '../features/venue/VenueSuitability';
-import { VenueBookingRequests } from '../features/venue/VenueBookingRequests';
-import { HoldVenueForm } from '../features/coordinator/VenueHolds';
-import { TentativeHolds } from '../features/venue/TentativeHolds';
-import { VenueSearch } from '../features/venue/VenueSearch';
-import { VenueCalendar } from '../features/venue/VenueCalendar';
-import { VenueForm } from '../features/venue/VenueForm';
-import { VenueDashboard, VenueInventory, AvailabilityCalendar } from '../features/venue/Venue';
-import { BookingDecision, BookingDetail, BookingRequests } from '../features/venue/BookingRequests';
-import { VenueBlockout } from '../features/venue/VenueBlockout';
-import { EquipmentDashboard } from '../features/support/Support';
-import { EquipmentReservationFormPage } from '../features/support/EquipmentReservations';
-import {
-  AdminHome, UserManagement, RoleAssignment, AuditLogViewer, ReportingDashboard, DigestPreferences, Recommendations,
-} from '../features/admin/Admin';
-import { AuditHistory, CommentsActivity, SearchFilter, EmptyErrorLoading } from '../features/operations/Operations';
 import { ComingSoon } from './ComingSoon';
 import { HomeRedirect } from './HomeRedirect';
-import { UiKit } from './UiKit';
-import { ListTemplate } from '../templates/ListTemplate';
-import { DetailTemplate } from '../templates/DetailTemplate';
-import { FormTemplate } from '../templates/FormTemplate';
-import { DecisionTemplate } from '../templates/DecisionTemplate';
+
+const LostVenueRecovery = lazy(() => import('../features/venue/LostVenueRecovery').then(m => ({ default: m.LostVenueRecovery })));
+const EventAttendance = lazy(() => import('../features/coordinator/EventAttendance').then(m => ({ default: m.EventAttendance })));
+const EventCompletion = lazy(() => import('../features/events/EventCompletion').then(m => ({ default: m.EventCompletion })));
+const EventCancellation = lazy(() => import('../features/events/EventCancellation').then(m => ({ default: m.EventCancellation })));
+const MySchedule = lazy(() => import('../features/support/TechnicianStaffing').then(m => ({ default: m.MySchedule })));
+const StaffingQueue = lazy(() => import('../features/support/TechnicianStaffing').then(m => ({ default: m.StaffingQueue })));
+const StaffingRequestPage = lazy(() => import('../features/support/TechnicianStaffing').then(m => ({ default: m.StaffingRequestPage })));
+const EquipmentAvailability = lazy(() => import('../features/support/EquipmentAvailability').then(m => ({ default: m.EquipmentAvailability })));
+const EquipmentRequests = lazy(() => import('../features/support/EquipmentRequests').then(m => ({ default: m.EquipmentRequests })));
+const EquipmentRequestFormPage = lazy(() => import('../features/support/EquipmentRequests').then(m => ({ default: m.EquipmentRequestFormPage })));
+const EquipmentRequestEvents = lazy(() => import('../features/support/EquipmentRequests').then(m => ({ default: m.EquipmentRequestEvents })));
+const EquipmentCatalogue = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentCatalogue })));
+const EquipmentFormPage = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentFormPage })));
+const EquipmentDetail = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentDetail })));
+const MarkUnavailablePage = lazy(() => import('../features/support/EquipmentUnavailability').then(m => ({ default: m.MarkUnavailablePage })));
+
+const LandingPage = lazy(() => import('../features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('../features/accessControl/LoginPage').then(m => ({ default: m.LoginPage })));
+const PasswordRecovery = lazy(() => import('../features/accessControl/PasswordRecovery').then(m => ({ default: m.PasswordRecovery })));
+const VerifyPage = lazy(() => import('../features/accessControl/VerifyPage').then(m => ({ default: m.VerifyPage })));
+const RegisterForm = lazy(() => import('../features/accessControl/RegisterForm').then(m => ({ default: m.RegisterForm })));
+const ProfileForm = lazy(() => import('../features/accessControl/ProfileForm').then(m => ({ default: m.ProfileForm })));
+const PermissionDenied = lazy(() => import('../features/access/PermissionDenied').then(m => ({ default: m.PermissionDenied })));
+const ClientEvents = lazy(() => import('../features/organiser/ClientEvents').then(m => ({ default: m.ClientEvents })));
+const OrganiserRequestFlow = lazy(() => import('../features/organiser/OrganiserRequestFlow').then(m => ({ default: m.OrganiserRequestFlow })));
+const OrganiserDrafts = lazy(() => import('../features/organiser/OrganiserDrafts').then(m => ({ default: m.OrganiserDrafts })));
+const OrganiserDraftEdit = lazy(() => import('../features/organiser/OrganiserDrafts').then(m => ({ default: m.OrganiserDraftEdit })));
+const OrganiserDashboard = lazy(() => import('../features/organiser/Organiser').then(m => ({ default: m.OrganiserDashboard })));
+const OrganiserRequestList = lazy(() => import('../features/organiser/Organiser').then(m => ({ default: m.RequestList })));
+const SubmittedDetail = lazy(() => import('../features/organiser/Organiser').then(m => ({ default: m.SubmittedDetail })));
+const AttendeeEvents = lazy(() => import('../features/attendee/AttendeeEvents').then(m => ({ default: m.AttendeeEvents })));
+const WithdrawFromEvent = lazy(() => import('../features/attendee/AttendeeRegistration').then(m => ({ default: m.WithdrawFromEvent })));
+const EventFeedback = lazy(() => import('../features/attendee/AttendeeRegistration').then(m => ({ default: m.EventFeedback })));
+const EventDiscovery = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDiscovery })));
+const EventDetail = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDetail })));
+const RegisterForEvent = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.RegisterForEvent })));
+const NotificationInbox = lazy(() => import('../features/notifications/NotificationInbox').then(m => ({ default: m.NotificationInbox })));
+const ChangeRequests = lazy(() => import('../features/events/ChangeRequests').then(m => ({ default: m.ChangeRequests })));
+const AnswerQuestions = lazy(() => import('../features/organiser/AnswerQuestions').then(m => ({ default: m.AnswerQuestions })));
+const EventRegistrationsPage = lazy(() => import('../features/organiser/EventRegistrations').then(m => ({ default: m.EventRegistrationsPage })));
+const RegistrationPeriodPage = lazy(() => import('../features/organiser/RegistrationPeriod').then(m => ({ default: m.RegistrationPeriodPage })));
+const RequestClarification = lazy(() => import('../features/coordinator/RequestClarification').then(m => ({ default: m.RequestClarification })));
+const CoordinatorHome = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.CoordinatorHome })));
+const CoordinatorReviewQueue = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.ReviewQueue })));
+const CoordinatorRequestDetail = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.RequestDetail })));
+const CoordinatorReassignments = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.Reassignments })));
+const SupportRequestForm = lazy(() => import('../features/coordinator/TechnicalSupport').then(m => ({ default: m.SupportRequestForm })));
+const PlanningWorkspace = lazy(() => import('../features/coordinator/Coordinator').then(m => ({ default: m.PlanningWorkspace })));
+const ConfirmRedirect = lazy(() => import('../features/coordinator/EventReadiness').then(m => ({ default: m.ConfirmRedirect })));
+const EventReadiness = lazy(() => import('../features/coordinator/EventReadiness').then(m => ({ default: m.EventReadiness })));
+const DecisionPanel = lazy(() => import('../features/coordinator/DecisionPanel').then(m => ({ default: m.DecisionPanel })));
+const VenueSuitability = lazy(() => import('../features/venue/VenueSuitability').then(m => ({ default: m.VenueSuitability })));
+const VenueBookingRequests = lazy(() => import('../features/venue/VenueBookingRequests').then(m => ({ default: m.VenueBookingRequests })));
+const HoldVenueForm = lazy(() => import('../features/coordinator/VenueHolds').then(m => ({ default: m.HoldVenueForm })));
+const TentativeHolds = lazy(() => import('../features/venue/TentativeHolds').then(m => ({ default: m.TentativeHolds })));
+const VenueSearch = lazy(() => import('../features/venue/VenueSearch').then(m => ({ default: m.VenueSearch })));
+const VenueCalendar = lazy(() => import('../features/venue/VenueCalendar').then(m => ({ default: m.VenueCalendar })));
+const VenueForm = lazy(() => import('../features/venue/VenueForm').then(m => ({ default: m.VenueForm })));
+const VenueDashboard = lazy(() => import('../features/venue/Venue').then(m => ({ default: m.VenueDashboard })));
+const VenueInventory = lazy(() => import('../features/venue/Venue').then(m => ({ default: m.VenueInventory })));
+const AvailabilityCalendar = lazy(() => import('../features/venue/Venue').then(m => ({ default: m.AvailabilityCalendar })));
+const BookingDecision = lazy(() => import('../features/venue/BookingRequests').then(m => ({ default: m.BookingDecision })));
+const BookingDetail = lazy(() => import('../features/venue/BookingRequests').then(m => ({ default: m.BookingDetail })));
+const BookingRequests = lazy(() => import('../features/venue/BookingRequests').then(m => ({ default: m.BookingRequests })));
+const VenueBlockout = lazy(() => import('../features/venue/VenueBlockout').then(m => ({ default: m.VenueBlockout })));
+const EquipmentDashboard = lazy(() => import('../features/support/Support').then(m => ({ default: m.EquipmentDashboard })));
+const EquipmentReservationFormPage = lazy(() => import('../features/support/EquipmentReservations').then(m => ({ default: m.EquipmentReservationFormPage })));
+const AdminHome = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.AdminHome })));
+const UserManagement = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.UserManagement })));
+const RoleAssignment = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.RoleAssignment })));
+const AuditLogViewer = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.AuditLogViewer })));
+const ReportingDashboard = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.ReportingDashboard })));
+const DigestPreferences = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.DigestPreferences })));
+const Recommendations = lazy(() => import('../features/admin/Admin').then(m => ({ default: m.Recommendations })));
+const AuditHistory = lazy(() => import('../features/operations/Operations').then(m => ({ default: m.AuditHistory })));
+const CommentsActivity = lazy(() => import('../features/operations/Operations').then(m => ({ default: m.CommentsActivity })));
+const SearchFilter = lazy(() => import('../features/operations/Operations').then(m => ({ default: m.SearchFilter })));
+const EmptyErrorLoading = lazy(() => import('../features/operations/Operations').then(m => ({ default: m.EmptyErrorLoading })));
+
+const UiKit = lazy(() => import('./UiKit').then(m => ({ default: m.UiKit })));
+const ListTemplate = lazy(() => import('../templates/ListTemplate').then(m => ({ default: m.ListTemplate })));
+const DetailTemplate = lazy(() => import('../templates/DetailTemplate').then(m => ({ default: m.DetailTemplate })));
+const FormTemplate = lazy(() => import('../templates/FormTemplate').then(m => ({ default: m.FormTemplate })));
+const DecisionTemplate = lazy(() => import('../templates/DecisionTemplate').then(m => ({ default: m.DecisionTemplate })));
 
 export type RouteAccess = 'public' | 'signed-in';
 export type RouteStatus = 'live' | 'mock' | 'coming-soon' | 'redirect';
@@ -91,12 +117,27 @@ export type AppRoute = {
   story?: string;
 };
 
+function RouteLoading() {
+  return (
+    <div className="ui-page" role="status" aria-label="Loading page">
+      <div style={{ display: 'grid', placeItems: 'center', minHeight: '40vh' }}>
+        <Loader2 size={32} className="ui-spin" aria-hidden="true" />
+        <span className="visually-hidden">Loading page…</span>
+      </div>
+    </div>
+  );
+}
+
+const withSuspense = (element: ReactElement): ReactElement => (
+  <Suspense fallback={<RouteLoading />}>{element}</Suspense>
+);
+
 const pub = (path: string, element: ReactElement, story?: string): AppRoute =>
-  ({ path, element, access: 'public', status: 'live', story });
+  ({ path, element: withSuspense(element), access: 'public', status: 'live', story });
 const sample = (path: string, element: ReactElement): AppRoute =>
-  ({ path, element, access: 'signed-in', status: 'mock' });
+  ({ path, element: withSuspense(element), access: 'signed-in', status: 'mock' });
 const page = (path: string, element: ReactElement, status: RouteStatus, story?: string): AppRoute =>
-  ({ path, element, access: 'signed-in', status, story });
+  ({ path, element: withSuspense(element), access: 'signed-in', status, story });
 
 export const routes: AppRoute[] = [
   // Public pages: no shared header.

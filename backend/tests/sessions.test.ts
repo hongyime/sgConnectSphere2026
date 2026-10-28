@@ -63,7 +63,7 @@ function fakePool(user: UserRow | undefined): { pool: Pool; queries: string[]; r
       if (sql === 'BEGIN' || sql === 'COMMIT' || sql === 'ROLLBACK') {
         return { rows: [], rowCount: 0 } as unknown as QueryResult;
       }
-      if (sql.startsWith('SELECT * FROM users WHERE lower(email)')) {
+      if (sql.startsWith('SELECT * FROM users WHERE lower(email)') || sql.startsWith('SELECT password_hash FROM users WHERE lower(email)')) {
         return { rows: currentUser ? [currentUser] : [], rowCount: currentUser ? 1 : 0 } as unknown as QueryResult;
       }
       if (sql.startsWith('UPDATE users SET failed_login_count = 0, locked_until = NULL')) {
@@ -170,4 +170,14 @@ test('does not increment counter when the account does not exist', async () => {
   await expectAccessError(login(pool, 'unknown@example.com', wrongPassword), 401);
   const updates = queries.filter(sql => sql.startsWith('UPDATE users'));
   assert.equal(updates.length, 0, 'Missing user must not produce any users-table write.');
+});
+
+test('queries candidate password_hash before opening transaction or row-lock', async () => {
+  const { pool, queries } = fakePool(await fixtureUser());
+  const token = await login(pool, 'organiser@example.com', knownPassword);
+  assert.match(token, /^[a-f0-9]{64}$/);
+  assert.ok(queries.length >= 3, 'Expected at least 3 queries');
+  assert.ok(queries[0].startsWith('SELECT password_hash FROM users'), 'First query must be unreserved password_hash read');
+  assert.equal(queries[1], 'BEGIN', 'BEGIN must follow password verification query');
+  assert.ok(queries[2].startsWith('SELECT * FROM users WHERE lower(email) = lower($1) FOR UPDATE'), 'Row lock must happen inside transaction');
 });

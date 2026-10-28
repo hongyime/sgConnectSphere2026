@@ -7,7 +7,7 @@ let pool: pg.Pool | null = null;
 
 export function getDatabasePool() {
   pool ??= new Pool({
-    connectionString: requireEnv(runtimeConfig.databaseUrl, 'DATABASE_URL'),
+    connectionString: requireEnv(process.env.DATABASE_POOLER_URL || runtimeConfig.databaseUrl, 'DATABASE_URL'),
     max: 2,
     connectionTimeoutMillis: 3000,
     idleTimeoutMillis: 10000,

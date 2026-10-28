@@ -18,6 +18,16 @@ export function sessionToken(request: VercelRequest) {
 }
 
 export async function login(pool: Pool, email: string, password: string) {
+  const candidateResult = typeof (pool as any).query === 'function'
+    ? await pool.query(`SELECT password_hash FROM users WHERE lower(email) = lower($1)`, [email.trim()])
+    : await (async () => {
+        const c = await pool.connect();
+        try { return await c.query(`SELECT password_hash FROM users WHERE lower(email) = lower($1)`, [email.trim()]); }
+        finally { c.release(); }
+      })();
+  const candidateHash = candidateResult.rows[0]?.password_hash || '';
+  const matches = await verifyPassword(password, candidateHash);
+
   const db = await pool.connect();
   try {
     await db.query('BEGIN');
@@ -35,7 +45,6 @@ export async function login(pool: Pool, email: string, password: string) {
       user.locked_until = null;
     }
 
-    const matches = await verifyPassword(password, user?.password_hash || '');
     const isCurrentlyLocked = Boolean(user && (
       user.failed_login_count >= LOCKOUT_THRESHOLD
       || (user.locked_until && user.locked_until > new Date())

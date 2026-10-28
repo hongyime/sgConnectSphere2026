@@ -98,3 +98,25 @@ test("TC_E08S05_01 maintenance distinguishes expiry and completion failures", as
   });
   assert.equal(evaluations, 1);
 });
+
+test("evaluateCompletions candidate selection query contains LIMIT 50", async () => {
+  const { evaluateCompletions } = await import("../src/modules/eventLifecycle/completion.js");
+  const queries: string[] = [];
+  const fakeDb = {
+    connect: async () => ({
+      query: async (sql: string) => {
+        queries.push(sql);
+        if (sql === "BEGIN" || sql === "COMMIT" || sql === "ROLLBACK") return { rows: [] };
+        if (sql.includes("clock_timestamp()")) return { rows: [{ now: new Date() }] };
+        if (sql.includes("SELECT id FROM events")) return { rows: [] };
+        return { rows: [] };
+      },
+      release: () => {},
+    }),
+  } as unknown as Pool;
+  const res = await evaluateCompletions(fakeDb);
+  assert.deepEqual(res, { completed: 0 });
+  const selectQuery = queries.find((q) => q.includes("SELECT id FROM events"));
+  assert.ok(selectQuery, "Candidate query must be executed");
+  assert.ok(selectQuery.includes("LIMIT 50"), "Candidate query must include LIMIT 50");
+});

@@ -1,27 +1,30 @@
 import { sessionToken, tokenDigest } from '../accessControl/sessions.js';
-import { Pool } from 'pg';
-import { requireEnv } from '../../config.js';
+import type { Pool } from 'pg';
+import { getDatabasePool } from '../../database/client.js';
 import type { VercelRequest, VercelResponse } from '../../vercel.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { sendJson } from '../../http.js';
 import { AccessError, type Query } from './service.js';
 
-let pool: Pool | undefined;
-export function databasePool() {
-  pool ??= new Pool({ connectionString: requireEnv(process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL, 'DATABASE_URL'), max: 3 });
-  return pool;
+export function databasePool(): Pool {
+  return getDatabasePool();
 }
 export const query: Query = (sql: string, values?: unknown[]) => databasePool().query(sql, values);
 
-export async function currentUser(request: VercelRequest): Promise<AuthenticatedUser> {
+export async function currentUser(request: VercelRequest, queryFn: Query = query): Promise<AuthenticatedUser> {
   const token = sessionToken(request);
   if (!token || !/^[a-f0-9]{64}$/.test(token)) throw new AccessError(401, 'Sign in to continue.');
-  const result = await query(`SELECT u.id, u.email, u.role, u.client_org_id AS "clientOrgId", u.is_active AS "isActive",
+  const result = await queryFn(`SELECT u.id, u.email, u.role, u.client_org_id AS "clientOrgId", u.is_active AS "isActive",
     u.failed_login_count AS "failedLoginCount", u.locked_until AS "lockedUntil"
     FROM auth_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = $1 AND s.expires_at > now()`, [tokenDigest(token)]);
   if (!result.rows[0]) throw new AccessError(401, 'Your session has expired. Please sign in again.');
-  return result.rows[0] as AuthenticatedUser;
+  const user = result.rows[0] as AuthenticatedUser;
+  const isLocked = Boolean(user.lockedUntil && new Date(user.lockedUntil).getTime() > Date.now());
+  if (!user.isActive || isLocked) {
+    throw new AccessError(403, 'Account is inactive or locked.');
+  }
+  return user;
 }
 
 export async function respond(response: VercelResponse, work: () => Promise<Record<string, unknown>>) {

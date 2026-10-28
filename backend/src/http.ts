@@ -24,8 +24,8 @@ export function requireMethod(
 }
 
 export function hasInternalSecret(request: VercelRequest, expectedSecret?: string) {
-  if (!expectedSecret) {
-    return process.env.NODE_ENV !== 'production';
+  if (!expectedSecret || expectedSecret.trim() === '') {
+    return false;
   }
 
   const headerSecretValue = request.headers['x-internal-secret'];

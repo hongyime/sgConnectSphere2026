@@ -66,8 +66,11 @@ export default async function handler(request: VercelRequest, response: VercelRe
     return;
   }
   try {
-    const result = await publishCommittedDeliveries(postgresDeliveryStore(notificationDatabase()), createDeliveryTransport());
-    sendJson(response, 200, result);
+    const store = postgresDeliveryStore(notificationDatabase());
+    const transport = createDeliveryTransport();
+    const published = await publishCommittedDeliveries(store, transport);
+    const dispatched = await dispatchCommittedDeliveries(store, transport, sendDurableBrevoEmail);
+    sendJson(response, 200, { published, dispatched });
   } catch {
     sendJson(response, 503, { error: 'notification_relay_unavailable' });
   }

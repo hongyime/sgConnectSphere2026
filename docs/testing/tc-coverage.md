@@ -701,6 +701,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventCompletion.test.ts`
 
 - Completion reads/writes refuse missing, wrong-role, locked/inactive and invalid identifiers before querying
+- evaluateCompletions candidate selection query contains LIMIT 50
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -879,6 +880,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E09-S03: the Organiser sets one Event-level registration period that Attendees are held to
 
+### `backend/tests/securityHardening.test.ts`
+
+- currentUser: rejects request with missing session cookie with 401
+- currentUser: rejects request with malformed session token with 401
+- currentUser: rejects expired or non-existent session with 401
+- currentUser: rejects inactive account (isActive = false) with 403
+- currentUser: rejects currently locked account (lockedUntil > now) with 403
+- currentUser: rejects account that is both inactive and locked with 403
+- currentUser: returns user when account is active and lock is expired (lockedUntil <= now)
+- currentUser: returns user when account is active and never locked (lockedUntil undefined)
+- hasInternalSecret: returns false for undefined, empty, or whitespace-only expectedSecret under development and production
+- hasInternalSecret: authenticates valid secret via x-internal-secret header
+- hasInternalSecret: authenticates valid secret via Bearer token in authorization header
+- hasInternalSecret: supports array header values
+- hasInternalSecret: rejects when headers are missing or mismatched
+
 ### `backend/tests/sessions.test.ts`
 
 - increments failed_login_count on wrong password below threshold
@@ -888,6 +905,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - resets counter and lock on a mid-window correct password
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
+- queries candidate password_hash before opening transaction or row-lock
 
 ### `backend/tests/staffAssignments.test.ts`
 
@@ -1825,7 +1843,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - invalid IDs and oversized batch requests are rejected before a Redis request
 - email network ambiguity is retained without an automatic resend
 - accepted emails remain sent when optional provider metadata is malformed or oversized
-- legacy raw-email helpers fail without reading or mutating the old queue
 
 ### `tests/redis/transport.test.ts`
 
