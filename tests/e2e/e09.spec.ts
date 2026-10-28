@@ -3,6 +3,7 @@ import {
   fakeOrganiserRegistrations, fakePeriodSave, fakeRegistrationBackend, organiserRegistrations, registrationEvent, registrationForm,
   registrationSessions,
 } from './helpers/registrationBackend';
+import { signInAs } from './helpers/fakeSession';
 
 // E09 - 36 cases. Source: docs/testing/cases/E09.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -139,7 +140,7 @@ test.describe("E09-S02", () => {
 
   test("TC_E09S02_06 - An Organiser may manually add an attendee only when both capacities have room", async ({ page }) => {
     const posts = await fakeOrganiserRegistrations(page, { post: () => ({ status: 201, json: organiserRegistrations({
-      capacity: { capacity: 120, registered: 100 },
+      capacity: { capacity: 120, registered: 100, remaining: 20 },
       sessions: [{ ...registrationSessions[0], capacity: 80, registered: 80 }, { ...registrationSessions[1], capacity: 40, registered: 20 }],
     }) }) });
     await page.goto('/organiser/requests/EVT-2001/registrations');
@@ -208,11 +209,11 @@ test.describe("E09-S02", () => {
     let view: unknown = organiserRegistrations({ pending: [{ ...casey, overCapacity: '"Session A" is full (80 of 80 places).' }] });
     const roomy = organiserRegistrations({
       sessions: [{ ...registrationSessions[0], capacity: 100, registered: 80 }, { ...registrationSessions[1], capacity: 40, registered: 19 }],
-      capacity: { capacity: 140, registered: 99 }, pending: [{ ...casey, overCapacity: null }],
+      capacity: { capacity: 140, registered: 99, remaining: 41 }, pending: [{ ...casey, overCapacity: null }],
     });
     const posts = await fakeOrganiserRegistrations(page, {
       view: () => view,
-      post: () => ({ json: { ...roomy, capacity: { capacity: 140, registered: 100 }, pending: [] } }),
+      post: () => ({ json: { ...roomy, capacity: { capacity: 140, registered: 100, remaining: 40 }, pending: [] } }),
     });
     await page.goto('/organiser/requests/EVT-2001/registrations');
     const row = page.getByRole('row', { name: /Casey Tan/ });
@@ -230,7 +231,7 @@ test.describe("E09-S02", () => {
 
   test("TC_E09S02_12 - Combined Event capacity should reflect confirmed Session layout capacities", async ({ page }) => {
     await fakeOrganiserRegistrations(page, { view: organiserRegistrations({
-      capacity: { capacity: 120, registered: 0 },
+      capacity: { capacity: 120, registered: 0, remaining: 120 },
       sessions: [{ ...registrationSessions[0], capacity: 80, registered: 0 }, { ...registrationSessions[1], capacity: 40, registered: 0 }],
     }) });
     await page.goto('/organiser/requests/EVT-2001/registrations');
@@ -482,94 +483,56 @@ test.describe("E09-S04", () => {
 // E09-S06 live attendance coverage: event-attendance.spec.ts and backend eventAttendance suites.
 
 test.describe("E09-S07", () => {
+  const listPage = '/organiser/requests/EVT-2001/registrations';
+  const person = (id: string, name: string, email: string, contactNumber: string, extra: Record<string, unknown> = {}) =>
+    ({ id, name, email, contactNumber, sessionIds: ['s-a'], ...extra });
 
-  /**
-   * TC_E09S07_01
-   * AC:      E09-S07 - Scenario 1 (Registrations grouped by event)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has attendee_a@example.com and attendee_b@example.com registered, each with a name, email address and contact number on file
-   *
-   * Test data:
-   *   attendee_a@example.com: +65 9123 4567 | attendee_b@example.com: +65 9234 5678
-   *
-   * Expected result:
-   *   The list shows each Attendee's name, email address and contact number: attendee_a@example.com and attendee_b@example.com both appear with their full contact details
-   */
-  test.fixme("TC_E09S07_01 - Verify that opening the registration list for an event with registered Attendees should show each Attendee's name, email address and contact number", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open the registration list for "Tech Conference 2026"
-    void page;
+  test("TC_E09S07_01 - Verify that opening the registration list for an event with registered Attendees should show each Attendee's name, email address and contact number", async ({ page }) => {
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({ registered: [
+      person('r-a', 'Attendee A', 'attendee_a@example.com', '+65 9123 4567', { registeredAt: '2026-10-20T02:00:00.000Z', manuallyAdded: false }),
+      person('r-b', 'Attendee B', 'attendee_b@example.com', '+65 9234 5678', { registeredAt: '2026-10-21T02:00:00.000Z', manuallyAdded: false }),
+    ] }) });
+    await page.goto(listPage);
+    const list = page.getByRole('table', { name: 'Registered attendees' });
+    await expect(list.getByRole('row', { name: /Attendee A/ })).toContainText('attendee_a@example.com');
+    await expect(list.getByRole('row', { name: /Attendee A/ })).toContainText('+65 9123 4567');
+    await expect(list.getByRole('row', { name: /Attendee B/ })).toContainText('attendee_b@example.com');
+    await expect(list.getByRole('row', { name: /Attendee B/ })).toContainText('+65 9234 5678');
   });
 
-  /**
-   * TC_E09S07_02
-   * AC:      E09-S07 - Scenario 2 (Counts and remaining capacity)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Tech Conference 2026" the event has 100 registered out of a capacity of 150
-   *
-   * Test data:
-   *   the event: 100 registered, capacity 150
-   *
-   * Expected result:
-   *   the event shows "100 registered" and "50 remaining"
-   */
-  test.fixme("TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open the registration list for "Tech Conference 2026"
-    void page;
+  test("TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event", async ({ page }) => {
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({ capacity: { capacity: 150, registered: 100, remaining: 50 } }) });
+    await page.goto(listPage);
+    await expect(page.getByText('100 registered')).toBeVisible();
+    await expect(page.getByText('50 remaining')).toBeVisible();
   });
 
-  /**
-   * TC_E09S07_03
-   * AC:      E09-S07 - Scenario 3 (Unmanaged event refused)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   organiser_b@clienta.com is linked to Client B; event "Annual Tech Summit" belongs to Client A
-   *
-   * Test data:
-   *   Acting user: organiser_b@clienta.com | Event: Annual Tech Summit (Client A)
-   *
-   * Expected result:
-   *   Access is refused, since "Annual Tech Summit" does not belong to organiser_b@clienta.com's client organisation
-   */
-  test.fixme("TC_E09S07_03 - Verify that attempting to open the registration list for an event that does not belong to the Organiser's client organisation should be refused", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_b@clienta.com
-    // 2. Attempt to open the registration list for "Annual Tech Summit"
-    void page;
+  test("TC_E09S07_03 - Verify that attempting to open the registration list for an event that does not belong to the Organiser's client organisation should be refused", async ({ page }) => {
+    await signInAs(page, 'event_organiser', { email: 'organiser_c@clientb.com' });
+    await page.route('**/api/events?registrations=1*', route => route.fulfill({ status: 403,
+      json: { error: 'Access denied. This event is not available to your organisation.' } }));
+    await page.goto(listPage);
+    await expect(page.getByText('Access denied. This event is not available to your organisation.')).toBeVisible();
+    await expect(page.getByRole('table', { name: 'Registered attendees' })).toHaveCount(0);
   });
 
-  /**
-   * TC_E09S07_04
-   * AC:      E09-S07 - Scenario 4 (Waitlist shown separately)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   "Community Meetup"'s event has 5 registered Attendees and 2 on the waiting list
-   *
-   * Test data:
-   *   Registered: 5 | Waitlisted: 2
-   *
-   * Expected result:
-   *   The 5 registered Attendees and the 2 waitlisted Attendees are shown in clearly separate sections/lists
-   */
-  test.fixme("TC_E09S07_04 - Verify that waitlisted Attendees should be shown separately from registered Attendees on the registration list", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open the registration list for "Community Meetup"
-    void page;
+  test("TC_E09S07_04 - Verify that waitlisted Attendees should be shown separately from registered Attendees on the registration list", async ({ page }) => {
+    const registered = ['A', 'B', 'C', 'D', 'E'].map(letter =>
+      person(`r-${letter}`, `Attendee ${letter}`, `attendee_${letter.toLowerCase()}@example.com`, '+65 9500 0000',
+        { registeredAt: '2026-10-20T02:00:00.000Z', manuallyAdded: false }));
+    const waitlisted = ['I', 'J'].map(letter =>
+      person(`w-${letter}`, `Attendee ${letter}`, `attendee_${letter.toLowerCase()}@example.com`, '+65 9500 0009', { joinedAt: '2026-10-22T02:00:00.000Z' }));
+    await fakeOrganiserRegistrations(page, { view: organiserRegistrations({ registered, waitlisted }) });
+    await page.goto(listPage);
+    await expect(page.getByRole('heading', { name: 'Registered attendees (5)' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Waiting list (2)' })).toBeVisible();
+    const waiting = page.getByRole('table', { name: 'Waiting list' });
+    await expect(waiting.getByRole('row', { name: /Attendee I/ })).toBeVisible();
+    await expect(waiting.getByRole('row', { name: /Attendee A/ })).toHaveCount(0);
+    await expect(page.getByRole('table', { name: 'Registered attendees' }).getByRole('row', { name: /Attendee J/ })).toHaveCount(0);
   });
 
 });
-
-// Week 7 additions from docs/testing/cases/E09.md.
 
 test.describe("E09-S01 — Week 7 case scaffolds", () => {
   test("TC_E09S01_06 — Verify that an Attendee viewing a multi-venue event should see only the primary venue", async ({ page }) => {

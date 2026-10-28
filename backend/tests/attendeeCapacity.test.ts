@@ -9,7 +9,7 @@ import type { Query } from '../src/modules/eventVisibility/service.js';
 
 // E09-S02 unit tests with a scripted database. Locks, counts and races on real
 // PostgreSQL are in attendeeCapacity.integration.test.ts.
-const organiser: AuthenticatedUser = { id: randomUUID(), email: 'olive@example.test', role: 'event_organiser', isActive: true, failedLoginCount: 0 };
+const organiser: AuthenticatedUser = { id: randomUUID(), email: 'olive@example.test', role: 'event_organiser', clientOrgId: 'client-a', isActive: true, failedLoginCount: 0 };
 const eventId = randomUUID(), sessionA = randomUUID(), sessionB = randomUUID(), requestId = randomUUID(), attendeeId = randomUUID();
 const now = new Date('2027-03-01T02:00:00Z');
 
@@ -18,6 +18,7 @@ type State = {
   capacity?: Record<string, unknown>[];
   eventRegistered?: number;
   pending?: Record<string, unknown>[];
+  attendees?: Record<string, unknown>[];
   request?: Record<string, unknown> | null;
   attendee?: Record<string, unknown> | null;
   existing?: Record<string, unknown> | null;
@@ -33,7 +34,7 @@ function script(state: State = {}) {
     calls.push({ sql, values });
     if (state.failAt && sql.includes(state.failAt)) throw state.failure;
     let rows: unknown[] = [];
-    if (sql.includes('FROM events WHERE id::text')) {
+    if (sql.includes('FROM events WHERE (id::text')) {
       rows = state.event === null ? [] : [{
         id: eventId, event_code: 'EVT-2001', title: 'Community Meetup', status: 'confirmed', waitlist_enabled: false,
         organiser_id: organiser.id, starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'),
@@ -46,7 +47,8 @@ function script(state: State = {}) {
         { id: sessionA, title: 'Morning', starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T04:00:00Z'), venue_name: 'Hall 1', venue_location: 'L1' },
         { id: sessionB, title: null, starts_at: new Date('2027-04-01T05:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'), venue_name: null, venue_location: null },
       ];
-    } else if (sql.includes("r.status = 'pending'")) rows = state.pending ?? [];
+    } else if (sql.includes("r.status IN ('registered', 'waitlisted')")) rows = state.attendees ?? [];
+    else if (sql.includes("r.status = 'pending'")) rows = state.pending ?? [];
     else if (sql.includes('WHERE r.id = $1 AND r.event_id = $2')) {
       rows = state.request === null ? [] : [{ id: requestId, status: 'pending', attendee_id: attendeeId, session_ids: [sessionA], ...state.request }];
     } else if (sql.includes('UPDATE event_registrations SET status')) rows = [{ at: now }];
@@ -86,18 +88,48 @@ test('getEventRegistrations shows capacity per Session and why each Pending requ
   const view = await getEventRegistrations(script({ pending, capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }] }).query, organiser, 'EVT-2001');
   assert.deepEqual(view.event, { id: eventId, eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: false,
     startsAt: '2027-04-01T01:00:00.000Z', endsAt: '2027-04-01T09:00:00.000Z', registrationEnabled: true,
-    opensAt: null, closesAt: '2027-03-30T00:00:00.000Z', withdrawalDeadline: null });
-  assert.deepEqual(view.capacity, { capacity: 10, registered: 4 });
+    opensAt: null, closesAt: '2027-03-30T00:00:00.000Z', withdrawalDeadline: null, canManage: true });
+  assert.deepEqual(view.capacity, { capacity: 10, registered: 4, remaining: 6 });
   assert.deepEqual(view.sessions.map(session => [session.id, session.capacity, session.registered]), [[sessionA, 10, 10], [sessionB, 0, 0]]);
   assert.deepEqual(view.pending, [{ id: requestId, name: 'Casey Tan', email: 'casey@example.test', requestedAt: now.toISOString(),
     sessionIds: [sessionA], overCapacity: '"Morning" is full (10 of 10 places).' }]);
 });
 
-test("getEventRegistrations is for the Event's own Organiser only", async () => {
+test("TC_E09S07_03 - another organisation's event is refused and the attempt recorded; a colleague may view but not manage", async () => {
   await assert.rejects(getEventRegistrations(script().query, { ...organiser, role: 'attendee' }, eventId), { status: 403 });
-  await assert.rejects(getEventRegistrations(script({ event: null }).query, organiser, eventId), { status: 404 });
-  await assert.rejects(getEventRegistrations(script({ event: { organiser_id: randomUUID() } }).query, organiser, eventId), { status: 404, message: 'Event not found.' });
+  await assert.rejects(getEventRegistrations(script().query, { ...organiser, clientOrgId: undefined }, eventId), { status: 403 });
+  const { query, calls } = script({ event: null });
+  await assert.rejects(getEventRegistrations(query, organiser, 'EVT-9999'),
+    { status: 403, message: 'Access denied. This event is not available to your organisation.' });
+  assert.ok(calls[0]!.sql.includes('client_org_id = $2') && calls[0]!.values![1] === 'client-a');
+  const denial = calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!;
+  assert.ok(denial.sql.includes("'Access Denied', 'registrations'"));
+  assert.deepEqual(denial.values, [organiser.id, 'EVT-9999']);
+  // E01-S02 Scenario 3: a colleague in the same organisation sees the list.
+  const colleague = await getEventRegistrations(script({ event: { organiser_id: randomUUID() } }).query, organiser, eventId);
+  assert.equal(colleague.event.canManage, false);
   await assert.rejects(getEventRegistrations(script().query, organiser, ''), { status: 400 });
+});
+
+test('TC_E09S07_01, _02, _04 - registered and waitlisted Attendees are listed apart, with name, email and contact number only', async () => {
+  const at = (minute: number) => new Date(`2027-03-01T02:${String(minute).padStart(2, '0')}:00Z`);
+  const person = (name: string, extra: Record<string, unknown>) => ({ id: randomUUID(), full_name: name, email: `${name.toLowerCase()}@example.test`,
+    contact_number: '+65 9000 0000', session_ids: [sessionA], manually_added: false, password_hash: 'never shown', ...extra });
+  const attendees = [
+    person('Ann', { status: 'registered', registered_at: at(1) }),
+    person('Ben', { status: 'waitlisted', registered_at: at(2), contact_number: null }),
+    person('Cal', { status: 'registered', registered_at: at(3), manually_added: true }),
+  ];
+  const view = await getEventRegistrations(script({ attendees, eventRegistered: 2 }).query, organiser, eventId);
+  assert.deepEqual(view.registered.map(row => [row.name, row.email, row.contactNumber, row.manuallyAdded]),
+    [['Ann', 'ann@example.test', '+65 9000 0000', false], ['Cal', 'cal@example.test', '+65 9000 0000', true]]);
+  assert.deepEqual(Object.keys(view.registered[0]!).sort(), ['contactNumber', 'email', 'id', 'manuallyAdded', 'name', 'registeredAt', 'sessionIds']);
+  assert.deepEqual(view.waitlisted, [{ id: attendees[1]!.id, name: 'Ben', email: 'ben@example.test', contactNumber: null,
+    sessionIds: [sessionA], joinedAt: at(2).toISOString() }]);
+  assert.deepEqual(view.capacity, { capacity: 20, registered: 2, remaining: 18 });
+  // Over capacity after a capacity drop: nothing is "remaining", never a negative number.
+  const over = await getEventRegistrations(script({ eventRegistered: 25 }).query, organiser, eventId);
+  assert.equal(over.capacity.remaining, 0);
 });
 
 test('parseAction accepts approve, reject and add, and names what is wrong otherwise', () => {
@@ -200,4 +232,16 @@ test('getEventRegistrations returns the registration period the Organiser set (E
   assert.equal(view.event.closesAt, null);
   assert.equal(view.event.withdrawalDeadline, '2027-03-25T00:00:00.000Z');
   assert.equal(view.event.registrationEnabled, false);
+});
+
+test("manageRegistrations is for the Event's own Organiser: another organisation is refused and recorded, a colleague is refused", async () => {
+  const other = script({ event: null });
+  await assert.rejects(manageRegistrations(other.pool, organiser, 'EVT-9999', { action: 'approve', registrationId: requestId }),
+    { status: 403, message: 'Access denied. This event is not available to your organisation.' });
+  assert.ok(other.calls.some(call => call.sql.includes('INSERT INTO audit_logs')));
+  assert.equal(other.calls.some(call => call.sql === 'BEGIN'), false);
+  const colleague = script({ event: { organiser_id: randomUUID() } });
+  await assert.rejects(manageRegistrations(colleague.pool, organiser, eventId, { action: 'approve', registrationId: requestId }),
+    { status: 403, message: "Only this event's Organiser can approve requests or add attendees." });
+  assert.equal(colleague.calls.some(call => call.sql.includes('UPDATE event_registrations')), false);
 });

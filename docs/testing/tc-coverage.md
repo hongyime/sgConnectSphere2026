@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **266** (70.2%)
+- Automated (explicit TC_ID in an active test title): **270** (71.2%)
   - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **227**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **84** (22.2%)
+  - Live-assertion (other active tests): **231**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **80** (21.1%)
 - No test yet (no test file mentions the TC_ID): **29** (7.7%)
 
 ## Coverage by epic
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
-| E09 | 45 | 29 | 13 | 3 |
+| E09 | 45 | 33 | 9 | 3 |
 | E10 | 29 | 13 | 9 | 7 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **266** | **84** | **29** |
+| **Total** | **379** | **270** | **80** | **29** |
 
 ## Case-by-case status
 
@@ -395,10 +395,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S06_02` | E09-S06 | Verify that a registered Attendee who did not attend should be shown as register | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S06_03` | E09-S06 | Verify that attempting to record attendance before the event is Completed should | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_03 — all non-Completed statuses block writes, server capability matches; missing, foreign and inactive registrations re |
 | `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
-| `TC_E09S07_01` | E09-S07 | Verify that opening the registration list for an event with registered Attendees | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_01 - Verify that opening the registration list for an event with registered Attendees should show each Attendee |
-| `TC_E09S07_02` | E09-S07 | Verify that the registration list should show the registered count and remaining | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event |
-| `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_03 - Verify that attempting to open the registration list for an event that does not belong to the Organiser |
-| `TC_E09S07_04` | E09-S07 | Verify that waitlisted Attendees should be shown separately from registered Atte | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S07_04 - Verify that waitlisted Attendees should be shown separately from registered Attendees on the registration list |
+| `TC_E09S07_01` | E09-S07 | Verify that opening the registration list for an event with registered Attendees | ✅ active | backend/tests/attendeeCapacity.test.ts: TC_E09S07_01, _02, _04 - registered and waitlisted Attendees are listed apart, with name, email and contact number only; tests/e2e/e09.spec. |
+| `TC_E09S07_02` | E09-S07 | Verify that the registration list should show the registered count and remaining | ✅ active | tests/e2e/e09.spec.ts: TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event |
+| `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ✅ active | backend/tests/attendeeCapacity.test.ts: TC_E09S07_03 - another organisation; tests/e2e/e09.spec.ts: TC_E09S07_03 - Verify that attempting to open the registration list for an event |
+| `TC_E09S07_04` | E09-S07 | Verify that waitlisted Attendees should be shown separately from registered Atte | ✅ active | tests/e2e/e09.spec.ts: TC_E09S07_04 - Verify that waitlisted Attendees should be shown separately from registered Attendees on the registration list; frontend/src/features/organise |
 
 ### E10
 
@@ -493,12 +493,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - overCapacity names each full chosen Session, then a full Event, else null
 - getEventRegistrations shows capacity per Session and why each Pending request does not fit
-- getEventRegistrations is for the Event
 - parseAction accepts approve, reject and add, and names what is wrong otherwise
 - manageRegistrations rejects a Pending request without a capacity check
 - manageRegistrations refuses unknown, decided and unconfirmed cases
 - manageRegistrations maps a busy account and a lost unique race, and rethrows other failures
 - getEventRegistrations returns the registration period the Organiser set (E09-S03)
+- manageRegistrations is for the Event
 
 ### `backend/tests/attendeeRegistration.test.ts`
 
@@ -1375,6 +1375,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a failed decline keeps the confirm step open
 - an unconfirmed event, an empty list and a load failure are each explained
 - leaving the page while an approval is saving drops the late reply
+- empty lists say so, and a closed waiting list says it is off
+- a colleague
 
 ### `frontend/src/features/organiser/Organiser.test.tsx`
 

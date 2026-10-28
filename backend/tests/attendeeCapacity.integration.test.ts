@@ -68,7 +68,7 @@ test('E09-S02: Session and Event capacity, Pending requests and manual additions
     const url = new URL(process.env.TEST_DATABASE_URL!); url.searchParams.set('options', `-csearch_path=${schema},public`);
     pool = new Pool({ connectionString: url.toString(), max: 6 });
     const person = (index: number): AuthenticatedUser => ({ id: attendees[index - 1]!, email: `attendee${index}@example.test`, role: 'attendee', isActive: true, failedLoginCount: 0 });
-    const olive: AuthenticatedUser = { id: organiser, email: 'organiser@example.test', role: 'event_organiser', isActive: true, failedLoginCount: 0 };
+    const olive: AuthenticatedUser = { id: organiser, email: 'organiser@example.test', role: 'event_organiser', clientOrgId: org, isActive: true, failedLoginCount: 0 };
     const register = (index: number, sessionId: string) => registerForEvent(pool!, person(index), 'EVT-2001', { sessionIds: [sessionId] });
     const statusOf = (result: { body: Record<string, unknown> }) => (result.body.registration as { status: string }).status;
     const counts = async () => {
@@ -118,7 +118,7 @@ test('E09-S02: Session and Event capacity, Pending requests and manual additions
     assert.deepEqual(await counts(), [5, 10, '2/6', '3/4']);
     const approved = await manageRegistrations(pool, olive, 'EVT-2001', { action: 'approve', registrationId: caseyRequest.id });
     assert.equal(approved.status, 200);
-    assert.deepEqual(approved.body.capacity, { capacity: 10, registered: 6 });
+    assert.deepEqual(approved.body.capacity, { capacity: 10, registered: 6, remaining: 4 });
     assert.equal((approved.body.pending as unknown[]).length, 2);
     assert.deepEqual((await db.query('SELECT title FROM notifications WHERE user_id=$1 ORDER BY created_at', [attendees[2]])).rows.map(row => row.title),
       ['Registration request received', 'Registration confirmed']);
@@ -141,8 +141,27 @@ test('E09-S02: Session and Event capacity, Pending requests and manual additions
     assert.equal((await db.query('SELECT count(*)::int AS n FROM event_registrations WHERE attendee_id=$1', [attendees[10]])).rows[0].n, 0);
     const audit = (await db.query("SELECT action FROM audit_logs WHERE entity_type='event_registration' ORDER BY occurred_at")).rows.map(row => row.action);
     assert.deepEqual(audit, ['Registration Approved', 'Registration Rejected', 'Attendee Added Manually']);
-    // Another Organiser's account can't see the event.
-    await assert.rejects(getEventRegistrations(query, { ...olive, id: coordinator }, 'EVT-2001'), { status: 404 });
+    // E09-S07 (TC_E09S07_01, _02, _04): registered and waitlisted Attendees listed apart, with
+    // name, email and contact number; registered count and places remaining.
+    await db.query("INSERT INTO event_registrations(event_id,attendee_id,status) VALUES ($1,$2,'waitlisted')", [meetup, attendees[10]]);
+    const list = await getEventRegistrations(query, olive, 'EVT-2001');
+    assert.equal(list.registered.length, 7);
+    const vip = list.registered.find(row => row.email === 'attendee10@example.test')!;
+    assert.equal(vip.manuallyAdded, true); assert.equal(vip.contactNumber, '+65 8000 0000'); assert.equal(vip.name, 'Synthetic attendee');
+    assert.deepEqual(list.waitlisted.map(row => row.email), ['attendee11@example.test']);
+    assert.deepEqual(list.capacity, { capacity: 10, registered: 7, remaining: 3 });
+    // TC_E09S07_03: another organisation's Organiser is refused, and the attempt is recorded (E01-S02).
+    const otherOrg = randomUUID();
+    await db.query('INSERT INTO client_organisations(id,name) VALUES ($1,$2)', [otherOrg, 'Other client']);
+    await assert.rejects(getEventRegistrations(query, { ...olive, id: coordinator, clientOrgId: otherOrg }, 'EVT-2001'),
+      { status: 403, message: 'Access denied. This event is not available to your organisation.' });
+    const denial = (await db.query("SELECT event_id FROM audit_logs WHERE action='Access Denied' AND field_changed='registrations' AND actor_id=$1", [coordinator])).rows;
+    assert.deepEqual(denial.map(row => row.event_id), [meetup]);
+    // A colleague in the same organisation (E01-S02 Scenario 3) can view the list but not manage it.
+    const colleague = { ...olive, id: coordinator };
+    assert.equal((await getEventRegistrations(query, colleague, 'EVT-2001')).event.canManage, false);
+    await assert.rejects(manageRegistrations(pool, colleague, 'EVT-2001', { action: 'add', email: 'attendee11@example.test', sessionIds: [sessionA] }),
+      { status: 403, message: "Only this event's Organiser can approve requests or add attendees." });
 
     // The real API handler with an Organiser session cookie, and the origin check on POST.
     process.env.DATABASE_URL = url.toString(); delete process.env.DATABASE_POOLER_URL; process.env.APP_URL = 'https://app.example.test';
@@ -160,7 +179,7 @@ test('E09-S02: Session and Event capacity, Pending requests and manual additions
     assert.equal(signedIn.status, 200);
     const cookie = signedIn.headers['Set-Cookie'].split(';')[0];
     const shown = await call(api, { method: 'GET', url: '/api/events?registrations=1&id=EVT-2001', headers: { cookie } });
-    assert.equal(shown.status, 200); assert.deepEqual(shown.body.capacity, { capacity: 10, registered: 7 }); assert.equal(shown.body.pending.length, 1);
+    assert.equal(shown.status, 200); assert.deepEqual(shown.body.capacity, { capacity: 10, registered: 7, remaining: 3 }); assert.equal(shown.body.pending.length, 1);
     const pendingId = shown.body.pending[0].id;
     const foreign = await call(api, { method: 'POST', url: '/api/events?registrations=1&id=EVT-2001', headers: { cookie, origin: 'https://evil.example.test' },
       body: { action: 'approve', registrationId: pendingId } });

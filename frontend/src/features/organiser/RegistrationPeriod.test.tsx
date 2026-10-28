@@ -17,8 +17,8 @@ function view(event: Partial<EventRegistrations['event']> = {}): EventRegistrati
   return {
     event: { id: 'e-1', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: false,
       startsAt: '2026-11-15T01:00:00.000Z', endsAt: '2026-11-15T09:00:00.000Z', registrationEnabled: true,
-      opensAt: OPENS, closesAt: CLOSES, withdrawalDeadline: null, ...event },
-    capacity: { capacity: 100, registered: 0 }, sessions: [], pending: [],
+      opensAt: OPENS, closesAt: CLOSES, withdrawalDeadline: null, canManage: true, ...event },
+    capacity: { capacity: 100, registered: 0, remaining: 100 }, sessions: [], pending: [], registered: [], waitlisted: [],
   };
 }
 
