@@ -192,7 +192,7 @@ Given a venue's existing booking or hold, once that venue's setup and turnaround
 ## E05-S06 — Mark a venue temporarily unavailable over existing bookings
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 8
 - **BDR references**: C-66, C-48, C-61, C-111, C-120, C-121, C-122, T-28, T-67, T-74, T-80, T-81, T-91, O-23, O-24, O-25, O-26
 - **Owner**:
 
@@ -200,7 +200,7 @@ Given a venue's existing booking or hold, once that venue's setup and turnaround
 
 As a Venue Staff member, I want to mark a venue temporarily unavailable for maintenance, equipment failure, renovation, a safety concern or another operational reason, even when events are already booked in it, so that affected bookings are identified and their Coordinators can arrange an alternative without the events themselves being cancelled.
 
-New story from the Week 7 Customer Changes (C-66). It supersedes E05-S04 Scenario 2, which refused a block over a confirmed booking; E05-S04 is in the Sprint 2 sprint backlog and is not edited (T-67, T-74). Estimate to be set by planning poker at Sprint 3 planning (T-73).
+New story from the Week 7 Customer Changes (C-66). It supersedes E05-S04 Scenario 2, which refused a block over a confirmed booking; E05-S04 is in the Sprint 2 sprint backlog and is not edited (T-67, T-74). No estimate was recorded at Sprint 3 planning (T-73). An eight-point estimate was proposed on 28 October 2026 for teammate review, sized against E05-S04 (3), E10-S05 (5) and E10-S01 (8): seven scenarios across a schema change, backend and frontend, covering Conflicting bookings and holds, the Confirmed-to-Planning return, in-app and email notifications, open-ended and extended periods, shortening and lifting, and edit history. Jira stays blank until the matching backlog PR merges, then is set to eight points. T-73 estimates in-flight stories for their remaining work only, so team/PO confirmation is required on whether eight points records the whole-story size and how it is counted for sprint reporting. It is not an estimate of work remaining now.
 
 Updated on 23 October 2026, before any work on the story started, to the Week 9 decisions that closed its open questions; an incomplete story's criteria are updated in place (T-74). T-80 allows an unavailability with no end, in force until Venue Staff lift it, and keeps setup and turnaround buffers off unavailability periods (closes O-23). T-81 returns a Confirmed event whose active venue booking is lost to Planning without cancelling it (C-120, closes O-24 and replaces its earlier "status unchanged" default). C-121 confirms the O-25 notification rule and C-122 the O-26 restore rule. T-91 lets Venue Staff edit an unavailability, keeps the history of each change and notifies affected Coordinators when it is lifted. C-111 asks that affected existing bookings be flagged; Scenario 2 applies this to unexpired Tentative holds as well as Pending and Confirmed bookings.
 
