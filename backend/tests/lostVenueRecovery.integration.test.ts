@@ -1,4 +1,4 @@
-// E05-S06 detection is a fixture precondition here, not a claimed trigger test.
+// Recovery regressions plus the real E05-S06 loss/recovery/lift integration.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -7,9 +7,10 @@ import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js'
 import { decideBooking } from '../src/modules/venueBooking/decisions.js';
 import { cancelLostVenueBooking } from '../src/modules/venueBooking/lostVenueRecovery.js';
 import { listBookingRequests } from '../src/modules/venueBooking/bookingRequests.js';
+import { createVenueBlock, liftVenueBlock, editVenueBlock } from '../src/modules/venueBooking/blocks.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
-async function fixture() {
+async function fixture(realLoss = false) {
   const db = await loginDatabase();
   const q = db.pool.query.bind(db.pool);
   const org=randomUUID(), organiser=randomUUID(), coordinator=randomUUID(), staff=randomUUID(), attendee=randomUUID();
@@ -26,12 +27,14 @@ async function fixture() {
     await q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)',[id,staff]);
   }
   await q(`INSERT INTO venue_bookings(id,event_id,venue_id,booking_range,status,is_primary) VALUES($1,$2,$3,'[2027-01-15T01:00Z,2027-01-15T04:00Z)','confirmed',true)`,[lost,event,old]);
-  await q(`INSERT INTO venue_blocks(id,venue_id,block_range,reason,reason_category) VALUES($1,$2,'[2027-01-15T00:00Z,2027-01-16T00:00Z)','Roof unsafe','safety_concern')`,[block,old]);
-  await q("UPDATE venue_bookings SET status='conflicting',status_before_conflict='confirmed',conflict_block_id=$2 WHERE id=$1",[lost,block]);
+  if (!realLoss) {
+    await q(`INSERT INTO venue_blocks(id,venue_id,block_range,reason,reason_category) VALUES($1,$2,'[2027-01-15T00:00Z,2027-01-16T00:00Z)','Roof unsafe','safety_concern')`,[block,old]);
+    await q("UPDATE venue_bookings SET status='conflicting',status_before_conflict='confirmed',conflict_block_id=$2 WHERE id=$1",[lost,block]);
+  }
   await q(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location) VALUES($1,'Published recovery test','2027-01-15T01:00Z','2027-01-15T04:00Z','Original Hall','Test campus')`,[event]);
   await q('INSERT INTO event_registrations(event_id,attendee_id) VALUES($1,$2)',[event,attendee]);
   const input={event_id:event,venue_id:next,replaces_booking_id:lost,starts_at:'2027-01-15T01:00:00Z',ends_at:'2027-01-15T04:00:00Z',purpose:'Programme',headcount:40};
-  return {...db,q,actor,decider,event,lost,input,organiser,attendee,staff};
+  return {...db,q,actor,decider,event,lost,input,organiser,attendee,staff,old};
 }
 
 test('TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is explicit',async()=>{
@@ -117,6 +120,43 @@ async function anotherVenue(f: Awaited<ReturnType<typeof fixture>>, name: string
   await f.q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,$2,'Test campus',100,'00:00','23:59')", [id,name]);
   await f.q('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [id,f.staff]);
   return id;
+}
+
+for (const ending of ['lift', 'edit'] as const) {
+  test(`TC_E10S05_01 TC_E10S05_03 TC_E10S05_04: real loss and rejected retry keep the original conflicting after block ${ending}`, async () => {
+    const f = await fixture(true);
+    try {
+      await f.q("UPDATE events SET status='confirmed' WHERE id=$1", [f.event]);
+      const created = await createVenueBlock(f.pool, f.decider, f.old, {
+        starts_at: '2027-01-15T00:00:00Z', ends_at: '2027-01-16T00:00:00Z',
+        reason_category: 'safety_concern', reason: 'Roof unsafe',
+      });
+      assert.equal(created.status, 201);
+      const blockId = (created.body as {block: {id: string}}).block.id;
+      assert.equal((await f.q('SELECT status FROM events WHERE id=$1', [f.event])).rows[0].status, 'planning');
+      assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1', [f.lost])).rows[0].status, 'conflicting');
+      assert.equal((await f.q("SELECT id FROM notifications WHERE user_id=$1 AND title='Venue unavailable'", [f.actor.id])).rowCount, 1);
+      const original = (await f.q('SELECT booking_range,purpose,headcount FROM venue_bookings WHERE id=$1', [f.lost])).rows[0];
+      const first = await submitBooking(f.pool, f.actor, f.input, randomUUID());
+      await decideBooking(f.pool, f.decider, first.body.booking.id, {decision: 'reject', reason: 'Unsuitable'});
+      const venue = await anotherVenue(f, 'Retry hall');
+      const retry = await submitBooking(f.pool, f.actor, {...f.input, venue_id: venue}, randomUUID());
+      assert.equal((await f.q('SELECT venue_name FROM event_publications')).rows[0].venue_name, 'Original Hall');
+      assert.equal((await f.q('SELECT id FROM notifications WHERE user_id IN ($1,$2)', [f.organiser,f.attendee])).rowCount, 0);
+      await decideBooking(f.pool, f.decider, retry.body.booking.id, {decision: 'approve'});
+      if (ending === 'lift') await liftVenueBlock(f.pool, f.decider, f.old, blockId);
+      else await editVenueBlock(f.pool, f.decider, f.old, blockId, {
+        starts_at: '2027-01-15T00:00:00Z', ends_at: '2027-01-15T01:00:00Z',
+        reason_category: 'safety_concern', reason: 'Shortened',
+      });
+      assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1', [f.lost])).rows[0].status, 'conflicting');
+      assert.deepEqual((await f.q('SELECT booking_range,purpose,headcount FROM venue_bookings WHERE id=$1', [f.lost])).rows[0], original);
+      assert.equal((await f.q('SELECT venue_name FROM event_publications')).rows[0].venue_name, 'Retry hall');
+      assert.equal((await f.q('SELECT id FROM notifications WHERE user_id IN ($1,$2)', [f.organiser,f.attendee])).rowCount, 2);
+      await cancelLostVenueBooking(f.pool, f.actor, {booking_id: f.lost});
+      assert.equal((await f.q('SELECT status FROM venue_bookings WHERE id=$1', [retry.body.booking.id])).rows[0].status, 'confirmed');
+    } finally { await f.close(); }
+  });
 }
 
 test('TC_E10S05_03 TC_E10S05_04: rejected retries and staff suggestions preserve the lost original across the chain', async () => {
