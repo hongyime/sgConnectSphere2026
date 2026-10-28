@@ -55,11 +55,11 @@ test('currentUser: rejects inactive account (isActive = false) with 403', async 
 
   await assert.rejects(
     currentUser(req, mockQuery),
-    (err: unknown) => err instanceof AccessError && err.status === 403 && err.message === 'Account is inactive or locked.',
+    (err: unknown) => err instanceof AccessError && err.status === 403 && err.message === 'Account is inactive.',
   );
 });
 
-test('currentUser: rejects currently locked account (lockedUntil > now) with 403', async () => {
+test('currentUser: returns user when account is active even if lockedUntil is in the future (does not kill existing session)', async () => {
   const req = createMockRequest(VALID_TOKEN);
   const lockedUser: AuthenticatedUser = {
     id: 'user-locked-1',
@@ -71,13 +71,12 @@ test('currentUser: rejects currently locked account (lockedUntil > now) with 403
   };
   const mockQuery: Query = async () => ({ rows: [lockedUser] });
 
-  await assert.rejects(
-    currentUser(req, mockQuery),
-    (err: unknown) => err instanceof AccessError && err.status === 403 && err.message === 'Account is inactive or locked.',
-  );
+  const user = await currentUser(req, mockQuery);
+  assert.equal(user.id, 'user-locked-1');
+  assert.equal(user.isActive, true);
 });
 
-test('currentUser: rejects account that is both inactive and locked with 403', async () => {
+test('currentUser: rejects account that is both inactive and locked with 403 Account is inactive', async () => {
   const req = createMockRequest(VALID_TOKEN);
   const lockedInactiveUser: AuthenticatedUser = {
     id: 'user-locked-inactive-1',
@@ -91,7 +90,7 @@ test('currentUser: rejects account that is both inactive and locked with 403', a
 
   await assert.rejects(
     currentUser(req, mockQuery),
-    (err: unknown) => err instanceof AccessError && err.status === 403 && err.message === 'Account is inactive or locked.',
+    (err: unknown) => err instanceof AccessError && err.status === 403 && err.message === 'Account is inactive.',
   );
 });
 

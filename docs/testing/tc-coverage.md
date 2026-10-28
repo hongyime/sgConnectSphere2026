@@ -887,8 +887,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - currentUser: rejects request with malformed session token with 401
 - currentUser: rejects expired or non-existent session with 401
 - currentUser: rejects inactive account (isActive = false) with 403
-- currentUser: rejects currently locked account (lockedUntil > now) with 403
-- currentUser: rejects account that is both inactive and locked with 403
+- currentUser: returns user when account is active even if lockedUntil is in the future (does not kill existing session)
+- currentUser: rejects account that is both inactive and locked with 403 Account is inactive
 - currentUser: returns user when account is active and lock is expired (lockedUntil <= now)
 - currentUser: returns user when account is active and never locked (lockedUntil undefined)
 - hasInternalSecret: returns false for undefined, empty, or whitespace-only expectedSecret under development and production

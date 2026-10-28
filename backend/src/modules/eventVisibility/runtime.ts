@@ -14,15 +14,13 @@ export const query: Query = (sql: string, values?: unknown[]) => databasePool().
 export async function currentUser(request: VercelRequest, queryFn: Query = query): Promise<AuthenticatedUser> {
   const token = sessionToken(request);
   if (!token || !/^[a-f0-9]{64}$/.test(token)) throw new AccessError(401, 'Sign in to continue.');
-  const result = await queryFn(`SELECT u.id, u.email, u.role, u.client_org_id AS "clientOrgId", u.is_active AS "isActive",
-    u.failed_login_count AS "failedLoginCount", u.locked_until AS "lockedUntil"
+  const result = await queryFn(`SELECT u.id, u.email, u.role, u.client_org_id AS "clientOrgId", u.is_active AS "isActive"
     FROM auth_sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token_hash = $1 AND s.expires_at > now()`, [tokenDigest(token)]);
   if (!result.rows[0]) throw new AccessError(401, 'Your session has expired. Please sign in again.');
   const user = result.rows[0] as AuthenticatedUser;
-  const isLocked = Boolean(user.lockedUntil && new Date(user.lockedUntil).getTime() > Date.now());
-  if (!user.isActive || isLocked) {
-    throw new AccessError(403, 'Account is inactive or locked.');
+  if (!user.isActive) {
+    throw new AccessError(403, 'Account is inactive.');
   }
   return user;
 }

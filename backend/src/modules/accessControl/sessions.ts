@@ -18,13 +18,10 @@ export function sessionToken(request: VercelRequest) {
 }
 
 export async function login(pool: Pool, email: string, password: string) {
-  const candidateResult = typeof (pool as any).query === 'function'
-    ? await pool.query(`SELECT password_hash FROM users WHERE lower(email) = lower($1)`, [email.trim()])
-    : await (async () => {
-        const c = await pool.connect();
-        try { return await c.query(`SELECT password_hash FROM users WHERE lower(email) = lower($1)`, [email.trim()]); }
-        finally { c.release(); }
-      })();
+  const candidateResult = await pool.query(
+    `SELECT password_hash FROM users WHERE lower(email) = lower($1)`,
+    [email.trim()],
+  );
   const candidateHash = candidateResult.rows[0]?.password_hash || '';
   const matches = await verifyPassword(password, candidateHash);
 

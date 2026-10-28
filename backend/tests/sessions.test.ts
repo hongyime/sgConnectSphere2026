@@ -93,7 +93,10 @@ function fakePool(user: UserRow | undefined): { pool: Pool; queries: string[]; r
     },
     release() { /* no-op */ },
   } as unknown as PoolClient;
-  const pool = { connect: async () => client } as unknown as Pool;
+  const pool = {
+    connect: async () => client,
+    query: (sql: string, params?: unknown[]) => client.query(sql, params),
+  } as unknown as Pool;
   return { pool, queries, row: () => currentUser };
 }
 
