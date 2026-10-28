@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **265** (69.9%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+- Automated (explicit TC_ID in an active test title): **267** (70.4%)
+  - Real-database (`.integration.test` / `.db.test`): **39**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **227**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **84** (22.2%)
-- No test yet (no test file mentions the TC_ID): **30** (7.9%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **83** (21.9%)
+- No test yet (no test file mentions the TC_ID): **29** (7.7%)
 
 ## Coverage by epic
 
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 29 | 13 | 3 |
-| E10 | 29 | 12 | 9 | 8 |
+| E10 | 29 | 14 | 8 | 7 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **265** | **84** | **30** |
+| **Total** | **379** | **267** | **83** | **29** |
 
 ## Case-by-case status
 
@@ -337,12 +337,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log |
 | `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
-| `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
-| `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/tests/eventCo |
-| `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/tests/eventCo |
-| `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
-| `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/completion/even |
-| `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System audit; backen |
+| `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
+| `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
+| `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
+| `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
+| `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/co |
+| `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first |
 | `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, an |
 | `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from  |
@@ -409,7 +409,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled wit |
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/e2e/e10.spec.ts: TC_E10S01_05 - Verify that |
-| `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ❌ none | — |
+| `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ❌ none | — |
 | `TC_E10S02_01` | E10-S02 | An attendance change should flag only bookings whose governing Session headcount | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_01 - Verify that increasing a event |
 | `TC_E10S02_02` | E10-S02 | Verify that editing only the event description on an event with confirmed venue  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing |
@@ -429,10 +429,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S04_04` | E10-S04 | Verify that a cancelled event should be read-only and show its cancellation reas | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_05` | E10-S04 | Verify that an Event Organiser attempting to cancel directly should have the act | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
 | `TC_E10S04_06` | E10-S04 | Cancelling an Event should close every Pending change request as Obsolete | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessions released, notices, request/history and read-only  |
-| `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator |
+| `TC_E10S05_01` | E10-S05 | Verify that when a booked venue is marked unavailable the Coordinator's event sh | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_01 TC_E10S05_02 TC_E10S05_04: real loss preserves arrangements and confirmed venue reaches two Attendees and intercep |
 | `TC_E10S05_02` | E10-S05 | Verify that a flagged event should show the reason, period and affected booking, | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
 | `TC_E10S05_03` | E10-S05 | Verify that requesting a replacement venue should create a second booking reques | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
-| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/lostVenueRecovery.integration.test.ts: TC_E10S05_02 TC_E10S05_03 TC_E10S05_04: linked replacement approval publishes and notifies once; original cancellation is expli |
+| `TC_E10S05_04` | E10-S05 | Verify that the Organiser and registered Attendees should be notified of the ven | ✅ active | backend/tests/eventNotifications.test.ts: TC_E10S05_04: venue change descriptions name the confirmed replacement without changing other messages; backend/tests/lostVenueRecovery.in |
 
 ### E11
 
@@ -825,6 +825,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - rejects anonymous, inactive and locked callers before database access
 - rejects cross-origin writes and client supplied identity
 - storage errors never disclose database details
+
+### `backend/tests/obsoleteChangeRequests.test.ts`
+
+- No affected Pending requests means no new history (including retries)
 
 ### `backend/tests/originAllowlist.test.ts`
 

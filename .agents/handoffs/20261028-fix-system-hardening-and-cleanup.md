@@ -22,6 +22,7 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
   - Wrapped route elements in `pub`, `sample`, and `page` constructors with `<Suspense fallback={<RouteLoading />}>`.
   - Reduced main bundle size from 669.43 kB down to 330.24 kB, completely eliminating Vite's `(!) Some chunks are larger than 500 kB after minification` warning.
   - Synced with `main` to resolve route conflict with PR #361.
+  - Synced with `origin/main` (PR #363, PR #364, PR #366, PR #367), resolving conflict in `backend/package.json` to keep both `tests/obsoleteChangeRequests.test.ts` and `tests/securityHardening.test.ts`.
 
 - **Dead Code Elimination**:
   - Deleted unused scaffold modules: `backend/src/modules/registration/`, `backend/src/modules/auditHistory/`, and `backend/src/providers/redisQueue.ts`.
@@ -39,9 +40,9 @@ Goal: Resolve security, reliability, performance, and dead code issues across ba
 
 ## Verification Commands & Outcomes
 
-- `python scripts/check.py`: 182 tooling tests, 711 test records validated, pre-commit hygiene clean.
+- `python scripts/check.py`: 182 tooling tests, 726 test records validated, pre-commit hygiene clean.
 - `npm run typecheck`: Passed cleanly across both frontend and backend workspaces.
-- `npm test --workspace backend`: All 553 backend unit tests pass (including 16 tests in `securityHardening.test.ts`).
+- `npm test --workspace backend`: All 570 backend unit tests pass across 48 test files (including 6 tests in `obsoleteChangeRequests.test.ts` from `main` and 16 tests in `securityHardening.test.ts`).
 - `npm run test:runtime`: All 26 runtime smoke tests pass (including explicit CSRF origin rejection for missing and disallowed origins).
 - `node --import tsx --test tests/notifications/providers.test.ts`: All 11 notification provider tests pass.
 - `node --import tsx --test backend/tests/securityHardening.test.ts`: All 16 security hardening tests pass.

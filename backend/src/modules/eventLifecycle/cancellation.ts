@@ -1,3 +1,4 @@
+import { obsoletePendingChangeRequests } from "./obsoleteChangeRequests.js";
 import type { Pool, PoolClient } from "pg";
 import type { AuthenticatedUser } from "../accessControl/types.js";
 import { canActAsRole } from "../accessControl/service.js";
@@ -307,19 +308,9 @@ export async function cancelEvent(
                VALUES($1,$2,$3,$4,$5,'status',$6)`,
               [currentUser.id, entityType, row.id, event.id, action, value],
             );
-            const obsolete = (
-              await client.query<{ id: string }>(
-                `UPDATE change_requests SET status='obsolete',reviewed_by=$2,
-          reviewed_at=now(),decision_reason='Event cancelled' WHERE event_id=$1 AND status='pending' RETURNING id`,
-                [event.id, currentUser.id],
-              )
-            ).rows;
-            for (const request of obsolete)
-              await client.query(
-                `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)
-          VALUES($1,'change_request',$2,$3,'Change request became Obsolete','status','pending','obsolete')`,
-                [currentUser.id, request.id, event.id],
-              );
+            await obsoletePendingChangeRequests(
+              client, event.id, currentUser.id, "cancelled",
+            );
           },
         },
       );

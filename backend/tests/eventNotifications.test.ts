@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectEventRecipients, type EventAudience, type EventChange } from '../src/modules/eventNotifications/service.js';
+import { describeEventChange, selectEventRecipients, type EventAudience, type EventChange } from '../src/modules/eventNotifications/service.js';
 
 const audience: EventAudience = {
   eventId:'event', title:'Private planning title', publicName:'Published event', status:'confirmed',
@@ -9,6 +9,14 @@ const audience: EventAudience = {
 };
 const selected = (change: EventChange, before=audience, after=audience, actorId?: string) =>
   [...selectEventRecipients(before, after, change, actorId).recipients.keys()].sort();
+
+test('TC_E10S05_04: venue change descriptions name the confirmed replacement without changing other messages', () => {
+  assert.equal(describeEventChange({kind:'arrangements',fields:['venue'],venueName:' Replacement Hall '}),
+    'Event venue changed. New venue: Replacement Hall.');
+  assert.equal(describeEventChange({kind:'arrangements',fields:['venue']}), 'Event venue changed.');
+  assert.equal(describeEventChange({kind:'arrangements',fields:['venue'],venueName:'  '}), 'Event venue changed.');
+  assert.equal(describeEventChange({kind:'arrangements',fields:['time'],venueName:'Ignored'}), 'Event time changed.');
+});
 
 test('TC_E11S01_10: approved recipient matrix distinguishes internal decisions from public changes', () => {
   const cases: [EventChange, string[]][] = [
