@@ -29,6 +29,8 @@ async function fixture() {
 test('E09-S06 live API cookie sessions wire reads, writes, missing id, malformed body and access refusals',async()=>{
  const f=await fixture();const saved={...process.env};let closeRuntime:(()=>Promise<void>)|undefined;
  try {
+   const origin='https://connectsphere.example.com';
+   process.env.PUBLIC_SITE_URL=origin;
    process.env.DATABASE_URL=f.connectionString;delete process.env.DATABASE_POOLER_URL;
    const runtime=await import('../src/modules/eventVisibility/runtime.js');
    const client=await import('../src/database/client.js');
@@ -40,7 +42,7 @@ test('E09-S06 live API cookie sessions wire reads, writes, missing id, malformed
    const cookie=`cs_access=${token}`;
    async function call(method:string,url:string,cookie?:string,body?:unknown) {
      let status=200;let result:any;const headers:Record<string,unknown>={};
-     await handler({method,url,headers:{cookie},body},{setHeader(k,v){headers[k]=v;},status(code){status=code;return{json(value){result=value;}};},json(value){result=value;}});
+     await handler({method,url,headers:{cookie,origin},body},{setHeader(k,v){headers[k]=v;},status(code){status=code;return{json(value){result=value;}};},json(value){result=value;}});
      return{status,body:result,headers};
    }
    assert.equal((await call('GET','/api/events?attendance=1&id=ATTENDANCE-TEST')).status,401);

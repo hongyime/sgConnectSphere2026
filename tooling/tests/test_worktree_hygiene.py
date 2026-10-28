@@ -328,6 +328,7 @@ class WorktreeHygieneTests(unittest.TestCase):
             with (
                 patch("scripts.check_worktrees.is_link_or_junction", side_effect=lambda path: path == candidate),
                 patch.object(Path, "unlink", side_effect=OSError("access denied")),
+                patch("scripts.check_worktrees.os.rmdir", side_effect=OSError("access denied")),
             ):
                 ok, messages = unlink_directory_links(worktree, force=True)
         self.assertFalse(ok)

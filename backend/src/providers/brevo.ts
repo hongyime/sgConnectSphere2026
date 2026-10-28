@@ -1,17 +1,6 @@
 import { requireEnv, runtimeConfig } from '../config.js';
 import type { SendLease, SendOutcome } from '../modules/notificationDispatcher/durable.js';
 
-export type EmailJob = {
-  to: string;
-  subject: string;
-  html: string;
-  notificationId?: string;
-};
-
-export async function sendBrevoEmail(_job: EmailJob): Promise<never> {
-  throw new Error('Use the durable worker with a PostgreSQL send lease');
-}
-
 // One bounded provider attempt. HTTP 429 is explicitly retryable. Network/5xx
 // ambiguity is retained for reconciliation instead of silently sending twice.
 export async function sendDurableBrevoEmail(job: SendLease): Promise<SendOutcome> {

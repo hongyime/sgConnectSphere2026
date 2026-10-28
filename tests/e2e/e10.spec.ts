@@ -1,4 +1,5 @@
-import { test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 // E10 - 20 cases. Source: docs/testing/cases/E10.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -64,12 +65,42 @@ test.describe("E10-S01", () => {
    * Expected result:
    *   Direct editing is refused; organiser_a@clienta.com is offered the change request form, pre-filled with the Expected Attendance field
    */
-  test.fixme("TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled with that field", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Community Meetup"
-    // 3. Attempt to directly edit the Expected Attendance field
-    void page;
+  test("TC_E10S01_03 - a refused restricted edit carries its proposed attendance into the change-request form", async ({ page }, testInfo) => {
+    const calls = await refusedEditBackend(page, false);
+    await page.goto('/events/EVT-MEETUP');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const form = page.getByRole('form', { name: 'Edit event details' });
+    await form.getByLabel('Expected attendance').fill('75');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(form.getByRole('alert')).toContainText('not allowed after approval');
+    expect(calls.requests).toHaveLength(0);
+    const number = testInfo.project.name === 'desktop' ? 1 : 3;
+    await page.screenshot({ path: `test-results/scrum205/TC_E10S01_03-${number}.png`, fullPage: true });
+    await form.locator('.event-edit-alert').getByRole('link', { name: 'Request a change' }).click();
+    await expect(page).toHaveURL(/event=event-meetup&fields=expectedAttendance$/);
+    await expect(page.getByRole('checkbox', { name: 'Change expected attendance' })).toBeChecked();
+    await expect(page.getByLabel('New expected attendance')).toHaveValue('75');
+    await expect(page.getByText('Current: 40', { exact: true })).toBeVisible();
+    expect(calls.requests).toHaveLength(0);
+    await page.screenshot({ path: `test-results/scrum205/TC_E10S01_03-${number + 1}.png`, fullPage: true });
+    await page.getByLabel('Describe the change').fill('Additional guests');
+    await page.getByRole('button', { name: 'Send change request' }).click();
+    await expect(page.getByText('Change request sent for Coordinator review. Current Event details stay unchanged.')).toBeVisible();
+    expect(calls.requests).toEqual([{ description: 'Additional guests', changes: { expectedAttendance: 75 } }]);
+    await expect(page.getByRole('checkbox', { name: 'Change expected attendance' })).not.toBeChecked();
+  });
+
+  test("TC_E10S01_03 - a Confirmed Event keeps attendance read-only and offers its field-specific form", async ({ page }) => {
+    const calls = await refusedEditBackend(page, true);
+    await page.goto('/events/EVT-MEETUP');
+    await page.getByRole('button', { name: 'Edit event' }).click();
+    const field = page.getByLabel('Expected attendance', { exact: true });
+    await expect(field).toHaveAttribute('readonly', '');
+    await field.locator('..').getByRole('link', { name: 'Request a change' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Change expected attendance' })).toBeChecked();
+    await expect(page.getByLabel('New expected attendance')).toHaveValue('40');
+    expect(calls.edits).toBe(0);
+    expect(calls.requests).toHaveLength(0);
   });
 
   /**
@@ -386,3 +417,42 @@ test.describe("E10-S05 — Week 7 case scaffolds", () => {
   });
 
 });
+
+// Intercepted API fixtures validate browser interaction, not database persistence
+// or human acceptance. The first case models approval after the edit form opens.
+async function refusedEditBackend(page: Page, alreadyConfirmed: boolean) {
+  await signInAs(page, 'event_organiser');
+  const calls = { edits: 0, requests: [] as unknown[] };
+  await page.route('**/api/events?*', async route => {
+    const url = new URL(route.request().url());
+    if (!['EVT-MEETUP', 'event-meetup'].includes(url.searchParams.get('id') ?? '')) return route.fallback();
+    if (url.searchParams.get('changeRequests') === '1') {
+      if (route.request().method() === 'POST') {
+        calls.requests.push(route.request().postDataJSON());
+        return route.fulfill({ status: 201, json: { request: { id: 'request-meetup' } } });
+      }
+      return route.fulfill({ json: {
+        event: { id: 'event-meetup', eventCode: 'EVT-MEETUP', status: 'confirmed' },
+        permissions: { canSubmit: true, canDecide: false },
+        current: { expectedAttendance: 40 }, requests: [],
+      } });
+    }
+    if (route.request().method() === 'PATCH') {
+      calls.edits++;
+      expect(route.request().postDataJSON()).toEqual({ expectedAttendance: 75 });
+      return route.fulfill({ status: 409, json: {
+        error: 'Direct editing of expectedAttendance is not allowed after approval. Raise a change request.',
+        changeRequestUrl: '/change-requests/new?event=event-meetup',
+      } });
+    }
+    return route.fulfill({ json: { event: {
+      id: 'event-meetup', event_code: 'EVT-MEETUP', title: 'Community Meetup', description: 'Community event',
+      status: alreadyConfirmed ? 'confirmed' : 'under_review', status_changed_at: '2026-10-28T01:00:00.000Z',
+      starts_at: '2027-03-01T01:00:00.000Z', ends_at: '2027-03-01T04:00:00.000Z',
+      expected_attendance: 40, creator_name: 'Organiser A', canEdit: true,
+      editableFields: alreadyConfirmed ? ['title', 'description', 'purpose', 'registrationDates'] : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'],
+      activityLog: [],
+    } } });
+  });
+  return calls;
+}

@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **271** (71.5%)
+- Automated (explicit TC_ID in an active test title): **272** (71.8%)
   - Real-database (`.integration.test` / `.db.test`): **39**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **231**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **79** (20.8%)
+  - Live-assertion (other active tests): **232**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **78** (20.6%)
 - No test yet (no test file mentions the TC_ID): **29** (7.7%)
 
 ## Coverage by epic
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 33 | 9 | 3 |
-| E10 | 29 | 14 | 8 | 7 |
+| E10 | 29 | 15 | 7 | 7 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **271** | **79** | **29** |
+| **Total** | **379** | **272** | **78** | **29** |
 
 ## Case-by-case status
 
@@ -406,7 +406,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E10S01_01` | E10-S01 | Verify that submitting a change request on an approved or confirmed event should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
-| `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S01_03 - Verify that attempting to directly edit a restricted field after approval should be refused and offered the change request form pre-filled wit |
+| `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ✅ active | tests/e2e/e10.spec.ts: TC_E10S01_03 - a refused restricted edit carries its proposed attendance into the change-request form; tests/e2e/e10.spec.ts: TC_E10S01_03 - a Confirmed Even |
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/e2e/e10.spec.ts: TC_E10S01_05 - Verify that |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -702,6 +702,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventCompletion.test.ts`
 
 - Completion reads/writes refuse missing, wrong-role, locked/inactive and invalid identifiers before querying
+- evaluateCompletions candidate selection query contains LIMIT 50
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
 
@@ -884,6 +885,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - E09-S03: the Organiser sets one Event-level registration period that Attendees are held to
 
+### `backend/tests/securityHardening.test.ts`
+
+- currentUser: rejects request with missing session cookie with 401
+- currentUser: rejects request with malformed session token with 401
+- currentUser: rejects expired or non-existent session with 401
+- currentUser: rejects inactive account (isActive = false) with 403
+- currentUser: returns user when account is active even if lockedUntil is in the future (does not kill existing session)
+- currentUser: rejects account that is both inactive and locked with 403 Account is inactive
+- currentUser: returns user when account is active and lock is expired (lockedUntil <= now)
+- currentUser: returns user when account is active and never locked (lockedUntil undefined)
+- hasInternalSecret: returns false for undefined, empty, or whitespace-only expectedSecret under development and production
+- hasInternalSecret: authenticates valid secret via x-internal-secret header
+- hasInternalSecret: authenticates valid secret via Bearer token in authorization header
+- hasInternalSecret: supports array header values
+- hasInternalSecret: rejects when headers are missing or mismatched
+- eventsHandler and venuesHandler: reject mutating requests from unauthorized or missing origins with 403
+- eventsHandler registrations: rejects mutating request from unauthorized or missing origin with 403 and allows valid origin
+- getDatabasePool: evaluates dynamic environment, wraps end idempotently, and drains previous pool on URL change
+
 ### `backend/tests/sessions.test.ts`
 
 - increments failed_login_count on wrong password below threshold
@@ -893,6 +913,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - resets counter and lock on a mid-window correct password
 - does not increment counter for an inactive account
 - does not increment counter when the account does not exist
+- queries candidate password_hash before opening transaction or row-lock
 
 ### `backend/tests/staffAssignments.test.ts`
 
@@ -1346,6 +1367,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
 - registration date inputs describe the validation error after an invalid save
+
+### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
+
+- Editing a refused draft clears its stale recovery link
+- The Coordinator edit form never offers the Organiser-only recovery
+
+### `frontend/src/features/events/changeRequestPrefill.test.ts`
+
+- Field links encode the Event and select only known fields once
+- No offer without an explicit server link or a restricted edit
+- Every restricted field keeps its typed proposed value; unrelated draft keys are ignored
+- Invalid dates do not break the form
 
 ### `frontend/src/features/notifications/NotificationInbox.test.tsx`
 
@@ -1836,7 +1869,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - invalid IDs and oversized batch requests are rejected before a Redis request
 - email network ambiguity is retained without an automatic resend
 - accepted emails remain sent when optional provider metadata is malformed or oversized
-- legacy raw-email helpers fail without reading or mutating the old queue
 
 ### `tests/redis/transport.test.ts`
 

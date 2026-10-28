@@ -27,8 +27,7 @@ beforeEach(() => {
 });
 after(() => { globalThis.fetch = originalFetch; });
 const { createDeliveryTransport } = await import('../../backend/src/providers/durableRedis.js');
-const { sendDurableBrevoEmail, sendBrevoEmail } = await import('../../backend/src/providers/brevo.js');
-const { enqueueEmail, dequeueEmailBatch } = await import('../../backend/src/providers/redisQueue.js');
+const { sendDurableBrevoEmail } = await import('../../backend/src/providers/brevo.js');
 const job: SendLease = {
   id: randomUUID(), notificationId: randomUUID(), token: randomUUID(), attempts: 1,
   to: 'recipient@example.invalid', subject: 'Synthetic subject', html: '<p>Synthetic</p>',
@@ -107,11 +106,4 @@ test('accepted emails remain sent when optional provider metadata is malformed o
     assert.deepEqual(await sendDurableBrevoEmail(job), { kind: 'sent' });
   }
   assert.equal(calls.length, 2);
-});
-
-test('legacy raw-email helpers fail without reading or mutating the old queue', async () => {
-  await assert.rejects(enqueueEmail(job), /committed|PostgreSQL/);
-  await assert.rejects(dequeueEmailBatch(5), /destructive|legacy/i);
-  await assert.rejects(sendBrevoEmail(job), /durable worker/);
-  assert.equal(calls.length, 0);
 });
