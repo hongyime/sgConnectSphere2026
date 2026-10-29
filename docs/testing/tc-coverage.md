@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **272** (71.8%)
-  - Real-database (`.integration.test` / `.db.test`): **38**
+- Automated (explicit TC_ID in an active test title): **273** (72.0%)
+  - Real-database (`.integration.test` / `.db.test`): **37**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **233**
+  - Live-assertion (other active tests): **235**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **78** (20.6%)
-- No test yet (no test file mentions the TC_ID): **29** (7.7%)
+- No test yet (no test file mentions the TC_ID): **28** (7.4%)
 
 ## Coverage by epic
 
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 33 | 9 | 3 |
-| E10 | 29 | 15 | 7 | 7 |
+| E10 | 29 | 16 | 7 | 6 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **272** | **78** | **29** |
+| **Total** | **379** | **273** | **78** | **28** |
 
 ## Case-by-case status
 
@@ -410,7 +410,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_ |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
-| `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ❌ none | — |
+| `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions |
 | `TC_E10S02_01` | E10-S02 | An attendance change should flag only bookings whose governing Session headcount | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_01 - Verify that increasing a event |
 | `TC_E10S02_02` | E10-S02 | Verify that editing only the event description on an event with confirmed venue  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing |
 | `TC_E10S02_03` | E10-S02 | Verify that saving a change that affects confirmed arrangements should show whic | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect |
@@ -1741,6 +1741,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - answers the header session call for the chosen role, or 401 when signed out
 - an unstubbed request fails loudly with 404
 - handlers can be functions, and deferred holds a reply back
+
+### `tests/auth-e2e/changeRequests.spec.ts`
+
+- Dependency regression: real arrangement approval stays unapplied while E10-S02 is absent
 
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 

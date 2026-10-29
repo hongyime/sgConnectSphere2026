@@ -21,3 +21,7 @@ Existing auth Playwright CI step auto-selects the new file, so no CI configurati
 ## Delivery
 
 All available work is a bounded test/evidence increment, not arrangement application. Repository hygiene/tooling passed; all newly cited runs have immutable T-65 records. Keep this intentional integration worktree for review. No production, Jira or teammate-message changes. Do not silently repeat human tests already evidenced.
+
+## Aaron review on PR #375
+
+Synced remote a02c33e1, including Bryan's main merge and #373 focus-flake fix; current-head checks were reported green. Changed terminal tests to two literal TC_E10S01_06/_07 titles calling one shared helper so the inventory discovers both. Removed the TC ID from the arrangement waiting regression; it is not full arrangement-application acceptance. Regenerate inventory after these source edits. Keep old T-65 records immutable; run the revised browser slice on its committed source head and add a fresh exact-commit record. Broader audit last-file category behavior is outside this PR. No product code or new E10-S02 integration is included.

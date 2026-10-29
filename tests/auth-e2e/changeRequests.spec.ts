@@ -1,7 +1,7 @@
 // Real browser, session/API and isolated PostgreSQL coverage for the merged
 // E10-S01 foundation and SCRUM-205 prefill. No response interception. Concurrent
 // approval is a fixture state change, not evidence of the approval workflow.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Page } from '@playwright/test';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
@@ -138,7 +138,7 @@ test('TC_E10S01_04 TC_E10S01_05: real safe approval and decline persist their di
   } finally { await coordinator.close(); }
 });
 
-test('TC_E10S01_04: real arrangement approval stays unapplied while E10-S02 is absent', async ({page,browser}) => {
+test('Dependency regression: real arrangement approval stays unapplied while E10-S02 is absent', async ({page,browser}) => {
   const f = await fixture();
   await signIn(page,f.organiser);
   await page.goto(`/organiser/requests/${f.eventCode}/change`);
@@ -163,42 +163,45 @@ test('TC_E10S01_04: real arrangement approval stays unapplied while E10-S02 is a
   } finally { await coordinator.close(); }
 });
 
-for (const terminal of ['completed','cancelled'] as const) {
-  const tc = terminal==='completed' ? 'TC_E10S01_06' : 'TC_E10S01_07';
-  test(`${tc}: real ${terminal} workflow closes Pending requests as Obsolete and disables decisions`, async ({page,browser}) => {
-    const f = await fixture();
-    if (terminal==='completed') {
-      await database.pool.query("UPDATE events SET event_range=tstzrange(now()-interval '2 hours',now()-interval '1 hour','[)') WHERE id=$1",[f.event]);
-    }
-    await signIn(page,f.organiser);
-    await page.goto(`/organiser/requests/${f.eventCode}/change`);
-    await submit(page,'event name','Never applied name','Pending when Event ends');
-    const coordinator = await browser.newPage({baseURL:appUrl});
-    try {
-      await signIn(coordinator,f.coordinator);
-      const action = terminal==='completed' ? 'completion' : 'cancellation';
-      const response = await coordinator.request.post(`/api/events?${action}=1&id=${f.event}`,{
-        headers:{origin:appUrl},data:terminal==='cancelled' ? {reason:'Event cancelled during change review'} : {},
-      });
-      expect(response.status()).toBe(200);
-      await page.reload();
-      await expect(page.getByText(`This Event is ${terminal}. Change requests cannot be submitted or decided.`)).toBeVisible();
-      await expect(page.getByText('Obsolete', {exact:true})).toBeVisible();
-      await expect(page.getByRole('button', {name:'Send change request',exact:true})).toHaveCount(0);
-      await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
-      await expect(coordinator.getByText('Obsolete', {exact:true})).toBeVisible();
-      await expect(coordinator.getByRole('button', {name:'Approve…',exact:true})).toHaveCount(0);
-      const request = (await database.pool.query('SELECT id,status,decision_reason FROM change_requests WHERE event_id=$1',[f.event])).rows[0];
-      expect(request.status).toBe('obsolete');
-      expect(request.decision_reason).toBe(`Event ${terminal}`);
-      expect((await database.pool.query('SELECT title FROM events WHERE id=$1',[f.event])).rows[0].title).toBe('Original browser Event');
-      const denied = await coordinator.request.post(`/api/events?changeRequests=1&id=${f.event}&requestId=${request.id}`,{
-        headers:{origin:appUrl},data:{decision:'approve'},
-      });
-      expect(denied.status()).toBe(409);
-      const history = (await database.pool.query("SELECT old_value,new_value,actor_id FROM audit_logs WHERE entity_id=$1 AND field_changed='status' AND new_value='obsolete'",[request.id])).rows;
-      expect(history).toHaveLength(1);
-      expect(history[0]).toEqual({old_value:'pending',new_value:'obsolete',actor_id:f.coordinator});
-    } finally { await coordinator.close(); }
-  });
+async function closesAsObsolete(page: Page, browser: Browser, terminal: 'completed' | 'cancelled') {
+  const f = await fixture();
+  if (terminal==='completed') {
+    await database.pool.query("UPDATE events SET event_range=tstzrange(now()-interval '2 hours',now()-interval '1 hour','[)') WHERE id=$1",[f.event]);
+  }
+  await signIn(page,f.organiser);
+  await page.goto(`/organiser/requests/${f.eventCode}/change`);
+  await submit(page,'event name','Never applied name','Pending when Event ends');
+  const coordinator = await browser.newPage({baseURL:appUrl});
+  try {
+    await signIn(coordinator,f.coordinator);
+    const action = terminal==='completed' ? 'completion' : 'cancellation';
+    const response = await coordinator.request.post(`/api/events?${action}=1&id=${f.event}`,{
+      headers:{origin:appUrl},data:terminal==='cancelled' ? {reason:'Event cancelled during change review'} : {},
+    });
+    expect(response.status()).toBe(200);
+    await page.reload();
+    await expect(page.getByText(`This Event is ${terminal}. Change requests cannot be submitted or decided.`)).toBeVisible();
+    await expect(page.getByText('Obsolete', {exact:true})).toBeVisible();
+    await expect(page.getByRole('button', {name:'Send change request',exact:true})).toHaveCount(0);
+    await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
+    await expect(coordinator.getByText('Obsolete', {exact:true})).toBeVisible();
+    await expect(coordinator.getByRole('button', {name:'Approve…',exact:true})).toHaveCount(0);
+    const request = (await database.pool.query('SELECT id,status,decision_reason FROM change_requests WHERE event_id=$1',[f.event])).rows[0];
+    expect(request.status).toBe('obsolete');
+    expect(request.decision_reason).toBe(`Event ${terminal}`);
+    expect((await database.pool.query('SELECT title FROM events WHERE id=$1',[f.event])).rows[0].title).toBe('Original browser Event');
+    const denied = await coordinator.request.post(`/api/events?changeRequests=1&id=${f.event}&requestId=${request.id}`,{
+      headers:{origin:appUrl},data:{decision:'approve'},
+    });
+    expect(denied.status()).toBe(409);
+    const history = (await database.pool.query("SELECT old_value,new_value,actor_id FROM audit_logs WHERE entity_id=$1 AND field_changed='status' AND new_value='obsolete'",[request.id])).rows;
+    expect(history).toHaveLength(1);
+    expect(history[0]).toEqual({old_value:'pending',new_value:'obsolete',actor_id:f.coordinator});
+  } finally { await coordinator.close(); }
 }
+
+test('TC_E10S01_06: real completed workflow closes Pending requests as Obsolete and disables decisions',
+  ({page,browser}) => closesAsObsolete(page,browser,'completed'));
+
+test('TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions',
+  ({page,browser}) => closesAsObsolete(page,browser,'cancelled'));
