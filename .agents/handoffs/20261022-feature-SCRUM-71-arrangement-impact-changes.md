@@ -1,125 +1,112 @@
 # SCRUM-71 E10-S02 — distinguish minor edits from arrangement-affecting changes
 
-Implement E10-S02 (Jira SCRUM-71, owner Le Xin): when an Event or Session edit
-affects confirmed arrangements, identify the affected Session venue bookings
-and equipment reservations, show them before the change takes effect, flag
-them for reconfirmation, warn about over-subscription without removing anyone,
-and notify the assigned Venue Staff and Technical Support Staff. Ji Ning's
-E10-S01 (SCRUM-70) applies approved change requests through the same check, so
-the backend lands first.
+Backend increment (PR A, subtask SCRUM-236) of E10-S02 (Jira SCRUM-71, owner Le Xin):
+when an Event or Session change affects confirmed arrangements, identify the
+affected Session venue bookings and equipment reservations, preview them before
+the change takes effect, flag them for reconfirmation, warn about
+over-subscription without removing anyone, and notify the assigned Venue Staff
+and Technical Support Staff. SCRUM-71 stays open: the frontend (SCRUM-237) and
+the manual acceptance run (SCRUM-238) follow in PR B.
 
 ## Plan
 
-Backend PR (this branch):
+PR A, backend (this branch):
 
-1. Impact check — compare before/after snapshots (done, see below).
-2. Capacity rule — booking headcount, else Session attendance (done, in 1).
-3. Preview — the same check without saving; over-subscription warning.
-4. Apply on save — set `requires_reconfirmation` and write audit rows in the
-   Coordinator's edit transaction (`updateEventInformationWithNotifications`).
-5. Notify the assigned Venue Staff and Technical Support Staff.
-6. Real-database tests for TC_E10S02_01–09; unit coverage 100%.
+1. Impact check, before/after snapshots (done).
+2. Capacity rule: booking headcount, else Session attendance (done).
+3. Preview without saving; over-subscription warning (done, now on E09-S02's
+   `eventCapacity()`).
+4. Flag and audit in the Coordinator's edit transaction (done).
+5. Notify the flagged venues' Venue Staff and the assigned Technical Support
+   Staff (done).
+6. Real-database tests for TC_E10S02_01–09 (done, 15 tests).
+7. Docs, push, draft PR, postplan, Jira (in progress).
 
-Frontend PR (later): confirmation screen on Save, Playwright scaffolds made
-live, manual run with hand-taken screenshots (T-93) and T-65 records.
+PR B, frontend (new branch from main after PR A): confirmation screen before the
+Coordinator's save, reconfirmation marker where missing, Vitest at 100%,
+Playwright TC_02/03/04/06 live, `tc-coverage.md` regenerated, click-through guide
+and preconditions SQL, real local run, Le Xin's manual T-93 run, records,
+AC-to-evidence checklist for the Product Owner.
 
 ## Done so far
 
-- `backend/src/modules/changeManagement/arrangementImpact.ts`:
-  `assessArrangementImpact(before, after)` and `loadArrangementSnapshot(query, eventId)`.
-- `backend/tests/arrangementImpact.test.ts`: 15 unit cases following
-  TC_E10S02_01/02/05/07/08/09 data plus boundaries; added to `npm test`.
-- Task 3: `backend/src/modules/changeManagement/eventChange.ts`.
-  `previewEventChange` locks the Event, runs the real `updateEventInformation`
-  inside `SAVEPOINT event_change_preview`, reads the after-snapshot and the
-  registration counts, then rolls back to the savepoint, so validation,
-  permissions and the 0014 Session sync trigger all apply and nothing is
-  saved. `assessOverSubscription` + `loadRegistrationCounts` give the
-  Scenario 4 warning. Route: `PATCH /api/events?edit=1&id=<id>&preview=1`
-  (same errors as the save, including the change-request offer).
-- `backend/tests/eventChangePreview.test.ts`: 9 unit cases with a scripted
-  client double (TC_02/_03/_04 data, savepoint order, refusals).
-- Task 4: `applyArrangementImpact` sets `requires_reconfirmation = true` on the
-  affected bookings and reservations and writes one `audit_logs` row each
-  (`entity_type` venue_booking / equipment_reservation, action
-  `Reconfirmation required: <reason(s)>`, `field_changed`
-  `requires_reconfirmation`, `new_value` `true`).
-  `updateEventInformationWithNotifications` now loads the arrangements before
-  and after the edit under its existing row lock, applies the impact, and
-  returns `{ ...result, impact, overSubscription }`. The existing date-change
-  notice is unchanged. 5 more unit cases (now 14 in the file).
-- Task 5: new `EventChange` kind `reconfirmation_required` in
-  `eventNotifications/service.ts`, routed to `venueStaff` when bookings are
-  flagged and `technicalStaff` when reservations are. The save captures the
-  audience with `requestedVenueIds` = the flagged venues, so only those
-  venues' assigned Venue Staff are told; Technical Support Staff are the
-  event's current `tech_staff_assignments`. The reconfirmation notice and the
-  generic date notice share one change id, so a staff member gets one
-  notification (the specific one), not two; Organiser and Attendees still get
-  the generic date notice. Tests: TC_E10S02_06, a capacity-only case, and 3
-  routing rows in `eventNotifications.test.ts`.
+- Rebased onto main 901d69b on 29 October (a merge commit was blocked by the
+  local `test-run-evidence` hook, which treated teammates' older records arriving
+  from main as new). Conflicts in `api/events.ts` and `backend/package.json`
+  kept both sides.
+- `changeManagement/arrangementImpact.ts`: `assessArrangementImpact`,
+  `loadArrangementSnapshot`, `governingHeadcount`.
+- `changeManagement/eventChange.ts`: `previewEventChange(With)` (savepoint and
+  rollback), `applyArrangementImpact` (flag plus one audit row per arrangement),
+  `assessOverSubscription` / `loadOverSubscription` over E09-S02's
+  `eventCapacity()` (5662a80).
+- `eventNotifications/informationChange.ts`: the Coordinator's save flags,
+  notifies and returns `impact` and `overSubscription`.
+- `eventNotifications/service.ts`: `reconfirmation_required` notice kind.
+- `api/events.ts`: `PATCH ?edit=1&id=…&preview=1`.
+- `backend/tests/arrangementImpact.integration.test.ts`: 15 PostgreSQL tests,
+  added to `test:db` and `application-checks.yml` (01057a7, 584ecb5).
+- Docs: `docs/api-changes-week7.md` (route and response),
+  `docs/contracts/change-requests.md` ("E10-S02 backend delivered").
 
 ## Decisions taken without team sign-off (reviewer please check)
 
 - Only **Confirmed** venue bookings and **reserved/partial** equipment
   reservations count as arrangements. Pending requests are still undecided.
 - Capacity is the venue's supported-layout capacity for the Session's layout,
-  otherwise the venue maximum, matching E06 suitability (`assessment.ts`).
-- Capacity is breached only **strictly above** capacity, matching E05-S01's
-  exact-capacity boundary.
-- An attendance change flags a booking only when the Session attendance
-  governs it (no booking headcount override, T-78/T-79). A booking whose
-  attendance falls but stays above capacity is still listed.
-- Any Event-wide start or end change flags every Session's arrangements
-  (Scenario 5). Adding or removing a Session is E04-S02, not this check.
-- Over-subscription (T-85, C-78): a Session's capacity is the sum of its
-  Confirmed bookings' capacities; the Event's combined capacity is the sum of
-  all Confirmed bookings. Only `registered` places count (Pending holds no
-  seat). Equal to capacity is not over. With no Confirmed booking there is no
-  capacity, so nothing is compared. E09-S02 (SCRUM-64, unbuilt) should reuse
-  this rule rather than define its own.
+  otherwise the venue maximum, matching E06 suitability and E09-S02.
+- Capacity is breached only **strictly above** capacity (E05-S01 boundary).
+- **Story-owner decision, 29 October:** when a Session's attendance changes,
+  every booking in it whose governing headcount (its own, else the Session's)
+  is above capacity is flagged, including a booking whose own headcount was
+  already above it. This follows Scenario 1's wording (584ecb5).
+- Any Event-wide start or end change flags every Session's arrangements.
+- Over-subscription uses E09-S02's `eventCapacity()` (C-78, T-85, B-05): only
+  Registered places count; exactly full is not over; a Session or Event with
+  no Confirmed booking has capacity 0 and is not compared.
 - Every affected arrangement is logged on every edit that affects it, even if
-  it was already flagged: each edit is a separate reason staff should see.
-- Activity log display: main's Event Activity log reads only
-  `entity_type = 'event'`, so these booking/reservation entries show once
-  #298 widens that query (as for #299's entries).
-- An Event edit alone rarely changes capacity (capacity comes from bookings),
-  so the warning matters most when E10-S01 applies a venue change; the same
-  function serves both.
+  already flagged.
+- One change id for the edit, so staff get the reconfirmation notice and not the
+  generic date notice as well; the Organiser and Attendees keep the generic one.
 
-## Open questions for the team
+## Not covered by app actions yet (database proof only)
 
-1. Two-Session cases (TC_01, _05, _07, _08, _09) cannot be set up in the app
-   until E04-S02 (SCRUM-39) and E07-S08 (SCRUM-181) exist. Proposal: prove
-   them with real-database tests now; hand-test them once those land.
-2. ~~TC_04 combined capacity~~ answered by C-78 ("total attendee capacity is
-   determined by the total layout capacity") and T-85; see decisions above.
+- Two-Session parts of TC_E10S02_01, _05 and _07: no route edits one Session
+  (E04-S02, SCRUM-39, Bryan). Tests change the Session in SQL and run the same
+  functions the save runs.
+- TC_E10S02_04: no Coordinator edit lowers capacity. Approved E10-S01 change
+  requests (which can carry a layout change) still stop at "waiting for the
+  arrangement check"; wiring them to this check needs Ji Ning's agreement on
+  notice ownership. The test sets the layout in SQL.
+- TC_E10S02_08 and _09 can be run by hand once a second Session is created with
+  preconditions SQL.
 
 ## Next step
 
-Task 6: real-database tests on native loopback PostgreSQL (never Supabase,
-no Docker Desktop; see `docs/testing/supabase-test-schema.md`). Add
-`backend/tests/arrangementImpact.integration.test.ts` covering TC_E10S02_01–09
-with two Sessions inserted directly, that the preview leaves no rows or audit
-entries behind, and that notifications reach only the flagged venues' staff.
-Add it to `test:db` and the CI booking selector, then write the T-65 record.
+Push, open the draft PR A, post the postplan, move SCRUM-71 to In Progress and
+SCRUM-236 to In Review. Then start PR B from main once PR A merges.
 
-## Commands run
+## Commands run (29 October, Windows, native PostgreSQL 17 on 5432)
 
-- `npx c8 --include src/modules/changeManagement/arrangementImpact.ts tsx --test tests/arrangementImpact.test.ts`
-  (from `backend/`): 15/15 passed, 100% statements/branches/functions/lines.
-- `npm run typecheck` (backend): passed.
-- Task 3: `npx c8 ... tsx --test tests/eventChangePreview.test.ts tests/arrangementImpact.test.ts`
-  (from `backend/`): 24/24 passed, 100% on both files.
-  `tsx --test tests/eventVisibility.test.ts tests/eventNotifications.test.ts tests/decision.test.ts`: 31/31.
-  `npm run test:runtime`: 17/17. `tsc --noEmit --strict ... api/events.ts`: exit 0.
-- Task 4: the same c8 run over `eventChangePreview` + `arrangementImpact`
-  tests: 29/29, 100% on `arrangementImpact.ts`, `eventChange.ts`,
-  `informationChange.ts`. Full `npm test` (backend): 447/447.
-  `api/events.ts` strict tsc: exit 0.
-- Task 5: c8 over `eventChangePreview`, `arrangementImpact` and
-  `eventNotifications` tests: 36/36; 100% on the three SCRUM-71 files, and
-  every changed line of `service.ts` covered (its uncovered lines 145, 146,
-  149 and 172 are older notice kinds). Full `npm test` (backend): 449/449.
-  Backend `tsc --noEmit`: exit 0.
-- No database suite has been run yet.
+- Backend `npm run typecheck`: exit 0. Backend `npm test`: 605/605.
+- `npx c8 … tsx --test tests/arrangementImpact.test.ts tests/eventChangePreview.test.ts tests/eventNotifications.test.ts`:
+  100% statements, branches, functions and lines on `arrangementImpact.ts`,
+  `eventChange.ts` and `informationChange.ts`.
+- `npx tsx --test tests/arrangementImpact.integration.test.ts` on 584ecb5:
+  15/15, record `docs/testing/runs/20261029-203439-lexinphun2024-debug-backend-db.md`.
+- Nine deliberate code breaks (boundaries, status filters, end-only move,
+  own-headcount rule) each failed both the unit and the database tests; code
+  restored afterwards.
+- Related database suites (decision, eventCancellation, eventNotifications,
+  eventReadiness, eventReadinessRoutes, registrationPeriod, changeRequests,
+  attendeeCapacity): 64/64.
+- `tsc --noEmit --strict … api/events.ts`: exit 0. `python scripts/check.py`: pass.
+
+## Learnings
+
+- The local `test-run-evidence` pre-commit hook fails a merge commit that brings
+  in teammates' older run records from main; rebasing an unpushed branch avoids it.
+- Git Bash `date` on Windows prints UTC even with `TZ=Asia/Singapore`; take
+  run-record times from Python's local time.
+- Fixtures with only "normal" rows hid status-filter and boundary bugs from the
+  database suite; deliberate code breaks found the gaps.

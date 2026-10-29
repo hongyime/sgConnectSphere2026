@@ -156,6 +156,35 @@ lock Event before request. canSubmit requires both the owning Organiser and an
 assigned Coordinator; history remains readable without one. Approval confirmation
 explains the entire mixed request waits, matching the backend atomic behaviour.
 
+## E10-S02 backend delivered (SCRUM-236, 29 October)
+
+The Coordinator's direct edit now runs the arrangement check described in the
+owner proposal above. Under the Event row lock, `updateEventInformationWithNotifications`
+loads the arrangement snapshot before and after the edit, flags what changed
+(`applyArrangementImpact`), sends the `reconfirmation_required` staff notice and
+returns `impact` and `overSubscription`. `previewEventChange` (`&preview=1`) runs
+the same edit in a savepoint and rolls it back. The over-subscription warning now
+reads E09-S02's `eventCapacity()`, so the warning and registration enforcement share
+one capacity rule; it warns only strictly above capacity and skips a Session or
+Event with no Confirmed booking. Route and response shapes are in
+`docs/api-changes-week7.md`.
+
+Story-owner decision (29 October): when a Session's attendance changes, a booking
+whose own headcount is already above capacity is flagged too, following
+Scenario 1's wording.
+
+Still open, not changed by this backend PR:
+
+- Approved E10-S01 change requests still stop at "Approved — waiting for the
+  arrangement check". Calling `previewEventChangeWith` and the apply path from
+  `decideChangeRequest` needs Ji Ning's agreement on notice ownership, since her
+  decision notice and this staff notice must not be duplicated. Until then
+  TC_E10S02_04 has no app path that lowers capacity and is proved only against
+  PostgreSQL.
+- No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
+  of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
+- The Coordinator's preview screen is the frontend increment (SCRUM-237).
+
 ## Refused-edit handoff (SCRUM-205)
 
 The owning Organiser's event edit form keeps post-approval restricted fields
