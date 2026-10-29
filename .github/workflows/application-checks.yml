@@ -12,6 +12,8 @@ on:
       - "playwright.config.ts"
       - "playwright.auth.config.ts"
       - "vercel.json"
+      - "docs/c4-diagrams.md"
+      - "puppeteer-config.json"
       - ".github/workflows/application-checks.yml"
   # Also run on pushes to main so post-merge build failures are visible
   # in the Actions log. Teammates without Vercel dashboard access read
@@ -29,6 +31,8 @@ on:
       - "playwright.config.ts"
       - "playwright.auth.config.ts"
       - "vercel.json"
+      - "docs/c4-diagrams.md"
+      - "puppeteer-config.json"
       - ".github/workflows/application-checks.yml"
   # Merge queue. GitHub does not support `paths:` on merge_group, so every
   # queued PR runs the full suite against its merge commit, including docs-only
@@ -85,6 +89,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: C4 diagram Mermaid render gate (mmdc)
+        run: npx --yes @mermaid-js/mermaid-cli@11.17.1 -p puppeteer-config.json -i docs/c4-diagrams.md -o /tmp/c4-rendered.md
 
       - name: Typecheck
         run: npm run typecheck
