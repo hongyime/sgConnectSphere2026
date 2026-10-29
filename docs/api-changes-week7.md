@@ -1,13 +1,14 @@
 ## API changes for the Week 7 and Week 9 Customer Changes
 
-Version 2 · 13 October 2026
+Version 3 · 30 October 2026
 
 The Week 7 "Managing Changes" guide asks that a requirement change be traced through to
-the interfaces it touches. This file records the Week 7 baseline and its Week 9
-reconciliation for the owning story, shared-skeleton frontend and test-case authors.
-The Week 9 addendum is authoritative where it supersedes Week 7 assumptions. Nothing
-here is implemented by this documentation update; each row names the story and cases
-that will prove it. The shared booking contract controls the venue API details.
+the interfaces it touches. This file records the Week 7 baseline, its Week 9
+reconciliation and implementation notes for the owning story, shared-skeleton frontend
+and test-case authors. The Week 9 addendum is authoritative where it supersedes Week 7
+assumptions. Target rows name the story and cases that prove the change; dated
+implementation notes record what shipped. The shared booking contract controls the
+venue API details.
 
 Conventions carried over from the existing routes (ADR-014, `api/` is at the Hobby-plan
 function cap): new Coordinator, Lead and Safety Officer actions are query-parameter
@@ -142,6 +143,22 @@ assumptions. Keep them visible in API copy, validation and design until reviewed
 do not label either as a customer requirement. The Session copy route must copy
 only the scope accepted under O-51 and must not copy transactional records by
 default.
+
+### Implementation note — Event date horizon (E02-S07 / SCRUM-180)
+
+On Event submission through `POST /api/events` or draft submission through
+`PATCH /api/events?id=<id>`, `startAt` and `endAt` must fall on or before the
+date two calendar years after the current Singapore-local date. There is no
+minimum lead time. A later Event date returns HTTP 400 with
+`{ error: "event_date_outside_horizon", field: "startAt" | "endAt",
+maximumDate: "YYYY-MM-DD" }`; the Organiser form names the offending field and
+the accepted Singapore-local boundary. Draft saves may retain a farther date,
+but submitting the draft rechecks it. The existing past-date error is unchanged.
+
+The database creates one default Session from the Event date range, so it inherits
+the checked Event dates. No API currently creates or edits additional Session date
+ranges; E02-S07's multi-Session date acceptance remains open until E04 adds that
+write path and applies the same rule.
 
 ### Out of scope here
 

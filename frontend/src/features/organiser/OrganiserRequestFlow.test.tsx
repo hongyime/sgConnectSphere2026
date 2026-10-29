@@ -98,6 +98,41 @@ test('API validation errors show all returned fields without claiming success', 
   expect(screen.queryByText('Submitted', { exact: true })).not.toBeInTheDocument();
 });
 
+for (const [field, label] of [
+  ['startAt', 'Preferred start date and time'],
+  ['endAt', 'Preferred end date and time'],
+] as const) {
+  test(`an out-of-horizon ${field} response identifies the date and Singapore-local limit`, async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => (
+      url.includes('accessibilityFeatures')
+        ? accessibilityFeaturesResponse()
+        : new Response(JSON.stringify({
+          error: 'event_date_outside_horizon', field, maximumDate: '2028-10-13',
+        }), { status: 400 })
+    )));
+    completeForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      `${label} must be on or before 2028-10-13 (Singapore time).`,
+    );
+  });
+}
+
+test('an invalid out-of-horizon API field falls back to the generic error', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => (
+    url.includes('accessibilityFeatures')
+      ? accessibilityFeaturesResponse()
+      : new Response(JSON.stringify({
+        error: 'event_date_outside_horizon', field: 'sessionAt', maximumDate: '2028-10-13',
+      }), { status: 400 })
+  )));
+  completeForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('The request could not be submitted.');
+});
+
 // --- SCRUM-27: save/reopen/edit a draft ---
 
 test('Save draft is enabled with optional fields incomplete, and saves as a draft', async () => {

@@ -5,14 +5,15 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
 ## Scope and current state
 
 - Canonical story: `docs/backlog/release-1/E02-event-request-submission.md`; acceptance cases: `docs/testing/cases/E02.md`; decisions: C-71, C-72 and T-87.
-- Jira SCRUM-180 is To Do and assigned to Xiang Ying. It has no Story point estimate. The assignment was selected from eligible users tied at zero open story points.
+- Jira SCRUM-180 is To Do and assigned to Xiang Ying. It has no Story point estimate. The assignment was selected from eligible users tied at zero open story points; the To Do status remains consistent with the repo's PR-based Jira workflow while this branch has no PR.
 - The existing Event request create/update paths are in `backend/src/modules/eventLifecycle/service.ts` and `frontend/src/features/organiser/OrganiserRequestFlow.tsx`.
-- Repository search found no API that creates or edits Session date ranges. E02-S07's Session-date acceptance case cannot be exercised through an existing Session write path; keep that limitation explicit and do not add E04 scope implicitly.
+- Implemented Singapore-local two-calendar-year validation for submitted Event start/end dates, including the exact boundary and leap-day clamp. Draft saves keep farther dates, but draft submission rechecks them. No fixed minimum lead time was added.
+- The Organiser form reports which Event date exceeds the boundary. Backend tests cover boundary/timezone/leap-year/near-term/draft cases; frontend tests cover both fields and malformed error fields. `docs/testing/tc-coverage.md` was regenerated.
+- Repository search found no API that creates or edits Session date ranges. The database's single default Session inherits the validated Event range; E02-S07's multi-Session date acceptance cannot be exercised through an existing write path. Keep this limitation explicit and do not add E04 scope implicitly.
 - SCRUM-180 stays open until all acceptance evidence, independent human review, and PO/delegate acceptance are recorded. No manual tester work is performed by the agent.
 
 ## Next steps
 
-1. Implement Singapore-local calendar-date horizon validation for Event start and end dates on submission, preserving draft saves and existing past/range checks.
-2. Surface the rejected Event field and maximum date in the Organiser form.
-3. Add boundary and error tests, keep changed code at 100% unit coverage, regenerate `docs/testing/tc-coverage.md` if test inventory changes, record only evidence runs actually used, run `python scripts/check.py`, and commit regularly.
-4. Do not open another PR while the authenticated author already has three open PRs; preserve SCRUM-66's closed PR state and do not close unrelated PRs to free a slot.
+1. Verification: backend unit suite 618 passed / 1 skipped; frontend suite 679 passed on isolated retry after two unrelated existing UI tests timed out during the concurrent run; both TypeScript checks and `python scripts/check.py` passed. The date-horizon helper has 100% statement, branch, function and line coverage.
+2. Commit the implementation and refreshed coverage inventory. Then rerun and record only automated evidence runs under `docs/testing/runs/`; never create manual-run records/screenshots.
+3. Do not open another PR while the authenticated author already has three open PRs; preserve SCRUM-66's closed PR state and do not close unrelated PRs to free a slot.

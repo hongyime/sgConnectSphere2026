@@ -756,6 +756,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a request with all ten mandatory fields complete is submitted
 - every missing mandatory field is named, not just the first one
 - a preferred date in the past is blocked with an explanation
+- the two-year boundary uses the Singapore-local calendar date and includes the exact limit
+- adding two calendar years clamps leap day to the last valid day of February
+- a feasible next-day Event date has no fixed minimum lead time
+- a submitted Event date on the exact two-year boundary is accepted
+- a draft may keep a farther date, but submitting that draft applies the horizon
 - an empty equipment/layout/registration field without
 - an end time at or before the start time is rejected
 - a non-positive or non-integer expected attendance is reported as missing
@@ -1488,6 +1493,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - sends all request fields with same-origin credentials and confirms API success
 - a network failure reports an error and allows retry
 - API validation errors show all returned fields without claiming success
+- an invalid out-of-horizon API field falls back to the generic error
 - Save draft is enabled with optional fields incomplete, and saves as a draft
 - Save draft is disabled without a title, attendance, or dates
 - editing an existing draft PATCHes it instead of creating a new one

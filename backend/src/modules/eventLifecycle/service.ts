@@ -1,4 +1,5 @@
 import { validateEventStatusTransition } from './status.js';
+import { isAfterSingaporeDate, twoCalendarYearsFromSingaporeDate } from './dateHorizon.js';
 import type { EventLifecycleRepository } from './repository.js';
 import type { CreateEventRequest, EventUpdate, StatusChangeRequest } from './types.js';
 
@@ -112,6 +113,20 @@ function assertValidRangeAndFuture(request: Pick<CreateEventRequest, 'startAt' |
   }
 }
 
+// shortcut: Session dates mirror this Event range until E04 adds a multi-Session write path.
+function assertWithinEventDateHorizon(request: Pick<CreateEventRequest, 'startAt' | 'endAt' | 'status'>) {
+  if (request.status === 'draft') {
+    return;
+  }
+
+  const maximumDate = twoCalendarYearsFromSingaporeDate(new Date());
+  for (const [field, date] of [['startAt', request.startAt], ['endAt', request.endAt]] as const) {
+    if (isAfterSingaporeDate(date, maximumDate)) {
+      throw new EventValidationError('event_date_outside_horizon', { field, maximumDate });
+    }
+  }
+}
+
 export async function createEventRequest(
   repository: EventLifecycleRepository,
   request: CreateEventRequest,
@@ -126,6 +141,7 @@ export async function createEventRequest(
   }
 
   assertValidRangeAndFuture(request);
+  assertWithinEventDateHorizon(request);
 
   return repository.createEvent({
     ...request,
@@ -210,6 +226,7 @@ export async function updateEventRequest(
   }
 
   assertValidRangeAndFuture(merged);
+  assertWithinEventDateHorizon(merged);
 
   return repository.updateEvent(eventId, {
     ...merged,
