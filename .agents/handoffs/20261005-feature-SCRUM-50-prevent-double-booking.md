@@ -16,19 +16,20 @@ Goal: deliver the frontend and automated component coverage for E06-S06 / SCRUM-
 - `BookingDecision` now reads venue setup/turnaround buffers and the Singapore-day venue calendar before offering approval. It detects buffered overlap with Confirmed bookings, active Tentative claims, and already Conflicting claims; it ignores the candidate booking's own calendar segments.
 - The decision screen shows a conflict badge and warning and disables approval while checking or when a conflict exists; rejection remains available. Calendar-load errors are explained while the server remains authoritative. A server 409 conflict stays visible and prevents retrying approval.
 - Added helper and component tests under `frontend/src/features/venues/` and extended the active booking-decision test; the helper is kept beside the live Venue Staff screen in `frontend/src/features/venue/`.
-- The user explicitly asked to skip human tester steps. No manual run record or tester screenshots were created; SCRUM-50 is not being reported as Done.
-- The current worktree changes are uncommitted. The local branch reports 115 commits ahead and 4 behind its upstream; inspect that divergence before any push.
+- Removed the obsolete type-only backend scaffold; backend claim enforcement remains on main through PR #339.
+- Implementation is committed and pushed in `7994ec6`; branch history reconciliation is `45be219`; the cleanup is `cf89c89`.
+- The user explicitly asked to skip human tester steps. Automated evidence is recorded in `docs/testing/runs/20261030-002633-bryanseah234-frontend-vitest.md` and `docs/testing/runs/20261030-002633-bryanseah234-tooling.md`. No manual run record or screenshots were created; SCRUM-50 remains open for review and acceptance.
+- Jira currently lists SCRUM-50 as To Do and SCRUM-231/232 as To Do. Move SCRUM-231 to In Review after opening the PR; leave the parent and human-test subtask unchanged.
 
 ## Next steps
 
-1. Human review can continue through the existing PR workflow. If these automated runs are cited as PR evidence, create the required T-65 test session record first.
-2. Check the branch history divergence before preparing any commit or push.
+1. Open a PR from this branch with the automated run records and verification above; leave manual acceptance pending.
+2. After the PR is open, transition SCRUM-231 to In Review, then start the next ranked To Do story, SCRUM-66 / E09-S04.
 
 ## Verification
 
-- Focused coverage run for `conflictDetection.ts` and `BookingRequests.tsx`: 49 tests passed; 100% statements, branches, functions, and lines.
-- `npm test --workspace frontend`: 67 files and 700 tests passed.
-- `npm run typecheck --workspace frontend`: passed.
+- On `cf89c89`, focused coverage for `conflictDetection.ts` and `BookingRequests.tsx`: 49 tests passed; 100% statements, branches, functions, and lines. Recorded in the linked frontend Vitest session file.
+- On `cf89c89`, `npm test --workspace frontend`: 67 files and 700 tests passed. Recorded in the linked frontend Vitest session file.
 - `npm run build --workspace frontend`: passed; Vite reported the existing `OrganiserRequestFlow` mixed static/dynamic import warning.
-- `python scripts/check.py`: passed (186 tooling tests, 740 records); it reported two existing secondary worktrees.
+- On `cf89c89`, `python scripts/check.py`: passed (186 tooling tests, 740 records); it reported two existing secondary worktrees. Recorded in the tooling session file.
 - No manual browser acceptance run was performed, per user instruction.
