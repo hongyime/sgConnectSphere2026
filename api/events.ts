@@ -58,7 +58,7 @@ import {
   RejectedRequestError,
   withDecision,
 } from '../backend/src/modules/eventLifecycle/decision.js';
-import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
+import { EventSessionConflictError, listEventSessions, PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
 import { withArrangements } from '../backend/src/modules/eventReadiness/arrangements.js';
 import {
   confirmEvent,
@@ -75,6 +75,7 @@ import {
   updateEventRequest,
 } from '../backend/src/modules/eventLifecycle/service.js';
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
+import { deleteEventSession } from '../backend/src/modules/eventLifecycle/sessionManagement.js';
 import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
@@ -336,7 +337,7 @@ async function handleCommentPost(request: VercelRequest, response: VercelRespons
 // Full detail shape for the SCRUM-27 draft list/reopen endpoints - unlike
 // the POST response below, this includes description/purpose because
 // reopening a draft (Scenario 2) needs every previously entered value back.
-function serializeEventDetail(event: EventRecord) {
+function serializeEventDetail(event: EventRecord, sessions: Awaited<ReturnType<typeof listEventSessions>> = []) {
   return {
     id: event.id,
     title: event.title,
@@ -352,6 +353,7 @@ function serializeEventDetail(event: EventRecord) {
     equipmentRequirements: event.equipmentRequirements,
     layoutPreference: event.layoutPreference,
     registrationSetup: event.registrationSetup,
+    sessions,
   };
 }
 
@@ -414,7 +416,10 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     const id = params.get('id');
     if (user.role === 'attendee') await refusePlanning(query, user, id || '');
     await requireOrganiser(query, user, 'events');
-    if (id) return { event: await withArrangements(query, await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240))))) };
+    if (id) {
+      const event = await withArrangements(query, await withDecision(query, await withOutstandingQuestions(query, await getEvent(query, user, id.slice(0, 240)))));
+      return { event: { ...event, sessions: await listEventSessions(query, event.id) } };
+    }
     return {
       events: await listEvents(query, user, params.get('q') || ''),
       notifications: await listNotifications(query, user),
@@ -475,13 +480,13 @@ async function handleGetMine(
       if (!event || event.organiserId !== user.id) {
         throw new AccessError(404, 'not_found');
       }
-      return { event: serializeEventDetail(event) };
+      return { event: serializeEventDetail(event, await listEventSessions(query, event.id)) };
     }
 
     const statusParam = params.get('status');
     const status = statusParam && isEventStatus(statusParam) ? statusParam : undefined;
     const events = await repository.listEventsByOrganiser(user.id, status);
-    return { events: events.map(serializeEventDetail) };
+    return { events: events.map(event => serializeEventDetail(event)) };
   });
 }
 
@@ -507,6 +512,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse) {
     }
 
     const event = await createEventRequest(repository, createRequest);
+    const sessions = await listEventSessions(query, event.id);
     sendJson(response, 201, {
       event: {
         id: event.id,
@@ -521,6 +527,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse) {
         equipmentRequirements: event.equipmentRequirements,
         layoutPreference: event.layoutPreference,
         registrationSetup: event.registrationSetup,
+        sessions,
       },
     });
   } catch (error) {
@@ -555,7 +562,7 @@ async function handlePatch(request: VercelRequest, response: VercelResponse) {
 
     try {
       const event = await updateEventRequest(repository, id, user.id, patch);
-      return { event: serializeEventDetail(event) };
+      return { event: serializeEventDetail(event, await listEventSessions(query, event.id)) };
     } catch (error) {
       if (error instanceof EventNotFoundError) throw new AccessError(404, 'not_found');
       if (error instanceof EventAccessError) throw new AccessError(403, 'forbidden');
@@ -572,6 +579,12 @@ async function handlePatch(request: VercelRequest, response: VercelResponse) {
         // Cache-Control header double-setting no-op.
         return {} as Record<string, unknown>;
       }
+      if (error instanceof EventSessionConflictError) {
+        response.setHeader('Cache-Control', 'private, no-store');
+        response.setHeader('Vary', 'Cookie');
+        sendJson(response, 409, { error: error.message });
+        return {} as Record<string, unknown>;
+      }
       throw error;
     }
   });
@@ -581,10 +594,20 @@ async function handlePatch(request: VercelRequest, response: VercelResponse) {
 // owning organiser, only while the event is still a draft (enforced in
 // deleteEventRequest).
 async function handleDelete(request: VercelRequest, response: VercelResponse) {
+  const params = new URL(request.url || '/', 'http://localhost').searchParams;
+  if (params.get('session') === '1') {
+    await respond(response, async () => {
+      const id = params.get('id');
+      const sessionId = params.get('session_id');
+      if (!id || !sessionId) throw new AccessError(400, 'An Event and Session are required.');
+      return await deleteEventSession(getDatabasePool(), await currentUser(request), id.slice(0, 240), sessionId);
+    });
+    return;
+  }
   await respond(response, async () => {
     const user = await requireOrganiserWithClient(request);
 
-    const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
+    const id = params.get('id');
     if (!id) {
       throw new AccessError(400, 'missing_id');
     }

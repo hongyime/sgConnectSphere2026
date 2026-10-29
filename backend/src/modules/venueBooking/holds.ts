@@ -157,6 +157,14 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
   return audited(database, actor, () => inTransaction(database, async client => {
     const event = await lockEvent(client, actor, { event: identifier });
     if (!HOLDABLE_STATUSES.includes(event.status)) throw new AccessError(409, NOT_HOLDABLE);
+    const sessions = (await client.query<{ id: string; startsAt: Date; endsAt: Date }>(
+      'SELECT id,lower(session_range) AS "startsAt",upper(session_range) AS "endsAt" FROM sessions WHERE event_id=$1 FOR SHARE', [event.id])).rows;
+    const requestedSessionId = data.session_id;
+    if (requestedSessionId !== undefined && (typeof requestedSessionId !== 'string' || !UUID.test(requestedSessionId))) throw new AccessError(400, 'Choose a valid Session.');
+    const session = typeof requestedSessionId === 'string'
+      ? sessions.find(item => item.id === requestedSessionId)
+      : sessions.length === 1 ? sessions[0] : undefined;
+    if (!session) throw new AccessError(requestedSessionId ? 400 : 409, requestedSessionId ? 'Choose a Session belonging to this event.' : 'Choose a Session before holding a venue.');
     // Lock the venue: holds (and, once E06-S03 does the same, requests) for one
     // venue are decided one at a time, so two can't both see it free.
     const venue = (await client.query<Venue>(`SELECT id, name FROM venues WHERE id = $1 AND is_active FOR NO KEY UPDATE`, [venueId])).rows[0];
@@ -166,12 +174,13 @@ export async function placeHold(database: Pool, user: AuthenticatedUser | undefi
     const now = await databaseNow(client);
     const valid = validateHoldInput(data, event, now);
     if (!valid.input) return { status: 400, body: { error: 'validation_failed', errors: valid.errors } };
+    if (valid.input.startsAt < session.startsAt || valid.input.endsAt > session.endsAt) throw new AccessError(400, 'The hold period must fall within its Session.');
     const clash = await findClash(client, venue.id, valid.input.startsAt, valid.input.endsAt, now, null);
     if (clash) return { status: 409, body: { error: clash } };
     const id = randomUUID();
-    await client.query(`INSERT INTO venue_bookings (id, venue_id, event_id, booking_range, status, expires_at)
-      VALUES ($1, $2, $3, tstzrange($4, $5, '[)'), 'tentative', $6)`,
-    [id, venue.id, event.id, valid.input.startsAt, valid.input.endsAt, valid.input.expiresAt]);
+    await client.query(`INSERT INTO venue_bookings (id, venue_id, event_id, session_id, booking_range, status, expires_at)
+      VALUES ($1, $2, $3, $4, tstzrange($5, $6, '[)'), 'tentative', $7)`,
+    [id, venue.id, event.id, session.id, valid.input.startsAt, valid.input.endsAt, valid.input.expiresAt]);
     await audit(client, { actorId: actor.id, eventId: event.id, bookingId: id, action: `Tentative hold placed on ${venue.name}`, next: valid.input.expiresAt.toISOString() });
     return { status: 201, body: { hold: { id, venueId: venue.id, venueName: venue.name, status: 'tentative', expiresAt: valid.input.expiresAt.toISOString() } } };
   }));

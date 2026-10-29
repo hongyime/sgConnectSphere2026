@@ -117,7 +117,7 @@ test('a non-positive or non-integer expected attendance is reported as missing',
 
 // Cover the HTTP parser as well as the service: previously the parser returned
 // invalid_payload before the service could name all missing mandatory fields.
-import { parseCreateEventBody } from '../src/modules/eventLifecycle/parseRequest.js';
+import { parseCreateEventBody, parseUpdateEventBody } from '../src/modules/eventLifecycle/parseRequest.js';
 
 test('an empty HTTP request being submitted reports all ten mandatory fields without writing', async () => {
   const repository = fakeRepository();
@@ -391,4 +391,91 @@ test('changing the status of an unknown event is reported as not found', async (
     changeEventStatus(repository, { eventId: 'no-such-event', actorId: 'coordinator-1', toStatus: 'under_review' }),
     { message: 'Event not found: no-such-event' },
   );
+});
+
+test('multiple Sessions validate and set the Event planning envelope and total attendance', async () => {
+  const repository = fakeRepository();
+  const firstStart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const firstEnd = new Date(firstStart.getTime() + 2 * 60 * 60 * 1000);
+  const secondStart = new Date(firstStart.getTime() + 24 * 60 * 60 * 1000);
+  const secondEnd = new Date(secondStart.getTime() + 3 * 60 * 60 * 1000);
+  const event = await createEventRequest(repository, completeRequest({
+    sessions: [
+      { title: 'Opening', startAt: firstStart, endAt: firstEnd, expectedAttendance: 40, venueRequirements: 'Hall A', equipmentRequirements: 'Projector' },
+      { title: 'Workshop', startAt: secondStart, endAt: secondEnd, expectedAttendance: 120, venueRequirements: 'Hall B', equipmentRequirements: 'Microphones' },
+    ],
+  }));
+  assert.equal(event.startAt?.getTime(), firstStart.getTime());
+  assert.equal(event.endAt?.getTime(), secondEnd.getTime());
+  assert.equal(event.expectedAttendance, 160);
+  assert.deepEqual(repository.created[0]?.sessions?.map(session => [session.title, session.expectedAttendance]), [
+    ['Opening', 40], ['Workshop', 120],
+  ]);
+});
+
+test('Session payloads reject empty lists, bad ranges, past dates, invalid attendance and forged ids', async () => {
+  const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const valid = { title: 'Opening', startAt, endAt: new Date(startAt.getTime() + 60_000), expectedAttendance: 40 };
+  for (const sessions of [
+    [],
+    [{ ...valid, endAt: startAt }],
+    [{ ...valid, startAt: new Date(Date.now() - 60_000) }],
+    [{ ...valid, expectedAttendance: 0 }],
+    [{ ...valid, id: 'not-a-uuid' }],
+    [{ ...valid, id: '' }],
+  ]) {
+    const repository = fakeRepository();
+    await assert.rejects(createEventRequest(repository, completeRequest({ sessions })), (error: unknown) => {
+      assert.ok(error instanceof EventValidationError);
+      assert.equal(error.message, 'invalid_sessions');
+      return true;
+    });
+    assert.equal(repository.created.length, 0);
+  }
+});
+
+test('HTTP parser retains independent Session requirements and rejects a non-array Session list', () => {
+  const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const parsed = parseCreateEventBody({ sessions: [{
+    title: 'Opening', startAt: startAt.toISOString(), endAt: new Date(startAt.getTime() + 60_000).toISOString(),
+    expectedAttendance: 40, venueRequirements: 'Hall A', accessibilityFeatureIds: ['step-free'], equipmentRequirements: 'Projector',
+  }] }, 'organiser-a', 'client-a');
+  assert.deepEqual(parsed?.sessions?.[0], {
+    title: 'Opening', startAt, endAt: new Date(startAt.getTime() + 60_000), expectedAttendance: 40,
+    layoutId: undefined, venueRequirements: 'Hall A', accessibilityNote: undefined,
+    accessibilityFeatureIds: ['step-free'], equipmentRequirements: 'Projector', layoutPreference: undefined,
+  });
+  assert.equal(parseCreateEventBody({ sessions: {} }, 'organiser-a', 'client-a'), null);
+});
+
+test('HTTP PATCH parser retains Session edits and rejects a non-array Session list', () => {
+  const startAt = new Date('2027-03-12T01:00:00Z');
+  const endAt = new Date('2027-03-12T03:00:00Z');
+  const parsed = parseUpdateEventBody({ sessions: [{ id: 'session-a', title: 'Opening', startAt: startAt.toISOString(),
+    endAt: endAt.toISOString(), expectedAttendance: 40, accessibilityFeatureIds: ['step-free'] }] });
+  assert.deepEqual(parsed?.sessions?.[0], {
+    id: 'session-a', title: 'Opening', startAt, endAt, expectedAttendance: 40,
+    layoutId: undefined, venueRequirements: undefined, accessibilityNote: undefined,
+    accessibilityFeatureIds: ['step-free'], equipmentRequirements: undefined, layoutPreference: undefined,
+  });
+  assert.equal(parseUpdateEventBody({ sessions: {} }), null);
+});
+
+test('HTTP parsers reject non-string Session ids instead of treating them as new Sessions', () => {
+  const session = { title: 'Opening', startAt: '2027-03-12T01:00:00Z', endAt: '2027-03-12T03:00:00Z', expectedAttendance: 40, id: 42 };
+  assert.equal(parseCreateEventBody({ sessions: [session] }, 'organiser-a', 'client-a'), null);
+  assert.equal(parseUpdateEventBody({ sessions: [session] }), null);
+});
+
+test('an empty Session id in a draft update is rejected before persistence', async () => {
+  const repository = fakeRepository();
+  const update = repository.updateEvent.bind(repository);
+  let writes = 0;
+  repository.updateEvent = async (...args) => { writes += 1; return update(...args); };
+  const draft = await createEventRequest(repository, completeRequest({ status: 'draft' }));
+  const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await assert.rejects(updateEventRequest(repository, draft.id, draft.organiserId, { sessions: [{
+    id: '', title: 'Opening', startAt, endAt: new Date(startAt.getTime() + 60_000), expectedAttendance: 40,
+  }] }), { message: 'invalid_sessions' });
+  assert.equal(writes, 0);
 });

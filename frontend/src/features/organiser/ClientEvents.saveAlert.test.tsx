@@ -132,3 +132,14 @@ test('TC_E03S12_05 - cancelling an approved event\'s edit confirms nothing, and 
   expect(successAlert()).toBeNull();
   expect(calls.filter(call => call.method === 'PATCH')).toHaveLength(0);
 });
+
+test('the event page displays its Session schedule', async () => {
+  stubApi({ 'GET /api/events?id=EVT-PLAN': { body: orgRead('Planning event', {
+    sessions: [{ id: 'session-opening', title: 'Opening', startAt: '2027-03-12T01:00:00Z',
+      endAt: '2027-03-12T03:00:00Z', expectedAttendance: 40 }],
+  }) } });
+  renderEventPage();
+  expect(await screen.findByRole('heading', { name: 'Sessions' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Opening' })).toBeInTheDocument();
+  expect(screen.getByText('40 expected attendees')).toBeInTheDocument();
+});

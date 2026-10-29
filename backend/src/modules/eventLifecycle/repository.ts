@@ -4,9 +4,14 @@ import { inTransaction } from '../../database/pool.js';
 import { assignCoordinatorOnSubmit } from './coordinatorAssignment.js';
 import { validateEventStatusTransition } from './status.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
-import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
+import type { Query } from '../eventVisibility/service.js';
+import type { CreateEventRequest, EventRecord, EventSessionInput, EventUpdate } from './types.js';
 
 type SqlRunner = { query: Pool['query'] };
+
+export class EventSessionConflictError extends Error {
+  constructor(message: string) { super(message); this.name = 'EventSessionConflictError'; }
+}
 
 // E03-S01 Scenario 1: a request that has just become Submitted is assigned a
 // Coordinator (and moved to Under Review) inside the same transaction, so no
@@ -53,6 +58,73 @@ export async function getAccessibilityFeatureIds(runner: SqlRunner, eventId: str
     [eventId],
   );
   return result.rows.map(row => row.feature_id);
+}
+
+async function saveSessionNeeds(client: PoolClient, sessionId: string, featureIds: string[]) {
+  await client.query('DELETE FROM session_accessibility_needs WHERE session_id=$1', [sessionId]);
+  for (const featureId of featureIds) {
+    await client.query('INSERT INTO session_accessibility_needs(session_id,feature_id) VALUES($1,$2)', [sessionId, featureId]);
+  }
+}
+
+async function persistSessions(client: PoolClient, eventId: string, sessions: EventSessionInput[]) {
+  const existing = (await client.query<{ id: string }>('SELECT id FROM sessions WHERE event_id=$1 FOR UPDATE', [eventId])).rows;
+  const existingIds = new Set(existing.map(row => row.id));
+  const suppliedIds = sessions.flatMap(session => session.id ? [session.id] : []);
+  if (new Set(suppliedIds).size !== suppliedIds.length || suppliedIds.some(id => !existingIds.has(id))) {
+    throw new EventSessionConflictError('A Session does not belong to this Event or was supplied more than once.');
+  }
+  const retained = new Set<string>();
+  const insert = async (session: EventSessionInput, id?: string) => {
+    const values = [eventId, session.title ?? null, session.startAt.toISOString(), session.endAt.toISOString(), session.expectedAttendance,
+      session.layoutId ?? null, session.venueRequirements ?? null, session.accessibilityNote ?? null,
+      session.equipmentRequirements ?? null, session.layoutPreference ?? null];
+    if (id) {
+      await client.query(`UPDATE sessions SET title=$2,session_range=tstzrange($3,$4,'[)'),expected_attendance=$5,
+        layout_id=$6,venue_requirements=$7,accessibility_note=$8,equipment_requirements=$9,layout_preference=$10
+        WHERE id=$11 AND event_id=$1`, [...values, id]);
+      retained.add(id);
+      await saveSessionNeeds(client, id, session.accessibilityFeatureIds ?? []);
+    } else {
+      const result = await client.query<{ id: string }>(`INSERT INTO sessions(event_id,title,session_range,expected_attendance,layout_id,
+        venue_requirements,accessibility_note,equipment_requirements,layout_preference)
+        VALUES($1,$2,tstzrange($3,$4,'[)'),$5,$6,$7,$8,$9,$10) RETURNING id`, values);
+      retained.add(result.rows[0]!.id);
+      await saveSessionNeeds(client, result.rows[0]!.id, session.accessibilityFeatureIds ?? []);
+    }
+  };
+
+  for (const [index, session] of sessions.entries()) {
+    const id = session.id ?? (index === 0 ? existing.find(row => !retained.has(row.id))?.id : undefined);
+    await insert(session, id);
+  }
+  const removed = existing.filter(row => !retained.has(row.id)).map(row => row.id);
+  if (!removed.length) return;
+  const dependencies = await client.query<{ used: boolean }>(`SELECT
+    EXISTS(SELECT 1 FROM event_registration_sessions WHERE session_id=ANY($1::uuid[])) OR
+    EXISTS(SELECT 1 FROM venue_bookings WHERE session_id=ANY($1::uuid[]) AND status NOT IN ('rejected','released','expired')) OR
+    EXISTS(SELECT 1 FROM equipment_requests WHERE session_id=ANY($1::uuid[])) OR
+    EXISTS(SELECT 1 FROM equipment_reservations WHERE session_id=ANY($1::uuid[])) AS used`, [removed]);
+  if (dependencies.rows[0]?.used) throw new EventSessionConflictError('A Session with registrations or arrangements cannot be removed.');
+  await client.query('DELETE FROM sessions WHERE id=ANY($1::uuid[]) AND event_id=$2', [removed, eventId]);
+}
+
+export async function listEventSessions(runner: Query, eventId: string) {
+  const result = await runner<{
+    id: string; title: string | null; start_at: Date; end_at: Date; expected_attendance: number; layout_id: string | null;
+    venue_requirements: string | null; accessibility_note: string | null; accessibility_feature_ids: string[];
+    equipment_requirements: string | null; layout_preference: string | null;
+  }>(`SELECT s.id,s.title,lower(s.session_range) AS start_at,upper(s.session_range) AS end_at,s.expected_attendance,s.layout_id,
+      s.venue_requirements,s.accessibility_note,s.equipment_requirements,s.layout_preference,
+      ARRAY(SELECT feature_id FROM session_accessibility_needs n WHERE n.session_id=s.id ORDER BY feature_id) AS accessibility_feature_ids
+    FROM sessions s WHERE s.event_id=$1 ORDER BY lower(s.session_range),s.created_at,s.id`, [eventId]);
+  return result.rows.map(session => ({
+    id: session.id, title: session.title ?? undefined, startAt: session.start_at.toISOString(), endAt: session.end_at.toISOString(),
+    expectedAttendance: session.expected_attendance, layoutId: session.layout_id ?? undefined,
+    venueRequirements: session.venue_requirements ?? undefined, accessibilityNote: session.accessibility_note ?? undefined,
+    accessibilityFeatureIds: session.accessibility_feature_ids ?? [], equipmentRequirements: session.equipment_requirements ?? undefined,
+    layoutPreference: session.layout_preference ?? undefined,
+  }));
 }
 
 export type EventLifecycleRepository = {
@@ -315,6 +387,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       const event = mapEvent(result.rows[0]);
       const featureIds = request.accessibilityFeatureIds ?? [];
       await linkAccessibilityNeeds(client, event.id, featureIds);
+      if (request.sessions) await persistSessions(client, event.id, request.sessions);
       if (event.status === 'submitted') {
         const audit = await client.query<{ id: string; occurred_at: Date }>(
           `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,new_value)
@@ -477,6 +550,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       const event = mapEvent(result.rows[0]);
       const featureIds = update.accessibilityFeatureIds ?? [];
       await replaceAccessibilityNeeds(client, eventId, featureIds);
+      if (update.sessions) await persistSessions(client, eventId, update.sessions);
       if (event.status === 'submitted') {
         const audit = await client.query<{ id: string; occurred_at: Date }>(
           `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)

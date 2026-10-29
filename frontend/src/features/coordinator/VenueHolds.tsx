@@ -7,7 +7,7 @@
 // Data comes from features/venue/holdsApi.ts; the server decides what may be
 // held (canHold) and refuses clashes, naming what is in the way.
 import { useState, type FormEvent } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Bookmark, CalendarClock, Send, Undo2 } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, ErrorState, FactList, FormActions, FormField, FormSection, LoadingState,
@@ -151,6 +151,10 @@ const zoneHint = `Times are in ${Intl.DateTimeFormat().resolvedOptions().timeZon
 
 export function HoldVenueForm() {
   const { eventCode = '', venueId = '' } = useParams();
+  const [params] = useSearchParams();
+  const sessionId = params.get('session_id') ?? '';
+  const sessionStart = params.get('starts_at') ?? '';
+  const sessionEnd = params.get('ends_at') ?? '';
   const navigate = useNavigate();
   const { result, reload } = useLoad(async signal => {
     const [event, venue] = await Promise.all([getAssignedEvent(eventCode, signal), getVenue(venueId, signal)]);
@@ -170,8 +174,8 @@ export function HoldVenueForm() {
       {loaded ? (
         HOLDABLE.includes(loaded.event.status) ? (
           <HoldForm
-            key={`${loaded.event.id}:${loaded.venue.id}`}
-            event={{ code: eventRef(loaded.event), title: loaded.event.title, startsAt: loaded.event.starts_at, endsAt: loaded.event.ends_at }}
+            key={`${loaded.event.id}:${loaded.venue.id}:${sessionId}`}
+            event={{ code: eventRef(loaded.event), title: loaded.event.title, startsAt: sessionStart || loaded.event.starts_at, endsAt: sessionEnd || loaded.event.ends_at, sessionId }}
             venue={{ id: loaded.venue.id, name: loaded.venue.name }}
             backTo={backTo}
             onPlaced={(venueName, expiresAt) => navigate(eventPath(eventRef(loaded.event)), { state: { holdPlaced: { venueName, expiresAt } } satisfies HoldPlaced })}
@@ -188,7 +192,7 @@ export function HoldVenueForm() {
 }
 
 function HoldForm({ event, venue, backTo, onPlaced }: {
-  event: { code: string; title: string; startsAt: string; endsAt: string };
+  event: { code: string; title: string; startsAt: string; endsAt: string; sessionId: string };
   venue: { id: string; name: string };
   backTo: string;
   onPlaced: (venueName: string, expiresAt: string) => void;
@@ -212,6 +216,7 @@ function HoldForm({ event, venue, backTo, onPlaced }: {
       startsAt: new Date(draft.startsAt).toISOString(),
       endsAt: new Date(draft.endsAt).toISOString(),
       ...(draft.customExpiry ? { expiresAt: new Date(draft.expiresAt).toISOString() } : {}),
+      ...(event.sessionId ? { sessionId: event.sessionId } : {}),
     });
     setSending(false);
     if (outcome.ok) { onPlaced(outcome.data.hold.venueName, outcome.data.hold.expiresAt); return; }
@@ -229,7 +234,7 @@ function HoldForm({ event, venue, backTo, onPlaced }: {
       {invalid ? <Alert tone="error">Check the highlighted fields and try again.</Alert> : null}
       {refusal ? <Alert tone="error" title="This venue can't be held">{refusal}</Alert> : null}
       <Card label="Hold details">
-        <FactList items={[['Venue', venue.name], ['Event', formatDateRange(event.startsAt, event.endsAt)]]} />
+        <FactList items={[['Venue', venue.name], [event.sessionId ? 'Session period' : 'Event period', formatDateRange(event.startsAt, event.endsAt)]]} />
         <FormSection title="Period">
           <FormField label="Hold starts" hint={zoneHint} error={errors.startsAt}>
             {props => <input {...props} type="datetime-local" value={draft.startsAt} onChange={change => set('startsAt')(change.target.value)} />}

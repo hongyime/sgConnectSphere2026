@@ -11,9 +11,10 @@ import './venue.css';
 
 type Option = { id: string; label: string };
 type Result = { id: string; name: string; location: string; max_capacity: number; effective_capacity: number | null; available: boolean; suitable: boolean; mismatches: string[]; layouts: (Option & { capacity: number })[]; facilities: Option[]; accessibility: Option[] };
+type SessionOption = { id: string; title?: string; start: string; end: string; attendance: number; layout?: string; accessibility: string[]; facilities: string[]; accessibility_note?: string };
 type SearchSetup = {
   options: { layouts: Option[]; accessibility: Option[]; facilities: Option[] };
-  defaults: { start?: string; end?: string; attendance?: number; layout?: string; accessibility?: string[]; facilities?: string[]; accessibility_note?: string; title?: string };
+  defaults: { id?: string; start?: string; end?: string; attendance?: number; layout?: string; accessibility?: string[]; facilities?: string[]; accessibility_note?: string; title?: string; session_id?: string; sessions?: SessionOption[] };
 };
 const localTime = (value: string) => {
   if (!value) return '';
@@ -25,21 +26,22 @@ export function VenueSearch() {
   const { eventCode } = useParams();
   const [params] = useSearchParams();
   const replacementId = params.get('replaces_booking_id') ?? '';
+  const requestedSessionId = params.get('session_id') ?? '';
   // A new event gets a fresh form and cannot retain the previous event's search.
-  return <VenueSearchPage key={`${eventCode}:${replacementId}`} eventCode={eventCode} replacementId={replacementId} />;
+  return <VenueSearchPage key={`${eventCode}:${replacementId}:${requestedSessionId}`} eventCode={eventCode} replacementId={replacementId} requestedSessionId={requestedSessionId} />;
 }
 
-function VenueSearchPage({ eventCode, replacementId }: { eventCode?: string; replacementId: string }) {
+function VenueSearchPage({ eventCode, replacementId, requestedSessionId }: { eventCode?: string; replacementId: string; requestedSessionId: string }) {
   const { result, reload } = useLoad(async signal => {
-    const params = new URLSearchParams({ mode: 'suitability', ...(eventCode ? { event_id: eventCode } : {}) });
+    const params = new URLSearchParams({ mode: 'suitability', ...(eventCode ? { event_id: eventCode } : {}), ...(requestedSessionId ? { session_id: requestedSessionId } : {}) });
     const setup = await apiCall<SearchSetup>(`/api/venues?${params}`, { signal }, 'Unable to load venue search.');
     if (!setup.ok || !replacementId || !eventCode) return setup;
     const bookings = await getVenueBookingRequests(eventCode, signal);
     if (!bookings.ok) return bookings;
     const source = bookings.data.bookings.find(b => b.id === replacementId && b.status === 'conflicting' && b.conflict_block_id && lostVenueRecoveryState(bookings.data.bookings, b).canRequest);
     if (!source) return { ok: false as const, status: 409, message: 'This lost booking is no longer available for replacement.' };
-    return { ...setup, data: { ...setup.data, defaults: { ...setup.data.defaults, start: source.starts_at, end: source.ends_at, attendance: source.headcount ?? setup.data.defaults.attendance } } };
-  }, [eventCode, replacementId]);
+    return { ...setup, data: { ...setup.data, defaults: { ...setup.data.defaults, session_id: source.session_id ?? undefined, start: source.starts_at, end: source.ends_at, attendance: source.headcount ?? setup.data.defaults.attendance } } };
+  }, [eventCode, replacementId, requestedSessionId]);
   return <PageLayout eyebrow="Coordinator workspace" title="Search for suitable venues">
     {result.state === 'loading' && <LoadingState label="Loading venue search…" />}
     {result.state === 'error' && <ErrorState failure={result.failure} context="venue search" onRetry={reload} />}
@@ -48,8 +50,11 @@ function VenueSearchPage({ eventCode, replacementId }: { eventCode?: string; rep
 }
 
 function VenueSearchForm({ setup: { options, defaults: d }, eventCode, replacementId }: { setup: SearchSetup; eventCode?: string; replacementId: string }) {
-  const [fields, setFields] = useState({ start: localTime(d.start || ''), end: localTime(d.end || ''), attendance: String(d.attendance ?? ''), capacity: '', layout: d.layout || '', location: '', q: '' });
-  const [selected, setSelected] = useState({ accessibility: d.accessibility || [], facilities: d.facilities || [] });
+  const initialSession = d.sessions?.find(session => session.id === d.session_id) ?? d.sessions?.[0];
+  const initial = d.session_id ? d : initialSession ?? d;
+  const [sessionId, setSessionId] = useState(d.session_id ?? initialSession?.id ?? '');
+  const [fields, setFields] = useState({ start: localTime(initial.start ?? ''), end: localTime(initial.end ?? ''), attendance: String(initial.attendance ?? ''), capacity: '', layout: initial.layout ?? '', location: '', q: '' });
+  const [selected, setSelected] = useState({ accessibility: initial.accessibility ?? [], facilities: initial.facilities ?? [] });
   const [venues, setVenues] = useState<Result[] | null>(null);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -65,6 +70,7 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode, replaceme
       const params = new URLSearchParams({ mode: 'suitability', search: '1', ...fields, start: new Date(fields.start).toISOString(), end: new Date(fields.end).toISOString(), accessibility: selected.accessibility.join(','), facilities: selected.facilities.join(',') });
       if (!fields.capacity) params.delete('capacity');
       if (eventCode) params.set('event_id', eventCode);
+      if (sessionId) params.set('session_id', sessionId);
       const result = await apiCall<{ venues: Result[] }>(`/api/venues?${params}`, undefined, 'Unable to search venues.');
       if (!current()) return;
       if (!result.ok) {
@@ -85,6 +91,16 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode, replaceme
       {d.accessibility_note && <Alert tone="info" title="Additional accessibility notes (for manual review)">{d.accessibility_note}</Alert>}
       <form onSubmit={search} className="venue-search-form">
         {error && <Alert tone="error">{error}</Alert>}
+        {d.sessions && d.sessions.length > 1 && <FormField label="Session">
+          {props => <select {...props} value={sessionId} onChange={event => {
+            const chosen = d.sessions?.find(session => session.id === event.target.value);
+            setSessionId(event.target.value);
+            if (!chosen) return;
+            setFields(current => ({ ...current, start: localTime(chosen.start), end: localTime(chosen.end), attendance: String(chosen.attendance), layout: chosen.layout ?? '' }));
+            setSelected({ accessibility: chosen.accessibility, facilities: chosen.facilities });
+            setVenues(null); setError(''); setErrors({});
+          }}><option value="">Choose a Session</option>{d.sessions?.map((session, index) => <option key={session.id} value={session.id}>{session.title || `Session ${index + 1}`}</option>)}</select>}
+        </FormField>}
         <FormSection title="Date, time and venue requirements">
           {([['q', 'Venue name', 'text'], ['location', 'Location', 'text'], ['start', 'Start', 'datetime-local'], ['end', 'End', 'datetime-local'], ['attendance', 'Expected attendance', 'number'], ['capacity', 'Minimum capacity (optional)', 'number']] as const).map(([key, label, type]) => {
             const required = ['start', 'end', 'attendance'].includes(key);
@@ -124,8 +140,8 @@ function VenueSearchForm({ setup: { options, defaults: d }, eventCode, replaceme
             ['Facilities', v.facilities.map(f => f.label).join(', ') || 'None'],
             ['Accessibility', v.accessibility.map(f => f.label).join(', ') || 'None'],
           ]} />
-          {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/suitability${replacementId ? `?replaces_booking_id=${encodeURIComponent(replacementId)}` : ''}`}>Check recorded event requirements</ButtonLink>}
-          {eventCode && v.available && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/hold`}>Hold this venue</ButtonLink>}
+          {eventCode && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/suitability${sessionId || replacementId ? `?${new URLSearchParams({ ...(sessionId ? { session_id: sessionId } : {}), ...(replacementId ? { replaces_booking_id: replacementId } : {}) })}` : ''}`}>Check recorded event requirements</ButtonLink>}
+          {eventCode && v.available && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venues/${encodeURIComponent(v.id)}/hold${sessionId ? `?${new URLSearchParams({ session_id: sessionId, starts_at: new Date(fields.start).toISOString(), ends_at: new Date(fields.end).toISOString() })}` : ''}`}>Hold this venue</ButtonLink>}
           {v.mismatches.length > 0 && <div><strong>Unmet requirements</strong><ul>{v.mismatches.map(m => <li key={m}>{m}</li>)}</ul></div>}
         </Card>)}
       </>}

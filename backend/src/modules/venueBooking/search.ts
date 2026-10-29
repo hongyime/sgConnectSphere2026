@@ -31,6 +31,22 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
       ${assignedEventOnly ? 'AND e.coordinator_id = $2' : ''}`, assignedEventOnly ? [eventId, user!.id] : [eventId]);
     if (!result.rows[0]) throw new AccessError(404, 'Event not found.');
     defaults = result.rows[0];
+    const sessions = (await query(`SELECT s.id,s.title,lower(s.session_range) AS start,upper(s.session_range) AS end,
+      s.expected_attendance AS attendance,s.layout_id AS layout,s.accessibility_note,
+      ARRAY(SELECT feature_id FROM session_accessibility_needs WHERE session_id=s.id) AS accessibility,
+      ARRAY(SELECT facility_id FROM session_facility_needs WHERE session_id=s.id) AS facilities
+      FROM sessions s WHERE s.event_id=$1 ORDER BY lower(s.session_range),s.created_at,s.id`, [defaults.id])).rows as Record<string, unknown>[];
+    defaults.sessions = sessions;
+    const sessionId = params.get('session_id');
+    if (sessionId) {
+      const session = sessions.find(item => item.id === sessionId);
+      if (!session) throw new AccessError(400, 'Choose a Session belonging to this event.');
+      defaults = { ...defaults, ...session, session_id: sessionId };
+    } else if (params.get('search') === '1' && sessions.length > 1) {
+      return { errors: { session_id: ['Choose a Session before searching.'] } };
+    } else if (sessions.length === 1) {
+      defaults = { ...defaults, ...sessions[0], session_id: sessions[0]!.id };
+    }
   }
   const options = { layouts, accessibility, facilities };
   if (params.get('search') !== '1') return { defaults, options };

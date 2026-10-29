@@ -47,7 +47,7 @@ for (const value of ['0', '-1', '1.5']) {
   });
 }
 
-test('sends all request fields with same-origin credentials and confirms API success', async () => {
+test('TC_E04S02_01: creates one Session without extra Event lifecycle setup', async () => {
   const fetchMock = vi.fn(async (url: string, _init: FetchInit) => (
     url.includes('accessibilityFeatures') ? accessibilityFeaturesResponse() : new Response('{}', { status: 201 })
   ));
@@ -75,7 +75,79 @@ test('sends all request fields with same-origin credentials and confirms API suc
     accessibilityNote: 'Wheelchair access and front-row reserved seats',
     accessibilityFeatureIds: [],
     equipmentRequirements: 'none_required', layoutPreference: 'none_required', registrationSetup: 'none_required',
+    sessions: [{
+      title: 'Annual Sustainability Forum',
+      startAt: new Date('2027-01-15T09:00').toISOString(),
+      endAt: new Date('2027-01-15T12:00').toISOString(),
+      expectedAttendance: 180,
+      venueRequirements: 'Seminar room with theatre seating',
+      accessibilityNote: 'Wheelchair access and front-row reserved seats',
+      accessibilityFeatureIds: [],
+      equipmentRequirements: 'none_required',
+      layoutPreference: 'none_required',
+    }],
   });
+});
+
+test('TC_E04S02_02: an added Session keeps its own schedule, attendance and requirements in one Event request', async () => {
+  const fetchMock = vi.fn(async (url: string, _init: FetchInit) => url.includes('accessibilityFeatures')
+    ? accessibilityFeaturesResponse([{ id: 'feature-step-free', code: 'step_free', label: 'Step-free access' }])
+    : new Response('{}', { status: 201 }));
+  vi.stubGlobal('fetch', fetchMock);
+  completeForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Add Session' }));
+  fireEvent.change(screen.getByLabelText('Session name (optional)'), { target: { value: 'Workshop' } });
+  fireEvent.change(screen.getByLabelText('Start date and time'), { target: { value: '2027-01-16T13:00' } });
+  fireEvent.change(screen.getByLabelText('End date and time'), { target: { value: '2027-01-16T16:00' } });
+  fireEvent.change(screen.getByLabelText('Expected attendance', { selector: '#request-session-2-expectedAttendance' }), { target: { value: '120' } });
+  fireEvent.change(screen.getByLabelText('Venue requirements', { selector: '#request-session-2-venueRequirements' }), { target: { value: 'Hall B' } });
+  fireEvent.change(screen.getByLabelText('Equipment requirements', { selector: '#request-session-2-equipmentRequirements' }), { target: { value: 'Microphones' } });
+  const stepFree = () => screen.getByLabelText('Step-free access', { selector: '#request-session-2-access-feature-step-free' });
+  await screen.findByLabelText('Step-free access', { selector: '#request-session-2-access-feature-step-free' });
+  fireEvent.click(stepFree());
+  expect(stepFree()).toBeChecked();
+  fireEvent.click(stepFree());
+  expect(stepFree()).not.toBeChecked();
+  fireEvent.click(stepFree());
+  fireEvent.click(screen.getByRole('button', { name: 'Add Session' }));
+  fireEvent.click(stepFree());
+  expect(stepFree()).not.toBeChecked();
+  fireEvent.click(stepFree());
+  expect(stepFree()).toBeChecked();
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Session 3' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+  expect(await screen.findByText('Persisted through API and submitted to coordinator queue')).toBeVisible();
+  const [, init] = fetchMock.mock.calls.find(([url]) => url === '/api/events')!;
+  const body = JSON.parse(init.body);
+  expect(body.startAt).toBe(new Date('2027-01-15T09:00').toISOString());
+  expect(body.endAt).toBe(new Date('2027-01-16T16:00').toISOString());
+  expect(body.expectedAttendance).toBe(300);
+  expect(body.sessions).toHaveLength(2);
+  expect(body.sessions[1]).toMatchObject({
+    title: 'Workshop', startAt: new Date('2027-01-16T13:00').toISOString(),
+    endAt: new Date('2027-01-16T16:00').toISOString(), expectedAttendance: 120,
+    venueRequirements: 'Hall B', equipmentRequirements: 'Microphones', accessibilityFeatureIds: ['feature-step-free'],
+  });
+});
+
+test('an added incomplete Session blocks both draft save and submission until removed or completed', () => {
+  render(<OrganiserRequestFlow />);
+  fireEvent.click(screen.getByRole('button', { name: 'Add Session' }));
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  expect(screen.getByRole('button', { name: 'Submit request' })).toBeDisabled();
+  expect(screen.getByRole('list', { name: 'Missing mandatory fields' })).toHaveTextContent('Session 2 dates and times');
+  fireEvent.change(screen.getByLabelText('Start date and time'), { target: { value: '2026-09-09T12:00' } });
+  fireEvent.change(screen.getByLabelText('End date and time'), { target: { value: '2026-09-09T11:00' } });
+  fireEvent.change(screen.getByLabelText('Expected attendance', { selector: '#request-session-2-expectedAttendance' }), { target: { value: '1.5' } });
+  expect(screen.getByRole('list', { name: 'Missing mandatory fields' })).toHaveTextContent('Session 2 end time');
+  expect(screen.getByRole('list', { name: 'Missing mandatory fields' })).toHaveTextContent('Session 2 start time');
+  expect(screen.getByRole('list', { name: 'Missing mandatory fields' })).toHaveTextContent('Session 2 expected attendance');
+  fireEvent.change(screen.getByLabelText('Start date and time'), { target: { value: '2027-01-16T09:00' } });
+  fireEvent.change(screen.getByLabelText('End date and time'), { target: { value: '2027-01-16T10:00' } });
+  fireEvent.change(screen.getByLabelText('Expected attendance', { selector: '#request-session-2-expectedAttendance' }), { target: { value: '1' } });
+  expect(screen.getByRole('list', { name: 'Missing mandatory fields' })).not.toHaveTextContent('Session 2');
+  fireEvent.click(screen.getByRole('button', { name: 'Remove Session 2' }));
+  expect(screen.getByRole('button', { name: 'Save draft' })).toBeEnabled();
 });
 
 test('a network failure reports an error and allows retry', async () => {

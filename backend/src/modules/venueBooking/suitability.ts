@@ -55,14 +55,19 @@ export async function venueSuitability(query: Query, user: AuthenticatedUser | u
   if (!eventId || !venueId || eventId.length > 240 || venueId.length > 240) {
     throw new AccessError(400, 'An event and venue are required.');
   }
-  const search = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, search: '1' }), true);
+  const searchParams = new URLSearchParams({ event_id: eventId, search: '1' });
+  if (params.has('session_id')) searchParams.set('session_id', params.get('session_id')!);
+  const search = await venueSearch(query, user, searchParams, true);
   if (search.errors) throw new AccessError(400, 'The event needs valid recorded requirements before suitability can be checked.');
   const venue = search.venues!.find(v => v.id === venueId);
   if (!venue) throw new AccessError(404, 'Active venue not found.');
   const hours = (await query<Hours>('SELECT opens_at::text, closes_at::text FROM venues WHERE id::text=$1 AND is_active', [venueId])).rows[0];
   if (!hours) throw new AccessError(404, 'Active venue not found.');
+  const sessions = search.defaults.sessions as Record<string, unknown>[] | undefined;
+  const chosen = sessions?.find(session => session.id === search.defaults.session_id);
   return {
-    event: { id: search.defaults.id, title: search.defaults.title, status: search.defaults.status, start: search.criteria!.start, end: search.criteria!.end, accessibility_note: search.defaults.accessibility_note },
+    event: { id: search.defaults.id, title: search.defaults.title, status: search.defaults.status, session_id: search.defaults.session_id,
+      session_title: chosen?.title, start: search.criteria!.start, end: search.criteria!.end, accessibility_note: search.defaults.accessibility_note },
     assessment: assessEventVenue({ ...venue, ...hours }, search.criteria!, search.options),
   };
 }

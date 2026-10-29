@@ -15,6 +15,7 @@ const audience = { id: eventId, title: 'Synthetic Event', public_name: null, sta
 type State = { assigned?: boolean; wrongCoordinator?: boolean; active?: boolean; locked?: boolean; role?: string; status?: string; sessions?: number; sessionOutside?: boolean; venue?: boolean; candidate?: boolean; clash?: boolean; block?: boolean; requirements?: boolean; hold?: string; expiry?: Date | null; previous?: Record<string, unknown>; failure?: Error; staff?: string[]; rejection?: string; replacement?: boolean };
 function database(state: State = {}) {
   const calls: { sql: string; values?: unknown[] }[] = [];
+  const sessionIds = Array.from({ length: state.sessions ?? 1 }, () => randomUUID());
   const answer = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
     let rows: unknown[] = [];
@@ -26,9 +27,10 @@ function database(state: State = {}) {
     else if (sql.includes('INSERT INTO audit_logs')) rows = [{ id: randomUUID(), occurred_at: new Date() }];
     else if (sql.includes('SELECT is_active,role')) rows = [{ is_active: state.active !== false, role: state.role ?? actor.role, locked_until: state.locked ? new Date(Date.now() + 60000) : null }];
     else if (sql.includes('SELECT id,submission_payload')) rows = state.previous ? [state.previous] : [];
-    else if (sql.includes('SELECT id,event_id,venue_id,status,expires_at')) rows = state.hold === 'missing' ? [] : [{ id: holdId, event_id: eventId, venue_id: venueId, status: state.hold ?? 'tentative', expires_at: state.expiry === undefined ? new Date(Date.now() + 60000) : state.expiry, starts_at: start, ends_at: end, purpose: null, headcount: null, requested_by: actor.id }];
+    else if (sql.includes('SELECT id,event_id,venue_id,status,expires_at')) rows = state.hold === 'missing' ? [] : [{ id: holdId, event_id: eventId, venue_id: venueId, status: state.hold ?? 'tentative', session_id: sessionIds[0], expires_at: state.expiry === undefined ? new Date(Date.now() + 60000) : state.expiry, starts_at: start, ends_at: end, purpose: null, headcount: null, requested_by: actor.id }];
     else if (sql.includes('SELECT clock_timestamp()')) rows = [{ now: new Date() }];
-    else if (sql.includes('FROM sessions WHERE')) rows = Array.from({ length: state.sessions ?? 1 }, () => ({ id: randomUUID(), starts_at: state.sessionOutside ? end : start, ends_at: end }));
+    else if (sql.includes('FROM sessions s WHERE s.event_id')) rows = sessionIds.map(id => ({ id, title: null, start, end, attendance: state.requirements === false ? 0 : 150, layout: '', accessibility: [], facilities: [] }));
+    else if (sql.includes('FROM sessions WHERE')) rows = sessionIds.map(id => ({ id, starts_at: state.sessionOutside ? end : start, ends_at: end }));
     else if (sql.includes('SELECT opens_at')) rows = state.venue === false ? [] : [{ opens_at: '08:00:00', closes_at: '22:00:00' }];
     else if (sql.includes('SELECT lower(occupied_window')) rows = state.clash ? [{ starts_at: start, ends_at: end }] : [];
     else if (sql.includes('SELECT id FROM venue_blocks')) rows = state.block ? [{ id: randomUUID() }] : [];
@@ -44,7 +46,7 @@ function database(state: State = {}) {
     return { rows, rowCount: rows.length };
   };
   const client = { query: answer, release() {} } as unknown as PoolClient;
-  return { pool: { connect: async () => client, query: answer } as unknown as Pool, calls };
+  return { pool: { connect: async () => client, query: answer } as unknown as Pool, calls, sessionIds };
 }
 
 test('booking input normalizes instants and optional fields, rejects invalid types/bounds', () => {
@@ -53,6 +55,7 @@ test('booking input normalizes instants and optional fields, rejects invalid typ
   assert.equal(validateBookingInput({ ...input, purpose: ' ' }).input?.purpose, null);
   for (const delta of [{ event_id: '' }, { event_id: 'x'.repeat(161) }, { venue_id: 3 }, { starts_at: 'bad' }, { ends_at: start.toISOString() }, { starts_at: '2027-01-15T09:00' }, { purpose: 3 }, { purpose: 'x'.repeat(81) }, { headcount: 0 }, { headcount: 1.2 }, { headcount: '3' }, { headcount: 2147483648 }]) assert.ok(validateBookingInput({ ...input, ...delta }).errors);
   assert.ok(validateBookingInput({}).errors);
+  assert.ok(validateBookingInput({ ...input, session_id: 'bad' }).errors?.session_id);
 });
 
 test('authentication/input refusals happen before a transaction', async () => {
@@ -80,12 +83,20 @@ test('TC_E06S03_01 TC_E06S03_02 advisory failure does not block Pending; status 
 test('transactional gates refuse assignment/account/status/session/venue/block/conflicts', async () => {
   for (const [state, status] of [[{ assigned: false },404],[{ active: false },403],[{ locked: true },403],[{ role: 'venue_staff' },403],[{ status: 'confirmed' },409],[{ sessions: 0 },409],[{ sessions: 2 },409],[{ sessionOutside: true },400],[{ venue: false },404],[{ candidate: false },404],[{ clash: true },409],[{ block: true },409],[{ requirements: false },400]] as const) {
     const db = database(state);
-    await assert.rejects(submitBooking(db.pool, actor, input, randomUUID()), { status });
+    await assert.rejects(submitBooking(db.pool, actor, input, randomUUID()), { status }, JSON.stringify(state));
     assert.equal(db.calls.at(-1)?.sql, 'ROLLBACK');
     assert.ok(!db.calls.some(c => c.sql.includes('INSERT INTO venue_bookings')));
   }
   const outside = database();
   await assert.rejects(submitBooking(outside.pool, actor, { ...input, starts_at: '2027-01-15T00:00:00Z' }, randomUUID()), { status: 400 });
+});
+
+test('TC_E04S02_04: bookings remain independent across Sessions and preserve each Session range', async () => {
+  const db = database({ sessions: 2 });
+  const result = await submitBooking(db.pool, actor, { ...input, session_id: db.sessionIds[1] }, randomUUID());
+  assert.equal(result.status, 201);
+  const insert = db.calls.find(call => call.sql.includes('INSERT INTO venue_bookings'))!;
+  assert.equal(insert.values?.[2], db.sessionIds[1]);
 });
 
 test('direct retry returns stored request without effects; changed payload is rejected', async () => {

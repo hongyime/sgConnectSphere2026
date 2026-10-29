@@ -37,3 +37,47 @@ test('invalid input identifies fields before venue query',async()=> {
  const result=await venueSearch(query,user,new URLSearchParams('search=1&start=bad&end=bad&attendance=-1&layout=unknown&facilities=unknown'));
  for(const key of ['start','end','attendance','layout','facilities']) assert.ok(result.errors?.[key]);
 });
+
+test('TC_E04S02_03: venue suitability uses the selected Session requirements', async () => {
+  const sessions = [
+    { id: 's-a', title: 'Opening', start: '2027-03-12T01:00:00.000Z', end: '2027-03-12T03:00:00.000Z', attendance: 40, layout: 'theatre', accessibility: ['ramp'], facilities: [] },
+    { id: 's-b', title: 'Workshop', start: '2027-03-13T05:00:00.000Z', end: '2027-03-13T08:00:00.000Z', attendance: 120, layout: '', accessibility: [], facilities: ['wifi'] },
+  ];
+  const calls: string[] = [];
+  const scoped: Query = async <T extends Record<string, unknown>>(sql: string) => {
+    calls.push(sql);
+    const rows = sql.includes('FROM room_layouts') ? [{ id: 'theatre', label: 'Theatre' }]
+      : sql.includes('FROM accessibility_features') ? [{ id: 'ramp', label: 'Ramp' }]
+      : sql.includes('FROM facilities') ? [{ id: 'wifi', label: 'WiFi' }]
+      : sql.includes('FROM events e WHERE') ? [{ id: 'event', title: 'Event', status: 'planning', start: '2027-03-12T01:00:00Z', end: '2027-03-13T08:00:00Z', attendance: 160, layout: '', accessibility: [], facilities: [] }]
+      : sql.includes('FROM sessions s WHERE') ? sessions
+        : sql.includes('SELECT v.id') ? [venue] : [];
+    return { rows: rows as T[] };
+  };
+  const result = await venueSearch(scoped, user, new URLSearchParams({ event_id: 'event', session_id: 's-b', search: '1' }));
+  assert.equal(result.criteria?.attendance, 120);
+  assert.equal(result.criteria?.start, sessions[1]!.start);
+  assert.deepEqual(result.criteria?.facilities, ['wifi']);
+  assert.equal(result.defaults.session_id, 's-b');
+  assert.ok(calls.some(sql => sql.includes('session_accessibility_needs')));
+});
+
+test('multi-Session searches require a Session and reject foreign Session ids', async () => {
+  const multi: Query = async <T extends Record<string, unknown>>(sql: string) => ({ rows: (sql.includes('FROM events e WHERE')
+    ? [{ id: 'event', title: 'Event', status: 'planning', start: criteria.start, end: criteria.end, attendance: 80, layout: '', accessibility: [], facilities: [] }]
+    : sql.includes('FROM sessions s WHERE') ? [{ id: 's-a' }, { id: 's-b' }] : []) as T[] });
+  const missing = await venueSearch(multi, user, new URLSearchParams({ event_id: 'event', search: '1' }));
+  assert.deepEqual(missing.errors?.session_id, ['Choose a Session before searching.']);
+  await assert.rejects(venueSearch(multi, user, new URLSearchParams({ event_id: 'event', session_id: 'foreign', search: '1' })), { status: 400 });
+});
+
+test('a single-Session event defaults suitability to that Session', async () => {
+  const single: Query = async <T extends Record<string, unknown>>(sql: string) => ({ rows: (sql.includes('FROM events e WHERE')
+    ? [{ id: 'event', title: 'Event', status: 'planning', start: criteria.start, end: criteria.end, attendance: 80, layout: '', accessibility: [], facilities: [] }]
+    : sql.includes('FROM sessions s WHERE') ? [{ id: 'session', title: 'Session', start: criteria.start, end: criteria.end, attendance: 40, layout: 'theatre', accessibility: ['ramp'], facilities: ['wifi'] }]
+      : []) as T[] });
+  const result = await venueSearch(single, user, new URLSearchParams({ event_id: 'event' }));
+  assert.equal(result.defaults.session_id, 'session');
+  assert.equal(result.defaults.attendance, 40);
+  assert.deepEqual(result.defaults.facilities, ['wifi']);
+});

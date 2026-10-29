@@ -1,4 +1,4 @@
-import type { CreateEventRequest, EventUpdate } from './types.js';
+import type { CreateEventRequest, EventSessionInput, EventUpdate } from './types.js';
 
 type CreateEventBody = {
   title?: unknown;
@@ -15,6 +15,7 @@ type CreateEventBody = {
   equipmentRequirements?: unknown;
   layoutPreference?: unknown;
   registrationSetup?: unknown;
+  sessions?: unknown;
 };
 
 function optionalString(value: unknown) {
@@ -39,6 +40,29 @@ function parseDate(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function parseSessions(value: unknown): EventSessionInput[] | null {
+  if (!Array.isArray(value)) return null;
+  if (value.some(entry => entry && typeof entry === 'object' && !Array.isArray(entry)
+    && 'id' in entry && typeof (entry as Record<string, unknown>).id !== 'string')) return null;
+  return value.map(entry => {
+    const session = entry && typeof entry === 'object' && !Array.isArray(entry)
+      ? entry as Record<string, unknown> : {};
+    return {
+      ...(typeof session.id === 'string' ? { id: session.id } : {}),
+      title: optionalString(session.title),
+      startAt: parseDate(session.startAt) ?? new Date(Number.NaN),
+      endAt: parseDate(session.endAt) ?? new Date(Number.NaN),
+      expectedAttendance: typeof session.expectedAttendance === 'number' ? session.expectedAttendance : Number.NaN,
+      layoutId: optionalString(session.layoutId),
+      venueRequirements: optionalString(session.venueRequirements),
+      accessibilityNote: optionalString(session.accessibilityNote),
+      accessibilityFeatureIds: featureIdList(session.accessibilityFeatureIds),
+      equipmentRequirements: optionalString(session.equipmentRequirements),
+      layoutPreference: optionalString(session.layoutPreference),
+    };
+  });
+}
+
 export function parseCreateEventBody(
   body: unknown,
   organiserId: string,
@@ -59,6 +83,8 @@ export function parseCreateEventBody(
     : Number.NaN;
 
   const status = payload.status === 'submitted' ? 'submitted' : 'draft';
+  const sessions = payload.sessions === undefined ? undefined : parseSessions(payload.sessions);
+  if (payload.sessions !== undefined && !sessions) return null;
 
   return {
     title,
@@ -77,6 +103,7 @@ export function parseCreateEventBody(
     equipmentRequirements: optionalString(payload.equipmentRequirements),
     layoutPreference: optionalString(payload.layoutPreference),
     registrationSetup: optionalString(payload.registrationSetup),
+    ...(sessions === undefined || sessions === null ? {} : { sessions }),
   };
 }
 
@@ -139,6 +166,11 @@ export function parseUpdateEventBody(body: unknown): Partial<EventUpdate> | null
   }
   if (payload.registrationSetup !== undefined) {
     patch.registrationSetup = optionalString(payload.registrationSetup);
+  }
+  if (payload.sessions !== undefined) {
+    const sessions = parseSessions(payload.sessions);
+    if (!sessions) return null;
+    patch.sessions = sessions;
   }
 
   return patch;

@@ -147,6 +147,7 @@ type EditState =
   | {
       status: 'loaded';
       initialValues: {
+        primarySessionId: string;
         eventName: string;
         description: string;
         purpose: string;
@@ -159,6 +160,11 @@ type EditState =
         equipmentRequirements: string;
         layoutPreference: string;
         registrationSetup: string;
+        additionalSessions: {
+          id?: string; title: string; startDate: string; endDate: string; expectedAttendance: string;
+          venueRequirements: string; accessibilityNeeds: string; accessibilityFeatureIds: string[];
+          equipmentRequirements: string; layoutPreference: string;
+        }[];
       };
     };
 
@@ -213,21 +219,37 @@ export function OrganiserDraftEdit() {
         return;
       }
 
+      const sessions = Array.isArray(event.sessions) ? event.sessions : [];
+      const first = sessions[0];
+
       setState({
         status: 'loaded',
         initialValues: {
+          primarySessionId: typeof first?.id === 'string' ? first.id : '',
           eventName: event.title ?? '',
           description: event.description ?? '',
           purpose: event.purpose ?? '',
-          startDate: event.startAt ? toLocalInputValue(event.startAt) : '',
-          endDate: event.endAt ? toLocalInputValue(event.endAt) : '',
-          expectedAttendance: event.expectedAttendance != null ? String(event.expectedAttendance) : '',
-          venueRequirements: event.venueRequirements ?? '',
-          accessibilityNeeds: event.accessibilityNote ?? '',
-          accessibilityFeatureIds: Array.isArray(event.accessibilityFeatureIds) ? event.accessibilityFeatureIds : [],
-          equipmentRequirements: event.equipmentRequirements ?? '',
-          layoutPreference: event.layoutPreference ?? '',
+          startDate: first?.startAt ? toLocalInputValue(first.startAt) : event.startAt ? toLocalInputValue(event.startAt) : '',
+          endDate: first?.endAt ? toLocalInputValue(first.endAt) : event.endAt ? toLocalInputValue(event.endAt) : '',
+          expectedAttendance: first?.expectedAttendance != null ? String(first.expectedAttendance) : event.expectedAttendance != null ? String(event.expectedAttendance) : '',
+          venueRequirements: first?.venueRequirements ?? event.venueRequirements ?? '',
+          accessibilityNeeds: first?.accessibilityNote ?? event.accessibilityNote ?? '',
+          accessibilityFeatureIds: Array.isArray(first?.accessibilityFeatureIds) ? first.accessibilityFeatureIds : Array.isArray(event.accessibilityFeatureIds) ? event.accessibilityFeatureIds : [],
+          equipmentRequirements: first?.equipmentRequirements ?? event.equipmentRequirements ?? '',
+          layoutPreference: first?.layoutPreference ?? event.layoutPreference ?? '',
           registrationSetup: event.registrationSetup ?? '',
+          additionalSessions: sessions.slice(1).map((session: Record<string, unknown>) => ({
+            ...(typeof session.id === 'string' ? { id: session.id } : {}),
+            title: typeof session.title === 'string' ? session.title : '',
+            startDate: typeof session.startAt === 'string' ? toLocalInputValue(session.startAt) : '',
+            endDate: typeof session.endAt === 'string' ? toLocalInputValue(session.endAt) : '',
+            expectedAttendance: session.expectedAttendance == null ? '' : String(session.expectedAttendance),
+            venueRequirements: typeof session.venueRequirements === 'string' ? session.venueRequirements : '',
+            accessibilityNeeds: typeof session.accessibilityNote === 'string' ? session.accessibilityNote : '',
+            accessibilityFeatureIds: Array.isArray(session.accessibilityFeatureIds) ? session.accessibilityFeatureIds as string[] : [],
+            equipmentRequirements: typeof session.equipmentRequirements === 'string' ? session.equipmentRequirements : '',
+            layoutPreference: typeof session.layoutPreference === 'string' ? session.layoutPreference : '',
+          })),
         },
       });
     })();

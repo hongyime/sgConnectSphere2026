@@ -12,13 +12,15 @@ import { assessEventVenue } from './suitability.js';
 import { lostVenueRetryParent } from './lostVenueRecovery.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type BookingInput = { event_id: string; venue_id: string; starts_at: string; ends_at: string; purpose: string | null; headcount: number | null; replaces_booking_id?: string };
+type BookingInput = { event_id: string; venue_id: string; session_id?: string; starts_at: string; ends_at: string; purpose: string | null; headcount: number | null; replaces_booking_id?: string };
 export function validateBookingInput(body: Record<string, unknown>) {
   const errors: Record<string, string[]> = {};
   const identifier = typeof body.event_id === 'string' ? body.event_id.trim() : '';
   if (!identifier || identifier.length > 160) errors.event_id = ['An event id or code is required.'];
   const venue = typeof body.venue_id === 'string' ? body.venue_id : '';
   if (!UUID.test(venue)) errors.venue_id = ['Select a venue.'];
+  const sessionId = body.session_id;
+  if (sessionId !== undefined && (typeof sessionId !== 'string' || !UUID.test(sessionId))) errors.session_id = ['Choose a valid Session.'];
   const instant = (key: string) => {
     const raw = body[key];
     if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(raw) || !Number.isFinite(Date.parse(raw))) {
@@ -37,11 +39,11 @@ export function validateBookingInput(body: Record<string, unknown>) {
   if (replacement !== undefined && (typeof replacement !== 'string' || !UUID.test(replacement))) errors.replaces_booking_id = ['Select a rejected booking to replace.'];
   const headcount = body.headcount === undefined || body.headcount === null ? null : body.headcount;
   if (headcount !== null && (typeof headcount !== 'number' || !Number.isInteger(headcount) || headcount <= 0 || headcount > 2147483647)) errors.headcount = ['Enter a whole number greater than zero.'];
-  return Object.keys(errors).length ? { errors } : { input: { event_id: identifier, venue_id: venue, starts_at: start, ends_at: end, purpose, headcount: headcount as number | null, ...(replacement === undefined ? {} : { replaces_booking_id: replacement as string }) } satisfies BookingInput };
+  return Object.keys(errors).length ? { errors } : { input: { event_id: identifier, venue_id: venue, ...(typeof sessionId === 'string' ? { session_id: sessionId } : {}), starts_at: start, ends_at: end, purpose, headcount: headcount as number | null, ...(replacement === undefined ? {} : { replaces_booking_id: replacement as string }) } satisfies BookingInput };
 }
 
 type EventRow = { id: string; status: 'approved' | 'planning'; coordinator_id: string | null; starts_at: Date; ends_at: Date };
-type HoldRow = { id: string; event_id: string; venue_id: string; status: string; expires_at: Date | null; starts_at: Date; ends_at: Date; purpose: string | null; headcount: number | null; requested_by: string | null };
+type HoldRow = { id: string; event_id: string; venue_id: string; status: string; session_id: string | null; expires_at: Date | null; starts_at: Date; ends_at: Date; purpose: string | null; headcount: number | null; requested_by: string | null };
 async function returnedBooking(client: PoolClient, id: string) {
   return (await client.query(`SELECT id,event_id,venue_id,session_id,status,purpose,headcount,requested_by,requested_at,is_primary,replaces_booking_id,
     lower(booking_range) AS starts_at,upper(booking_range) AS ends_at,suitability_snapshot AS suitability
@@ -76,7 +78,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       if (converting) {
         // Lock order agrees with holds/expiry: Event, Venue, Booking.
         await client.query('SELECT v.id FROM venues v JOIN venue_bookings b ON b.venue_id=v.id WHERE b.id=$1 FOR NO KEY UPDATE OF v', [data.booking_id]);
-        hold = (await client.query<HoldRow>(`SELECT id,event_id,venue_id,status,expires_at,purpose,headcount,requested_by,
+        hold = (await client.query<HoldRow>(`SELECT id,event_id,venue_id,status,expires_at,session_id,purpose,headcount,requested_by,
           lower(booking_range) AS starts_at,upper(booking_range) AS ends_at FROM venue_bookings WHERE id=$1 FOR UPDATE`, [data.booking_id])).rows[0];
         if (!hold) throw new AccessError(404, 'Tentative hold not found.');
         // Preserve the existing conversion retry behaviour for legacy Pending
@@ -87,7 +89,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         }
         const now = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
         if (hold.status !== 'tentative' || !hold.expires_at || hold.expires_at <= now) throw new AccessError(409, EXPIRED);
-        input = { event_id: event.id, venue_id: hold.venue_id, starts_at: hold.starts_at.toISOString(), ends_at: hold.ends_at.toISOString(), purpose: hold.purpose, headcount: hold.headcount };
+        input = { event_id: event.id, venue_id: hold.venue_id, ...(hold.session_id ? { session_id: hold.session_id } : {}), starts_at: hold.starts_at.toISOString(), ends_at: hold.ends_at.toISOString(), purpose: hold.purpose, headcount: hold.headcount };
       } else {
         // Normalize the event identifier before comparing a replay payload.
         input = { ...input!, event_id: event.id };
@@ -114,8 +116,9 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       if (new Date(input!.starts_at) < event.starts_at || new Date(input!.ends_at) > event.ends_at) throw new AccessError(400, 'The booking period must fall within the event.');
       const sessions = (await client.query<{ id: string; starts_at: Date; ends_at: Date }>(
         'SELECT id,lower(session_range) AS starts_at,upper(session_range) AS ends_at FROM sessions WHERE event_id=$1 FOR SHARE', [event.id])).rows;
-      if (sessions.length !== 1) throw new AccessError(409, 'This event requires Session selection before a booking can be requested.');
-      if (new Date(input!.starts_at) < sessions[0]!.starts_at || new Date(input!.ends_at) > sessions[0]!.ends_at) throw new AccessError(400, 'The booking period must fall within its Session.');
+      const session = input!.session_id ? sessions.find(item => item.id === input!.session_id) : sessions.length === 1 ? sessions[0] : undefined;
+      if (!session) throw new AccessError(input!.session_id ? 400 : 409, input!.session_id ? 'Choose a Session belonging to this event.' : 'Choose a Session before requesting a booking.');
+      if (new Date(input!.starts_at) < session.starts_at || new Date(input!.ends_at) > session.ends_at) throw new AccessError(400, 'The booking period must fall within its Session.');
       const venue = (await client.query<{ opens_at: string; closes_at: string }>('SELECT opens_at::text,closes_at::text FROM venues WHERE id=$1 AND is_active FOR NO KEY UPDATE', [input!.venue_id])).rows[0];
       if (!venue) throw new AccessError(404, 'Active venue not found.');
       const clash = (await client.query<{ starts_at: Date; ends_at: Date }>(`SELECT lower(occupied_window(b.booking_range,v.setup_time_minutes,v.turnaround_time_minutes)) AS starts_at,
@@ -127,7 +130,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
       if (clash) throw new AccessError(409, `This venue is unavailable from ${formatSgt(clash.starts_at)} to ${formatSgt(clash.ends_at)}, including setup and turnaround.`);
       const block = (await client.query('SELECT id FROM venue_blocks WHERE venue_id=$1 AND lifted_at IS NULL AND block_range && tstzrange($2,$3,\'[)\') LIMIT 1', [input!.venue_id,input!.starts_at,input!.ends_at])).rows[0];
       if (block) throw new AccessError(409, 'This venue is blocked during the requested period.');
-      const params = new URLSearchParams({ event_id: event.id, search: '1', start: input!.starts_at, end: input!.ends_at });
+      const params = new URLSearchParams({ event_id: event.id, session_id: session.id, search: '1', start: input!.starts_at, end: input!.ends_at });
       if (input!.headcount !== null) { params.set('attendance', String(input!.headcount)); params.set('capacity', String(input!.headcount)); }
       const search = await venueSearch(client.query.bind(client) as Query, user, params, true);
       if (search.errors || !search.criteria || !search.venues) throw new AccessError(400, 'The event needs valid recorded requirements.');
@@ -141,7 +144,7 @@ export async function submitBooking(database: Pool, user: AuthenticatedUser | un
         suitability_snapshot=$3 WHERE id=$1`, [id,user.id,JSON.stringify(suitability)]);
       else await client.query(`INSERT INTO venue_bookings(id,event_id,session_id,venue_id,booking_range,status,purpose,headcount,requested_by,requested_at,submission_key,submission_payload,suitability_snapshot,replaces_booking_id)
         VALUES($1,$2,$3,$4,tstzrange($5,$6,'[)'),'pending',$7,$8,$9,clock_timestamp(),$10,$11,$12,$13)`,
-      [id,event.id,sessions[0]!.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability),replacementParentId ?? null]);
+      [id,event.id,session.id,input!.venue_id,input!.starts_at,input!.ends_at,input!.purpose,input!.headcount,user.id,idempotencyKey,JSON.stringify(input),JSON.stringify(suitability),replacementParentId ?? null]);
       if (event.status === 'approved') await applyEventStatusChange(client, event.id, 'planning', user.id, { notificationOptions: options });
       const auditId = randomUUID();
       await client.query(`INSERT INTO audit_logs(id,actor_id,entity_type,entity_id,event_id,action,field_changed,old_value,new_value)

@@ -40,6 +40,7 @@ export type EventChange =
   | { kind: 'equipment_changed'; venueAffected: boolean; technicalAffected: boolean }
   | { kind: 'reconfirmation_required'; venueAffected: boolean; technicalAffected: boolean; reasons: readonly ('time' | 'capacity')[] }
   | { kind: 'place_released' }
+  | { kind: 'session_deleted'; sessionTitle: string }
   | { kind: 'description_only' };
 
 // Capture BEFORE cancellation releases bookings/assignments/registrations.
@@ -107,6 +108,7 @@ function groupsFor(change: EventChange): Group[] {
     case 'booking_requested':
     case 'booking_withdrawn':
     case 'lost_venue_cancelled': return ['venueStaff'];
+    case 'session_deleted': return ['venueStaff'];
     case 'booking_decided': return ['coordinator'];
     case 'equipment_changed': return ['coordinator', ...(change.venueAffected ? ['venueStaff' as const] : []), ...(change.technicalAffected ? ['technicalStaff' as const] : [])];
     // SCRUM-71 (E10-S02 Scenario 6): only the staff who must reconfirm.
@@ -156,6 +158,7 @@ export function describeEventChange(change: EventChange): string {
     case 'equipment_changed': return 'Equipment arrangements or availability changed; review the affected work.';
     case 'reconfirmation_required': return `An event change (${[...new Set(change.reasons)].map(reason => reason==='time' ? 'date or time' : 'attendance above capacity').join(', ')}) means venue bookings or equipment reservations need reconfirmation. Review the flagged arrangements.`;
     case 'place_released': return 'A place is available. Apply on a first-come basis; no place has been reserved for you.';
+    case 'session_deleted': return `Session ${change.sessionTitle} was deleted; its venue arrangements were released.`;
     case 'description_only': return '';
   }
 }

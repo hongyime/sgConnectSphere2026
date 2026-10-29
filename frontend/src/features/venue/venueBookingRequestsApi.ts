@@ -13,7 +13,7 @@ export function withdrawVenueBooking(bookingId: string) {
 
 export type VenueBookingRequestsData = {
   event: { id: string; event_code: string | null; title: string; status: string; starts_at?: string; ends_at?: string };
-  bookings: ({ id: string; venue_id: string; venue_name: string; location: string; status: string;
+  bookings: ({ id: string; venue_id: string; session_id?: string | null; venue_name: string; location: string; status: string;
     starts_at: string; ends_at: string; created_at: string; decision_reason: string | null;
     suggested_venue_id?: string | null; suggested_venue_name?: string | null; replaces_booking_id?: string | null; has_replacement?: boolean;
     conflict_block_id?: string | null; conflict_category?: string | null; conflict_reason?: string | null; conflict_starts_at?: string | null; conflict_ends_at?: string | null; requires_reconfirmation?: boolean;

@@ -22,6 +22,7 @@ const staff: AuthenticatedUser = { ...coordinator, id: '00000000-0000-4000-8000-
 const organiser: AuthenticatedUser = { ...coordinator, id: '00000000-0000-4000-8000-0000000000e1', role: 'event_organiser' };
 const VENUE = '11111111-1111-4111-8111-111111111111';
 const HOLD = '22222222-2222-4222-8222-222222222222';
+const SESSION = '33333333-3333-4333-8333-333333333333';
 const NOW = new Date('2026-11-01T00:00:00.000Z');
 const HOUR = 60 * 60 * 1000;
 const at = (hours: number) => new Date(NOW.getTime() + hours * HOUR);
@@ -40,7 +41,9 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
   const calls: Array<{ sql: string; values?: unknown[] }> = [];
   const answer = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
-    const rule = rules.find(([pattern]) => pattern.test(sql)) ?? (CLOCK.test(sql) ? [CLOCK, { rows: [{ now: NOW }] }] as const : undefined);
+    const rule = rules.find(([pattern]) => pattern.test(sql)) ?? (SESSION_QUERY.test(sql)
+      ? [SESSION_QUERY, { rows: [{ id: SESSION, startsAt: event.startsAt, endsAt: event.endsAt }] }] as const
+      : CLOCK.test(sql) ? [CLOCK, { rows: [{ now: NOW }] }] as const : undefined);
     const reply = rule ? (typeof rule[1] === 'function' ? rule[1](values) : rule[1]) : { rows: [] };
     if (reply instanceof Error) throw reply;
     return { rowCount: reply.rows.length, ...reply };
@@ -51,6 +54,7 @@ function fakeDatabase(rules: Array<[RegExp, Reply | ((values?: unknown[]) => Rep
 }
 const sqlCalls = (calls: Array<{ sql: string }>, pattern: RegExp) => calls.filter(call => pattern.test(call.sql));
 const CLOCK = /SELECT clock_timestamp\(\) AS now/;
+const SESSION_QUERY = /FROM sessions WHERE event_id=\$1 FOR SHARE/;
 const EVENT_ROW = /FROM events WHERE (id::text = \$1 OR event_code = \$1|id = \(SELECT event_id FROM venue_bookings WHERE id = \$1\))/;
 const VENUE_ROW = /FROM venues WHERE id = \$1 AND is_active FOR NO KEY UPDATE/;
 const CLASH = /ORDER BY lower\(vb.booking_range\) LIMIT 1/;
@@ -123,7 +127,7 @@ test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved ten
   assert.deepEqual({ ...body.hold, id: undefined }, { id: undefined, venueId: VENUE, venueName: 'Main Hall', status: 'tentative', expiresAt: at(48).toISOString() });
   const insert = sqlCalls(db.calls, /INSERT INTO venue_bookings/)[0]!;
   assert.match(insert.sql, /'tentative'/);
-  assert.deepEqual(insert.values?.slice(1), [VENUE, event.id, event.startsAt, event.endsAt, at(48)]);
+  assert.deepEqual(insert.values?.slice(1), [VENUE, event.id, SESSION, event.startsAt, event.endsAt, at(48)]);
   const clash = sqlCalls(db.calls, CLASH)[0]!;
   assert.match(clash.sql, /vb.status::text = 'tentative' AND vb.expires_at > \$4/);
   assert.deepEqual(clash.values, [VENUE, event.startsAt, event.endsAt, NOW, null]);
@@ -134,6 +138,29 @@ test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved ten
     EVENT_ROW.test(call.sql) ? 'event' : VENUE_ROW.test(call.sql) ? 'venue' : CLOCK.test(call.sql) ? 'clock' : CLASH.test(call.sql) ? 'clash' : '',
   ).filter(Boolean);
   assert.deepEqual(order, ['event', 'venue', 'clock', 'clash']);
+});
+
+test('a multi-Session hold must name its Session and stay inside that Session window', async () => {
+  const otherSession = '44444444-4444-4444-8444-444444444444';
+  const selected = { id: otherSession, startsAt: new Date('2026-11-12T02:00:00.000Z'), endsAt: new Date('2026-11-12T03:00:00.000Z') };
+  const rules: Array<[RegExp, Reply | ((values?: unknown[]) => Reply)]> = [
+    [EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }],
+    [SESSION_QUERY, { rows: [{ id: SESSION, startsAt: event.startsAt, endsAt: event.endsAt }, selected] }],
+  ];
+  const input = { event_id: event.eventCode, venue_id: VENUE, session_id: otherSession,
+    starts_at: selected.startsAt.toISOString(), ends_at: selected.endsAt.toISOString() };
+  const db = fakeDatabase(rules);
+  const result = await placeHold(db.pool, coordinator, input);
+  assert.equal(result.status, 201);
+  const insert = sqlCalls(db.calls, /INSERT INTO venue_bookings/)[0]!;
+  assert.deepEqual(insert.values?.slice(1, 6), [VENUE, event.id, otherSession, selected.startsAt, selected.endsAt]);
+
+  await assert.rejects(placeHold(fakeDatabase(rules).pool, coordinator, { ...input, session_id: undefined }), { status: 409 });
+  await assert.rejects(placeHold(fakeDatabase(rules).pool, coordinator, { ...input, session_id: 42 }), { status: 400 });
+  await assert.rejects(placeHold(fakeDatabase(rules).pool, coordinator, { ...input, session_id: '55555555-5555-4555-8555-555555555555',
+    starts_at: selected.startsAt.toISOString(), ends_at: selected.endsAt.toISOString() }), { status: 400 });
+  await assert.rejects(placeHold(fakeDatabase(rules).pool, coordinator, { ...input,
+    ends_at: '2026-11-12T03:30:00.000Z' }), { status: 400 });
 });
 
 test('TC_E06S05_01: an overlapping hold, request, booking or block is refused and named', async () => {

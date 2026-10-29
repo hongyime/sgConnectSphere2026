@@ -15,7 +15,7 @@ export type EventHolds = {
   holds: Hold[];
   canHold: boolean;
 };
-export type HoldInput = { startsAt: string; endsAt: string; expiresAt?: string };
+export type HoldInput = { startsAt: string; endsAt: string; expiresAt?: string; sessionId?: string };
 
 // The server's rules and sentences (holds.ts), repeated so a form can say
 // what's wrong before sending.
@@ -63,6 +63,7 @@ export function placeHold(event: string, venue: string, input: HoldInput) {
   return apiCall<{ hold: { id: string; venueName: string; status: 'tentative'; expiresAt: string } }>('/api/venues',
     jsonRequest('POST', {
       action: 'hold', event_id: event, venue_id: venue, starts_at: input.startsAt, ends_at: input.endsAt,
+      ...(input.sessionId ? { session_id: input.sessionId } : {}),
       ...(input.expiresAt ? { expires_at: input.expiresAt } : {}),
     }), 'The venue could not be held.');
 }

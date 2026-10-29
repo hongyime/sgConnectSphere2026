@@ -1,6 +1,6 @@
 import { validateEventStatusTransition } from './status.js';
 import type { EventLifecycleRepository } from './repository.js';
-import type { CreateEventRequest, EventUpdate, StatusChangeRequest } from './types.js';
+import type { CreateEventRequest, EventSessionInput, EventUpdate, StatusChangeRequest } from './types.js';
 
 // Sentinel stored in the optional-but-mandatory fields to mean "the organiser
 // explicitly said this event doesn't need it" (E02-S01 Scenario 4), as
@@ -112,10 +112,59 @@ function assertValidRangeAndFuture(request: Pick<CreateEventRequest, 'startAt' |
   }
 }
 
+const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function prepareSessions(sessions: EventSessionInput[]): EventSessionInput[] {
+  const errors: string[] = [];
+  const now = Date.now();
+  if (sessions.length < 1 || sessions.length > 50) errors.push('Add between one and fifty Sessions.');
+  sessions.forEach((session, index) => {
+    const label = `Session ${index + 1}`;
+    if (session.id !== undefined && !SESSION_ID.test(session.id)) errors.push(`${label}: invalid id.`);
+    if (session.title && session.title.length > 240) errors.push(`${label}: title must be at most 240 characters.`);
+    if (!(session.startAt instanceof Date) || !Number.isFinite(session.startAt.getTime())) errors.push(`${label}: enter a valid start date and time.`);
+    if (!(session.endAt instanceof Date) || !Number.isFinite(session.endAt.getTime())) errors.push(`${label}: enter a valid end date and time.`);
+    if (session.startAt instanceof Date && Number.isFinite(session.startAt.getTime())
+      && session.endAt instanceof Date && Number.isFinite(session.endAt.getTime())) {
+      if (session.endAt <= session.startAt) errors.push(`${label}: end time must be after start time.`);
+      if (session.startAt.getTime() <= now) errors.push(`${label}: start time must be in the future.`);
+    }
+    if (!Number.isInteger(session.expectedAttendance) || session.expectedAttendance < 1 || session.expectedAttendance > 2147483647) {
+      errors.push(`${label}: expected attendance must be a positive whole number.`);
+    }
+  });
+  const totalAttendance = sessions.reduce((total, session) => total + (Number.isInteger(session.expectedAttendance) ? session.expectedAttendance : 0), 0);
+  if (totalAttendance > 2147483647) errors.push('Combined Session attendance exceeds the supported limit.');
+  if (errors.length) throw new EventValidationError('invalid_sessions', { sessionErrors: errors });
+  return sessions.map(session => ({
+    ...session,
+    title: session.title?.trim() || undefined,
+    venueRequirements: session.venueRequirements?.trim() || undefined,
+    accessibilityNote: session.accessibilityNote?.trim() || undefined,
+    equipmentRequirements: session.equipmentRequirements?.trim() || undefined,
+    layoutPreference: session.layoutPreference?.trim() || undefined,
+    accessibilityFeatureIds: session.accessibilityFeatureIds?.filter(Boolean) ?? [],
+  }));
+}
+
+function sessionEnvelope<T extends Pick<CreateEventRequest, 'startAt' | 'endAt' | 'expectedAttendance'>>(request: T, sessions: EventSessionInput[]): T {
+  return {
+    ...request,
+    startAt: new Date(Math.min(...sessions.map(session => session.startAt.getTime()))),
+    endAt: new Date(Math.max(...sessions.map(session => session.endAt.getTime()))),
+    expectedAttendance: sessions.reduce((total, session) => total + session.expectedAttendance, 0),
+  };
+}
+
 export async function createEventRequest(
   repository: EventLifecycleRepository,
   request: CreateEventRequest,
 ) {
+  if (request.sessions) {
+    if (request.sessions.some(session => session.id !== undefined)) throw new EventValidationError('invalid_sessions', { sessionErrors: ['New Sessions cannot include existing ids.'] });
+    const sessions = prepareSessions(request.sessions);
+    request = { ...sessionEnvelope(request, sessions), sessions };
+  }
   if (request.status && !['draft', 'submitted'].includes(request.status)) {
     throw new EventValidationError('invalid_initial_status');
   }
@@ -184,6 +233,7 @@ export async function updateEventRequest(
     throw new EventValidationError('invalid_initial_status');
   }
 
+  const sessions = patch.sessions === undefined ? undefined : prepareSessions(patch.sessions);
   const merged: EventUpdate = {
     title: patch.title ?? event.title,
     description: patch.description ?? event.description,
@@ -199,7 +249,10 @@ export async function updateEventRequest(
     equipmentRequirements: patch.equipmentRequirements ?? event.equipmentRequirements,
     layoutPreference: patch.layoutPreference ?? event.layoutPreference,
     registrationSetup: patch.registrationSetup ?? event.registrationSetup,
+    sessions,
   };
+
+  if (sessions) Object.assign(merged, sessionEnvelope(merged, sessions));
 
   const missingFields = findMissingMandatoryFields(
     { ...merged, organiserId: event.organiserId, clientOrgId: event.clientOrgId },

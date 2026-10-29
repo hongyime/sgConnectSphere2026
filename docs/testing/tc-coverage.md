@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **281** (74.1%)
-  - Real-database (`.integration.test` / `.db.test`): **40**
+- Automated (explicit TC_ID in an active test title): **284** (74.9%)
+  - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **240**
+  - Live-assertion (other active tests): **245**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **71** (18.7%)
-- No test yet (no test file mentions the TC_ID): **27** (7.1%)
+- No test yet (no test file mentions the TC_ID): **24** (6.3%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 12 | 1 | 8 |
 | E03 | 62 | 49 | 13 | 0 |
-| E04 | 5 | 2 | 0 | 3 |
+| E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **281** | **71** | **27** |
+| **Total** | **379** | **284** | **71** | **24** |
 
 ## Case-by-case status
 
@@ -177,11 +177,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
-| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; frontend/src/features/organise |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; frontend/src/features/organise |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/venueSearch.test.ts: TC_E04S02_03: venue suitability uses the selected Session requirements |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/bookingSubmission.test.ts: TC_E04S02_04: bookings remain independent across Sessions and preserve each Session range |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/sessionManagement.test.ts: TC_E04S02_05: deleting a Session releases its booking, updates Event totals, notifies Venue Staff and records history |
 
 ### E05
 
@@ -779,6 +779,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an illegal status transition is rejected before any audit entry is written
 - changing status to the same status is a no-op that writes no audit entry
 - changing the status of an unknown event is reported as not found
+- multiple Sessions validate and set the Event planning envelope and total attendance
+- Session payloads reject empty lists, bad ranges, past dates, invalid attendance and forged ids
+- HTTP parser retains independent Session requirements and rejects a non-array Session list
+- HTTP PATCH parser retains Session edits and rejects a non-array Session list
+- HTTP parsers reject non-string Session ids instead of treating them as new Sessions
+- an empty Session id in a draft update is rejected before persistence
 
 ### `backend/tests/eventNotifications.integration.test.ts`
 
@@ -794,6 +800,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted
 - SCRUM-60 D64: Safety Review counts as an active event for workload and deactivation (T-52)
 - SCRUM-60: a wrong-role submission is refused and audited without opening a transaction; signed-out and blank calls record nothing
+
+### `backend/tests/eventSessionRepository.test.ts`
+
+- create writes the first Session into the default row and inserts later Sessions
+- update retains and edits supplied Sessions, inserts new ones, and removes only unused rows
+- legacy Event creation without Session input leaves the default Session trigger in charge
+- update rolls back if a removed Session has registrations or arrangements
+- update refuses duplicate and foreign Session ids before changing Session rows
+- listEventSessions maps stored ranges and accessibility features to the API shape
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -951,6 +966,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - eventsHandler and venuesHandler: reject mutating requests from unauthorized or missing origins with 403
 - eventsHandler registrations: rejects mutating request from unauthorized or missing origin with 403 and allows valid origin
 - getDatabasePool: evaluates dynamic environment, wraps end idempotently, and drains previous pool on URL change
+
+### `backend/tests/sessionManagement.test.ts`
+
+- Session deletion protects ownership, active status, the final Session, and linked attendee/support history
+- a Session id must be a UUID before a transaction starts
 
 ### `backend/tests/sessions.test.ts`
 
@@ -1160,6 +1180,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validateHoldInput defaults to the event period and a 48-hour expiry
 - validateHoldInput reports each bad field, including an expiry outside 1 hour to 14 days
 - T-78 (O-29): a hold must lie within the event period
+- a multi-Session hold must name its Session and stay inside that Session window
 - a hold is refused for another Coordinator\
 - Scenario 4: the Coordinator releases a hold and the period is Free again
 - expiry is judged at database time read after the locks, not when the request arrived
@@ -1181,11 +1202,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - inactive coordinator is rejected
 - coordinator can load search options
 - invalid input identifies fields before venue query
+- multi-Session searches require a Session and reject foreign Session ids
+- a single-Session event defaults suitability to that Session
 
 ### `backend/tests/venueSuitability.test.ts`
 
 - missing layout is explained; no selected layout uses maximum; absent requirements stay optional
 - event assessment uses recorded requirements, ignores client overrides and performs no business writes
+- E04-S02 suitability reads the selected Session range and attendance, not the Event totals
 - anonymous, wrong-role and inactive users cannot assess venues
 - missing identifiers and invalid event requirements are rejected
 - missing/draft event and missing/retired venue return not found
@@ -1445,6 +1469,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a late answer for the previous request never replaces the current one
 - the reply is handled under StrictMode, as in development
 
+### `frontend/src/features/organiser/ClientEvents.saveAlert.test.tsx`
+
+- the event page displays its Session schedule
+
 ### `frontend/src/features/organiser/ConfirmedArrangements.test.tsx`
 
 - SCRUM-60 fix (a) - equipment recorded as none required reads
@@ -1485,7 +1513,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 
-- sends all request fields with same-origin credentials and confirms API success
+- an added incomplete Session blocks both draft save and submission until removed or completed
 - a network failure reports an error and allows retry
 - API validation errors show all returned fields without claiming success
 - Save draft is enabled with optional fields incomplete, and saves as a draft
@@ -1496,6 +1524,15 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+
+### `frontend/src/features/organiser/OrganiserSessions.test.tsx`
+
+- organiser confirms deletion and sees the linked booking release result
+- deletion refusals preserve the Session and expose the server reason
+- a single Session remains in place without a delete action
+- keeping a Session closes its delete confirmation without calling the API
+- a missing title and multiple released bookings use readable success text
+- invalid response JSON and non-Error failures show a safe fallback
 
 ### `frontend/src/features/organiser/RegistrationPeriod.test.tsx`
 
@@ -1645,6 +1682,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/venue/VenueBookingForm.test.tsx`
 
+- multi-Session booking includes the selected Session id
 - network retry retains the key; changing the payload rotates it
 - blank optional values use event attendance; suitable result has no failure list
 - invalid dates, reversed/outside periods, purpose and headcount prevent submission
@@ -1697,6 +1735,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/venue/VenueSearch.navigation.test.tsx`
 
 - event-scoped results offer Hold this venue only for an available venue
+- searching and booking navigation stay scoped to the selected Session
 
 ### `frontend/src/features/venue/VenueSuitability.test.tsx`
 

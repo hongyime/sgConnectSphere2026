@@ -55,7 +55,7 @@ test('missing layout is explained; no selected layout uses maximum; absent requi
   assert.equal(assessEventVenue(venue, { ...criteria, layout: 'unknown', accessibility: ['unknown'], facilities: ['unknown'] }, options).suitable, false);
 });
 
-function repository(overrides: { event?: boolean; venue?: boolean; hours?: boolean; attendance?: number; coordinator?: string | null } = {}) {
+function repository(overrides: { event?: boolean; venue?: boolean; hours?: boolean; attendance?: number; coordinator?: string | null; sessions?: Record<string, unknown>[] } = {}) {
   const writes: string[] = [];
   const query: Query = async <T extends Record<string, unknown>>(sql: string, values?: unknown[]) => {
     let rows: unknown[] = [];
@@ -63,6 +63,7 @@ function repository(overrides: { event?: boolean; venue?: boolean; hours?: boole
     else if (sql.includes('FROM room_layouts')) rows = options.layouts;
     else if (sql.includes('SELECT id, label FROM accessibility_features')) rows = options.accessibility;
     else if (sql.includes('SELECT id, label FROM facilities')) rows = options.facilities;
+    else if (sql.includes('FROM sessions s WHERE')) rows = overrides.sessions ?? [];
     else if (sql.includes('FROM events e')) rows = overrides.event === false || (sql.includes('e.coordinator_id = $2') && (overrides.coordinator === undefined ? user.id : overrides.coordinator) !== values?.[1]) ? [] : [{ id: 'event', title: 'Event', start: criteria.start, end: criteria.end, attendance: overrides.attendance ?? 100, layout: 'theatre', accessibility: ['ramp'], facilities: ['wifi'], accessibility_note: 'Manual note' }];
     else if (sql.includes('SELECT v.id')) rows = overrides.venue === false ? [] : [venue];
     else if (sql.includes('SELECT opens_at')) rows = overrides.hours === false ? [] : [venue];
@@ -81,6 +82,16 @@ test('event assessment uses recorded requirements, ignores client overrides and 
   assert.equal(result.event.accessibility_note, 'Manual note');
   assert.equal(result.assessment.advisory, true);
   assert.deepEqual(writes, []);
+});
+
+test('E04-S02 suitability reads the selected Session range and attendance, not the Event totals', async () => {
+  const session = { id: 'session-b', title: 'Workshop', start: '2027-03-13T05:00:00.000Z', end: '2027-03-13T08:00:00.000Z', attendance: 120, layout: '', accessibility: [], facilities: [] };
+  const input = params();
+  input.set('session_id', 'session-b');
+  const result = await venueSuitability(repository({ sessions: [{ id: 'session-a', title: 'Opening', start: criteria.start, end: criteria.end, attendance: 40, layout: 'theatre', accessibility: ['ramp'], facilities: ['wifi'] }, session] }).query, user, input);
+  assert.equal(result.event.session_title, 'Workshop');
+  assert.equal(result.event.start, session.start);
+  assert.equal(result.assessment.comparisons[0]?.required, '120');
 });
 test('anonymous, wrong-role and inactive users cannot assess venues', async () => {
   await assert.rejects(venueSuitability(repository().query, undefined, params()), { status: 401 });

@@ -18,6 +18,13 @@ test('TC_E06S03_01 request uses recorded IDs, optional fields and an idempotency
   expect(screen.getByText('Event is outside operating hours.')).toBeInTheDocument();
   expect(screen.getByRole('link',{name:'View venue booking requests'})).toHaveAttribute('href','/coordinator/events/EVT-1/venue-bookings');
 });
+test('multi-Session booking includes the selected Session id', async () => {
+  const fetcher = vi.fn().mockResolvedValue({ok:true,json:async()=>success}); vi.stubGlobal('fetch',fetcher);
+  render(<MemoryRouter><VenueBookingForm eventId="event" eventCode="EVT-1" venueId="venue" sessionId="session-b" start="2027-01-15T01:00:00Z" end="2027-01-15T10:00:00Z" /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button',{name:'Submit booking request'}));
+  await screen.findByText('Booking request submitted');
+  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toMatchObject({session_id:'session-b'});
+});
 test('network retry retains the key; changing the payload rotates it', async () => {
   const fetcher = vi.fn().mockRejectedValue(new Error('offline')); vi.stubGlobal('fetch',fetcher); mount();
   fireEvent.click(screen.getByRole('button',{name:'Submit booking request'}));

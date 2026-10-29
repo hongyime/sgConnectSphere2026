@@ -16,8 +16,21 @@ import { listAccessibilityFeatures, type AccessibilityFeature } from './accessib
 const NONE_REQUIRED = 'none_required';
 
 type OptionalField = 'equipmentRequirements' | 'layoutPreference' | 'registrationSetup';
+type DraftSession = {
+  id?: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  expectedAttendance: string;
+  venueRequirements: string;
+  accessibilityNeeds: string;
+  accessibilityFeatureIds: string[];
+  equipmentRequirements: string;
+  layoutPreference: string;
+};
 
 type DraftEvent = {
+  primarySessionId: string;
   eventName: string;
   description: string;
   purpose: string;
@@ -34,9 +47,10 @@ type DraftEvent = {
   equipmentRequirements: string;
   layoutPreference: string;
   registrationSetup: string;
+  additionalSessions: DraftSession[];
 };
 
-type FieldKey = keyof DraftEvent;
+type FieldKey = Exclude<keyof DraftEvent, 'additionalSessions' | 'primarySessionId'>;
 type SubmitState =
   | { status: 'idle' }
   | { status: 'submitting' }
@@ -53,6 +67,7 @@ type DraftSaveState =
   | { status: 'error'; message: string; missingFields?: string[] };
 
 const initialDraft: DraftEvent = {
+  primarySessionId: '',
   eventName: 'Annual Sustainability Forum',
   description: 'A forum bringing together sustainability leads across the client organisation.',
   purpose: 'Share the annual sustainability roadmap and gather feedback.',
@@ -65,6 +80,7 @@ const initialDraft: DraftEvent = {
   equipmentRequirements: 'Projector, 2 wireless microphones, livestream support',
   layoutPreference: '',
   registrationSetup: '',
+  additionalSessions: [],
 };
 
 const OPTIONAL_FIELDS: OptionalField[] = ['equipmentRequirements', 'layoutPreference', 'registrationSetup'];
@@ -104,7 +120,7 @@ function getMissingFields(draft: DraftEvent) {
   if (!draft.startDate || !draft.endDate) {
     missing.push('Preferred dates and times');
   }
-  return missing;
+  return [...missing, ...getAdditionalSessionIssues(draft)];
 }
 
 const ALWAYS_MANDATORY_FIELD_KEYS: FieldKey[] = ['eventName', 'expectedAttendance'];
@@ -117,7 +133,19 @@ function getDraftMissingFields(draft: DraftEvent) {
   if (!draft.startDate || !draft.endDate) {
     missing.push('Preferred dates and times');
   }
-  return missing;
+  return [...missing, ...getAdditionalSessionIssues(draft)];
+}
+
+function getAdditionalSessionIssues(draft: DraftEvent) {
+  const issues: string[] = [];
+  draft.additionalSessions.forEach((session, index) => {
+    const number = index + 2;
+    if (!session.startDate || !session.endDate) issues.push(`Session ${number} dates and times`);
+    else if (new Date(session.endDate).getTime() <= new Date(session.startDate).getTime()) issues.push(`Session ${number} end time`);
+    if (session.startDate && new Date(session.startDate).getTime() <= Date.now()) issues.push(`Session ${number} start time`);
+    if (!Number.isInteger(Number(session.expectedAttendance)) || Number(session.expectedAttendance) < 1) issues.push(`Session ${number} expected attendance`);
+  });
+  return issues;
 }
 
 function isInvalidDateRange(draft: DraftEvent) {
@@ -142,6 +170,32 @@ function updateDraft(draft: DraftEvent, key: FieldKey, value: string): DraftEven
 
 function toIsoLocal(value: string) {
   return new Date(value).toISOString();
+}
+
+function requestBody(draft: DraftEvent, status: 'draft' | 'submitted') {
+  const sessions: DraftSession[] = [{
+    ...(draft.primarySessionId ? { id: draft.primarySessionId } : {}),
+    title: draft.eventName, startDate: draft.startDate, endDate: draft.endDate,
+    expectedAttendance: draft.expectedAttendance, venueRequirements: draft.venueRequirements,
+    accessibilityNeeds: draft.accessibilityNeeds, accessibilityFeatureIds: draft.accessibilityFeatureIds,
+    equipmentRequirements: draft.equipmentRequirements, layoutPreference: draft.layoutPreference,
+  }, ...draft.additionalSessions];
+  const startAt = Math.min(...sessions.map(session => new Date(session.startDate).getTime()));
+  const endAt = Math.max(...sessions.map(session => new Date(session.endDate).getTime()));
+  return {
+    title: draft.eventName, description: draft.description, purpose: draft.purpose, status,
+    startAt: new Date(startAt).toISOString(), endAt: new Date(endAt).toISOString(),
+    expectedAttendance: sessions.reduce((sum, session) => sum + Number(session.expectedAttendance), 0),
+    venueRequirements: draft.venueRequirements, accessibilityNote: draft.accessibilityNeeds,
+    accessibilityFeatureIds: draft.accessibilityFeatureIds, equipmentRequirements: draft.equipmentRequirements,
+    layoutPreference: draft.layoutPreference, registrationSetup: draft.registrationSetup,
+    sessions: sessions.map(session => ({
+      ...(session.id ? { id: session.id } : {}), title: session.title, startAt: toIsoLocal(session.startDate), endAt: toIsoLocal(session.endDate),
+      expectedAttendance: Number(session.expectedAttendance), venueRequirements: session.venueRequirements,
+      accessibilityNote: session.accessibilityNeeds, accessibilityFeatureIds: session.accessibilityFeatureIds,
+      equipmentRequirements: session.equipmentRequirements, layoutPreference: session.layoutPreference,
+    })),
+  };
 }
 
 export function OrganiserRequestFlow({
@@ -198,6 +252,13 @@ export function OrganiserRequestFlow({
     }));
   };
 
+  const updateAdditionalSession = (index: number, key: keyof DraftSession, value: string) => {
+    setDraft(current => ({
+      ...current,
+      additionalSessions: current.additionalSessions.map((session, item) => item === index ? { ...session, [key]: value } : session),
+    }));
+  };
+
   const submitRequest = async () => {
     if (!canSubmit || submitState.status === 'submitting') {
       return;
@@ -221,21 +282,7 @@ export function OrganiserRequestFlow({
         headers: {
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          title: draft.eventName,
-          description: draft.description,
-          purpose: draft.purpose,
-          status: 'submitted',
-          startAt: toIsoLocal(draft.startDate),
-          endAt: toIsoLocal(draft.endDate),
-          expectedAttendance: Number(draft.expectedAttendance),
-          venueRequirements: draft.venueRequirements,
-          accessibilityNote: draft.accessibilityNeeds,
-          accessibilityFeatureIds: draft.accessibilityFeatureIds,
-          equipmentRequirements: draft.equipmentRequirements,
-          layoutPreference: draft.layoutPreference,
-          registrationSetup: draft.registrationSetup,
-        }),
+        body: JSON.stringify(requestBody(draft, 'submitted')),
       });
     } catch {
       setSubmitState({ status: 'error', message: 'The request could not be submitted.' });
@@ -286,21 +333,7 @@ export function OrganiserRequestFlow({
         headers: {
           'content-type': 'application/json',
         },
-        body: JSON.stringify({
-          title: draft.eventName,
-          description: draft.description,
-          purpose: draft.purpose,
-          status: 'draft',
-          startAt: toIsoLocal(draft.startDate),
-          endAt: toIsoLocal(draft.endDate),
-          expectedAttendance: Number(draft.expectedAttendance),
-          venueRequirements: draft.venueRequirements,
-          accessibilityNote: draft.accessibilityNeeds,
-          accessibilityFeatureIds: draft.accessibilityFeatureIds,
-          equipmentRequirements: draft.equipmentRequirements,
-          layoutPreference: draft.layoutPreference,
-          registrationSetup: draft.registrationSetup,
-        }),
+        body: JSON.stringify(requestBody(draft, 'draft')),
       });
     } catch {
       setDraftSaveState({ status: 'error', message: 'The draft could not be saved.' });
@@ -402,7 +435,7 @@ export function OrganiserRequestFlow({
             />
             <div className="field-control field-wide accessibility-fields">
               <div className="accessibility-block">
-                <label>Accessibility requirements</label>
+                <label>Predefined accessibility requirements</label>
                 <p className="field-hint">
                   Predefined requirements used to automatically match suitable venues.
                 </p>
@@ -454,6 +487,61 @@ export function OrganiserRequestFlow({
               onChange={(value) => setDraft(updateDraft(draft, 'registrationSetup', value))}
               onNoneRequiredChange={(checked) => setNoneRequired('registrationSetup', checked)}
             />
+            <section className="field-control field-wide" aria-label="Additional Sessions">
+              <h3>Sessions</h3>
+              <p className="field-hint">The fields above define Session 1. Add more Sessions when they have different dates, attendance, or arrangements.</p>
+              {draft.additionalSessions.map((session, index) => {
+                const number = index + 2;
+                const fields: [keyof DraftSession, string, string][] = [
+                  ['title', 'Session name (optional)', 'text'], ['startDate', 'Start date and time', 'datetime-local'],
+                  ['endDate', 'End date and time', 'datetime-local'], ['expectedAttendance', 'Expected attendance', 'number'],
+                  ['venueRequirements', 'Venue requirements', 'text'], ['accessibilityNeeds', 'Accessibility needs', 'text'],
+                  ['equipmentRequirements', 'Equipment requirements', 'text'], ['layoutPreference', 'Layout preference', 'text'],
+                ];
+                return <fieldset className="form-section ui-form-section" key={session.id ?? index}>
+                  <legend>Session {number}</legend>
+                  <button type="button" className="secondary-action" onClick={() => setDraft(current => ({
+                    ...current, additionalSessions: current.additionalSessions.filter((_, item) => item !== index),
+                  }))}>Remove Session {number}</button>
+                  <div className="form-grid">
+                    {fields.map(([key, label, type]) => {
+                      const id = `request-session-${number}-${key}`;
+                      const value = session[key] as string;
+                      return <div className="field-control" key={key}>
+                        <label htmlFor={id}>{label}</label>
+                        <input id={id} type={type} min={type === 'number' ? 1 : undefined} step={type === 'number' ? 1 : undefined}
+                          value={value} onChange={event => updateAdditionalSession(index, key, event.target.value)} />
+                      </div>;
+                    })}
+                    <fieldset className="field-control field-wide">
+                      <legend>Predefined accessibility requirements</legend>
+                      <div className="field-checkbox-group">
+                        {accessibilityFeatures.map(feature => {
+                          const id = `request-session-${number}-access-${feature.id}`;
+                          return <label key={feature.id} htmlFor={id} className="field-checkbox"><input id={id} type="checkbox"
+                            checked={session.accessibilityFeatureIds.includes(feature.id)}
+                            onChange={event => setDraft(current => ({
+                              ...current,
+                              additionalSessions: current.additionalSessions.map((item, position) => position !== index ? item : {
+                                ...item, accessibilityFeatureIds: event.target.checked
+                                  ? [...item.accessibilityFeatureIds, feature.id]
+                                  : item.accessibilityFeatureIds.filter(id => id !== feature.id),
+                              }),
+                            }))} />{feature.label}</label>;
+                        })}
+                      </div>
+                    </fieldset>
+                  </div>
+                </fieldset>;
+              })}
+              <button type="button" className="secondary-action" onClick={() => setDraft(current => ({
+                ...current,
+                additionalSessions: [...current.additionalSessions, {
+                  title: '', startDate: '', endDate: '', expectedAttendance: '', venueRequirements: '', accessibilityNeeds: '',
+                  accessibilityFeatureIds: [], equipmentRequirements: '', layoutPreference: '',
+                }],
+              }))}>Add Session</button>
+            </section>
           </div>
 
           <div className="form-actions">

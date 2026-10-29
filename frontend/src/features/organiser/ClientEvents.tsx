@@ -8,11 +8,12 @@ import type { EditableField } from '../events/eventEditApi';
 import { fieldList } from '../events/eventEditFields';
 import { formatEditedValue } from '../events/ActivityLog';
 import { Alert } from '../../shared/feedback';
+import { OrganiserSessions } from './OrganiserSessions';
 
 type StatusHistoryEntry = { occurred_at: string; old_value: string | null; new_value: string | null };
 type ActivityEntry = { occurred_at: string; action: string; field_changed: string | null; old_value: string | null; new_value: string | null; actor_name: string | null; actor_email: string | null };
 type Comment = { id: string; body: string; created_at: string; author_name: string; author_email: string };
-type Event = { cancellation_reason?: string | null; id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canRequestCancellation?: boolean; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
+type Event = { cancellation_reason?: string | null; id: string; event_code: string; title: string; description: string; purpose?: string | null; status: string; status_changed_at: string; starts_at: string; ends_at?: string; expected_attendance?: number; venue_requirements?: string | null; accessibility_note?: string | null; equipment_requirements?: string | null; layout_preference?: string | null; registration_setup?: string | null; registration_opens_at?: string | null; registration_closes_at?: string | null; creator_name: string; coordinator_name?: string | null; sessions?: { id: string; title?: string; startAt: string; endAt: string; expectedAttendance: number }[]; statusHistory?: StatusHistoryEntry[]; activityLog?: ActivityEntry[]; comments?: Comment[]; canRequestCancellation?: boolean; canPostComment?: boolean; canEdit?: boolean; editableFields?: string[] };
 type Notification = { id: string; title: string; message: string };
 
 function plainStatus(status: string) {
@@ -140,6 +141,7 @@ export function ClientEvents() {
           <dt>Registration setup</dt><dd>{event.registration_setup ?? 'Not provided'}</dd>
           <dt>Registration dates</dt><dd>{event.registration_opens_at && event.registration_closes_at ? `${plainDate(event.registration_opens_at)} – ${plainDate(event.registration_closes_at)}` : 'Not provided'}</dd>
         </dl></section>
+        <OrganiserSessions eventId={event.id} status={event.status} sessions={event.sessions} onDeleted={message => { setSaved(message); setRevision(value => value + 1); }} />
         <section aria-labelledby="event-status-heading"><h3 id="event-status-heading">Current status</h3><p><strong>{plainStatus(event.status)}</strong></p><p>Reached on {plainDate(event.status_changed_at)}</p><p>Assigned Coordinator: <strong>{event.coordinator_name ?? 'Not yet assigned'}</strong></p></section>
         <section aria-labelledby="status-history-heading"><h3 id="status-history-heading">Status history</h3>
           {event.statusHistory?.length ? <ol>{event.statusHistory.map((entry, index) => <li key={`${entry.occurred_at}-${index}`}>{entry.old_value ? `${plainStatus(entry.old_value)} → ` : ''}{plainStatus(entry.new_value ?? '')} — {plainDate(entry.occurred_at)}</li>)}</ol> : <p>No status changes recorded yet.</p>}

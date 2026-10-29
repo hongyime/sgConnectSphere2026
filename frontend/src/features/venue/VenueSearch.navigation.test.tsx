@@ -107,6 +107,30 @@ test('event-scoped results offer Hold this venue only for an available venue', a
   expect(busy.querySelector('a[href$="/hold"]')).toBeNull();
 });
 
+test('searching and booking navigation stay scoped to the selected Session', async () => {
+  const sessions = [
+    { id: 'session-a', title: 'Opening', start: '2027-03-12T01:00:00Z', end: '2027-03-12T03:00:00Z', attendance: 40, accessibility: [], facilities: [] },
+    { id: 'session-b', title: 'Workshop', start: '2027-03-13T05:00:00Z', end: '2027-03-13T08:00:00Z', attendance: 120, accessibility: [], facilities: [] },
+  ];
+  const calls: URL[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+    const url = new URL(input, 'http://localhost'); calls.push(url);
+    const body = url.searchParams.get('search') === '1' ? results('A') : { ...defaults('A'), defaults: { ...defaults('A').defaults, sessions } };
+    return { ok: true, status: 200, json: async () => body } as Response;
+  }));
+  renderEventA();
+  expect(await screen.findByRole('heading', { name: 'Event A' })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Session'), { target: { value: 'session-b' } });
+  expect(screen.getByLabelText('Expected attendance (required)')).toHaveValue(120);
+  fireEvent.click(screen.getByRole('button', { name: 'Search venues' }));
+  const venue = await screen.findByRole('heading', { name: 'Hall for event A' });
+  const search = calls.find(url => url.searchParams.get('search') === '1')!;
+  expect(search.searchParams.get('session_id')).toBe('session-b');
+  const card = venue.closest('section')!;
+  expect(card.querySelector('a[href*="suitability"]')?.getAttribute('href')).toContain('session_id=session-b');
+  expect(card.querySelector('a[href*="/hold"]')?.getAttribute('href')).toContain('session_id=session-b');
+});
+
 test('TC_E10S05_03: a rejected replacement reopens search with the lost booking period and preserves its link', async () => {
   const fetcher=vi.fn(async(input:string)=>{
     const url=new URL(input,'http://localhost');

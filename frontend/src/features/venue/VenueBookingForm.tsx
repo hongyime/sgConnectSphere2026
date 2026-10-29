@@ -2,9 +2,9 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Alert, Button, ButtonLink, Card, FormActions, FormField, FormSection, apiCall, jsonRequest } from '../../shared';
 import { toLocalInput } from '../events/EventEditForm';
 
-type Props = { eventId: string; eventCode: string; venueId: string; start: string; end: string; onSubmitted?: () => void; replacementLabel?: string; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
+type Props = { eventId: string; eventCode: string; venueId: string; sessionId?: string; start: string; end: string; onSubmitted?: () => void; replacementLabel?: string; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
 type Result = { booking: { id: string }; suitability: { suitable: boolean; mismatches: string[] } };
-export function VenueBookingForm({ eventId, eventCode, venueId, start, end, replacement, replacementLabel, onSubmitted }: Props) {
+export function VenueBookingForm({ eventId, eventCode, venueId, sessionId, start, end, replacement, replacementLabel, onSubmitted }: Props) {
   const [fields, setFields] = useState({ starts_at: toLocalInput(replacement?.starts_at ?? start), ends_at: toLocalInput(replacement?.ends_at ?? end), purpose: replacement?.purpose ?? '', headcount: replacement?.headcount == null ? '' : String(replacement.headcount) });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [failure, setFailure] = useState('');
@@ -23,7 +23,7 @@ export function VenueBookingForm({ eventId, eventCode, venueId, start, end, repl
     if (fields.headcount && (!/^\d+$/.test(fields.headcount) || Number(fields.headcount) < 1 || Number(fields.headcount) > 2147483647)) invalid.headcount = ['Enter a whole number greater than zero.'];
     if (fields.purpose.trim().length > 80) invalid.purpose = ['Purpose must be at most 80 characters.'];
     setErrors(invalid); setFailure(''); if (Object.keys(invalid).length) return;
-    const payload = { ...(replacement ? { replaces_booking_id: replacement.id } : {}), action: 'request_booking', event_id: eventId, venue_id: venueId, starts_at: first.toISOString(), ends_at: last.toISOString(), purpose: fields.purpose.trim() || null, headcount: fields.headcount ? Number(fields.headcount) : null };
+    const payload = { ...(replacement ? { replaces_booking_id: replacement.id } : {}), action: 'request_booking', event_id: eventId, venue_id: venueId, ...(sessionId ? { session_id: sessionId } : {}), starts_at: first.toISOString(), ends_at: last.toISOString(), purpose: fields.purpose.trim() || null, headcount: fields.headcount ? Number(fields.headcount) : null };
     const encoded = JSON.stringify(payload);
     if (submission.current?.payload !== encoded) submission.current = { payload: encoded, key: crypto.randomUUID() };
     setBusy(true);

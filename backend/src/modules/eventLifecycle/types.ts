@@ -26,6 +26,20 @@ export type EventRecord = {
   registrationSetup?: string;
 };
 
+export type EventSessionInput = {
+  id?: string;
+  title?: string;
+  startAt: Date;
+  endAt: Date;
+  expectedAttendance: number;
+  layoutId?: string;
+  venueRequirements?: string;
+  accessibilityNote?: string;
+  accessibilityFeatureIds?: string[];
+  equipmentRequirements?: string;
+  layoutPreference?: string;
+};
+
 export type StatusChangeRequest = {
   eventId: string;
   actorId: string;
@@ -50,6 +64,7 @@ export type CreateEventRequest = {
   equipmentRequirements?: string;
   layoutPreference?: string;
   registrationSetup?: string;
+  sessions?: EventSessionInput[];
 };
 
 // A full replacement of every editable field on an existing draft. The service
