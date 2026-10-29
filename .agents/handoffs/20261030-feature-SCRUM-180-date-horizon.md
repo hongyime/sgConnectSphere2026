@@ -14,6 +14,7 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
 
 ## Next steps
 
-1. Verification: backend unit suite 618 passed / 1 skipped; frontend suite 679 passed on isolated retry after two unrelated existing UI tests timed out during the concurrent run; both TypeScript checks and `python scripts/check.py` passed. The date-horizon helper has 100% statement, branch, function and line coverage.
-2. Commit the implementation and refreshed coverage inventory. Then rerun and record only automated evidence runs under `docs/testing/runs/`; never create manual-run records/screenshots.
-3. Do not open another PR while the authenticated author already has three open PRs; preserve SCRUM-66's closed PR state and do not close unrelated PRs to free a slot.
+1. Implementation and refreshed coverage are committed as `f86576a` and pushed to `feature/SCRUM-180-date-horizon`. Post-commit run records are `20261030-071336-bryanseah234-backend-unit.md`, `20261030-071353-bryanseah234-frontend-vitest.md`, and `20261030-071454-bryanseah234-tooling.md`.
+2. Jira SCRUM-180 is assigned to Xiang Ying and remains To Do; an implementation/verification comment records the branch, commit and remaining Session-path limitation.
+3. No PR was opened because the authenticated author already has three open PRs. Preserve SCRUM-66's closed PR state and do not close unrelated PRs to free a slot.
+4. Keep the story open: E02-S07's multi-Session date cases need an E04 Session write path, and the team still owns independent review and acceptance. No manual tester steps or screenshots were created.
