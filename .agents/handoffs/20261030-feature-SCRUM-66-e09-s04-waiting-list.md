@@ -25,7 +25,7 @@ Goal: implement the backend and attendee UI for E09-S04 / SCRUM-66, covering Eve
 - Final backend unit run on `5b78ff0` passed 620 tests, skipped one PostgreSQL integration contract because `TEST_DATABASE_URL` is unset, and had zero failures (`docs/testing/runs/20261030-014858-bryanseah234-backend-unit.md`). `python scripts/check.py` passes; its only notice is the two pre-existing secondary worktrees.
 - A SCRUM-66 review postplan at `artifacts/scrum-66-waiting-list-review.html` passes `python3 scripts/check_postplan_html.py`. Browser surfaces are unavailable in this session, so visual inspection and upload remain pending.
 - On 30 October, the live Sprint 4 Jira query showed SCRUM-50 as the only Story still To Do. Its implementation is already in open PR #378. SCRUM-61, SCRUM-66, SCRUM-70, SCRUM-71, and SCRUM-75 remain In Progress under their existing owners; do not change ownership or close their human gates.
-- Commits `f71afb4`, `544edf9`, and `dbbe7f8` are pushed; the branch has no commits behind current `origin/main`. PR #379's body was refreshed with current evidence via REST, but GitHub still displays the closed PR's last head as `7cae7f2` while the branch is at `dbbe7f8`.
+- Commits `f71afb4`, `544edf9`, `dbbe7f8`, and `9c96766` are pushed; the branch had no commits behind current `origin/main` at the last fetch. PR #379's body was refreshed with current evidence via REST; GitHub still displays the closed PR's last head as `7cae7f2` while the branch includes later documentation-only commits.
 - The latest Jira check still has SCRUM-222/223 In Progress and SCRUM-224 To Do under Aaron; SCRUM-231 is In Review and SCRUM-232 remains To Do for manual acceptance. Preserve these statuses and assignments.
 
 ## Next steps
