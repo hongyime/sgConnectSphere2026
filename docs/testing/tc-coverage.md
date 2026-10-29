@@ -530,6 +530,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - primary selection shares origin/authentication HTTP boundary, without submission key
 
+### `backend/tests/bookingState.test.ts`
+
+- each of the 7 booking statuses gets its own BookingState
+- every BookingState reports decidability through the shared interface
+- an unknown status keeps the old
+
 ### `backend/tests/bookingSubmission.integration.test.ts`
 
 - notification failure rolls back request, status, audit and deliveries together
@@ -679,6 +685,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 writers refuse signed-out callers and other roles before opening a transaction, and audit the refusal
 - E07-S05 invalid ids and input are answered without a transaction once the caller is Technical Support
 - E07-S05 the equipment route sends markUnavailable and returnToService to the writers and lists periods with the item
+
+### `backend/tests/errorPolymorphism.test.ts`
+
+- every AccessError subclass is usable through the shared base
+- each AccessError subclass carries its own type-specific field
 
 ### `backend/tests/eventAttendance.integration.test.ts`
 
@@ -884,6 +895,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/registrationPeriod.integration.test.ts`
 
 - E09-S03: the Organiser sets one Event-level registration period that Attendees are held to
+
+### `backend/tests/repositoryContract.test.ts`
+
+- in-memory EventLifecycleRepository satisfies the shared contract
+- PostgresEventLifecycleRepository satisfies the shared contract
 
 ### `backend/tests/securityHardening.test.ts`
 

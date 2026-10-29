@@ -9,6 +9,7 @@ import type { VenueErrors } from './catalogue.js';
 import { holdsVenue } from './holds.js';
 import { confirmLostVenueReplacement } from './lostVenueRecovery.js';
 import { formatSgt } from './bookingShared.js';
+import { bookingState } from './bookingState.js';
 
 // E06-S04 "Decide on a venue booking request" (SCRUM-48). Venue Staff approve
 // or reject a Pending booking (Scenarios 1 to 3). Each decision is recorded in
@@ -38,17 +39,6 @@ type BookingRow = {
   decision_reason: string | null; suggested_venue_id: string | null; suggested_venue_name: string | null;
   decided_by_name: string | null; decided_at: Date | null; created_at: Date; is_primary: boolean;
   suitability_snapshot: unknown;
-};
-
-// Why a booking that isn't Pending can't be decided, worded for Venue Staff.
-// Conflicting bookings wait for the E05-S05/S06 resolution flow (PR #244).
-const NOT_DECIDABLE: Record<string, string> = {
-  confirmed: 'This request has already been decided, so it can no longer be changed.',
-  rejected: 'This request has already been decided, so it can no longer be changed.',
-  conflicting: 'This booking now clashes with a change to the venue. It must be resolved before it can be decided.',
-  released: 'The Coordinator withdrew this request, so there is nothing to decide.',
-  tentative: 'This is a tentative hold, not a request yet, so there is nothing to decide.',
-  expired: 'This hold has expired, so there is nothing to decide.',
 };
 
 // Why a Pending request on a closed event can't be decided.
@@ -266,7 +256,7 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     const row = await lockBooking(client, bookingId);
     if (!row) return { status: 404, body: { error: 'Booking not found.' } };
     if (row.status !== 'pending') {
-      return { status: 409, body: { error: NOT_DECIDABLE[row.status] ?? NOT_DECIDABLE.confirmed } };
+      return { status: 409, body: { error: bookingState(row.status).canDecide() } };
     }
     if (decision.decision === 'approve') {
       const clash = await approvalClash(client, row);
