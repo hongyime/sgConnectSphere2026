@@ -3,41 +3,27 @@ import { inTransaction } from '../../database/pool.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, updateEventInformation, type Query } from '../eventVisibility/service.js';
 import { assertEditableAfterDecision } from '../eventLifecycle/decision.js';
-import { assessArrangementImpact, loadArrangementSnapshot, type ArrangementImpact, type ArrangementSnapshot } from './arrangementImpact.js';
+import { eventCapacity, type EventCapacity } from '../attendeeRegistration/capacity.js';
+import { assessArrangementImpact, loadArrangementSnapshot, type ArrangementImpact } from './arrangementImpact.js';
 
-// E10-S02 Scenario 4 (T-85, C-78): approved registrations measured against
-// each Session's capacity (its Confirmed bookings' layout capacity) and the
-// Event's combined capacity (every Confirmed booking). A Session or Event
-// with no Confirmed booking has no capacity yet, so it is not compared.
-export type RegistrationCounts = { event: number; sessions: Record<string, number> };
+// E10-S02 Scenario 4 (T-85, C-78, B-11): approved registrations measured
+// against E09-S02's eventCapacity(), so this warning and registration
+// enforcement never disagree (B-05). Capacity 0 means no Confirmed booking
+// yet, so there is nothing to compare. Only strictly above capacity warns:
+// exactly full is not over-subscribed. Nobody is removed or waitlisted (C-05).
 export type OverSubscription = { scope: 'session' | 'event'; sessionId: string | null; registered: number; capacity: number };
 
-export function assessOverSubscription(snapshot: ArrangementSnapshot, counts: RegistrationCounts): OverSubscription[] {
-  const capacities = new Map<string, number>();
-  for (const booking of snapshot.bookings) {
-    if (booking.sessionId) capacities.set(booking.sessionId, (capacities.get(booking.sessionId) ?? 0) + booking.capacity);
-  }
-  const over: OverSubscription[] = [];
-  for (const session of snapshot.sessions) {
-    const capacity = capacities.get(session.id);
-    const registered = counts.sessions[session.id] ?? 0;
-    if (capacity !== undefined && registered > capacity) over.push({ scope: 'session', sessionId: session.id, registered, capacity });
-  }
-  const combined = snapshot.bookings.reduce((total, booking) => total + booking.capacity, 0);
-  if (snapshot.bookings.length && counts.event > combined) over.push({ scope: 'event', sessionId: null, registered: counts.event, capacity: combined });
+export function assessOverSubscription(capacity: EventCapacity): OverSubscription[] {
+  const over: OverSubscription[] = capacity.sessions
+    .filter(session => session.capacity > 0 && session.registered > session.capacity)
+    .map(session => ({ scope: 'session', sessionId: session.sessionId, registered: session.registered, capacity: session.capacity }));
+  if (capacity.capacity > 0 && capacity.registered > capacity.capacity)
+    over.push({ scope: 'event', sessionId: null, registered: capacity.registered, capacity: capacity.capacity });
   return over;
 }
 
-// Only Registered places are approved seats; Pending ones await the
-// Organiser and never hold a place (T-85), and nobody is removed here.
-export async function loadRegistrationCounts(query: Query, eventId: string): Promise<RegistrationCounts> {
-  const event = (await query<{ count: string }>(
-    "SELECT count(*) AS count FROM event_registrations WHERE event_id = $1 AND status = 'registered'", [eventId])).rows[0];
-  const sessions = (await query<{ session_id: string; count: string }>(
-    `SELECT rs.session_id, count(*) AS count FROM event_registration_sessions rs
-     JOIN event_registrations r ON r.id = rs.registration_id
-     WHERE rs.event_id = $1 AND r.status = 'registered' GROUP BY rs.session_id`, [eventId])).rows;
-  return { event: Number(event?.count ?? 0), sessions: Object.fromEntries(sessions.map(row => [row.session_id, Number(row.count)])) };
+export async function loadOverSubscription(query: Query, eventId: string): Promise<OverSubscription[]> {
+  return assessOverSubscription(await eventCapacity(query, eventId));
 }
 
 export type EventChangePreview = { impact: ArrangementImpact; overSubscription: OverSubscription[] };
@@ -79,8 +65,7 @@ export async function previewEventChangeWith(client: PoolClient, user: Authentic
   try {
     await updateEventInformation(query, user, identifier, input);
     const after = await loadArrangementSnapshot(query, event.id);
-    const counts = await loadRegistrationCounts(query, event.id);
-    return { impact: assessArrangementImpact(before, after), overSubscription: assessOverSubscription(after, counts) };
+    return { impact: assessArrangementImpact(before, after), overSubscription: await loadOverSubscription(query, event.id) };
   } finally {
     await client.query('ROLLBACK TO SAVEPOINT event_change_preview');
   }

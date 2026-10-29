@@ -5,7 +5,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, updateEventInformation, type Query } from '../eventVisibility/service.js';
 import { assertEditableAfterDecision } from '../eventLifecycle/decision.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
-import { applyArrangementImpact, assessOverSubscription, loadRegistrationCounts } from '../changeManagement/eventChange.js';
+import { applyArrangementImpact, loadOverSubscription } from '../changeManagement/eventChange.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from './service.js';
 
 // Existing E03-S06 edit behaviour, now atomic with its audit and E11 deliveries.
@@ -27,7 +27,7 @@ export async function updateEventInformationWithNotifications(
     const arrangementsAfter = await loadArrangementSnapshot(query, event.id);
     const impact = assessArrangementImpact(arrangementsBefore, arrangementsAfter);
     await applyArrangementImpact(query, user.id, event.id, impact);
-    const overSubscription = assessOverSubscription(arrangementsAfter, await loadRegistrationCounts(query, event.id));
+    const overSubscription = await loadOverSubscription(query, event.id);
     const after = await captureEventAudience(client, event.id, options);
     const dateChanged = after.status!=='draft' && (before.startsAt!==after.startsAt || before.endsAt!==after.endsAt);
     if (impact.affected || dateChanged) {
