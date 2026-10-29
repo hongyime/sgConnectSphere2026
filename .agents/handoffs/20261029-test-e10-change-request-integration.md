@@ -25,3 +25,9 @@ All available work is a bounded test/evidence increment, not arrangement applica
 ## Aaron review on PR #375
 
 Synced remote a02c33e1, including Bryan's main merge and #373 focus-flake fix; current-head checks were reported green. Changed terminal tests to two literal TC_E10S01_06/_07 titles calling one shared helper so the inventory discovers both. Removed the TC ID from the arrangement waiting regression; it is not full arrangement-application acceptance. Regenerate inventory after these source edits. Keep old T-65 records immutable; run the revised browser slice on its committed source head and add a fresh exact-commit record. Broader audit last-file category behavior is outside this PR. No product code or new E10-S02 integration is included.
+
+## Review-fix verification and current dependency
+
+Exact source f43d161: 12/12 desktop/mobile real-stack tests, both typechecks, repository checks and explicit audit-discovery assertions passed. Default frontend run had 668 pass/8 timing or asynchronous failures; unchanged-source rerun with --maxWorkers=2 passed all 676 tests in 65 files. Fresh immutable record: 20261030-001943-jininggg-full-regression.md. Old records remain untouched. The guard carries no acceptance TC ID; safe-field TC_04 subset is separately labelled. No audit-script changes or acceptance claims.
+
+E10-S02 backend #376 has since merged into main, but this bounded review-fix branch does not wire it. Continue the real preview/apply integration separately from the current main after this test increment, using the delivered contract. No teammate reply is posted automatically for this review.
