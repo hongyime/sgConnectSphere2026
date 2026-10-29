@@ -20,11 +20,15 @@ Goal: deliver the frontend and automated component coverage for E06-S06 / SCRUM-
 - Implementation is committed and pushed in `7994ec6`; branch history reconciliation is `45be219`; the cleanup is `cf89c89`.
 - The user explicitly asked to skip human tester steps. Automated evidence is recorded in `docs/testing/runs/20261030-002633-bryanseah234-frontend-vitest.md` and `docs/testing/runs/20261030-002633-bryanseah234-tooling.md`. No manual run record or screenshots were created; SCRUM-50 remains open for review and acceptance.
 - Jira currently lists SCRUM-50 as To Do and SCRUM-231/232 as To Do. Move SCRUM-231 to In Review after opening the PR; leave the parent and human-test subtask unchanged.
+- PR #378's first CI run failed in eight desktop/mobile E06-S04 browser executions because the old API fakes omitted the newly required venue and availability-calendar reads, and one assertion expected approval to remain enabled after a server-side conflict. Updated those fakes and assertions; the focused scaffold E2E now passes 10/10 on `0b287ce`, recorded in `docs/testing/runs/20261030-011249-bryanseah234-frontend-e2e.md`.
+- On `0b287ce`, `python scripts/check.py` passed 186 tooling tests and validated 745 records; the two pre-existing secondary worktrees remain a warning. Recorded in `docs/testing/runs/20261030-011355-bryanseah234-tooling.md`.
+- PR #378's first guardrail run also rejected a third simultaneously open PR. PR #379 was temporarily closed to clear that per-author limit; its pushed branch remains preserved. PR #378 is the active next-ranked task.
 
 ## Next steps
 
-1. Open a PR from this branch with the automated run records and verification above; leave manual acceptance pending.
-2. After the PR is open, transition SCRUM-231 to In Review, then start the next ranked To Do story, SCRUM-66 / E09-S04.
+1. Commit the refreshed browser fakes and automated records, then push so PR #378 gets a clean CI run.
+2. Transition SCRUM-231 to In Review once the fix is on the open PR; leave SCRUM-50 and SCRUM-232 open pending human acceptance.
+3. Continue the Sprint 4 technical To Do queue; SCRUM-66 / E09-S04 is implemented on its preserved branch, waiting for an open-PR slot.
 
 ## Verification
 
