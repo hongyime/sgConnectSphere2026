@@ -4,6 +4,7 @@ import { inTransaction } from '../backend/src/database/pool.js';
 import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../backend/src/modules/changeManagement/requests.js';
+import { previewEventChange } from '../backend/src/modules/changeManagement/eventChange.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -197,6 +198,12 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
     const user = await currentUser(request);
     const eventId = params.get('id');
     if (!eventId) { sendJson(response, 400, { error: 'missing_id' }); return; }
+    // SCRUM-71 (E10-S02 Scenario 3): &preview=1 returns the arrangements the
+    // same edit would affect, without saving it.
+    if (params.get('preview') === '1') {
+      sendJson(response, 200, await previewEventChange(getDatabasePool(), user, eventId.slice(0, 240), request.body));
+      return;
+    }
     const result = await updateEventInformationWithNotifications(getDatabasePool(), user, eventId.slice(0, 240), request.body);
     sendJson(response, 200, { ...result });
   } catch (error) {
