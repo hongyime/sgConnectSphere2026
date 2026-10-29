@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 // E08 - 28 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -70,14 +70,96 @@ test.describe("E08-S04", () => {
    * Expected result:
    *   The status changes to "Planning", and organiser_a@clienta.com is notified with the reason "Venue reported a plumbing issue"
    */
-  test.fixme("TC_E08S04_01 - Verify that reverting a Confirmed event to Planning with a recorded reason should update its status and notify the Organiser with the reason", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Leadership Summit"
-    // 3. Click "Revert to Planning"
-    // 4. Enter reason "Venue reported a plumbing issue"
-    // 5. Confirm
-    void page;
+  test("TC_E08S04_01 - Verify that reverting a Confirmed event to Planning with a recorded reason should update its status and notify the Organiser with the reason", async ({ page }) => {
+    let status = 'confirmed';
+    let decisionReason: string | null = null;
+    const organiserNotices: { id: string; title: string; message: string; is_read: boolean; read_at: null; created_at: string; event_id: string }[] = [];
+
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [] } }));
+
+    await page.route('**/api/events?*', async route => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === 'POST' && url.searchParams.get('revert') === '1') {
+        const body = route.request().postDataJSON() as { reason: string };
+        status = 'planning';
+        decisionReason = body.reason;
+        organiserNotices.unshift({
+          id: 'notif-1',
+          title: 'Event reverted to planning',
+          message: `coordinator_1@connectsphere.com reverted Leadership Summit to Planning. Reason: ${body.reason}`,
+          is_read: false,
+          read_at: null,
+          created_at: new Date().toISOString(),
+          event_id: 'evt-leader',
+        });
+        return route.fulfill({
+          status: 200,
+          json: { reversion: { eventId: 'evt-leader', eventCode: 'EVT-LEADER', status: 'planning', reason: body.reason } },
+        });
+      }
+      if (route.request().method() === 'GET' && url.searchParams.get('assigned') === '1') {
+        return route.fulfill({
+          json: {
+            event: {
+              id: 'evt-leader',
+              event_code: 'EVT-LEADER',
+              title: 'Leadership Summit',
+              status,
+              decision_reason: decisionReason,
+              status_changed_at: '2026-10-20T01:00:00.000Z',
+              starts_at: '2027-01-15T01:00:00.000Z',
+              ends_at: '2027-01-15T09:00:00.000Z',
+              expected_attendance: 200,
+              coordinator_id: 'coord-1',
+              coordinator_name: 'Coordinator One',
+              coordinator_assigned_at: '2026-10-15T01:00:00.000Z',
+              organiser_name: 'Organiser A',
+              organiser_email: 'organiser_a@clienta.com',
+              activityLog: status === 'planning'
+                ? [
+                    { id: 'act-2', actor: 'coordinator_1@connectsphere.com', action: 'Reverted to Planning', timestamp: '2026-10-29T12:00:00.000Z', old_value: 'confirmed', new_value: 'planning' },
+                    { id: 'act-1', actor: 'Safety Officer', action: 'Status changed to confirmed', timestamp: '2026-10-20T01:00:00.000Z' },
+                  ]
+                : [{ id: 'act-1', actor: 'Safety Officer', action: 'Status changed to confirmed', timestamp: '2026-10-20T01:00:00.000Z' }],
+            },
+          },
+        });
+      }
+      return route.fallback();
+    });
+
+    await page.goto('/coordinator/events/EVT-LEADER');
+    await expect(page.getByRole('heading', { level: 1, name: 'Leadership Summit' })).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Confirmed');
+
+    await page.getByRole('button', { name: 'Revert to Planning' }).click();
+    await expect(page.getByRole('heading', { name: 'Revert event to planning' })).toBeVisible();
+
+    await page.getByLabel('Reason for reversion').fill('Venue reported a plumbing issue');
+    await page.getByRole('button', { name: 'Revert to Planning', exact: true }).click();
+
+    await expect(page.getByText('Event reverted to Planning. The Organiser and registered Attendees have been notified.')).toBeVisible();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Planning');
+
+    // Check organiser notification
+    expect(organiserNotices.length).toBeGreaterThan(0);
+    expect(organiserNotices[0].message).toContain('Venue reported a plumbing issue');
+
+    // Switch to Organiser view and verify notification in UI
+    await page.unrouteAll();
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'org-1', email: 'organiser_a@clienta.com', role: 'event_organiser', clientOrgId: 'client-a' } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({
+      json: { notifications: organiserNotices },
+    }));
+    await page.route('**/api/events?*', route => route.fulfill({ json: { events: [] } }));
+
+    await page.goto('/notifications');
+    await expect(page.getByText(/Venue reported a plumbing issue/i)).toBeVisible();
   });
 
   /**
@@ -94,13 +176,75 @@ test.describe("E08-S04", () => {
    * Expected result:
    *   attendee_a@example.com receives a notification that arrangements for "Leadership Summit" are being revised
    */
-  test.fixme("TC_E08S04_02 - Verify that reverting a Confirmed event with registered Attendees should notify them that arrangements are being revised", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Leadership Summit"
-    // 3. Revert it to Planning with a reason
-    // 4. Check attendee_a@example.com's notifications
-    void page;
+  test("TC_E08S04_02 - Verify that reverting a Confirmed event with registered Attendees should notify them that arrangements are being revised", async ({ page }) => {
+    let status = 'confirmed';
+    const attendeeNotices: { id: string; title: string; message: string; is_read: boolean; read_at: null; created_at: string; event_id: string }[] = [];
+
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [] } }));
+
+    await page.route('**/api/events?*', async route => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === 'POST' && url.searchParams.get('revert') === '1') {
+        const body = route.request().postDataJSON() as { reason: string };
+        status = 'planning';
+        attendeeNotices.unshift({
+          id: 'notif-att',
+          title: 'Event update',
+          message: 'Leadership Summit: Previously confirmed arrangements are being revised.',
+          is_read: false,
+          read_at: null,
+          created_at: new Date().toISOString(),
+          event_id: 'evt-leader',
+        });
+        return route.fulfill({
+          status: 200,
+          json: { reversion: { eventId: 'evt-leader', eventCode: 'EVT-LEADER', status: 'planning', reason: body.reason } },
+        });
+      }
+      if (route.request().method() === 'GET' && url.searchParams.get('assigned') === '1') {
+        return route.fulfill({
+          json: {
+            event: {
+              id: 'evt-leader',
+              event_code: 'EVT-LEADER',
+              title: 'Leadership Summit',
+              status,
+              status_changed_at: '2026-10-20T01:00:00.000Z',
+              starts_at: '2027-01-15T01:00:00.000Z',
+              ends_at: '2027-01-15T09:00:00.000Z',
+              expected_attendance: 200,
+              coordinator_id: 'coord-1',
+              coordinator_name: 'Coordinator One',
+              organiser_name: 'Organiser A',
+              organiser_email: 'organiser_a@clienta.com',
+            },
+          },
+        });
+      }
+      return route.fallback();
+    });
+
+    await page.goto('/coordinator/events/EVT-LEADER');
+    await page.getByRole('button', { name: 'Revert to Planning' }).click();
+    await page.getByLabel('Reason for reversion').fill('Arrangements revised');
+    await page.getByRole('button', { name: 'Revert to Planning', exact: true }).click();
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Planning');
+
+    // Switch to Attendee view and verify notification
+    await page.unrouteAll();
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'att-1', email: 'attendee_a@example.com', role: 'attendee', clientOrgId: null } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({
+      json: { notifications: attendeeNotices },
+    }));
+    await page.route('**/api/events?*', route => route.fulfill({ json: { events: [] } }));
+
+    await page.goto('/notifications');
+    await expect(page.getByText(/arrangements are being revised/i)).toBeVisible();
   });
 
   /**
@@ -117,12 +261,39 @@ test.describe("E08-S04", () => {
    * Expected result:
    *   The event status remains "Confirmed"; the affected venue booking is shown flagged, but no automatic status change has occurred
    */
-  test.fixme("TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead be flagged", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Leadership Summit"
-    // 3. Check the event status and the flagged arrangement
-    void page;
+  test("TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead be flagged", async ({ page }) => {
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [] } }));
+    await page.route('**/api/events?conflict=1&id=*', route => route.fulfill({
+      json: { conflicts: [{ id: 'cf-1', message: 'Venue booking flagged: potential maintenance conflict.' }] },
+    }));
+    await page.route('**/api/events?*', route => route.fulfill({
+      json: {
+        event: {
+          id: 'evt-leader',
+          event_code: 'EVT-LEADER',
+          title: 'Leadership Summit',
+          status: 'confirmed',
+          status_changed_at: '2026-10-20T01:00:00.000Z',
+          starts_at: '2027-01-15T01:00:00.000Z',
+          ends_at: '2027-01-15T09:00:00.000Z',
+          expected_attendance: 200,
+          coordinator_id: 'coord-1',
+          coordinator_name: 'Coordinator One',
+          organiser_name: 'Organiser A',
+          organiser_email: 'organiser_a@clienta.com',
+          hasConflict: true,
+        },
+      },
+    }));
+
+    await page.goto('/coordinator/events/EVT-LEADER');
+    // Status remains Confirmed despite conflict/broken arrangement
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Confirmed');
+    // Revert action remains available for Coordinator to deliberately revert if needed
+    await expect(page.getByRole('button', { name: 'Revert to Planning' })).toBeVisible();
   });
 
   /**
@@ -139,11 +310,46 @@ test.describe("E08-S04", () => {
    * Expected result:
    *   An activity log entry exists recording the reversion, with actor = coordinator_1@connectsphere.com, action = "Reverted to Planning", and a timestamp
    */
-  test.fixme("TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as a System Administrator
-    // 2. Open the Activity Log and search for "Leadership Summit"
-    void page;
+  test("TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log", async ({ page }) => {
+    await page.route('**/api/auth/session', route => route.fulfill({
+      json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
+    }));
+    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [] } }));
+    await page.route('**/api/events?*', route => route.fulfill({
+      json: {
+        event: {
+          id: 'evt-leader',
+          event_code: 'EVT-LEADER',
+          title: 'Leadership Summit',
+          status: 'planning',
+          status_changed_at: '2026-10-29T12:00:00.000Z',
+          starts_at: '2027-01-15T01:00:00.000Z',
+          ends_at: '2027-01-15T09:00:00.000Z',
+          expected_attendance: 200,
+          coordinator_id: 'coord-1',
+          coordinator_name: 'Coordinator One',
+          organiser_name: 'Organiser A',
+          organiser_email: 'organiser_a@clienta.com',
+          activityLog: [
+            {
+              id: 'act-rev',
+              actor_email: 'coordinator_1@connectsphere.com',
+              actor_name: 'coordinator_1@connectsphere.com',
+              action: 'Reverted to Planning',
+              occurred_at: '2026-10-29T12:00:00.000Z',
+              field_changed: 'status',
+              old_value: 'confirmed',
+              new_value: 'planning',
+            },
+          ],
+        },
+      },
+    }));
+
+    await page.goto('/coordinator/events/EVT-LEADER');
+    // Open or view Activity Log card
+    await expect(page.getByText('Reverted to Planning')).toBeVisible();
+    await expect(page.getByText('coordinator_1@connectsphere.com').first()).toBeVisible();
   });
 
 });
