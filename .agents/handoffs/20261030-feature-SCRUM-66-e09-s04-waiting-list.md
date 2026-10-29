@@ -18,7 +18,7 @@ Goal: implement the backend and attendee UI for E09-S04 / SCRUM-66, covering Eve
 - Backend implementation committed as `a22df28`: waitlist join and first-come claim share the Event registration lock; released places notify remaining waitlisted Attendees on withdrawal or account deactivation.
 - Backend unit suite passed; registration and deactivation tests cover join/claim races, losing claims, Pending selected Sessions, and released-place notices.
 - PostgreSQL integration scenarios cover simultaneous claims, API join, and deactivation notices. They were not run locally because `TEST_DATABASE_URL` is not configured.
-- Frontend status/join/leave and claim entry are implemented. Focused Attendee tests pass 45/45 and the changed feature/API files report 100% statement, branch, function, and line coverage. Full frontend coverage reports 685/688 passing; three failures are in unchanged ChangeRequests, AppHeader, and EquipmentUnavailability tests.
+- Frontend status/join/leave and claim entry are implemented. Focused Attendee tests pass 45/45; full frontend coverage passes 688/688 across 66 files. The changed feature/API files report 100% statement, branch, function, and line coverage.
 - Typecheck passes. Keep integration and manual acceptance pending; the user requested no tester steps, and SCRUM-224 / SCRUM-66 must stay open.
 
 ## Next steps
