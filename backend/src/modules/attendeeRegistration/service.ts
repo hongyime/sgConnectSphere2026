@@ -102,6 +102,14 @@ export function parseSessionIds(body: unknown): { ids: string[] } | { error: str
   return { ids: [...new Set((raw as string[]).map(id => id.toLowerCase()))] };
 }
 
+function parseWaitlistClaim(body: unknown): { claim: boolean } | { error: string } {
+  const raw = body && typeof body === 'object' && !Array.isArray(body)
+    ? (body as Record<string, unknown>).claimWaitlist : undefined;
+  return raw === undefined || typeof raw === 'boolean'
+    ? { claim: raw === true }
+    : { error: 'claimWaitlist must be true or false.' };
+}
+
 export function identifier(value: string) {
   if (!value || value.length > 240) throw new AccessError(400, 'An event id or code is required.');
 }
@@ -199,7 +207,7 @@ export async function getRegistrationForm(query: Query, user: AuthenticatedUser,
     event: publicEvent(event),
     // E09-S02: full Sessions and a full Event still accept a request, which
     // waits as Pending for the Organiser; the Event-level waiting list is
-    // offered where enabled (T-85, T-98; no per-Session list, O-50).
+    // offered where enabled (T-85, T-98; no per-Session list).
     capacity: {
       eventFull: capacity.registered >= capacity.capacity,
       waitlistEnabled: event.waitlist_enabled,
@@ -232,6 +240,8 @@ async function lockAccount(client: PoolClient, user: AuthenticatedUser) {
 export async function registerForEvent(database: Pool, user: AuthenticatedUser, ref: string, body: unknown): Promise<Result> {
   identifier(ref);
   await requireAttendee((sql, values) => database.query(sql, values), user);
+  const claim = parseWaitlistClaim(body);
+  if ('error' in claim) return { status: 400, body: { error: claim.error } };
   const parsed = parseSessionIds(body);
   if ('error' in parsed) return { status: 400, body: { error: parsed.error } };
   const sessionIds = parsed.ids;
@@ -249,14 +259,29 @@ export async function registerForEvent(database: Pool, user: AuthenticatedUser, 
         return { status: 400, body: { error: `Add your ${missing.join(', ').toLowerCase()} to your profile before registering.`, missingFields: missing } };
       }
       const existing = await activeRegistration(query, event.id, user.id);
-      if (existing) {
+      if (claim.claim && existing?.status !== 'waitlisted') {
+        return { status: 409, body: { error: "You're no longer on the waiting list for this event." } };
+      }
+      if (!claim.claim && existing) {
         return { status: 409, body: { error: "You're already registered for this event.", registration: publicRegistration(existing) } };
       }
       const sessions = (await sessionsFor(query, event.id)).filter(session => sessionIds.includes(session.id));
       if (sessions.length !== sessionIds.length) return { status: 400, body: { error: INVALID_SESSIONS } };
-      const pending = overCapacity(await eventCapacity(query, event.id), sessionIds) !== null;
-      const registration = (await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status)
-        VALUES ($1, $2, $3) RETURNING id, status, registered_at`, [event.id, user.id, pending ? 'pending' : 'registered'])).rows[0] as Existing;
+      const capacity = await eventCapacity(query, event.id);
+      if (claim.claim && capacity.registered >= capacity.capacity) {
+        return { status: 409, body: { error: "That place has just been taken; you're still on the waiting list." } };
+      }
+      const pending = overCapacity(capacity, sessionIds) !== null;
+      const registration = (await client.query(claim.claim
+        ? `UPDATE event_registrations SET status = $2, registered_at = $3, withdrawn_at = NULL
+          WHERE id = $1 AND event_id = $4 AND attendee_id = $5 AND status = 'waitlisted'
+          RETURNING id, status, registered_at`
+        : `INSERT INTO event_registrations (event_id, attendee_id, status)
+          VALUES ($1, $2, $3) RETURNING id, status, registered_at`,
+      claim.claim
+        ? [existing!.id, pending ? 'pending' : 'registered', event.now, event.id, user.id]
+        : [event.id, user.id, pending ? 'pending' : 'registered'])).rows[0] as Existing | undefined;
+      if (!registration) return { status: 409, body: { error: "You're no longer on the waiting list for this event." } };
       await client.query(`INSERT INTO event_registration_sessions (registration_id, event_id, session_id, selected_at)
         SELECT $1, $2, unnest($3::uuid[]), $4`, [registration.id, event.id, sessions.map(session => session.id), registration.registered_at]);
       const chosen = sessions.map(session =>
@@ -267,7 +292,7 @@ export async function registerForEvent(database: Pool, user: AuthenticatedUser, 
         title: pending ? 'Registration request received' : 'Registration confirmed',
         message: pending
           ? `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: your choice is at capacity, so the organiser will review your request for ${chosen.join('; ')}.`
-          : `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: you're registered for ${chosen.join('; ')}.`,
+          : `${event.name}, ${formatEventDates(event.starts_at, event.ends_at)}: ${claim.claim ? "you've claimed a released place and are registered for" : "you're registered for"} ${chosen.join('; ')}.`,
       });
       return {
         status: 201,
@@ -277,6 +302,41 @@ export async function registerForEvent(database: Pool, user: AuthenticatedUser, 
           sessions: sessions.map(publicSession),
         },
       };
+    });
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+    if (code === '55P03') throw new AccessError(409, 'Your account is being updated. Please try again.');
+    if (code === '23505') return { status: 409, body: { error: "You're already registered for this event." } };
+    throw error;
+  }
+}
+
+// E09-S04: join only when the Event-level list is enabled and the combined
+// Event capacity is full. Session-specific lists are not offered (T-98).
+export async function joinWaitingList(database: Pool, user: AuthenticatedUser, ref: string): Promise<Result> {
+  identifier(ref);
+  await requireAttendee((sql, values) => database.query(sql, values), user);
+  try {
+    return await inTransaction(database, async client => {
+      const query: Query = (sql, values) => client.query(sql, values);
+      const event = (await client.query(`${EVENT} WHERE e.id::text = $1 OR e.event_code = $1 FOR UPDATE OF e`, [ref])).rows[0] as EventRow | undefined;
+      if (!offered(event)) return { status: 409, body: { error: NOT_OFFERED } };
+      const state = registrationState(event, event.now);
+      if (state !== 'open') return { status: 409, body: { error: closedMessage(event, state), registrationState: state } };
+      if (!await lockAccount(client, user)) throw new AccessError(403, 'Your account cannot join a waiting list.');
+      const existing = await activeRegistration(query, event.id, user.id);
+      if (existing) {
+        return { status: 409, body: { error: existing.status === 'waitlisted'
+          ? "You're already on the waiting list for this event."
+          : "You're already registered for this event.", registration: publicRegistration(existing) } };
+      }
+      if (!event.waitlist_enabled) return { status: 409, body: { error: 'This event is not accepting waiting-list entries.' } };
+      const capacity = await eventCapacity(query, event.id);
+      if (capacity.capacity === 0) return { status: 409, body: { error: 'This event has no places available to wait for.' } };
+      if (capacity.registered < capacity.capacity) return { status: 409, body: { error: 'This event has places available; register directly.' } };
+      const registration = (await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status)
+        VALUES ($1, $2, 'waitlisted') RETURNING id, status, registered_at`, [event.id, user.id])).rows[0] as Existing;
+      return { status: 201, body: { registration: publicRegistration({ ...registration, session_ids: [] }), event: publicEvent(event) } };
     });
   } catch (error) {
     const code = (error as { code?: string }).code;
