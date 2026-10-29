@@ -15,14 +15,15 @@ Goal: implement the backend and attendee UI for E09-S04 / SCRUM-66, covering Eve
 - Started from current `origin/main` after opening PR #378 for SCRUM-50.
 - SCRUM-66 dependencies E09-S01/S02 and E09-S05 are already implemented in merged registration code; this branch must be reviewed for overlap with their owners' work.
 - Read the current story, subtasks, acceptance cases, DoD, instructor guidance, source-of-truth rules, notification implementation, and registration code.
-- Backend work in progress: waitlist join and first-come claim share the Event registration lock; released places notify every remaining waitlisted Attendee. Account deactivation now sends those notices for a registered place it releases.
-- Added unit coverage for join/claim races, losing claims, Pending selected Sessions, and deactivation release/no-release cases. The focused backend suite passes (49/49).
-- Added PostgreSQL integration scenarios for simultaneous claims, API join, and deactivation notices. They are included in the existing DB suite but were not run locally because `TEST_DATABASE_URL` is not configured.
-- Frontend waitlist status/join/leave and claim entry are under implementation; local component coverage is being closed out.
+- Backend implementation committed as `a22df28`: waitlist join and first-come claim share the Event registration lock; released places notify remaining waitlisted Attendees on withdrawal or account deactivation.
+- Backend unit suite passed; registration and deactivation tests cover join/claim races, losing claims, Pending selected Sessions, and released-place notices.
+- PostgreSQL integration scenarios cover simultaneous claims, API join, and deactivation notices. They were not run locally because `TEST_DATABASE_URL` is not configured.
+- Frontend status/join/leave and claim entry are implemented. Focused Attendee tests pass 45/45 and the changed feature/API files report 100% statement, branch, function, and line coverage. Full frontend coverage reports 685/688 passing; three failures are in unchanged ChangeRequests, AppHeader, and EquipmentUnavailability tests.
+- Typecheck passes. Keep integration and manual acceptance pending; the user requested no tester steps, and SCRUM-224 / SCRUM-66 must stay open.
 
 ## Next steps
 
-1. Finish frontend branch coverage, status/API docs, and implementation-status note.
-2. Run repository checks before each commit; run unit/component coverage and typechecks. Do not run DB suites without a disposable local/CI `TEST_DATABASE_URL`, against Supabase, or with Docker Desktop.
-3. Run final suites against committed code, record only evidence runs in new T-65 records, and keep the manual tester subtask and parent story open.
-4. Open a technical PR with honest verification and pending human acceptance; then continue with the next ranked Sprint 4 To Do.
+1. Run `python scripts/check.py` before the next commit; do not run DB suites without a disposable local/CI `TEST_DATABASE_URL`, against Supabase, or with Docker Desktop.
+2. Commit the frontend/docs slice and create new T-65 records only for final automated evidence; do not create manual records or screenshots.
+3. Open a technical PR with honest verification and pending human acceptance; keep SCRUM-224 and the parent story open.
+4. Continue with the next ranked Sprint 4 technical To Do.
