@@ -30,22 +30,22 @@ AC-to-evidence checklist for the Product Owner.
 
 ## Done so far
 
-- Rebased onto main 901d69b on 29 October (a merge commit was blocked by the
+- Rebased onto main 901d69b, then bcd8a13 (#371), on 29 October (a merge commit was blocked by the
   local `test-run-evidence` hook, which treated teammates' older records arriving
   from main as new). Conflicts in `api/events.ts` and `backend/package.json`
-  kept both sides.
+  kept both sides; run records were re-made after the second rebase.
 - `changeManagement/arrangementImpact.ts`: `assessArrangementImpact`,
   `loadArrangementSnapshot`, `governingHeadcount`.
 - `changeManagement/eventChange.ts`: `previewEventChange(With)` (savepoint and
   rollback), `applyArrangementImpact` (flag plus one audit row per arrangement),
   `assessOverSubscription` / `loadOverSubscription` over E09-S02's
-  `eventCapacity()` (5662a80).
+  `eventCapacity()` (e752922).
 - `eventNotifications/informationChange.ts`: the Coordinator's save flags,
   notifies and returns `impact` and `overSubscription`.
 - `eventNotifications/service.ts`: `reconfirmation_required` notice kind.
 - `api/events.ts`: `PATCH ?edit=1&id=…&preview=1`.
 - `backend/tests/arrangementImpact.integration.test.ts`: 15 PostgreSQL tests,
-  added to `test:db` and `application-checks.yml` (01057a7, 584ecb5).
+  added to `test:db` and `application-checks.yml` (105ff50, 4dce30c).
 - Docs: `docs/api-changes-week7.md` (route and response),
   `docs/contracts/change-requests.md` ("E10-S02 backend delivered").
 
@@ -59,7 +59,7 @@ AC-to-evidence checklist for the Product Owner.
 - **Story-owner decision, 29 October:** when a Session's attendance changes,
   every booking in it whose governing headcount (its own, else the Session's)
   is above capacity is flagged, including a booking whose own headcount was
-  already above it. This follows Scenario 1's wording (584ecb5).
+  already above it. This follows Scenario 1's wording (4dce30c).
 - Any Event-wide start or end change flags every Session's arrangements.
 - Over-subscription uses E09-S02's `eventCapacity()` (C-78, T-85, B-05): only
   Registered places count; exactly full is not over; a Session or Event with
@@ -92,8 +92,8 @@ SCRUM-236 to In Review. Then start PR B from main once PR A merges.
 - `npx c8 … tsx --test tests/arrangementImpact.test.ts tests/eventChangePreview.test.ts tests/eventNotifications.test.ts`:
   100% statements, branches, functions and lines on `arrangementImpact.ts`,
   `eventChange.ts` and `informationChange.ts`.
-- `npx tsx --test tests/arrangementImpact.integration.test.ts` on 584ecb5:
-  15/15, record `docs/testing/runs/20261029-203439-lexinphun2024-debug-backend-db.md`.
+- `npx tsx --test tests/arrangementImpact.integration.test.ts` on fa6ce58:
+  15/15, record `docs/testing/runs/20261029-204828-lexinphun2024-debug-backend-db.md`.
 - Nine deliberate code breaks (boundaries, status filters, end-only move,
   own-headcount rule) each failed both the unit and the database tests; code
   restored afterwards.
