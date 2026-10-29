@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { stubApi } from '../../testing/fakeApi';
@@ -25,7 +25,7 @@ test('TC_E10S01_03: refused save offers an explicit link, preserves attempted at
   fireEvent.change(screen.getByLabelText('Expected attendance'), { target: { value: '75' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
   const link = await screen.findByRole('link', { name: 'Request a change' });
-  expect(screen.getByRole('alert').parentElement).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole('alert').parentElement).toHaveFocus());
   expect(screen.getByLabelText('Expected attendance')).toHaveValue(75);
   expect(calls.filter(call => call.method === 'POST')).toHaveLength(0);
   fireEvent.click(link);

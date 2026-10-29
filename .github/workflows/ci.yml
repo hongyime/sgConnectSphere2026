@@ -55,6 +55,8 @@ jobs:
           fi
       - name: docs/source-of-truth.md file references exist
         run: python scripts/check_docs_freshness.py
+      - name: docs/c4-diagrams.md keeps the C1/C2 node inventory
+        run: python scripts/check_c4_diagrams.py
       - name: Report scope
         if: always()
         run: |
