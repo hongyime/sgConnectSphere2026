@@ -22,13 +22,15 @@ Goal: deliver the frontend and automated component coverage for E06-S06 / SCRUM-
 - Jira currently lists SCRUM-50 as To Do and SCRUM-231/232 as To Do. Move SCRUM-231 to In Review after opening the PR; leave the parent and human-test subtask unchanged.
 - PR #378's first CI run failed in eight desktop/mobile E06-S04 browser executions because the old API fakes omitted the newly required venue and availability-calendar reads, and one assertion expected approval to remain enabled after a server-side conflict. Updated those fakes and assertions; the focused scaffold E2E now passes 10/10 on `0b287ce`, recorded in `docs/testing/runs/20261030-011249-bryanseah234-frontend-e2e.md`.
 - On `0b287ce`, `python scripts/check.py` passed 186 tooling tests and validated 745 records; the two pre-existing secondary worktrees remain a warning. Recorded in `docs/testing/runs/20261030-011355-bryanseah234-tooling.md`.
-- PR #378's first guardrail run also rejected a third simultaneously open PR. PR #379 was temporarily closed to clear that per-author limit; its pushed branch remains preserved. PR #378 is the active next-ranked task.
+- PR #378's guardrail run rejects the third simultaneously open PR: #374, #377, and #378 are open by the same author. PR #379 was closed earlier and its pushed branch remains preserved. Do not close unrelated reviewed PRs to clear this policy check.
+- The full Application Checks workflow passed on `68b55ee` (run 40919387941, 11m51s), including typecheck, backend/frontend tests, PostgreSQL and Redis acceptance suites, build, Playwright, and T-72. Recorded in `docs/testing/runs/20261030-012617-bryanseah234-full-regression.md`. Repository checks and security scans also passed; only the open-PR guardrail fails. PR review is still required.
+- A current Sprint 4 Jira query confirms SCRUM-50 is the only Story in To Do. SCRUM-231 is In Review; leave SCRUM-50 and SCRUM-232 open pending human review/acceptance, per the instruction not to perform tester steps.
 
 ## Next steps
 
-1. Commit the refreshed browser fakes and automated records, then push so PR #378 gets a clean CI run.
-2. Transition SCRUM-231 to In Review once the fix is on the open PR; leave SCRUM-50 and SCRUM-232 open pending human acceptance.
-3. Continue the Sprint 4 technical To Do queue; SCRUM-66 / E09-S04 is implemented on its preserved branch, waiting for an open-PR slot.
+1. Keep PR #378 ready for human review; the application workflow is green at `68b55ee`, but the repository guardrail remains blocked until the author has at most two open PRs.
+2. Keep SCRUM-50 open until its Definition of Done is met. Human acceptance under SCRUM-232 remains outside this agent's work.
+3. No further unowned Sprint 4 Story remains in To Do. SCRUM-66 / E09-S04 is implemented on its preserved branch but is In Progress and assigned to Aaron Koh, so it is not part of this To Do queue.
 
 ## Verification
 
