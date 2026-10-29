@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **273** (72.0%)
-  - Real-database (`.integration.test` / `.db.test`): **37**
+- Automated (explicit TC_ID in an active test title): **282** (74.4%)
+  - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **235**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **78** (20.6%)
-- No test yet (no test file mentions the TC_ID): **28** (7.4%)
+  - Live-assertion (other active tests): **243**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **71** (18.7%)
+- No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
 ## Coverage by epic
 
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 12 | 15 | 1 |
 | E09 | 45 | 33 | 9 | 3 |
-| E10 | 29 | 16 | 7 | 6 |
+| E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **273** | **78** | **28** |
+| **Total** | **379** | **282** | **71** | **26** |
 
 ## Case-by-case status
 
@@ -411,15 +411,15 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_ |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions |
-| `TC_E10S02_01` | E10-S02 | An attendance change should flag only bookings whose governing Session headcount | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_01 - Verify that increasing a event |
-| `TC_E10S02_02` | E10-S02 | Verify that editing only the event description on an event with confirmed venue  | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing |
-| `TC_E10S02_03` | E10-S02 | Verify that saving a change that affects confirmed arrangements should show whic | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect |
-| `TC_E10S02_04` | E10-S02 | Verify that a venue change that reduces a event's capacity below its registratio | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_04 - Verify that a venue change that reduces a event |
-| `TC_E10S02_05` | E10-S02 | Changing a Session date should flag its booking and equipment reservation for re | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_05 - Verify that changing a event |
-| `TC_E10S02_06` | E10-S02 | Verify that when a date or time change flags arrangements for reconfirmation, th | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_06 - Verify that when a date or time change flags arrangements for reconfirmation, the assigned Technical Support Staff should also be notified, no |
-| `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ⚠️ scaffold | tests/e2e/e10.spec.ts: TC_E10S02_07 — Verify that increasing expected attendance on a multi-venue event should flag only the venue bookings whose governing headcount now exceeds ca |
-| `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ❌ none | — |
-| `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ❌ none | — |
+| `TC_E10S02_01` | E10-S02 | An attendance change should flag only bookings whose governing Session headcount | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_01: Session A attendance above its capacity flags only Session A\; backend/tests/arrangementImpact.integration.test.t |
+| `TC_E10S02_02` | E10-S02 | Verify that editing only the event description on an event with confirmed venue  | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_02: a description-only save flags nothing, logs nothing for arrangements and tells no staff; backend/tests/arrangemen |
+| `TC_E10S02_03` | E10-S02 | Verify that saving a change that affects confirmed arrangements should show whic | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_03: the preview lists the affected booking and equipment, and saves, flags, logs and notifies nothing; backend/tests/ |
+| `TC_E10S02_04` | E10-S02 | Verify that a venue change that reduces a event's capacity below its registratio | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_04: capacity falling below the registrations warns, and every Attendee stays Registered; backend/tests/arrangementImp |
+| `TC_E10S02_05` | E10-S02 | Changing a Session date should flag its booking and equipment reservation for re | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_05: changing only Session A\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_05 and TC_E10S02_06: an  |
+| `TC_E10S02_06` | E10-S02 | Verify that when a date or time change flags arrangements for reconfirmation, th | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_05 and TC_E10S02_06: an Event date change flags the booking and equipment, and tells its Venue Staff and Technical Su |
+| `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_07: a booking headcount governs over Session attendance; only the Session-governed booking is flagged (SQL Session ch |
+| `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
+| `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -484,6 +484,24 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 ## Active tests that cover behaviour without an explicit TC reference
 
 The following tests are actively running (not `test.fixme`) but their titles do not embed a TC_ID. They still contribute to Q1/Q2 coverage; they just don't show up in the counts above. Add a TC_XX reference to the test title if you want the auditor to pick it up next run. Blank sections mean every active test in that file already has a TC_ID.
+
+### `backend/tests/arrangementImpact.integration.test.ts`
+
+- the Event capacity E09-S02 reports is the sum of every Confirmed booking, Session by Session
+
+### `backend/tests/arrangementImpact.test.ts`
+
+- attendance raised to exactly the capacity is still sufficient (boundary)
+- attendance lowered but still above capacity stays flagged; lowered within capacity does not
+- Scenario 1: an attendance change flags a booking whose own headcount is already above capacity
+- a Session end-time-only change also counts as a time change
+- an Event end-only change is still an Event-wide time change
+- a single-session move with too many people lists both reasons once
+- arrangements without a known Session move only with the Event
+- a Session missing from either snapshot is neither moved nor resized
+- governingHeadcount: override, then Session attendance, then unknown
+- loadArrangementSnapshot reads live arrangements and converts dates to ISO strings
+- loadArrangementSnapshot refuses an unknown Event
 
 ### `backend/tests/attendeeCapacity.integration.test.ts`
 
@@ -703,6 +721,20 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventAttendanceRoutes.integration.test.ts`
 
 - E09-S06 live API cookie sessions wire reads, writes, missing id, malformed body and access refusals
+
+### `backend/tests/eventChangePreview.test.ts`
+
+- exactly full is not over-subscribed; one above is (boundary)
+- a full Session warns even when the combined Event capacity still holds everyone
+- no Confirmed booking means no capacity to compare yet
+- loadOverSubscription reads E09-S02 capacity: only Registered places count
+- applyArrangementImpact flags each affected arrangement and logs why, once each
+- applyArrangementImpact writes nothing when nothing is affected
+- a refused edit is refused in preview too, and the savepoint is still rolled back
+- an unknown Event or a rejected request is refused before any savepoint
+- previewEventChange wraps the preview in its own transaction
+- a draft date change sends no generic date notice; an unknown Event is refused
+- a capacity-only change notifies the Venue Staff alone, with no date notice
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
