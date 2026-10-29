@@ -34,29 +34,68 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 
 ## Level 1 — System Context
 
-ConnectSphere sits between the seven user roles and the external Email Provider.
-An account may hold more than one role; the roles below describe access grants,
+ConnectSphere sits between the seven user roles and the external Email Provider. Every actor reaches the system through the Web Application; the Email Provider delivers notification email out to all seven roles.
+
+```mermaid
+%% C1 SystemContext
+flowchart TB
+    subgraph People["People"]
+        EO["Event Organiser"]
+        AT["Attendee"]
+        EC["Event Coordinator"]
+        VS["Venue Staff"]
+        TS["Technical Support Staff"]
+        ECL["Event Coordinator Lead"]
+        SO["Safety Officer"]
+    end
+
+    CS["ConnectSphere<br/>Event Planning and Venue Booking System"]
+    EMAIL["Email Provider<br/>External SMTP service"]
+
+    EO -->|"Submits and tracks event requests"| CS
+    AT -->|"Registers, waits and withdraws"| CS
+    EC -->|"Reviews, approves, plans and confirms"| CS
+    VS -->|"Maintains venues, decides bookings"| CS
+    TS -->|"Maintains equipment, assigns support staff"| CS
+    ECL -->|"Assigns and oversees coordinators"| CS
+    SO -->|"Reviews confirmed arrangements"| CS
+    CS -->|"Sends notification email"| EMAIL
+```
+
+An account may hold more than one role; the roles above describe access grants,
 not mutually exclusive account types. Seed data still assigns one role per account (T-86).
-
-- Each of the seven actors interacts with ConnectSphere exclusively through the **Web Application**:
-  - **Event Organiser** — creates, submits and tracks event requests, and raises change requests.
-  - **Event Coordinator** — reviews, approves, plans, confirms and manages changes.
-  - **Venue Staff** — maintains the venue catalogue and decides booking requests.
-  - **Technical Support Staff** — maintains equipment, reserves items and assigns support staff.
-  - **Attendee** — registers for events, joins the waiting list and withdraws.
-- The **Email Provider** delivers notification email out to all seven roles.
-
-*(Diagram: "SystemContext" — Level 1, auto-layout top-to-bottom, includes all elements.)*
 
 ---
 
 ## Level 2 — Containers
 
+```mermaid
+%% C2 Containers
+flowchart TB
+    WEB["Web Application<br/>React, Tailwind CSS"]
+    APP["Application Server<br/>TypeScript, Vercel serverless functions"]
+    DB[("PostgreSQL<br/>with btree_gist")]
+    QUEUE[("Redis<br/>Job queue")]
+    RELAY["Scheduler and Outbox Relay<br/>Background process"]
+    WORKER["Notification Worker<br/>Background process"]
+    EMAIL["Email Provider<br/>External SMTP service"]
+
+    WEB -->|"JSON/HTTPS"| APP
+    APP -->|"Writes change and deliveries in one transaction (SQL/TCP)"| DB
+    RELAY -->|"Polls committed deliveries (SQL/TCP)"| DB
+    RELAY -->|"Publishes jobs"| QUEUE
+    QUEUE -->|"Dispatches jobs"| WORKER
+    WORKER -->|"Records delivery outcome (SQL/TCP)"| DB
+    WORKER -->|"Sends notification email (SMTP)"| EMAIL
+```
+
+The container table below is the reference detail for the diagram above.
+
 | Container | Technology | Description |
 |---|---|---|
 | **Web Application** | React, Tailwind CSS | Responsive single-page application serving all seven roles on desktop and mobile. |
-| **Application Server** | Python (framework TBC) | Modular monolith exposing a REST API: authentication/authorisation, event lifecycle, venue booking, equipment, registration and change management. |
-| **Database** | PostgreSQL 16 with `btree_gist` | Stores events, venues, bookings, equipment, reservations, registrations, notification outbox and audit log. |
+| **Application Server** | TypeScript (Node.js) — Vercel serverless functions | Modular monolith exposing a REST API: authentication/authorisation, event lifecycle, venue booking, equipment, registration and change management. |
+| **Database** | PostgreSQL with `btree_gist` | Stores events, venues, bookings, equipment, reservations, registrations, notification outbox and audit log. |
 | **Job Queue** | Redis | Holds notification jobs, published only after the originating transaction has committed. |
 | **Scheduler and Outbox Relay** | Background process | Polls committed notification deliveries and publishes them; also runs periodic domain evaluations: auto-completing an event once its end time has passed and processing each hold's explicitly configured expiry and warning interval (T-84). |
 | **Notification Worker** | Background process | Consumes queued jobs, calls the Email Provider, and records the delivery outcome. |
@@ -74,8 +113,6 @@ not mutually exclusive account types. Seed data still assigns one role per accou
 | Notification Worker | Email Provider | Sends notification email via | SMTP |
 
 > **ADR-006:** Notification jobs are published only *after* the originating transaction has committed — this is why the Scheduler/Outbox Relay, rather than the Application Server, is responsible for polling and publishing.
-
-*(Diagram: "Containers" — Level 2, auto-layout top-to-bottom, includes all elements.)*
 
 ---
 
