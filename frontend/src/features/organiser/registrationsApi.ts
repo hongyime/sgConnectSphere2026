@@ -18,14 +18,23 @@ export type PendingRequest = {
 export type EventRegistrations = {
   event: {
     id: string; eventCode: string | null; name: string; status: string; waitlistEnabled: boolean;
+    // Only the Event's own Organiser approves, declines or adds; colleagues view (E09-S07).
+    canManage: boolean;
     // E09-S03 registration period.
     startsAt: string; endsAt: string; registrationEnabled: boolean;
     opensAt: string | null; closesAt: string | null; withdrawalDeadline: string | null;
   };
-  capacity: { capacity: number; registered: number };
+  capacity: { capacity: number; registered: number; remaining: number };
   sessions: SessionPlaces[];
   pending: PendingRequest[];
+  // E09-S07: name, email and contact number only (T-32).
+  registered: RegisteredAttendee[];
+  waitlisted: WaitlistedAttendee[];
 };
+
+type ListedAttendee = { id: string; name: string | null; email: string; contactNumber: string | null; sessionIds: string[] };
+export type RegisteredAttendee = ListedAttendee & { registeredAt: string; manuallyAdded: boolean };
+export type WaitlistedAttendee = ListedAttendee & { joinedAt: string };
 
 export type RegistrationAction =
   | { action: 'approve' | 'reject'; registrationId: string }

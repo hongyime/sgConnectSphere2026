@@ -16,6 +16,10 @@ import {
 // Approval and manual additions recheck every chosen Session and the Event
 // under the same Event row lock as Attendee registration, so neither limit can
 // be exceeded by a race (T-85).
+// E09-S07: the registration list (registered and waitlisted Attendees with
+// name, email and contact number only, T-32) is visible to every Organiser of
+// the Event's client organisation, like their events (E01-S02); only the
+// Event's own Organiser approves, declines or adds.
 
 type OrganiserEvent = {
   id: string; event_code: string | null; title: string; status: string;
@@ -23,6 +27,7 @@ type OrganiserEvent = {
   registration_enabled: boolean; opens_at: Date | null; closes_at: Date | null; withdrawal_deadline: Date | null;
 };
 type PendingRow = { id: string; full_name: string | null; email: string; registered_at: Date; session_ids: string[] };
+type AttendeeRow = PendingRow & { status: 'registered' | 'waitlisted'; contact_number: string | null; manually_added: boolean };
 type Result = { status: number; body: Record<string, unknown> };
 type Action = { action: 'approve' | 'reject'; registrationId: string } | { action: 'add'; email: string; sessionIds: string[] };
 
@@ -32,15 +37,29 @@ const NOT_CONFIRMED = 'Registrations can only be managed for a Confirmed event.'
 const SESSION_IDS = `array(SELECT rs.session_id::text FROM event_registration_sessions rs
   WHERE rs.registration_id = r.id ORDER BY rs.session_id) AS session_ids`;
 
-async function organiserEvent(query: Query, user: AuthenticatedUser, ref: string, lock = false) {
+const NOT_YOURS = 'Access denied. This event is not available to your organisation.';
+
+// An Event of the Organiser's own client organisation (E01-S02). Any other, or
+// an unknown one, gets the same refusal, recorded like getEvent's. Pass the
+// pool, not a transaction, so the record survives the refusal.
+async function organisationEvent(query: Query, user: AuthenticatedUser, ref: string, lock = false) {
   identifier(ref);
-  if (!canActAsRole(user, ['event_organiser']).allowed) throw new AccessError(403, 'Only the Event Organiser can manage registrations.');
+  if (!canActAsRole(user, ['event_organiser']).allowed || !user.clientOrgId) {
+    throw new AccessError(403, 'Only Event Organisers can view registrations.');
+  }
   const event = (await query(`SELECT id, event_code, title, status, waitlist_enabled, organiser_id,
       lower(event_range) AS starts_at, upper(event_range) AS ends_at, registration_enabled,
       registration_opens_at AS opens_at, registration_closes_at AS closes_at, withdrawal_deadline
-    FROM events WHERE id::text = $1 OR event_code = $1${lock ? ' FOR UPDATE' : ''}`, [ref])).rows[0] as OrganiserEvent | undefined;
-  // Another Organiser's event looks the same as a missing one.
-  if (!event || event.organiser_id !== user.id) throw new AccessError(404, 'Event not found.');
+    FROM events WHERE (id::text = $1 OR event_code = $1) AND client_org_id = $2 AND status <> 'draft'${lock ? ' FOR UPDATE' : ''}`,
+  [ref, user.clientOrgId])).rows[0] as OrganiserEvent | undefined;
+  if (!event) {
+    if (!lock) {
+      await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
+        SELECT $1, 'event', coalesce(e.id, gen_random_uuid()), e.id, 'Access Denied', 'registrations', $2
+        FROM (SELECT 1) anchor LEFT JOIN events e ON e.id::text = $2 OR e.event_code = $2`, [user.id, ref]);
+    }
+    throw new AccessError(403, NOT_YOURS);
+  }
   return event;
 }
 
@@ -48,18 +67,25 @@ function sessionNames(sessions: SessionChoice[]) {
   return new Map(sessions.map((session, index) => [session.id, session.title ? `"${session.title}"` : `Session ${index + 1}`]));
 }
 
-function snapshot(event: OrganiserEvent, capacity: EventCapacity, sessions: SessionChoice[], pending: PendingRow[]) {
+function attendee(row: AttendeeRow) {
+  return { id: row.id, name: row.full_name, email: row.email, contactNumber: row.contact_number, sessionIds: row.session_ids };
+}
+
+function snapshot(event: OrganiserEvent, user: AuthenticatedUser, capacity: EventCapacity, sessions: SessionChoice[],
+  pending: PendingRow[], attendees: AttendeeRow[]) {
   const names = sessionNames(sessions);
   const places = new Map(capacity.sessions.map(session => [session.sessionId, session]));
   return {
     event: {
       id: event.id, eventCode: event.event_code, name: event.title, status: event.status, waitlistEnabled: event.waitlist_enabled,
+      // Only the Event's own Organiser approves, declines or adds (E09-S02).
+      canManage: event.organiser_id === user.id,
       // E09-S03: the registration period the Organiser sets.
       startsAt: event.starts_at.toISOString(), endsAt: event.ends_at.toISOString(), registrationEnabled: event.registration_enabled,
       opensAt: event.opens_at?.toISOString() ?? null, closesAt: event.closes_at?.toISOString() ?? null,
       withdrawalDeadline: event.withdrawal_deadline?.toISOString() ?? null,
     },
-    capacity: { capacity: capacity.capacity, registered: capacity.registered },
+    capacity: { capacity: capacity.capacity, registered: capacity.registered, remaining: Math.max(0, capacity.capacity - capacity.registered) },
     sessions: sessions.map(session => ({
       ...publicSession(session),
       capacity: places.get(session.id)?.capacity ?? 0,
@@ -69,6 +95,11 @@ function snapshot(event: OrganiserEvent, capacity: EventCapacity, sessions: Sess
       id: row.id, name: row.full_name, email: row.email, requestedAt: row.registered_at.toISOString(), sessionIds: row.session_ids,
       overCapacity: overCapacity(capacity, row.session_ids, names),
     })),
+    // E09-S07 Scenarios 1 and 4: registered and waitlisted shown apart.
+    registered: attendees.filter(row => row.status === 'registered')
+      .map(row => ({ ...attendee(row), registeredAt: row.registered_at.toISOString(), manuallyAdded: row.manually_added })),
+    waitlisted: attendees.filter(row => row.status === 'waitlisted')
+      .map(row => ({ ...attendee(row), joinedAt: row.registered_at.toISOString() })),
   };
 }
 
@@ -79,14 +110,25 @@ async function pendingRequests(query: Query, eventId: string) {
     ORDER BY r.registered_at, r.id`, [eventId])).rows as PendingRow[];
 }
 
-// GET: what the Organiser needs to decide (TC_E09S02_11, _12), and the
-// registration period they set (E09-S03).
-export async function getEventRegistrations(query: Query, user: AuthenticatedUser, ref: string) {
-  const event = await organiserEvent(query, user, ref);
-  const [capacity, sessions, pending] = await Promise.all([
-    eventCapacity(query, event.id), sessionsFor(query, event.id), pendingRequests(query, event.id),
+// Registered by when they registered; the waiting list by when they joined.
+async function attendeeList(query: Query, eventId: string) {
+  return (await query(`SELECT r.id, r.status, u.full_name, u.email, u.contact_number, r.registered_at, r.manually_added, ${SESSION_IDS}
+    FROM event_registrations r JOIN users u ON u.id = r.attendee_id
+    WHERE r.event_id = $1 AND r.status IN ('registered', 'waitlisted')
+    ORDER BY r.registered_at, r.id`, [eventId])).rows as AttendeeRow[];
+}
+
+async function picture(query: Query, event: OrganiserEvent, user: AuthenticatedUser, sessions?: SessionChoice[]) {
+  const [capacity, allSessions, pending, attendees] = await Promise.all([
+    eventCapacity(query, event.id), sessions ?? sessionsFor(query, event.id), pendingRequests(query, event.id), attendeeList(query, event.id),
   ]);
-  return snapshot(event, capacity, sessions, pending);
+  return snapshot(event, user, capacity, allSessions, pending, attendees);
+}
+
+// GET: what the Organiser needs to decide (TC_E09S02_11, _12), the registration
+// period they set (E09-S03) and the registration list (E09-S07).
+export async function getEventRegistrations(query: Query, user: AuthenticatedUser, ref: string) {
+  return picture(query, await organisationEvent(query, user, ref), user);
 }
 
 export function parseAction(body: unknown): Action | { error: string } {
@@ -175,10 +217,13 @@ export async function manageRegistrations(database: Pool, user: AuthenticatedUse
   identifier(ref);
   const input = parseAction(body);
   if ('error' in input) return { status: 400, body: { error: input.error } };
+  // Outside the transaction, so a refusal for another organisation is recorded.
+  await organisationEvent((sql, values) => database.query(sql, values), user, ref);
   try {
     return await inTransaction(database, async client => {
       const query: Query = (sql, values) => client.query(sql, values);
-      const event = await organiserEvent(query, user, ref, true);
+      const event = await organisationEvent(query, user, ref, true);
+      if (event.organiser_id !== user.id) throw new AccessError(403, "Only this event's Organiser can approve requests or add attendees.");
       if (event.status !== 'confirmed') return { status: 409, body: { error: NOT_CONFIRMED } };
       const capacity = await eventCapacity(query, event.id);
       const sessions = await sessionsFor(query, event.id);
@@ -187,7 +232,7 @@ export async function manageRegistrations(database: Pool, user: AuthenticatedUse
         : await decide(client, user, event, capacity, sessionNames(sessions), input);
       if (result.status >= 300) return result;
       // Hand back the refreshed picture so the page needn't reload.
-      return { status: result.status, body: { ...result.body, ...snapshot(event, await eventCapacity(query, event.id), sessions, await pendingRequests(query, event.id)) } };
+      return { status: result.status, body: { ...result.body, ...await picture(query, event, user, sessions) } };
     });
   } catch (error) {
     const code = (error as { code?: string }).code;

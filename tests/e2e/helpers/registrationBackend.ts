@@ -58,13 +58,16 @@ export function organiserRegistrations(overrides: Record<string, unknown> = {}) 
   return {
     event: { id: 'e-2001', eventCode: 'EVT-2001', name: 'Community Meetup', status: 'confirmed', waitlistEnabled: true,
       startsAt: '2026-11-15T01:00:00.000Z', endsAt: '2026-11-15T09:00:00.000Z', registrationEnabled: true,
-      opensAt: '2026-10-01T01:00:00.000Z', closesAt: '2026-11-10T09:00:00.000Z', withdrawalDeadline: null },
-    capacity: { capacity: 120, registered: 99 },
+      opensAt: '2026-10-01T01:00:00.000Z', closesAt: '2026-11-10T09:00:00.000Z', withdrawalDeadline: null,
+      canManage: true },
+    capacity: { capacity: 120, registered: 99, remaining: 21 },
     sessions: [
       { ...registrationSessions[0], capacity: 80, registered: 80 },
       { ...registrationSessions[1], capacity: 40, registered: 19 },
     ],
     pending: [],
+    registered: [],
+    waitlisted: [],
     ...overrides,
   };
 }
