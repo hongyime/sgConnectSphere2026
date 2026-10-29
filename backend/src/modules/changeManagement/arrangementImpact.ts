@@ -49,10 +49,12 @@ export function assessArrangementImpact(before: ArrangementSnapshot, after: Arra
     const headcount = governingHeadcount(booking, session);
     const reasons: ImpactReason[] = [];
     if (moved(booking.sessionId)) reasons.push('time');
-    // Scenario 1: only a booking governed by the Session attendance can be
-    // pushed over capacity by an attendance change, and only strictly above
-    // it; a venue holding exactly the headcount is still sufficient (E05-S01).
-    if (booking.headcount === null && attendanceChanged(booking.sessionId) && headcount !== null && headcount > booking.capacity) reasons.push('capacity');
+    // Scenario 1: when a Session's attendance changes, flag each of its
+    // bookings whose governing headcount (its own, else the Session's) is
+    // strictly above capacity, including one whose own headcount already was
+    // (story owner's reading of the AC, 29 Oct). Exactly full is still
+    // sufficient (E05-S01).
+    if (attendanceChanged(booking.sessionId) && headcount !== null && headcount > booking.capacity) reasons.push('capacity');
     if (reasons.length) bookings.push({ id: booking.id, sessionId: booking.sessionId, venueId: booking.venueId, venueName: booking.venueName, reasons, governingHeadcount: headcount, capacity: booking.capacity });
   }
   const reservations: AffectedReservation[] = after.reservations

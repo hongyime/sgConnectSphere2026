@@ -76,6 +76,15 @@ test('TC_E10S02_07: a booking headcount override governs over the Session attend
   assert.equal(impact.bookings[0]!.governingHeadcount, 81);
 });
 
+test('Scenario 1: an attendance change flags a booking whose own headcount is already above capacity', () => {
+  const before = snapshot({ sessions: [{ ...sessionA, expectedAttendance: 50 }, sessionB], bookings: [{ ...bookingA, headcount: 90 }] });
+  const after = snapshot({ sessions: [{ ...sessionA, expectedAttendance: 60 }, sessionB], bookings: [{ ...bookingA, headcount: 90 }] });
+  const impact = assessArrangementImpact(before, after);
+  assert.deepEqual(impact.bookings.map(booking => [booking.id, booking.reasons, booking.governingHeadcount]), [['booking-a', ['capacity'], 90]],
+    'its governing headcount of 90 exceeds the 80 capacity, so the change asks staff to re-check it');
+  assert.equal(assessArrangementImpact(after, after).affected, false, 'no attendance change, no flag');
+});
+
 test('TC_E10S02_05: a Session date change flags only that Session booking and equipment', () => {
   const after = snapshot({ sessions: [{ ...sessionA, startsAt: '2027-03-13T01:00:00.000Z', endsAt: '2027-03-13T03:00:00.000Z' }, sessionB] });
   const impact = assessArrangementImpact(snapshot(), after);

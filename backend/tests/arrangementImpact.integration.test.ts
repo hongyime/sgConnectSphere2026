@@ -24,7 +24,8 @@ import { applyArrangementImpact, loadOverSubscription, previewEventChange } from
 import { eventCapacity } from '../src/modules/attendeeRegistration/capacity.js';
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 
-type SessionSpec = { range: string; attendance: number; capacity: number; headcount?: number };
+// book: false leaves the Session without a venue booking or equipment.
+type SessionSpec = { range: string; attendance: number; capacity: number; headcount?: number; book?: boolean };
 
 async function fixture(sessions: SessionSpec[]) {
   const db = await loginDatabase();
@@ -61,6 +62,7 @@ async function fixture(sessions: SessionSpec[]) {
         session = randomUUID();
         await q("INSERT INTO sessions(id,event_id,title,session_range,expected_attendance) VALUES($1,$2,'Session',$3,$4)", [session, event, spec.range, spec.attendance]);
       }
+      if (spec.book === false) { made.push({ session, venue: '', staff: otherVenueStaff, booking: '', reservation: '' }); continue; }
       const venue = randomUUID();
       const staff = await user('venue_staff');
       await q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,$2,'Test',$3,'00:00','23:59')", [venue, `Hall ${index + 1} ${venue}`, spec.capacity]);
@@ -95,18 +97,19 @@ async function fixture(sessions: SessionSpec[]) {
         return impact;
       } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
     };
-    return { db, q, event, organiser, coordinator, tech, otherVenueStaff, sessions: made, flags, audit, notices, changeSession };
+    return { db, q, event, organiser, coordinator, tech, otherVenueStaff, equipment, sessions: made, flags, audit, notices, changeSession };
   } catch (error) { await db.close(); throw error; }
 }
 
-const register = async (f: Awaited<ReturnType<typeof fixture>>, count: number, session: string) => {
-  // Synthetic attendees, each Registered for the Event and the chosen Session (T-85).
+const register = async (f: Awaited<ReturnType<typeof fixture>>, count: number, session: string, status = 'registered') => {
+  // Synthetic attendees for the Event and the chosen Session (T-85); only
+  // 'registered' takes a place.
   await f.q(`WITH people AS (
       INSERT INTO users(email,password_hash,full_name,role)
       SELECT 'attendee-' || gen_random_uuid() || '@example.test', 'synthetic', 'Attendee', 'attendee' FROM generate_series(1,$1) RETURNING id),
     registrations AS (
-      INSERT INTO event_registrations(event_id,attendee_id,status) SELECT $2, id, 'registered' FROM people RETURNING id)
-    INSERT INTO event_registration_sessions(registration_id,event_id,session_id) SELECT id, $2, $3 FROM registrations`, [count, f.event, session]);
+      INSERT INTO event_registrations(event_id,attendee_id,status) SELECT $2, id, $4::registration_status FROM people RETURNING id)
+    INSERT INTO event_registration_sessions(registration_id,event_id,session_id) SELECT id, $2, $3 FROM registrations`, [count, f.event, session, status]);
 };
 
 const day = (date: string, from: string, to: string) => `[${date} ${from}Z,${date} ${to}Z)`;
@@ -247,9 +250,19 @@ test('TC_E10S02_05 and TC_E10S02_06: an Event date change flags the booking and 
   const f = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 80, capacity: 200 }]);
   try {
     const [a] = f.sessions;
+    // Not live arrangements, so never flagged: a Pending booking request and released equipment.
+    const otherVenue = randomUUID();
+    await f.q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,'Overflow room','Test',50,'00:00','23:59')", [otherVenue]);
+    const pending = (await f.q("INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status) VALUES($1,$2,$3,'[2027-03-12 00:00Z,2027-03-14 00:00Z)','pending') RETURNING id",
+      [f.event, a.session, otherVenue])).rows[0].id;
+    const request = randomUUID();
+    await f.q('INSERT INTO equipment_requests(id,event_id,session_id,equipment_id,quantity_requested,requested_by) VALUES($1,$2,$3,$4,1,$5)', [request, f.event, a.session, f.equipment, f.coordinator.id]);
+    const released = (await f.q("INSERT INTO equipment_reservations(request_id,event_id,session_id,equipment_id,quantity_reserved,reservation_range,reserved_by,status) VALUES($1,$2,$3,$4,1,'[2027-03-12 00:00Z,2027-03-14 00:00Z)',$5,'released') RETURNING id",
+      [request, f.event, a.session, f.equipment, f.tech.id])).rows[0].id;
     const result = await updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, { startAt: '2027-03-19T00:00:00Z', endAt: '2027-03-21T00:00:00Z' });
     assert.deepEqual(result.impact.bookings.map(booking => booking.id), [a.booking]);
-    assert.deepEqual(await f.flags(), { bookings: { [a.booking]: true }, reservations: { [a.reservation]: true } });
+    assert.deepEqual(await f.flags(), { bookings: { [a.booking]: true, [pending]: false }, reservations: { [a.reservation]: true, [released]: false } },
+      'only the Confirmed booking and the live reservation need reconfirmation');
     const notices = await f.notices();
     const recipients = notices.map(notice => notice.user_id);
     assert.deepEqual([...recipients].sort(), [a.staff.id, f.tech.id].sort(), 'one notice each; Venue Staff of other venues are not told');
@@ -268,5 +281,54 @@ test('TC_E10S02_08: an Event-wide date change flags every Session\'s booking and
     assert.deepEqual(result.impact.bookings.map(booking => booking.id).sort(), [a.booking, b.booking].sort());
     assert.deepEqual(await f.flags(), { bookings: { [a.booking]: true, [b.booking]: true }, reservations: { [a.reservation]: true, [b.reservation]: true } });
     assert.deepEqual((await f.notices()).map(notice => notice.user_id).sort(), [a.staff.id, b.staff.id, f.tech.id].sort());
+  } finally { await f.db.close(); }
+});
+
+test('TC_E10S02_08: moving only the Event end still flags every Session\'s arrangements (real save)', async () => {
+  const f = await fixture([{ range: day('2027-03-12', '01:00', '03:00'), attendance: 50, capacity: 80 }, { range: day('2027-03-13', '01:00', '03:00'), attendance: 50, capacity: 80 }]);
+  try {
+    const result = await updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, { startAt: '2027-03-12T00:00:00Z', endAt: '2027-03-15T00:00:00Z' });
+    assert.equal(result.impact.bookings.length, 2);
+    assert.equal(result.impact.reservations.length, 2);
+  } finally { await f.db.close(); }
+});
+
+test('TC_E10S02_04 boundary: exactly full does not warn, one more Registered does; Pending and waitlisted hold no place', async () => {
+  const f = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 80, capacity: 80 }]);
+  try {
+    const [a] = f.sessions;
+    await register(f, 80, a.session);
+    await register(f, 5, a.session, 'pending');
+    await register(f, 5, a.session, 'waitlisted');
+    assert.deepEqual(await loadOverSubscription(f.q, f.event), [], '80 Registered in 80 places is full, not over (T-85)');
+    await register(f, 1, a.session);
+    assert.deepEqual(await loadOverSubscription(f.q, f.event), [
+      { scope: 'session', sessionId: a.session, registered: 81, capacity: 80 },
+      { scope: 'event', sessionId: null, registered: 81, capacity: 80 },
+    ]);
+  } finally { await f.db.close(); }
+});
+
+test('TC_E10S02_04: a Session or Event with no Confirmed booking has no capacity to warn about yet', async () => {
+  const partly = await fixture([{ range: day('2027-03-12', '01:00', '03:00'), attendance: 80, capacity: 80 }, { range: day('2027-03-13', '01:00', '03:00'), attendance: 30, capacity: 80, book: false }]);
+  try {
+    await register(partly, 10, partly.sessions[0].session);
+    await register(partly, 30, partly.sessions[1].session);
+    assert.deepEqual(await loadOverSubscription(partly.q, partly.event), [], 'Session B is unbooked; 40 Registered fit the Event\'s 80');
+  } finally { await partly.db.close(); }
+  const none = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 10, capacity: 80, book: false }]);
+  try {
+    await register(none, 5, none.sessions[0].session);
+    assert.deepEqual(await loadOverSubscription(none.q, none.event), [], 'no venue yet, so no "5 of 0" warning');
+  } finally { await none.db.close(); }
+});
+
+test('TC_E10S02_01: an attendance change flags a booking whose own headcount is already above capacity (SQL Session change)', async () => {
+  const f = await fixture([{ range: day('2027-03-12', '01:00', '03:00'), attendance: 50, capacity: 80, headcount: 90 }]);
+  try {
+    const [a] = f.sessions;
+    const impact = await f.changeSession(a.session, 'expected_attendance=$2', [60]);
+    assert.deepEqual(impact.bookings.map(booking => [booking.id, booking.governingHeadcount, booking.capacity]), [[a.booking, 90, 80]]);
+    assert.equal((await f.flags()).bookings[a.booking], true);
   } finally { await f.db.close(); }
 });
