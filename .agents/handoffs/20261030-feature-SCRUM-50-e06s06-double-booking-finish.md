@@ -20,7 +20,7 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 ## Plan (task-by-task, owner approves each)
 
 - T1 branch and this handoff. Done.
-- T2 tag backend tests with TC_IDs, add the missing checks, clarify TC_01/_03/_06 wording (same T-100 meaning), set Owner: Le Xin, regenerate exports and `tc-coverage.md`.
+- T2 done. `venueClaimPolicy.integration.test.ts` titles now carry TC_E06S06_01 to _07; added TC_01 (Confirmed plus Pending after a real Venue Staff buffer edit), TC_04 and TC_05 with the case's zero-buffer data, TC_06 primary (rejection, Rejected stays terminal) and alternative (Coordinator withdraw and replan) paths, and the Scenario 2 no-disclosure check on the request path. The fixture gained `editBuffers` (real `updateVenue`, so C-109 flags are set), `withdraw`, `bookingRows` and an optional event title. Case wording left unchanged: the tests match TC_01/_06 as written, and the TC_03 "automated only" note goes in the T5 guide. Owner set to Le Xin in both E06 backlog views; dated exports are regenerated once in T7. `tc-coverage.md` regenerated: all seven E06-S06 cases active.
 - T3 copy Bryan's warning commit with his authorship, check it against main and T-100.
 - T4 replace the seven browser scaffolds; TC_03 stays backend-proven.
 - T5 click-through guide, preconditions SQL, automated real local run (T-65).
@@ -29,9 +29,16 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 
 ## Decisions to check
 
-- No PO question needed: every gap implements or proves T-100 as written; the rule itself is unchanged.
+- No PO question needed for the listed gaps: each implements or proves T-100 as written.
+- Open PO question (asked 30 October): a refused hold names the other event (`holds.ts` findClash, E06-S05 Scenario "existing hold or booking is identified", TC_E06S05_01), while E06-S06 Scenario 2 says a refused hold or request does not disclose another event's title. The request path already hides it. Yes = hide on holds too (message plus E06-S05 hold-message tests in `venueHolds.test.ts`, `venueHolds.integration.test.ts`, `VenueHolds.test.tsx`, E06-S05 wording); No = narrow E06-S06 Scenario 2 to booking requests. Record the answer in `docs/bdr/`. Until then the hold-path no-disclosure check is deliberately absent.
 - Bryan's other branch was updated on 29 October; its handoff notes local/remote divergence, so only its frontend commit is reused, not the branch.
+
+## Commands run (exploratory, not yet T-65 evidence)
+
+- Native loopback PostgreSQL 5432, `TEST_DATABASE_URL` pointing at the disposable `connectsphere_notification_test` database; no Supabase, no Docker.
+- `npx tsx --test tests/venueClaimPolicy.integration.test.ts`: 11/11 pass. Three deliberate breaks (request refusal naming the event, buffer edit flagging nothing, approval skipping the recheck) each failed the expected TC tests; source restored.
+- `npm run test:venue-booking-requests:db`: 96/96 pass. `npm run typecheck`: pass.
 
 ## Not done / next step
 
-Start T2 after the owner's go-ahead. Jira was not reachable from this session (Atlassian app 403), so SCRUM-50 and its subtask statuses are unverified.
+Start T3 after the owner's go-ahead. The evidence run for the PR is recorded in T5 on a committed head. Jira was not reachable from this session (Atlassian app 403), so SCRUM-50 and its subtask statuses are unverified.

@@ -315,7 +315,7 @@ Given a hold expires at 10:00:00 When the expiry job runs at 09:59:59 Then the h
 - **Sprint**: Sprint 3
 - **Points**: 5
 - **BDR references**: C-01, C-16, C-46, T-22, C-60, C-65, T-66, C-67, T-68, C-109, T-100
-- **Owner**:
+- **Owner**: Le Xin
 
 ### User story
 
