@@ -19,7 +19,7 @@ function detail(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function stub(options: { event?: Record<string, unknown>; patchReply?: { status: number; body: unknown } } = {}) {
+function stub(options: { event?: Record<string, unknown>; patchReply?: { status: number; body: unknown }; previewReply?: { status: number; body: unknown } } = {}) {
   let current = detail(options.event);
   const patches: { url: URL; body: Record<string, unknown> }[] = [];
   vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
@@ -34,8 +34,10 @@ function stub(options: { event?: Record<string, unknown>; patchReply?: { status:
     else if (init?.method === 'PATCH') {
       const body = JSON.parse(String(init.body)) as Record<string, unknown>;
       patches.push({ url, body });
-      reply = options.patchReply ?? { status: 200, body: { updated: true, eventId: 'evt-1004', fields: Object.keys(body) } };
-      if (reply.status === 200 && typeof body.venueRequirements === 'string') current = { ...current, venue_requirements: body.venueRequirements };
+      // E10-S02: the Coordinator's Save first asks for a preview (&preview=1).
+      if (url.searchParams.get('preview') === '1') reply = options.previewReply ?? { status: 200, body: { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] } };
+      else reply = options.patchReply ?? { status: 200, body: { updated: true, eventId: 'evt-1004', fields: Object.keys(body) } };
+      if (reply.status === 200 && !url.searchParams.get('preview') && typeof body.venueRequirements === 'string') current = { ...current, venue_requirements: body.venueRequirements };
     } else reply = { status: 200, body: { event: current } };
     return { ok: reply.status < 300, status: reply.status, json: async () => reply.body } as Response;
   }));
@@ -63,9 +65,10 @@ test('the assigned Coordinator edits an approved event and only the changed fiel
 
   expect(await screen.findByText("Saved your changes to the venue requirements. They're recorded in the event's activity log.")).toBeInTheDocument();
   expect(await screen.findByText('Lecture theatre with step-free access')).toBeInTheDocument();
-  expect(patches).toHaveLength(1);
-  expect(patches[0].url.search).toBe('?edit=1&id=evt-1004');
-  expect(patches[0].body).toEqual({ venueRequirements: 'Lecture theatre with step-free access' });
+  // TC_E10S02_02 shape: nothing affected, so no review step; preview then save, same body.
+  expect(patches.map(patch => patch.url.search)).toEqual(['?edit=1&id=evt-1004&preview=1', '?edit=1&id=evt-1004']);
+  expect(patches.map(patch => patch.body)).toEqual([{ venueRequirements: 'Lecture theatre with step-free access' }, { venueRequirements: 'Lecture theatre with step-free access' }]);
+  expect(screen.queryByRole('form', { name: 'Check what this change affects' })).not.toBeInTheDocument();
 });
 
 test('before approval the Coordinator sees the details read-only with an explanation', async () => {
@@ -107,4 +110,94 @@ test('cancelling closes the form without saving', async () => {
   expect(screen.queryByRole('form', { name: 'Edit event details' })).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { level: 1, name: 'Annual Tech Summit' })).toBeInTheDocument();
   expect(patches).toHaveLength(0);
+});
+
+// E10-S02 (SCRUM-237): what a change affects is shown before it is saved.
+const hall = { id: 'booking-a', sessionId: 'session-a', venueId: 'hall', venueName: 'Riverside Hall', reasons: ['time'], governingHeadcount: 200, capacity: 200 };
+const projector = { id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] };
+const dateImpact = { impact: { affected: true, bookings: [hall], reservations: [projector] }, overSubscription: [] };
+
+async function editStart(value = '2026-11-20T09:00') {
+  renderDetail();
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit details' }));
+  // Move the whole event so it still ends after it starts.
+  fireEvent.change(screen.getByLabelText('Starts'), { target: { value } });
+  fireEvent.change(screen.getByLabelText('Ends'), { target: { value: '2026-11-20T12:00' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+}
+
+test('TC_E10S02_03: a date change shows the affected booking and equipment, and saves only after confirming', async () => {
+  const patches = stub({ previewReply: { status: 200, body: dateImpact }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...dateImpact } } });
+  await editStart();
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(review.parentElement).toHaveFocus();
+  expect(within(review).getByRole('heading', { name: 'Venue bookings to reconfirm' })).toBeInTheDocument();
+  expect(within(review).getByText('Riverside Hall').closest('li')).toHaveTextContent('Riverside Hall: date or time changed');
+  expect(within(review).getByText('Projector').closest('li')).toHaveTextContent('Projector: date or time changed');
+  expect(review).toHaveTextContent('Saving flags these for reconfirmation and notifies the Venue Staff and Technical Support Staff.');
+  expect(patches).toHaveLength(1);
+  expect(patches[0].url.searchParams.get('preview')).toBe('1');
+
+  fireEvent.click(within(review).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByText(/2 arrangements were flagged for reconfirmation and the Venue Staff and Technical Support Staff were notified\./)).toBeInTheDocument();
+  expect(patches).toHaveLength(2);
+  expect(patches[1].url.searchParams.get('preview')).toBeNull();
+  expect(patches[1].body).toEqual(patches[0].body);
+});
+
+test('TC_E10S02_01: attendance above capacity names the headcount and places; one flag tells the Venue Staff', async () => {
+  const capacity = { impact: { affected: true, bookings: [{ ...hall, reasons: ['capacity'], governingHeadcount: 250 }], reservations: [] }, overSubscription: [] };
+  stub({ previewReply: { status: 200, body: capacity }, patchReply: { status: 200, body: { updated: true, fields: ['expectedAttendance'], ...capacity } } });
+  renderDetail();
+  fireEvent.click(await screen.findByRole('button', { name: 'Edit details' }));
+  fireEvent.change(screen.getByLabelText('Expected attendance'), { target: { value: '250' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(within(review).getByText('Riverside Hall').closest('li')).toHaveTextContent('Riverside Hall: 250 people for 200 places');
+  expect(within(review).queryByRole('heading', { name: 'Equipment to reconfirm' })).not.toBeInTheDocument();
+  expect(review).toHaveTextContent('notifies the Venue Staff.');
+  fireEvent.click(within(review).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByText(/1 arrangement was flagged for reconfirmation and the Venue Staff were notified\./)).toBeInTheDocument();
+});
+
+test('TC_E10S02_04: over-subscription warns, removes nobody, and the plain Save still applies the change', async () => {
+  const over = { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [
+    { scope: 'session', sessionId: 'session-a', registered: 100, capacity: 80 },
+    { scope: 'event', sessionId: null, registered: 100, capacity: 80 },
+  ] };
+  stub({ previewReply: { status: 200, body: over }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...over } } });
+  await editStart();
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(within(review).getByRole('alert')).toHaveTextContent('A Session: 100 registered for 80 places. The whole event: 100 registered for 80 places. No one will be removed or moved to the waiting list.');
+  expect(review).not.toHaveTextContent('Saving flags these');
+  fireEvent.click(within(review).getByRole('button', { name: 'Save changes' }));
+  expect(await screen.findByText(/no one was removed or moved to the waiting list\./)).toBeInTheDocument();
+  expect(screen.queryByText(/flagged for reconfirmation/)).not.toBeInTheDocument();
+});
+
+test('cancelling the review returns to the form with the edit kept and saves nothing', async () => {
+  const patches = stub({ previewReply: { status: 200, body: dateImpact } });
+  await editStart();
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(review).toHaveTextContent('Cancel goes back to your edits without saving.');
+  fireEvent.click(within(review).getByRole('button', { name: 'Cancel' }));
+  expect(screen.getByRole('heading', { name: 'Edit event details' })).toHaveFocus();
+  expect(screen.getByLabelText('Starts')).toHaveValue('2026-11-20T09:00');
+  expect(patches).toHaveLength(1);
+});
+
+test('a refused preview is shown in the form, with no review step and nothing saved', async () => {
+  const patches = stub({ previewReply: { status: 403, body: { error: 'Only the assigned Coordinator may edit an approved event.' } } });
+  await editStart();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Only the assigned Coordinator may edit an approved event.');
+  expect(screen.queryByRole('form', { name: 'Check what this change affects' })).not.toBeInTheDocument();
+  expect(patches).toHaveLength(1);
+});
+
+test('a save refused after the review goes back to the form and shows why', async () => {
+  stub({ previewReply: { status: 200, body: dateImpact }, patchReply: { status: 409, body: { error: 'The event changed while you were reviewing. Check it and save again.' } } });
+  await editStart();
+  fireEvent.click(within(await screen.findByRole('form', { name: 'Check what this change affects' })).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('The event changed while you were reviewing. Check it and save again.');
+  expect(screen.getByRole('form', { name: 'Edit event details' })).toBeInTheDocument();
 });

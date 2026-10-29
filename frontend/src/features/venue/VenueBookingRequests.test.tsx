@@ -213,3 +213,12 @@ test('E05-S06: an open-ended unavailability reads until lifted, and missing deta
   expect(open).toHaveTextContent('Renovation, from 15 Jan 2027, 8:00 am until lifted. Alternative arrangements are required. Before this it was Tentative.');
   expect(bare).toHaveTextContent(/^Venue unavailableAlternative arrangements are required\.$/);
 });
+
+test('E10-S02: a confirmed booking flagged for reconfirmation says so; an unflagged one does not', async () => {
+  const flagged = { ...data, bookings: [{ ...data.bookings[1], requires_reconfirmation: true }, { ...data.bookings[1], id: 'three', venue_name: 'Side Room', requires_reconfirmation: false }] };
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => flagged }));
+  mount();
+  expect(await screen.findByText('Needs reconfirmation')).toBeInTheDocument();
+  expect(screen.getAllByText('Needs reconfirmation')).toHaveLength(1);
+  expect(screen.getByText(/Venue Staff need to reconfirm this booking/)).toBeInTheDocument();
+});

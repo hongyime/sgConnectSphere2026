@@ -32,8 +32,8 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 - Flagged venue bookings have no "reconfirmed" action: nothing clears
   `venue_bookings.requires_reconfirmation`, and readiness treats a flagged
   booking as needing review, so the Event cannot reach Safety Review. E05-S01's
-  capacity flag has the same gap. Not in E10-S02's ACs; story owner to decide
-  how to raise it.
+  capacity flag has the same gap. Not in E10-S02's ACs; raised as a team
+  follow-up on #376 (30 October), owner to be agreed. Not built in this PR.
 - Multi-Session Event: an Event-level attendance edit does not reach Sessions
   (0014 syncs a sole Session only), so Scenario 1 fires there only through a
   Session edit (E04-S02). Reviewer note on #376.

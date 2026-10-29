@@ -16,7 +16,8 @@ import { EventEditForm } from '../events/EventEditForm';
 import { fieldList } from '../events/eventEditFields';
 import { ActivityLog } from '../events/ActivityLog';
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
-import type { EditableField } from '../events/eventEditApi';
+import type { ChangeCheck, EditableField } from '../events/eventEditApi';
+import { staffToNotify } from '../events/ArrangementReview';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
   listReassignments, requestReassignment, respondToReassignment,
@@ -275,6 +276,18 @@ const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>(
   'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup',
 ]);
 
+// E10-S02 Scenarios 4 to 6: say what the save flagged, who was told, and that
+// an over-subscription removed nobody.
+function savedMessage(fields: string[], check: ChangeCheck) {
+  const { bookings, reservations } = check.impact;
+  const flagged = bookings.length + reservations.length;
+  return [
+    `Saved your changes to the ${fieldList(fields)}. They're recorded in the event's activity log.`,
+    flagged ? `${flagged} ${flagged === 1 ? 'arrangement was' : 'arrangements were'} flagged for reconfirmation and the ${staffToNotify(check)} were notified.` : null,
+    check.overSubscription.length ? 'More people are registered than there are places; no one was removed or moved to the waiting list.' : null,
+  ].filter(Boolean).join(' ');
+}
+
 function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onSaved: () => void }) {
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState<string | null>(null);
@@ -293,11 +306,12 @@ function EventDetailsPanel({ event, onSaved }: { event: AssignedEventDetail; onS
         eventId={event.id}
         values={event}
         editable={COORDINATOR_EDITABLE}
-        intro={<p>Changes are saved straight to the event and recorded in its activity log under your name.</p>}
+        intro={<p>Changes are saved straight to the event and recorded in its activity log under your name. If a change affects confirmed venue bookings or equipment, you'll see them before it's saved.</p>}
+        checkArrangements
         onCancel={() => setEditing(false)}
-        onSaved={fields => {
+        onSaved={(fields, check) => {
           setEditing(false);
-          setSaved(`Saved your changes to the ${fieldList(fields)}. They're recorded in the event's activity log.`);
+          setSaved(savedMessage(fields, check));
           onSaved();
         }}
       />
