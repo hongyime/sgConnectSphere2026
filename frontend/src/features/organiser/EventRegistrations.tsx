@@ -3,16 +3,21 @@
 // (C-78, T-85). Requests over either limit wait here as Pending; approving
 // rechecks both limits (Scenario 3), and a manual addition is only allowed
 // while every chosen Session and the Event have room (Scenarios 6-7, T-50).
+// E09-S07 (SCRUM-217): the registration list. Registered and waitlisted
+// Attendees are listed apart with name, email and contact number only (T-32),
+// with the registered count and places remaining. Colleagues in the same
+// organisation can view it; only the Event's Organiser decides or adds.
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, Inbox, UserPlus, X } from 'lucide-react';
+import { Check, Inbox, UserPlus, Users, X } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, DataTable, EmptyState, ErrorState, FactList, FormActions, FormField, FormSection,
   LoadingState, PageLayout, StatusPill, formatDate, formatDateRange, useLoad, type Column,
 } from '../../shared';
 import {
   getEventRegistrations, manageRegistrations,
-  type EventRegistrations, type PendingRequest, type RegistrationAction, type SessionPlaces,
+  type EventRegistrations, type PendingRequest, type RegisteredAttendee, type RegistrationAction, type SessionPlaces,
+  type WaitlistedAttendee,
 } from './registrationsApi';
 import './organiser.css';
 
@@ -69,29 +74,45 @@ function RegistrationsBody({ initial, eventRef }: { initial: EventRegistrations;
   }
 
   const confirmed = view.event.status === 'confirmed';
+  const manage = view.event.canManage;
   const full = view.capacity.registered >= view.capacity.capacity;
   return (
     <>
       {notice ? <Alert tone={notice.tone}>{notice.text}</Alert> : null}
       {!confirmed ? <Alert tone="info">Registrations can be managed once the event is Confirmed.</Alert> : null}
+      {!manage ? (
+        <Alert tone="info">This is a colleague's event. You can see its registrations; only its Organiser can approve requests or add attendees.</Alert>
+      ) : null}
       <Card title="Places">
         <FactList columns={3} items={[
           ['Event', <>{places(view.capacity.registered, view.capacity.capacity)} taken{full ? <> <StatusPill status="warning" label="Full" /></> : null}</>],
+          // E09-S07 Scenario 2 (TC_E09S07_02).
+          ['Registered', `${view.capacity.registered} registered`],
+          ['Remaining', `${view.capacity.remaining} remaining`],
           ['Pending requests', String(view.pending.length)],
-          ['Waiting list', view.event.waitlistEnabled ? 'On' : 'Off'],
+          ['Waiting list', view.event.waitlistEnabled ? `On, ${view.waitlisted.length} waiting` : 'Off'],
         ]} />
         <PlacesTable sessions={view.sessions} />
         <p className="field-hint">Places come from each Session's confirmed venue layouts. Pending requests don't take a place.</p>
       </Card>
       <Card title="Pending requests">
-        <PendingTable view={view} busy={busy} disabled={!confirmed}
+        <PendingTable view={view} busy={busy} disabled={!confirmed} canManage={manage}
           onDecide={(request, approve, label) => act({ action: approve ? 'approve' : 'reject', registrationId: request.id }, request.id,
             approve ? `${label} is now registered.` : `${label}'s request was declined.`)} />
       </Card>
-      <Card title="Add an attendee manually">
-        <ManualAddition key={view.sessions.map(session => session.id).join()} sessions={view.sessions} busy={busy === 'add'} disabled={!confirmed}
-          onAdd={(email, sessionIds) => act({ action: 'add', email, sessionIds }, 'add', `${email} is registered and marked as a manual addition.`)} />
+      {/* E09-S07 Scenarios 1 and 4: registered and waitlisted Attendees in separate lists. */}
+      <Card title={`Registered attendees (${view.registered.length})`}>
+        <RegisteredTable rows={view.registered} sessions={view.sessions} />
       </Card>
+      <Card title={`Waiting list (${view.waitlisted.length})`}>
+        <WaitingListTable rows={view.waitlisted} enabled={view.event.waitlistEnabled} />
+      </Card>
+      {manage ? (
+        <Card title="Add an attendee manually">
+          <ManualAddition key={view.sessions.map(session => session.id).join()} sessions={view.sessions} busy={busy === 'add'} disabled={!confirmed}
+            onAdd={(email, sessionIds) => act({ action: 'add', email, sessionIds }, 'add', `${email} is registered and marked as a manual addition.`)} />
+        </Card>
+      ) : null}
     </>
   );
 }
@@ -109,8 +130,50 @@ function PlacesTable({ sessions }: { sessions: SessionPlaces[] }) {
     rowKey={session => session.id} />;
 }
 
-function PendingTable({ view, busy, disabled, onDecide }: {
-  view: EventRegistrations; busy: string | null; disabled: boolean;
+const contact = (value: string | null) => value ?? 'Not given';
+
+function sessionLabels(ids: string[], sessions: SessionPlaces[]) {
+  const names = new Map(sessions.map((session, index) => [session.id, sessionName(session, index)]));
+  return ids.map(id => names.get(id) ?? 'Removed Session').join(', ');
+}
+
+function RegisteredTable({ rows, sessions }: { rows: RegisteredAttendee[]; sessions: SessionPlaces[] }) {
+  if (rows.length === 0) {
+    return (
+      <EmptyState title="No one has registered yet" icon={<Users size={22} aria-hidden="true" />}>
+        Attendees appear here once they register or you approve their request.
+      </EmptyState>
+    );
+  }
+  const columns: Column<RegisteredAttendee>[] = [
+    { header: 'Name', primary: true, cell: row => row.name ?? row.email },
+    { header: 'Email', cell: row => row.email },
+    { header: 'Contact number', cell: row => contact(row.contactNumber) },
+    { header: 'Sessions', cell: row => sessionLabels(row.sessionIds, sessions) },
+    { header: 'Registered', cell: row => (
+      <>{formatDate(row.registeredAt, true)}{row.manuallyAdded ? <> <StatusPill status="info" label="Added manually" /></> : null}</>
+    ) },
+  ];
+  return <DataTable caption="Registered attendees" columns={columns} rows={rows} rowKey={row => row.id} />;
+}
+
+// Waiting-list order is the order they joined (first come, first served, T-33).
+function WaitingListTable({ rows, enabled }: { rows: WaitlistedAttendee[]; enabled: boolean }) {
+  if (rows.length === 0) {
+    return <p className="field-hint">{enabled ? 'No one is on the waiting list.' : 'The waiting list is off for this event.'}</p>;
+  }
+  const columns: Column<WaitlistedAttendee & { position: number }>[] = [
+    { header: 'Position', cell: row => String(row.position) },
+    { header: 'Name', primary: true, cell: row => row.name ?? row.email },
+    { header: 'Email', cell: row => row.email },
+    { header: 'Contact number', cell: row => contact(row.contactNumber) },
+    { header: 'Joined', cell: row => formatDate(row.joinedAt, true) },
+  ];
+  return <DataTable caption="Waiting list" columns={columns} rows={rows.map((row, index) => ({ ...row, position: index + 1 }))} rowKey={row => row.id} />;
+}
+
+function PendingTable({ view, busy, disabled, canManage, onDecide }: {
+  view: EventRegistrations; busy: string | null; disabled: boolean; canManage: boolean;
   onDecide: (request: PendingRequest, approve: boolean, label: string) => Promise<boolean>;
 }) {
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -121,11 +184,10 @@ function PendingTable({ view, busy, disabled, onDecide }: {
       </EmptyState>
     );
   }
-  const names = new Map(view.sessions.map((session, index) => [session.id, sessionName(session, index)]));
   const label = (request: PendingRequest) => request.name ?? request.email;
   const columns: Column<PendingRequest>[] = [
     { header: 'Attendee', primary: true, cell: request => <>{label(request)}<br /><small>{request.email}</small></> },
-    { header: 'Sessions', cell: request => request.sessionIds.map(id => names.get(id) ?? 'Removed Session').join(', ') },
+    { header: 'Sessions', cell: request => sessionLabels(request.sessionIds, view.sessions) },
     { header: 'Requested', cell: request => formatDate(request.requestedAt, true) },
     { header: 'Capacity', cell: request => request.overCapacity
       // The span keeps the pill its natural height inside the phone card layout.
@@ -147,7 +209,9 @@ function PendingTable({ view, busy, disabled, onDecide }: {
       </span>
     ) },
   ];
-  return <DataTable caption="Pending requests" columns={columns} rows={view.pending} rowKey={request => request.id} />;
+  // A colleague sees the requests but not the Decision column (E09-S07).
+  return <DataTable caption="Pending requests" columns={canManage ? columns : columns.slice(0, -1)} rows={view.pending}
+    rowKey={request => request.id} />;
 }
 
 function ManualAddition({ sessions, busy, disabled, onAdd }: {

@@ -5,9 +5,11 @@ Version 2 · 13 October 2026
 This diagram traces the Week 7/Week 9 booking, Session, registration, access and
 event-lifecycle decisions to the domain objects that own them. It is a domain model
 of the `Event Lifecycle`, `Venue Management`, `Equipment and Support`, `Registration`
-and `Access Control` components in `docs/c4-diagrams.md`, not a transcript of the
-TypeScript modules. Where a class maps to a table in `docs/db_schema.md`, the table
-is named in a note. Week 9 decisions are marked `W9`.
+and `Access Control` components in `docs/c4-diagrams.md`: a domain model realized
+by functional services in the backend rather than by stateful classes, with the
+Implementation mapping table below as the code correspondence. Where a class maps
+to a table in `docs/db_schema.md`, the table is named in a note. Week 9 decisions
+are marked `W9`.
 
 ### Venue booking
 
@@ -364,6 +366,26 @@ classDiagram
   only transition from Safety Review to Confirmed (T-82).
 - `HoldExpiryJob` and `UnassignedQueue` are stereotyped `<<service>>` because they
   own no state of their own; both read and write through the classes they point at.
+
+### Implementation mapping
+
+Every diagrammed method resolves to a function in the backend modules.
+
+| Diagrammed method | Implementation site |
+| --- | --- |
+| `Event.submit()` | `backend/src/modules/eventLifecycle/service.ts:createEventRequest` |
+| `Event.approve()` / `Event.reject()` | `backend/src/modules/eventLifecycle/decision.ts:decideEventRequest` |
+| `Event.requestClarification()` | `backend/src/modules/eventLifecycle/clarification.ts:requestClarification` |
+| `Event.cancel()` | `backend/src/modules/eventLifecycle/cancellation.ts:cancelEvent` |
+| `Event.complete()` | `backend/src/modules/eventLifecycle/completion.ts:completeEvent` |
+| `Event.assignCoordinator()` | `backend/src/modules/eventLifecycle/coordinatorAssignment.ts:assignCoordinatorOnSubmit` |
+| `Event.reassignCoordinator()` | `backend/src/modules/eventLifecycle/coordinatorAssignment.ts` (a Lead action recorded in the audit log, not a function) |
+| `VenueBooking.confirm()` / `VenueBooking.reject()` | `backend/src/modules/venueBooking/decisions.ts:decideBooking` |
+| `VenueBooking.expire()` / `VenueBooking.extend()` | `backend/src/modules/venueBooking/holds.ts:expireHolds` and `:extendHold` |
+| `VenueBlock.edit()` | `backend/src/modules/venueBooking/blocks.ts:editVenueBlock` (open-ended ranges via `:shortenVenueBlock`) |
+| `VenueBlock.lift()` | `backend/src/modules/venueBooking/blocks.ts:liftVenueBlock` |
+| `EventRegistration.withdraw()` | `backend/src/modules/attendeeRegistration/service.ts:withdrawRegistration` |
+| `CapacityService.checkSessionAndEventCapacity()` | `backend/src/modules/attendeeRegistration/capacity.ts:eventCapacity` and `:overCapacity` |
 
 ### Change log
 
