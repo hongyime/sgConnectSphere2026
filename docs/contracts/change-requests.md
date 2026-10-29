@@ -169,9 +169,12 @@ one capacity rule; it warns only strictly above capacity and skips a Session or
 Event with no Confirmed booking. Route and response shapes are in
 `docs/api-changes-week7.md`.
 
-Story-owner decision (29 October): when a Session's attendance changes, a booking
-whose own headcount is already above capacity is flagged too, following
-Scenario 1's wording.
+**Awaiting team confirmation (PR #376):** the story owner's reading of Scenario 1
+(29 October) is that when a Session's attendance changes, a booking whose own
+headcount is already above capacity is flagged too, following the AC's wording.
+The alternative is to flag only bookings governed by the Session attendance.
+The code follows the story owner's reading until reviewers confirm or choose
+the alternative.
 
 Still open, not changed by this backend PR:
 

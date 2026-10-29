@@ -56,7 +56,7 @@ AC-to-evidence checklist for the Product Owner.
 - Capacity is the venue's supported-layout capacity for the Session's layout,
   otherwise the venue maximum, matching E06 suitability and E09-S02.
 - Capacity is breached only **strictly above** capacity (E05-S01 boundary).
-- **Story-owner decision, 29 October:** when a Session's attendance changes,
+- **Story-owner decision, 29 October, AWAITING TEAM CONFIRMATION in PR #376:** when a Session's attendance changes,
   every booking in it whose governing headcount (its own, else the Session's)
   is above capacity is flagged, including a booking whose own headcount was
   already above it. This follows Scenario 1's wording (4dce30c).
