@@ -10,7 +10,9 @@ import {
   PageLayout, StatusPill, formatDate, formatDateRange, useLoad,
 } from '../../shared';
 import { decideBooking, getBooking, listPendingBookings, type BookingRequest, type BookingStatus } from './bookingDecisionApi';
-import { listVenues } from './venueApi';
+import { getVenue, listVenues } from './venueApi';
+import { bookingCalendarRange, detectBookingConflict } from './conflictDetection';
+import { getVenueCalendar } from './venueCalendarApi';
 
 const QUEUE = '/venue/bookings';
 const bookingLink = (booking: BookingRequest) => `${QUEUE}/${encodeURIComponent(booking.id)}`;
@@ -135,6 +137,25 @@ export function BookingDetail() {
 
 type Choice = 'approve' | 'reject';
 
+async function loadBookingConflict(booking: BookingRequest | null, signal: AbortSignal) {
+  if (!booking || booking.status !== 'pending') return { ok: true as const, data: null };
+  const venue = await getVenue(booking.venue.id, signal);
+  if (!venue.ok) return venue;
+  const range = bookingCalendarRange(booking.startsAt, booking.endsAt, venue.data.setup_time_minutes, venue.data.turnaround_time_minutes);
+  if (!range) return { ok: false as const, status: 0, message: 'The booking period could not be checked.' };
+  const calendar = await getVenueCalendar(booking.venue.id, range.from, range.to, signal);
+  if (!calendar.ok) return calendar;
+  return {
+    ok: true as const,
+    data: detectBookingConflict({
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+      eventId: booking.event.id,
+      eventCode: booking.event.code,
+    }, venue.data.setup_time_minutes, venue.data.turnaround_time_minutes, calendar.data.entries),
+  };
+}
+
 export function BookingDecision() {
   const { bookingId = '' } = useParams();
   const { result, reload } = useLoad(signal => getBooking(bookingId, signal), [bookingId]);
@@ -143,7 +164,13 @@ export function BookingDecision() {
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [serverConflict, setServerConflict] = useState<string | null>(null);
   const booking = result.state === 'ready' ? result.data : null;
+  const availability = useLoad(signal => loadBookingConflict(booking, signal), [booking?.id, booking?.status, booking?.startsAt, booking?.endsAt, booking?.venue.id]);
+  const conflictMessage = booking?.status === 'pending'
+    ? serverConflict ?? (availability.result.state === 'ready' ? availability.result.data : null)
+    : null;
+  const checkingAvailability = booking?.status === 'pending' && availability.result.state === 'loading';
 
   function cancel() {
     setChoice(null);
@@ -160,12 +187,23 @@ export function BookingDecision() {
       // Field messages are written by the API to be shown (design.md 8.5).
       const fields = outcome.fieldErrors ? Object.values(outcome.fieldErrors).flat() : [];
       setRefusal(fields.length ? fields.join(' ') : outcome.message);
+      if (outcome.status === 409) {
+        const isVenueConflict = Boolean(outcome.details?.conflict)
+          || outcome.message.toLowerCase().includes('venue was just taken');
+        if (picked === 'approve' && isVenueConflict) {
+          setServerConflict(outcome.message);
+          setChoice(null);
+          setSuggested('');
+          reload();
+        }
+      }
       return;
     }
     const coordinator = outcome.data.coordinatorNotified ? `${booking?.event.coordinatorName ?? 'The Coordinator'} has been notified` : 'No Coordinator is assigned yet, so nobody was notified';
     setDone(picked === 'approve'
       ? `Approved. The booking is confirmed. ${coordinator}.`
       : `Rejected. ${coordinator}${outcome.data.coordinatorNotified ? ', with your reason' : ''}.`);
+    setServerConflict(null);
     cancel();
     reload();
   }
@@ -174,7 +212,16 @@ export function BookingDecision() {
     <PageLayout
       eyebrow={booking?.event.code ?? 'Booking request'}
       title={booking ? `Decide: ${booking.venue.name} for ${booking.event.title}` : 'Decide on a booking request'}
-      actions={booking ? <BookingStatusPill status={booking.status} /> : undefined}
+      actions={booking ? (
+        <>
+          {conflictMessage && (
+            <span title={conflictMessage}>
+              <StatusPill status="warning" label="Booking Conflict" />
+            </span>
+          )}
+          <BookingStatusPill status={booking.status} />
+        </>
+      ) : undefined}
       width="narrow"
     >
       {result.state === 'loading' ? <LoadingState label="Loading booking request…" rows={2} /> : null}
@@ -184,6 +231,17 @@ export function BookingDecision() {
       {done && booking ? <Alert tone="success" action={<ButtonLink to={bookingLink(booking)}>View request</ButtonLink>}>{done}</Alert> : null}
       {booking ? (
         <>
+          {conflictMessage ? (
+            <Alert tone="warning" title="Booking Conflict">
+              <p><strong>{conflictMessage}</strong></p>
+              <p>Approval is blocked until this venue conflict is resolved.</p>
+            </Alert>
+          ) : null}
+          {availability.result.state === 'error' && booking.status === 'pending' ? (
+            <Alert tone="info" title="Availability could not be checked">
+              The server will recheck the venue before approving this request.
+            </Alert>
+          ) : null}
           <Card title="What you're deciding"><FactList items={requestFacts(booking)} /></Card>
           <AdvisoryRequirements booking={booking} />
           {booking.status !== 'pending' ? (
@@ -212,8 +270,8 @@ export function BookingDecision() {
           ) : (
             <Card title="Your decision">
               <div className="ui-actions">
-                <Button variant="primary" icon={<CheckCircle2 size={14} aria-hidden="true" />} onClick={() => setChoice('approve')}>Approve…</Button>
-                <Button variant="danger" icon={<XCircle size={14} aria-hidden="true" />} onClick={() => setChoice('reject')}>Reject…</Button>
+                <Button variant="primary" icon={<CheckCircle2 size={14} aria-hidden="true" />} onClick={() => setChoice('approve')} disabled={busy || checkingAvailability || Boolean(conflictMessage)} title={conflictMessage ?? undefined}>Approve…</Button>
+                <Button variant="danger" icon={<XCircle size={14} aria-hidden="true" />} onClick={() => setChoice('reject')} disabled={busy}>Reject…</Button>
               </div>
             </Card>
           )}
