@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCRUM-66 — Event waiting list</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #10151f; color: #edf2f7; --muted: #a5b2c3; --line: #344155; --accent: #89e0c4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    main { width: min(1040px, calc(100% - 40px)); margin: 52px auto 72px; }
+    header, section { border: 1px solid var(--line); border-radius: 18px; background: #171f2c; padding: clamp(22px, 4vw, 38px); margin-bottom: 22px; }
+    .eyebrow { color: var(--accent); font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font-size: clamp(2rem, 6vw, 3.7rem); line-height: 1.03; letter-spacing: -.04em; margin: 12px 0; }
+    h2 { font-size: 1.45rem; margin: 0 0 18px; }
+    p, li { color: var(--muted); line-height: 1.65; }
+    a { color: var(--accent); }
+    figure { margin: 24px 0 0; border-radius: 14px; background: #111925; padding: 16px; }
+    svg { display: block; width: 100%; height: auto; }
+    figcaption { color: var(--muted); font-size: .9rem; margin: 10px 4px 2px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+    article { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+    article h3 { font-size: 1rem; margin: 0 0 8px; color: var(--accent); }
+    article p { margin: 0; font-size: .92rem; }
+    code { color: #d7e6ff; overflow-wrap: anywhere; }
+    .status { display: inline-block; border: 1px solid #7a6340; border-radius: 99px; color: #ffd995; padding: 4px 10px; font-size: .82rem; }
+    ol { padding-left: 1.35rem; }
+    li + li { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Review brief · SCRUM-66 · E09-S04</div>
+      <h1>Join the waiting list</h1>
+      <p>When an Event is full, an Attendee can join its waiting list, follow released-place notices, and claim a place through the existing registration flow.</p>
+      <span class="status">Technical work pushed · human review pending</span>
+    </header>
+
+    <section id="overview" aria-labelledby="overview-title">
+      <h2 id="overview-title">Overview</h2>
+      <p>This change gives the first Attendee to complete a claim the released Event place while keeping the list at Event level.</p>
+      <figure>
+        <svg viewBox="0 0 900 190" role="img" aria-labelledby="flow-title flow-desc" xmlns="http://www.w3.org/2000/svg">
+          <title id="flow-title">Waiting-list place release and claim</title>
+          <desc id="flow-desc">A full Event accepts a waiting-list entry; a released place notifies waitlisted attendees; the first valid claim is registered under the Event lock.</desc>
+          <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#89e0c4"/></marker></defs>
+          <g fill="#1d2a39" stroke="#54706f" stroke-width="2">
+            <rect x="18" y="52" width="185" height="82" rx="14"/><rect x="250" y="52" width="185" height="82" rx="14"/>
+            <rect x="483" y="52" width="185" height="82" rx="14"/><rect x="715" y="52" width="167" height="82" rx="14"/>
+          </g>
+          <g fill="#edf2f7" font-family="system-ui,sans-serif" text-anchor="middle">
+            <text x="110" y="86" font-size="17" font-weight="700">Event full</text><text x="110" y="111" fill="#a5b2c3" font-size="13">registration open</text>
+            <text x="342" y="86" font-size="17" font-weight="700">Join list</text><text x="342" y="111" fill="#a5b2c3" font-size="13">one Event entry</text>
+            <text x="575" y="86" font-size="17" font-weight="700">Place released</text><text x="575" y="111" fill="#a5b2c3" font-size="13">notify active entries</text>
+            <text x="798" y="86" font-size="17" font-weight="700">First claim</text><text x="798" y="111" fill="#a5b2c3" font-size="13">normal registration</text>
+          </g>
+          <g stroke="#89e0c4" stroke-width="3" marker-end="url(#arrow)"><path d="M207 93h35"/><path d="M439 93h35"/><path d="M672 93h35"/></g>
+          <text x="450" y="174" fill="#a5b2c3" font-family="system-ui,sans-serif" font-size="13" text-anchor="middle">Event lock serializes competing claims; no queue position, automatic promotion, or reservation window.</text>
+        </svg>
+        <figcaption>Flow from a full Event to the first successful claim, with claim serialization at the Event registration lock (T-46, T-98; `backend/src/modules/attendeeRegistration/service.ts`).</figcaption>
+      </figure>
+    </section>
+
+    <section id="details" aria-labelledby="details-title">
+      <h2 id="details-title">Details and evidence</h2>
+      <div class="grid">
+        <article>
+          <h3>Join, leave, and claim</h3>
+          <p><code>backend/src/modules/attendeeRegistration/service.ts</code> validates full/open Events and serializes join and claim. A losing claim stays waitlisted; a full chosen Session follows Pending (T-98).</p>
+        </article>
+        <article>
+          <h3>Place-release notices</h3>
+          <p>Withdrawals and attendee deactivation notify the remaining list when an approved place opens (<code>backend/src/modules/accessControl/deactivation.ts</code>; E09-S05 withdrawal flow).</p>
+        </article>
+        <article>
+          <h3>Attendee flow</h3>
+          <p><code>frontend/src/features/attendee/WaitingList.tsx</code> shows current status, join/leave actions, and the existing registration claim path. API routes are in <code>api/attendee/events.ts</code>.</p>
+        </article>
+        <article>
+          <h3>Scope constraints</h3>
+          <p>The list is Event-level. It does not show positions, promote automatically, or reserve a place; all waitlisted Attendees are told when a place is released (C-23, T-46, T-98).</p>
+        </article>
+      </div>
+      <h2 style="margin-top:28px">Automated checks</h2>
+      <ul>
+        <li>Backend unit suite: <strong>620 passed, 1 database integration contract skipped, 0 failed</strong>; run record on <code>5b78ff0</code>: <code>docs/testing/runs/20261030-014858-bryanseah234-backend-unit.md</code>.</li>
+        <li>Frontend Vitest: <strong>688/688 passed</strong>; changed waiting-list UI/API files have 100% statement, branch, function, and line coverage; run record: <code>docs/testing/runs/20261030-010501-bryanseah234-frontend-vitest.md</code>.</li>
+        <li>TypeScript check passed for frontend and backend on <code>7cae7f2</code>; GitHub application checks passed at that PR head.</li>
+        <li>Repository check: <strong>186 tooling tests passed</strong>; local run record: <code>docs/testing/runs/20261030-015208-bryanseah234-tooling.md</code>.</li>
+      </ul>
+      <p>PostgreSQL integration tests were not run locally because no disposable <code>TEST_DATABASE_URL</code> is configured. Manual tester steps and screenshots are intentionally left to the human tester; SCRUM-224 and the parent story remain open.</p>
+    </section>
+
+    <section id="next-steps" aria-labelledby="next-title">
+      <h2 id="next-title">Next steps</h2>
+      <ol>
+        <li>Reopen review PR #379 when the author's open-PR count is within the repository limit; run the current required checks on its updated head.</li>
+        <li>Human reviewer checks implementation and tests; the Product Owner or delegate reviews acceptance evidence after the tester's steps.</li>
+        <li>Keep SCRUM-66 and SCRUM-224 open until the human review and acceptance gates are complete.</li>
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

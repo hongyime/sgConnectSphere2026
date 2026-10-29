@@ -23,11 +23,12 @@ Goal: implement the backend and attendee UI for E09-S04 / SCRUM-66, covering Eve
 - The branch is pushed. PR #379 was closed after its guardrail rejected a third simultaneous open PR (limit: two per author); its branch and commits are preserved. SCRUM-66 and SCRUM-222/223 are back In Progress while awaiting a review slot.
 - PR #379's application checks passed at `7cae7f2`; repository checks found the generated `docs/testing/tc-coverage.md` stale, and the PR guardrail rejected the fourth open PR. The coverage inventory has now been regenerated on this branch: 286 active, 66 scaffold, 27 without tests.
 - Final backend unit run on `5b78ff0` passed 620 tests, skipped one PostgreSQL integration contract because `TEST_DATABASE_URL` is unset, and had zero failures (`docs/testing/runs/20261030-014858-bryanseah234-backend-unit.md`). `python scripts/check.py` passes; its only notice is the two pre-existing secondary worktrees.
+- A SCRUM-66 review postplan at `artifacts/scrum-66-waiting-list-review.html` passes `python3 scripts/check_postplan_html.py`. Browser surfaces are unavailable in this session, so visual inspection and upload remain pending.
 - On 30 October, the live Sprint 4 Jira query showed SCRUM-50 as the only Story still To Do. Its implementation is already in open PR #378. SCRUM-61, SCRUM-66, SCRUM-70, SCRUM-71, and SCRUM-75 remain In Progress under their existing owners; do not change ownership or close their human gates.
 
 ## Next steps
 
-1. Commit the regenerated coverage inventory, this handoff update, and the final backend T-65 record after `python scripts/check.py` passes.
-2. Reopen PR #379 after the author's open PR count is at most two, then refresh its required checks and postplan. Keep SCRUM-224 and SCRUM-66 open until human review and acceptance.
+1. Commit the SCRUM-66 postplan artifact, tooling run record, and this handoff update after `python scripts/check.py` passes.
+2. Visually inspect the postplan in a browser, then upload it and reopen PR #379 when the author's open PR count is at most two; refresh current required checks. Keep SCRUM-224 and SCRUM-66 open until human review and acceptance.
 3. Continue with any new Sprint 4 technical To Do that appears in Jira; the current Sprint 4 To Do story, SCRUM-50, is already represented by open PR #378.
 4. Do not run DB suites without a disposable local/CI `TEST_DATABASE_URL`, against Supabase, or with Docker Desktop. Do not perform manual tester steps or create manual records/screenshots.
