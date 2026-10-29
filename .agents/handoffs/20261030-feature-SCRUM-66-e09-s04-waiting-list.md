@@ -20,10 +20,11 @@ Goal: implement the backend and attendee UI for E09-S04 / SCRUM-66, covering Eve
 - PostgreSQL integration scenarios cover simultaneous claims, API join, and deactivation notices. They were not run locally because `TEST_DATABASE_URL` is not configured.
 - Frontend status/join/leave and claim entry are implemented. Focused Attendee tests pass 45/45; full frontend coverage passes 688/688 across 66 files. The changed feature/API files report 100% statement, branch, function, and line coverage.
 - Typecheck passes. Keep integration and manual acceptance pending; the user requested no tester steps, and SCRUM-224 / SCRUM-66 must stay open.
+- The branch is pushed. PR #379 was closed after its guardrail rejected a third simultaneous open PR (limit: two per author); its branch and commits are preserved. SCRUM-66 and SCRUM-222/223 are back In Progress while awaiting a review slot.
 
 ## Next steps
 
 1. Run `python scripts/check.py` before the next commit; do not run DB suites without a disposable local/CI `TEST_DATABASE_URL`, against Supabase, or with Docker Desktop.
 2. Commit the frontend/docs slice and create new T-65 records only for final automated evidence; do not create manual records or screenshots.
-3. Open a technical PR with honest verification and pending human acceptance; keep SCRUM-224 and the parent story open.
-4. Continue with the next ranked Sprint 4 technical To Do.
+3. Reopen PR #379 once an existing PR closes; keep SCRUM-224 and the parent story open until human acceptance.
+4. Continue with the next ranked Sprint 4 technical To Do while the PR slot is unavailable.
