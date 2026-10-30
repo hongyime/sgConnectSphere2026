@@ -15,6 +15,15 @@ Covered by the automated tests instead of this script:
   runs them in parallel against PostgreSQL.
 - **TC_E06S06_06's alternative path** (the Coordinator withdraws and replans
   one request) and the expired-hold check: the same backend file.
+- **Scenario 1** (the first accepted claim reserves the slot) has no case of
+  its own in the catalogue. On screen it shows in TC_02 and TC_05, where an
+  already accepted Pending or Confirmed claim refuses the later request. Its
+  other two parts are proven against PostgreSQL in the same backend file:
+  *converting a hold keeps its claim* (the screen path for conversion is
+  E06-S05's, TC_E06S05_04) and *an expired hold no longer claims the venue*
+  (expiry cannot be clicked: it needs the hold to run out, at least an hour,
+  or a database time change, which is not a user action; E06-S05 covers the
+  expiry screens with TC_E06S05_05).
 
 ## Safe local environment
 

@@ -30,6 +30,16 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 - T6 Le Xin's T-93 manual run with hand-taken screenshots.
 - T7 `python scripts/check.py`, PR with `Closes SCRUM-50`.
 
+## AC to evidence
+
+Records: backend/db `20261030-201757`, real browser `20261030-201713`, real-stack click-through `20261030-201527`, manual `20261030-211029` (all `docs/testing/runs/`, `-lexinphun2024-debug-` names).
+
+- Scenario 1, first accepted claim: no catalogue case of its own (owner's choice, 30 October, not to add one). Shown on screen by TC_02 and TC_05 (manual and browser), where an accepted Pending or Confirmed claim refuses the later request. Conversion keeps the claim and an expired hold no longer claims: backend/db only (`converting a hold keeps its venue claim…`, `an expired hold no longer claims the venue…`). Conversion's screen path is E06-S05's (TC_E06S05_04); expiry cannot be clicked (it needs the hold to run out or a database time change), and E06-S05 covers its screens (TC_E06S05_05).
+- Scenario 2: TC_02, TC_05, backend/db, browser and manual; the refusal names only the buffered window (T-102).
+- Scenario 3: TC_03, backend/db only; manual N/A because two submissions at one instant cannot be clicked.
+- Scenario 4: TC_01, TC_04, TC_06 (both resolution paths in backend/db; rejection path in browser and manual), plus the buffered-adjacency test.
+- Scenario 5: TC_07, backend/db, browser and manual.
+
 ## Decisions to check
 
 - No PO question needed for the listed gaps: each implements or proves T-100 as written.
