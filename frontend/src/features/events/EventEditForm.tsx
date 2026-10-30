@@ -148,6 +148,11 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const alertRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const reviewed = useRef(false);
+  // Each Save press gets a number. Leaving the form, switching to another
+  // event or editing again makes it stale, so a late preview answer cannot
+  // go on to save a change nobody is looking at (#380 review).
+  const attempt = useRef(0);
+  useEffect(() => () => { attempt.current += 1; }, [eventId]);
 
   // Bring the form into view when it opens, and move focus to any error so
   // keyboard and screen-reader users hear why the save didn't go through.
@@ -164,6 +169,8 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const changed = (Object.keys(draft) as EditableField[]).some(field => (draft[field] ?? '').trim() !== (initial[field] ?? '').trim());
 
   function update(field: EditableField, value: string) {
+    attempt.current += 1;
+    setSaving(false);
     setDraft(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
     setServerError(null);
@@ -179,11 +186,13 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       return;
     }
     if (Object.keys(patch).length === 0) return;
+    const current = ++attempt.current;
     setSaving(true);
     setServerError(null);
     setChangeOffer(null);
     if (checkArrangements) {
       const preview = await previewEventInformation(eventId, patch);
+      if (current !== attempt.current) return;
       if (!preview.ok) { setSaving(false); refused(preview, patch); return; }
       if (needsReview(preview)) { setSaving(false); setReview({ patch, check: preview }); return; }
     }

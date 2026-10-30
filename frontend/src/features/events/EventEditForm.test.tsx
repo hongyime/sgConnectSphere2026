@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { buildPatch, EventEditForm, toLocalInput } from './EventEditForm';
 
 const initial = {
@@ -168,4 +168,84 @@ test('TC_E03S11_05 - the Organiser can fill in registration setup, shown with th
   expect(setup).toHaveValue('Free registration');
   expect(setup).not.toHaveAttribute('readonly');
   cleanup();
+});
+
+describe('a late preview answer does not save (#380 review)', () => {
+  const values = { title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+    expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null };
+  const nothingAffected = { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] };
+
+  // The preview reply is held until the test releases it; any other PATCH saves.
+  function holdPreview() {
+    const calls: string[] = [];
+    let release: () => void = () => {};
+    const held = new Promise<void>(resolve => { release = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+      calls.push(input);
+      if (input.includes('&preview=1')) await held;
+      const body = input.includes('&preview=1') ? nothingAffected : { fields: ['title'], ...nothingAffected };
+      return { ok: true, status: 200, json: async () => body } as Response;
+    }));
+    return { calls, release };
+  }
+  const saves = (calls: string[]) => calls.filter(url => !url.includes('&preview=1'));
+  const form = (eventId: string, onSaved = vi.fn()) => (
+    <EventEditForm eventId={eventId} values={values} editable={new Set(['title'])} checkArrangements onSaved={onSaved} onCancel={() => {}} />
+  );
+  function startSave() {
+    fireEvent.change(screen.getByLabelText('Event name'), { target: { value: 'Charity Run 2026' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+  }
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+  test('still saves when the form is open when the answer arrives', async () => {
+    const { calls, release } = holdPreview();
+    const onSaved = vi.fn();
+    render(form('evt-1', onSaved));
+    startSave();
+    release();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(['title'], nothingAffected));
+    expect(saves(calls)).toEqual(['/api/events?edit=1&id=evt-1']);
+  });
+
+  test('sends no save after the form closes', async () => {
+    const { calls, release } = holdPreview();
+    const onSaved = vi.fn();
+    const { unmount } = render(form('evt-1', onSaved));
+    startSave();
+    await waitFor(() => expect(calls).toHaveLength(1));
+    unmount();
+    release();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(saves(calls)).toEqual([]);
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  test('sends no save for the old event after switching to another one', async () => {
+    const { calls, release } = holdPreview();
+    const onSaved = vi.fn();
+    const { rerender } = render(form('evt-1', onSaved));
+    startSave();
+    await waitFor(() => expect(calls).toHaveLength(1));
+    rerender(form('evt-2', onSaved));
+    release();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(saves(calls)).toEqual([]);
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  test('sends no save of the old edit after the field is edited again', async () => {
+    const { calls, release } = holdPreview();
+    const onSaved = vi.fn();
+    render(form('evt-1', onSaved));
+    startSave();
+    await waitFor(() => expect(calls).toHaveLength(1));
+    fireEvent.change(screen.getByLabelText('Event name'), { target: { value: 'Charity Run 2027' } });
+    release();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(saves(calls)).toEqual([]);
+    expect(onSaved).not.toHaveBeenCalled();
+    // The Coordinator can save the new value as usual.
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  });
 });
