@@ -117,3 +117,18 @@ Docker port; DB runs used a native 5432 URL built in memory from
 
 Record the review-fix test runs (T-65), push to #380, update the PR body,
 reply to Ji Ning's review, then update #381 from #380.
+
+## Update — 2026-10-30 PR conflict review
+
+- Merged current `main` (`3ac6582`) into this branch and resolved the
+  `CoordinatorWorkspace.tsx` import conflict by retaining both the revert
+  action and arrangement-preview imports.
+- Regenerated `docs/testing/tc-coverage.md` after the merge: 286/379 automated,
+  67 scaffold, 26 without a test.
+- The two P2 review findings on PR #380 remain unresolved: invalidate late
+  preview continuations after unmount/event change, and bind confirmation to a
+  server-validated preview revision so a changed impact cannot be saved unseen.
+  This conflict-only update does not address or claim a fix for either finding.
+
+  Both findings are now fixed on this branch (40c5469, e2af9e4, 19a426f; see
+  "PR #380 review" above), merged with this update afterwards.

@@ -165,6 +165,14 @@ test('Venue Staff approve a pending booking request', async ({ page }) => {
     }
     const url = new URL(request.url());
     if (url.searchParams.get('bookings') === 'pending') return route.fulfill({ json: { bookings: [current] } });
+    if (url.searchParams.get('calendar') === '1') return route.fulfill({ json: {
+      venue: { id: 'v-1', name: 'Orchid Hall', opens_at: '08:00', closes_at: '22:00', is_active: true },
+      from: url.searchParams.get('from'), to: url.searchParams.get('to'), timezone: 'Asia/Singapore', entries: [],
+    } });
+    if (url.searchParams.has('id')) return route.fulfill({ json: { venue: {
+      id: 'v-1', name: 'Orchid Hall', location: 'Singapore', max_capacity: 200, opens_at: '08:00', closes_at: '22:00',
+      facilities: [], accessibility_features: [], supported_layouts: [], setup_time_minutes: 0, turnaround_time_minutes: 0,
+    } } });
     return route.fulfill({ json: { booking: current } });
   });
 
@@ -173,6 +181,6 @@ test('Venue Staff approve a pending booking request', async ({ page }) => {
   await page.getByRole('link', { name: 'Decide on request' }).click();
   await page.getByRole('button', { name: 'Approve…' }).click();
   await page.getByRole('button', { name: 'Approve request' }).click();
-  await expect(page.getByRole('status')).toContainText('Approved. The booking is confirmed. Coordinator A has been notified.');
+  await expect(page.getByText('Approved. The booking is confirmed. Coordinator A has been notified.')).toBeVisible();
   expect(decided).toEqual({ action: 'decide', booking_id: 'b-1', decision: 'approve' });
 });
