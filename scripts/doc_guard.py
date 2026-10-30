@@ -21,7 +21,8 @@ import tempfile
 from pathlib import Path
 
 DOC_CLIP = 5
-WAIVER_RE = re.compile(r"^Docs-Impact:\s*none\b", re.MULTILINE | re.IGNORECASE)
+WAIVER_RE = re.compile(r"^Docs-Impact:[ \t]*none[ \t]*(?:—|–|-)[ \t]*\S[^\r\n]*$",
+                       re.MULTILINE | re.IGNORECASE)
 VALID_STATUS = {"draft", "provisional", "final"}
 STALE_RE = re.compile(r"\(provisional\s*[\u2014\u2013-]\s*Sprint 4 in progress\)", re.IGNORECASE)
 
@@ -188,19 +189,23 @@ def selftest() -> int:
         commit("feat: change port")
         expect("a", 1)
 
+        run("commit", "--allow-empty", "-m", "chore: waiver without reason",
+            "-m", "Docs-Impact: none")
+        expect("b", 1)
+
         run("commit", "--allow-empty", "-m", "chore: no doc impact",
             "-m", "Docs-Impact: none \u2014 no doc impact")
-        expect("b", 0)
+        expect("c", 0)
 
         code.write_text("export const port = 5000;\n", encoding="utf-8")
         doc.write_text(doc.read_text(encoding="utf-8") + "\nPort moved to 5000.\n", encoding="utf-8")
         commit("feat: change port and doc")
-        expect("c", 0)
+        expect("d", 0)
 
         (tmp / "docs" / "FREEZE").write_text("", encoding="utf-8")
         doc.write_text(doc.read_text(encoding="utf-8") + "\nNEEDS-REVIEW\n", encoding="utf-8")
         commit("chore: freeze")
-        expect("d", 1)
+        expect("e", 1)
 
         if failures:
             print(f"selftest: FAIL {', '.join(failures)}")
