@@ -250,7 +250,7 @@ E14-S02 completion no longer waits on these booking workflows. The original
 
 - **Sprint**: Sprint 3
 - **Points**: 5
-- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, T-78, T-92, O-31, O-32, O-33, O-34
+- **BDR references**: C-01, C-16, C-37, C-60, T-49, C-65, T-66, C-68, T-69, T-78, T-92, O-31, O-32, O-33, O-34, T-102
 - **Owner**:
 
 ### User story
@@ -267,7 +267,7 @@ Given a venue is free for the period When I place a tentative hold Then the cale
 
 #### Scenario 2 — Slot already held or booked
 
-Given a venue already has a tentative hold or a confirmed booking for the period When I attempt to hold it for another event Then the hold is refused and the existing hold or booking is identified
+Given a venue already has a tentative hold or a confirmed booking for the period When I attempt to hold it for another event Then the hold is refused and the occupied buffered window is shown as unavailable, without naming the other event (T-102)
 
 #### Scenario 3 — Hold becomes a booking request
 
@@ -314,7 +314,7 @@ Given a hold expires at 10:00:00 When the expiry job runs at 09:59:59 Then the h
 
 - **Sprint**: Sprint 3
 - **Points**: 5
-- **BDR references**: C-01, C-16, C-46, T-22, C-60, C-65, T-66, C-67, T-68, C-109, T-100
+- **BDR references**: C-01, C-16, C-46, T-22, C-60, C-65, T-66, C-67, T-68, C-109, T-100, T-102
 - **Owner**: Le Xin
 
 ### User story

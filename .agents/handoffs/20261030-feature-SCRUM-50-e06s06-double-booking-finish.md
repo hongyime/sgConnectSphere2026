@@ -21,6 +21,7 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 
 - T1 branch and this handoff. Done.
 - T2 done. `venueClaimPolicy.integration.test.ts` titles now carry TC_E06S06_01 to _07; added TC_01 (Confirmed plus Pending after a real Venue Staff buffer edit), TC_04 and TC_05 with the case's zero-buffer data, TC_06 primary (rejection, Rejected stays terminal) and alternative (Coordinator withdraw and replan) paths, and the Scenario 2 no-disclosure check on the request path. The fixture gained `editBuffers` (real `updateVenue`, so C-109 flags are set), `withdraw`, `bookingRows` and an optional event title. Case wording left unchanged: the tests match TC_01/_06 as written, and the TC_03 "automated only" note goes in the T5 guide. Owner set to Le Xin in both E06 backlog views; dated exports are regenerated once in T7. `tc-coverage.md` regenerated: all seven E06-S06 cases active.
+- T2b done (T-102). `holds.ts` findClash now returns the request-path sentence with the other booking's occupied buffered window and no longer reads the event code or title. Updated E06-S05 hold-message checks in `venueHolds.test.ts`, `venueHolds.integration.test.ts`, `VenueHolds.test.tsx`, `tests/e2e/venueHolds.spec.ts`, `tests/auth-e2e/venueHolds.spec.ts`, the E06-S05 click-through guide, E06-S05 Scenario 2 in both backlog views and TC_E06S05_01. TC_E06S06_02's hold path now checks no disclosure. Added an expiry-notice unit test so `eventName`'s code-prefixed branch stays covered.
 - T3 copy Bryan's warning commit with his authorship, check it against main and T-100.
 - T4 replace the seven browser scaffolds; TC_03 stays backend-proven.
 - T5 click-through guide, preconditions SQL, automated real local run (T-65).
@@ -30,7 +31,7 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 ## Decisions to check
 
 - No PO question needed for the listed gaps: each implements or proves T-100 as written.
-- Open PO question (asked 30 October): a refused hold names the other event (`holds.ts` findClash, E06-S05 Scenario "existing hold or booking is identified", TC_E06S05_01), while E06-S06 Scenario 2 says a refused hold or request does not disclose another event's title. The request path already hides it. Yes = hide on holds too (message plus E06-S05 hold-message tests in `venueHolds.test.ts`, `venueHolds.integration.test.ts`, `VenueHolds.test.tsx`, E06-S05 wording); No = narrow E06-S06 Scenario 2 to booking requests. Record the answer in `docs/bdr/`. Until then the hold-path no-disclosure check is deliberately absent.
+- T-102 (PO Bryan, 30 October, relayed by Le Xin): a refused hold hides the other event's name, like a refused request. Recorded in `docs/bdr/B-team-decisions.md` and `G-change-log.md`; E06-S05 and E06-S06 cite it. E06-S05 is not reopened; its Done flag and old run records are untouched. Reviewers: E06-S05 owner (Amareet) should see the reworded Scenario 2 and TC_E06S05_01.
 - Bryan's other branch was updated on 29 October; its handoff notes local/remote divergence, so only its frontend commit is reused, not the branch.
 
 ## Commands run (exploratory, not yet T-65 evidence)
@@ -38,6 +39,8 @@ Goal: finish E06-S06 "Prevent double-booking of a venue" (story SCRUM-50) for it
 - Native loopback PostgreSQL 5432, `TEST_DATABASE_URL` pointing at the disposable `connectsphere_notification_test` database; no Supabase, no Docker.
 - `npx tsx --test tests/venueClaimPolicy.integration.test.ts`: 11/11 pass. Three deliberate breaks (request refusal naming the event, buffer edit flagging nothing, approval skipping the recheck) each failed the expected TC tests; source restored.
 - `npm run test:venue-booking-requests:db`: 96/96 pass. `npm run typecheck`: pass.
+- T2b: hold and claim suites plus buffer conflicts 51/51; backend `npm test` 612 pass, 1 skipped (existing), `holds.ts` 100% lines, branches 98.56% with only pre-existing gaps at lines 82 and 196 (main had the same two); old `holds.ts` restored temporarily failed the three new checks; `VenueHolds.test.tsx` 14/14; `tests/e2e/venueHolds.spec.ts` 10/10; `tests/auth-e2e/venueHolds.spec.ts` 2/2 on the loopback test schema.
+- Worktree: this branch lives in a separate `connectsphere-e06-s06` worktree because the main checkout is on another branch.
 
 ## Not done / next step
 

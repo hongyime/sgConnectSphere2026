@@ -420,3 +420,12 @@ for new records: PASS/FAIL rows need linked existing screenshots, screenshots
 must be stored under the matching evidence folder, and the record plus images
 must arrive together. Automated runs and SKIP/N/A rows do not require images;
 old merged records are not rewritten.
+
+## 30 October 2026: refused holds stop naming the other event (T-102)
+
+The Product Owner answered yes to hiding the other event's name when a
+tentative hold is refused, matching E06-S06 Scenario 2 and the existing
+booking-request refusal. The hold refusal now gives only the occupied buffered
+window. E06-S05 Scenario 2 and TC_E06S05_01 are reworded in both backlog views
+and the case catalogue. E06-S05 is not reopened; its Done flag and earlier run
+records stay as they are.

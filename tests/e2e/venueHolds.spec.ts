@@ -8,7 +8,7 @@ import { signInAs } from './helpers/fakeSession';
 
 const STARTS = '2027-03-10T01:00:00.000Z';
 const ENDS = '2027-03-10T09:00:00.000Z';
-const CLASH = 'This venue already has a tentative hold for EVT-CR Charity Run from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm.';
+const CLASH = 'This venue is unavailable from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm, including setup and turnaround.';
 
 type Hold = {
   id: string; venueId: string; venueName: string; eventId: string; eventCode: string; eventTitle: string;

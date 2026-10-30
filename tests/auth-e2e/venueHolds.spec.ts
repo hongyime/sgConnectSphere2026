@@ -105,7 +105,9 @@ test('TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 tentative holds on the
   await page.goto(`/coordinator/events/EVT-HLD-CR/venues/${hall}/hold`);
   await page.getByRole('button', { name: 'Hold venue' }).click();
   await expect(page.getByText("This venue can't be held")).toBeVisible();
-  await expect(page.getByText(/^This venue already has a tentative hold for EVT-HLD-TC Tech Conference from /)).toBeVisible();
+  // T-102: the refusal gives the unavailable window, not the other event's name.
+  await expect(page.getByText(/^This venue is unavailable from .+, including setup and turnaround\.$/)).toBeVisible();
+  await expect(page.getByText(/Tech Conference/)).toHaveCount(0);
   expect(await holdsOf(charity)).toEqual([]);
 
   // TC_E06S05_07: Venue Staff see the hold and move its expiry later; the change is logged with who made it.

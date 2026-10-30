@@ -72,18 +72,22 @@ test('TC_E06S06_02: an accepted pending request refuses its competitor without d
 test('TC_E06S06_02: a hold blocks a later request, and a pending request blocks a later hold', async () => {
   const f = await venueClaimPolicyFixture();
   try {
-    const heldEvent = await f.createEvent();
+    const heldEvent = await f.createEvent(f.coordinator, 'Charity Run');
     const refusedRequestEvent = await f.createEvent();
     assert.equal((await f.hold(heldEvent, f.ids.venueA, f.period('2027-02-02', '10:00', '12:00'))).status, 201);
     const afterHold = await f.effectSnapshot();
-    await assert.rejects(f.request(refusedRequestEvent, f.ids.venueA, f.period('2027-02-02', '10:00', '12:00')), { status: 409 });
+    await assert.rejects(f.request(refusedRequestEvent, f.ids.venueA, f.period('2027-02-02', '10:00', '12:00')),
+      refusedWithoutDisclosure('Charity Run'));
     assert.deepEqual(await f.effectSnapshot(), afterHold);
 
-    const requestedEvent = await f.createEvent();
+    const requestedEvent = await f.createEvent(f.coordinator, 'Product Expo');
     const refusedHoldEvent = await f.createEvent();
     assert.equal((await f.request(requestedEvent, f.ids.venueA, f.period('2027-02-03', '10:00', '12:00'))).status, 201);
     const afterRequest = await f.effectSnapshot();
-    assert.equal((await f.hold(refusedHoldEvent, f.ids.venueA, f.period('2027-02-03', '10:00', '12:00'))).status, 409);
+    // T-102: a refused hold gets the same window-only sentence as a refused request.
+    const refusedHold = await f.hold(refusedHoldEvent, f.ids.venueA, f.period('2027-02-03', '10:00', '12:00'));
+    assert.equal(refusedHold.status, 409);
+    assert.ok(refusedWithoutDisclosure('Product Expo')(Object.assign(new Error((refusedHold.body as { error: string }).error), { status: 409 })));
     assert.deepEqual(await f.effectSnapshot(), afterRequest);
   } finally {
     await f.close();
