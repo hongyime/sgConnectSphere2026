@@ -1087,6 +1087,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
+- reconfirming moves a flagged booking to its Session time, clears the flag, logs it and tells the Coordinator
+- reconfirming with no assigned Coordinator still clears the flag and tells nobody
+- only Venue Staff reconfirm, and the refusal is recorded
+- reconfirming needs a booking id
+- reconfirming refuses a missing, unconfirmed or unflagged booking, or a closed event, and changes nothing
+- reconfirming is refused when the new time clashes with another booking or a block
+- reconfirming that loses a race to the 0016 guard is a 409, not a server error
+- reconfirming rechecks the staff account like a decision
+- the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events
+- a reconfirmation notice falls back to
 
 ### `backend/tests/venueBookingRequests.test.ts`
 
@@ -1183,6 +1193,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - handler: methods, origin and actions
 - handler: GET routes to the event or staff list; POST to hold, convert, release or extend
 - database buffer-guard refusals become 409 and rollback a hold creation
+
+### `backend/tests/venueReconfirmation.integration.test.ts`
+
+- reconfirming moves the booking to its Session time, clears the flag, logs it and tells the Coordinator once
+- reconfirming is refused when another booking holds the venue at the new time, and nothing changes
+- reconfirming is refused when a maintenance block covers the new time
+- only a flagged Confirmed booking on an open event is reconfirmed, and only by Venue Staff
+- two Venue Staff reconfirming the same booking at once: one succeeds, the other is told nothing is left
+
+### `backend/tests/venueReconfirmationRoute.integration.test.ts`
+
+- Venue Staff list and reconfirm a flagged booking through /api/venues
 
 ### `backend/tests/venueSearch.test.ts`
 

@@ -23,6 +23,11 @@ import { bookingState } from './bookingState.js';
 //
 // The Coordinator's "amend to the suggested venue" step of Scenario 2 belongs
 // with E06-S03's request flow.
+//
+// E08-S04 Scenario 4 (SCRUM-242): Venue Staff also reconfirm a Confirmed
+// booking flagged requires_reconfirmation (E10-S02 date or attendance change,
+// E05-S01 capacity drop). Like an equipment re-reservation, the booking moves
+// to its Session's current time, which must still be free.
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const REASON_MAX = 2000;
@@ -38,7 +43,7 @@ type BookingRow = {
   coordinator_id: string | null; coordinator_name: string | null;
   decision_reason: string | null; suggested_venue_id: string | null; suggested_venue_name: string | null;
   decided_by_name: string | null; decided_at: Date | null; created_at: Date; is_primary: boolean;
-  suitability_snapshot: unknown;
+  suitability_snapshot: unknown; requires_reconfirmation: boolean;
 };
 
 // Why a Pending request on a closed event can't be decided.
@@ -52,7 +57,8 @@ const BOOKING_SELECT = `SELECT vb.id, vb.status, lower(vb.booking_range) AS star
     e.id AS event_id, e.event_code, e.title AS event_title, e.expected_attendance,
     e.coordinator_id, c.full_name AS coordinator_name,
     vb.decision_reason, vb.suggested_venue_id, sv.name AS suggested_venue_name,
-    d.full_name AS decided_by_name, vb.decided_at, vb.created_at, vb.is_primary, vb.suitability_snapshot
+    d.full_name AS decided_by_name, vb.decided_at, vb.created_at, vb.is_primary, vb.suitability_snapshot,
+    vb.requires_reconfirmation
   FROM venue_bookings vb
   JOIN venues v ON v.id = vb.venue_id
   JOIN events e ON e.id = vb.event_id
@@ -84,6 +90,7 @@ export function toBooking(row: BookingRow) {
     requestedAt: row.created_at.toISOString(),
     isPrimary: row.is_primary,
     advisoryMismatches: advisoryMismatches(row.suitability_snapshot),
+    requiresReconfirmation: row.requires_reconfirmation,
   };
 }
 
@@ -139,6 +146,17 @@ export async function listPendingBookings(query: Query, user: AuthenticatedUser 
   return { bookings: result.rows.map(toBooking) };
 }
 
+// E08-S04 Scenario 4: Confirmed bookings waiting for Venue Staff to
+// reconfirm, on events that are still open.
+export async function listBookingsToReconfirm(query: Query, user: AuthenticatedUser | undefined) {
+  await requireBookingDecider(query, user);
+  const result = await query<BookingRow>(`${BOOKING_SELECT}
+    WHERE vb.status = 'confirmed' AND vb.requires_reconfirmation AND e.status NOT IN ('completed', 'cancelled')
+    ORDER BY lower(vb.booking_range), vb.id
+    LIMIT 200`);
+  return { bookings: result.rows.map(toBooking) };
+}
+
 export async function getBooking(query: Query, user: AuthenticatedUser | undefined, bookingId: string) {
   await requireBookingDecider(query, user);
   if (!UUID_PATTERN.test(bookingId)) throw new AccessError(404, 'Booking not found.');
@@ -161,7 +179,7 @@ type Clash = { id: string; status: string; event_code: string | null; event_titl
 // when Venue Staff lengthen a venue's buffers after both were requested
 // (buffer_conflict). The guard refuses the write anyway; checking first lets
 // Venue Staff see which booking or block is in the way.
-async function approvalClash(client: PoolClient, row: BookingRow) {
+async function approvalClash(client: PoolClient, row: BookingRow, verb = 'approved') {
   const booking = (await client.query<Clash>(`SELECT vb.id, vb.status, e.event_code, e.title AS event_title,
       lower(vb.booking_range) AS starts_at, upper(vb.booking_range) AS ends_at,
       lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)) AS occupied_start,
@@ -177,7 +195,7 @@ async function approvalClash(client: PoolClient, row: BookingRow) {
       ? `${booking.event_code} ${booking.event_title}` : booking.event_title;
     const state = booking.status === 'confirmed' ? 'confirmed' : booking.status === 'pending' ? 'pending' : 'held';
     return {
-      error: `This can't be approved: with setup and turnaround time it overlaps the ${state} booking for "${name}" `
+      error: `This can't be ${verb}: with setup and turnaround time it overlaps the ${state} booking for "${name}" `
         + `(${formatEventDates(booking.starts_at, booking.ends_at)}) at ${row.venue_name}. `
         + `Buffered window: ${formatEventDates(booking.occupied_start, booking.occupied_end)}.`,
       conflict: {
@@ -195,7 +213,7 @@ async function approvalClash(client: PoolClient, row: BookingRow) {
   if (block) {
     const period = block.ends_at ? formatEventDates(block.starts_at, block.ends_at) : `from ${formatSgt(block.starts_at)}, until lifted`;
     return {
-      error: `This can't be approved: ${row.venue_name} is blocked for "${block.reason}" (${period}).`,
+      error: `This can't be ${verb}: ${row.venue_name} is blocked for "${block.reason}" (${period}).`,
       conflict: { block: { reason: block.reason, startsAt: block.starts_at.toISOString(), endsAt: block.ends_at?.toISOString() ?? null } },
     };
   }
@@ -219,6 +237,19 @@ function decisionMessage(staffName: string, row: BookingRow, decision: BookingDe
   };
 }
 
+// The decider's account is still active and unlocked, held for the transaction.
+async function lockActiveStaff(client: PoolClient, staff: AuthenticatedUser) {
+  try {
+    const account = await client.query(`SELECT id FROM users WHERE id=$1 AND is_active AND role='venue_staff'
+      AND failed_login_count<5 AND (locked_until IS NULL OR locked_until<=clock_timestamp()) FOR SHARE NOWAIT`, [staff.id]);
+    if (!account.rows[0]) throw new AccessError(403, 'Your account cannot decide booking requests.');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === '55P03')
+      throw new AccessError(409, 'An account update may be in progress. Refresh the booking list and try again.');
+    throw error;
+  }
+}
+
 //   POST /api/venues { action: 'decide', booking_id, decision: 'approve' }
 //   POST /api/venues { action: 'decide', booking_id, decision: 'reject', reason, suggested_venue_id? }
 export async function decideBooking(database: Pool, user: AuthenticatedUser | undefined, bookingId: unknown, body: unknown) {
@@ -239,15 +270,7 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
     if (!target) return { status: 404, body: { error: 'Booking not found.' } };
     const event = (await client.query<{ status: string }>(
       'SELECT status FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id])).rows[0];
-    try {
-      const account = await client.query(`SELECT id FROM users WHERE id=$1 AND is_active AND role='venue_staff'
-        AND failed_login_count<5 AND (locked_until IS NULL OR locked_until<=clock_timestamp()) FOR SHARE NOWAIT`, [staff.id]);
-      if (!account.rows[0]) throw new AccessError(403, 'Your account cannot decide booking requests.');
-    } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === '55P03')
-        throw new AccessError(409, 'An account update may be in progress. Refresh the booking list and try again.');
-      throw error;
-    }
+    await lockActiveStaff(client, staff);
     // A Completed or Cancelled event is closed, so a request still Pending on
     // it is left alone rather than confirmed onto a finished event.
     const closed = event && EVENT_CLOSED[event.status];
@@ -319,6 +342,70 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
       }));
     }
 
+    const updated = await lockBooking(client, row.id);
+    return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified } };
+  });
+}
+
+export const NOTHING_TO_RECONFIRM = "This booking doesn't need reconfirming: nothing has changed since it was confirmed.";
+export const ONLY_CONFIRMED_RECONFIRMED = 'Only a Confirmed booking can be reconfirmed.';
+
+//   POST /api/venues { action: 'reconfirm', booking_id }
+// E08-S04 Scenario 4. The booking takes its Session's current time (the
+// Event's, without a Session), which must be clear of other bookings and
+// blocks with setup and turnaround time; the flag is cleared, the
+// reconfirmation is audited and the Coordinator is told.
+export async function reconfirmBooking(database: Pool, user: AuthenticatedUser | undefined, bookingId: unknown) {
+  const staff = await requireBookingDecider(poolQuery(database), user);
+  if (typeof bookingId !== 'string' || !UUID_PATTERN.test(bookingId)) {
+    return { status: 400, body: { error: 'validation_failed', errors: { booking_id: ['A booking id is required.'] } } };
+  }
+  return inTransaction(database, async client => {
+    // The same lock order as a decision: event, venue, booking.
+    const target = (await client.query<{ venue_id: string; event_id: string }>(
+      'SELECT venue_id, event_id FROM venue_bookings WHERE id = $1', [bookingId])).rows[0];
+    if (!target) return { status: 404, body: { error: 'Booking not found.' } };
+    const event = (await client.query<{ status: string }>(
+      'SELECT status FROM events WHERE id = $1 FOR NO KEY UPDATE', [target.event_id])).rows[0];
+    await lockActiveStaff(client, staff);
+    const closed = event && EVENT_CLOSED[event.status];
+    if (closed) return { status: 409, body: { error: closed } };
+    await client.query('SELECT id FROM venues WHERE id = $1 FOR NO KEY UPDATE', [target.venue_id]);
+    const row = await lockBooking(client, bookingId);
+    if (!row) return { status: 404, body: { error: 'Booking not found.' } };
+    if (row.status !== 'confirmed') return { status: 409, body: { error: ONLY_CONFIRMED_RECONFIRMED } };
+    if (!row.requires_reconfirmation) return { status: 409, body: { error: NOTHING_TO_RECONFIRM } };
+
+    const current = (await client.query<{ starts_at: Date; ends_at: Date }>(`SELECT
+        lower(COALESCE(s.session_range, e.event_range)) AS starts_at, upper(COALESCE(s.session_range, e.event_range)) AS ends_at
+      FROM venue_bookings vb JOIN events e ON e.id = vb.event_id LEFT JOIN sessions s ON s.id = vb.session_id
+      WHERE vb.id = $1`, [row.id])).rows[0]!;
+    const moved = { ...row, starts_at: current.starts_at, ends_at: current.ends_at };
+    const clash = await approvalClash(client, moved, 'reconfirmed');
+    if (clash) return { status: 409, body: clash };
+    try {
+      await client.query(`UPDATE venue_bookings SET booking_range = tstzrange($2, $3, '[)'), requires_reconfirmation = false
+        WHERE id = $1`, [row.id, current.starts_at, current.ends_at]);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23P01') throw new AccessError(409, VENUE_JUST_TAKEN);
+      throw error;
+    }
+    const when = formatEventDates(current.starts_at, current.ends_at);
+    const audit = await client.query<{ id: string; occurred_at: Date }>(`INSERT INTO audit_logs
+        (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+      VALUES ($1, 'venue_booking', $2, $3, 'Booking Reconfirmed', 'requires_reconfirmation', 'true', 'false') RETURNING id, occurred_at`,
+    [staff.id, row.id, row.event_id]);
+
+    let notified = false;
+    if (row.coordinator_id) {
+      const staffName = (await client.query<{ full_name: string }>(
+        'SELECT full_name FROM users WHERE id = $1', [staff.id])).rows[0]?.full_name ?? 'Venue Staff';
+      notified = Boolean(await writeEventNotification(client, {
+        eventId: row.event_id, changeId: audit.rows[0]!.id, userId: row.coordinator_id, occurredAt: audit.rows[0]!.occurred_at,
+        title: 'Venue booking reconfirmed',
+        message: `${staffName} reconfirmed ${row.venue_name} for "${row.event_title}" (${when}). It no longer needs reconfirmation.`,
+      }));
+    }
     const updated = await lockBooking(client, row.id);
     return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified } };
   });
