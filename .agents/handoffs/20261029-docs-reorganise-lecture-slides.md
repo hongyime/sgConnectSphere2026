@@ -69,6 +69,23 @@ Aaron's 30 Oct review points, applied on Bryan's behalf as single text-run edits
 
 The changed slides were rendered in PowerPoint 16 and checked.
 
+Second pass, same day (Aaron asked for everything outside his review too):
+
+- **Layout**: on slides 4, 5, 7, 9, 10, 11, 13 and 16 only the first paragraph of each
+  answer box had a font size, so the rest fell back to 18 pt and overlapped the next
+  question or ran off the slide. Each answer box now uses its first paragraph's size
+  throughout, and the boxes were fitted and stacked in PowerPoint (no text shrunk).
+- **Claims the repo does not support, reworded to what it records**: slide 5's
+  frontend files and tests; slide 6 examples 2–3; slide 7's rework examples (now T-93's
+  agent screenshots and SCRUM-51's agent setup error), "transaction isolation levels"
+  and "near-match scoring"; slide 8's CI list; slide 9's worktree path, merge strategy
+  and the 1 Oct unapproved merges before the 3 Oct ruleset; slide 10's 20/20 check
+  runs on `eab9f898`; slide 11's "same millisecond" and the CFO sentence (the CFO's
+  Week 10 request is about AI and is not in the repo); slide 12's triggers, required
+  checks, CI-caught example (#320, run 39831097976) and bypass answer; slide 13's
+  overclaims; slide 16's Sprint 4 points (35 Done on 29 Oct per the PostPlan
+  dashboard, not 50) and the `check_postplan_html.py` claim.
+
 ## Not done / next step
 
 1. **Ceremony video URLs** (slide 2) still have to come from the team; they are not
