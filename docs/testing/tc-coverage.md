@@ -1148,8 +1148,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/venueClaimPolicy.integration.test.ts`
 
-- buffered adjacency is accepted while a one-minute buffered overlap is refused
+- buffered adjacency is accepted and approved while a one-minute buffered overlap is refused
 - converting a hold keeps its venue claim active against another request
+- an expired hold no longer claims the venue, so a later overlapping request is accepted
 
 ### `backend/tests/venueHolds.integration.test.ts`
 

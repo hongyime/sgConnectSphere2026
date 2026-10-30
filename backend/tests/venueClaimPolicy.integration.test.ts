@@ -9,12 +9,12 @@ function hasStatus(error: unknown, status: number) {
   return typeof error === 'object' && error !== null && 'status' in error && error.status === status;
 }
 
-// Scenario 2: the Coordinator learns the buffered window is taken, never whose event holds it.
-function refusedWithoutDisclosure(otherTitle: string) {
+// Scenario 2: the Coordinator learns which buffered window is taken, never whose event holds it.
+function refusedWithoutDisclosure(otherTitle: string, from: string, to: string) {
   return (error: unknown) => {
     assert.ok(hasStatus(error, 409));
     const message = (error as Error).message;
-    assert.match(message, /^This venue is unavailable from .+ to .+, including setup and turnaround\.$/);
+    assert.equal(message, `This venue is unavailable from ${from} to ${to}, including setup and turnaround.`);
     assert.ok(!message.includes(otherTitle) && !message.includes('EVT-'), message);
     return true;
   };
@@ -60,8 +60,9 @@ test('TC_E06S06_02: an accepted pending request refuses its competitor without d
     assert.ok('booking' in first.body);
     assert.equal(first.body.booking.status, 'pending');
     const beforeRefusal = await f.effectSnapshot();
+    // Charity Run's buffered window: 09:00-11:00 widened by 30 and 45 minutes.
     await assert.rejects(f.request(competitor, f.ids.venueA, f.period('2027-02-01', '10:00', '12:00')),
-      refusedWithoutDisclosure('Charity Run'));
+      refusedWithoutDisclosure('Charity Run', '1 Feb 2027, 8:30 am', '1 Feb 2027, 11:45 am'));
     assert.deepEqual(await f.effectSnapshot(), beforeRefusal);
   } finally {
     await f.close();
@@ -77,7 +78,7 @@ test('TC_E06S06_02: a hold blocks a later request, and a pending request blocks 
     assert.equal((await f.hold(heldEvent, f.ids.venueA, f.period('2027-02-02', '10:00', '12:00'))).status, 201);
     const afterHold = await f.effectSnapshot();
     await assert.rejects(f.request(refusedRequestEvent, f.ids.venueA, f.period('2027-02-02', '10:00', '12:00')),
-      refusedWithoutDisclosure('Charity Run'));
+      refusedWithoutDisclosure('Charity Run', '2 Feb 2027, 10:00 am', '2 Feb 2027, 12:00 pm'));
     assert.deepEqual(await f.effectSnapshot(), afterHold);
 
     const requestedEvent = await f.createEvent(f.coordinator, 'Product Expo');
@@ -87,7 +88,7 @@ test('TC_E06S06_02: a hold blocks a later request, and a pending request blocks 
     // T-102: a refused hold gets the same window-only sentence as a refused request.
     const refusedHold = await f.hold(refusedHoldEvent, f.ids.venueA, f.period('2027-02-03', '10:00', '12:00'));
     assert.equal(refusedHold.status, 409);
-    assert.ok(refusedWithoutDisclosure('Product Expo')(Object.assign(new Error((refusedHold.body as { error: string }).error), { status: 409 })));
+    assert.ok(refusedWithoutDisclosure('Product Expo', '3 Feb 2027, 10:00 am', '3 Feb 2027, 12:00 pm')(Object.assign(new Error((refusedHold.body as { error: string }).error), { status: 409 })));
     assert.deepEqual(await f.effectSnapshot(), afterRequest);
   } finally {
     await f.close();
@@ -166,7 +167,7 @@ test('TC_E06S06_05: a one-minute overlap is refused at submission without disclo
     assert.equal((await decideBooking(f.pool, f.staff, existing.body.booking.id, { decision: 'approve' })).status, 200);
     const beforeRefusal = await f.effectSnapshot();
     await assert.rejects(f.request(productExpo, f.ids.venueA, f.period('2027-02-10', '10:59', '13:00')),
-      refusedWithoutDisclosure('Charity Run'));
+      refusedWithoutDisclosure('Charity Run', '10 Feb 2027, 9:00 am', '10 Feb 2027, 11:00 am'));
     assert.deepEqual(await f.effectSnapshot(), beforeRefusal);
     assert.deepEqual(await f.bookingRows([charityRun, productExpo]), [{ status: 'confirmed', buffer_conflict: false }]);
   } finally {
@@ -175,22 +176,26 @@ test('TC_E06S06_05: a one-minute overlap is refused at submission without disclo
 });
 
 // Scenario 4 checklist: with non-zero buffers, buffered adjacency stays free and one minute more does not.
-test('buffered adjacency is accepted while a one-minute buffered overlap is refused', async () => {
+test('buffered adjacency is accepted and approved while a one-minute buffered overlap is refused', async () => {
   const f = await venueClaimPolicyFixture();
   try {
     await f.setBuffers(f.ids.venueA, 30, 30);
     const firstEvent = await f.createEvent();
     const adjacentEvent = await f.createEvent();
     const overlapEvent = await f.createEvent();
+    // 09:00-10:00 occupies 08:30-10:30; 11:00-12:00 occupies 10:30-12:30: they touch at 10:30.
     const first = await f.request(firstEvent, f.ids.venueA, f.period('2027-03-01', '09:00', '10:00'));
     assert.ok('booking' in first.body);
     const adjacent = await f.request(adjacentEvent, f.ids.venueA, f.period('2027-03-01', '11:00', '12:00'));
     assert.equal(adjacent.status, 201);
     assert.ok('booking' in adjacent.body);
-    assert.equal((await decideBooking(f.pool, f.staff, adjacent.body.booking.id, {
-      decision: 'reject', reason: 'Free the adjacency control slot',
-    })).status, 200);
-    await assert.rejects(f.request(overlapEvent, f.ids.venueA, f.period('2027-03-01', '10:59', '11:59')), { status: 409 });
+    for (const id of [first.body.booking.id, adjacent.body.booking.id]) {
+      assert.equal((await decideBooking(f.pool, f.staff, id, { decision: 'approve' })).status, 200);
+    }
+    assert.deepEqual((await f.bookingRows([firstEvent, adjacentEvent])).map(row => row.status), ['confirmed', 'confirmed']);
+    // 12:59-13:59 occupies 12:29-14:29: one minute into the adjacent booking's window.
+    await assert.rejects(f.request(overlapEvent, f.ids.venueA, f.period('2027-03-01', '12:59', '13:59')), { status: 409 });
+    assert.deepEqual(await f.bookingRows([overlapEvent]), []);
   } finally {
     await f.close();
   }
@@ -210,9 +215,10 @@ async function bufferGrowthConflict(f: Awaited<ReturnType<typeof venueClaimPolic
   assert.deepEqual(await f.bookingRows([charityRun, alumniDinner]), [
     { status: 'pending', buffer_conflict: false }, { status: 'pending', buffer_conflict: true },
   ]);
-  for (const id of [charity.body.booking.id, alumni.body.booking.id]) {
-    assert.equal((await decideBooking(f.pool, f.staff, id, { decision: 'approve' })).status, 409);
-  }
+  // Both approvals run at once: each rechecks the current buffers, and neither wins.
+  const approvals = await Promise.all([charity.body.booking.id, alumni.body.booking.id]
+    .map(id => decideBooking(f.pool, f.staff, id, { decision: 'approve' })));
+  assert.deepEqual(approvals.map(result => result.status), [409, 409]);
   assert.deepEqual(await f.bookingRows([charityRun, alumniDinner]), [
     { status: 'pending', buffer_conflict: false }, { status: 'pending', buffer_conflict: true },
   ]);
@@ -293,6 +299,27 @@ test('converting a hold keeps its venue claim active against another request', a
     const beforeRefusal = await f.effectSnapshot();
     await assert.rejects(f.request(competitorEvent, f.ids.venueA, f.period('2027-04-02', '10:00', '12:00')), { status: 409 });
     assert.deepEqual(await f.effectSnapshot(), beforeRefusal);
+  } finally {
+    await f.close();
+  }
+});
+
+// Scenario 1: only an unexpired Tentative hold is an active claim. Once its expiry
+// passes (before the expiry job runs) a booking request for the slot is accepted.
+test('an expired hold no longer claims the venue, so a later overlapping request is accepted', async () => {
+  const f = await venueClaimPolicyFixture();
+  try {
+    const holdEvent = await f.createEvent();
+    const laterEvent = await f.createEvent();
+    const held = await f.hold(holdEvent, f.ids.venueA, f.period('2027-04-03', '10:00', '12:00'));
+    assert.ok('hold' in held.body && held.body.hold);
+    await assert.rejects(f.request(laterEvent, f.ids.venueA, f.period('2027-04-03', '10:00', '12:00')), { status: 409 });
+    // Time passing, as in the E06-S05 expiry tests: the hold's expiry is now in the past.
+    await f.pool.query("UPDATE venue_bookings SET expires_at = now() - interval '1 minute' WHERE id = $1", [held.body.hold.id]);
+    const accepted = await f.request(laterEvent, f.ids.venueA, f.period('2027-04-03', '10:00', '12:00'));
+    assert.equal(accepted.status, 201);
+    assert.ok('booking' in accepted.body);
+    assert.equal(accepted.body.booking.status, 'pending');
   } finally {
     await f.close();
   }
