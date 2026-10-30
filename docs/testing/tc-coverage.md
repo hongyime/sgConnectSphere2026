@@ -407,7 +407,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_01` | E10-S01 | Verify that submitting a change request on an approved or confirmed event should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_03: Confirmed readonly field opens its real prefilled form without creating a request; tests/auth-e2e/changeRequests.spec.ts: TC_E1 |
-| `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
+| `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S01_04: Event layout/accessibility changes flag venues only and include changed layout capacity; backend/tests/changeRequests.integra |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_ |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions |
@@ -1839,10 +1839,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - answers the header session call for the chosen role, or 401 when signed out
 - an unstubbed request fails loudly with 404
 - handlers can be functions, and deferred holds a reply back
-
-### `tests/auth-e2e/changeRequests.spec.ts`
-
-- Dependency regression: real arrangement approval stays unapplied while E10-S02 is absent
 
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
