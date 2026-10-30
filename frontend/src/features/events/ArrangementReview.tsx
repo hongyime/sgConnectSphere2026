@@ -24,8 +24,10 @@ export function staffToNotify(check: ChangeCheck) {
   ].filter(Boolean).join(' and ');
 }
 
-export function ArrangementReview({ check, busy, onConfirm, onCancel }: {
+export function ArrangementReview({ check, changed = false, busy, onConfirm, onCancel }: {
   check: ChangeCheck;
+  // The save was refused because this list changed after the first check.
+  changed?: boolean;
   busy: boolean;
   onConfirm: () => void;
   onCancel: () => void;
@@ -40,6 +42,7 @@ export function ArrangementReview({ check, busy, onConfirm, onCancel }: {
       onConfirm={onConfirm}
       onCancel={onCancel}
       description={<>
+        {changed ? <Alert tone="warning">What this change affects has changed since you checked. Review the updated list before saving.</Alert> : null}
         {bookings.length > 0 ? <>
           <h3>Venue bookings to reconfirm</h3>
           <ul>{bookings.map(booking => <li key={booking.id}><strong>{booking.venueName}</strong>: {bookingReasons(booking)}</li>)}</ul>

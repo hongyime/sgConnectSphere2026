@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { refusedEditOffer } from './changeRequestPrefill';
 import { Lock, Save } from 'lucide-react';
 import { Alert, Button, FormActions, FormSection, type ApiFailure } from '../../shared';
-import { needsReview, previewEventInformation, updateEventInformation, type ChangeCheck, type EditableField, type EventPatch } from './eventEditApi';
+import { changedCheck, needsReview, previewEventInformation, updateEventInformation, type ChangeCheck, type EditableField, type EventPatch } from './eventEditApi';
 import { ArrangementReview } from './ArrangementReview';
 import { fieldList } from './eventEditFields';
 import './eventEdit.css';
@@ -143,7 +143,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const [serverError, setServerError] = useState<string | null>(null);
   const [changeOffer, setChangeOffer] = useState<ReturnType<typeof refusedEditOffer>>(null);
   const [saving, setSaving] = useState(false);
-  const [review, setReview] = useState<{ patch: EventPatch; check: ChangeCheck } | null>(null);
+  const [review, setReview] = useState<{ patch: EventPatch; check: ChangeCheck; changed?: boolean } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
@@ -195,14 +195,20 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       if (current !== attempt.current) return;
       if (!preview.ok) { setSaving(false); refused(preview, patch); return; }
       if (needsReview(preview)) { setSaving(false); setReview({ patch, check: preview }); return; }
+      await save(patch, preview.revision);
+      return;
     }
     await save(patch);
   }
 
-  async function save(patch: EventPatch) {
+  // `reviewed` binds the save to the preview it follows; when the server
+  // finds the arrangements changed, show the fresh list instead of saving.
+  async function save(patch: EventPatch, reviewed?: string) {
     setSaving(true);
-    const result = await updateEventInformation(eventId, patch);
+    const result = await updateEventInformation(eventId, patch, reviewed);
     setSaving(false);
+    const fresh = result.ok ? null : changedCheck(result);
+    if (fresh) { setReview({ patch, check: fresh, changed: true }); return; }
     if (!result.ok) { setReview(null); refused(result, patch); return; }
     onSaved(result.fields, { impact: result.impact, overSubscription: result.overSubscription });
   }
@@ -215,7 +221,8 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   if (review) {
     return (
       <div ref={reviewRef} tabIndex={-1} className="event-edit-review">
-        <ArrangementReview check={review.check} busy={saving} onConfirm={() => void save(review.patch)} onCancel={() => setReview(null)} />
+        <ArrangementReview check={review.check} changed={review.changed} busy={saving}
+          onConfirm={() => void save(review.patch, review.check.revision)} onCancel={() => setReview(null)} />
       </div>
     );
   }
