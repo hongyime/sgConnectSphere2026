@@ -20,7 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../src/modules/changeManagement/arrangementImpact.js';
-import { applyArrangementImpact, loadOverSubscription, previewEventChange } from '../src/modules/changeManagement/eventChange.js';
+import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, previewEventChange } from '../src/modules/changeManagement/eventChange.js';
 import { eventCapacity } from '../src/modules/attendeeRegistration/capacity.js';
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 
@@ -330,5 +330,70 @@ test('TC_E10S02_01: an attendance change flags a booking whose own headcount is 
     const impact = await f.changeSession(a.session, 'expected_attendance=$2', [60]);
     assert.deepEqual(impact.bookings.map(booking => [booking.id, booking.governingHeadcount, booking.capacity]), [[a.booking, 90, 80]]);
     assert.equal((await f.flags()).bookings[a.booking], true);
+  } finally { await f.db.close(); }
+});
+
+// #380 review: the save is bound to the preview the Coordinator saw. When
+// the arrangements change in between, the save is refused before anything
+// is written, and the refusal carries the fresh list for a new review.
+test('a save whose preview went stale (another booking confirmed meanwhile) is refused and writes nothing', async () => {
+  const f = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 80, capacity: 200 }]);
+  try {
+    const [a] = f.sessions;
+    const move = { startAt: '2027-03-19T00:00:00Z', endAt: '2027-03-21T00:00:00Z' };
+    const preview = await previewEventChange(f.db.pool, f.coordinator, 'EVT-E10S02', move);
+    assert.deepEqual(preview.impact.bookings.map(booking => booking.id), [a.booking], 'the Coordinator sees Hall A only');
+    // Hall B is confirmed for the same Session while the review is open.
+    const hallB = randomUUID();
+    await f.q("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,'Hall B','Test',150,'00:00','23:59')", [hallB]);
+    const bookingB = (await f.q("INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status) VALUES($1,$2,$3,'[2027-03-12 00:00Z,2027-03-14 00:00Z)','confirmed') RETURNING id",
+      [f.event, a.session, hallB])).rows[0].id as string;
+    const state = async () => ({
+      event: (await f.q('SELECT event_range::text FROM events WHERE id=$1', [f.event])).rows[0],
+      flags: await f.flags(),
+      audit: (await f.q('SELECT count(*)::int AS n FROM audit_logs WHERE event_id=$1', [f.event])).rows[0].n,
+      notices: (await f.q('SELECT count(*)::int AS n FROM notifications WHERE event_id=$1', [f.event])).rows[0].n,
+    });
+    const before = await state();
+
+    const refused = await updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, move, { reviewed: preview.revision })
+      .then(() => null, (error: unknown) => error);
+    assert.ok(refused instanceof ArrangementsChangedError, 'the stale save is refused');
+    assert.equal(refused.status, 409);
+    assert.deepEqual(refused.preview.impact.bookings.map(booking => booking.id).sort(), [a.booking, bookingB].sort(), 'the refusal lists Hall A and Hall B');
+    assert.notEqual(refused.preview.revision, preview.revision);
+    assert.deepEqual(await state(), before, 'no date moved, nothing flagged, logged or notified');
+
+    // Saving against the fresh list goes through and flags both.
+    const saved = await updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, move, { reviewed: refused.preview.revision });
+    assert.equal(saved.revision, refused.preview.revision);
+    assert.deepEqual((await f.flags()).bookings, { [a.booking]: true, [bookingB]: true });
+  } finally { await f.db.close(); }
+});
+
+test('a save whose preview went stale (more Registered meanwhile) is refused before the over-subscription is accepted', async () => {
+  const f = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 80, capacity: 200 }]);
+  try {
+    const [a] = f.sessions;
+    const edit = { description: 'Saved after checking' };
+    const preview = await previewEventChange(f.db.pool, f.coordinator, 'EVT-E10S02', edit);
+    assert.deepEqual(preview.overSubscription, [], 'nothing was over-subscribed when checked');
+    await register(f, 201, a.session);
+    await assert.rejects(updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, edit, { reviewed: preview.revision }),
+      (error: ArrangementsChangedError) => error instanceof ArrangementsChangedError
+        && error.preview.overSubscription.some(over => over.registered === 201 && over.capacity === 200));
+    assert.equal((await f.q('SELECT description FROM events WHERE id=$1', [f.event])).rows[0].description, 'Original description', 'the edit rolled back');
+  } finally { await f.db.close(); }
+});
+
+test('a save with the revision from an unchanged preview saves as usual', async () => {
+  const f = await fixture([{ range: '[2027-03-12 00:00Z,2027-03-14 00:00Z)', attendance: 80, capacity: 200 }]);
+  try {
+    const [a] = f.sessions;
+    const move = { startAt: '2027-03-19T00:00:00Z', endAt: '2027-03-21T00:00:00Z' };
+    const preview = await previewEventChange(f.db.pool, f.coordinator, 'EVT-E10S02', move);
+    const saved = await updateEventInformationWithNotifications(f.db.pool, f.coordinator, f.event, move, { reviewed: preview.revision });
+    assert.equal(saved.revision, preview.revision, 'the save reached the same list as the preview');
+    assert.deepEqual(await f.flags(), { bookings: { [a.booking]: true }, reservations: { [a.reservation]: true } });
   } finally { await f.db.close(); }
 });

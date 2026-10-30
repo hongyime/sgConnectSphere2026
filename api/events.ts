@@ -4,7 +4,7 @@ import { inTransaction } from '../backend/src/database/pool.js';
 import { cancelEvent, getCancellation } from '../backend/src/modules/eventLifecycle/cancellation.js';
 import { updateEventInformationWithNotifications } from '../backend/src/modules/eventNotifications/informationChange.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../backend/src/modules/changeManagement/requests.js';
-import { previewEventChange } from '../backend/src/modules/changeManagement/eventChange.js';
+import { ArrangementsChangedError, previewEventChange } from '../backend/src/modules/changeManagement/eventChange.js';
 // Vercel maps every file under `api/` to a serverless function. `api/foo.ts` and
 // `api/foo/index.ts` both target the same URL path `/api/foo`; only one wins the
 // route (empirically the parent file), so the other becomes an unreachable
@@ -204,9 +204,16 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
       sendJson(response, 200, await previewEventChange(getDatabasePool(), user, eventId.slice(0, 240), request.body));
       return;
     }
-    const result = await updateEventInformationWithNotifications(getDatabasePool(), user, eventId.slice(0, 240), request.body);
+    // &reviewed=<revision> binds the save to that preview (#380 review).
+    const reviewed = params.get('reviewed');
+    const result = await updateEventInformationWithNotifications(getDatabasePool(), user, eventId.slice(0, 240), request.body,
+      reviewed === null ? {} : { reviewed: reviewed.slice(0, 64) });
     sendJson(response, 200, { ...result });
   } catch (error) {
+    if (error instanceof ArrangementsChangedError) {
+      sendJson(response, 409, { error: error.message, message: 'What this change affects has changed since you checked. Review the updated list before saving.', ...error.preview });
+      return;
+    }
     if (error instanceof AccessError) {
       // SCRUM-34 (E03-S03, D11): a rejected request offers no change request.
       const offerChangeRequest = error.status === 409 && !(error instanceof RejectedRequestError);
