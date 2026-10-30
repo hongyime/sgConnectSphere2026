@@ -47,12 +47,34 @@ number and path is traceable; nothing was left as an unqualified assertion.
   #366, #368) are re-homed to their authors. Contribution percentages are
   `git shortlog -sne origin/main` share and now total 100%.
 
+## Review fixes pushed by Aaron (Bl0oper), 30 Oct 2026
+
+Aaron's 30 Oct review points, applied on Bryan's behalf as single text-run edits:
+
+- **Slide 2**: ceremony links are now `[link to be added]` placeholders.
+- **Slide 4**: "status polymorphism" cites #371 instead of T-59/T-63.
+- **Slide 6**: example 1 says what AI *could* do and cites what the repo records
+  (T-59, rollback isolation, `isSafeResetTarget()` in `backend/src/database/cli.ts`);
+  example 2 says 739 run records; example 3 cites T-100 (rule B) and the
+  `FOR UPDATE` locks in `venueBooking/` instead of T-63/T-68.
+- **Slide 9**: branch prefix `feature/`, not `feat/`.
+- **Slide 10**: no open issues (30 Oct 2026).
+- **Slide 12**: no linter; `check.py` and the tc-coverage audit listed under
+  `repository-checks`. The CI failure count is kept as Bryan wrote it.
+- **Slide 14**: rewritten around PR #355, where application-checks caught a booking
+  query that read migration 0025's `conflict_block_id` against a fixture schema built
+  from 0001 and 0019 (run 40331728045; fixed in `2e7b580`).
+- **Slide 15**: Amareet's two text columns as Amareet asked; the table's minimum row
+  heights were lowered so the longer row stays on the slide.
+
+The changed slides were rendered in PowerPoint 16 and checked.
+
 ## Not done / next step
 
 1. **Ceremony video URLs** (slide 2) still have to come from the team; they are not
-   in the repository. Insert them before submission.
+   in the repository. Replace the placeholders before submission.
 2. **Each member should confirm their own slide 15 row** — content is git-derived,
-   not self-reported. Amareet and Xiang Ying have not reviewed theirs.
+   not self-reported. Amareet has confirmed theirs; Xiang Ying has not.
 3. The deck was rebuilt as slide XML text; there is no LibreOffice in this
    environment, so layout was checked structurally (python-pptx: 17 slides, 7x5
    table, table bottom 7.03 in on a 7.5 in slide) but not rendered. Ask a reviewer
