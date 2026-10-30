@@ -105,6 +105,21 @@ Local environment note: `.env`'s `TEST_DATABASE_URL` still points at the old
 Docker port; DB runs used a native 5432 URL built in memory from
 `LOCAL_NATIVE_DATABASE_URL`.
 
+## PR #380 re-review (Ji Ning, 30 October, at a6f4517)
+
+One new P2, fixed: every field edit called `setSaving(false)` to invalidate a
+pending preview, which also cleared the busy state while the mutating PATCH
+was still pending, so a second save could overlap the first. The write now
+has its own `writing` state and ref, separate from preview invalidation:
+while it is pending the fields are read-only, Cancel and Save are disabled,
+and `update()` and `submit()` return at once (the ref answers before a
+re-render). The late-preview guards are unchanged. New tests in
+`EventEditForm.test.tsx`: an edit and a second submit during a held save send
+one PATCH and save the first value (fails without the fix); confirming the
+review twice sends one save (non-regression: Confirm was already busy); after
+a refused save the fields are editable again. No other change found needed
+in the PR's code on a full re-read.
+
 ## Evidence so far
 
 - Real local run 14/14: `20261030-142228-lexinphun2024-debug-frontend-e2e.md` (30dbc92).

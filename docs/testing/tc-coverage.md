@@ -1460,6 +1460,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - sends no save after the form closes
 - sends no save for the old event after switching to another one
 - sends no save of the old edit after the field is edited again
+- the fields are read-only and Save sends nothing more until the first save answers
+- confirming the review twice sends one save
+- after a refused save the fields can be edited and saved again
 
 ### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
 

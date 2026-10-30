@@ -153,6 +153,11 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   // go on to save a change nobody is looking at (#380 review).
   const attempt = useRef(0);
   useEffect(() => () => { attempt.current += 1; }, [eventId]);
+  // The mutating save itself cannot be cancelled by an edit, unlike a preview:
+  // while it is pending the fields are read-only and Save does nothing, so two
+  // writes never overlap (#380 re-review). The ref answers before a re-render.
+  const [writing, setWriting] = useState(false);
+  const writingRef = useRef(false);
 
   // Bring the form into view when it opens, and move focus to any error so
   // keyboard and screen-reader users hear why the save didn't go through.
@@ -169,6 +174,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const changed = (Object.keys(draft) as EditableField[]).some(field => (draft[field] ?? '').trim() !== (initial[field] ?? '').trim());
 
   function update(field: EditableField, value: string) {
+    if (writingRef.current) return;
     attempt.current += 1;
     setSaving(false);
     setDraft(current => ({ ...current, [field]: value }));
@@ -179,6 +185,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (writingRef.current) return;
     const { patch, errors: found } = buildPatch(initial, draft);
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -204,8 +211,12 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   // `reviewed` binds the save to the preview it follows; when the server
   // finds the arrangements changed, show the fresh list instead of saving.
   async function save(patch: EventPatch, reviewed?: string) {
+    writingRef.current = true;
+    setWriting(true);
     setSaving(true);
     const result = await updateEventInformation(eventId, patch, reviewed);
+    writingRef.current = false;
+    setWriting(false);
     setSaving(false);
     const fresh = result.ok ? null : changedCheck(result);
     if (fresh) { setReview({ patch, check: fresh, changed: true }); return; }
@@ -257,7 +268,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
             const error = errors[spec.field];
             const describedBy = [error ? `${id}-error` : null, spec.hint ? `${id}-hint` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
             const common = {
-              id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
+              id, value: draft[spec.field], readOnly: locked || writing, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
               onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
             };
             const lock = locked ? <Lock size={12} aria-hidden="true" /> : null;
@@ -268,7 +279,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
               // Two ordinary fields side by side in the section grid, rather
               // than a nested fieldset the section's legend rule would float.
               const [opens = '', closes = ''] = (draft.registrationDates ?? '').split('|');
-              const dateProps = { type: 'datetime-local', readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy };
+              const dateProps = { type: 'datetime-local', readOnly: locked || writing, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy };
               return (
                 <Fragment key={spec.field}>
                   <div className={`field-control${state}`}>
