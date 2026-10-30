@@ -184,3 +184,15 @@ test('TC_E08S05_05: automatic completion names the System without inventing an a
   expect(screen.getByRole('cell', { name: 'System' })).toBeTruthy();
   expect(screen.getByRole('cell', { name: 'Not recorded' })).toBeTruthy();
 });
+
+test('TC_E08S04_04: reversion to planning preserves action label in activity log', () => {
+  const reverted: ActivityEntry = {
+    occurred_at: '2026-10-29T12:00:00.000Z',
+    action: 'Reverted to Planning',
+    field_changed: 'status',
+    old_value: 'confirmed',
+    new_value: 'planning',
+    actor_name: 'Coordinator A',
+  };
+  expect(describeAction(reverted)).toBe('Reverted to Planning');
+});

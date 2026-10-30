@@ -177,3 +177,96 @@ export async function confirmEvent(database: Pool, user: AuthenticatedUser | und
   // E08-S06 owns the Safety Officer's approval, which is what confirms.
   throw new AccessError(409, READINESS_MESSAGES.confirmThroughApproval);
 }
+
+export type EventReversionResult = {
+  eventId: string;
+  eventCode: string | null;
+  status: 'planning';
+  reason: string;
+  statusChangedAt: Date;
+};
+
+export function parseReversionReason(input: unknown): string {
+  let parsed = input;
+  if (typeof input === 'string') {
+    const trimmed = input.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        parsed = input;
+      }
+    }
+  }
+  const reason = (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+    ? (parsed as Record<string, unknown>).reason
+    : parsed;
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new AccessError(400, 'A reason is required to revert this event to planning.');
+  }
+  if (reason.trim().length > 2000) {
+    throw new AccessError(400, 'Reversion reason must not exceed 2000 characters.');
+  }
+  return reason.trim();
+}
+
+// POST /api/events?revert=1&id=<event id or code> (E08-S04 / SCRUM-61)
+export async function revertEventToPlanning(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  identifier: string,
+  input: unknown,
+): Promise<EventReversionResult> {
+  if (!user) throw new AccessError(401, 'Sign in to continue.');
+  checkIdentifier(identifier);
+  if (!canActAsRole(user, ['event_coordinator']).allowed) {
+    await recordEventDenial(database, user, identifier, 'event_reversion');
+    throw new AccessError(403, 'Only the assigned Coordinator can revert this event to Planning.');
+  }
+  const reason = parseReversionReason(input);
+  const coordinator = user;
+
+  const outcome = await inTransaction(database, async client => {
+    const event = (await client.query<EventRow>(`${EVENT_SELECT} FOR UPDATE`, [identifier])).rows[0];
+    if (!event || event.coordinator_id !== coordinator.id || event.status === 'draft') return { denied: true as const };
+    if (event.status !== 'confirmed') {
+      throw new AccessError(409, 'Only a Confirmed event can be reverted to Planning.');
+    }
+
+    const { event: updated } = await applyEventStatusChange(client, event.id, 'planning', coordinator.id, {
+      reason,
+      auditAction: 'Reverted to Planning',
+      beforeNotify: async change => {
+        const actor = (await client.query<{ full_name: string }>('SELECT full_name FROM users WHERE id = $1', [coordinator.id]))
+          .rows[0];
+        const name = actor?.full_name?.trim() || coordinator.email;
+        const label = eventLabel(event);
+        await writeEventNotification(client, {
+          eventId: event.id,
+          changeId: change.auditId,
+          userId: event.organiser_id,
+          occurredAt: change.occurredAt,
+          title: 'Event reverted to planning',
+          message: `${name} reverted ${label} to Planning. Reason: ${reason}`,
+        });
+      },
+    });
+
+    return {
+      denied: false as const,
+      result: {
+        eventId: event.id,
+        eventCode: event.event_code,
+        status: 'planning' as const,
+        reason,
+        statusChangedAt: updated.statusChangedAt,
+      },
+    };
+  });
+
+  if (outcome.denied) {
+    await recordEventDenial(database, coordinator, identifier, 'event_reversion');
+    throw new AccessError(403, 'Access denied. This event is not assigned to you.');
+  }
+  return outcome.result;
+}

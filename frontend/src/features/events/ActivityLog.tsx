@@ -79,6 +79,7 @@ export function describeChange(entry: ActivityEntry) {
 export function describeAction(entry: ActivityEntry) {
   // "Booking Approved" -> "Booking approved" (sentence case, design.md 8.1).
   if (isBookingDecision(entry)) return entry.action.charAt(0) + entry.action.slice(1).toLowerCase();
+  if (entry.action === 'Reverted to Planning') return 'Reverted to Planning';
   if (entry.field_changed === 'status') return 'Status changed';
   if (entry.action === 'Record updated') return 'Details edited';
   return entry.action;

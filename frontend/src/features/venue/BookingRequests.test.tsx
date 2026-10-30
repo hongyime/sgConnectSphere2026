@@ -282,7 +282,8 @@ test('TC_E06S04_04: an approval blocked by a buffered clash shows which booking 
   fireEvent.click(screen.getByRole('button', { name: 'Approve request' }));
   expect(await screen.findByRole('alert')).toHaveTextContent(clash);
   expect(screen.queryByText(/^Approved\./)).toBeNull();
-  expect(screen.getByRole('button', { name: 'Approve request' })).toBeEnabled();
+  expect(screen.queryByRole('button', { name: 'Approve request' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Approve…' })).toBeDisabled();
 });
 
 test('a decision on an event with no Coordinator says nobody was notified', async () => {

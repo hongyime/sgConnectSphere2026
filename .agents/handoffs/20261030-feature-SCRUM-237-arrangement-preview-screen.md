@@ -84,3 +84,15 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 
 Task 8: push, open PR B with the AC-to-evidence checklist for the Product
 Owner, postplan, and Jira (SCRUM-237, SCRUM-238).
+
+## Update — 2026-10-30 PR conflict review
+
+- Merged current `main` (`3ac6582`) into this branch and resolved the
+  `CoordinatorWorkspace.tsx` import conflict by retaining both the revert
+  action and arrangement-preview imports.
+- Regenerated `docs/testing/tc-coverage.md` after the merge: 286/379 automated,
+  67 scaffold, 26 without a test.
+- The two P2 review findings on PR #380 remain unresolved: invalidate late
+  preview continuations after unmount/event change, and bind confirmation to a
+  server-validated preview revision so a changed impact cannot be saved unseen.
+  This conflict-only update does not address or claim a fix for either finding.
