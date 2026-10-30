@@ -26,16 +26,26 @@ export type AffectedBooking = {
 };
 export type AffectedReservation = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string; reasons: ImpactReason[] };
 export type OverSubscription = { scope: 'session' | 'event'; sessionId: string | null; registered: number; capacity: number };
+// `revision` fingerprints what the preview listed; the save sends it back so
+// the server can refuse when the arrangements changed meanwhile (#380 review).
 export type ChangeCheck = {
   impact: { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[] };
   overSubscription: OverSubscription[];
+  revision?: string;
 };
 type ChangeCheckBody = Partial<ChangeCheck>;
 
 const checkFrom = (body: ChangeCheckBody): ChangeCheck => ({
   impact: body.impact ?? { affected: false, bookings: [], reservations: [] },
   overSubscription: body.overSubscription ?? [],
+  ...(typeof body.revision === 'string' ? { revision: body.revision } : {}),
 });
+
+// The save was refused because what it affects changed since the preview:
+// the refusal carries the fresh list to review again.
+export function changedCheck(result: ApiFailure): ChangeCheck | null {
+  return result.status === 409 && result.code === 'arrangements_changed' && result.details ? checkFrom(result.details as ChangeCheckBody) : null;
+}
 
 // Something for the Coordinator to look at before the change takes effect.
 export function needsReview(check: ChangeCheck) {
@@ -46,9 +56,9 @@ export type EditResult =
   | ({ ok: true; fields: string[] } & ChangeCheck)
   | ApiFailure;
 
-export async function updateEventInformation(eventId: string, patch: EventPatch): Promise<EditResult> {
+export async function updateEventInformation(eventId: string, patch: EventPatch, reviewed?: string): Promise<EditResult> {
   const result = await apiCall<{ fields?: string[] } & ChangeCheckBody>(
-    `/api/events?edit=1&id=${encodeURIComponent(eventId)}`,
+    `/api/events?edit=1&id=${encodeURIComponent(eventId)}${reviewed === undefined ? '' : `&reviewed=${encodeURIComponent(reviewed)}`}`,
     jsonRequest('PATCH', patch),
     'Unable to save your changes.');
   return result.ok ? { ok: true, fields: result.data.fields ?? Object.keys(patch), ...checkFrom(result.data) } : result;

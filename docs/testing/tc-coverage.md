@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **282** (74.4%)
+- Automated (explicit TC_ID in an active test title): **286** (75.5%)
   - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **243**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **71** (18.7%)
+  - Live-assertion (other active tests): **247**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **67** (17.7%)
 - No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
 ## Coverage by epic
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 12 | 15 | 1 |
+| E08 | 28 | 16 | 11 | 1 |
 | E09 | 45 | 33 | 9 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **282** | **71** | **26** |
+| **Total** | **379** | **286** | **67** | **26** |
 
 ## Case-by-case status
 
@@ -331,10 +331,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_08` | E08-S03 | Verify that submitting a fully arranged event for its Operational Safety Check s | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_08: submitting a fully arranged Planning event moves it to Safety Review and notifies the Organiser and every active Saf |
 | `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_09: submission is blocked while a venue booking is outstanding, each one listed by venue, and nothing changes; backend/t |
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
-| `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_01 - Verify that reverting a Confirmed event to Planning with a recorded reason should update its status and notify the Organiser with the reason |
-| `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_02 - Verify that reverting a Confirmed event with registered Attendees should notify them that arrangements are being revised |
-| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead b |
-| `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log |
+| `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
+| `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
+| `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
@@ -488,6 +488,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/arrangementImpact.integration.test.ts`
 
 - the Event capacity E09-S02 reports is the sum of every Confirmed booking, Session by Session
+- a save whose preview went stale (another booking confirmed meanwhile) is refused and writes nothing
+- a save whose preview went stale (more Registered meanwhile) is refused before the over-subscription is accepted
+- a save with the revision from an unchanged preview saves as usual
 
 ### `backend/tests/arrangementImpact.test.ts`
 
@@ -735,6 +738,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - previewEventChange wraps the preview in its own transaction
 - a draft date change sends no generic date notice; an unknown Event is refused
 - a capacity-only change notifies the Venue Staff alone, with no date notice
+- the revision is the same for the same arrangements and changes with any of them
+- a save with the preview revision goes through and returns the same revision
+- a save with a stale revision is refused with the fresh list, before anything is flagged or sent
+
+### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
+
+- the save route refuses a stale preview revision with the fresh list, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -794,6 +804,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted
 - SCRUM-60 D64: Safety Review counts as an active event for workload and deactivation (T-52)
 - SCRUM-60: a wrong-role submission is refused and audited without opening a transaction; signed-out and blank calls record nothing
+
+### `backend/tests/eventReversion.test.ts`
+
+- revertEventToPlanning refuses unauthenticated and non-coordinator roles
+- revertEventToPlanning validates identifier and reason before opening transaction
+- revertEventToPlanning refuses unassigned coordinator or non-existent event
+- revertEventToPlanning refuses events that are not in Confirmed status
+- Scenario 4 / C-132 / T-82: a reverted event in Planning cannot be confirmed directly; it must pass Safety Review again
+- revertEventToPlanning falls back to coordinator email if full_name is empty or whitespace
+- revertEventToPlanning refuses unassigned events (coordinator_id is null) and draft events
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1298,6 +1318,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - cancelling the review returns to the form with the edit kept and saves nothing
 - a refused preview is shown in the form, with no review step and nothing saved
 - a save refused after the review goes back to the form and shows why
+- confirming the review sends the revision of the list that was shown
+- a save refused because the arrangements changed shows the fresh list, saves nothing, and confirming it sends the new revision
+- a save with nothing to review is still bound: if something became affected, the review appears instead
 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
@@ -1410,6 +1433,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Server refusal stays visible and busy submission prevents duplicate clicks
 - A late submission response cannot overwrite a different event route
 
+### `frontend/src/features/events/EventDetails.test.tsx`
+
+- renders
+- does not render
+- does not render
+- clicking
+- validation requires non-empty reason and blocks submission
+- submitting with valid reason calls POST /api/events?revert=1&id=... and hands the success message to the caller
+- displays error message when API call fails
+
 ### `frontend/src/features/events/EventEditForm.test.tsx`
 
 - sends only the fields that changed, trimmed and typed
@@ -1423,6 +1456,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
 - registration date inputs describe the validation error after an invalid save
+- still saves when the form is open when the answer arrives
+- sends no save after the form closes
+- sends no save for the old event after switching to another one
+- sends no save of the old edit after the field is edited again
 
 ### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
 
@@ -1824,6 +1861,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/e03.spec.ts`
 
 - E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
+
+### `tests/e2e/e10.spec.ts`
+
+- a save refused because the arrangements changed during the review shows the fresh list before anything is saved
 
 ### `tests/e2e/eventReadiness.spec.ts`
 

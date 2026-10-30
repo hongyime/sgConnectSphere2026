@@ -1,7 +1,7 @@
 // E03-S07 (SCRUM-37) on the Coordinator event page: the assigned Coordinator
 // edits an approved event (Scenario 2); edits are unavailable before approval;
 // a server refusal (Scenario 5, e.g. after a reassignment) is shown as-is.
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
 import { RequestDetail } from './CoordinatorWorkspace';
@@ -19,7 +19,9 @@ function detail(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function stub(options: { event?: Record<string, unknown>; patchReply?: { status: number; body: unknown }; previewReply?: { status: number; body: unknown } } = {}) {
+type Reply = { status: number; body: unknown };
+// patchReplies answers successive saves in order, then patchReply takes over.
+function stub(options: { event?: Record<string, unknown>; patchReply?: Reply; patchReplies?: Reply[]; previewReply?: Reply } = {}) {
   let current = detail(options.event);
   const patches: { url: URL; body: Record<string, unknown> }[] = [];
   vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
@@ -36,7 +38,7 @@ function stub(options: { event?: Record<string, unknown>; patchReply?: { status:
       patches.push({ url, body });
       // E10-S02: the Coordinator's Save first asks for a preview (&preview=1).
       if (url.searchParams.get('preview') === '1') reply = options.previewReply ?? { status: 200, body: { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] } };
-      else reply = options.patchReply ?? { status: 200, body: { updated: true, eventId: 'evt-1004', fields: Object.keys(body) } };
+      else reply = options.patchReplies?.shift() ?? options.patchReply ?? { status: 200, body: { updated: true, eventId: 'evt-1004', fields: Object.keys(body) } };
       if (reply.status === 200 && !url.searchParams.get('preview') && typeof body.venueRequirements === 'string') current = { ...current, venue_requirements: body.venueRequirements };
     } else reply = { status: 200, body: { event: current } };
     return { ok: reply.status < 300, status: reply.status, json: async () => reply.body } as Response;
@@ -130,7 +132,8 @@ test('TC_E10S02_03: a date change shows the affected booking and equipment, and 
   const patches = stub({ previewReply: { status: 200, body: dateImpact }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...dateImpact } } });
   await editStart();
   const review = await screen.findByRole('form', { name: 'Check what this change affects' });
-  expect(review.parentElement).toHaveFocus();
+  // Focus moves in an effect after the review renders, so wait for it (it was flaky, 2 in 12 runs).
+  await waitFor(() => expect(review.parentElement).toHaveFocus());
   expect(within(review).getByRole('heading', { name: 'Venue bookings to reconfirm' })).toBeInTheDocument();
   expect(within(review).getByText('Riverside Hall').closest('li')).toHaveTextContent('Riverside Hall: date or time changed');
   expect(within(review).getByText('Projector').closest('li')).toHaveTextContent('Projector: date or time changed');
@@ -181,7 +184,7 @@ test('cancelling the review returns to the form with the edit kept and saves not
   const review = await screen.findByRole('form', { name: 'Check what this change affects' });
   expect(review).toHaveTextContent('Cancel goes back to your edits without saving.');
   fireEvent.click(within(review).getByRole('button', { name: 'Cancel' }));
-  expect(screen.getByRole('heading', { name: 'Edit event details' })).toHaveFocus();
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'Edit event details' })).toHaveFocus());
   expect(screen.getByLabelText('Starts')).toHaveValue('2026-11-20T09:00');
   expect(patches).toHaveLength(1);
 });
@@ -200,4 +203,54 @@ test('a save refused after the review goes back to the form and shows why', asyn
   fireEvent.click(within(await screen.findByRole('form', { name: 'Check what this change affects' })).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
   expect(await screen.findByRole('alert')).toHaveTextContent('The event changed while you were reviewing. Check it and save again.');
   expect(screen.getByRole('form', { name: 'Edit event details' })).toBeInTheDocument();
+});
+
+// #380 review: the save is bound to the list the Coordinator saw.
+const hallB = { ...hall, id: 'booking-b', venueId: 'hall-b', venueName: 'Garden Hall' };
+const stale = (bookings: typeof hall[], revision: string): Reply => ({ status: 409, body: {
+  error: 'arrangements_changed', message: 'What this change affects has changed since you checked. Review the updated list before saving.',
+  impact: { affected: true, bookings, reservations: [] }, overSubscription: [], revision } });
+
+test('confirming the review sends the revision of the list that was shown', async () => {
+  const patches = stub({ previewReply: { status: 200, body: { ...dateImpact, revision: 'rev-shown' } }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...dateImpact } } });
+  await editStart();
+  fireEvent.click(within(await screen.findByRole('form', { name: 'Check what this change affects' })).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByText(/2 arrangements were flagged for reconfirmation/)).toBeInTheDocument();
+  expect(patches[1].url.searchParams.get('reviewed')).toBe('rev-shown');
+});
+
+test('a save refused because the arrangements changed shows the fresh list, saves nothing, and confirming it sends the new revision', async () => {
+  const preview = { impact: { affected: true, bookings: [hall], reservations: [] }, overSubscription: [], revision: 'rev-hall-a' };
+  const saved = { impact: { affected: true, bookings: [hall, hallB], reservations: [] }, overSubscription: [], revision: 'rev-both' };
+  const patches = stub({ previewReply: { status: 200, body: preview },
+    patchReplies: [stale([hall, hallB], 'rev-both'), { status: 200, body: { updated: true, fields: ['startAt'], ...saved } }] });
+  await editStart();
+  let review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(within(review).queryByText('Garden Hall')).not.toBeInTheDocument();
+  fireEvent.click(within(review).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+
+  review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(await within(review).findByText('Garden Hall')).toBeInTheDocument();
+  expect(within(review).getByText('Riverside Hall')).toBeInTheDocument();
+  expect(within(review).getByRole('alert')).toHaveTextContent('What this change affects has changed since you checked. Review the updated list before saving.');
+  await waitFor(() => expect(review.parentElement).toHaveFocus());
+  expect(screen.queryByText(/flagged for reconfirmation and/)).not.toBeInTheDocument();
+  expect(patches[1].url.searchParams.get('reviewed')).toBe('rev-hall-a');
+
+  fireEvent.click(within(review).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByText(/2 arrangements were flagged for reconfirmation and the Venue Staff were notified\./)).toBeInTheDocument();
+  expect(patches).toHaveLength(3);
+  expect(patches[2].url.searchParams.get('reviewed')).toBe('rev-both');
+  expect(patches[2].body).toEqual(patches[0].body);
+});
+
+test('a save with nothing to review is still bound: if something became affected, the review appears instead', async () => {
+  const patches = stub({ previewReply: { status: 200, body: { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [], revision: 'rev-nothing' } },
+    patchReplies: [stale([hallB], 'rev-hall-b')] });
+  await editStart();
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(within(review).getByText('Garden Hall')).toBeInTheDocument();
+  expect(within(review).getByRole('alert')).toHaveTextContent('has changed since you checked');
+  expect(patches.map(patch => patch.url.searchParams.get('reviewed'))).toEqual([null, 'rev-nothing']);
+  expect(screen.queryByText(/Saved your changes/)).not.toBeInTheDocument();
 });

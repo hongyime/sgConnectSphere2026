@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { refusedEditOffer } from './changeRequestPrefill';
 import { Lock, Save } from 'lucide-react';
 import { Alert, Button, FormActions, FormSection, type ApiFailure } from '../../shared';
-import { needsReview, previewEventInformation, updateEventInformation, type ChangeCheck, type EditableField, type EventPatch } from './eventEditApi';
+import { changedCheck, needsReview, previewEventInformation, updateEventInformation, type ChangeCheck, type EditableField, type EventPatch } from './eventEditApi';
 import { ArrangementReview } from './ArrangementReview';
 import { fieldList } from './eventEditFields';
 import './eventEdit.css';
@@ -143,11 +143,16 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const [serverError, setServerError] = useState<string | null>(null);
   const [changeOffer, setChangeOffer] = useState<ReturnType<typeof refusedEditOffer>>(null);
   const [saving, setSaving] = useState(false);
-  const [review, setReview] = useState<{ patch: EventPatch; check: ChangeCheck } | null>(null);
+  const [review, setReview] = useState<{ patch: EventPatch; check: ChangeCheck; changed?: boolean } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
   const reviewRef = useRef<HTMLDivElement>(null);
   const reviewed = useRef(false);
+  // Each Save press gets a number. Leaving the form, switching to another
+  // event or editing again makes it stale, so a late preview answer cannot
+  // go on to save a change nobody is looking at (#380 review).
+  const attempt = useRef(0);
+  useEffect(() => () => { attempt.current += 1; }, [eventId]);
 
   // Bring the form into view when it opens, and move focus to any error so
   // keyboard and screen-reader users hear why the save didn't go through.
@@ -164,6 +169,8 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const changed = (Object.keys(draft) as EditableField[]).some(field => (draft[field] ?? '').trim() !== (initial[field] ?? '').trim());
 
   function update(field: EditableField, value: string) {
+    attempt.current += 1;
+    setSaving(false);
     setDraft(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
     setServerError(null);
@@ -179,21 +186,29 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       return;
     }
     if (Object.keys(patch).length === 0) return;
+    const current = ++attempt.current;
     setSaving(true);
     setServerError(null);
     setChangeOffer(null);
     if (checkArrangements) {
       const preview = await previewEventInformation(eventId, patch);
+      if (current !== attempt.current) return;
       if (!preview.ok) { setSaving(false); refused(preview, patch); return; }
       if (needsReview(preview)) { setSaving(false); setReview({ patch, check: preview }); return; }
+      await save(patch, preview.revision);
+      return;
     }
     await save(patch);
   }
 
-  async function save(patch: EventPatch) {
+  // `reviewed` binds the save to the preview it follows; when the server
+  // finds the arrangements changed, show the fresh list instead of saving.
+  async function save(patch: EventPatch, reviewed?: string) {
     setSaving(true);
-    const result = await updateEventInformation(eventId, patch);
+    const result = await updateEventInformation(eventId, patch, reviewed);
     setSaving(false);
+    const fresh = result.ok ? null : changedCheck(result);
+    if (fresh) { setReview({ patch, check: fresh, changed: true }); return; }
     if (!result.ok) { setReview(null); refused(result, patch); return; }
     onSaved(result.fields, { impact: result.impact, overSubscription: result.overSubscription });
   }
@@ -206,7 +221,8 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   if (review) {
     return (
       <div ref={reviewRef} tabIndex={-1} className="event-edit-review">
-        <ArrangementReview check={review.check} busy={saving} onConfirm={() => void save(review.patch)} onCancel={() => setReview(null)} />
+        <ArrangementReview check={review.check} changed={review.changed} busy={saving}
+          onConfirm={() => void save(review.patch, review.check.revision)} onCancel={() => setReview(null)} />
       </div>
     );
   }

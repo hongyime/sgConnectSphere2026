@@ -162,15 +162,16 @@ test.describe("E10-S02", () => {
   const projector = { id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] };
   const dateChange = { impact: { affected: true, bookings: [riverside], reservations: [projector] }, overSubscription: [] };
 
-  async function openEdit(page: Page, change?: Parameters<typeof fakeCoordinatorBackend>[1]['change']) {
-    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-TECH', title: 'Tech Conference 2026', assignedTo: coordA, status: 'planning', change });
+  type BackendOptions = Parameters<typeof fakeCoordinatorBackend>[1];
+  async function openEdit(page: Page, change?: BackendOptions['change'], changeAfterPreview?: BackendOptions['changeAfterPreview']) {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-TECH', title: 'Tech Conference 2026', assignedTo: coordA, status: 'planning', change, changeAfterPreview });
     await page.goto('/coordinator/events/EVT-TECH');
     await page.getByRole('button', { name: 'Edit details' }).click();
     return { backend, form: page.getByRole('form', { name: 'Edit event details' }) };
   }
 
-  async function moveDates(page: Page) {
-    const { backend, form } = await openEdit(page, dateChange);
+  async function moveDates(page: Page, changeAfterPreview?: BackendOptions['changeAfterPreview']) {
+    const { backend, form } = await openEdit(page, dateChange, changeAfterPreview);
     await form.getByLabel('Starts').fill('2026-11-20T09:00');
     await form.getByLabel('Ends').fill('2026-11-20T12:00');
     await form.getByRole('button', { name: 'Save changes' }).click();
@@ -222,6 +223,7 @@ test.describe("E10-S02", () => {
     await expect(page.getByText(/flagged for reconfirmation/)).toHaveCount(0);
     await expect(page.getByRole('form', { name: 'Check what this change affects' })).toHaveCount(0);
     expect(backend.previews).toBe(1);
+    expect(backend.reviewed).toEqual(['rev-1']);
     expect(backend.audit.map(row => row.field)).toEqual(['description']);
   });
 
@@ -247,6 +249,23 @@ test.describe("E10-S02", () => {
     expect(backend.audit).toEqual([]);
     await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('2 arrangements were flagged for reconfirmation');
+    expect(backend.reviewed).toEqual(['rev-1']);
+    expect(backend.audit.map(row => row.field)).toEqual(['startAt', 'endAt']);
+  });
+
+  // #380 review: the save is bound to the list the Coordinator saw.
+  test('a save refused because the arrangements changed during the review shows the fresh list before anything is saved', async ({ page }) => {
+    const garden = { ...riverside, id: 'booking-b', venueId: 'garden', venueName: 'Garden Hall' };
+    const backend = await moveDates(page, { impact: { affected: true, bookings: [riverside, garden], reservations: [projector] }, overSubscription: [] });
+    const review = page.getByRole('form', { name: 'Check what this change affects' });
+    await expect(review.getByRole('listitem').filter({ hasText: 'Garden Hall' })).toHaveCount(0);
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(review.getByRole('alert')).toHaveText('What this change affects has changed since you checked. Review the updated list before saving.');
+    await expect(review.getByRole('listitem').filter({ hasText: 'Garden Hall' })).toHaveText('Garden Hall: date or time changed');
+    expect(backend.audit).toEqual([]);
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('3 arrangements were flagged for reconfirmation');
+    expect(backend.reviewed).toEqual(['rev-1', 'rev-2']);
     expect(backend.audit.map(row => row.field)).toEqual(['startAt', 'endAt']);
   });
 
