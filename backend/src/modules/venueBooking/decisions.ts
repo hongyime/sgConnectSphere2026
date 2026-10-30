@@ -10,6 +10,7 @@ import { holdsVenue } from './holds.js';
 import { confirmLostVenueReplacement } from './lostVenueRecovery.js';
 import { formatSgt } from './bookingShared.js';
 import { bookingState } from './bookingState.js';
+import { enterSafetyReviewIfReady } from '../eventReadiness/autoSafetyReview.js';
 
 // E06-S04 "Decide on a venue booking request" (SCRUM-48). Venue Staff approve
 // or reject a Pending booking (Scenarios 1 to 3). Each decision is recorded in
@@ -342,8 +343,10 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
       }));
     }
 
+    // E08-S04 Scenario 4: an approval can be a reverted event's last arrangement.
+    const enteredSafetyReview = decision.decision === 'approve' && await enterSafetyReviewIfReady(client, row.event_id, staff.id);
     const updated = await lockBooking(client, row.id);
-    return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified } };
+    return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified, enteredSafetyReview } };
   });
 }
 
@@ -406,7 +409,8 @@ export async function reconfirmBooking(database: Pool, user: AuthenticatedUser |
         message: `${staffName} reconfirmed ${row.venue_name} for "${row.event_title}" (${when}). It no longer needs reconfirmation.`,
       }));
     }
+    const enteredSafetyReview = await enterSafetyReviewIfReady(client, row.event_id, staff.id);
     const updated = await lockBooking(client, row.id);
-    return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified } };
+    return { status: 200, body: { booking: toBooking(updated!), coordinatorNotified: notified, enteredSafetyReview } };
   });
 }

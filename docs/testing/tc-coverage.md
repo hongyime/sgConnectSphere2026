@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **286** (75.5%)
-  - Real-database (`.integration.test` / `.db.test`): **38**
+- Automated (explicit TC_ID in an active test title): **287** (75.7%)
+  - Real-database (`.integration.test` / `.db.test`): **39**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **247**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **67** (17.7%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **66** (17.4%)
 - No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
 ## Coverage by epic
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 16 | 11 | 1 |
+| E08 | 28 | 17 | 10 | 1 |
 | E09 | 45 | 33 | 9 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **286** | **67** | **26** |
+| **Total** | **379** | **287** | **66** | **26** |
 
 ## Case-by-case status
 
@@ -335,7 +335,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
+| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; tests/e2e |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -543,6 +543,21 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
+
+### `backend/tests/autoSafetyReview.integration.test.ts`
+
+- the earlier safety approval is not reused: only a Safety Officer can confirm the event again
+- the event waits until the last arrangement: booking, then equipment, then Technical Support staff
+- re-reserving the last flagged equipment puts a reverted event in Safety Review
+- approving the last pending booking of a reverted event puts it in Safety Review
+- an event that was never Confirmed stays in Planning for its Coordinator to submit
+- rejecting a booking never moves a reverted event, even with nothing left outstanding
+
+### `backend/tests/autoSafetyReview.test.ts`
+
+- a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change
+- without an assigned Coordinator only the Organiser and the Safety Officers are told
+- nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding
 
 ### `backend/tests/bookingPrimary.test.ts`
 
