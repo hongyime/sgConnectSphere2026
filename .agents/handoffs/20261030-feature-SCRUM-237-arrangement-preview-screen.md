@@ -57,10 +57,30 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 - Multi-Session Event: an Event-level attendance edit does not reach Sessions
   (0014 syncs a sole Session only), so Scenario 1 fires there only through a
   Session edit (E04-S02). Reviewer note on #376.
-- Database-only evidence until other stories land: two-Session parts of
-  TC_E10S02_01/_05/_07 (E04-S02) and TC_E10S02_04 (E10-S01 apply path).
+- Database-only evidence until E04-S02 (SCRUM-39) lands: the change-one-Session-
+  of-two parts of TC_E10S02_01/_05/_07. No code edits a single Session yet. When
+  E04-S02 adds it, its Session save must call `assessArrangementImpact` and
+  `applyArrangementImpact` (as `updateEventInformationWithNotifications` does);
+  no change to E10-S02 code. Then Le Xin runs those three parts by hand in a new
+  T-65 record. E04-S02's owner is not confirmed yet (Bryan helps on part of it;
+  it may move to Amareet), so raise it with whoever takes it.
+- TC_E10S02_04 is run by hand with Venue Staff lowering the venue capacity
+  (E05-S01); a Coordinator-made capacity drop waits for the E10-S01 apply path.
+
+- Follow-up (found in the manual run, not an AC): on a two-Session event the
+  review box lists equipment by name only, so two "E10 Projector" lines look
+  identical. Add the Session date to each item when E04-S02 makes multi-Session
+  events creatable in the app; it needs the backend to return it.
+
+## Evidence so far
+
+- Real local run 14/14: `20261030-142228-lexinphun2024-debug-frontend-e2e.md` (30dbc92).
+- Le Xin's manual run 9/9 PASS with 22 screenshots:
+  `20261030-154914-lexinphun2024-debug-frontend-e2e.md` (8e2d7ee).
+- Vitest 686/686 and Playwright 420 passed: `20261030-134709-…-frontend-vitest.md`,
+  `20261030-134946-…-frontend-e2e.md` (5fdddca).
 
 ## Next step
 
-Task 7: click-through guide (`docs/testing/manual/`) and preconditions SQL, a
-real local run, then Le Xin's manual T-93 run with hand-taken screenshots.
+Task 8: push, open PR B with the AC-to-evidence checklist for the Product
+Owner, postplan, and Jira (SCRUM-237, SCRUM-238).

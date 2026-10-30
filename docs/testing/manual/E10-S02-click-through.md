@@ -33,6 +33,12 @@ http://localhost:5173. Every account uses the seed password
 | `venue_a@connectsphere.com` | Venue Staff for every E10 venue |
 | `tech_a@connectsphere.com` | Technical Support Staff for every E10 event |
 
+Fixture substitutions: the cases name `coordinator_1`, `venue_staff_1` and
+`tech_support_1`, which the seed does not have; use the seed accounts above,
+which have the same roles. Separate events (EVT-1021 to EVT-1025) replace the
+single "Tech Conference 2026" so the cases do not affect each other, keeping each
+case's numbers and dates. Say so in the run record.
+
 Do the sections in order: B continues from A on the same event. Date and time
 fields use your browser's local time; the steps assume Singapore time.
 
