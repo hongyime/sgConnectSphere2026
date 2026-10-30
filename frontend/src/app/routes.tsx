@@ -56,6 +56,7 @@ const EventFeedback = lazy(() => import('../features/attendee/AttendeeRegistrati
 const EventDiscovery = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDiscovery })));
 const EventDetail = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.EventDetail })));
 const RegisterForEvent = lazy(() => import('../features/attendee/EventRegistration').then(m => ({ default: m.RegisterForEvent })));
+const WaitingList = lazy(() => import('../features/attendee/WaitingList').then(m => ({ default: m.WaitingList })));
 const NotificationInbox = lazy(() => import('../features/notifications/NotificationInbox').then(m => ({ default: m.NotificationInbox })));
 const ChangeRequests = lazy(() => import('../features/events/ChangeRequests').then(m => ({ default: m.ChangeRequests })));
 const AnswerQuestions = lazy(() => import('../features/organiser/AnswerQuestions').then(m => ({ default: m.AnswerQuestions })));
@@ -194,10 +195,7 @@ export const routes: AppRoute[] = [
   page('/attendee/discover/:eventCode', <EventDetail />, 'live', 'E09-S01'),
   page('/attendee/register/:eventCode', <RegisterForEvent />, 'live', 'E09-S01'),
   page('/attendee/feedback/:eventCode', <EventFeedback />, 'mock'),
-  page('/attendee/waitlist/:eventCode', (
-    <ComingSoon story="E09-S04" title="Waiting list"
-      summary="Shown when an event is full: the attendee's place on the waiting list, and how seats are offered automatically when a registered attendee withdraws." />
-  ), 'coming-soon', 'E09-S04'),
+  page('/attendee/waitlist/:eventCode', <WaitingList />, 'live', 'E09-S04'),
 
   // Event Coordinator
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),

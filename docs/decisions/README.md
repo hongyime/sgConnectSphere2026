@@ -118,3 +118,5 @@ either record.
 | 0014 | [Pull requests do not edit STATE.md or JOURNAL.md](0014-pull-requests-do-not-edit-state-or-journal.md) |
 | 0015 | [One-at-a-time production migrations](0015-one-at-a-time-production-migrations.md) |
 | 0016 | [Story-level design ownership and cross-story coordination](0016-story-level-design-ownership.md) |
+| 0017 | [Guard pull-request scope and reference artifacts](0017-pr-guardrails-for-reference-artifacts-and-scope.md) |
+| 0018 | [Guard code changes against doc drift](0018-doc-sync-guard.md) |
