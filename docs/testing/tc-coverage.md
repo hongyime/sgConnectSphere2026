@@ -488,6 +488,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/arrangementImpact.integration.test.ts`
 
 - the Event capacity E09-S02 reports is the sum of every Confirmed booking, Session by Session
+- a save whose preview went stale (another booking confirmed meanwhile) is refused and writes nothing
+- a save whose preview went stale (more Registered meanwhile) is refused before the over-subscription is accepted
+- a save with the revision from an unchanged preview saves as usual
 
 ### `backend/tests/arrangementImpact.test.ts`
 
@@ -735,6 +738,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - previewEventChange wraps the preview in its own transaction
 - a draft date change sends no generic date notice; an unknown Event is refused
 - a capacity-only change notifies the Venue Staff alone, with no date notice
+- the revision is the same for the same arrangements and changes with any of them
+- a save with the preview revision goes through and returns the same revision
+- a save with a stale revision is refused with the fresh list, before anything is flagged or sent
+
+### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
+
+- the save route refuses a stale preview revision with the fresh list, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -1298,6 +1308,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - cancelling the review returns to the form with the edit kept and saves nothing
 - a refused preview is shown in the form, with no review step and nothing saved
 - a save refused after the review goes back to the form and shows why
+- confirming the review sends the revision of the list that was shown
+- a save refused because the arrangements changed shows the fresh list, saves nothing, and confirming it sends the new revision
+- a save with nothing to review is still bound: if something became affected, the review appears instead
 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
@@ -1423,6 +1436,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
 - registration date inputs describe the validation error after an invalid save
+- still saves when the form is open when the answer arrives
+- sends no save after the form closes
+- sends no save for the old event after switching to another one
+- sends no save of the old edit after the field is edited again
 
 ### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
 
@@ -1824,6 +1841,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/e03.spec.ts`
 
 - E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
+
+### `tests/e2e/e10.spec.ts`
+
+- a save refused because the arrangements changed during the review shows the fresh list before anything is saved
 
 ### `tests/e2e/eventReadiness.spec.ts`
 

@@ -46,6 +46,11 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 - Over-subscription alone shows the review with a plain "Save changes".
 - The marker sits on the Coordinator's venue bookings page, not a Venue Staff
   page, because Venue Staff have no list of confirmed bookings.
+- The preview revision (below) is checked only when the save sends it, not
+  required for every Coordinator save: the Coordinator may save the edit
+  either way, so requiring it adds no protection and would change every
+  existing Coordinator save test. Switching to required is a small change if
+  the reviewer asks.
 
 ## Open items
 
@@ -72,6 +77,34 @@ evidence for the Product Owner's acceptance of SCRUM-71.
   identical. Add the Session date to each item when E04-S02 makes multi-Session
   events creatable in the app; it needs the backend to return it.
 
+## PR #380 review (Ji Ning, 30 October, at c7ef449)
+
+Two P2 points, both fixed on this branch:
+
+1. A late preview could start a save after the form closed. Each Save press
+   now has a number that unmounting, switching event or editing again makes
+   stale; a stale preview answer stops there (40c5469). Four Vitest tests
+   hold the preview reply; the three stale ones fail without the guard.
+2. The save was not bound to the arrangements shown. The preview now returns
+   `revision`; the save takes `&reviewed=`, recomputes under the Event lock
+   and throws `ArrangementsChangedError` (409 `arrangements_changed`, fresh
+   list, whole edit rolled back) when it differs (e2af9e4). The screen sends
+   the revision on confirm and on the nothing-to-review path, and shows the
+   fresh list with a warning when refused (19a426f). Tests: unit, PostgreSQL
+   (another booking confirmed / more Registered between preview and save),
+   the real route, Vitest and a new Playwright test; every deliberate break
+   failed at least one. Contract and `docs/api-changes-week7.md` updated.
+
+Found on the way: TC_E10S02_03's review-focus assertion in
+`CoordinatorEditing.test.tsx` was flaky on c7ef449 too (2 in 12 runs; focus
+moves in an effect after render). The three focus assertions there now wait
+for focus; removing the focus call still fails them; 0 failures in 45 strict
+runs afterwards.
+
+Local environment note: `.env`'s `TEST_DATABASE_URL` still points at the old
+Docker port; DB runs used a native 5432 URL built in memory from
+`LOCAL_NATIVE_DATABASE_URL`.
+
 ## Evidence so far
 
 - Real local run 14/14: `20261030-142228-lexinphun2024-debug-frontend-e2e.md` (30dbc92).
@@ -82,5 +115,5 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 
 ## Next step
 
-Task 8: push, open PR B with the AC-to-evidence checklist for the Product
-Owner, postplan, and Jira (SCRUM-237, SCRUM-238).
+Record the review-fix test runs (T-65), push to #380, update the PR body,
+reply to Ji Ning's review, then update #381 from #380.

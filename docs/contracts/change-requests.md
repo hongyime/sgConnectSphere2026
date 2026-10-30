@@ -183,6 +183,22 @@ Known limit (reviewer note on PR #376): on a multi-Session Event, an Event-level
 only syncs a sole Session. Scenario 1 can therefore fire there only through a
 Session edit, which arrives with E04-S02.
 
+**Save bound to the reviewed preview (PR #380 review, Ji Ning, 30 October):**
+the preview also returns `revision`, a fingerprint (`changeRevision`) of exactly
+the `impact` and `overSubscription` it lists. The Coordinator's screen sends it
+back as `&reviewed=<revision>` on every save that follows a preview, including
+one with nothing to review. Under the Event row lock the save recomputes the
+same check and, when its revision differs (for example another booking was
+confirmed, or more Attendees registered, while the review was open), throws
+`ArrangementsChangedError` before flagging, auditing or notifying anything; the
+whole edit rolls back. The route answers 409 `arrangements_changed` with the
+fresh `impact`, `overSubscription` and `revision` and no `changeRequestUrl`, and
+the screen shows that list for a new review. A save without `reviewed` (the
+Organiser's form, other callers) behaves as before: the revision is checked
+only when sent, since the Coordinator may save the edit either way and the
+review is a safeguard, not a permission. E10-S01 can reuse the same revision
+when approved changes call the preview.
+
 Still open, not changed by this backend PR:
 
 - Approved E10-S01 change requests still stop at "Approved — waiting for the
@@ -193,7 +209,7 @@ Still open, not changed by this backend PR:
   PostgreSQL.
 - No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
   of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
-- The Coordinator's preview screen is the frontend increment (SCRUM-237).
+- The Coordinator's preview screen is the frontend increment (SCRUM-237, PR #380).
 
 ## Refused-edit handoff (SCRUM-205)
 
