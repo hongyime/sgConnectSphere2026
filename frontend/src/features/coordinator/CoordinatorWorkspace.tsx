@@ -16,6 +16,7 @@ import { EventEditForm } from '../events/EventEditForm';
 import { fieldList } from '../events/eventEditFields';
 import { ActivityLog } from '../events/ActivityLog';
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
+import { RevertToPlanningButton } from '../events/EventDetails';
 import type { EditableField } from '../events/eventEditApi';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
@@ -196,6 +197,7 @@ export function RequestDetail() {
   const event = result.state === 'ready' ? result.data : null;
   // RequestClarification comes back here with { clarificationSent: true } (E03-S02).
   const clarificationSent = (useLocation().state as { clarificationSent?: boolean } | null)?.clarificationSent === true;
+  const [revertedMessage, setRevertedMessage] = useState<string | null>(null);
 
   return (
     <PageLayout
@@ -222,6 +224,15 @@ export function RequestDetail() {
             <ButtonLink to={`${eventLink(event)}/readiness`} variant={event.status === 'planning' ? 'primary' : 'secondary'} icon={<ListChecks size={14} aria-hidden="true" />}>Check readiness</ButtonLink>
           ) : null}
           {['confirmed', 'completed'].includes(event.status) ? <ButtonLink to={`${eventLink(event)}/complete`}>Event completion</ButtonLink> : null}
+          {event.status === 'confirmed' ? (
+            <RevertToPlanningButton
+              event={event}
+              onReverted={(msg) => {
+                setRevertedMessage(msg);
+                reload();
+              }}
+            />
+          ) : null}
           <StatusPill status={event.status} />
         </>
       ) : undefined}
@@ -231,6 +242,7 @@ export function RequestDetail() {
       {event ? (
         <>
           {clarificationSent ? <Alert tone="success">Questions sent. The request is now awaiting clarification.</Alert> : null}
+          {revertedMessage ? <Alert tone="success">{revertedMessage}</Alert> : null}
           {/* E05-S06 (SCRUM-152) Scenario 3: a venue lost to an unavailability is flagged on the event. */}
           {CONFLICT_VISIBLE.includes(event.status) ? <VenueConflictFlag key={`conflict-${event.id}`} eventCode={eventRef(event)} /> : null}
           <p className="coordinator-subtle"><Clock3 size={14} aria-hidden="true" /> {statusLabel(event.status)} since {formatDate(event.status_changed_at, true)}</p>

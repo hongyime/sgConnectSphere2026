@@ -64,6 +64,7 @@ import {
   confirmEvent,
   getEventReadiness,
   ReadinessBlockedError,
+  revertEventToPlanning,
   submitForSafetyReview,
 } from '../backend/src/modules/eventReadiness/submission.js';
 import {
@@ -151,6 +152,13 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('decide') === '1') {
       await handleDecisionPost(request, response, params);
+      return;
+    }
+    if (params.get('revert') === '1') {
+      await respond(response, async () => {
+        const user = await currentUser(request);
+        return { reversion: await revertEventToPlanning(getDatabasePool(), user, params.get('id') || '', request.body) };
+      });
       return;
     }
     if (params.get('safetyReview') === '1' || params.get('confirm') === '1') {
