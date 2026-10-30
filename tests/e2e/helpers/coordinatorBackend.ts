@@ -18,7 +18,10 @@ export async function fakeCoordinatorBackend(page: Page, options: {
   assignedTo: Coordinator;
   pendingTo?: Coordinator;
   status?: string;
+  // E10-S02: what the preview and the save report the edit affects (#376).
+  change?: { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[] }; overSubscription: unknown[] };
 }) {
+  const change = options.change ?? { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] };
   const eventId = `event-${options.eventCode.toLowerCase()}`;
   const state = {
     user: options.assignedTo,
@@ -29,6 +32,7 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     // E03-S07: current editable values and the audit rows each edit writes.
     fields: { title: options.title, description: 'Charity fundraiser run.', venue_requirements: 'Outdoor start line', expected_attendance: 250 } as Record<string, unknown>,
     audit: [] as { actor: string; field: string; value: string }[],
+    previews: 0,
   };
 
   function notify(to: Coordinator, title: string, message: string) {
@@ -114,13 +118,15 @@ export async function fakeCoordinatorBackend(page: Page, options: {
       if (!mine || !['approved', 'planning', 'confirmed', 'completed'].includes(state.status)) {
         return json(route, 403, { error: 'Only the assigned Coordinator may edit an approved event.' });
       }
+      // E10-S02 (#376): the preview runs the same checks and changes nothing.
+      if (params.get('preview') === '1') { state.previews += 1; return json(route, 200, change); }
       const patch = request.postDataJSON() as Record<string, unknown>;
       const columns: Record<string, string> = { title: 'title', description: 'description', venueRequirements: 'venue_requirements', expectedAttendance: 'expected_attendance' };
       for (const [field, value] of Object.entries(patch)) {
         if (columns[field]) state.fields[columns[field]] = value;
         state.audit.push({ actor: state.user.email, field, value: String(value) });
       }
-      return json(route, 200, { updated: true, eventId, fields: Object.keys(patch) });
+      return json(route, 200, { updated: true, eventId, fields: Object.keys(patch), ...change });
     }
     return json(route, 404, { error: 'Not handled by the test backend.' });
   });
@@ -129,5 +135,6 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     signInAs(user: Coordinator) { state.user = user; },
     get assignedTo() { return state.assignedTo; },
     get audit() { return state.audit; },
+    get previews() { return state.previews; },
   };
 }

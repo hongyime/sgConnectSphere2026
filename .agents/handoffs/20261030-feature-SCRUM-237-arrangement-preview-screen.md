@@ -26,6 +26,26 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 - Scenario 1 agreed by the team (Bl0oper, Ji Ning): a booking whose own
   headcount is already above capacity is flagged when its Session's attendance
   changes. Recorded in the contract.
+- Coordinator review step (5653d55): `EventEditForm` gets `checkArrangements`
+  (Coordinator only); Save calls `&preview=1`, shows `ArrangementReview`
+  (bookings, equipment, staff to notify, over-subscription) when something is
+  affected, else saves straight away; Cancel keeps the edit. Success message
+  names what was flagged and who was told. The Coordinator's venue bookings
+  page shows "Needs reconfirmation". Venue Staff screens list Pending requests
+  only, so no Venue Staff marker (goes with the reconfirm follow-up).
+- Playwright TC_E10S02_02/03/04/06 live against faked replies; _01/_05/_07
+  stay `fixme` with a pointer to the PostgreSQL suite. The shared
+  `coordinatorBackend.ts` fake now answers `&preview=1` without changing state,
+  which kept E03-S07's Coordinator edit test passing (it failed when the
+  preview was first added).
+
+## Decisions taken without team sign-off (reviewer please check)
+
+- The review step appears only when something is affected or over-subscribed;
+  other Coordinator edits save in one step as before.
+- Over-subscription alone shows the review with a plain "Save changes".
+- The marker sits on the Coordinator's venue bookings page, not a Venue Staff
+  page, because Venue Staff have no list of confirmed bookings.
 
 ## Open items
 
@@ -42,5 +62,5 @@ evidence for the Product Owner's acceptance of SCRUM-71.
 
 ## Next step
 
-Task 5: the Coordinator preview screen in `frontend/src/features/events/EventEditForm.tsx`
-and `CoordinatorWorkspace.tsx`.
+Task 7: click-through guide (`docs/testing/manual/`) and preconditions SQL, a
+real local run, then Le Xin's manual T-93 run with hand-taken screenshots.

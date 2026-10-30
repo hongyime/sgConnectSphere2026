@@ -1295,6 +1295,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a refused edit keeps the form open and shows the server reason
 - invalid values are flagged next to the field and nothing is sent
 - cancelling closes the form without saving
+- cancelling the review returns to the form with the edit kept and saves nothing
+- a refused preview is shown in the form, with no review step and nothing saved
+- a save refused after the review goes back to the form and shows why
 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
@@ -1394,6 +1397,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - same-venue releases identify each booking when actor and time coincide
 - event and legacy hold entries do not invent a booking reference
+
+### `frontend/src/features/events/ArrangementReview.test.tsx`
+
+- a save reply without fields or impact falls back to the sent fields and nothing affected
+- the preview goes to &preview=1 and a refusal is passed through as a failure
 
 ### `frontend/src/features/events/EventCompletion.test.tsx`
 
@@ -1661,6 +1669,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
 - E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed
+- E10-S02: a confirmed booking flagged for reconfirmation says so; an unflagged one does not
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
