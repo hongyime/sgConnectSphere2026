@@ -331,10 +331,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_08` | E08-S03 | Verify that submitting a fully arranged event for its Operational Safety Check s | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_08: submitting a fully arranged Planning event moves it to Safety Review and notifies the Organiser and every active Saf |
 | `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_09: submission is blocked while a venue booking is outstanding, each one listed by venue, and nothing changes; backend/t |
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
-| `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReversion.test.ts: TC_E08S04_01 status transitions: Confirmed -> Planning is allowed, Planning cannot jump to Confirmed (C-132, T-82); backend/tests/eventReversi |
-| `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReversion.test.ts: TC_E08S04_01, TC_E08S04_02, TC_E08S04_04: reverting a Confirmed event updates status, audits, and notifies organiser & attendees; tests/e2e/e0 |
-| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead b |
-| `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReversion.test.ts: TC_E08S04_01, TC_E08S04_02, TC_E08S04_04: reverting a Confirmed event updates status, audits, and notifies organiser & attendees; tests/e2e/e0 |
+| `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
+| `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
+| `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
@@ -801,7 +801,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - revertEventToPlanning validates identifier and reason before opening transaction
 - revertEventToPlanning refuses unassigned coordinator or non-existent event
 - revertEventToPlanning refuses events that are not in Confirmed status
-- Scenario 4 / C-132 / T-82: reverting clears active safety review approval; direct confirmation is refused
+- Scenario 4 / C-132 / T-82: a reverted event in Planning cannot be confirmed directly; it must pass Safety Review again
 - revertEventToPlanning falls back to coordinator email if full_name is empty or whitespace
 - revertEventToPlanning refuses unassigned events (coordinator_id is null) and draft events
 
@@ -1419,7 +1419,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - does not render
 - clicking
 - validation requires non-empty reason and blocks submission
-- submitting with valid reason calls POST /api/events?revert=1&id=..., shows success message and calls callback
+- submitting with valid reason calls POST /api/events?revert=1&id=... and hands the success message to the caller
 - displays error message when API call fails
 
 ### `frontend/src/features/events/EventEditForm.test.tsx`
