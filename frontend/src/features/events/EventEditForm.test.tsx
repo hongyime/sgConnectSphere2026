@@ -249,3 +249,80 @@ describe('a late preview answer does not save (#380 review)', () => {
     expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
   });
 });
+
+describe('an edit while the save is being written does not start a second save (#380 re-review)', () => {
+  const values = { title: 'Charity Run', description: null, purpose: null, starts_at: '2026-11-12T01:00:00.000Z', ends_at: '2026-11-12T04:00:00.000Z',
+    expected_attendance: 200, venue_requirements: null, accessibility_note: null, equipment_requirements: null, layout_preference: null };
+  const nothingAffected = { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] };
+  const projector = { id: 'r-1', sessionId: 's-1', equipmentId: 'e-1', equipmentName: 'Projector', reasons: ['time'] };
+  const affected = { impact: { affected: true, bookings: [], reservations: [projector] }, overSubscription: [], revision: 'rev-1' };
+
+  // Previews answer at once; the mutating PATCH is held until the test releases it.
+  function holdSave(preview: object, saved: { status: number; body: object }) {
+    const calls: string[] = [];
+    let release: () => void = () => {};
+    const held = new Promise<void>(resolve => { release = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => {
+      calls.push(input);
+      if (input.includes('&preview=1')) return { ok: true, status: 200, json: async () => preview } as Response;
+      await held;
+      return { ok: saved.status < 400, status: saved.status, json: async () => saved.body } as Response;
+    }));
+    return { calls, release };
+  }
+  const saves = (calls: string[]) => calls.filter(url => !url.includes('&preview=1'));
+  const nameField = () => screen.getByLabelText('Event name');
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+  test('the fields are read-only and Save sends nothing more until the first save answers', async () => {
+    const { calls, release } = holdSave(nothingAffected, { status: 200, body: { fields: ['title'], ...nothingAffected } });
+    const onSaved = vi.fn();
+    render(<EventEditForm eventId="evt-1" values={values} editable={new Set(['title'])} checkArrangements onSaved={onSaved} onCancel={() => {}} />);
+    fireEvent.change(nameField(), { target: { value: 'Charity Run 2026' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(saves(calls)).toHaveLength(1));
+
+    expect(nameField()).toHaveAttribute('readonly');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    fireEvent.change(nameField(), { target: { value: 'Charity Run 2027' } });
+    fireEvent.submit(nameField().closest('form')!);
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(nameField()).toHaveValue('Charity Run 2026');
+    expect(saves(calls)).toHaveLength(1);
+
+    release();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(onSaved).toHaveBeenCalledWith(['title'], nothingAffected);
+    expect(saves(calls)).toHaveLength(1);
+  });
+
+  // Non-regression: the review's Confirm is already busy after the first press.
+  test('confirming the review twice sends one save', async () => {
+    const { calls, release } = holdSave(affected, { status: 200, body: { fields: ['title'], ...affected } });
+    const onSaved = vi.fn();
+    render(<EventEditForm eventId="evt-1" values={values} editable={new Set(['title'])} checkArrangements onSaved={onSaved} onCancel={() => {}} />);
+    fireEvent.change(nameField(), { target: { value: 'Charity Run 2026' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    const confirm = await screen.findByRole('button', { name: 'Save and ask staff to reconfirm' });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    await waitFor(() => expect(saves(calls)).toHaveLength(1));
+    release();
+    await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
+    expect(saves(calls)).toEqual(['/api/events?edit=1&id=evt-1&reviewed=rev-1']);
+  });
+
+  test('after a refused save the fields can be edited and saved again', async () => {
+    const { calls, release } = holdSave(nothingAffected, { status: 400, body: { error: 'The event could not be saved.' } });
+    render(<EventEditForm eventId="evt-1" values={values} editable={new Set(['title'])} checkArrangements onSaved={vi.fn()} onCancel={() => {}} />);
+    fireEvent.change(nameField(), { target: { value: 'Charity Run 2026' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(saves(calls)).toHaveLength(1));
+    release();
+    expect(await screen.findByText('The event could not be saved.')).toBeInTheDocument();
+    expect(nameField()).not.toHaveAttribute('readonly');
+    fireEvent.change(nameField(), { target: { value: 'Charity Run 2027' } });
+    expect(nameField()).toHaveValue('Charity Run 2027');
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeEnabled();
+  });
+});
