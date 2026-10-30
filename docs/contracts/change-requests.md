@@ -169,12 +169,35 @@ one capacity rule; it warns only strictly above capacity and skips a Session or
 Event with no Confirmed booking. Route and response shapes are in
 `docs/api-changes-week7.md`.
 
-**Awaiting team confirmation (PR #376):** the story owner's reading of Scenario 1
-(29 October) is that when a Session's attendance changes, a booking whose own
-headcount is already above capacity is flagged too, following the AC's wording.
-The alternative is to flag only bookings governed by the Session attendance.
-The code follows the story owner's reading until reviewers confirm or choose
-the alternative.
+**Agreed Scenario 1 behaviour (team, 29 October, PR #376):** when a Session's
+attendance changes, every booking in that Session whose governing headcount
+(its own when set, otherwise the Session's attendance) is strictly above
+capacity is flagged, including a booking whose own headcount was already above
+capacity. Proposed by the story owner (Le Xin), agreed by the reviewer (Bl0oper)
+and by Ji Ning for E10-S01, which reuses the same rule when it applies approved
+changes. No Product Owner decision was needed: the AC wording and
+TC_E10S02_01 to _09 are unchanged.
+
+Known limit (reviewer note on PR #376): on a multi-Session Event, an Event-level
+`expectedAttendance` edit does not reach the Sessions, because the 0014 trigger
+only syncs a sole Session. Scenario 1 can therefore fire there only through a
+Session edit, which arrives with E04-S02.
+
+**Save bound to the reviewed preview (PR #380 review, Ji Ning, 30 October):**
+the preview also returns `revision`, a fingerprint (`changeRevision`) of exactly
+the `impact` and `overSubscription` it lists. The Coordinator's screen sends it
+back as `&reviewed=<revision>` on every save that follows a preview, including
+one with nothing to review. Under the Event row lock the save recomputes the
+same check and, when its revision differs (for example another booking was
+confirmed, or more Attendees registered, while the review was open), throws
+`ArrangementsChangedError` before flagging, auditing or notifying anything; the
+whole edit rolls back. The route answers 409 `arrangements_changed` with the
+fresh `impact`, `overSubscription` and `revision` and no `changeRequestUrl`, and
+the screen shows that list for a new review. A save without `reviewed` (the
+Organiser's form, other callers) behaves as before: the revision is checked
+only when sent, since the Coordinator may save the edit either way and the
+review is a safeguard, not a permission. E10-S01 can reuse the same revision
+when approved changes call the preview.
 
 Still open, not changed by this backend PR:
 
@@ -186,7 +209,7 @@ Still open, not changed by this backend PR:
   PostgreSQL.
 - No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
   of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
-- The Coordinator's preview screen is the frontend increment (SCRUM-237).
+- The Coordinator's preview screen is the frontend increment (SCRUM-237, PR #380).
 
 ## Refused-edit handoff (SCRUM-205)
 

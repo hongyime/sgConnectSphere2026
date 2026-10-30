@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import type { Pool, PoolClient } from 'pg';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import {
-  applyArrangementImpact, assessOverSubscription, loadOverSubscription, previewEventChange, previewEventChangeWith,
+  applyArrangementImpact, ArrangementsChangedError, assessOverSubscription, changeRevision, loadOverSubscription, previewEventChange, previewEventChangeWith,
 } from '../src/modules/changeManagement/eventChange.js';
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 import type { EventCapacity } from '../src/modules/attendeeRegistration/capacity.js';
@@ -148,7 +148,8 @@ test('TC_E10S02_03: a date change previews the affected booking and equipment, t
 test('TC_E10S02_02: a description-only preview affects nothing', async () => {
   const { client } = scriptedClient();
   const preview = await previewEventChangeWith(client, coordinator, 'EVT-1', { description: 'New wording' });
-  assert.deepEqual(preview, { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] });
+  const check = { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] };
+  assert.deepEqual(preview, { ...check, revision: changeRevision(check) });
 });
 
 test('a refused edit is refused in preview too, and the savepoint is still rolled back', async () => {
@@ -243,4 +244,52 @@ test('a capacity-only change notifies the Venue Staff alone, with no date notice
   assert.deepEqual([...recipients.keys()], ['venue-1'], 'no equipment is affected, so Technical Support is not told');
   assert.match(recipients.get('venue-1')!.first, /attendance above capacity/);
   assert.ok(!notices.some(values => String(values[3]).includes('Event date, time changed')));
+});
+
+// #380 review: the preview's revision binds the save to what was shown.
+test('the revision is the same for the same arrangements and changes with any of them', () => {
+  const booking = { id: 'booking-a', sessionId: 'session-a', venueId: 'hall', venueName: 'Hall A', reasons: ['time' as const], governingHeadcount: 80, capacity: 200 };
+  const check = { impact: { affected: true, bookings: [booking], reservations: [] }, overSubscription: [] };
+  assert.equal(changeRevision(check), changeRevision(structuredClone(check)));
+  assert.match(changeRevision(check), /^[0-9a-f]{32}$/);
+  const variants = [
+    { ...check, impact: { ...check.impact, bookings: [booking, { ...booking, id: 'booking-b', venueName: 'Hall B' }] } },
+    { ...check, impact: { ...check.impact, bookings: [{ ...booking, reasons: ['time' as const, 'capacity' as const] }] } },
+    { ...check, impact: { ...check.impact, bookings: [{ ...booking, capacity: 150 }] } },
+    { ...check, impact: { ...check.impact, reservations: [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time' as const] }] } },
+    { ...check, overSubscription: [{ scope: 'event' as const, sessionId: null, registered: 201, capacity: 200 }] },
+  ];
+  for (const variant of variants) assert.notEqual(changeRevision(variant), changeRevision(check), JSON.stringify(variant));
+});
+
+test('TC_E10S02_03: the preview carries the revision of what it lists', async () => {
+  const { client } = scriptedClient({ registered: 250 });
+  const preview = await previewEventChangeWith(client, coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' });
+  assert.equal(preview.revision, changeRevision({ impact: preview.impact, overSubscription: preview.overSubscription }));
+});
+
+test('a save with the preview revision goes through and returns the same revision', async () => {
+  const move = { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' };
+  const preview = await previewEventChangeWith(scriptedClient({ registered: 250 }).client, coordinator, 'EVT-1', move);
+  const { client, sql } = scriptedClient({ registered: 250 });
+  const result = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', move, { reviewed: preview.revision });
+  assert.equal(result.revision, preview.revision);
+  assert.ok(sql.some(text => text.startsWith('UPDATE venue_bookings SET requires_reconfirmation')));
+  assert.equal(sql.at(-1), 'COMMIT');
+});
+
+test('a save with a stale revision is refused with the fresh list, before anything is flagged or sent', async () => {
+  const { client, sql, notices, options } = scriptedClient({ registered: 250, staff: true });
+  const refused = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1',
+    { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' }, { ...options, reviewed: 'revision-shown-earlier' })
+    .then(() => null, (error: unknown) => error);
+  assert.ok(refused instanceof ArrangementsChangedError);
+  assert.equal(refused.status, 409);
+  assert.equal(refused.message, 'arrangements_changed');
+  assert.deepEqual(refused.preview.impact.bookings.map(booking => booking.id), ['booking-a']);
+  assert.equal(refused.preview.revision, changeRevision({ impact: refused.preview.impact, overSubscription: refused.preview.overSubscription }));
+  assert.ok(!sql.some(text => text.includes('requires_reconfirmation = true')), 'nothing flagged');
+  assert.ok(!sql.some(text => text.startsWith('INSERT INTO audit_logs') && text.includes('requires_reconfirmation')), 'nothing logged for arrangements');
+  assert.deepEqual(notices, [], 'nobody notified');
+  assert.equal(sql.at(-1), 'ROLLBACK', 'the edit itself rolls back');
 });
