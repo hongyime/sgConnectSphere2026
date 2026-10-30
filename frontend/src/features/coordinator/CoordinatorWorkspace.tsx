@@ -228,7 +228,7 @@ export function RequestDetail() {
             <RevertToPlanningButton
               event={event}
               onReverted={(msg) => {
-                setRevertedMessage(msg ?? 'Event reverted to Planning. The Organiser and registered Attendees have been notified.');
+                setRevertedMessage(msg);
                 reload();
               }}
             />

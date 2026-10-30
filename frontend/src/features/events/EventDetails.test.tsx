@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { EventDetails, RevertToPlanningButton, type EventRecord } from './EventDetails';
+import { REVERTED_MESSAGE, RevertToPlanningButton, type EventRecord } from './EventDetails';
 
 afterEach(() => {
   cleanup();
@@ -13,10 +13,6 @@ const confirmedEvent: EventRecord = {
   event_code: 'EVT-1001',
   title: 'Leadership Summit',
   status: 'confirmed',
-  startsAt: '2027-01-15T01:00:00.000Z',
-  endsAt: '2027-01-15T09:00:00.000Z',
-  expectedAttendance: 150,
-  coordinator_id: 'coord-1',
 };
 
 function stubApi(handler: (url: URL, init?: RequestInit) => { status: number; body: unknown }) {
@@ -34,16 +30,16 @@ function stubApi(handler: (url: URL, init?: RequestInit) => { status: number; bo
   return calls;
 }
 
-describe('EventDetails & RevertToPlanningButton', () => {
+describe('RevertToPlanningButton', () => {
   test('renders "Revert to Planning" button for Coordinator on Confirmed event', () => {
-    render(<EventDetails event={confirmedEvent} currentUserRole="event_coordinator" />);
+    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" onReverted={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'Revert to Planning' })).toBeInTheDocument();
   });
 
   test('does not render "Revert to Planning" button on non-confirmed events', () => {
     for (const status of ['planning', 'safety_review', 'under_review', 'completed', 'cancelled']) {
       const { unmount } = render(
-        <EventDetails event={{ ...confirmedEvent, status }} currentUserRole="event_coordinator" />,
+        <RevertToPlanningButton event={{ ...confirmedEvent, status }} currentUserRole="event_coordinator" onReverted={vi.fn()} />,
       );
       expect(screen.queryByRole('button', { name: 'Revert to Planning' })).not.toBeInTheDocument();
       unmount();
@@ -53,7 +49,7 @@ describe('EventDetails & RevertToPlanningButton', () => {
   test('does not render "Revert to Planning" button for non-coordinator roles', () => {
     for (const role of ['event_organiser', 'attendee', 'venue_staff']) {
       const { unmount } = render(
-        <EventDetails event={confirmedEvent} currentUserRole={role} />,
+        <RevertToPlanningButton event={confirmedEvent} currentUserRole={role} onReverted={vi.fn()} />,
       );
       expect(screen.queryByRole('button', { name: 'Revert to Planning' })).not.toBeInTheDocument();
       unmount();
@@ -61,7 +57,7 @@ describe('EventDetails & RevertToPlanningButton', () => {
   });
 
   test('clicking "Revert to Planning" opens modal and Cancel closes it', () => {
-    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" />);
+    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" onReverted={vi.fn()} />);
     const openBtn = screen.getByRole('button', { name: 'Revert to Planning' });
     fireEvent.click(openBtn);
 
@@ -76,7 +72,7 @@ describe('EventDetails & RevertToPlanningButton', () => {
 
   test('validation requires non-empty reason and blocks submission', async () => {
     const calls = stubApi(() => ({ status: 200, body: {} }));
-    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" />);
+    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" onReverted={vi.fn()} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Revert to Planning' }));
 
@@ -96,7 +92,7 @@ describe('EventDetails & RevertToPlanningButton', () => {
     expect(calls).toHaveLength(0);
   });
 
-  test('submitting with valid reason calls POST /api/events?revert=1&id=..., shows success message and calls callback', async () => {
+  test('submitting with valid reason calls POST /api/events?revert=1&id=... and hands the success message to the caller', async () => {
     const onReverted = vi.fn();
     const calls = stubApi((url, init) => {
       if (url.pathname === '/api/events' && url.searchParams.get('revert') === '1') {
@@ -117,13 +113,7 @@ describe('EventDetails & RevertToPlanningButton', () => {
       return { status: 404, body: { error: 'Not found' } };
     });
 
-    render(
-      <EventDetails
-        event={confirmedEvent}
-        currentUserRole="event_coordinator"
-        onEventUpdated={onReverted}
-      />,
-    );
+    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" onReverted={onReverted} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Revert to Planning' }));
 
@@ -132,24 +122,25 @@ describe('EventDetails & RevertToPlanningButton', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Revert to Planning' }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/Event reverted to Planning/)).toBeInTheDocument();
-    });
+    await waitFor(() => expect(onReverted).toHaveBeenCalledWith(REVERTED_MESSAGE));
+    expect(onReverted).toHaveBeenCalledTimes(1);
+    expect(REVERTED_MESSAGE).toMatch(/if the event is published/);
+    expect(screen.queryByRole('heading', { name: 'Revert event to planning' })).not.toBeInTheDocument();
 
     expect(calls).toHaveLength(1);
     expect(calls[0].url.searchParams.get('revert')).toBe('1');
     expect(calls[0].url.searchParams.get('id')).toBe(confirmedEvent.id);
     expect(calls[0].init?.method).toBe('POST');
-    expect(onReverted).toHaveBeenCalledTimes(1);
   });
 
   test('displays error message when API call fails', async () => {
+    const onReverted = vi.fn();
     stubApi(() => ({
       status: 409,
       body: { error: 'Only a Confirmed event can be reverted to Planning.' },
     }));
 
-    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" />);
+    render(<RevertToPlanningButton event={confirmedEvent} currentUserRole="event_coordinator" onReverted={onReverted} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Revert to Planning' }));
 
@@ -161,5 +152,6 @@ describe('EventDetails & RevertToPlanningButton', () => {
     await waitFor(() => {
       expect(screen.getByText('Only a Confirmed event can be reverted to Planning.')).toBeInTheDocument();
     });
+    expect(onReverted).not.toHaveBeenCalled();
   });
 });

@@ -347,7 +347,7 @@ test('TC_E08S04_01, TC_E08S04_02, TC_E08S04_04: reverting a Confirmed event upda
   assert.match(String(attendeeNotif.values?.[3]), /arrangements are being revised/);
 });
 
-test('Scenario 4 / C-132 / T-82: reverting clears active safety review approval; direct confirmation is refused', async () => {
+test('Scenario 4 / C-132 / T-82: a reverted event in Planning cannot be confirmed directly; it must pass Safety Review again', async () => {
   // Reverted event is now in Planning status
   const { pool, client } = mockPool({
     eventRow: {

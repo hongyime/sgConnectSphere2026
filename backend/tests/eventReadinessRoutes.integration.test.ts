@@ -4,6 +4,10 @@
 // eventReadiness.integration.test.ts; this file checks the wiring: query
 // parameters, status codes and response bodies.
 //
+// SCRUM-61 (E08-S04): the revert route's persistence (status, audit row,
+// Organiser and Attendee notices, refusal) is proven here against the real
+// database too; eventReversion.test.ts covers the same rules with a mock pool.
+//
 // The API reads DATABASE_URL when its modules load, so every application
 // module is imported after it is pointed at this test's schema.
 //
@@ -16,7 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { VercelRequest, VercelResponse } from '../src/vercel.js';
 
-test('TC_E08S03_08 and TC_E08S03_09: the readiness, submission and confirm routes answer with the right status and body', async () => {
+test('TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert routes answer with the right status and body', async () => {
   const f = await loginDatabase();
   const saved = { ...process.env };
   let closeRuntime: (() => Promise<unknown>) | undefined;
@@ -62,16 +66,16 @@ test('TC_E08S03_08 and TC_E08S03_09: the readiness, submission and confirm route
     await f.pool.query(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status)
       VALUES ($1, $2, ${range}, 'pending')`, [waiting.venue, waiting.id]);
 
-    async function call(method: 'GET' | 'POST', url: string, cookie?: string) {
+    async function call(method: 'GET' | 'POST', url: string, cookie?: string, body: unknown = {}) {
       let status = 200;
-      let body: Record<string, any> = {};
+      let reply: Record<string, any> = {};
       const response: VercelResponse = {
         setHeader() {},
-        status(code) { status = code; return { json(value) { body = value as typeof body; } }; },
-        json(value) { body = value as typeof body; },
+        status(code) { status = code; return { json(value) { reply = value as typeof reply; } }; },
+        json(value) { reply = value as typeof reply; },
       };
-      await handler({ method, url, headers: { cookie, origin: 'https://app.example.test' }, body: {} } as VercelRequest, response);
-      return { status, body };
+      await handler({ method, url, headers: { cookie, origin: 'https://app.example.test' }, body } as VercelRequest, response);
+      return { status, body: reply };
     }
 
     const read = await call('GET', '/api/events?readiness=1&id=EVT-R02', cookies.coordinator);
@@ -109,6 +113,48 @@ test('TC_E08S03_08 and TC_E08S03_09: the readiness, submission and confirm route
     assert.equal(organiserRead.status, 200);
     assert.deepEqual(organiserRead.body.event.arrangements.venues.map((row: { venueName: string; purpose: string }) => [row.venueName, row.purpose]),
       [['Hall EVT-R01', 'Main programme']]);
+
+    // E08-S04: the assigned Coordinator reverts the Confirmed EVT-R01 to Planning.
+    const attendee = randomUUID(), otherCoordinator = randomUUID();
+    for (const [id, role] of [[attendee, 'attendee'], [otherCoordinator, 'event_coordinator']]) {
+      await f.pool.query(`INSERT INTO users (id, email, password_hash, full_name, role)
+        VALUES ($1, $2, 'unused', $3, $4::user_role)`, [id, `${id}@example.test`, `Person ${role}`, role]);
+    }
+    const otherToken = randomUUID().replaceAll('-', '') + randomUUID().replaceAll('-', '');
+    await f.pool.query(`INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')`,
+      [tokenDigest(otherToken), otherCoordinator]);
+    // Attendees are only told about a published event (selectEventRecipients).
+    await f.pool.query(`INSERT INTO event_publications (event_id, name, starts_at, ends_at, venue_name, venue_location)
+      VALUES ($1, 'Leadership Summit', '2027-01-15 09:00+08', '2027-01-15 17:00+08', 'Hall EVT-R01', 'Level 1')`, [ready.id]);
+    await f.pool.query(`INSERT INTO event_registrations (event_id, attendee_id) VALUES ($1, $2)`, [ready.id, attendee]);
+    const noticesFor = async (userId: string) => (await f.pool.query<{ title: string; message: string }>(
+      'SELECT title, message FROM notifications WHERE user_id = $1 AND event_id = $2 ORDER BY created_at', [userId, ready.id])).rows;
+    const organiserBefore = (await noticesFor(organiser)).length;
+    const reason = 'Venue reported a plumbing issue';
+
+    const refusedRevert = await call('POST', '/api/events?revert=1&id=EVT-R01', `cs_access=${otherToken}`, { reason });
+    assert.equal(refusedRevert.status, 403);
+    assert.equal(refusedRevert.body.error, 'Access denied. This event is not assigned to you.');
+    const denial = await f.pool.query(`SELECT field_changed FROM audit_logs
+      WHERE actor_id = $1 AND event_id = $2 AND action = 'Access Denied'`, [otherCoordinator, ready.id]);
+    assert.deepEqual(denial.rows, [{ field_changed: 'event_reversion' }]);
+    assert.equal((await call('POST', '/api/events?revert=1&id=EVT-R01', cookies.coordinator, { reason: '  ' })).status, 400);
+
+    const reverted = await call('POST', '/api/events?revert=1&id=EVT-R01', cookies.coordinator, { reason });
+    assert.equal(reverted.status, 200);
+    assert.equal(reverted.body.reversion.status, 'planning');
+    assert.equal((await f.pool.query('SELECT status::text AS status FROM events WHERE id = $1', [ready.id])).rows[0]!.status, 'planning');
+    const audit = await f.pool.query(`SELECT actor_id, old_value, new_value FROM audit_logs
+      WHERE event_id = $1 AND action = 'Reverted to Planning'`, [ready.id]);
+    assert.deepEqual(audit.rows, [{ actor_id: coordinator, old_value: 'confirmed', new_value: 'planning' }]);
+    const organiserNotices = (await noticesFor(organiser)).slice(organiserBefore);
+    assert.equal(organiserNotices.length, 1, 'one Organiser notice, not the generic one as well');
+    assert.equal(organiserNotices[0]!.title, 'Event reverted to planning');
+    assert.match(organiserNotices[0]!.message, new RegExp(`Reason: ${reason}$`));
+    const attendeeNotices = await noticesFor(attendee);
+    assert.equal(attendeeNotices.length, 1);
+    assert.match(attendeeNotices[0]!.message, /Previously confirmed arrangements are being revised./);
+    assert.doesNotMatch(attendeeNotices[0]!.message, /plumbing/, 'the reason is internal');
   } finally {
     for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
     Object.assign(process.env, saved);

@@ -141,7 +141,7 @@ test.describe("E08-S04", () => {
     await page.getByLabel('Reason for reversion').fill('Venue reported a plumbing issue');
     await page.getByRole('button', { name: 'Revert to Planning', exact: true }).click();
 
-    await expect(page.getByText('Event reverted to Planning. The Organiser and registered Attendees have been notified.')).toBeVisible();
+    await expect(page.getByText(/^Event reverted to Planning. The Organiser has been notified with your reason;/)).toBeVisible();
     await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Planning');
 
     // Check organiser notification
@@ -261,7 +261,7 @@ test.describe("E08-S04", () => {
    * Expected result:
    *   The event status remains "Confirmed"; the affected venue booking is shown flagged, but no automatic status change has occurred
    */
-  test("TC_E08S04_03 - Verify that an arrangement breaking on a Confirmed event should not automatically revert its status; the affected arrangement should instead be flagged", async ({ page }) => {
+  test("TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event", async ({ page }) => {
     await page.route('**/api/auth/session', route => route.fulfill({
       json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
     }));
