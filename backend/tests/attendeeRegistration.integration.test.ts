@@ -6,7 +6,7 @@ import { Client, Pool } from 'pg';
 import { hashPassword } from '../src/modules/accessControl/passwords';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 import { eventCapacity } from '../src/modules/attendeeRegistration/capacity';
-import { getRegistrationForm, listOpenEvents, registerForEvent, withdrawRegistration } from '../src/modules/attendeeRegistration/service';
+import { getRegistrationForm, joinWaitingList, listOpenEvents, registerForEvent, withdrawRegistration } from '../src/modules/attendeeRegistration/service';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
@@ -17,8 +17,8 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
   assert.ok(process.env.TEST_DATABASE_URL, 'Use a disposable TEST_DATABASE_URL');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL }); await db.connect();
   const schema = `registration_${randomUUID().replaceAll('-', '')}`;
-  const [org, organiser, coordinator, casey, dana, eli, fay] = Array.from({ length: 7 }, () => randomUUID());
-  const [meetup, planning, closed, layout, hall, seminar] = Array.from({ length: 6 }, () => randomUUID());
+  const [org, organiser, coordinator, casey, dana, eli, fay, grace] = Array.from({ length: 8 }, () => randomUUID());
+  const [meetup, planning, closed, waitlistEvent, layout, hall, seminar, waitHall] = Array.from({ length: 8 }, () => randomUUID());
   const savedEnv = { ...process.env };
   let pool: Pool | undefined;
   let closeRuntime: (() => Promise<void>) | undefined;
@@ -40,25 +40,27 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
       [dana, 'attendee', 'dana@example.test', '+65 8000 0002'],
       [eli, 'attendee', 'eli@example.test', null],
       [fay, 'attendee', 'fay@example.test', '+65 8000 0004'],
+      [grace, 'attendee', 'grace@example.test', '+65 8000 0005'],
     ]) {
       await db.query(`INSERT INTO users(id,client_org_id,email,password_hash,full_name,role,contact_number,email_verified_at)
         VALUES ($1,$2,$3,$4,$5,$6,$7,now())`,
         [id, role === 'attendee' ? null : org, email, digest, `Synthetic ${role}`, role, contact]);
     }
     await db.query("INSERT INTO room_layouts(id,code,label) VALUES ($1,'theatre','Theatre')", [layout]);
-    for (const [id, name] of [[hall, 'Grand Auditorium'], [seminar, 'Seminar Room B']]) {
-      await db.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,$2,'Level 1',200,'07:00','23:00')", [id, name]);
+    for (const [id, name, capacity] of [[hall, 'Grand Auditorium', 200], [seminar, 'Seminar Room B', 200], [waitHall, 'Small Waiting Room', 1]]) {
+      await db.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,$2,'Level 1',$3,'07:00','23:00')", [id, name, capacity]);
     }
     // Event ranges far in the future; registration windows relative to the database clock.
     const events: [string, string, string, string, string][] = [
       [meetup, 'EVT-REG-1', 'Private meetup title', 'confirmed', "now() - interval '1 day'"],
       [planning, 'EVT-REG-2', 'Draft Networking Event', 'planning', "now() - interval '1 day'"],
       [closed, 'EVT-REG-3', 'Closed event', 'confirmed', "now() - interval '3 days'"],
+      [waitlistEvent, 'EVT-WAIT-1', 'Waitlist Event', 'confirmed', "now() - interval '1 day'"],
     ];
     for (const [id, code, title, status, opens] of events) {
       await db.query(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,status,event_range,expected_attendance,
           layout_id,registration_enabled,registration_opens_at,registration_closes_at)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,'[2030-05-01 01:00Z,2030-05-01 09:00Z)',100,$8,true,${opens},
+        VALUES ($1,$2,$3,$4,$5,$6,$7,${id === waitlistEvent ? "'[2030-05-02 01:00Z,2030-05-02 09:00Z)'" : "'[2030-05-01 01:00Z,2030-05-01 09:00Z)'"},100,$8,true,${opens},
           ${id === closed ? "now() - interval '1 day'" : "now() + interval '10 days'"})`,
         [id, code, organiser, coordinator, org, title, status, layout]);
     }
@@ -71,7 +73,11 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
     await db.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary) VALUES
       ($1,$3,$4,'[2030-05-01 01:00Z,2030-05-01 04:00Z)','confirmed',true),
       ($2,$3,$5,'[2030-05-01 05:00Z,2030-05-01 09:00Z)','confirmed',false)`, [hall, seminar, meetup, sessionA, sessionB]);
-    for (const id of [meetup, planning, closed]) {
+    await db.query('UPDATE events SET waitlist_enabled=true WHERE id=$1', [waitlistEvent]);
+    const waitSession = (await db.query('SELECT id FROM sessions WHERE event_id=$1', [waitlistEvent])).rows[0].id as string;
+    await db.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary)
+      VALUES ($1,$2,$3,'[2030-05-02 01:00Z,2030-05-02 09:00Z)','confirmed',true)`, [waitHall, waitlistEvent, waitSession]);
+    for (const id of [meetup, planning, closed, waitlistEvent]) {
       await db.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
         SELECT id, CASE WHEN id=$2 THEN 'Community Meetup' ELSE title END, lower(event_range), upper(event_range), 'Published venue', 'Level 1'
         FROM events WHERE id=$1`, [id, meetup]);
@@ -85,7 +91,7 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
 
     // Discovery: only the Confirmed, not-yet-closed event; the Planning and closed events are hidden.
     const open = await listOpenEvents(query, caseyUser);
-    assert.deepEqual(open.map(event => event.eventCode), ['EVT-REG-1']);
+    assert.deepEqual(open.map(event => event.eventCode), ['EVT-REG-1', 'EVT-WAIT-1']);
     assert.equal(open[0]!.name, 'Community Meetup');
     assert.equal(JSON.stringify(open).includes('Private meetup title'), false);
 
@@ -142,6 +148,23 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
     await db.query("UPDATE event_registrations SET status='withdrawn', withdrawn_at=now() WHERE id=$1", [registrationId]);
     assert.equal((await registerForEvent(pool, caseyUser, 'EVT-REG-1', { sessionIds: [sessionB] })).status, 201);
 
+    // E09-S04/T-46: no positions or automatic promotion; two claims contend for one released place.
+    const initialWaitlist = await registerForEvent(pool, caseyUser, 'EVT-WAIT-1', { sessionIds: [waitSession] });
+    assert.equal(initialWaitlist.status, 201);
+    const danaWaitlist = await joinWaitingList(pool, danaUser, 'EVT-WAIT-1');
+    const fayWaitlist = await joinWaitingList(pool, as(fay, 'fay@example.test'), 'EVT-WAIT-1');
+    assert.equal(danaWaitlist.status, 201); assert.equal(fayWaitlist.status, 201);
+    assert.equal('position' in (danaWaitlist.body.registration as object), false);
+    assert.equal((await withdrawRegistration(pool, caseyUser, 'EVT-WAIT-1')).status, 200);
+    const claimRace = await Promise.all([dana, fay].map(id => registerForEvent(pool!, as(id, id === dana ? 'dana@example.test' : 'fay@example.test'), 'EVT-WAIT-1',
+      { sessionIds: [waitSession], claimWaitlist: true })));
+    assert.deepEqual(claimRace.map(result => result.status).sort(), [201, 409]);
+    const claimRows = (await db.query("SELECT attendee_id,status FROM event_registrations WHERE event_id=$1 ORDER BY attendee_id", [waitlistEvent])).rows;
+    assert.equal(claimRows.filter(row => row.status === 'registered').length, 1);
+    assert.equal(claimRows.filter(row => row.status === 'waitlisted').length, 1);
+    const waitlistNotices = (await db.query("SELECT count(*)::int AS n FROM notifications WHERE event_id=$1 AND title='Event update' AND user_id=ANY($2::uuid[])", [waitlistEvent, [dana, fay]])).rows[0].n;
+    assert.equal(waitlistNotices, 2);
+
     // The real API handler: GET discovery and form, POST registration with a session cookie.
     process.env.DATABASE_URL = url.toString(); delete process.env.DATABASE_POOLER_URL; process.env.APP_URL = 'https://app.example.test';
     // config.ts reads APP_URL once at import, which happened above; this one is read per call.
@@ -162,6 +185,18 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
     const shown = await call(api, { method: 'GET', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie } });
     assert.equal(shown.status, 200); assert.equal(shown.body.sessions.length, 2); assert.equal(shown.headers['Cache-Control'], 'private, no-store');
     const origin = 'https://app.example.test';
+    const graceSignedIn = await call(session, { method: 'POST', headers: { origin }, body: { email: 'grace@example.test', password: credential } });
+    assert.equal(graceSignedIn.status, 200);
+    const waitlistJoin = await call(api, { method: 'POST', url: '/api/attendee/events?waitlist=1&id=EVT-WAIT-1',
+      headers: { cookie: graceSignedIn.headers['Set-Cookie'].split(';')[0], origin }, body: {} });
+    assert.equal(waitlistJoin.status, 201);
+    assert.equal((await db.query("SELECT status FROM event_registrations WHERE event_id=$1 AND attendee_id=$2", [waitlistEvent, grace])).rows[0].status, 'waitlisted');
+    const staleClaim = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-WAIT-1',
+      headers: { cookie: graceSignedIn.headers['Set-Cookie'].split(';')[0], origin }, body: { sessionIds: [waitSession], claimWaitlist: true } });
+    assert.equal(staleClaim.status, 409);
+    assert.match(staleClaim.body.error, /place has just been taken/);
+    assert.equal((await db.query("SELECT status FROM event_registrations WHERE event_id=$1 AND attendee_id=$2", [waitlistEvent, grace])).rows[0].status, 'waitlisted');
+    await db.query("UPDATE events SET status='completed' WHERE id=$1", [waitlistEvent]);
     const foreign = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie, origin: 'https://evil.example.test' }, body: { sessionIds: [sessionB] } });
     assert.equal(foreign.status, 403); assert.equal(foreign.body.error, 'Request origin not allowed.');
     const posted = await call(api, { method: 'POST', url: '/api/attendee/events?registration=1&id=EVT-REG-1', headers: { cookie, origin }, body: { sessionIds: [sessionB] } });

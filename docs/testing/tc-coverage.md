@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **286** (75.5%)
+- Automated (explicit TC_ID in an active test title): **291** (76.8%)
   - Real-database (`.integration.test` / `.db.test`): **38**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **247**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **67** (17.7%)
+  - Live-assertion (other active tests): **252**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **62** (16.4%)
 - No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
 ## Coverage by epic
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 33 | 10 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 16 | 11 | 1 |
-| E09 | 45 | 33 | 9 | 3 |
+| E09 | 45 | 38 | 4 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **286** | **67** | **26** |
+| **Total** | **379** | **291** | **62** | **26** |
 
 ## Case-by-case status
 
@@ -381,11 +381,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
 | `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
 | `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions |
-| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_01 - Verify that joining the waiting list for a full event with the list enabled should add the Attendee and confirm their position |
-| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_02 - Verify that when a place is released in a event with a waiting list, all waitlisted Attendees should be notified and the place claimed on a fi |
-| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
-| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
-| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
+| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01); tests/e2e/e09.spec.ts: TC_E09S |
+| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, _03); tests/e2e/e09.spec.ts: TC_E09S04_02  |
+| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event; frontend/src/features/attendee/WaitingL |
+| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it; frontend/src/features/attendee/WaitingList.test.t |
+| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released; frontend/src/features/attendee/Waitin |
 | `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
@@ -533,6 +533,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
 - registerForEvent maps a lost unique race, a busy account and rethrows other failures
 - getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)
+- joinWaitingList refuses a disabled list, an Event with room, and an Event without places
+- joinWaitingList rejects unavailable Events, closed windows, existing registrations and invalid accounts
+- joinWaitingList handles races, locked accounts and unexpected failures transactionally
+- a lost place keeps the Attendee waitlisted; a full selected Session follows Pending (T-85, T-98)
+- claimWaitlist accepts only a boolean and an active waitlist row
 - withdrawRegistration tells nobody when the Event is still full or the row held no place (D82, D88)
 - withdrawRegistration answers a missing, repeated or foreign withdrawal without writing (AC 6)
 - withdrawRegistration maps a busy account and rethrows other failures
@@ -621,6 +626,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/deactivation.test.ts`
 
 - eligible attendee: locks identity, withdraws, deactivates, revokes sessions, audits and commits
+- a waitlisted deactivation releases no place and sends no place notice
+- a still-full Event sends no place notice when an attendee deactivates
 - coordinator assignments block without successful audit or mutations
 - coordinator without blocking assignments succeeds
 - already deactivated returns safe conflict without audit
@@ -1269,7 +1276,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - public pages have no shared header
 - /home sends a signed-in user to their role home
 - /home sends a signed-out visitor to sign in
-- a placeholder route shows the Coming soon page with its story
+- the attendee waiting-list route offers a full Event with its list enabled
 
 ### `frontend/src/app/routes.test.tsx`
 
@@ -1307,6 +1314,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a Pending request can be withdrawn until the event starts, with its own wording (D88, D106)
 - a refused withdrawal shows the server sentence in the panel, and Cancel goes back
 - withdrawing works under StrictMode, and leaving the page drops a late reply
+
+### `frontend/src/features/attendee/WaitingList.test.tsx`
+
+- an Event with room points to registration, and an active registration cannot join the list
+- a closed list stays visible without a claim or leave action, and closed registration explains why joining is unavailable
+- a registered attendee sees why they cannot join the waiting list
+- leave failures keep the confirmation open and show the server response
+- failed status loads offer a retry
+- late join and leave responses after unmount do not update the screen
+- a taken place keeps the claim form and its error; a stale claim link is refused
 
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 

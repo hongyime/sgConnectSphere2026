@@ -8,7 +8,8 @@ import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { VercelResponse } from '../src/vercel.js';
 
 const user: AuthenticatedUser = { id: 'self', email: 'self@example.test', role: 'attendee', isActive: true, failedLoginCount: 0 };
-function fixture(role = 'attendee', active = true, assignments: unknown[] = [], failAt = '') {
+function fixture(role = 'attendee', active = true, assignments: unknown[] = [], failAt = '', waitlisted: string[] = ['waiter'],
+  registrationStatus = 'registered', capacityFull = false) {
   const calls: { sql: string; values?: unknown[] }[] = [];
   let released = false;
   const pool = { async connect() { return {
@@ -16,8 +17,18 @@ function fixture(role = 'attendee', active = true, assignments: unknown[] = [], 
       calls.push({ sql, values });
       if (failAt && sql.includes(failAt)) throw new Error('private database failure');
       if (sql.startsWith('SELECT id, role')) return { rows: [{ id: 'self', role, is_active: active }] };
+      if (sql.includes('AS coordinator_id')) return { rows: [{ id: 'event', title: 'Event', public_name: 'Community Meetup', status: 'confirmed',
+        starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'), organiser_id: null, coordinator_id: null }] };
+      if (sql.includes('SELECT r.id, r.event_id, r.status')) return { rows: [{ id: 'registration', event_id: 'event', status: registrationStatus, occurred_at: new Date('2027-03-01T02:00:00Z') }] };
       if (sql.includes('FROM events') && sql.includes('SELECT')) return { rows: assignments };
+      if (sql.includes('AS session_capacity')) return { rows: [{ session_id: 'session', session_capacity: 10, registered: capacityFull ? 10 : 0 }] };
+      if (sql.includes('AS registered FROM event_registrations')) return { rows: [{ registered: capacityFull ? 10 : 0 }] };
+      if (sql.includes('SELECT r.attendee_id, r.status')) return { rows: waitlisted.map(attendee_id => ({ attendee_id, status: 'waitlisted' })) };
       if (sql.includes('UPDATE event_registrations')) return { rows: [{ id: 'registration' }], rowCount: 1 };
+      if (sql.includes('INSERT INTO notifications')) return { rows: [{ id: 'notification' }], rowCount: 1 };
+      if (sql.includes('INSERT INTO notification_deliveries')) return { rows: [{ id: '11111111-1111-4111-8111-111111111111' }], rowCount: 1 };
+      if (sql.includes('SELECT d.delivery_status')) return { rows: [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null,
+        email: 'waiter@example.test', title: 'Event update', message: 'Community Meetup: A place is available.' }] };
       return { rows: [] };
     }, release() { released = true; },
   }; } } as unknown as Pool;
@@ -31,10 +42,26 @@ test('eligible attendee: locks identity, withdraws, deactivates, revokes session
   assert.equal(calls[0].sql, 'BEGIN'); assert.equal(calls.at(-1)?.sql, 'COMMIT');
   assert.ok(calls.some(call => call.sql.includes('is_active = false, deactivated_at = now()')));
   assert.ok(calls.some(call => call.sql.includes('DELETE FROM auth_sessions')));
+  const notice = calls.find(call => call.sql.includes('INSERT INTO notifications'))!;
+  assert.deepEqual(notice.values?.slice(0, 3), ['waiter', 'event', 'Event update']);
+  assert.match(String(notice.values?.[3]), /A place is available/);
+  assert.ok(calls.some(call => call.sql.includes('INSERT INTO notification_deliveries')));
   const audit = calls.find(call => call.sql.includes('INSERT INTO audit_logs'))!;
   assert.deepEqual(audit.values, ['self']); assert.match(audit.sql, /Account Deactivated/);
   assert.equal(calls.some(call => /DELETE FROM (users|events|event_registrations)/.test(call.sql)), false);
   assert.equal(released(), true);
+});
+test('a waitlisted deactivation releases no place and sends no place notice', async () => {
+  const { pool, calls } = fixture('attendee', true, [], '', ['waiter'], 'waitlisted');
+  const result = await deactivateAccount(pool, user, { confirm: true });
+  assert.equal(result.withdrawnRegistrations, 1);
+  assert.ok(calls.some(call => call.sql.includes('UPDATE event_registrations')));
+  assert.equal(calls.some(call => call.sql.includes('AS session_capacity') || call.sql.includes('INSERT INTO notifications')), false);
+});
+test('a still-full Event sends no place notice when an attendee deactivates', async () => {
+  const { pool, calls } = fixture('attendee', true, [], '', ['waiter'], 'registered', true);
+  await deactivateAccount(pool, user, { confirm: true });
+  assert.equal(calls.some(call => call.sql.includes('INSERT INTO notifications')), false);
 });
 for (const role of ['event_organiser', 'venue_staff', 'technical_support_staff']) {
   test(`${role} follows standard deactivation, without withdrawing registrations`, async () => {

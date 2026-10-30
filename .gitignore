@@ -87,6 +87,7 @@ artifacts/sbom/*
 !artifacts/e10-cancellation-ci-followup.html
 
 !artifacts/e08-completion-conflict-followup.html
+!artifacts/scrum-66-waiting-list-review.html
 
 # Durable SCRUM-205 review artifact
 !artifacts/scrum-205-refused-edit.html
