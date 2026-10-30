@@ -8,8 +8,9 @@
 --
 -- What `setup` makes (Singapore time, +08). Every event is in Planning, owned by
 -- organiser_a (Client A) and assigned to coord_a, copying EVT-2001's people.
--- Venues have no layout rows, so a venue's places are its maximum (C-78), and
--- venue_a is their Venue Staff. Every confirmed booking has a reserved E10
+-- Each venue lists a projector, wheelchair access and a 20-seat Boardroom
+-- layout (the venue form needs one of each), but the events use no layout, so a
+-- venue's places are its maximum (C-78). venue_a is their Venue Staff. Every confirmed booking has a reserved E10
 -- Projector, and tech_a is the event's Technical Support Staff.
 --   EVT-1021 "Tech Conference 2026", 15 Nov 2026 09:00-17:00, attendance 150,
 --     at E10 Grand Hall (300): TC_E10S02_02, _03, _05, _06.
@@ -43,6 +44,14 @@ VALUES ('E10 Grand Hall', 'Level 1', 300, '00:00', '23:59'),
        ('E10 Auditorium', 'Level 3', 120, '00:00', '23:59'),
        ('E10 Seminar Room A', 'Level 4', 80, '00:00', '23:59'),
        ('E10 Seminar Room B', 'Level 4', 80, '00:00', '23:59');
+
+-- What the E05-S01 venue form requires before Venue Staff can save a venue.
+INSERT INTO venue_facilities (venue_id, facility_id)
+SELECT v.id, f.id FROM venues v, facilities f WHERE v.name LIKE 'E10 %' AND f.code = 'projector';
+INSERT INTO venue_accessibility_features (venue_id, feature_id)
+SELECT v.id, a.id FROM venues v, accessibility_features a WHERE v.name LIKE 'E10 %' AND a.code = 'wheelchair_access';
+INSERT INTO venue_supported_layouts (venue_id, layout_id, capacity)
+SELECT v.id, l.id, 20 FROM venues v, room_layouts l WHERE v.name LIKE 'E10 %' AND l.code = 'boardroom';
 
 INSERT INTO venue_staff_assignments (venue_id, staff_id)
 SELECT v.id, u.id FROM venues v, users u
