@@ -10,8 +10,9 @@
 -- organiser_a (Client A) and assigned to coord_a, copying EVT-2001's people.
 -- Each venue lists a projector, wheelchair access and a 20-seat Boardroom
 -- layout (the venue form needs one of each), but the events use no layout, so a
--- venue's places are its maximum (C-78). venue_a is their Venue Staff. Every confirmed booking has a reserved E10
--- Projector, and tech_a is the event's Technical Support Staff.
+-- venue's places are its maximum (C-78). venue_a is their Venue Staff. Every
+-- confirmed booking has a reserved E10 Projector, and tech_a is the event's
+-- Technical Support Staff.
 --   EVT-1021 "Tech Conference 2026", 15 Nov 2026 09:00-17:00, attendance 150,
 --     at E10 Grand Hall (300): TC_E10S02_02, _03, _05, _06.
 --   EVT-1022 "Riverside Summit", 18 Nov 2026 09:00-17:00, attendance 200, at
