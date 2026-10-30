@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **379**
 - Automated (explicit TC_ID in an active test title): **293** (77.3%)
-  - Real-database (`.integration.test` / `.db.test`): **45**
+  - Real-database (`.integration.test` / `.db.test`): **39**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **247**
+  - Live-assertion (other active tests): **253**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **60** (15.8%)
 - No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
@@ -267,13 +267,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S06_01` | E06-S06 | Verify approval rechecks a confirmed booking after buffer growth | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_01: approval rechecks a confirmed booking after buffer growth and keeps both bookings; tests/e2e/e06.spec.ts: TC_E06S0 |
+| `TC_E06S06_01` | E06-S06 | Verify approval rechecks a confirmed booking after buffer growth | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_01: approval rechecks a confirmed booking after buffer growth and keeps both bookings; tests/auth-e2e/venueClaimPolicy |
 | `TC_E06S06_02` | E06-S06 | Verify a later overlapping request is refused while the first claim remains acti | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_02: an accepted pending request refuses its competitor without disclosure or side effects; backend/tests/venueClaimPol |
-| `TC_E06S06_03` | E06-S06 | Verify concurrent overlapping new claims accept only one request | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_03: concurrent overlapping requests leave exactly one accepted claim; tests/e2e/e06.spec.ts: TC_E06S06_03 - T-100: Ver |
-| `TC_E06S06_04` | E06-S06 | Verify exact half-open buffered adjacency is allowed with zero buffers | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_04: a pending request exactly adjacent to a confirmed booking can be approved; tests/e2e/e06.spec.ts: TC_E06S06_04 - T |
-| `TC_E06S06_05` | E06-S06 | Verify a one-minute overlap is refused before an impossible fixture is inserted | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_05: a one-minute overlap is refused at submission without disclosure or a new row; tests/e2e/e06.spec.ts: TC_E06S06_05 |
+| `TC_E06S06_03` | E06-S06 | Verify concurrent overlapping new claims accept only one request | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_03: concurrent overlapping requests leave exactly one accepted claim |
+| `TC_E06S06_04` | E06-S06 | Verify exact half-open buffered adjacency is allowed with zero buffers | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_04: a pending request exactly adjacent to a confirmed booking can be approved; tests/auth-e2e/venueClaimPolicy.spec.ts |
+| `TC_E06S06_05` | E06-S06 | Verify a one-minute overlap is refused before an impossible fixture is inserted | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_05: a one-minute overlap is refused at submission without disclosure or a new row; tests/auth-e2e/venueClaimPolicy.spe |
 | `TC_E06S06_06` | E06-S06 | Verify buffer-growth conflicts block approvals until an explicit resolution | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_06: buffer growth blocks both approvals until Venue Staff rejects one request; backend/tests/venueClaimPolicy.integrat |
-| `TC_E06S06_07` | E06-S06 | Verify one event may confirm overlapping bookings at different venues | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_07: one event can confirm overlapping requests at different venues; tests/e2e/e06.spec.ts: TC_E06S06_07 — T-100: Verif |
+| `TC_E06S06_07` | E06-S06 | Verify one event may confirm overlapping bookings at different venues | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_07: one event can confirm overlapping requests at different venues; tests/auth-e2e/venueClaimPolicy.spec.ts: TC_E06S06 |
 
 ### E07
 

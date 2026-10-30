@@ -103,7 +103,7 @@ test('TC_E06S05_03 from the event, a free venue is held for the event period wit
   expect(state.posts).toEqual([{ action: 'hold', event_id: 'EVT-TC', venue_id: 'v-hall', starts_at: STARTS, ends_at: ENDS }]);
 });
 
-test('TC_E06S05_01 a hold that clashes is refused, naming the hold in the way', async ({ page }) => {
+test('TC_E06S05_01 a hold that clashes is refused with the unavailable window', async ({ page }) => {
   await world(page, 'event_coordinator', { clash: true });
   await page.goto('/coordinator/events/EVT-TC/venues/v-hall/hold');
   await page.getByRole('button', { name: 'Hold venue' }).click();

@@ -95,7 +95,7 @@ test('TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 tentative holds on the
   expect(placed).toMatchObject({ venue_id: hall, status: 'tentative' });
   expect(Math.abs(placed!.expires_at!.getTime() - (before + 48 * HOUR))).toBeLessThan(5 * 60_000);
 
-  // TC_E06S05_01: Coordinator B's overlapping event sees the hall as taken and is refused, naming the hold.
+  // TC_E06S05_01: Coordinator B's overlapping event sees the hall as taken and is refused with the unavailable window only (T-102).
   await logout();
   await login(other);
   await page.goto('/coordinator/events/EVT-HLD-CR/venues');
