@@ -1,18 +1,9 @@
 // E10-S02 (SCRUM-237) Scenarios 3 and 4: before the Coordinator's change takes
 // effect, show the Session venue bookings and equipment reservations it
 // affects and any over-subscription. Nothing is saved until they confirm.
+import { arrangementReasons } from './arrangementReasons';
 import { Alert, ConfirmPanel } from '../../shared';
-import type { AffectedBooking, ChangeCheck, ImpactReason, OverSubscription } from './eventEditApi';
-
-const TIME = 'date or time changed';
-
-function bookingReasons(booking: AffectedBooking) {
-  return booking.reasons.map((reason: ImpactReason) => reason === 'time'
-    ? TIME
-    : reason === 'layout' ? 'room layout changed'
-    : reason === 'accessibility' ? 'accessibility requirements changed'
-    : `${booking.governingHeadcount} people for ${booking.capacity} places`).join('; ');
-}
+import type { ChangeCheck, OverSubscription } from './eventEditApi';
 
 function overText(over: OverSubscription) {
   return `${over.scope === 'event' ? 'The whole event' : 'A Session'}: ${over.registered} registered for ${over.capacity} places.`;
@@ -47,11 +38,11 @@ export function ArrangementReview({ check, changed = false, busy, onConfirm, onC
         {changed ? <Alert tone="warning">What this change affects has changed since you checked. Review the updated list before saving.</Alert> : null}
         {bookings.length > 0 ? <>
           <h3>Venue bookings to reconfirm</h3>
-          <ul>{bookings.map(booking => <li key={booking.id}><strong>{booking.venueName}</strong>: {bookingReasons(booking)}</li>)}</ul>
+          <ul>{bookings.map(booking => <li key={booking.id}><strong>{booking.venueName}</strong>: {arrangementReasons(booking)}</li>)}</ul>
         </> : null}
         {reservations.length > 0 ? <>
           <h3>Equipment to reconfirm</h3>
-          <ul>{reservations.map(reservation => <li key={reservation.id}><strong>{reservation.equipmentName}</strong>: {TIME}</li>)}</ul>
+          <ul>{reservations.map(reservation => <li key={reservation.id}><strong>{reservation.equipmentName}</strong>: {arrangementReasons(reservation)}</li>)}</ul>
         </> : null}
         {check.impact.affected ? <p>Saving flags these for reconfirmation and notifies the {staffToNotify(check)}.</p> : null}
         {check.overSubscription.length > 0 ? (
