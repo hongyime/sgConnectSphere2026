@@ -220,3 +220,10 @@ assignments to active Venue Staff count, and
 request with no injected resolver notifies only the requested venue's staff
 and reports an unassigned venue as unresolved. Production still needs the
 real assignment rows once 0018 is applied.
+
+## Current E09/E10 reconciliation - 31 October 2026
+
+See [the current acceptance/evidence audit](e11-s01-evidence-audit-20261031.md) for merged producers,
+the organiser-registration public-name fix, retained human records and remaining
+production roster/mailbox acceptance gates. Earlier tables remain historical
+snapshots; absent callers listed there must not be treated as the current tree.
