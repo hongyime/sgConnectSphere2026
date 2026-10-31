@@ -198,3 +198,11 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+## Event request date horizon (SCRUM-180)
+
+`OrganiserRequestFlow` shows the backend's offending Event field (`startAt` or
+`endAt`) and Singapore-local `maximumDate` on horizon refusal, with a generic
+fallback for unsupported fields. Draft submission rechecks saved dates. See
+[the Event/Session handoff](contracts/event-date-horizon.md) for the remaining
+Session acceptance scope.

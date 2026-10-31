@@ -25,3 +25,12 @@ data belong in version control. Production data and credentials do not.
 
 Record language/framework, API-contract, database, authentication, hosting, and
 package-manager choices in decision records before adding their infrastructure.
+
+## Event request date horizon (SCRUM-180)
+
+Event request submission uses the Singapore calendar date plus two calendar
+years in `eventLifecycle/dateHorizon.ts`. Validation precedes persistence on
+create and draft submission; failed PATCH validation returns one structured 400
+through `respondWithResult`. Draft saves may retain farther dates. The sole
+default Session mirrors the Event range; independent Session validation remains
+an E04 integration dependency. See [the contract](contracts/event-date-horizon.md).

@@ -12,6 +12,7 @@ import {
 } from '../src/modules/eventLifecycle/service';
 import { createInMemoryEventLifecycleRepository as fakeRepository } from './helpers/inMemoryEventLifecycleRepository.js';
 import type { CreateEventRequest } from '../src/modules/eventLifecycle/types';
+import { isAfterSingaporeDate, singaporeDateKey, twoCalendarYearsFromSingaporeDate } from '../src/modules/eventLifecycle/dateHorizon.js';
 
 function completeRequest(overrides: Partial<CreateEventRequest> = {}): CreateEventRequest {
   const startAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -66,6 +67,85 @@ test('a preferred date in the past is blocked with an explanation', async () => 
     { message: 'Preferred date must be in the future' },
   );
   assert.equal(repository.created.length, 0);
+});
+
+test('the two-year boundary uses the Singapore-local calendar date and includes the exact limit', () => {
+  const submittedAt = new Date('2026-10-12T16:00:00.000Z');
+  const maximumDate = twoCalendarYearsFromSingaporeDate(submittedAt);
+
+  assert.equal(singaporeDateKey(submittedAt), '2026-10-13');
+  assert.equal(maximumDate, '2028-10-13');
+  assert.equal(isAfterSingaporeDate(new Date('2028-10-13T15:59:00.000Z'), maximumDate), false);
+  assert.equal(isAfterSingaporeDate(new Date('2028-10-13T16:00:00.000Z'), maximumDate), true);
+});
+
+test('adding two calendar years clamps leap day to the last valid day of February', () => {
+  assert.equal(twoCalendarYearsFromSingaporeDate(new Date('2028-02-28T16:00:00.000Z')), '2030-02-28');
+});
+
+test('a feasible next-day Event date has no fixed minimum lead time', async () => {
+  const repository = fakeRepository();
+  const startAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const event = await createEventRequest(repository, completeRequest({
+    startAt,
+    endAt: new Date(startAt.getTime() + 60 * 60 * 1000),
+  }));
+
+  assert.equal(event.status, 'submitted');
+  assert.equal(repository.created.length, 1);
+});
+
+test('a submitted Event date on the exact two-year boundary is accepted', async () => {
+  const repository = fakeRepository();
+  const maximumDate = twoCalendarYearsFromSingaporeDate(new Date());
+  const startAt = new Date(`${maximumDate}T09:00:00+08:00`);
+  const event = await createEventRequest(repository, completeRequest({
+    startAt,
+    endAt: new Date(startAt.getTime() + 60 * 60 * 1000),
+  }));
+
+  assert.equal(event.status, 'submitted');
+  assert.equal(repository.created.length, 1);
+});
+
+for (const field of ['startAt', 'endAt'] as const) {
+  test(`an Event ${field} after the two-year boundary is identified and blocked`, async () => {
+    const repository = fakeRepository();
+    const maximumDate = twoCalendarYearsFromSingaporeDate(new Date());
+    const beyond = new Date(`${maximumDate}T09:00:00+08:00`);
+    beyond.setUTCDate(beyond.getUTCDate() + 1);
+    const overrides = field === 'startAt'
+      ? { startAt: beyond, endAt: new Date(beyond.getTime() + 60 * 60 * 1000) }
+      : { startAt: new Date(Date.now() + 24 * 60 * 60 * 1000), endAt: beyond };
+
+    await assert.rejects(createEventRequest(repository, completeRequest(overrides)), (error: unknown) => {
+      assert.ok(error instanceof EventValidationError);
+      assert.equal(error.message, 'event_date_outside_horizon');
+      assert.deepEqual(error.details, { field, maximumDate });
+      return true;
+    });
+    assert.equal(repository.created.length, 0);
+  });
+}
+
+test('a draft may keep a farther date, but submitting that draft applies the horizon', async () => {
+  const repository = fakeRepository();
+  const maximumDate = twoCalendarYearsFromSingaporeDate(new Date());
+  const startAt = new Date(`${maximumDate}T09:00:00+08:00`);
+  startAt.setUTCDate(startAt.getUTCDate() + 1);
+  const draft = await createEventRequest(repository, completeRequest({
+    status: 'draft',
+    startAt,
+    endAt: new Date(startAt.getTime() + 60 * 60 * 1000),
+  }));
+
+  assert.equal(draft.status, 'draft');
+  await assert.rejects(updateEventRequest(repository, draft.id, draft.organiserId, { status: 'submitted' }), (error: unknown) => {
+    assert.ok(error instanceof EventValidationError);
+    assert.equal(error.message, 'event_date_outside_horizon');
+    assert.deepEqual(error.details, { field: 'startAt', maximumDate });
+    return true;
+  });
 });
 
 test('"none required" satisfies equipment, layout and registration setup', async () => {

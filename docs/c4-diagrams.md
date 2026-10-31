@@ -207,3 +207,11 @@ The container table below is the reference detail for the diagram above.
 - **ADR-001** — Component boundaries are enforced in code, not across the network (modular monolith design).
 - **ADR-006** — Notification jobs are published to the queue only after the originating transaction has committed.
 - **BDR T-35** — SMS notifications are out of scope for release 1; email only.
+
+### Date-horizon verification (SCRUM-180)
+
+The existing application-checks PostgreSQL Event lifecycle step also executes
+`eventDateHorizon.integration.test.ts`: real API authentication, field errors,
+draft refusal/correction, and sole-Session persistence. No component, external
+service or deployment topology is added. The shared Session validation handoff
+is in [the Event date-horizon contract](contracts/event-date-horizon.md).
