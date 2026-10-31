@@ -96,6 +96,10 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
   `tech_support_request` rows whose action is `Support Reconfirmed` (not the
   flag rows); the Organiser view is unchanged. DB check added and break-tested;
   the E14-S02 unit test that matches the query text updated.
+- Le Xin's manual run (Task 9): TC_E10S02_13 expects the refusal to name the
+  overlapping time, but it named only the technician and event. Le Xin chose to
+  show it: the reconfirm refusal now ends "(13 Dec 2026, 10:00 am – 2:00 pm)"
+  (`busySentence`, Singapore time); E07-S07's assign sentence is unchanged.
 - EVT-1021 to EVT-1025's support requests have tech_a assigned but status
   `open` (the earlier E10-S02 fixture), so the staffing queue shows them as
   "Needs a technician"; fixture only, left as is so sections A to G are unchanged.

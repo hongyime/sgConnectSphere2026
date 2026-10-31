@@ -154,7 +154,7 @@ test('TC_E10S02_13: a technician busy at the new time refuses the reconfirmation
     await f.moveTo('2026-12-12');
     const result = await reconfirmSupport(f.db.pool, f.techB, { request: f.support });
     assert.equal(result.status, 409);
-    assert.equal((result.body as { error: string }).error, 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time.');
+    assert.equal((result.body as { error: string }).error, 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).');
     const row = await f.row();
     assert.deepEqual([row.flagged, row.starts.toISOString(), row.to_start.toISOString()], [true, iso('2026-12-05', '06:00'), iso('2026-12-12', '06:00')]);
     assert.deepEqual(await f.assignment(), [[iso('2026-12-05', '06:00'), iso('2026-12-05', '12:00')]]);

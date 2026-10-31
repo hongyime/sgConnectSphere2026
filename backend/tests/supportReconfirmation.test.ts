@@ -81,7 +81,7 @@ test('TC_E10S02_13: a colleague busy at the new time refuses the reconfirmation,
   ]);
   const result = await reconfirmSupport(db.pool, tech, { request: REQUEST });
   assert.deepEqual(result, { status: 409, body: {
-    error: 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time.',
+    error: 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).',
     conflicts: [{ eventCode: 'EVT-2001', title: 'Year-end Gala', startsAt: clash.startsAt, endsAt: clash.endsAt }],
   } });
   assert.ok(!db.calls.some(sql => sql.startsWith('UPDATE')), 'nothing moves and the flag stays');
@@ -100,7 +100,7 @@ test('a colleague taken at the same moment is reported as the same clash, or pla
   ]);
   const named = await reconfirmSupport(raced.pool, tech, { request: REQUEST });
   assert.equal(named.status, 409);
-  assert.equal((named.body as { error: string }).error, 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time.');
+  assert.equal((named.body as { error: string }).error, 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).');
   assert.ok(raced.calls.includes('ROLLBACK'));
 
   const unnamed = fakeDatabase([

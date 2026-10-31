@@ -266,7 +266,7 @@ Screenshots: `TC_E10S02_11-1.png` (venue_a reconfirmed), `TC_E10S02_11-2.png`
 7. Sign in as `tech_a`. Open http://localhost:5173/support/technicians, click
    **Reconfirm…** for EVT-1027 Board Briefing, then **Reconfirm support**.
    Expected: "Technical Support A is already assigned to EVT-1028 Year-end Gala at
-   an overlapping time." in the panel; after **Cancel**, Board Briefing is still
+   an overlapping time (13 Dec 2026, 10:00 am – 2:00 pm)." in the panel; after **Cancel**, Board Briefing is still
    listed with *Staffed for* 6 Dec.
 
 Screenshots: `TC_E10S02_12-1.png` (Support to reconfirm), `TC_E10S02_12-2.png`

@@ -521,12 +521,12 @@ test.describe("E10-S02", () => {
    */
   test("TC_E10S02_13 - Reconfirming a Technical Support request should be refused when an assigned technician is busy at the new time", async ({ page }) => {
     await supportToReconfirm(page, () => ({ status: 409, json: {
-      error: 'Tech Support One is already assigned to EVT-2001 Year-end Gala at an overlapping time.',
+      error: 'Tech Support One is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).',
       conflicts: [{ eventCode: 'EVT-2001', title: 'Year-end Gala', startsAt: '2026-12-12T02:00:00.000Z', endsAt: '2026-12-12T06:00:00.000Z' }],
     } }));
     await page.getByRole('button', { name: 'Reconfirm support for EVT-1082 Charity Run' }).click();
     await page.getByRole('button', { name: 'Reconfirm support', exact: true }).click();
-    await expect(page.getByText('Tech Support One is already assigned to EVT-2001 Year-end Gala at an overlapping time.')).toBeVisible();
+    await expect(page.getByText('Tech Support One is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Reconfirm support for EVT-1082 Charity Run' })).toBeVisible();
     await expect(page.getByText(/Reconfirmed Sound desk/)).toHaveCount(0);
   });

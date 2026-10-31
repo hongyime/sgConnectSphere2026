@@ -53,12 +53,12 @@ test('TC_E10S02_12: a flagged request shows its time now and the time it moves t
 test('TC_E10S02_13: a busy technician refusal stays in the panel and the request stays listed', async () => {
   stubApi({
     [LIST]: { body: { requests: [charity] } },
-    [POST]: { status: 409, body: { error: 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time.' } },
+    [POST]: { status: 409, body: { error: 'Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).' } },
   }, { role: 'technical_support_staff' });
   renderList();
   fireEvent.click(await screen.findByRole('button', { name: 'Reconfirm support for EVT-1082 Charity Run' }));
   fireEvent.click(screen.getByRole('button', { name: 'Reconfirm support' }));
-  expect(await screen.findByText('Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time.')).toBeInTheDocument();
+  expect(await screen.findByText('Tech A is already assigned to EVT-2001 Year-end Gala at an overlapping time (12 Dec 2026, 10:00 am – 2:00 pm).')).toBeInTheDocument();
   expect(screen.getByRole('table')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(screen.queryByText(/already assigned/)).not.toBeInTheDocument();

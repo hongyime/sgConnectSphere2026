@@ -50,6 +50,12 @@ export async function listSupportToReconfirm(query: Query, user: AuthenticatedUs
   return { requests };
 }
 
+// TC_E10S02_13: the refusal names the busy colleague, the clashing event and
+// its time, e.g. "… at an overlapping time (13 Dec 2026, 10:00 am – 2:00 pm)."
+// E07-S07's assign sentence is left as it is.
+const busySentence = (who: string, conflict: Conflict) =>
+  `${conflictSentence(who, conflict).replace(/\.$/, '')} (${formatEventDates(new Date(conflict.startsAt), new Date(conflict.endsAt))}).`;
+
 // Colleagues on this request already assigned elsewhere at the new time.
 async function clashesAt(query: Query, requestId: string, target: string) {
   return (await query<Conflict & { staffName: string }>(`SELECT u.full_name AS "staffName", e.event_code AS "eventCode", e.title,
@@ -86,7 +92,7 @@ export async function reconfirmSupport(database: Pool, user: AuthenticatedUser |
       const clashes = await clashesAt(query, request.id, flag.target);
       if (clashes.length) {
         const conflicts: Conflict[] = clashes.map(({ staffName: _who, ...conflict }) => conflict);
-        return { status: 409, body: { error: conflictSentence(clashes[0]!.staffName, conflicts[0]!), conflicts } };
+        return { status: 409, body: { error: busySentence(clashes[0]!.staffName, conflicts[0]!), conflicts } };
       }
       const moved = (await client.query<{ starts_at: Date; ends_at: Date }>(`UPDATE tech_support_requests
         SET support_range = reconfirm_range, reconfirm_range = NULL, requires_reconfirmation = false
@@ -133,7 +139,7 @@ export async function reconfirmSupport(database: Pool, user: AuthenticatedUser |
     const clashes = target ? await clashesAt(database.query.bind(database) as Query, id, target) : [];
     const conflicts: Conflict[] = clashes.map(({ staffName: _who, ...conflict }) => conflict);
     return { status: 409, body: {
-      error: clashes[0] ? conflictSentence(clashes[0].staffName, conflicts[0]!) : 'A colleague is already assigned at an overlapping time.', conflicts,
+      error: clashes[0] ? busySentence(clashes[0].staffName, conflicts[0]!) : 'A colleague is already assigned at an overlapping time.', conflicts,
     } };
   }
 }
