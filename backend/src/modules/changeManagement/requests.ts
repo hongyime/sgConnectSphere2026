@@ -5,6 +5,8 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, requireOrganiser } from '../eventVisibility/service.js';
 import { recordEventDenial, requireCoordinator } from '../eventLifecycle/coordinatorAssignment.js';
+import { applyEventStatusChange } from '../eventLifecycle/repository.js';
+import { CHANGE_REQUEST_REPLANNING_ACTION } from '../eventReadiness/autoSafetyReview.js';
 import { previewEventChangeWith } from './eventChange.js';
 import { updateEventInformationWithNotificationsWith } from '../eventNotifications/informationChange.js';
 
@@ -261,8 +263,16 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
     if (arrangementApply) {
       if (input.previewToken !== preview.token) throw new AccessError(409, 'Preview the current affected arrangements before applying this request.');
       if (preview.lateClose && input.confirmLateClose !== true) throw new AccessError(428, 'Confirm registration closing after the Event starts.');
-      await updateEventInformationWithNotificationsWith(client, coordinator, event.id,
+      const applied = await updateEventInformationWithNotificationsWith(client, coordinator, event.id,
         { ...stored.fields, confirmLateClose: input.confirmLateClose === true }, { reviewed: preview.token }, request.requested_by);
+      // PO decision (SCRUM-70, comment 10401): only affected arrangements
+      // interrupt Safety Review. Keep this transition atomic with the apply.
+      if (event.status === 'safety_review' && applied.impact.affected) {
+        await applyEventStatusChange(client, event.id, 'planning', coordinator.id, {
+          auditAction: CHANGE_REQUEST_REPLANNING_ACTION,
+          reason: 'Approved change requires arrangement reconfirmation.',
+        });
+      }
       if (stored.fields.title !== undefined) await client.query('UPDATE event_publications SET name=$2 WHERE event_id=$1', [event.id, stored.fields.title]);
       if (stored.fields.startAt !== undefined || stored.fields.endAt !== undefined) await client.query(
         `UPDATE event_publications SET starts_at=lower(e.event_range),ends_at=upper(e.event_range)

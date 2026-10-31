@@ -184,3 +184,8 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+
+### E10-S01 Safety Review interruption
+
+E10-S01 applies affected approved changes during Safety Review through the shared arrangement transaction, then uses the central lifecycle writer to return to Planning. The explicit change-request replan audit also qualifies a first Safety Review for automatic re-entry after readiness clears; ordinary never-reviewed Planning Events keep their existing submission path.
