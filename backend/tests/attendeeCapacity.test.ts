@@ -36,7 +36,7 @@ function script(state: State = {}) {
     let rows: unknown[] = [];
     if (sql.includes('FROM events WHERE (id::text')) {
       rows = state.event === null ? [] : [{
-        id: eventId, event_code: 'EVT-2001', title: 'Community Meetup', status: 'confirmed', waitlist_enabled: false,
+        id: eventId, event_code: 'EVT-2001', title: 'Community Meetup', public_name: 'Published Community Meetup', status: 'confirmed', waitlist_enabled: false,
         organiser_id: organiser.id, starts_at: new Date('2027-04-01T01:00:00Z'), ends_at: new Date('2027-04-01T09:00:00Z'),
         registration_enabled: true, opens_at: null, closes_at: new Date('2027-03-30T00:00:00Z'), withdrawal_deadline: null, ...state.event,
       }];
@@ -244,4 +244,18 @@ test("manageRegistrations is for the Event's own Organiser: another organisation
   await assert.rejects(manageRegistrations(colleague.pool, organiser, eventId, { action: 'approve', registrationId: requestId }),
     { status: 403, message: "Only this event's Organiser can approve requests or add attendees." });
   assert.equal(colleague.calls.some(call => call.sql.includes('UPDATE event_registrations')), false);
+});
+
+
+for (const action of ['approve', 'reject', 'add'] as const) test(`TC_E11S01_14: organiser ${action} uses publication and suppresses notices without it`, async () => {
+  const input = action === 'add' ? { action, email: 'attendee@example.test', sessionIds: [sessionA] } : { action, registrationId: requestId };
+  const published = script({ event: { title: 'PRIVATE planning title', public_name: 'Public community event' } });
+  assert.ok((await manageRegistrations(published.pool, organiser, eventId, input)).status < 300);
+  const notice = published.calls.find(call => call.sql.includes('INSERT INTO notifications'))!;
+  assert.match(String(notice.values![3]), /Public community event/);
+  assert.doesNotMatch(String(notice.values![3]), /PRIVATE planning title/);
+  const unpublished = script({ event: { title: 'PRIVATE planning title', public_name: null } });
+  assert.ok((await manageRegistrations(unpublished.pool, organiser, eventId, input)).status < 300);
+  assert.equal(unpublished.calls.some(call => call.sql.includes('INSERT INTO notifications')), false);
+  assert.ok(unpublished.calls.some(call => call.sql === 'COMMIT'));
 });

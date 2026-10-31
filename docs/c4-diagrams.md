@@ -215,3 +215,14 @@ The existing application-checks PostgreSQL Event lifecycle step also executes
 draft refusal/correction, and sole-Session persistence. No component, external
 service or deployment topology is added. The shared Session validation handoff
 is in [the Event date-horizon contract](contracts/event-date-horizon.md).
+
+## E11 registration-notice publication boundary
+
+Organiser-managed registration approval/rejection/manual addition reads the
+published Event name for attendee notifications, while the Organiser's own
+registration screen keeps its internal Event view. Without a publication the
+public notice is suppressed, following T-64's shared recipient policy. Business
+writes, audit and any eligible in-app/email-outbox rows share the transaction;
+no live provider call runs in that transaction. The E11 cross-flow database
+suite is part of `backend`'s `test:db` command. See the 31 October E11 evidence
+audit for exact local/production/human delivery boundaries.

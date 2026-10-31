@@ -175,3 +175,14 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+## E11 registration-notice publication boundary
+
+Organiser-managed registration approval/rejection/manual addition reads the
+published Event name for attendee notifications, while the Organiser's own
+registration screen keeps its internal Event view. Without a publication the
+public notice is suppressed, following T-64's shared recipient policy. Business
+writes, audit and any eligible in-app/email-outbox rows share the transaction;
+no live provider call runs in that transaction. The E11 cross-flow database
+suite is part of `backend`'s `test:db` command. See the 31 October E11 evidence
+audit for exact local/production/human delivery boundaries.
