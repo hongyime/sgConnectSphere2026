@@ -460,8 +460,12 @@ notice fix changes public naming only: it does not alter booking approval,
 primary selection, assignment or reconfirmation rules. Production Venue Staff
 recipient verification still depends on the approved roster under SCRUM-195.
 
-The E10-S01 request review uses the same readable impact labels as E10-S02,
-including governing headcount/capacity when supplied. Required late-close
-consent disables confirmation until ticked. These UI safeguards do not change
-booking state rules or define automatic Safety Review reversion to Planning;
-that lifecycle question remains subject to PO confirmation.
+The readable impact labels and late-close consent safeguards in PR #390 are
+UI-only. Bryan has approved the separate Safety Review-to-Planning rule (T-103;
+SCRUM-70 comment 10401); it is no longer awaiting PO confirmation. The backend
+implementation below returns the Event to Planning only when applying an
+approved request flags arrangements for reconfirmation.
+
+### E10-S01 Safety Review interruption
+
+E10-S01 approved changes that interrupt Safety Review leave Confirmed bookings in place with reconfirmation flags. Reconfirming the last required arrangement uses the shared readiness transition and sends a fresh SO notice, including the first safety cycle; previous safety history remains unchanged.

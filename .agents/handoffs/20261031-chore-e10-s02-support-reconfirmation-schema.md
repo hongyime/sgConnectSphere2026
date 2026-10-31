@@ -31,9 +31,11 @@ applied by the deploy owner, and only then may the code PR that uses it
 
 ## Next step
 
-The database run record `20261031-190403` predates `reconfirm_range`; record a
-new run before citing evidence in the PR.
+`main` (with #392 and #393) merged in; `backend/package.json` conflict
+resolved by keeping main's `test:db` list and adding the schema test. New run
+record `20261031-210950` covers `reconfirm_range`: 312/313, the one failure
+the local-only `registration.db.test.ts`. PR opened.
 
-Open the PR when an author slot is free (T-101: two open per author; #392 and
-#393 are open). After merge, the deploy owner applies 0026 and records the run
-under `docs/ops/production-migration-runs/`; then the code PR may merge.
+After merge, the deploy owner applies 0026 and records the run under
+`docs/ops/production-migration-runs/`; then the code PR
+(`feature/SCRUM-71-e10s02-support-reconfirm`) may merge.

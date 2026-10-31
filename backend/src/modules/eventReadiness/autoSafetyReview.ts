@@ -11,13 +11,17 @@
 // log, and only a Safety Officer can confirm the event again (the check in
 // applyEventStatusChange), so it is never reused.
 //
-// A Planning event that was never Confirmed is left alone: its Coordinator
+// An approved request can also interrupt the first Safety Review. Its explicit
+// replan audit qualifies for re-entry without inventing an earlier approval.
+// Other Planning events that were never Confirmed are left alone: their Coordinator
 // submits it with E08-S03's "Submit for safety check".
 import type { PoolClient } from 'pg';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { eventLabel } from '../eventLifecycle/coordinatorAssignment.js';
 import { applyEventStatusChange } from '../eventLifecycle/repository.js';
 import { loadReadiness, type ReadinessEventRow } from './readiness.js';
+
+export const CHANGE_REQUEST_REPLANNING_ACTION = 'Returned to Planning after approved change';
 
 export const AUTO_SAFETY_REVIEW_ACTION = 'Entered Safety Review after reconfirmation';
 
@@ -52,13 +56,16 @@ export async function enterSafetyReviewIfReady(client: PoolClient, identifier: s
       lower(event_range) AS starts_at, upper(event_range) AS ends_at, equipment_requirements
     FROM events WHERE id::text = $1 OR event_code = $1 FOR NO KEY UPDATE`, [identifier])).rows[0];
   if (event?.status !== 'planning') return false;
-  // Confirmed before: its status history holds a change to or from Confirmed.
+  // Eligible history: previously Confirmed, or the explicit E10-S01 interruption
+  // of Safety Review. Ordinary initial Planning must not auto-submit.
   // An event Confirmed before the status history existed has no change to
   // Confirmed, but its reversion or venue loss still records one from it.
-  const confirmedBefore = await client.query(`SELECT 1 FROM audit_logs
+  const reviewHistory = await client.query(`SELECT 1 FROM audit_logs
     WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
-      AND (new_value = 'confirmed' OR old_value = 'confirmed') LIMIT 1`, [event.id]);
-  if (!confirmedBefore.rowCount) return false;
+      AND (new_value = 'confirmed' OR old_value = 'confirmed'
+        OR (old_value = 'safety_review' AND new_value = 'planning' AND action = $2)) LIMIT 1`,
+  [event.id, CHANGE_REQUEST_REPLANNING_ACTION]);
+  if (!reviewHistory.rowCount) return false;
   const readiness = await loadReadiness((sql, values) => client.query(sql, values), event);
   if (readiness.blockers.length) return false;
   await applyEventStatusChange(client, event.id, 'safety_review', actorId, {
