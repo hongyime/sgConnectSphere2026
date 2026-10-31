@@ -1728,6 +1728,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored
 - E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form
 
+### `frontend/src/features/support/SupportReconfirmation.test.tsx`
+
+- a request whose time stays, with no description and no Coordinator, says so
+- a failed load can be retried; a malformed reply is a failed load
+- the staffing page shows support to reconfirm above the queue and reloads the queue after a reconfirmation
+
 ### `frontend/src/features/support/TechnicianStaffing.test.tsx`
 
 - the queue shows requests needing a technician first, with filters for staffed and all

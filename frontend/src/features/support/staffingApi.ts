@@ -47,3 +47,17 @@ export function removeAssignment(assignment: string) {
   return apiCall<{ removed: true; requestStatus: 'open' | 'staffed' }>(URL,
     jsonRequest('POST', { action: 'remove', assignment }), 'The assignment could not be removed.');
 }
+
+// E10-S02 follow-up (SCRUM-244, T-103): staffed requests a date change flagged,
+// with the time each moves to, and reconfirming one there.
+export type SupportToReconfirm = StaffingRequest & { reconfirmFor: { startsAt: string; endsAt: string } };
+
+export function listSupportToReconfirm(signal?: AbortSignal) {
+  return load<{ requests: SupportToReconfirm[] }>(`${URL}&reconfirm=list`, signal, 'Support to reconfirm could not be loaded.',
+    data => Array.isArray(data?.requests));
+}
+
+export function reconfirmSupport(request: string) {
+  return apiCall<{ request: { id: string; startsAt: string; endsAt: string }; coordinatorNotified: boolean; enteredSafetyReview: boolean }>(URL,
+    jsonRequest('POST', { action: 'reconfirm', request }), 'The support request could not be reconfirmed.');
+}

@@ -12,6 +12,9 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const REQ = '11111111-1111-4111-8111-111111111111';
 const QUEUE = 'GET /api/venues?task=staffing';
+// The queue page also loads support to reconfirm (T-103); listed first, as the
+// fake matches the queue's URL as a prefix.
+const NONE_TO_RECONFIRM = { 'GET /api/venues?task=staffing&reconfirm=list': { body: { requests: [] } } };
 const DETAIL = `GET /api/venues?task=staffing&request=${REQ}`;
 const SCHEDULE = 'GET /api/venues?task=staffing&schedule=mine';
 const POST = 'POST /api/venues?task=staffing';
@@ -73,7 +76,7 @@ test('TC_E11S01_11 self actions do not claim notification, and confirmation is f
 });
 
 test('the queue shows requests needing a technician first, with filters for staffed and all', async () => {
-  stubApi({ [QUEUE]: { body: { requests: [
+  stubApi({ ...NONE_TO_RECONFIRM, [QUEUE]: { body: { requests: [
     conference,
     { ...conference, id: 'r-2', eventCode: 'EVT-CR', eventTitle: 'Charity Run', status: 'staffed', assignees: [{ assignmentId: 'a-1', staffId: 's-b', name: 'Tech B' }] },
   ] } } }, { role: 'technical_support_staff' });
@@ -92,14 +95,14 @@ test('the queue shows requests needing a technician first, with filters for staf
 
 test('an empty queue and an empty filter each explain themselves; a failed load can be retried', async () => {
   let fail = true;
-  stubApi({ [QUEUE]: () => (fail ? { status: 500, body: {} } : { body: { requests: [{ ...conference, status: 'staffed' }] } }) }, { role: 'technical_support_staff' });
+  stubApi({ ...NONE_TO_RECONFIRM, [QUEUE]: () => (fail ? { status: 500, body: {} } : { body: { requests: [{ ...conference, status: 'staffed' }] } }) }, { role: 'technical_support_staff' });
   renderAt('/support/technicians');
   expect(await screen.findByText('Support requests could not be loaded.')).toBeInTheDocument();
   fail = false;
   fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
   expect(await screen.findByText('Nothing in “Needs a technician”')).toBeInTheDocument();
   cleanup();
-  stubApi({ [QUEUE]: { body: { requests: [] } } }, { role: 'technical_support_staff' });
+  stubApi({ ...NONE_TO_RECONFIRM, [QUEUE]: { body: { requests: [] } } }, { role: 'technical_support_staff' });
   renderAt('/support/technicians');
   expect(await screen.findByText('No technical support requested')).toBeInTheDocument();
 });

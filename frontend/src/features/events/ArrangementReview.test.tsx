@@ -35,3 +35,24 @@ test('TC_E10S01_04: layout/accessibility impacts name their requirements rather 
   expect(screen.getByText(/room layout changed; accessibility requirements changed/)).toBeTruthy();
   expect(screen.queryByText(/40 people for 50 places/)).toBeNull();
 });
+
+const support = { id: 's', description: 'Sound desk', startsAt: '2026-12-04T22:00:00.000Z', endsAt: '2026-12-05T04:00:00.000Z', reasons: ['time' as const] };
+
+test('TC_E10S02_06: staffed support alone is reconfirmed by Technical Support Staff (T-103)', () => {
+  expect(staffToNotify({ impact: { affected: true, bookings: [], reservations: [], supports: [{ ...support, shiftMs: 0 }] }, overSubscription: [] })).toBe('Technical Support Staff');
+  expect(staffToNotify({ impact: { affected: false, bookings: [], reservations: [], supports: [] }, overSubscription: [] })).toBe('');
+});
+
+test('TC_E10S02_03: the preview lists flagged support with the time it moves to, or says it stays (T-103)', () => {
+  const week = 7 * 24 * 60 * 60 * 1000;
+  render(<ArrangementReview check={{ impact: { affected: true, bookings: [], reservations: [], supports: [
+    { ...support, shiftMs: week }, { ...support, id: 't', description: '', shiftMs: 0 },
+  ] }, overSubscription: [] }} busy={false} onConfirm={() => {}} onCancel={() => {}} />);
+  expect(screen.getByRole('heading', { name: 'Technical Support to reconfirm' })).toBeTruthy();
+  const items = screen.getAllByRole('listitem').map(item => item.textContent);
+  expect(items).toEqual([
+    'Sound desk: 5 Dec 2026, 6:00 am – 12:00 pm → 12 Dec 2026, 6:00 am – 12:00 pm',
+    'Technical support: 5 Dec 2026, 6:00 am – 12:00 pm, time stays the same',
+  ]);
+  expect(screen.getByText(/notifies the Technical Support Staff\./)).toBeTruthy();
+});

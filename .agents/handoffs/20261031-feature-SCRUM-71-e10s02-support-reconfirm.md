@@ -34,7 +34,11 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
    `enterSafetyReviewIfReady` run. Done: `supportReconfirmation.ts`,
    `GET ?task=staffing&reconfirm=list`, `POST ?task=staffing {action:'reconfirm'}`.
 6. Frontend: support in the "Check what this change affects" box; a "Support to
-   reconfirm" section for Technical Support Staff.
+   reconfirm" section for Technical Support Staff. Done: `ArrangementReview.tsx`
+   ("Technical Support to reconfirm", current time → new time),
+   `SupportReconfirmation.tsx` above the queue on `/support/technicians`
+   (reloads the queue after a reconfirmation), Activity log shows
+   `support_range` in Singapore time as "Support reconfirmed".
 7. Tests (unit, database, Playwright) with deliberate breaks; contracts and docs.
 8. Click-through guide, preconditions SQL, automated real local run.
 9. Le Xin's manual T-65/T-93 run.
@@ -85,6 +89,6 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 
 ## Next step
 
-Task 6: frontend, support in the "Check what this change affects" box and a
-"Support to reconfirm" section for Technical Support Staff; Activity log shows
-`support_range` in Singapore time.
+Task 7: Playwright (support assertions in TC_E10S02_05/_06/_08 and new
+TC_10 to _13; old e10.spec headers), TC_10 wording "is not asked to
+reconfirm", contracts (`docs/contracts/`, api-changes-week7) and docs.
