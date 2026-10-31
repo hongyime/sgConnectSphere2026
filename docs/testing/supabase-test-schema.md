@@ -38,10 +38,18 @@ had been made by hand. That gap is now closed: migration
 `0009_keepalive_logs.sql` creates it, and `test` carries it too, so `test` holds
 33 base tables as of that migration.
 
-## Honest scope: one test uses this today
+## Honest scope: two tests use this today
 
-**`backend/tests/deactivation.integration.test.ts` works against Supabase now,
-with no code change.** It is the only test written to the T-59 pattern.
+Two tests are written to the T-59 rollback pattern:
+
+- `backend/tests/deactivation.integration.test.ts` uses the shared `test`
+  schema.
+- `backend/tests/eventSessionsRoutes.integration.test.ts` (E04-S02) creates its
+  own disposable schema *inside* the rolled-back transaction and applies every
+  migration there, so it does not depend on `test` being current and still
+  leaves nothing behind.
+
+The deactivation test works against Supabase now, with no code change.
 
 Confirmed by running it:
 

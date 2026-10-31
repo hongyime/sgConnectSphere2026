@@ -29,6 +29,7 @@ function database(state: State = {}) {
     else if (sql.includes('SELECT id,event_id,venue_id,status,expires_at')) rows = state.hold === 'missing' ? [] : [{ id: holdId, event_id: eventId, venue_id: venueId, status: state.hold ?? 'tentative', expires_at: state.expiry === undefined ? new Date(Date.now() + 60000) : state.expiry, starts_at: start, ends_at: end, purpose: null, headcount: null, requested_by: actor.id }];
     else if (sql.includes('SELECT clock_timestamp()')) rows = [{ now: new Date() }];
     else if (sql.includes('FROM sessions WHERE')) rows = Array.from({ length: state.sessions ?? 1 }, () => ({ id: randomUUID(), starts_at: state.sessionOutside ? end : start, ends_at: end }));
+    else if (sql.includes('FROM sessions s WHERE')) rows = [{ start, end, attendance: state.requirements === false ? 0 : 150, layout: '', accessibility: [], facilities: [] }];
     else if (sql.includes('SELECT opens_at')) rows = state.venue === false ? [] : [{ opens_at: '08:00:00', closes_at: '22:00:00' }];
     else if (sql.includes('SELECT lower(occupied_window')) rows = state.clash ? [{ starts_at: start, ends_at: end }] : [];
     else if (sql.includes('SELECT id FROM venue_blocks')) rows = state.block ? [{ id: randomUUID() }] : [];

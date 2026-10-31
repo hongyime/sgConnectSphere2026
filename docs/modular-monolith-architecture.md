@@ -114,7 +114,7 @@ flowchart TB
 | Application entry | API Controllers | Receives REST/JSON requests and routes them into the application. |
 | Security | Identity and Access Control | Authenticates users and retrieves all granted role memberships and organisation context. |
 | Security | Role and Action Router | Allows an account to use actions permitted by any granted role; the API checks each request independently. Seed accounts start with one role (ADR-019). |
-| Business module | Event Lifecycle | Manages event drafts, child Sessions, submission, review, clarification, approval, planning, automatic Safety Review, confirmation, cancellation, completion and Obsolete change-request closure. |
+| Business module | Event Lifecycle | Manages event drafts, child Sessions, submission, review, clarification, approval, planning, automatic Safety Review, confirmation, cancellation, completion and Obsolete change-request closure. Session authoring is owned by the Organiser of the draft (`eventSessions`). |
 | Business module | Venue and Booking | Maintains venue information, Session-linked booking requests, open-ended editable venue blocks and history, suitability checks, per-hold expiry/warnings/extensions and booking conflicts. |
 | Business module | Equipment and Support | Maintains equipment, checks Session-level availability, creates Session-linked reservations, identifies shortfalls and assigns Event-level technical support. |
 | Business module | Attendee Registration | Publishes confirmed Events and Sessions; manages one Event-level registration with selected Sessions, Session/combined capacity, Pending Organiser review, Event-level waitlists, withdrawal and attendance. |

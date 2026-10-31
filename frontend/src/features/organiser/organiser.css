@@ -219,3 +219,18 @@
 /* E09-S02 registrations: Approve/Decline sit side by side and wrap on phones. */
 .registration-actions { display: inline-flex; flex-wrap: wrap; gap: 8px; }
 .registration-reason { color: var(--amber-ink); font-size: 0.9rem; }
+
+/* E04-S02: Sessions are children of a saved draft; one row per Session. */
+.session-editor { display: grid; gap: 12px; margin-top: 20px; }
+.session-editor h3 { margin: 0; }
+.session-list { list-style: none; display: grid; gap: 12px; margin: 0; padding: 0; }
+.session-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border: 1px solid var(--line, #d8dee9);
+  border-radius: 10px;
+  padding: 12px;
+}
+.session-row label { display: grid; gap: 4px; font-size: 0.9rem; }
+.session-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
