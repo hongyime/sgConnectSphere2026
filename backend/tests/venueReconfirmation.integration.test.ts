@@ -81,7 +81,10 @@ test('reconfirming moves the booking to its Session time, clears the flag, logs 
   const { eventId, bookingId, session } = await f.flaggedBooking();
   assert.equal((await f.query<{ range: string }>('SELECT session_range = $2::tstzrange AS moved FROM sessions WHERE id = $1', [session, NEW])).rows[0]!.moved, true,
     'the sole Session followed the event (0014)');
-  assert.deepEqual((await listBookingsToReconfirm(f.query, f.staff)).bookings.map(row => row.id), [bookingId]);
+  const waiting = (await listBookingsToReconfirm(f.query, f.staff)).bookings;
+  assert.deepEqual(waiting.map(row => [row.id, row.startsAt, row.reconfirmFor]),
+    [[bookingId, '2027-01-15T02:00:00.000Z', { startsAt: '2027-01-20T02:00:00.000Z', endsAt: '2027-01-20T04:00:00.000Z' }]],
+    'the list shows the booked time and the Session time it moves to');
 
   const result = await reconfirmBooking(f.pool, f.staff, bookingId);
 

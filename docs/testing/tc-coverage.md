@@ -1692,6 +1692,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
 
+### `frontend/src/features/venue/BookingReconfirmation.test.tsx`
+
+- the list shows each flagged booking with its booked time and the time it would move to
+- reconfirming asks first, then says who was told and that the reverted event is back in Safety Review
+- a booking kept at the same time says so, and an event without a Coordinator or other outstanding work says that
+- a refused reconfirmation shows the reason in the panel and keeps the booking listed
+- cancelling closes the panel and sends nothing; choosing again clears the last result
+- the Reconfirm buttons are disabled while a reconfirmation is being saved
+- an empty list and a failed load each say so
+- the Booking requests page shows the bookings to reconfirm under the pending requests
+
 ### `frontend/src/features/venue/BookingRequests.test.tsx`
 
 - Venue Staff see pending booking requests, each linking to its request

@@ -421,7 +421,7 @@ function reconfirmDatabase(overrides: Record<string, unknown> = {}, script: Scri
     if (scripted !== undefined) return scripted;
     if (sql.startsWith('SELECT status FROM events')) return [{ status: eventStatus }];
     if (sql.includes('FOR UPDATE OF vb')) return [bookingRow({ status: 'confirmed', requires_reconfirmation: true, ...overrides })];
-    if (sql.includes('COALESCE(s.session_range, e.event_range)')) return [{ starts_at: newStart, ends_at: newEnd }];
+    if (sql.includes('COALESCE(s.session_range, e.event_range)')) return (values?.[0] as string[]).map(id => ({ id, starts_at: newStart, ends_at: newEnd }));
     if (sql.startsWith('SELECT full_name FROM users')) return [{ full_name: 'Venue Staff A' }];
     return undefined;
   });
@@ -515,10 +515,13 @@ test('reconfirming rechecks the staff account like a decision', async () => {
 });
 
 test('the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events', async () => {
-  const db = fakeDatabase(sql => sql.includes('vb.requires_reconfirmation AND')
-    ? [bookingRow({ status: 'confirmed', requires_reconfirmation: true })] : undefined);
+  const db = fakeDatabase((sql, values) => sql.includes('vb.requires_reconfirmation AND')
+    ? [bookingRow({ status: 'confirmed', requires_reconfirmation: true })]
+    : sql.includes('COALESCE(s.session_range, e.event_range)') ? (values?.[0] as string[]).map(id => ({ id, starts_at: newStart, ends_at: newEnd })) : undefined);
   const listed = await listBookingsToReconfirm(db.query, staff);
   assert.deepEqual(listed.bookings.map(booking => [booking.id, booking.status, booking.requiresReconfirmation]), [[bookingId, 'confirmed', true]]);
+  assert.deepEqual(listed.bookings[0]!.reconfirmFor, { startsAt: newStart.toISOString(), endsAt: newEnd.toISOString() },
+    'each row says where the booking would move');
   const sql = db.calls.find(call => call.sql.includes('vb.requires_reconfirmation AND'))!.sql;
   assert.match(sql, /vb\.status = 'confirmed'/);
   assert.match(sql, /e\.status NOT IN \('completed', 'cancelled'\)/);

@@ -149,13 +149,27 @@ export async function listPendingBookings(query: Query, user: AuthenticatedUser 
 
 // E08-S04 Scenario 4: Confirmed bookings waiting for Venue Staff to
 // reconfirm, on events that are still open.
+// The time a reconfirmed booking takes: its Session's current time, or the
+// Event's when it has no Session (E10-S02 leaves a moved booking where it was).
+async function reconfirmTimes(query: Query, bookingIds: string[]) {
+  const result = await query<{ id: string; starts_at: Date; ends_at: Date }>(`SELECT vb.id,
+      lower(COALESCE(s.session_range, e.event_range)) AS starts_at, upper(COALESCE(s.session_range, e.event_range)) AS ends_at
+    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id LEFT JOIN sessions s ON s.id = vb.session_id
+    WHERE vb.id = ANY($1::uuid[])`, [bookingIds]);
+  return new Map(result.rows.map(row => [row.id, row]));
+}
+
 export async function listBookingsToReconfirm(query: Query, user: AuthenticatedUser | undefined) {
   await requireBookingDecider(query, user);
   const result = await query<BookingRow>(`${BOOKING_SELECT}
     WHERE vb.status = 'confirmed' AND vb.requires_reconfirmation AND e.status NOT IN ('completed', 'cancelled')
     ORDER BY lower(vb.booking_range), vb.id
     LIMIT 200`);
-  return { bookings: result.rows.map(toBooking) };
+  const times = await reconfirmTimes(query, result.rows.map(row => row.id));
+  return { bookings: result.rows.map(row => {
+    const target = times.get(row.id)!;
+    return { ...toBooking(row), reconfirmFor: { startsAt: target.starts_at.toISOString(), endsAt: target.ends_at.toISOString() } };
+  }) };
 }
 
 export async function getBooking(query: Query, user: AuthenticatedUser | undefined, bookingId: string) {
@@ -379,10 +393,7 @@ export async function reconfirmBooking(database: Pool, user: AuthenticatedUser |
     if (row.status !== 'confirmed') return { status: 409, body: { error: ONLY_CONFIRMED_RECONFIRMED } };
     if (!row.requires_reconfirmation) return { status: 409, body: { error: NOTHING_TO_RECONFIRM } };
 
-    const current = (await client.query<{ starts_at: Date; ends_at: Date }>(`SELECT
-        lower(COALESCE(s.session_range, e.event_range)) AS starts_at, upper(COALESCE(s.session_range, e.event_range)) AS ends_at
-      FROM venue_bookings vb JOIN events e ON e.id = vb.event_id LEFT JOIN sessions s ON s.id = vb.session_id
-      WHERE vb.id = $1`, [row.id])).rows[0]!;
+    const current = (await reconfirmTimes((sql, values) => client.query(sql, values), [row.id])).get(row.id)!;
     const moved = { ...row, starts_at: current.starts_at, ends_at: current.ends_at };
     const clash = await approvalClash(client, moved, 'reconfirmed');
     if (clash) return { status: 409, body: clash };
