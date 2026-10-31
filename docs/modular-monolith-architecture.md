@@ -158,3 +158,20 @@ the account's grants, and each backend action remains independently authorized.
   Event capacity (T-85).
 - Notifications are handled asynchronously through committed outbox records, Redis and a background worker.
 - Audit records preserve the history of significant actions across the business modules.
+
+## E10-S01 shared application transaction
+
+Approved change requests acquire Event then request locks and preview the real
+E10-S02 edit in a rolled-back savepoint. Confirmation rechecks the shared
+revision and calls `updateEventInformationWithNotificationsWith` on the same
+transaction client. Event fields, request status, arrangement flags, audit and
+notification outbox therefore commit or roll back together. The request service
+owns the Organiser decision notice; the shared edit owns staff reconfirmation.
+Layout/accessibility are now supported in trusted approved-request application.
+Individual Session mutation integration remains open.
+
+Layout/accessibility continuation: changed Event requirements flag confirmed venue
+bookings for review (T-16), with explicit reasons. Equipment is unaffected by
+these requirements alone. The existing sole-Session layout trigger is retained;
+no individual multi-Session requirements are overwritten. Layout capacity uses
+the shared E09 warning calculation and never removes registered attendees.

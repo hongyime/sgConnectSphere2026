@@ -423,3 +423,18 @@ When Venue Staff approves the replacement, the transaction transfers an original
 The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_booking` and `booking_id` explicitly releases it only for its current assigned active Coordinator and only with a same-event linked Confirmed replacement not requiring reconfirmation. It audits the cancellation and notifies the original venue's assigned staff. Released retries do not duplicate effects. Closed Events refuse recovery. The existing same-origin/session handler is reused; no new serverless function or migration is needed.
 
 The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Lifting or shortening unavailability follows same-event replacement descendants through rejected attempts. An active descendant prevents restoring the original; a Released attempt ends that path. This preserves explicit original cancellation after a successful retry. Database integration tests exercise real E05-S06 loss, recovery approval, publication/notification timing and block lifting/editing. Human manual acceptance remains required.
+
+## Approved Event change requests and reconfirmation
+
+E10-S01 applies supported arrangement changes through E10-S02's shared save
+transaction. The preview revision must still match under the Event lock before
+bookings or equipment are flagged for reconfirmation. A stale preview rolls
+back the request decision and all related edits/notices. The request service
+sends the Organiser decision notice while the shared save sends responsible
+staff reconfirmation notices. Approval does not itself cancel bookings.
+
+Layout/accessibility continuation: changed Event requirements flag confirmed venue
+bookings for review (T-16), with explicit reasons. Equipment is unaffected by
+these requirements alone. The existing sole-Session layout trigger is retained;
+no individual multi-Session requirements are overwritten. Layout capacity uses
+the shared E09 warning calculation and never removes registered attendees.

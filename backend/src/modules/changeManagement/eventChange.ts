@@ -48,7 +48,7 @@ export function withRevision(check: EventChangeCheck): EventChangePreview {
   return { ...check, revision: changeRevision(check) };
 }
 
-const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity' } as const;
+const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity', layout: 'room layout changed', accessibility: 'accessibility requirements changed' } as const;
 
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag
@@ -74,7 +74,8 @@ export async function applyArrangementImpact(query: Query, actorId: string, even
 // The edit runs for real inside a savepoint, so its validation, permissions
 // and the Session sync trigger all apply, and is then rolled back: nothing a
 // preview does is saved, audited or notified.
-export async function previewEventChangeWith(client: PoolClient, user: AuthenticatedUser, identifier: string, input: unknown): Promise<EventChangePreview> {
+export async function previewEventChangeWith(client: PoolClient, user: AuthenticatedUser, identifier: string, input: unknown,
+  approvedChangeRequest = false): Promise<EventChangePreview> {
   const event = (await client.query<{ id: string }>(
     'SELECT id FROM events WHERE id::text=$1 OR event_code=$1 FOR UPDATE', [identifier])).rows[0];
   if (!event) throw new AccessError(403, 'Edit access denied.');
@@ -83,7 +84,7 @@ export async function previewEventChangeWith(client: PoolClient, user: Authentic
   const before = await loadArrangementSnapshot(query, event.id);
   await client.query('SAVEPOINT event_change_preview');
   try {
-    await updateEventInformation(query, user, identifier, input);
+    await updateEventInformation(query, user, identifier, input, approvedChangeRequest);
     const after = await loadArrangementSnapshot(query, event.id);
     return withRevision({ impact: assessArrangementImpact(before, after), overSubscription: await loadOverSubscription(query, event.id) });
   } finally {

@@ -4,6 +4,8 @@ SCRUM-202 implements the backend portion of SCRUM-70. Requirements remain in
 `docs/backlog/release-1/E10-changes-rescheduling-cancellation.md` and
 `docs/testing/cases/E10.md`. Ownership/field classification follows the agreed
 20 October 2026 comment on SCRUM-70. This increment does not complete the story.
+The 30/31 October integration sections below describe the current application
+path; earlier waiting-state notes are foundation history.
 
 ## Authenticated API
 
@@ -13,7 +15,7 @@ Use the existing `/api/events` cookie-session handler:
 | --- | --- | --- |
 | GET `?changeRequests=1&id=<event id or code>` | None | `{ event: { id, eventCode, status }, permissions: { canSubmit, canDecide }, references: { layouts, accessibility }, current, requests }` |
 | POST `?changeRequests=1&id=<event id or code>` | `{ description, changes: { title: "New name" } }` | 201 `{ request }` |
-| POST `?changeRequests=1&id=<event id or code>&requestId=<request id>` | `{ decision: "approve" | "decline" | "apply", reason?: string }` | 200 `{ request }` |
+| POST `?changeRequests=1&id=<event id or code>&requestId=<request id>` | `{ decision: "preview" | "approve" | "decline" | "apply", reason?: string, previewToken?: string, confirmLateClose?: boolean }` | 200 `{ request }` |
 
 Only the owning Organiser in the matching organisation can submit. Reads are
 limited to that Organiser or the assigned Coordinator; only the assigned
@@ -51,7 +53,7 @@ the name of an existing publication only; they neither publish an unpublished
 Event nor expose private purpose/description. Field-level Event audit rows are
 retained alongside the request status audit.
 
-## E10-S02 boundary and remaining work
+## Original E10-S02 boundary (historical foundation)
 
 The first increment also accepts `expectedAttendance`, `venueRequirements`,
 `equipmentRequirements`, `accessibilityNote`, `layoutPreference`,
@@ -133,7 +135,7 @@ by this PR. Coordinate that query/prefill contract with her before extending it.
 After this increment merges, continue the E10-S02/Session integration from the
 then-current main in a new branch and run the combined acceptance evidence.
 
-## E10-S02 owner proposal (Le Xin, review5628492414)
+## E10-S02 owner proposal (historical, superseded below)
 
 Reuse the same arrangement path as Coordinator direct edits. Under the existing
 Event lock: loadArrangementSnapshot before; apply stored fields; load snapshot
@@ -157,6 +159,51 @@ assigned Coordinator; history remains readable without one. Approval confirmatio
 explains the entire mixed request waits, matching the backend atomic behaviour.
 
 ## E10-S02 backend delivered (SCRUM-236, 29 October)
+
+### E10-S01 integration increment (30 October)
+
+Request decision POST accepts `decision: "preview"` for Pending/Approved requests.
+It checks actor, assignment, terminal state, changed-field staleness and references
+under Event -> request locks. Supported fields return `request.preview` with
+`canApply: true`, `impact`, `overSubscription`, `lateClose` and `token`; the real
+shared edit runs in `previewEventChangeWith`'s rolled-back savepoint. Preview
+does not decide the request or persist edits, flags, audits or notices.
+
+Supported arrangement approval requires `previewToken`; older Approved requests
+use `decision: "apply"`. The server recomputes preview under the lock. Changed
+impact refuses with 409 and requires another preview. `confirmLateClose: true`
+is additionally required when registration closes after the proposed start
+(428 without consent). The UI shows affected arrangements and capacity warnings
+before confirmation. Over-subscription never removes registrations.
+
+`updateEventInformationWithNotificationsWith` exposes the shared save path in
+the caller's transaction. Request status, fields, flags, audit, publication and
+outbox roll back together. The shared path owns staff reconfirmation/public date
+notices; the request service owns the Organiser's decision notice, suppressing
+its duplicate generic date notice. No provider delivery is implied. Internal
+approved-request context supports Safety Review; ordinary direct edits retain
+their existing status restriction.
+
+### Layout/accessibility continuation (31 October)
+
+The trusted approved-request context now applies `layoutId` (UUID or null) and
+`accessibilityFeatureIds` (canonical set, including empty). References are
+validated and protected with key-share locks before application. Preview rolls
+back the real update, including the requirement relation replacement.
+
+T-16 treats layout/accessibility as arrangement-affecting: a changed Event
+requirement flags its confirmed venue bookings for review, with named `layout`
+and `accessibility` reasons. It does not cancel bookings or flag equipment just
+for these venue requirements. A layout-induced capacity change also uses the
+existing headcount and E09 registration-capacity checks; over-subscription warns
+without removing or waitlisting anyone. Null/empty clears are real changes.
+
+Migration 0014 synchronizes an Event layout to its sole Session. On multi-Session
+Events, the Event requirement is updated and venues are flagged, but individually
+authored Session layouts/requirements are not overwritten. Editing those needs
+the E04-S02 Session mutation contract. All currently accepted Event request
+fields can now be previewed/applied, including mixed safe/structured requests.
+This does not close Session integration or the combined human acceptance gate.
 
 The Coordinator's direct edit now runs the arrangement check described in the
 owner proposal above. Under the Event row lock, `updateEventInformationWithNotifications`
@@ -199,7 +246,8 @@ only when sent, since the Coordinator may save the edit either way and the
 review is a safeguard, not a permission. E10-S01 can reuse the same revision
 when approved changes call the preview.
 
-Still open, not changed by this backend PR:
+Historical backend-only follow-ups (superseded for supported E10-S01 fields by
+the integration increment above):
 
 - Approved E10-S01 change requests still stop at "Approved — waiting for the
   arrangement check". Calling `previewEventChangeWith` and the apply path from

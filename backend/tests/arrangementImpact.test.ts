@@ -165,7 +165,7 @@ test('loadArrangementSnapshot reads live arrangements and converts dates to ISO 
   ]);
   const result = await loadArrangementSnapshot(query, 'event-1');
   assert.deepEqual(result, {
-    event: { startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T07:00:00.000Z' },
+    event: { startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T07:00:00.000Z', layoutId: null, accessibilityFeatureIds: [] },
     sessions: [{ id: 'session-a', startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z', expectedAttendance: 80 }],
     bookings: [{ id: 'booking-a', sessionId: 'session-a', venueId: 'venue-a', venueName: 'Small Room', headcount: null, capacity: 80 }],
     reservations: [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector' }],
@@ -180,4 +180,17 @@ test('loadArrangementSnapshot reads live arrangements and converts dates to ISO 
 test('loadArrangementSnapshot refuses an unknown Event', async () => {
   const { query } = recordingQuery([[]]);
   await assert.rejects(loadArrangementSnapshot(query, 'missing'), /Event missing not found/);
+});
+
+
+test('TC_E10S01_04: Event layout/accessibility changes flag venues only and include changed layout capacity', () => {
+  const before = snapshot();
+  const after = snapshot({ event: { ...before.event, layoutId: 'layout-new', accessibilityFeatureIds: ['step-free'] },
+    bookings: [{ ...bookingA, capacity: 50 }, bookingB] });
+  const impact = assessArrangementImpact(before, after);
+  assert.deepEqual(impact.bookings.map(b => b.reasons), [['layout', 'accessibility', 'capacity'], ['layout', 'accessibility']]);
+  assert.deepEqual(impact.reservations, [], 'requirement changes do not move equipment reservations');
+  assert.equal(assessArrangementImpact(after, after).affected, false);
+  const cleared = snapshot({ event: { ...after.event, layoutId: null, accessibilityFeatureIds: [] } });
+  assert.deepEqual(assessArrangementImpact(after, cleared).bookings[0].reasons, ['layout', 'accessibility']);
 });
