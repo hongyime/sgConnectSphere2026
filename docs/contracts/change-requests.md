@@ -286,6 +286,14 @@ Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
 this frontend increment does not close parent SCRUM-70.
 
 
+## Review usability follow-up to #383 (PR #390)
+
+PR #390 provides shared readable impact labels and explicit late-close consent
+for both review panels; those UI safeguards do not implement lifecycle changes.
+Bryan has approved the Safety Review-to-Planning rule (T-103; SCRUM-70 comment
+10401). The separate backend implementation and its verification are described
+below; PO policy confirmation is no longer pending.
+
 ### Approved changes during Safety Review (PO approval recorded 31 October)
 
 Bryan approved the following interpretation, relayed by the story owner and

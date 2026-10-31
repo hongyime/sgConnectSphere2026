@@ -455,6 +455,12 @@ no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
 
 
+The readable impact labels and late-close consent safeguards in PR #390 are
+UI-only. Bryan has approved the separate Safety Review-to-Planning rule (T-103;
+SCRUM-70 comment 10401); it is no longer awaiting PO confirmation. The backend
+implementation below returns the Event to Planning only when applying an
+approved request flags arrangements for reconfirmation.
+
 ### E10-S01 Safety Review interruption
 
 E10-S01 approved changes that interrupt Safety Review leave Confirmed bookings in place with reconfirmation flags. Reconfirming the last required arrangement uses the shared readiness transition and sends a fresh SO notice, including the first safety cycle; previous safety history remains unchanged.
