@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, randomBytes } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { Pool } from 'pg';
 import { deactivateAccount, DEACTIVATION_BLOCKING_STATUSES } from '../src/modules/accessControl/deactivation.js';
 import { login, tokenDigest } from '../src/modules/accessControl/sessions.js';
@@ -24,7 +24,8 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
       // These extensions must already exist; do not change global DB setup.
       const extensions = await client.query(`SELECT count(*)::int AS count FROM pg_extension WHERE extname IN ('pgcrypto', 'btree_gist')`);
       assert.equal(extensions.rows[0].count, 2, 'Provision pgcrypto and btree_gist before running integration tests');
-      for (const file of ['0001_connectsphere_schema.sql', '0003_auth_sessions.sql']) {
+      // Every migration: the E09-S04 release notice needs Sessions, bookings and publications (0014+).
+      for (const file of (await readdir(new URL('../database/migrations/', import.meta.url))).filter(name => name.endsWith('.sql')).sort()) {
         await client.query(await readFile(new URL(`../database/migrations/${file}`, import.meta.url), 'utf8'));
       }
     }
@@ -35,7 +36,7 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
     // Nested service transactions are real PostgreSQL savepoints within the
     // rollback-only fixture transaction. Production still uses BEGIN/COMMIT.
     let failAudit = false;
-    const servicePool = { async connect() {
+    const servicePool = { query: (sql: string, values?: unknown[]) => client.query(sql, values), async connect() {
       let active = false;
       return { async query(sql: string, values?: unknown[]) {
         if (sql === 'BEGIN') { active = true; return client.query('SAVEPOINT account_operation'); }
