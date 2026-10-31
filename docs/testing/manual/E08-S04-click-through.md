@@ -114,7 +114,9 @@ Do the sections in order. Times are Singapore time.
    Review. It is confirmed only once the Safety Officer approves it.", and no
    **Submit for safety check** button: nobody submitted it. Screenshot
    `TC_E08S04_05-6`.
-8. Sign in as `safety_officer@connectsphere.com`, open **Notifications**.
+8. Sign in as `safety_officer@connectsphere.com`. The Safety Officer has no
+   home page or menu yet (E08-S06), so sign-in lands on the welcome page: open
+   http://localhost:5173/notifications directly.
    **Expected:** "Safety check needed: EVT-1082 Charity Run's arrangements are
    confirmed again, so it is back in Safety Review. It needs a new Operational
    Safety Check: the earlier approval does not carry over." Screenshot
@@ -144,29 +146,32 @@ Do the sections in order. Times are Singapore time.
    is unavailable 10 Dec 2026 … The event has returned to Planning."
    Screenshot `TC_E08S04_06-3`.
 
-## E. After the venue loss, a replacement puts it back in Safety Review (EVT-1084)
+## E. TC_E08S04_05 again — after the venue loss, a replacement puts it back in Safety Review (EVT-1084)
 
-Not a numbered case: it proves Scenarios 5 and 4 together (record as MULTIPLE).
+TC_E08S04_05's second road back to Planning: a venue loss (Scenario 5) instead
+of a deliberate reversion. Record it in TC_E08S04_05's row; its screenshots
+continue that case's numbering.
 
 1. Still as `coord_a`, open
    http://localhost:5173/coordinator/events/EVT-1084/venue-recovery. Click
    **Search for a replacement venue**, then **Search venues**. On **E08 Garden
    Hall**, click **Check recorded event requirements**, then **Submit booking
-   request**: "Your request is Pending." Screenshot `MULTIPLE-1`.
+   request**: "Your request is Pending." Screenshot `TC_E08S04_05-9`.
 2. Sign in as `venue_a@connectsphere.com`. Open **Booking requests**, open
    Leadership Seminar, click **Decide on request**, **Approve…**, **Approve
    request**: "Approved. The booking is confirmed. Coordinator A has been
-   notified." Screenshot `MULTIPLE-2`.
+   notified." Screenshot `TC_E08S04_05-10`.
 3. Sign in as `coord_a@connectsphere.com`. Open
    http://localhost:5173/coordinator/events/EVT-1084/readiness. **Expected:**
    still **Planning**, Outstanding items "E08 Seminar Hall — Conflicting".
-   Screenshot `MULTIPLE-3`.
+   Screenshot `TC_E08S04_05-11`.
 4. Open the venue-recovery page, click **Cancel original booking**, then
    **Confirm cancellation**. Open the readiness page. **Expected:** **Safety
-   Review**, with no submission. Screenshot `MULTIPLE-4`.
-5. Sign in as `safety_officer@connectsphere.com`, open **Notifications**:
+   Review**, with no submission. Screenshot `TC_E08S04_05-12`.
+5. Sign in as `safety_officer@connectsphere.com` and open
+   http://localhost:5173/notifications directly:
    "Safety check needed: EVT-1084 Leadership Seminar's arrangements are
-   confirmed again …". Screenshot `MULTIPLE-5`.
+   confirmed again …". Screenshot `TC_E08S04_05-13`.
 
 ## Check the database afterwards
 

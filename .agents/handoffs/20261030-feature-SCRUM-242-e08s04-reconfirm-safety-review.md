@@ -19,8 +19,10 @@ Backend subtask SCRUM-242, frontend subtask SCRUM-243.
 5. Frontend (SCRUM-243): Bookings to reconfirm section. Done (d4fdd33).
 6. TC_E08S04_03, _05, _06 live; venue-loss gap closed. Done (995057b).
 7. Docs and this handoff. Done (this commit).
-8. Click-through guide, preconditions SQL, automated real local run.
-9. Le Xin's manual T-65/T-93 run (SCRUM-235).
+8. Click-through guide, preconditions SQL, automated real local run. Done
+   (c568d28, record 20261031-142715).
+9. Le Xin's manual T-65/T-93 run (SCRUM-235). Done: 6/6 PASS on 2d4410b,
+   record 20261031-173321, 25 screenshots.
 10. PR when a review slot is free (team limit of two open PRs), Jira.
 
 ## Done so far
@@ -82,6 +84,15 @@ if the team disagrees.
 
 ## Follow-ups (not in this branch)
 
+- Technical Support staffing is not flagged by a date change (found in the
+  manual run): EVT-1082 moved to 12 Dec but its support request kept 5 Dec,
+  `staffed`, and counted as Ready, so the event entered Safety Review.
+  `tech_support_requests` has no reconfirmation flag and E10-S02's ACs name only
+  venue bookings and equipment. Question for the PO; a fix needs a migration.
+- Small display points from the manual run (no case failed): this story's
+  "Booking reconfirmed" Activity log row reads "True → False" (it could show the
+  old and new times); the automatic move reads "By" whoever's save triggered it;
+  the equipment save message does not mention Safety Review.
 - Readiness wording: a flagged booking always reads "needs review: its capacity
   is now below the expected attendance", which is wrong for an E10-S02 date
   change. A neutral "needs reconfirmation" is a one-line change in
@@ -99,5 +110,6 @@ if the team disagrees.
 
 ## Next step
 
-Task 8: click-through guide and preconditions SQL for TC_E08S04_03 to _06, then
-an automated real local run on native PostgreSQL before Le Xin's manual run.
+Task 10: push and open the PR when a review slot is free (no open PRs on
+31 October), with the AC-to-evidence table, the test-case changes for Bryan and
+the Technical Support finding; post the PO question where Le Xin decides; Jira.
