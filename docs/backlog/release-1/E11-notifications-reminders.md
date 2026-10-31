@@ -3,13 +3,36 @@
 ## E11-S01 — Notify users about events they are involved in
 
 - **Sprint**: Sprint 2
-- **Points**: 5
+- **Points**: 13
 - **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33, C-69, T-70, C-70, T-71
 - **Owner**:
 
 ### User story
 
 As a user involved in an event, I want to be notified when its status or arrangements change so that I do not have to keep checking the system and nobody continues working from outdated information.
+
+
+
+Estimate proposal (31 October 2026, for team/PO review): change the full-story
+size from the original five points to thirteen. Jira remains at five until the
+proposal is approved and merged. The routing matrix spans status/booking,
+equipment/support, effective arrangement changes, cancellation and waiting-list
+notifications; implementation includes recipient filtering, actor exclusion,
+deduplication, public/private content boundaries, transactional inbox/outbox,
+email failure handling, inbox/read state, and cross-workflow integration and
+human delivery evidence. Business implementations owned by booking, equipment,
+registration and change-management stories are excluded; only their E11 hooks
+and notification verification are counted here. Waiting time, PR count and work
+already credited elsewhere are not estimation inputs.
+
+Thirteen is a proposed whole-story sizing correction, not thirteen points of
+remaining work or extra velocity. T-73 sizes in-flight work by the remaining
+work, so team/PO confirmation of the recording/reporting basis is required;
+original sprint commitments and the five-point historical baseline stay intact.
+T-37 currently maps S=1, M=3, L=5 and XL=8: thirteen requires explicit team/PO
+agreement to a larger size or an alternative estimate. This proposal does not
+silently amend T-37 or claim a new size has already been agreed. Acceptance
+criteria, implementation status and final acceptance requirements are unchanged.
 
 ### Acceptance criteria
 
