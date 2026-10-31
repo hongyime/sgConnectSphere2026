@@ -4,7 +4,12 @@
 -- Venue bookings and equipment reservations have carried this flag since
 -- 0001; a staffed Technical Support request now gets the same one. The reason
 -- stays in the audit log ("Reconfirmation required: date or time changed"),
--- as it does for bookings and equipment, so only the flag is added.
+-- as it does for bookings and equipment.
+--
+-- Unlike a booking, which takes its Session's time, a support request keeps
+-- its own window (T-79), so the time it moves to is worked out when the date
+-- changes and kept in reconfirm_range until Technical Support Staff
+-- reconfirm it: the old Session time is gone by then. Empty when unflagged.
 --
 -- Migration-only PR, merged and applied before the code that sets or reads the
 -- flag (docs/ops/production-migrations.md, "Release sequence"). The column has
@@ -13,3 +18,7 @@
 
 ALTER TABLE tech_support_requests
   ADD COLUMN IF NOT EXISTS requires_reconfirmation boolean NOT NULL DEFAULT false;
+
+ALTER TABLE tech_support_requests
+  ADD COLUMN IF NOT EXISTS reconfirm_range tstzrange
+    CHECK (reconfirm_range IS NULL OR NOT isempty(reconfirm_range));

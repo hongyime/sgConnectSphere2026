@@ -324,6 +324,7 @@ erDiagram
         tstzrange support_range
         support_status status "open, staffed, cancelled"
         boolean requires_reconfirmation
+        tstzrange reconfirm_range
         uuid requested_by FK
         timestamptz created_at
     }
@@ -495,7 +496,10 @@ erDiagram
   (default false) to `TECH_SUPPORT_REQUESTS`, the flag venue bookings and
   equipment reservations already carry, so an event date/time change can flag
   staffed Technical Support for reconfirmation (E10-S02, T-103). The reason is
-  in the audit log, as for bookings and equipment.
+  in the audit log, as for bookings and equipment. It also adds
+  `reconfirm_range`, the time a flagged request moves to when Technical Support
+  Staff reconfirm it, worked out when the date changes because a request keeps
+  its own window (T-79); empty when unflagged.
 - Registration remains one row per attendee/Event. A partial unique constraint
   allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
   and Organiser-`rejected` rows are not active, so the account may register
