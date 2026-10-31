@@ -269,3 +269,19 @@ test('the /ui-kit reference page renders every block without calling the API', a
   await waitFor(() => expect(screen.getAllByRole('alert').length).toBeGreaterThan(0));
   expect(fetchSpy).not.toHaveBeenCalled();
 });
+
+test('TC_E10S01_04: ConfirmPanel refuses disabled or busy form submission while keeping Cancel available without consent', () => {
+  const onConfirm = vi.fn(), onCancel = vi.fn();
+  const { rerender } = render(<ConfirmPanel title="Consent check" confirmLabel="Confirm" confirmDisabled onConfirm={onConfirm} onCancel={onCancel} />);
+  expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
+  fireEvent.submit(screen.getByRole('form', { name: 'Consent check' }));
+  expect(onConfirm).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(onCancel).toHaveBeenCalledOnce();
+  rerender(<ConfirmPanel title="Consent check" confirmLabel="Confirm" busy onConfirm={onConfirm} onCancel={onCancel} />);
+  fireEvent.submit(screen.getByRole('form', { name: 'Consent check' }));
+  expect(onConfirm).not.toHaveBeenCalled();
+  rerender(<ConfirmPanel title="Consent check" confirmLabel="Confirm" onConfirm={onConfirm} onCancel={onCancel} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm' }));
+  expect(onConfirm).toHaveBeenCalledOnce();
+});
