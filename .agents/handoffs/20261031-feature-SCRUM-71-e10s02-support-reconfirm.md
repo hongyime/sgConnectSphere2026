@@ -19,7 +19,8 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 1. Branch, Jira subtask SCRUM-244, T-103 in `docs/bdr/`, E10-S02 Scenarios 5
    and 6 and checklist in both backlog views, re-estimate 5 to 8, backlog
    workbook, this handoff. Done (this commit).
-2. Test cases for the new criteria; test-case workbook; tc-coverage.
+2. Test cases for the new criteria; test-case workbook; tc-coverage. Done:
+   TC_E10S02_05/_06/_08 extended with support, TC_E10S02_10 to _13 added.
 3. Migration 0026: a reconfirmation flag on `tech_support_requests`.
 4. Backend: a date change flags staffed support requests (Session change: those
    overlapping the Session's previous time; Event-wide change: all), shows them
@@ -44,10 +45,20 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 - Support requests are Event-level with their own window (T-79), not tied to the
   event's time. A Session change therefore flags only staffed requests that
   overlap the Session's previous time; an Event-wide change flags them all.
-- Open for Task 5 (decide before building): the "new time" a reconfirmed request
-  moves to. Proposal: shift the window by the same amount the Event start moved,
-  keeping its length.
+- A reconfirmed support request moves by the same amount the Event start moved,
+  keeping its length (Le Xin chose option A on 31 October: custom windows such
+  as early setup survive; Technical Support Staff can still edit assignments).
+- TC_E10S02_05 carried a leftover second block from the 17 September migration
+  (an Event-wide date change, typed Negative) that filled its exported row; it
+  is removed, so the row now shows the Session case.
+
+## Found on the way
+
+- `tests/e2e/e10.spec.ts` headers for TC_E10S02_05 and _06 still quote the old
+  leftover wording; update them in Task 7 with the support assertions.
+- tc-coverage marks TC_E10S02_05, _06 and _08 active from their existing tests,
+  which do not yet check support; Task 7 adds those checks.
 
 ## Next step
 
-Task 2: test cases for the updated Scenarios 5 and 6.
+Task 3: migration 0026 (reconfirmation flag on `tech_support_requests`).
