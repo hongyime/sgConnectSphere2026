@@ -4,7 +4,8 @@
 //
 // Called inside the transaction of each action that confirms an arrangement:
 // a venue booking approved or reconfirmed, equipment reserved or re-reserved,
-// Technical Support staff assigned. It runs E08-S03's readiness check on the
+// Technical Support staff assigned, and a lost venue booking released once its
+// replacement is confirmed (E10-S05). It runs E08-S03's readiness check on the
 // locked event and, when nothing is outstanding, moves it through
 // applyEventStatusChange(). The earlier safety approval stays in the Activity
 // log, and only a Safety Officer can confirm the event again (the check in

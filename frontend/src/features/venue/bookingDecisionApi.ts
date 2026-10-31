@@ -53,7 +53,9 @@ export async function decideBooking(bookingId: string, choice: Decision) {
 export async function listBookingsToReconfirm(signal?: AbortSignal) {
   const result = await apiCall<{ bookings: BookingRequest[] }>(
     '/api/venues?bookings=reconfirm', { signal }, 'Unable to load the bookings to reconfirm.');
-  return result.ok ? { ok: true as const, data: result.data.bookings } : result;
+  // A reply without a list counts as nothing to reconfirm, so this secondary
+  // section can never break the Pending requests above it.
+  return result.ok ? { ok: true as const, data: result.data.bookings ?? [] } : result;
 }
 
 // enteredSafetyReview: this was a reverted event's last arrangement (E08-S04).

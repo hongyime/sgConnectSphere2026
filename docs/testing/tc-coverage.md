@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **299** (78.9%)
+- Automated (explicit TC_ID in an active test title): **300** (79.2%)
   - Real-database (`.integration.test` / `.db.test`): **40**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **258**
+  - Live-assertion (other active tests): **259**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.2%)
-- No test yet (no test file mentions the TC_ID): **26** (6.9%)
+- No test yet (no test file mentions the TC_ID): **25** (6.6%)
 
 ## Coverage by epic
 
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 17 | 10 | 1 |
+| E08 | 28 | 18 | 10 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **299** | **54** | **26** |
+| **Total** | **379** | **300** | **54** | **25** |
 
 ## Case-by-case status
 
@@ -333,10 +333,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
 | `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_03: a Technical Support equipment failure on a Confirmed event is flagged and the event stays Confirmed; tests/e2e/e |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; tests/e2e |
-| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
+| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_06: a venue block over a Confirmed booking returns the event to Planning, tells its Coordinator and does not cancel  |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -655,6 +655,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/decision.test.ts`
 
 - SCRUM-34: the reason is trimmed, an approval ignores any reason, and an unknown decision is refused
+
+### `backend/tests/e08s04Arrangements.integration.test.ts`
+
+- after a venue loss, the event waits for the replacement and the lost booking, then enters Safety Review (Scenarios 5 then 4)
+- after a venue loss on an event that was never Confirmed, cancelling the lost booking leaves it for the Coordinator to submit
 
 ### `backend/tests/emailTemplate.test.ts`
 

@@ -146,3 +146,13 @@ test('the Booking requests page shows the bookings to reconfirm under the pendin
   expect(await screen.findByRole('heading', { name: 'Bookings to reconfirm' })).toBeInTheDocument();
   expect(within(await table()).getByText('Product Expo 2026')).toBeInTheDocument();
 });
+
+test('a reply without a list counts as nothing to reconfirm and never breaks the page', async () => {
+  stubApi({
+    'GET /api/venues?bookings=pending': { body: { bookings: [] } },
+    'GET /api/venues?bookings=reconfirm': { body: { venues: [] } },
+  }, { role: 'venue_staff' });
+  render(<MemoryRouter><BookingRequests /></MemoryRouter>);
+  expect(await screen.findByText('No booking requests waiting')).toBeInTheDocument();
+  expect(await screen.findByText(/^Nothing to reconfirm\./)).toBeInTheDocument();
+});
