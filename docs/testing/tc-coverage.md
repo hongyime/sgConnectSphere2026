@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **304** (79.4%)
-  - Real-database (`.integration.test` / `.db.test`): **44**
+- Automated (explicit TC_ID in an active test title): **307** (80.2%)
+  - Real-database (`.integration.test` / `.db.test`): **47**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **259**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
-- No test yet (no test file mentions the TC_ID): **25** (6.5%)
+- No test yet (no test file mentions the TC_ID): **22** (5.7%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 16 | 1 | 4 |
 | E03 | 62 | 49 | 13 | 0 |
-| E04 | 5 | 2 | 0 | 3 |
+| E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **304** | **54** | **25** |
+| **Total** | **383** | **307** | **54** | **22** |
 
 ## Case-by-case status
 
@@ -179,9 +179,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
 | `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
-| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back |
 
 ### E05
 
@@ -861,6 +861,21 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenario 4 / C-132 / T-82: a reverted event in Planning cannot be confirmed directly; it must pass Safety Review again
 - revertEventToPlanning falls back to coordinator email if full_name is empty or whitespace
 - revertEventToPlanning refuses unassigned events (coordinator_id is null) and draft events
+
+### `backend/tests/eventSessions.test.ts`
+
+- E04-S02: the owning Organiser sees the Sessions of their Event
+- E04-S02: another Organiser cannot read or add Sessions
+- E04-S02: Sessions can be added to a draft Event
+- E04-S02: Sessions cannot be changed once the event is past planning
+- E04-S02: a Session whose end is not after its start is rejected before any write
+- E04-S02: editing a Session that does not belong to the Event is a 404
+- E04-S02: the last Session cannot be deleted
+- E04-S02: deleting one of several Sessions removes only that Session
+- E04-S02: a planning edit and its preview both run the arrangement-impact check
+- E04-S02: a Session can be removed while the event is in planning
+- E04-S02: removal is refused once the event is past planning
+- E04-S02: a malformed Session id is rejected before any query
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1638,6 +1653,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a seeded rejection with no recorded reason says so (D30)
 - a request that is not rejected shows no rejection notice
+
+### `frontend/src/features/organiser/SessionEditor.test.tsx`
+
+- E04-S02: the editor lists the Sessions of the draft
+- E04-S02: adding a Session posts to the sessions endpoint
+- E04-S02: removing a Session deletes that Session only
+- E04-S02: a planning edit previews its impact before saving
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 
