@@ -172,8 +172,8 @@ test('a chosen expiry is checked against 1 hour to 14 days and sent when valid',
   expect(posts(calls)[0]!.body).toMatchObject({ expires_at: new Date(valid).toISOString() });
 });
 
-test('TC_E06S05_01: a clash is refused with the server sentence naming what is in the way', async () => {
-  const clash = 'This venue already has a tentative hold for EVT-CR Charity Run from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm.';
+test('TC_E06S05_01: a clash is refused with the server sentence giving the unavailable window', async () => {
+  const clash = 'This venue is unavailable from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm, including setup and turnaround.';
   stubApi({ [EVENT]: { body: detail() }, [VENUE]: { body: { venue: { id: 'v-1', name: 'Riverside Hall' } } }, [POST]: { status: 409, body: { error: clash } } });
   renderAt('/coordinator/events/EVT-TECH/venues/v-1/hold');
   fireEvent.click(await screen.findByRole('button', { name: 'Hold venue' }));

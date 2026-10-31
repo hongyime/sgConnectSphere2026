@@ -72,8 +72,9 @@ export function detectBookingConflict(
     const kind = entry.state === 'confirmed' ? 'confirmed booking' : entry.state === 'conflicting' ? 'conflicting booking' : 'active booking or hold';
     return `Booking Conflict: overlaps with ${kind}${identifier(entry)}`;
   }
-  if (entries.some(entry => entry.kind === 'booking' && isCandidateEntry(entry, booking) && entry.bufferConflict)) {
-    return `Booking Conflict: ${booking.eventCode ? `[${booking.eventCode}] ` : 'this request '}is flagged after the venue buffers changed.`;
-  }
+  // A buffer_conflict flag alone does not block: it is not cleared when Venue
+  // Staff reject, or the Coordinator withdraws, the other booking, and E06-S06
+  // Scenario 4 lets the now-free request be approved. Only a current overlap
+  // above blocks; the server rechecks on approval either way.
   return null;
 }

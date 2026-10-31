@@ -123,118 +123,13 @@ test.describe("E06-S04", () => {
 // against PostgreSQL in backend/tests/venueHolds.integration.test.ts. The
 // TC_E06S05_01 placeholder that stood here was replaced by those.
 
-test.describe("E06-S06", () => {
-
-  /**
-   * TC_E06S06_01
-   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall had setup/turnaround 0 when confirmed Charity Run (09:00-11:00) and Pending Product Expo (11:00-13:00) were accepted; after setup changed to 30 minutes, both remain and only Pending Product Expo has buffer_conflict true
-   *
-   * Test data:
-   *   Before: adjacent advertised intervals, both buffers 0 | After: setup 30 creates buffered overlap from 10:30-11:00
-   *
-   * Expected result:
-   *   Approval rechecks current buffers and is refused; Confirmed Charity Run remains unflagged and Pending Product Expo retains buffer_conflict true
-   */
-  test.fixme("TC_E06S06_01 - T-100: Verify approval rechecks a confirmed booking after buffer growth", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Set Orchid Hall's setup and turnaround to 0; accept the two adjacent bookings.
-    // 2. Increase setup to 30; confirm both bookings stay present, Charity Run remains unflagged, and Product Expo has buffer_conflict true.
-    // 3. Attempt to approve Product Expo; verify the current conflict blocks approval.
-    void page;
-  });
-
-  /**
-   * TC_E06S06_02
-   * AC:      E06-S06 - Scenario 2 (Later overlapping claim refused)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   A Pending Charity Run claim (09:00-11:00) is active on Orchid Hall with 30-minute setup and 45-minute turnaround
-   *
-   * Test data:
-   *   Attempt a normal Product Expo request for 10:00-12:00 on the same venue
-   *
-   * Expected result:
-   *   The new overlapping request is refused while Charity Run remains active and unchanged
-   */
-  test.fixme("TC_E06S06_02 - T-100: Verify a later overlapping request is refused while the first claim remains active", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Submit the first request and confirm it is accepted.
-    // 2. Submit a normal overlapping request for the same venue.
-    // 3. Verify refusal, explain the occupied buffered window without other event details, and confirm the first request is unchanged.
-    void page;
-  });
-
-  /**
-   * TC_E06S06_03
-   * AC:      E06-S06 - Scenario 3 (Concurrent claims fail safely)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall has no active booking. Two Coordinators submit overlapping claims concurrently for separate Approved events
-   *
-   * Test data:
-   *   Charity Run 09:00-11:00 and Product Expo 10:00-12:00 target Orchid Hall with 30/45-minute buffers
-   *
-   * Expected result:
-   *   Exactly one request is accepted; the loser receives 409 and creates no row, status change, notification or audit effect
-   */
-  test.fixme("TC_E06S06_03 - T-100: Verify concurrent overlapping new claims accept only one request", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Submit both requests in parallel transactions.
-    // 2. Verify one accepted response and one 409 response.
-    // 3. Verify only the winner's row and effects exist.
-    void page;
-  });
-
-  /**
-   * TC_E06S06_04
-   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall has zero setup and turnaround; a Confirmed booking is 09:00-11:00 and an accepted Pending request is 11:00-13:00
-   *
-   * Test data:
-   *   Both buffers: 0 | Existing: 09:00-11:00 | Requested: 11:00-13:00 | Shared boundary: 11:00
-   *
-   * Expected result:
-   *   Approval succeeds; half-open buffered intervals touching at the exact boundary do not overlap
-   */
-  test.fixme("TC_E06S06_04 - T-100: Verify exact half-open buffered adjacency with zero buffers", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Confirm both venue buffers are 0.
-    // 2. Open the accepted Pending request beginning at 11:00.
-    // 3. Approve it and verify both bookings are Confirmed.
-    void page;
-  });
-
-  /**
-   * TC_E06S06_05
-   * AC:      E06-S06 - Scenario 4 (Approval rechecks current buffered availability)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Orchid Hall has zero setup and turnaround and one active Confirmed booking for 09:00-11:00; no conflicting Pending fixture exists
-   *
-   * Test data:
-   *   Existing claim: 09:00-11:00 | Attempted request: 10:59-13:00 | Overlap: 1 minute | Both buffers: 0
-   *
-   * Expected result:
-   *   Submission is refused before inserting a conflicting Pending row; the existing claim remains unchanged and is identified
-   */
-  test.fixme("TC_E06S06_05 - T-100: Verify a one-minute overlap is refused before insertion", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Submit a new request for 10:59-13:00 while the 09:00-11:00 claim is active.
-    // 2. Verify refusal without creating an impossible overlapping fixture.
-    void page;
-  });
-
-});
+// E06-S06 (SCRUM-50, T-100): the placeholders that stood here were replaced by
+// - tests/auth-e2e/venueClaimPolicy.spec.ts: TC_E06S06_01, _02, _04, _05, _06
+//   and _07 through the real screens, API and PostgreSQL;
+// - backend/tests/venueClaimPolicy.integration.test.ts: all seven cases against
+//   PostgreSQL, including TC_E06S06_03, whose two claims at the same instant
+//   cannot be produced by clicking, and TC_E06S06_06's Coordinator withdraw and
+//   replan path.
 
 // Week 7 additions from docs/testing/cases/E06.md.
 
@@ -277,21 +172,6 @@ test.describe("E06-S05 — Week 7 case scaffolds", () => {
 
   test.fixme("TC_E06S05_06 — Verify that the Coordinator should receive a reminder 24 hours before a hold expires and a notice when it expires", async ({ page }) => {
     // Implement from docs/testing/cases/E06.md (TC_E06S05_06).
-    void page;
-  });
-
-});
-
-test.describe("E06-S06 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E06S06_06 — T-100: Verify buffer-growth conflicts block approvals until explicit resolution", async ({ page }) => {
-    // Start with valid adjacent 0/0 Pending claims; grow buffers; verify both remain, earlier Charity Run is unflagged, later Alumni Dinner has buffer_conflict true, and both approvals fail while conflict remains.
-    // Primary resolution: Venue Staff reject one Pending request with a reason, then approve the other still-Pending request.
-    // Alternative: an authorized Coordinator withdraws/replans one request; approve only remaining requests that are Pending and conflict-free.
-    void page;
-  });
-
-  test.fixme("TC_E06S06_07 — T-100: Verify one event may confirm overlapping bookings at different venues", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S06_07); E06-S03 multi-venue semantics remain unchanged.
     void page;
   });
 

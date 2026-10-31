@@ -112,8 +112,9 @@ Staff. For each step note pass or fail. On a fail, copy the exact words you saw.
    from now>**, and the buttons **Submit booking request** and **Release**.
 7. **Second hold refused:** press the browser's **Back** button once, to the
    hold form, and click **Hold venue** again. Expect **"This venue can't be
-   held"** and **"This venue already has a tentative hold for EVT-3003
-   Planning Phase Gala from 25 Oct 2026, 6:00 pm to 25 Oct 2026, 10:00 pm."**
+   held"** and **"This venue is unavailable from 25 Oct 2026, 6:00 pm to
+   25 Oct 2026, 10:00 pm, including setup and turnaround."** The other event's
+   name is not shown (T-102).
    No second hold appears on the event page.
 
 ## C. Venue Staff move the expiry later (TC_E06S05_07)

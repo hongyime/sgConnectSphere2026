@@ -59,9 +59,15 @@ export function getRegistrationForm(ref: string, signal?: AbortSignal) {
     'Unable to load this event.');
 }
 
-export function register(ref: string, sessionIds: string[]) {
+export function register(ref: string, sessionIds: string[], claimWaitlist = false) {
   return apiCall<RegisterResult>(`/api/attendee/events?registration=1&id=${encodeURIComponent(ref)}`,
-    jsonRequest('POST', { sessionIds }), 'Unable to register. Please try again.');
+    jsonRequest('POST', { sessionIds, ...(claimWaitlist ? { claimWaitlist: true } : {}) }), 'Unable to register. Please try again.');
+}
+
+export function joinWaitingList(ref: string) {
+  return apiCall<{ registration: Registration; event: PublicEvent }>(
+    `/api/attendee/events?waitlist=1&id=${encodeURIComponent(ref)}`,
+    jsonRequest('POST', {}), 'Unable to join the waiting list. Please try again.');
 }
 
 export function withdraw(ref: string) {

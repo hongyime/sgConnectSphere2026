@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
@@ -26,9 +27,28 @@ export async function loadOverSubscription(query: Query, eventId: string): Promi
   return assessOverSubscription(await eventCapacity(query, eventId));
 }
 
-export type EventChangePreview = { impact: ArrangementImpact; overSubscription: OverSubscription[] };
+export type EventChangeCheck = { impact: ArrangementImpact; overSubscription: OverSubscription[] };
+export type EventChangePreview = EventChangeCheck & { revision: string };
 
-const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity' } as const;
+// #380 review: a fingerprint of exactly what the preview shows. The save
+// passes it back and is refused when its own result differs, so nothing the
+// Coordinator did not see is flagged, notified or warned about. Both sides
+// build the check with the same functions and the same ORDER BY, so equal
+// arrangements give equal JSON.
+export function changeRevision(check: EventChangeCheck): string {
+  return createHash('sha256').update(JSON.stringify([check.impact, check.overSubscription])).digest('hex').slice(0, 32);
+}
+
+// 409 with the fresh check, so the screen can show it for a new review.
+export class ArrangementsChangedError extends AccessError {
+  constructor(public preview: EventChangePreview) { super(409, 'arrangements_changed'); }
+}
+
+export function withRevision(check: EventChangeCheck): EventChangePreview {
+  return { ...check, revision: changeRevision(check) };
+}
+
+const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity', layout: 'room layout changed', accessibility: 'accessibility requirements changed' } as const;
 
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag
@@ -54,7 +74,8 @@ export async function applyArrangementImpact(query: Query, actorId: string, even
 // The edit runs for real inside a savepoint, so its validation, permissions
 // and the Session sync trigger all apply, and is then rolled back: nothing a
 // preview does is saved, audited or notified.
-export async function previewEventChangeWith(client: PoolClient, user: AuthenticatedUser, identifier: string, input: unknown): Promise<EventChangePreview> {
+export async function previewEventChangeWith(client: PoolClient, user: AuthenticatedUser, identifier: string, input: unknown,
+  approvedChangeRequest = false): Promise<EventChangePreview> {
   const event = (await client.query<{ id: string }>(
     'SELECT id FROM events WHERE id::text=$1 OR event_code=$1 FOR UPDATE', [identifier])).rows[0];
   if (!event) throw new AccessError(403, 'Edit access denied.');
@@ -63,9 +84,9 @@ export async function previewEventChangeWith(client: PoolClient, user: Authentic
   const before = await loadArrangementSnapshot(query, event.id);
   await client.query('SAVEPOINT event_change_preview');
   try {
-    await updateEventInformation(query, user, identifier, input);
+    await updateEventInformation(query, user, identifier, input, approvedChangeRequest);
     const after = await loadArrangementSnapshot(query, event.id);
-    return { impact: assessArrangementImpact(before, after), overSubscription: await loadOverSubscription(query, event.id) };
+    return withRevision({ impact: assessArrangementImpact(before, after), overSubscription: await loadOverSubscription(query, event.id) });
   } finally {
     await client.query('ROLLBACK TO SAVEPOINT event_change_preview');
   }

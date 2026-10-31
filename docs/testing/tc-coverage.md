@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **287** (75.7%)
-  - Real-database (`.integration.test` / `.db.test`): **39**
+- Automated (explicit TC_ID in an active test title): **299** (78.9%)
+  - Real-database (`.integration.test` / `.db.test`): **40**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **247**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **66** (17.4%)
+  - Live-assertion (other active tests): **258**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.2%)
 - No test yet (no test file mentions the TC_ID): **26** (6.9%)
 
 ## Coverage by epic
@@ -23,15 +23,15 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 2 | 0 | 3 |
 | E05 | 39 | 38 | 1 | 0 |
-| E06 | 43 | 33 | 10 | 0 |
+| E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 17 | 10 | 1 |
-| E09 | 45 | 33 | 9 | 3 |
+| E09 | 45 | 38 | 4 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **287** | **66** | **26** |
+| **Total** | **379** | **299** | **54** | **26** |
 
 ## Case-by-case status
 
@@ -267,13 +267,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_06` | E06-S05 | Verify that the Coordinator should receive one notice when a hold expires and no | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
 | `TC_E06S05_07` | E06-S05 | Verify that Venue Staff should be able to extend an unexpired hold but not an ex | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S06_01` | E06-S06 | Verify approval rechecks a confirmed booking after buffer growth | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_01 - T-100: Verify approval rechecks a confirmed booking after buffer growth |
-| `TC_E06S06_02` | E06-S06 | Verify a later overlapping request is refused while the first claim remains acti | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_02 - T-100: Verify a later overlapping request is refused while the first claim remains active |
-| `TC_E06S06_03` | E06-S06 | Verify concurrent overlapping new claims accept only one request | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_03 - T-100: Verify concurrent overlapping new claims accept only one request |
-| `TC_E06S06_04` | E06-S06 | Verify exact half-open buffered adjacency is allowed with zero buffers | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_04 - T-100: Verify exact half-open buffered adjacency with zero buffers |
-| `TC_E06S06_05` | E06-S06 | Verify a one-minute overlap is refused before an impossible fixture is inserted | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_05 - T-100: Verify a one-minute overlap is refused before insertion |
-| `TC_E06S06_06` | E06-S06 | Verify buffer-growth conflicts block approvals until an explicit resolution | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_06 — T-100: Verify buffer-growth conflicts block approvals until explicit resolution |
-| `TC_E06S06_07` | E06-S06 | Verify one event may confirm overlapping bookings at different venues | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S06_07 — T-100: Verify one event may confirm overlapping bookings at different venues |
+| `TC_E06S06_01` | E06-S06 | Verify approval rechecks a confirmed booking after buffer growth | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_01: approval rechecks a confirmed booking after buffer growth and keeps both bookings; tests/auth-e2e/venueClaimPolicy |
+| `TC_E06S06_02` | E06-S06 | Verify a later overlapping request is refused while the first claim remains acti | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_02: an accepted pending request refuses its competitor without disclosure or side effects; backend/tests/venueClaimPol |
+| `TC_E06S06_03` | E06-S06 | Verify concurrent overlapping new claims accept only one request | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_03: concurrent overlapping requests leave exactly one accepted claim |
+| `TC_E06S06_04` | E06-S06 | Verify exact half-open buffered adjacency is allowed with zero buffers | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_04: a pending request exactly adjacent to a confirmed booking can be approved; tests/auth-e2e/venueClaimPolicy.spec.ts |
+| `TC_E06S06_05` | E06-S06 | Verify a one-minute overlap is refused before an impossible fixture is inserted | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_05: a one-minute overlap is refused at submission without disclosure or a new row; tests/auth-e2e/venueClaimPolicy.spe |
+| `TC_E06S06_06` | E06-S06 | Verify buffer-growth conflicts block approvals until an explicit resolution | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_06: buffer growth blocks both approvals until Venue Staff rejects one request; backend/tests/venueClaimPolicy.integrat |
+| `TC_E06S06_07` | E06-S06 | Verify one event may confirm overlapping bookings at different venues | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S06_07: one event can confirm overlapping requests at different venues; tests/auth-e2e/venueClaimPolicy.spec.ts: TC_E06S06 |
 
 ### E07
 
@@ -381,11 +381,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
 | `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
 | `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions |
-| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_01 - Verify that joining the waiting list for a full event with the list enabled should add the Attendee and confirm their position |
-| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_02 - Verify that when a place is released in a event with a waiting list, all waitlisted Attendees should be notified and the place claimed on a fi |
-| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event |
-| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it |
-| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released |
+| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01); tests/e2e/e09.spec.ts: TC_E09S |
+| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, _03); tests/e2e/e09.spec.ts: TC_E09S04_02  |
+| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event; frontend/src/features/attendee/WaitingL |
+| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it; frontend/src/features/attendee/WaitingList.test.t |
+| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released; frontend/src/features/attendee/Waitin |
 | `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
@@ -407,7 +407,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S01_01` | E10-S01 | Verify that submitting a change request on an approved or confirmed event should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_02` | E10-S01 | Verify that viewing an event with a pending change request should still show the | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
 | `TC_E10S01_03` | E10-S01 | Verify that attempting to directly edit a restricted field after approval should | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_03: Confirmed readonly field opens its real prefilled form without creating a request; tests/auth-e2e/changeRequests.spec.ts: TC_E1 |
-| `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic; backend/tes |
+| `TC_E10S01_04` | E10-S01 | Verify that when the Coordinator approves a change request, the event should be  | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S01_04: Event layout/accessibility changes flag venues only and include changed layout capacity; backend/tests/changeRequests.integra |
 | `TC_E10S01_05` | E10-S01 | Verify that when the Coordinator declines a change request, the Organiser should | ✅ active | backend/tests/changeRequests.integration.test.ts: TC_E10S01_05: decline leaves confirmed details unchanged and notifies requester; tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_ |
 | `TC_E10S01_06` | E10-S01 | A Pending change request should become Obsolete when the Event is Completed | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E10S01_07` | E10-S01 | A Pending change request should become Obsolete when the Event is Cancelled | ✅ active | tests/auth-e2e/changeRequests.spec.ts: TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions |
@@ -488,6 +488,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/arrangementImpact.integration.test.ts`
 
 - the Event capacity E09-S02 reports is the sum of every Confirmed booking, Session by Session
+- a save whose preview went stale (another booking confirmed meanwhile) is refused and writes nothing
+- a save whose preview went stale (more Registered meanwhile) is refused before the over-subscription is accepted
+- a save with the revision from an unchanged preview saves as usual
 
 ### `backend/tests/arrangementImpact.test.ts`
 
@@ -530,6 +533,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
 - registerForEvent maps a lost unique race, a busy account and rethrows other failures
 - getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)
+- joinWaitingList refuses a disabled list, an Event with room, and an Event without places
+- joinWaitingList rejects unavailable Events, closed windows, existing registrations and invalid accounts
+- joinWaitingList handles races, locked accounts and unexpected failures transactionally
+- a lost place keeps the Attendee waitlisted; a full selected Session follows Pending (T-85, T-98)
+- claimWaitlist accepts only a boolean and an active waitlist row
 - withdrawRegistration tells nobody when the Event is still full or the row held no place (D82, D88)
 - withdrawRegistration answers a missing, repeated or foreign withdrawal without writing (AC 6)
 - withdrawRegistration maps a busy account and rethrows other failures
@@ -633,6 +641,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/deactivation.test.ts`
 
 - eligible attendee: locks identity, withdraws, deactivates, revokes sessions, audits and commits
+- a waitlisted deactivation releases no place and sends no place notice
+- a still-full Event sends no place notice when an attendee deactivates
 - coordinator assignments block without successful audit or mutations
 - coordinator without blocking assignments succeeds
 - already deactivated returns safe conflict without audit
@@ -750,6 +760,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - previewEventChange wraps the preview in its own transaction
 - a draft date change sends no generic date notice; an unknown Event is refused
 - a capacity-only change notifies the Venue Staff alone, with no date notice
+- the revision is the same for the same arrangements and changes with any of them
+- a save with the preview revision goes through and returns the same revision
+- a save with a stale revision is refused with the fresh list, before anything is flagged or sent
+
+### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
+
+- the save route refuses a stale preview revision with the fresh list, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -1173,13 +1190,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/venueClaimPolicy.integration.test.ts`
 
-- an accepted pending request refuses its competitor without business, audit or outbox changes
-- a hold blocks a later request, and a pending request blocks a later hold
-- concurrent overlapping requests leave exactly one accepted claim
-- buffered adjacency is accepted while a one-minute overlap is refused
-- later buffer growth blocks both approvals until Venue Staff rejects one active request
-- one event can confirm overlapping requests at different venues
+- buffered adjacency is accepted and approved while a one-minute buffered overlap is refused
 - converting a hold keeps its venue claim active against another request
+- an expired hold no longer claims the venue, so a later overlapping request is accepted
 
 ### `backend/tests/venueHolds.integration.test.ts`
 
@@ -1296,7 +1309,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - public pages have no shared header
 - /home sends a signed-in user to their role home
 - /home sends a signed-out visitor to sign in
-- a placeholder route shows the Coming soon page with its story
+- the attendee waiting-list route offers a full Event with its list enabled
 
 ### `frontend/src/app/routes.test.tsx`
 
@@ -1335,6 +1348,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a refused withdrawal shows the server sentence in the panel, and Cancel goes back
 - withdrawing works under StrictMode, and leaving the page drops a late reply
 
+### `frontend/src/features/attendee/WaitingList.test.tsx`
+
+- an Event with room points to registration, and an active registration cannot join the list
+- a closed list stays visible without a claim or leave action, and closed registration explains why joining is unavailable
+- a registered attendee sees why they cannot join the waiting list
+- leave failures keep the confirmation open and show the server response
+- failed status loads offer a retry
+- late join and leave responses after unmount do not update the screen
+- a taken place keeps the claim form and its error; a stale claim link is refused
+
 ### `frontend/src/features/coordinator/CoordinatorEditing.test.tsx`
 
 - the assigned Coordinator edits an approved event and only the changed field is sent
@@ -1342,6 +1365,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a refused edit keeps the form open and shows the server reason
 - invalid values are flagged next to the field and nothing is sent
 - cancelling closes the form without saving
+- cancelling the review returns to the form with the edit kept and saves nothing
+- a refused preview is shown in the form, with no review step and nothing saved
+- a save refused after the review goes back to the form and shows why
+- confirming the review sends the revision of the list that was shown
+- a save refused because the arrangements changed shows the fresh list, saves nothing, and confirming it sends the new revision
+- a save with nothing to review is still bound: if something became affected, the review appears instead
 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
@@ -1442,6 +1471,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - same-venue releases identify each booking when actor and time coincide
 - event and legacy hold entries do not invent a booking reference
 
+### `frontend/src/features/events/ArrangementReview.test.tsx`
+
+- a save reply without fields or impact falls back to the sent fields and nothing affected
+- the preview goes to &preview=1 and a refusal is passed through as a failure
+
 ### `frontend/src/features/events/EventCompletion.test.tsx`
 
 - Non-Confirmed states and missing event code are displayed without an action
@@ -1472,6 +1506,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registration date fields show existing ISO values in local input format
 - locked registration dates with no values are left out, as on the Coordinator form
 - registration date inputs describe the validation error after an invalid save
+- still saves when the form is open when the answer arrives
+- sends no save after the form closes
+- sends no save for the old event after switching to another one
+- sends no save of the old edit after the field is edited again
+- the fields are read-only and Save sends nothing more until the first save answers
+- confirming the review twice sends one save
+- after a refused save the fields can be edited and saved again
 
 ### `frontend/src/features/events/RefusedEdit.navigation.test.tsx`
 
@@ -1718,6 +1759,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - legacy rejected booking prefills blank metadata and uses current event bounds
 - a withdrawal in flight disables controls and does not submit twice
 - E05-S06: an open-ended unavailability reads until lifted, and missing details still say what is needed
+- E10-S02: a confirmed booking flagged for reconfirmation says so; an unflagged one does not
 
 ### `frontend/src/features/venue/VenueCalendar.navigation.test.tsx`
 
@@ -1831,10 +1873,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unstubbed request fails loudly with 404
 - handlers can be functions, and deferred holds a reply back
 
-### `tests/auth-e2e/changeRequests.spec.ts`
-
-- Dependency regression: real arrangement approval stays unapplied while E10-S02 is absent
-
 ### `tests/auth-e2e/loginRecovery.spec.ts`
 
 - invalid and expired reset links guide the user back to recovery
@@ -1872,6 +1910,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `tests/e2e/e03.spec.ts`
 
 - E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
+
+### `tests/e2e/e10.spec.ts`
+
+- a save refused because the arrangements changed during the review shows the fresh list before anything is saved
 
 ### `tests/e2e/eventReadiness.spec.ts`
 

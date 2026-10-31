@@ -1,9 +1,11 @@
 # E10-S01 focused click-through
 
-SCRUM-204 acceptance preparation for the merged foundation (#341), refused-edit
-prefill (#365) and terminal Obsolete handling (#363/#320). This is a planned human
-run, not execution evidence. Retain earlier valid evidence rather than repeating
-the E11 walkthrough. Full E10-S01 still depends on E10-S02 arrangement application.
+SCRUM-204 acceptance preparation for E10-S01 / SCRUM-70 with shared E10-S02
+integration and merged foundation/prefill/terminal work (#341/#365/#363/#320/#375).
+This is a planned human
+run, not execution evidence. Reuse valid earlier evidence and test changed
+behavior on the combined reviewed tree. Prefill/terminal handling are merged;
+Session edits and unsupported structured fields remain open.
 
 ## Prepare once
 
@@ -39,11 +41,18 @@ Keep this increment's manual record separate from other testers' sessions.
    selects **Decline…**, optionally adds a decision note, and confirms. Request
    becomes Declined; Event purpose remains unchanged. Organiser sees the result
    notice. Save one Declined screenshot with the optional note if entered.
-4. **Arrangement waiting state (TC_E10S01_04 incomplete dependency).** Organiser
-   requests a different expected attendance. Coordinator approves. Both sessions
-   show **Approved — waiting for the arrangement check**; current attendance
-   stays unchanged after refresh. Save one screenshot. This is intentional
-   interim behaviour, not a PASS for the whole arrangement-application criterion.
+4. **Arrangement preview/application (TC_E10S01_04).** Prepare a Confirmed
+   Session booking with capacity below the requested attendance. Organiser
+   requests the new attendance. Coordinator selects Approve and checks that
+   the affected booking is listed. Cancel: attendance, request, flags and
+   inboxes stay unchanged. Preview again and confirm: request becomes Applied,
+   attendance updates, booking requires reconfirmation, Organiser receives one
+   decision notice and responsible Venue Staff one reconfirmation notice.
+   Also check registration enablement with a cleared opening boundary and a
+   valid closing date: nothing changes while Pending; confirmation applies the
+   settings together. Ordinary direct-edit validation remains unchanged.
+   Save before/after screenshots. Older Approved requests use **Review and
+   apply…**. This does not prove individual Session-edit acceptance.
 5. **Responsive/error behaviour.** On a phone-width viewport, confirm the
    comparison becomes labelled rows/cards without horizontal page scrolling.
    An unrelated account's direct change-request URL must show access refusal,
@@ -72,12 +81,21 @@ The automated `tests/auth-e2e/changeRequests.spec.ts` uses real browser sessions
 the local API and disposable PostgreSQL, without response fixtures. It covers
 the readonly/current-value and concurrent-approval refusal paths, persisted
 submission/comparison, safe approval/decline, terminal Obsolete rendering and
-the arrangement waiting guard. Terminal actions in that suite use the real API;
+supported arrangement preview/application. Terminal actions in that suite use the real API;
 this is automated integration evidence, not a human completion/cancellation
-click-through. Its arrangement waiting assertion is a dependency regression,
-not a passing full TC_E10S01_04 arrangement-application result.
+click-through. The structured layout/accessibility browser case now verifies atomic application,
+venue-only review flags and sole-Session layout sync. Individual Session edits
+remain outside that automated workflow.
 
 Do not count queued outbox rows as email delivery. The final combined human run
-and acceptance must include actual arrangement preview/apply after E10-S02 lands.
+and acceptance must include actual arrangement preview/apply on the combined tree.
 No extra manual API race tests are required; retain the real-database concurrency
 evidence. Keep each tester's session and screenshots in its own T-65 record.
+
+For layout/accessibility application, submit both with a name change and verify
+all confirmed details remain unchanged while Pending and during preview. Check
+the preview lists the venue with layout/accessibility reasons; confirm and check
+Applied, the new requirements, the venue review flag and one staff notice.
+Check a lower-capacity layout warns without changing registrations, and that
+null layout / an empty accessibility set can be explicitly requested and applied.
+Record only the human steps actually executed, with hand-taken screenshots.
