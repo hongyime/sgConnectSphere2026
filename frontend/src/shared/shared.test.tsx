@@ -270,8 +270,7 @@ test('the /ui-kit reference page renders every block without calling the API', a
   expect(fetchSpy).not.toHaveBeenCalled();
 });
 
-
-test('ConfirmPanel refuses disabled or busy form submission while keeping Cancel available without consent', () => {
+test('TC_E10S01_04: ConfirmPanel refuses disabled or busy form submission while keeping Cancel available without consent', () => {
   const onConfirm = vi.fn(), onCancel = vi.fn();
   const { rerender } = render(<ConfirmPanel title="Consent check" confirmLabel="Confirm" confirmDisabled onConfirm={onConfirm} onCancel={onCancel} />);
   expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();

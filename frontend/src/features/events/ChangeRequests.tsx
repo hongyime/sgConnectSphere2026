@@ -1,4 +1,4 @@
-import { arrangementReasons } from './arrangementReasons';
+// E10-S01: submit and review Event change requests with shared arrangement previews.
 import { readChangeRequestPrefill, type ChangeRequestPrefill } from './changeRequestPrefill';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
@@ -10,6 +10,7 @@ import {
   changeFields, decideChangeRequest, getChangeRequests, submitChangeRequest, waitingMessage, previewChangeRequest, type ChangePreview,
   type ChangeField, type ChangeRequestRecord, type ChangeRequestView, type ChangeValues,
 } from './changeRequestsApi';
+import { arrangementReasons } from './arrangementReasons';
 
 const activeStatuses = ['approved', 'planning', 'safety_review', 'confirmed'];
 const label = (key: string) => changeFields.find(([field]) => field === key)?.[1] ?? key;
