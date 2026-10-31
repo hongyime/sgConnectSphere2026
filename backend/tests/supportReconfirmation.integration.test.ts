@@ -18,6 +18,7 @@ import { applyArrangementImpact } from '../src/modules/changeManagement/eventCha
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 import { loadReadiness } from '../src/modules/eventReadiness/readiness.js';
 import { enterSafetyReviewIfReady } from '../src/modules/eventReadiness/autoSafetyReview.js';
+import { listEventActivity } from '../src/modules/eventVisibility/service.js';
 import {
   NOTHING_TO_RECONFIRM, NOT_RECONFIRMABLE, listSupportToReconfirm, reconfirmSupport,
 } from '../src/modules/equipmentSupport/supportReconfirmation.js';
@@ -119,6 +120,11 @@ test('TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; re
       WHERE entity_id=$1 AND action='Support Reconfirmed'`, [f.support])).rows;
     assert.deepEqual(entry, [{ actor_id: f.techB.id, action: 'Support Reconfirmed', field_changed: 'support_range',
       old_value: `${iso('2026-12-05', '06:00')} to ${iso('2026-12-05', '12:00')}`, new_value: `${iso('2026-12-12', '06:00')} to ${iso('2026-12-12', '12:00')}` }]);
+    // The Coordinator's Activity log shows it; the Organiser's does not, as for booking decisions.
+    const staffLog = (await listEventActivity(f.q, f.event, { includeBookings: true })).rows;
+    assert.deepEqual(staffLog.filter(r => r.entity_type === 'tech_support_request').map(r => [r.action, r.actor_name]), [['Support Reconfirmed', 'Tech B']],
+      'the reconfirmation, not the flag row');
+    assert.ok(!(await listEventActivity(f.q, f.event)).rows.some(r => r.entity_type === 'tech_support_request'));
     const told = async (userId: string) => (await f.q('SELECT title, message FROM notifications WHERE user_id=$1 ORDER BY created_at, title', [userId])).rows;
     const coordinatorNotice = (await told(f.coordinator.id)).find(n => n.title === 'Technical support reconfirmed');
     assert.match(coordinatorNotice?.message ?? '', /^Tech B reconfirmed technical support for EVT-1082 Charity Run \(.*12 Dec.*\): Sound desk\. It no longer needs reconfirmation\.$/);

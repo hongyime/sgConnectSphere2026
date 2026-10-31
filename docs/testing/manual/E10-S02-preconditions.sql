@@ -25,6 +25,17 @@
 --   EVT-1025 "Two-Day Forum", 25 Nov 09:00 to 26 Nov 12:00, two Sessions
 --     (25 Nov and 26 Nov, 09:00-12:00), each with its own room (E10 Seminar
 --     Room A and B, 80 each) and Projector: TC_E10S02_08, _09.
+-- EVT-1021 to EVT-1025 keep an open support request (tech_a assigned, status
+-- left open as before T-103), so T-103 does not flag them and sections A to G
+-- read as they did. The T-103 follow-up (SCRUM-244) adds staffed requests:
+--   EVT-1026 "Charity Run", 5 Dec 2026 07:00-12:00, was Confirmed and is back in
+--     Planning, at E10 Garden Hall (200) with an E10 Projector, and a staffed
+--     "Sound desk" request 06:00-12:00 with tech_a: TC_E10S02_03/_06/_08
+--     (support), _11, _12.
+--   EVT-1027 "Board Briefing", 6 Dec 2026 10:00-12:00, no venue or equipment,
+--     a staffed "Lighting" request 09:00-12:00 with tech_a: TC_E10S02_13.
+--   EVT-1028 "Year-end Gala", 13 Dec 2026 10:00-14:00, a staffed "Stage
+--     lighting" request with tech_a, which makes tech_a busy for TC_E10S02_13.
 
 \set ON_ERROR_STOP on
 SELECT :'stage' = 'setup' AS is_setup, :'stage' = 'check' AS is_check \gset
@@ -44,7 +55,8 @@ VALUES ('E10 Grand Hall', 'Level 1', 300, '00:00', '23:59'),
        ('E10 Studio', 'Level 2', 80, '00:00', '23:59'),
        ('E10 Auditorium', 'Level 3', 120, '00:00', '23:59'),
        ('E10 Seminar Room A', 'Level 4', 80, '00:00', '23:59'),
-       ('E10 Seminar Room B', 'Level 4', 80, '00:00', '23:59');
+       ('E10 Seminar Room B', 'Level 4', 80, '00:00', '23:59'),
+       ('E10 Garden Hall', 'Level 5', 200, '00:00', '23:59');
 
 -- What the E05-S01 venue form requires before Venue Staff can save a venue.
 INSERT INTO venue_facilities (venue_id, facility_id)
@@ -71,7 +83,10 @@ FROM events e, (VALUES
   ('EVT-1022', 'Riverside Summit', 'Regional summit.', '[2026-11-18 09:00+08,2026-11-18 17:00+08)', 200),
   ('EVT-1023', 'Studio Workshop', 'Hands-on workshop.', '[2026-11-19 09:00+08,2026-11-19 12:00+08)', 50),
   ('EVT-1024', 'Product Launch', 'Launch event with public registration.', '[2026-11-21 09:00+08,2026-11-21 17:00+08)', 100),
-  ('EVT-1025', 'Two-Day Forum', 'Forum over two mornings.', '[2026-11-25 09:00+08,2026-11-26 12:00+08)', 80)
+  ('EVT-1025', 'Two-Day Forum', 'Forum over two mornings.', '[2026-11-25 09:00+08,2026-11-26 12:00+08)', 80),
+  ('EVT-1026', 'Charity Run', 'Charity fun run.', '[2026-12-05 07:00+08,2026-12-05 12:00+08)', 150),
+  ('EVT-1027', 'Board Briefing', 'Quarterly board briefing.', '[2026-12-06 10:00+08,2026-12-06 12:00+08)', 30),
+  ('EVT-1028', 'Year-end Gala', 'Staff year-end gala.', '[2026-12-13 10:00+08,2026-12-13 14:00+08)', 120)
 ) AS v(code, title, description, range, attendance)
 WHERE e.event_code = 'EVT-2001';
 
@@ -91,7 +106,8 @@ FROM (VALUES
   ('EVT-1023', 'E10 Studio', 60, NULL),
   ('EVT-1024', 'E10 Auditorium', NULL, NULL),
   ('EVT-1025', 'E10 Seminar Room A', NULL, 'Day 1'),
-  ('EVT-1025', 'E10 Seminar Room B', NULL, 'Day 2')
+  ('EVT-1025', 'E10 Seminar Room B', NULL, 'Day 2'),
+  ('EVT-1026', 'E10 Garden Hall', NULL, NULL)
 ) AS b(code, venue, headcount, session_title)
 JOIN events e ON e.event_code = b.code
 JOIN sessions s ON s.event_id = e.id AND (b.session_title IS NULL OR s.title = b.session_title)
@@ -112,15 +128,41 @@ SELECT r.id, r.event_id, r.session_id, r.equipment_id, 2, b.booking_range, t.id
 FROM requests r JOIN booked b ON b.session_id = r.session_id, users t
 WHERE t.email = 'tech_a@connectsphere.com';
 
--- tech_a is each event's Technical Support Staff.
+-- tech_a is each event's Technical Support Staff (EVT-1021 to EVT-1025).
 WITH support AS (
   INSERT INTO tech_support_requests (event_id, support_required, support_range, requested_by)
-  SELECT id, true, event_range, coordinator_id FROM events WHERE event_code LIKE 'EVT-102_'
+  SELECT id, true, event_range, coordinator_id FROM events WHERE event_code BETWEEN 'EVT-1021' AND 'EVT-1025'
   RETURNING id, event_id, support_range
 )
 INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
 SELECT support.id, support.event_id, t.id, support.support_range FROM support, users t
 WHERE t.email = 'tech_a@connectsphere.com';
+
+-- T-103: staffed support requests, each with tech_a assigned for its window.
+WITH support AS (
+  INSERT INTO tech_support_requests (event_id, support_required, support_description, support_range, status, requested_by)
+  SELECT e.id, true, r.description, r.range::tstzrange, 'staffed', e.coordinator_id
+  FROM events e JOIN (VALUES
+    ('EVT-1026', 'Sound desk', '[2026-12-05 06:00+08,2026-12-05 12:00+08)'),
+    ('EVT-1027', 'Lighting', '[2026-12-06 09:00+08,2026-12-06 12:00+08)'),
+    ('EVT-1028', 'Stage lighting', '[2026-12-13 10:00+08,2026-12-13 14:00+08)')
+  ) AS r(code, description, range) ON r.code = e.event_code
+  RETURNING id, event_id, support_range
+)
+INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
+SELECT support.id, support.event_id, t.id, support.support_range FROM support, users t
+WHERE t.email = 'tech_a@connectsphere.com';
+
+-- EVT-1026 was Confirmed and reverted to Planning (E08-S04), so it re-enters
+-- Safety Review by itself once every arrangement is confirmed again.
+INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value, occurred_at)
+SELECT u.id, 'event', e.id, e.id, a.action, 'status', a.old_value, a.new_value, a.at::timestamptz
+FROM events e, (VALUES
+  ('safety_officer@connectsphere.com', 'Status changed to confirmed', 'safety_review', 'confirmed', '2026-10-20 10:00+08'),
+  ('coord_a@connectsphere.com', 'Reverted to Planning', 'confirmed', 'planning', '2026-10-25 10:00+08')
+) AS a(email, action, old_value, new_value, at)
+JOIN users u ON u.email = a.email
+WHERE e.event_code = 'EVT-1026';
 
 -- EVT-1024: 100 Attendees Registered for the event and its Session (T-85).
 INSERT INTO users (email, password_hash, full_name, role, contact_number, email_verified_at)
@@ -171,4 +213,25 @@ WHERE e.event_code LIKE 'EVT-102_' ORDER BY n.created_at, e.event_code, u.email;
 
 SELECT e.event_code, r.status, count(*) FROM event_registrations r JOIN events e ON e.id = r.event_id
 WHERE e.event_code = 'EVT-1024' GROUP BY e.event_code, r.status;
+
+-- T-103: the support requests, their flag and the time each moves to, the
+-- technicians' assignments, the reconfirmations and the event statuses.
+SELECT e.event_code, coalesce(t.support_description, '(none)') AS support, t.status,
+  t.requires_reconfirmation AS needs_reconfirmation,
+  to_char(lower(t.support_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS starts_sgt,
+  to_char(lower(t.reconfirm_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS moves_to_sgt
+FROM tech_support_requests t JOIN events e ON e.id = t.event_id
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' ORDER BY e.event_code;
+
+SELECT e.event_code, u.email AS technician,
+  to_char(lower(a.assignment_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS starts_sgt
+FROM tech_staff_assignments a JOIN events e ON e.id = a.event_id JOIN users u ON u.id = a.staff_id
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' AND a.status = 'assigned' ORDER BY e.event_code;
+
+SELECT e.event_code, a.action, a.old_value, a.new_value
+FROM audit_logs a JOIN events e ON e.id = a.event_id
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' AND a.entity_type = 'tech_support_request'
+ORDER BY a.occurred_at;
+
+SELECT event_code, status FROM events WHERE event_code BETWEEN 'EVT-1026' AND 'EVT-1028' ORDER BY event_code;
 \endif

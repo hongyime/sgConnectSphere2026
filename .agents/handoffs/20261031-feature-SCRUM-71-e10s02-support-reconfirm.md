@@ -49,7 +49,10 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
    api-changes-week7 and change-requests contract. Two gaps fixed: the
    Coordinator's saved message and the E10-S01 change-request preview
    (Ji Ning's `ChangeRequests.tsx`) now count support.
-8. Click-through guide, preconditions SQL, automated real local run.
+8. Click-through guide, preconditions SQL, automated real local run. Done:
+   sections H to J and EVT-1026 to EVT-1028 in `E10-S02-click-through.md` and
+   `E10-S02-preconditions.sql` (EVT-1021 to EVT-1025 unchanged); automated run
+   3/3 sections passed after the fix below.
 9. Le Xin's manual T-65/T-93 run.
 10. PR(s) within the T-101 limits; Jira.
 
@@ -87,6 +90,16 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 
 ## Found on the way
 
+- Real local run (Task 8): the Coordinator's Activity log listed only event and
+  venue-booking entries, so "Support reconfirmed" was saved but never shown
+  (TC_E10S02_12). Fixed in `listEventActivity`: the staff view also lists
+  `tech_support_request` rows whose action is `Support Reconfirmed` (not the
+  flag rows); the Organiser view is unchanged. DB check added and break-tested;
+  the E14-S02 unit test that matches the query text updated.
+- EVT-1021 to EVT-1025's support requests have tech_a assigned but status
+  `open` (the earlier E10-S02 fixture), so the staffing queue shows them as
+  "Needs a technician"; fixture only, left as is so sections A to G are unchanged.
+
 - `tests/e2e/e10.spec.ts` headers for TC_E10S02_05 and _06 quoted the old
   leftover wording; updated in Task 7.
 - tc-coverage marks TC_E10S02_05, _06 and _08 active; their support checks are
@@ -103,5 +116,5 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 
 ## Next step
 
-Task 8: click-through guide (extend `docs/testing/manual/E10-S02-click-through.md`),
-preconditions SQL and an automated real local run (migration 0026 applied).
+Task 9: Le Xin's manual T-93 run of sections H to J (fresh data: reset, seed,
+setup).
