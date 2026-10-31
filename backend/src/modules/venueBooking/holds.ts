@@ -132,17 +132,19 @@ function checkExpiry(expires: Date | undefined, now: Date) {
 }
 
 // What is in the way of holding this venue for this period, if anything.
+// E06-S06 Scenario 2 (T-102): name only the occupied buffered window, never
+// the other event, the same sentence a refused booking request gets.
 async function findClash(client: PoolClient, venueId: string, startsAt: Date, endsAt: Date, now: Date, ignoreBookingId: string | null) {
-  const booking = (await client.query<{ status: string; eventCode: string | null; title: string; startsAt: Date; endsAt: Date }>(`
-    SELECT vb.status, e.event_code AS "eventCode", e.title, lower(vb.booking_range) AS "startsAt", upper(vb.booking_range) AS "endsAt"
-    FROM venue_bookings vb JOIN events e ON e.id = vb.event_id JOIN venues v ON v.id = vb.venue_id
+  const booking = (await client.query<{ startsAt: Date; endsAt: Date }>(`
+    SELECT lower(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)) AS "startsAt",
+      upper(occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)) AS "endsAt"
+    FROM venue_bookings vb JOIN venues v ON v.id = vb.venue_id
     WHERE vb.venue_id = $1 AND ${holdsVenue('vb', '$4')}
       AND occupied_window(vb.booking_range, v.setup_time_minutes, v.turnaround_time_minutes)
         && occupied_window(tstzrange($2, $3, '[)'), v.setup_time_minutes, v.turnaround_time_minutes) AND ($5::uuid IS NULL OR vb.id <> $5)
     ORDER BY lower(vb.booking_range) LIMIT 1`, [venueId, startsAt, endsAt, now, ignoreBookingId])).rows[0];
   if (booking) {
-    const kind = booking.status === 'tentative' ? 'a tentative hold' : booking.status === 'pending' ? 'a pending booking request' : 'a confirmed booking';
-    return `This venue already has ${kind} for ${eventName(booking)} from ${formatSgt(booking.startsAt)} to ${formatSgt(booking.endsAt)}.`;
+    return `This venue is unavailable from ${formatSgt(booking.startsAt)} to ${formatSgt(booking.endsAt)}, including setup and turnaround.`;
   }
   const block = (await client.query<{ reason: string }>(`SELECT reason FROM venue_blocks
     WHERE venue_id = $1 AND lifted_at IS NULL AND block_range && tstzrange($2, $3, '[)') LIMIT 1`, [venueId, startsAt, endsAt])).rows[0];

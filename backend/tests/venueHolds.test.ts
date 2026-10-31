@@ -136,25 +136,20 @@ test('TC_E06S05_03: the assigned Coordinator holds a free venue; it is saved ten
   assert.deepEqual(order, ['event', 'venue', 'clock', 'clash']);
 });
 
-test('TC_E06S05_01: an overlapping hold, request, booking or block is refused and named', async () => {
-  const clashWith = (status: string) => fakeDatabase([
+// T-102: the refusal gives the occupied buffered window only, never the other event.
+test('TC_E06S05_01: an overlapping hold, request, booking or block is refused without naming the other event', async () => {
+  const db = fakeDatabase([
     [EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }],
-    [CLASH, { rows: [{ status, eventCode: 'EVT-CR', title: status === 'confirmed' ? 'EVT-CR Charity Run' : 'Charity Run',
-      startsAt: new Date('2026-11-12T02:00:00Z'), endsAt: new Date('2026-11-12T05:00:00Z') }] }],
+    [CLASH, { rows: [{ startsAt: new Date('2026-11-12T02:00:00Z'), endsAt: new Date('2026-11-12T05:00:00Z') }] }],
   ]);
-  const cases: Array<[string, string]> = [
-    ['tentative', 'This venue already has a tentative hold for EVT-CR Charity Run from 12 Nov 2026, 10:00 am to 12 Nov 2026, 1:00 pm.'],
-    ['pending', 'This venue already has a pending booking request for EVT-CR Charity Run from 12 Nov 2026, 10:00 am to 12 Nov 2026, 1:00 pm.'],
-    ['confirmed', 'This venue already has a confirmed booking for EVT-CR Charity Run from 12 Nov 2026, 10:00 am to 12 Nov 2026, 1:00 pm.'],
-  ];
-  for (const [status, message] of cases) {
-    const db = clashWith(status);
-    assert.deepEqual(await placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }), { status: 409, body: { error: message } });
-    assert.equal(writes(db.calls), 0);
-  }
-  const noCode = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }],
-    [CLASH, { rows: [{ status: 'pending', eventCode: null, title: 'Open Day', startsAt: event.startsAt, endsAt: event.endsAt }] }]]);
-  assert.match(String((await placeHold(noCode.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE })).body.error), /request for Open Day from/);
+  assert.deepEqual(await placeHold(db.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }), { status: 409, body: {
+    error: 'This venue is unavailable from 12 Nov 2026, 10:00 am to 12 Nov 2026, 1:00 pm, including setup and turnaround.',
+  } });
+  assert.equal(writes(db.calls), 0);
+  // The clash query reads the buffered window and no event details at all.
+  const clashSql = sqlCalls(db.calls, CLASH)[0]!.sql;
+  assert.match(clashSql, /lower\(occupied_window\(vb\.booking_range/);
+  assert.doesNotMatch(clashSql, /e\.title|event_code|JOIN events/);
   const blocked = fakeDatabase([[EVENT_ROW, { rows: [event] }], [VENUE_ROW, { rows: [venue] }], [/FROM venue_blocks/, { rows: [{ reason: 'Aircon repair' }] }]]);
   assert.deepEqual(await placeHold(blocked.pool, coordinator, { event_id: 'EVT-TC', venue_id: VENUE }),
     { status: 409, body: { error: 'This venue is blocked for that period (Aircon repair).' } });
@@ -277,6 +272,20 @@ test('TC_E06S05_05 TC_E06S05_06: the expiry job marks passed holds expired, audi
     'Your tentative hold on Main Hall for EVT-TC Tech Conference 2026 expired at 1 Nov 2026, 8:00 am. The venue is free for other requests.']);
   assert.equal(notices[0]!.values?.[5], NOW);
   assert.equal(sqlCalls(db.calls, /INSERT INTO notification_deliveries/).length, 1);
+});
+
+// The Coordinator's own expiry notice still names their event, once, when the title already carries the code.
+test('TC_E06S05_06: an expiry notice does not repeat an event code the title already starts with', async () => {
+  const db = fakeDatabase([
+    [/SET status = 'expired'/, { rows: [{ id: HOLD, eventId: event.id, eventCode: 'EVT-CR', title: 'EVT-CR Charity Run',
+      coordinatorId: coordinator.id, venueName: 'Main Hall', expiresAt: NOW }] }],
+    [/INSERT INTO notifications/, { rows: [{ id: 'n1' }] }],
+    [/INSERT INTO notification_deliveries/, { rows: [{ id: '33333333-3333-4333-8333-333333333333' }] }],
+    [/FROM notification_deliveries d JOIN notifications n/, { rows: [{ delivery_status: 'sent', dispatch_state: 'done', recipient_email: 'coord_a@example.test' }] }],
+  ]);
+  await expireHolds(db.pool, NOW);
+  assert.equal(sqlCalls(db.calls, /INSERT INTO notifications/)[0]!.values?.[3],
+    'Your tentative hold on Main Hall for EVT-CR Charity Run expired at 1 Nov 2026, 8:00 am. The venue is free for other requests.');
 });
 
 test('the expiry job with nothing due changes nothing', async () => {

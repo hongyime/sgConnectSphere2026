@@ -30,3 +30,8 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
 - Jira SCRUM-180 is In Progress. Estimate #388 proposes 3 points pending review;
   leave Jira estimate unset until accepted. Prepare a partial implementation PR,
   with Session acceptance and independent human review explicitly outstanding.
+
+- Latest main b884126f merged after the initial verification commit bf72964;
+  regenerated tc-coverage.md to resolve its sole generated-file conflict.
+  Fresh combined-tree units: 643 backend passes/1 database-only skip,
+  749 frontend passes, both TypeScript checks passed.

@@ -362,6 +362,15 @@ E06-S06 and does not change E06-S03's multiple-venue semantics.
 - Occupancy uses half-open buffered intervals, so exact adjacency is allowed.
   Conflict checks remain per venue: the same event may hold or confirm
   overlapping bookings at different venues (C-67, T-68).
+- A refused hold or request gets the same Coordinator message, naming only the
+  other booking's occupied buffered window: "This venue is unavailable from
+  <start> to <end>, including setup and turnaround." It never names the other
+  event (T-102, 30 October 2026). Venue Staff approval refusals still identify
+  the conflicting booking.
+- `buffer_conflict` is not cleared when a rejection or withdrawal resolves the
+  conflict; it changes only at the next buffer edit. The Venue Staff decision
+  screen therefore blocks Approve only on a current buffered overlap, not on
+  the flag alone, and the server rechecks on approval (SCRUM-50).
 
 This decision creates no queue, status, schema or migration change. It does not
 rewrite migration 0016 or adopt migration 0021. The open-choice snapshot in #338
