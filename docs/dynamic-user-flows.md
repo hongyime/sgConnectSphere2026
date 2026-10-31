@@ -427,6 +427,16 @@ sequenceDiagram
     end
 ```
 
+Delivered in E08-S04 (SCRUM-242/243): the automatic step applies only to an
+Event that was Confirmed before and returned to Planning; a first-time Planning
+Event keeps the Coordinator's "Submit for safety check" (E08-S03). Venue Staff
+reconfirm a flagged booking from **Bookings to reconfirm** on their Booking
+requests page, which moves it to the Session's current time; Technical Support
+Staff re-save a flagged reservation. When that is the last outstanding
+arrangement, the Event enters Safety Review in the same transaction and the
+Safety Officer, Organiser and Coordinator are notified. No `safety_checks` row is
+created yet; E08-S06 adds the decision record.
+
 ## 15. Dynamic view — configured hold expiry and extensions (Week 9, C-99/C-124/C-125, T-84)
 
 ```mermaid
