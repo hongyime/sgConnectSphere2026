@@ -5,6 +5,7 @@ import type { Pool } from 'pg';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../src/modules/changeManagement/requests.js';
+import { reconfirmBooking } from '../src/modules/venueBooking/decisions.js';
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 
 async function fixture() {
@@ -37,10 +38,10 @@ async function previewToken(f: Fixture, id: string) {
   return result.preview;
 }
 
-async function booking(f: Fixture) {
+async function booking(f: Fixture, name = 'Preview Hall') {
   const venue = randomUUID(), staff = randomUUID();
   await f.pool.query("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic Venue Staff','venue_staff')", [staff, `${staff}@example.test`]);
-  await f.pool.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,'Preview Hall','Test',45,'00:00','23:59')", [venue]);
+  await f.pool.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,$2,'Test',45,'00:00','23:59')", [venue, name]);
   await f.pool.query('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [venue, staff]);
   const id = (await f.pool.query(`INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status)
     SELECT $1,id,$2,session_range,'confirmed' FROM sessions WHERE event_id=$1 RETURNING id`, [f.event, venue])).rows[0].id;
@@ -69,17 +70,24 @@ test('TC_E10S01_04: affected venue preview must be reviewed again after capacity
 
 test('TC_E10S01_04: outbox failure rolls back requested values, request status, flags and audits', () => run(async f => {
   const b = await booking(f);
+  await f.pool.query("UPDATE events SET status='safety_review' WHERE id=$1", [f.event]);
   const request = await f.submit({ expectedAttendance: 50, title: 'Atomic new name' });
   const preview = await previewToken(f, request.id);
   const audits = (await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count;
   await f.pool.query(`CREATE FUNCTION fail_apply_notice() RETURNS trigger LANGUAGE plpgsql AS $$
-    BEGIN RAISE EXCEPTION 'synthetic apply outbox failure'; END $$;
+    BEGIN
+      IF (SELECT title FROM notifications WHERE id=NEW.notification_id) = 'Change applied' THEN
+        RAISE EXCEPTION 'synthetic apply outbox failure';
+      END IF;
+      RETURN NEW;
+    END $$;
     CREATE TRIGGER fail_apply_notice BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION fail_apply_notice()`);
   await assert.rejects(decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
     { decision: 'approve', previewToken: preview.token }), /synthetic apply outbox failure/);
   const view = await listChangeRequests(f.pool, f.organiser, f.event);
   assert.equal(view.current.expectedAttendance, 40); assert.equal(view.current.title, 'Original');
   assert.equal(view.requests[0].status, 'pending');
+  assert.equal(view.event.status, 'safety_review', 'failed apply must roll back the lifecycle');
   assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].requires_reconfirmation, false);
   assert.equal((await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count, audits);
 }));
@@ -115,6 +123,7 @@ test('TC_E10S01_04: approved request path supports Safety Review while direct ed
   const preview = await previewToken(f, request.id);
   assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
     { decision: 'approve', previewToken: preview.token })).status, 'applied');
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'safety_review', 'structured no-impact change does not replan');
 }));
 
 test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic', () => run(async f => {
@@ -452,4 +461,36 @@ test('TC_E10S01_04: Event requirements do not overwrite individually authored mu
   assert.equal((await f.pool.query('SELECT layout_id FROM events WHERE id=$1', [f.event])).rows[0].layout_id, layout);
   assert.equal((await f.pool.query('SELECT layout_id FROM sessions WHERE id=$1', [first])).rows[0].layout_id, null);
   assert.equal((await f.pool.query('SELECT count(*) FROM sessions WHERE event_id=$1 AND layout_id IS NOT NULL', [f.event])).rows[0].count, '0');
+}));
+
+
+test('TC_E10S01_04: affected apply interrupts first Safety Review and reconfirmation requests a fresh SO check', () => run(async f => {
+  const b = await booking(f);
+  const second = await booking(f, 'Second Preview Hall');
+  const officer = randomUUID();
+  await f.pool.query("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic SO','safety_officer')", [officer, `${officer}@example.test`]);
+  await f.pool.query("UPDATE events SET status='safety_review',equipment_requirements='none_required' WHERE id=$1", [f.event]);
+  const request = await f.submit({ startAt: '2027-03-01T10:00:00Z' });
+  const preview = await previewToken(f, request.id);
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'safety_review', 'preview must not replan');
+  await decideChangeRequest(f.pool, f.coordinator, f.event, request.id, { decision: 'approve', previewToken: preview.token });
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'planning');
+  assert.equal((await f.pool.query('SELECT status,requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].status, 'confirmed');
+  const staff = { id: b.staff, role: 'venue_staff', isActive: true } as AuthenticatedUser;
+  assert.equal((await reconfirmBooking(f.pool, staff, b.id)).status, 200);
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'planning', 'wait for the last flagged booking');
+  assert.equal((await f.pool.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND title='Safety check needed'", [officer])).rows[0].count, '0');
+  const secondStaff = { id: second.staff, role: 'venue_staff', isActive: true } as AuthenticatedUser;
+  assert.equal((await reconfirmBooking(f.pool, secondStaff, second.id)).status, 200);
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'safety_review');
+  assert.equal((await f.pool.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND title='Safety check needed'", [officer])).rows[0].count, '1');
+  const history = (await f.pool.query("SELECT old_value,new_value FROM audit_logs WHERE event_id=$1 AND entity_type='event' AND field_changed='status' ORDER BY occurred_at,id", [f.event])).rows;
+  assert.deepEqual(history.map(row => [row.old_value,row.new_value]), [['safety_review','planning'],['planning','safety_review']]);
+}));
+
+test('TC_E10S01_04: safe-only apply leaves Safety Review unchanged', () => run(async f => {
+  await f.pool.query("UPDATE events SET status='safety_review' WHERE id=$1", [f.event]);
+  const request = await f.submit({ title: 'Safe new title' });
+  await f.decide(request.id);
+  assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'safety_review');
 }));

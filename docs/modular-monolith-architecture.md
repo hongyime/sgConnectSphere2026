@@ -195,3 +195,7 @@ writes, audit and any eligible in-app/email-outbox rows share the transaction;
 no live provider call runs in that transaction. The E11 cross-flow database
 suite is part of `backend`'s `test:db` command. See the 31 October E11 evidence
 audit for exact local/production/human delivery boundaries.
+
+### E10-S01 Safety Review interruption
+
+E10-S01 applies affected approved changes during Safety Review through the shared arrangement transaction, then uses the central lifecycle writer to return to Planning. The explicit change-request replan audit also qualifies a first Safety Review for automatic re-entry after readiness clears; ordinary never-reviewed Planning Events keep their existing submission path.
