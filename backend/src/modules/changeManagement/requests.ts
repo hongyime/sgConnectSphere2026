@@ -5,6 +5,8 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, requireOrganiser } from '../eventVisibility/service.js';
 import { recordEventDenial, requireCoordinator } from '../eventLifecycle/coordinatorAssignment.js';
+import { previewEventChangeWith } from './eventChange.js';
+import { updateEventInformationWithNotificationsWith } from '../eventNotifications/informationChange.js';
 
 // This allowlist is also the SQL identifier boundary. New fields require an
 // explicit schema/validation contract; never interpolate a client field name.
@@ -24,6 +26,17 @@ type Value = string | number | boolean | null | string[] | RegistrationDates;
 type Values = Partial<Record<Field, Value>>;
 const safeFields = new Set<Field>(['title', 'description', 'purpose']);
 export const WAITING_FOR_ARRANGEMENTS = 'Approved — waiting for the arrangement check';
+
+async function arrangementPreview(client: PoolClient, coordinator: AuthenticatedUser, event: Event, request: Request) {
+  const fields = request.requested_changes.fields;
+  const preview = await previewEventChangeWith(client, coordinator, event.id, { ...fields, confirmLateClose: true }, true);
+  const closesAt = fields.registrationDates === undefined ? event.registration_closes_at?.toISOString()
+    : (fields.registrationDates as RegistrationDates).closesAt;
+  const lateClose = !!closesAt && Date.parse(closesAt) > new Date((fields.startAt ?? event.starts_at) as string | Date).getTime();
+  // Reuse E10-S02's authoritative revision. Request permissions, status and
+  // changed-field snapshots are checked separately under Event -> request locks.
+  return { canApply: true as const, ...preview, lateClose, token: preview.revision };
+}
 
 type Event = {
   id: string; event_code: string; organiser_id: string; client_org_id: string;
@@ -213,7 +226,7 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
   identifier: string, requestId: string, body: unknown) {
   const coordinator = await requireCoordinator(pool, user, 'change_request_decide');
   const input = object(body);
-  if (!['approve', 'decline', 'apply'].includes(String(input.decision))) throw new AccessError(400, 'Choose approve, decline or apply.');
+  if (!['approve', 'decline', 'apply', 'preview'].includes(String(input.decision))) throw new AccessError(400, 'Choose approve, decline, apply or preview.');
   const reason = input.reason === undefined ? null : input.reason;
   if (reason !== null && (typeof reason !== 'string' || reason.trim().length > 4000)) throw new AccessError(400, 'Invalid decision reason.');
   return requestTransaction(pool, coordinator, identifier, async client => {
@@ -226,7 +239,8 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
     [event.id, requestId])).rows[0];
     if (!request) throw new AccessError(404, 'Change request not found.');
     const previous = request.status;
-    if (input.decision === 'apply' ? previous !== 'approved' : previous !== 'pending') {
+    if (input.decision === 'preview' ? !['pending', 'approved'].includes(previous)
+      : input.decision === 'apply' ? previous !== 'approved' : previous !== 'pending') {
       throw new AccessError(409, 'The request has already changed. Refresh before deciding.');
     }
     const stored = request.requested_changes;
@@ -240,7 +254,20 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
       }
     }
     const safe = input.decision !== 'decline' && Object.keys(stored.fields).every(key => safeFields.has(key as Field));
-    if (input.decision === 'apply' && !safe) throw new AccessError(409, WAITING_FOR_ARRANGEMENTS);
+    const preview = input.decision !== 'decline' && !safe ? await arrangementPreview(client, coordinator, event, request) : null;
+    if (input.decision === 'preview') return { ...request, preview };
+    const arrangementApply = !!preview?.canApply;
+    if (input.decision === 'apply' && !safe && !arrangementApply) throw new AccessError(409, WAITING_FOR_ARRANGEMENTS);
+    if (arrangementApply) {
+      if (input.previewToken !== preview.token) throw new AccessError(409, 'Preview the current affected arrangements before applying this request.');
+      if (preview.lateClose && input.confirmLateClose !== true) throw new AccessError(428, 'Confirm registration closing after the Event starts.');
+      await updateEventInformationWithNotificationsWith(client, coordinator, event.id,
+        { ...stored.fields, confirmLateClose: input.confirmLateClose === true }, { reviewed: preview.token }, request.requested_by);
+      if (stored.fields.title !== undefined) await client.query('UPDATE event_publications SET name=$2 WHERE event_id=$1', [event.id, stored.fields.title]);
+      if (stored.fields.startAt !== undefined || stored.fields.endAt !== undefined) await client.query(
+        `UPDATE event_publications SET starts_at=lower(e.event_range),ends_at=upper(e.event_range)
+         FROM events e WHERE event_publications.event_id=e.id AND e.id=$1`, [event.id]);
+    }
     if (safe) {
       const entries = Object.entries(stored.fields);
       await client.query(`UPDATE events SET ${entries.map(([key], index) => `${columns[key as Field]}=$${index + 2}`).join(',')}
@@ -255,7 +282,7 @@ export async function decideChangeRequest(pool: Pool, user: AuthenticatedUser | 
         VALUES ($1,'event',$2,$2,'Approved Change Applied',$3,$4,$5)`,
       [coordinator.id, event.id, key, String(stored.before[key as Field] ?? ''), String(value)]);
     }
-    const status = input.decision === 'decline' ? 'declined' : safe ? 'applied' : 'approved';
+    const status = input.decision === 'decline' ? 'declined' : safe || arrangementApply ? 'applied' : 'approved';
     const updated = (await client.query<Request>(`UPDATE change_requests SET status=$2::change_status,
       reviewed_by=$3,decision_reason=$4,reviewed_at=clock_timestamp() WHERE id=$1 RETURNING *`,
     [request.id, status, coordinator.id, typeof reason === 'string' ? reason.trim() : null])).rows[0]!;

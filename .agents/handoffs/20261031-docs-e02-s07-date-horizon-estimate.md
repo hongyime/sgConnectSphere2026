@@ -47,3 +47,14 @@ values (RELEASE 1 E14/G14, PRODUCT E20/G20), with styles/widths/dimensions
 preserved. The fresh-main baseline matched CAA 281026 exactly. Repository check
 passed 186 tooling tests. Review HTML rendered and visually inspected. No
 application tests run for this documentation-only proposal.
+
+## PR #388 conflict resolution — 31 October
+
+Merged main bda95edb normally. Resolved source-of-truth.md by retaining the
+CAA 311026 backlog reference and regenerated that workbook from the combined
+Markdown, incorporating main's latest E06 changes. A freshly generated main
+baseline differs only in the four intended E02-S07 cells (Release E14/G14,
+Product E20/G20); dimensions, styles and widths are preserved. Historical
+CAA 301026 remains unchanged. The three-point proposal and T-73 qualification
+are unchanged; no Jira status or estimate changes. Implementation is separately
+reviewable in #389; story-level acceptance remains open.

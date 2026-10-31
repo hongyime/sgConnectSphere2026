@@ -29,8 +29,18 @@ export const getChangeRequests = (identifier: string, signal?: AbortSignal) =>
   apiCall<ChangeRequestView>(endpoint(identifier), { signal }, 'Unable to load change requests.');
 export const submitChangeRequest = (identifier: string, description: string, changes: ChangeValues) =>
   apiCall<{ request: ChangeRequestRecord }>(endpoint(identifier), jsonRequest('POST', { description, changes }), 'Unable to send the change request.');
-export const decideChangeRequest = (identifier: string, requestId: string, decision: 'approve' | 'decline', reason: string) =>
+export type ChangePreview = { canApply: false; blockedFields: string[] } | {
+  canApply: true; token: string; lateClose: boolean;
+  impact: { affected: boolean; bookings: { id: string; venueName: string; reasons: string[] }[];
+    reservations: { id: string; equipmentName: string; reasons: string[] }[] };
+  overSubscription: { scope: string; registered: number; capacity: number }[];
+};
+export const previewChangeRequest = (identifier: string, requestId: string) =>
+  apiCall<{ request: ChangeRequestRecord & { preview: ChangePreview } }>(`${endpoint(identifier)}&requestId=${encodeURIComponent(requestId)}`,
+    jsonRequest('POST', { decision: 'preview' }), 'Unable to preview this request.');
+export const decideChangeRequest = (identifier: string, requestId: string, decision: 'approve' | 'decline' | 'apply', reason: string,
+  previewToken?: string, confirmLateClose = false) =>
   apiCall<{ request: ChangeRequestRecord }>(`${endpoint(identifier)}&requestId=${encodeURIComponent(requestId)}`,
-    jsonRequest('POST', { decision, reason }), 'Unable to record the decision.');
+    jsonRequest('POST', { decision, reason, ...(previewToken ? { previewToken, confirmLateClose } : {}) }), 'Unable to record the decision.');
 
 export const waitingMessage = 'Approved — waiting for the arrangement check';

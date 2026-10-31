@@ -362,6 +362,15 @@ E06-S06 and does not change E06-S03's multiple-venue semantics.
 - Occupancy uses half-open buffered intervals, so exact adjacency is allowed.
   Conflict checks remain per venue: the same event may hold or confirm
   overlapping bookings at different venues (C-67, T-68).
+- A refused hold or request gets the same Coordinator message, naming only the
+  other booking's occupied buffered window: "This venue is unavailable from
+  <start> to <end>, including setup and turnaround." It never names the other
+  event (T-102, 30 October 2026). Venue Staff approval refusals still identify
+  the conflicting booking.
+- `buffer_conflict` is not cleared when a rejection or withdrawal resolves the
+  conflict; it changes only at the next buffer edit. The Venue Staff decision
+  screen therefore blocks Approve only on a current buffered overlap, not on
+  the flag alone, and the server rechecks on approval (SCRUM-50).
 
 This decision creates no queue, status, schema or migration change. It does not
 rewrite migration 0016 or adopt migration 0021. The open-choice snapshot in #338
@@ -414,3 +423,18 @@ When Venue Staff approves the replacement, the transaction transfers an original
 The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_booking` and `booking_id` explicitly releases it only for its current assigned active Coordinator and only with a same-event linked Confirmed replacement not requiring reconfirmation. It audits the cancellation and notifies the original venue's assigned staff. Released retries do not duplicate effects. Closed Events refuse recovery. The existing same-origin/session handler is reused; no new serverless function or migration is needed.
 
 The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Lifting or shortening unavailability follows same-event replacement descendants through rejected attempts. An active descendant prevents restoring the original; a Released attempt ends that path. This preserves explicit original cancellation after a successful retry. Database integration tests exercise real E05-S06 loss, recovery approval, publication/notification timing and block lifting/editing. Human manual acceptance remains required.
+
+## Approved Event change requests and reconfirmation
+
+E10-S01 applies supported arrangement changes through E10-S02's shared save
+transaction. The preview revision must still match under the Event lock before
+bookings or equipment are flagged for reconfirmation. A stale preview rolls
+back the request decision and all related edits/notices. The request service
+sends the Organiser decision notice while the shared save sends responsible
+staff reconfirmation notices. Approval does not itself cancel bookings.
+
+Layout/accessibility continuation: changed Event requirements flag confirmed venue
+bookings for review (T-16), with explicit reasons. Equipment is unaffected by
+these requirements alone. The existing sole-Session layout trigger is retained;
+no individual multi-Session requirements are overwritten. Layout capacity uses
+the shared E09 warning calculation and never removes registered attendees.

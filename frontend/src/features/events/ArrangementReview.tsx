@@ -9,6 +9,8 @@ const TIME = 'date or time changed';
 function bookingReasons(booking: AffectedBooking) {
   return booking.reasons.map((reason: ImpactReason) => reason === 'time'
     ? TIME
+    : reason === 'layout' ? 'room layout changed'
+    : reason === 'accessibility' ? 'accessibility requirements changed'
     : `${booking.governingHeadcount} people for ${booking.capacity} places`).join('; ');
 }
 

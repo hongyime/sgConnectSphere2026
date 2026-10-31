@@ -20,6 +20,8 @@ A pull request that changes mapped code must also change at least one mapped
 doc, or carry the commit trailer `Docs-Impact: none — <reason>` in a commit
 body inside the PR range.
 
+The reason is mandatory: a bare `Docs-Impact: none` fails the guard.
+
 `scripts/doc_guard.py` is stdlib-only. It reads no environment variable and does
 not contact Jira or the network. The base ref or SHA is its first argument,
 defaulting to `origin/main`. It exits 1 on an unwaived rule hit and 2 when the

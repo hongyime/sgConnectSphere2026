@@ -5,6 +5,7 @@ import type { Pool } from 'pg';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../src/modules/changeManagement/requests.js';
+import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 
 async function fixture() {
   const f = await loginDatabase();
@@ -30,10 +31,91 @@ async function fixture() {
   return { ...f, event, organiser, coordinator, other, foreignCoordinator, submit, decide };
 }
 type Fixture = Awaited<ReturnType<typeof fixture>>;
+async function previewToken(f: Fixture, id: string) {
+  const result = await f.decide(id, 'preview');
+  assert.ok('preview' in result && result.preview?.canApply);
+  return result.preview;
+}
+
+async function booking(f: Fixture) {
+  const venue = randomUUID(), staff = randomUUID();
+  await f.pool.query("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic Venue Staff','venue_staff')", [staff, `${staff}@example.test`]);
+  await f.pool.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES($1,'Preview Hall','Test',45,'00:00','23:59')", [venue]);
+  await f.pool.query('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [venue, staff]);
+  const id = (await f.pool.query(`INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status)
+    SELECT $1,id,$2,session_range,'confirmed' FROM sessions WHERE event_id=$1 RETURNING id`, [f.event, venue])).rows[0].id;
+  return { id, venue, staff };
+}
 async function run(work: (f: Fixture) => Promise<void>) {
   const f = await fixture();
   try { await work(f); } finally { await f.close(); }
 }
+
+test('TC_E10S01_04: affected venue preview must be reviewed again after capacity changes; no preview side effects', () => run(async f => {
+  const b = await booking(f);
+  const request = await f.submit({ expectedAttendance: 50 });
+  const preview = await previewToken(f, request.id);
+  assert.equal(preview.impact.bookings[0].id, b.id);
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].requires_reconfirmation, false);
+  await f.pool.query('UPDATE venues SET max_capacity=49 WHERE id=$1', [b.venue]);
+  await assert.rejects(decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token }), /Preview the current/);
+  const refreshed = await previewToken(f, request.id);
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: refreshed.token })).status, 'applied');
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].requires_reconfirmation, true);
+  assert.equal((await f.pool.query('SELECT count(*) FROM notifications WHERE user_id=$1', [b.staff])).rows[0].count, '1');
+}));
+
+test('TC_E10S01_04: outbox failure rolls back requested values, request status, flags and audits', () => run(async f => {
+  const b = await booking(f);
+  const request = await f.submit({ expectedAttendance: 50, title: 'Atomic new name' });
+  const preview = await previewToken(f, request.id);
+  const audits = (await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count;
+  await f.pool.query(`CREATE FUNCTION fail_apply_notice() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN RAISE EXCEPTION 'synthetic apply outbox failure'; END $$;
+    CREATE TRIGGER fail_apply_notice BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION fail_apply_notice()`);
+  await assert.rejects(decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token }), /synthetic apply outbox failure/);
+  const view = await listChangeRequests(f.pool, f.organiser, f.event);
+  assert.equal(view.current.expectedAttendance, 40); assert.equal(view.current.title, 'Original');
+  assert.equal(view.requests[0].status, 'pending');
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].requires_reconfirmation, false);
+  assert.equal((await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count, audits);
+}));
+
+test('TC_E10S01_04: date application publishes dates and sends one staff notice and one Organiser decision', () => run(async f => {
+  const b = await booking(f);
+  await f.pool.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
+    VALUES($1,'Original','2027-03-01 09:00Z','2027-03-01 12:00Z','Preview Hall','Test')`, [f.event]);
+  const request = await f.submit({ startAt: '2027-03-01T10:00:00Z' });
+  const preview = await previewToken(f, request.id);
+  await decideChangeRequest(f.pool, f.coordinator, f.event, request.id, { decision: 'approve', previewToken: preview.token });
+  assert.equal((await f.pool.query('SELECT starts_at FROM event_publications WHERE event_id=$1', [f.event])).rows[0].starts_at.toISOString(), '2027-03-01T10:00:00.000Z');
+  for (const user of [b.staff, f.organiser.id]) assert.equal((await f.pool.query('SELECT count(*) FROM notifications WHERE user_id=$1', [user])).rows[0].count, '1');
+  await assert.rejects(f.decide(request.id), /already changed/);
+}));
+
+test('TC_E10S01_04: prior approved requests can apply; late registration closing needs explicit confirmation', () => run(async f => {
+  const request = await f.submit({ registrationDates: { opensAt: '2027-02-01T00:00:00Z', closesAt: '2027-03-01T10:00:00Z' }, waitlistEnabled: true });
+  await f.pool.query("UPDATE change_requests SET status='approved' WHERE id=$1", [request.id]);
+  const preview = await previewToken(f, request.id);
+  assert.equal(preview.lateClose, true);
+  await assert.rejects(decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'apply', previewToken: preview.token }), /Confirm registration closing/);
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'apply', previewToken: preview.token, confirmLateClose: true })).status, 'applied');
+  assert.equal((await listChangeRequests(f.pool, f.organiser, f.event)).current.waitlistEnabled, true);
+}));
+
+test('TC_E10S01_04: approved request path supports Safety Review while direct edits retain their existing restriction', () => run(async f => {
+  await f.pool.query("UPDATE events SET status='safety_review' WHERE id=$1", [f.event]);
+  await assert.rejects(updateEventInformationWithNotifications(f.pool, f.coordinator, f.event, { expectedAttendance: 50 }), /Only the assigned Coordinator/);
+  const request = await f.submit({ expectedAttendance: 50 });
+  const preview = await previewToken(f, request.id);
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token })).status, 'applied');
+}));
 
 test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: pending snapshot leaves Event unchanged; safe apply and outbox are atomic', () => run(async f => {
   await f.pool.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
@@ -99,13 +181,20 @@ test('TC_E10S01_05: decline leaves confirmed details unchanged and notifies requ
   assert.equal((await f.pool.query('SELECT count(*) FROM notification_deliveries')).rows[0].count, '2');
 }));
 
-test('TC_E10S01_04: arrangement changes are approved but never applied without E10-S02', () => run(async f => {
+test('TC_E10S01_04: arrangement preview rolls back; confirmation applies atomically through E10-S02', () => run(async f => {
   const request = await f.submit({ expectedAttendance: 50 });
-  assert.equal((await f.decide(request.id)).status, 'approved');
-  await assert.rejects(f.decide(request.id, 'apply'), /waiting for the arrangement check/);
+  await assert.rejects(f.decide(request.id), /Preview the current/);
+  const result = await f.decide(request.id, 'preview');
+  assert.ok('preview' in result && result.preview?.canApply);
+  assert.equal(result.status, 'pending');
   assert.equal((await listChangeRequests(f.pool, f.organiser, f.event)).current.expectedAttendance, 40);
+  assert.equal((await f.pool.query("SELECT count(*) FROM audit_logs WHERE action='Record updated'")).rows[0].count, '0');
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: result.preview.token })).status, 'applied');
+  assert.equal((await listChangeRequests(f.pool, f.organiser, f.event)).current.expectedAttendance, 50);
+  const stale = await f.submit({ expectedAttendance: 60 });
   await f.pool.query('UPDATE events SET expected_attendance=45 WHERE id=$1', [f.event]);
-  await assert.rejects(f.decide(request.id, 'apply'), /changed since submission/);
+  await assert.rejects(f.decide(stale.id, 'preview'), /changed since submission/);
 }));
 
 test('TC_E10S01_04: changed-field stale guard; unrelated fields do not block safe application', () => run(async f => {
@@ -188,13 +277,14 @@ test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: structured references/settings
   const view = await listChangeRequests(f.pool, f.organiser, f.event);
   assert.deepEqual(view.references, { layouts: [{ id: layout, label: 'Seminar' }], accessibility: [{ id: feature, label: 'Step-free' }] });
   assert.deepEqual(request.requested_changes.fields.accessibilityFeatureIds, [feature]);
-  assert.equal((await f.decide(request.id)).status, 'approved');
-  await assert.rejects(f.decide(request.id, 'apply'), /waiting for the arrangement check/);
+  const preview = await previewToken(f, request.id);
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token })).status, 'applied');
   const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
-  assert.equal(current.registrationEnabled, false);
-  assert.equal(current.layoutId, null);
-  assert.deepEqual(current.accessibilityFeatureIds, []);
-  assert.deepEqual(current.registrationDates, { opensAt: null, closesAt: null });
+  assert.equal(current.registrationEnabled, true);
+  assert.equal(current.layoutId, layout);
+  assert.deepEqual(current.accessibilityFeatureIds, [feature]);
+  assert.deepEqual(current.registrationDates, { opensAt: '2027-02-01T01:00:00.000Z', closesAt: '2027-02-28T10:00:00.000Z' });
 }));
 
 test('TC_E10S01_04: registration-window and accessibility changes make a pending request stale', () => run(async f => {
@@ -227,10 +317,30 @@ test('TC_E10S01_01: clearing existing settings is distinct from omitted fields',
     registrationDates: { opensAt: null, closesAt: null }, withdrawalDeadline: null });
   assert.equal(request.requested_changes.fields.registrationEnabled, false);
   assert.equal(request.requested_changes.fields.withdrawalDeadline, null);
-  assert.equal((await f.decide(request.id)).status, 'approved');
+  const preview = await previewToken(f, request.id);
+  assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token })).status, 'applied');
+  const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
+  assert.equal(current.registrationEnabled, false);
+  assert.equal(current.waitlistEnabled, false);
+  assert.deepEqual(current.registrationDates, { opensAt: null, closesAt: null });
+  assert.equal(current.withdrawalDeadline, null);
+}));
+
+test('TC_E10S01_04: approved registration enablement shares the preview revision and nullable-window validation', () => run(async f => {
+  const { previewEventChange } = await import('../src/modules/changeManagement/eventChange.js');
+  const fields = { registrationEnabled: true, registrationDates: { opensAt: null, closesAt: '2027-02-28T00:00:00Z' } };
+  const request = await f.submit(fields);
+  const preview = await previewToken(f, request.id);
+  assert.equal(preview.token, preview.revision);
+  await assert.rejects(updateEventInformationWithNotifications(f.pool, f.coordinator, f.event, fields), /valid opening and closing/);
+  await decideChangeRequest(f.pool, f.coordinator, f.event, request.id, { decision: 'approve', previewToken: preview.token });
   const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
   assert.equal(current.registrationEnabled, true);
-  assert.equal(current.withdrawalDeadline, '2027-02-28T00:00:00.000Z');
+  assert.deepEqual(current.registrationDates, { opensAt: null, closesAt: '2027-02-28T00:00:00.000Z' });
+  // Shared callers retain their previous direct-edit contract and revision shape.
+  const direct = await previewEventChange(f.pool, f.coordinator, f.event, { description: 'Direct preview' });
+  assert.match(direct.revision, /^[0-9a-f]{32}$/);
 }));
 
 
@@ -270,4 +380,76 @@ test('TC_E10S01_02: viewing requests does not block an Event writer while the re
     await writer.query('ROLLBACK'); writer.release(); resume(); await listing;
   }
   assert.equal((await f.pool.query('SELECT title FROM events WHERE id=$1', [f.event])).rows[0].title, 'Concurrent edit');
+}));
+
+
+test('TC_E10S01_04: layout/accessibility preview rolls back, then applies atomically with venue flags and capacity warning', () => run(async f => {
+  const b = await booking(f);
+  const layout = randomUUID(), feature = randomUUID();
+  await f.pool.query("INSERT INTO room_layouts(id,code,label) VALUES($1,'smaller_layout','Seminar')", [layout]);
+  await f.pool.query('INSERT INTO venue_supported_layouts(venue_id,layout_id,capacity) VALUES($1,$2,20)', [b.venue, layout]);
+  await f.pool.query("INSERT INTO accessibility_features(id,code,label) VALUES($1,'layout_step_free','Step free')", [feature]);
+  const session = (await f.pool.query('SELECT id FROM sessions WHERE event_id=$1', [f.event])).rows[0].id;
+  await f.pool.query(`WITH people AS (
+    INSERT INTO users(email,password_hash,full_name,role)
+    SELECT 'layout-' || gen_random_uuid() || '@example.test','synthetic','Attendee','attendee' FROM generate_series(1,21) RETURNING id),
+    registrations AS (
+    INSERT INTO event_registrations(event_id,attendee_id,status) SELECT $1,id,'registered' FROM people RETURNING id)
+    INSERT INTO event_registration_sessions(registration_id,event_id,session_id) SELECT id,$1,$2 FROM registrations`, [f.event, session]);
+  const request = await f.submit({ layoutId: layout, accessibilityFeatureIds: [feature], title: 'Changed with requirements' });
+  const preview = await previewToken(f, request.id);
+  assert.deepEqual(preview.impact.bookings[0].reasons, ['layout', 'accessibility', 'capacity']);
+  assert.equal(preview.impact.bookings[0].capacity, 20);
+  assert.deepEqual(preview.overSubscription.map(over => [over.scope, over.registered, over.capacity]), [['session',21,20],['event',21,20]]);
+  assert.equal((await listChangeRequests(f.pool, f.organiser, f.event)).current.layoutId, null);
+  assert.equal((await f.pool.query('SELECT count(*) FROM event_accessibility_needs WHERE event_id=$1', [f.event])).rows[0].count, '0');
+  const audits = (await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count;
+  await f.pool.query(`CREATE FUNCTION fail_layout_notice() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'layout outbox failure'; END $$;
+    CREATE TRIGGER fail_layout_notice BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION fail_layout_notice()`);
+  await assert.rejects(decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
+    { decision: 'approve', previewToken: preview.token }), /layout outbox failure/);
+  assert.equal((await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count, audits);
+  const unchanged = await listChangeRequests(f.pool, f.organiser, f.event);
+  assert.equal(unchanged.requests[0].status, 'pending');
+  assert.equal(unchanged.current.title, 'Original');
+  assert.deepEqual(unchanged.current.accessibilityFeatureIds, []);
+  await f.pool.query('DROP TRIGGER fail_layout_notice ON notification_deliveries');
+  await decideChangeRequest(f.pool, f.coordinator, f.event, request.id, { decision: 'approve', previewToken: preview.token });
+  assert.equal((await f.pool.query("SELECT count(*) FROM event_registrations WHERE event_id=$1 AND status='registered'", [f.event])).rows[0].count, '21');
+  assert.equal((await f.pool.query('SELECT layout_id FROM sessions WHERE event_id=$1', [f.event])).rows[0].layout_id, layout);
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1', [b.id])).rows[0].requires_reconfirmation, true);
+  assert.equal((await f.pool.query('SELECT count(*) FROM notifications WHERE user_id=$1', [b.staff])).rows[0].count, '1');
+  const clear = await f.submit({ layoutId: null, accessibilityFeatureIds: [] });
+  const clearing = await previewToken(f, clear.id);
+  await decideChangeRequest(f.pool, f.coordinator, f.event, clear.id, { decision: 'approve', previewToken: clearing.token });
+  const current = (await listChangeRequests(f.pool, f.organiser, f.event)).current;
+  assert.equal(current.layoutId, null); assert.deepEqual(current.accessibilityFeatureIds, []);
+}));
+
+
+test('TC_E10S01_04: the trusted primitive validates structured values and does not open direct-edit access', () => run(async f => {
+  const { updateEventInformation } = await import('../src/modules/eventVisibility/service.js');
+  const q = <T,>(sql: string, values?: unknown[]) => f.pool.query<T & import('pg').QueryResultRow>(sql, values);
+  for (const changes of [{ layoutId: 'bad' }, { accessibilityFeatureIds: ['bad'] }, { accessibilityFeatureIds: 'bad' },
+    { layoutId: randomUUID() }, { accessibilityFeatureIds: [randomUUID()] }]) {
+    await assert.rejects(updateEventInformation(q, f.coordinator, f.event, changes, true), /valid|no longer exists/);
+  }
+  await assert.rejects(updateEventInformation(q, f.coordinator, f.event, { layoutId: null }), /No editable/);
+  assert.deepEqual((await listChangeRequests(f.pool, f.organiser, f.event)).current.accessibilityFeatureIds, []);
+}));
+
+
+test('TC_E10S01_04: Event requirements do not overwrite individually authored multi-Session requirements', () => run(async f => {
+  const b = await booking(f);
+  const layout = randomUUID(), first = (await f.pool.query('SELECT id FROM sessions WHERE event_id=$1', [f.event])).rows[0].id;
+  await f.pool.query("INSERT INTO room_layouts(id,code,label) VALUES($1,'multi_change','Seminar')", [layout]);
+  await f.pool.query(`INSERT INTO sessions(event_id,session_range,expected_attendance)
+    VALUES($1,tstzrange('2027-03-01 10:00Z','2027-03-01 11:00Z','[)'),10)`, [f.event]);
+  const request = await f.submit({ layoutId: layout });
+  const preview = await previewToken(f, request.id);
+  assert.deepEqual(preview.impact.bookings.map(item => item.id), [b.id]);
+  await decideChangeRequest(f.pool, f.coordinator, f.event, request.id, { decision: 'approve', previewToken: preview.token });
+  assert.equal((await f.pool.query('SELECT layout_id FROM events WHERE id=$1', [f.event])).rows[0].layout_id, layout);
+  assert.equal((await f.pool.query('SELECT layout_id FROM sessions WHERE id=$1', [first])).rows[0].layout_id, null);
+  assert.equal((await f.pool.query('SELECT count(*) FROM sessions WHERE event_id=$1 AND layout_id IS NOT NULL', [f.event])).rows[0].count, '0');
 }));

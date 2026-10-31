@@ -3,6 +3,8 @@ import type { AuthenticatedUser } from '../../src/modules/accessControl/types.js
 import { loginDatabase } from './loginDatabase.js';
 import { submitBooking } from '../../src/modules/venueBooking/bookingSubmission.js';
 import { convertHold, placeHold } from '../../src/modules/venueBooking/holds.js';
+import { withdrawBooking } from '../../src/modules/venueBooking/bookingWithdrawal.js';
+import { updateVenue } from '../../src/modules/venueBooking/catalogue.js';
 
 export type BookingPeriod = Readonly<{ starts_at: string; ends_at: string }>;
 
@@ -46,12 +48,12 @@ export async function venueClaimPolicyFixture() {
     isActive: true, failedLoginCount: 0,
   };
 
-  async function createEvent(eventCoordinator: AuthenticatedUser = coordinator) {
+  async function createEvent(eventCoordinator: AuthenticatedUser = coordinator, title = 'Synthetic Claim Policy Event') {
     const id = randomUUID();
     const code = `EVT-${id.slice(0, 8)}`;
     await database.pool.query(`INSERT INTO events(id,event_code,organiser_id,coordinator_id,client_org_id,title,status,event_range,expected_attendance)
-      VALUES($1,$2,$3,$4,$5,'Synthetic Claim Policy Event','approved','[2027-01-01T00:00:00+08:00,2028-01-01T00:00:00+08:00)',50)`,
-    [id, code, ids.organiser, eventCoordinator.id, ids.org]);
+      VALUES($1,$2,$3,$4,$5,$6,'approved','[2027-01-01T00:00:00+08:00,2028-01-01T00:00:00+08:00)',50)`,
+    [id, code, ids.organiser, eventCoordinator.id, ids.org, title]);
     return id;
   }
 
@@ -78,9 +80,36 @@ export async function venueClaimPolicyFixture() {
     return convertHold(database.pool, coordinator, { booking_id: bookingId });
   }
 
+  function withdraw(bookingId: string) {
+    return withdrawBooking(database.pool, coordinator, { booking_id: bookingId });
+  }
+
+  // Raw buffer write: skips the C-109 flagging that a Venue Staff edit runs.
+  // Use editBuffers when a case reads buffer_conflict afterwards.
   async function setBuffers(venueId: string, setupMinutes: number, turnaroundMinutes: number) {
     await database.pool.query('UPDATE venues SET setup_time_minutes=$2,turnaround_time_minutes=$3 WHERE id=$1',
       [venueId, setupMinutes, turnaroundMinutes]);
+  }
+
+  // The real Venue Staff edit, which retains and flags C-109 conflicts. The
+  // seeded venues are bare rows, so the edit also supplies the details a
+  // Venue Staff save requires.
+  async function editBuffers(venueId: string, setupMinutes: number, turnaroundMinutes: number) {
+    const result = await updateVenue(database.pool, staff, venueId, {
+      opens_at: '08:00', closes_at: '22:00',
+      facilities: ['Stage'], accessibility_features: ['Wheelchair Access'],
+      supported_layouts: [{ label: 'Theatre', capacity: 200 }],
+      setup_time_minutes: setupMinutes, turnaround_time_minutes: turnaroundMinutes,
+    });
+    if (result.status !== 200) throw new Error(`Venue edit refused: ${JSON.stringify(result.body)}`);
+    return result;
+  }
+
+  async function bookingRows(eventIds: readonly string[]) {
+    const rows = await database.pool.query<{ event_id: string; status: string; buffer_conflict: boolean }>(
+      'SELECT event_id,status::text AS status,buffer_conflict FROM venue_bookings WHERE event_id=ANY($1::uuid[])', [eventIds]);
+    return eventIds.flatMap(eventId => rows.rows.filter(row => row.event_id === eventId)
+      .map(({ status, buffer_conflict }) => ({ status, buffer_conflict })));
   }
 
   async function effectSnapshot() {
@@ -102,6 +131,6 @@ export async function venueClaimPolicyFixture() {
 
   return {
     ...database, ids, coordinator, otherCoordinator, staff, createEvent, period, request,
-    requestAsOtherCoordinator, hold, convert, setBuffers, effectSnapshot,
+    requestAsOtherCoordinator, hold, convert, withdraw, setBuffers, editBuffers, bookingRows, effectSnapshot,
   };
 }
