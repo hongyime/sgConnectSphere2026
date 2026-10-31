@@ -315,7 +315,7 @@ test('TC_E09S02_04 - a full event with its waiting list on offers the list along
   expect(screen.queryByText('A Session you chose is full, so your request goes to the organiser to review.')).not.toBeInTheDocument();
 });
 
-test('a full event with its waiting list off offers only a request for review, on the event page too', async () => {
+test('TC_E09S04_04 - a full event with its waiting list off offers only a request for review, on the event page too', async () => {
   renderAt('/attendee/discover/EVT-9001', {
     [FORM_URL]: { body: form({ capacity: { eventFull: true, waitlistEnabled: false, fullSessionIds: ['s-a', 's-b'] } }) },
   });
