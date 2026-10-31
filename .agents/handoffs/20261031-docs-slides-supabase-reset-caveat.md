@@ -21,8 +21,8 @@ Goal: Follow up merged PR #374 by updating slide 6 to distinguish Claude's recor
 ## Branch and PR
 
 - The slide change was committed as `fd6fe4b1` and pushed on `docs/slides-supabase-reset-caveat`.
-- Draft follow-up PR #387 is open against `main`; its required checks are running and independent review is required.
+- Follow-up PR #387 is open and ready for review against `main`. It is mergeable; merge still requires green current-head checks and independent teammate approval.
 
 ## Next steps
 
-- Wait for green checks and teammate review on the latest PR head. Keep it in draft until those gates are satisfied.
+- Confirm current-head checks and await independent teammate approval before merge.
