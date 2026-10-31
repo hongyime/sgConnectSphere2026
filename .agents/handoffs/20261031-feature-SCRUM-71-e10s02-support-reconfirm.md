@@ -134,7 +134,12 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 
 ## Next step
 
-Task 10: PRs within T-101 (two open per author, 40 files each): the migration
-PR first (merged and applied before the code PR), then the code split. Jira:
-check SCRUM-71's description matches Scenarios 3, 5 and 6 (the Jira connector
-was unavailable on 31 October).
+Task 10: #396 (migration 0026) and #397 (backlog, T-104, cases) merged. The
+rest is split within T-101 (40 files): the code PR from
+`feature/SCRUM-244-e10s02-support-code` (40 files, base `main`) and the
+evidence PR from this branch (run records, screenshots, click-through guide
+and SQL, this handoff, the API-changes note; base the code branch, retargeted
+to `main` when it merges). The code PR merges only once the deploy owner has
+applied 0026. Runs on the code head `8cc4317`: records `20261031-233000` to
+`20261031-234500`. SCRUM-71's description was refreshed on 31 October; move
+SCRUM-244 on when both PRs merge.
