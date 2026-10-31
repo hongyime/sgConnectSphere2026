@@ -323,6 +323,7 @@ erDiagram
         text support_description
         tstzrange support_range
         support_status status "open, staffed, cancelled"
+        boolean requires_reconfirmation
         uuid requested_by FK
         timestamptz created_at
     }
@@ -490,6 +491,11 @@ erDiagram
   booking stays primary while Conflicting, keeping the original venue (E10-S05)
   and restoring it as it was; readers that show or publish the venue still require
   Confirmed. The 0016 write guard ignores lifted unavailability.
+- Migration `0026_support_reconfirmation.sql` adds `requires_reconfirmation`
+  (default false) to `TECH_SUPPORT_REQUESTS`, the flag venue bookings and
+  equipment reservations already carry, so an event date/time change can flag
+  staffed Technical Support for reconfirmation (E10-S02, T-103). The reason is
+  in the audit log, as for bookings and equipment.
 - Registration remains one row per attendee/Event. A partial unique constraint
   allows only one active `EVENT_REGISTRATIONS` row per account/Event (`withdrawn`
   and Organiser-`rejected` rows are not active, so the account may register
