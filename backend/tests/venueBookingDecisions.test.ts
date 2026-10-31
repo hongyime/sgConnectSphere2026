@@ -10,7 +10,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool } from 'pg';
 import {
-  decideBooking, getBooking, listPendingBookings, REASON_MAX, toBooking, validateDecision,
+  decideBooking, getBooking, listBookingsToReconfirm, listPendingBookings, NOTHING_TO_RECONFIRM, ONLY_CONFIRMED_RECONFIRMED,
+  REASON_MAX, reconfirmBooking, toBooking, validateDecision,
 } from '../src/modules/venueBooking/decisions.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -406,4 +407,130 @@ test('a booking that disappears before its venue is locked is not found', async 
   const result = await decideBooking(pool, staff, bookingId, { decision: 'approve' });
   assert.equal(result.status, 404);
   assert.equal(has(calls, 'FOR NO KEY UPDATE'), false);
+});
+
+// E08-S04 Scenario 4 (SCRUM-242): Venue Staff reconfirm a flagged Confirmed
+// booking. The real locking, range and guard behaviour is proved in
+// venueReconfirmation.integration.test.ts; these cover every branch.
+const newStart = new Date('2027-01-20T02:00:00Z');
+const newEnd = new Date('2027-01-20T04:00:00Z');
+
+function reconfirmDatabase(overrides: Record<string, unknown> = {}, script: Script = () => undefined, eventStatus = 'planning') {
+  return fakeDatabase((sql, values) => {
+    const scripted = script(sql, values);
+    if (scripted !== undefined) return scripted;
+    if (sql.startsWith('SELECT status FROM events')) return [{ status: eventStatus }];
+    if (sql.includes('FOR UPDATE OF vb')) return [bookingRow({ status: 'confirmed', requires_reconfirmation: true, ...overrides })];
+    if (sql.includes('COALESCE(s.session_range, e.event_range)')) return (values?.[0] as string[]).map(id => ({ id, starts_at: newStart, ends_at: newEnd }));
+    if (sql.startsWith('SELECT full_name FROM users')) return [{ full_name: 'Venue Staff A' }];
+    return undefined;
+  });
+}
+
+test('reconfirming moves a flagged booking to its Session time, clears the flag, logs it and tells the Coordinator', async () => {
+  const db = reconfirmDatabase();
+  const result = await reconfirmBooking(db.pool, staff, bookingId);
+  assert.equal(result.status, 200);
+  assert.equal((result.body as { coordinatorNotified: boolean }).coordinatorNotified, true);
+  const update = db.calls.find(call => call.sql.startsWith('UPDATE venue_bookings SET booking_range'));
+  assert.deepEqual(update?.values, [bookingId, newStart, newEnd]);
+  assert.match(update!.sql, /requires_reconfirmation = false/);
+  const clash = db.calls.find(call => call.sql.includes('occupied_window(tstzrange($3, $4'));
+  assert.deepEqual(clash?.values?.slice(2), [newStart, newEnd], 'the clash check uses the new time, not the old one');
+  const audit = db.calls.find(call => call.sql.includes("'Booking Reconfirmed'"));
+  assert.deepEqual(audit?.values, [staff.id, bookingId, bookingRow().event_id]);
+  const notice = db.calls.find(call => call.sql.includes('INSERT INTO notifications'));
+  assert.ok(notice?.values?.some(value => value === 'Venue booking reconfirmed'));
+  assert.ok(notice?.values?.some(value => typeof value === 'string' && value.startsWith('Venue Staff A reconfirmed Small Room for "Product Expo 2026"')));
+  assert.equal(has(db.calls, 'COMMIT'), true);
+});
+
+test('reconfirming with no assigned Coordinator still clears the flag and tells nobody', async () => {
+  const db = reconfirmDatabase({ coordinator_id: null });
+  const result = await reconfirmBooking(db.pool, staff, bookingId);
+  assert.equal(result.status, 200);
+  assert.equal((result.body as { coordinatorNotified: boolean }).coordinatorNotified, false);
+  assert.equal(has(db.calls, 'INSERT INTO notifications'), false);
+});
+
+test('only Venue Staff reconfirm, and the refusal is recorded', async () => {
+  const db = reconfirmDatabase();
+  await assert.rejects(reconfirmBooking(db.pool, coordinator, bookingId), { status: 403 });
+  assert.equal(has(db.calls, "'Access Denied', 'venue_bookings'"), true);
+  assert.equal(has(db.calls, 'UPDATE venue_bookings'), false);
+  await assert.rejects(reconfirmBooking(db.pool, undefined, bookingId), { status: 401 });
+});
+
+test('reconfirming needs a booking id', async () => {
+  for (const id of [undefined, 42, 'not-a-uuid']) {
+    const result = await reconfirmBooking(reconfirmDatabase().pool, staff, id);
+    assert.equal(result.status, 400);
+  }
+});
+
+test('reconfirming refuses a missing, unconfirmed or unflagged booking, or a closed event, and changes nothing', async () => {
+  const cases: [string, ReturnType<typeof reconfirmDatabase>, number, string][] = [
+    ['missing booking', reconfirmDatabase({}, sql => sql.startsWith('SELECT venue_id, event_id') ? [] : undefined), 404, 'Booking not found.'],
+    ['missing after lock', reconfirmDatabase({}, sql => sql.includes('FOR UPDATE OF vb') ? [] : undefined), 404, 'Booking not found.'],
+    ['pending', reconfirmDatabase({ status: 'pending' }), 409, ONLY_CONFIRMED_RECONFIRMED],
+    ['not flagged', reconfirmDatabase({ requires_reconfirmation: false }), 409, NOTHING_TO_RECONFIRM],
+    ['cancelled event', reconfirmDatabase({}, () => undefined, 'cancelled'), 409, 'This event has been cancelled, so its booking requests can no longer be decided.'],
+  ];
+  for (const [name, db, status, error] of cases) {
+    const result = await reconfirmBooking(db.pool, staff, bookingId);
+    assert.deepEqual([result.status, (result.body as { error: string }).error], [status, error], name);
+    assert.equal(has(db.calls, 'UPDATE venue_bookings'), false, name);
+  }
+});
+
+test('reconfirming is refused when the new time clashes with another booking or a block', async () => {
+  const booking = reconfirmDatabase({}, sql => sql.includes('occupied_window(vb.booking_range') && sql.includes('LIMIT 1') && !sql.includes('venue_blocks')
+    ? [{ id: 'other', status: 'confirmed', event_code: 'EVT-9', event_title: 'Gala', starts_at: newStart, ends_at: newEnd, occupied_start: newStart, occupied_end: newEnd }]
+    : undefined);
+  const clashed = await reconfirmBooking(booking.pool, staff, bookingId);
+  assert.equal(clashed.status, 409);
+  assert.match((clashed.body as { error: string }).error, /^This can't be reconfirmed: with setup and turnaround time it overlaps the confirmed booking for "EVT-9 Gala"/);
+  assert.equal(has(booking.calls, 'UPDATE venue_bookings'), false);
+
+  const block = reconfirmDatabase({}, sql => sql.includes('FROM venue_blocks') ? [{ reason: 'Roof repair', starts_at: newStart, ends_at: null }] : undefined);
+  const blocked = await reconfirmBooking(block.pool, staff, bookingId);
+  assert.equal(blocked.status, 409);
+  assert.match((blocked.body as { error: string }).error, /^This can't be reconfirmed: Small Room is blocked for "Roof repair"/);
+});
+
+test('reconfirming that loses a race to the 0016 guard is a 409, not a server error', async () => {
+  const guard = Object.assign(new Error('exclusion'), { code: '23P01' });
+  const db = reconfirmDatabase({}, sql => { if (sql.startsWith('UPDATE venue_bookings SET booking_range')) throw guard; return undefined; });
+  await assert.rejects(reconfirmBooking(db.pool, staff, bookingId), { status: 409 });
+  assert.equal(has(db.calls, 'ROLLBACK'), true);
+  const other = Object.assign(new Error('boom'), { code: 'XX000' });
+  const failing = reconfirmDatabase({}, sql => { if (sql.startsWith('UPDATE venue_bookings SET booking_range')) throw other; return undefined; });
+  await assert.rejects(reconfirmBooking(failing.pool, staff, bookingId), other);
+});
+
+test('reconfirming rechecks the staff account like a decision', async () => {
+  const db = reconfirmDatabase({}, sql => sql.includes('FOR SHARE NOWAIT') ? [] : undefined);
+  await assert.rejects(reconfirmBooking(db.pool, staff, bookingId), { status: 403 });
+  assert.equal(has(db.calls, 'UPDATE venue_bookings'), false);
+});
+
+test('the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events', async () => {
+  const db = fakeDatabase((sql, values) => sql.includes('vb.requires_reconfirmation AND')
+    ? [bookingRow({ status: 'confirmed', requires_reconfirmation: true })]
+    : sql.includes('COALESCE(s.session_range, e.event_range)') ? (values?.[0] as string[]).map(id => ({ id, starts_at: newStart, ends_at: newEnd })) : undefined);
+  const listed = await listBookingsToReconfirm(db.query, staff);
+  assert.deepEqual(listed.bookings.map(booking => [booking.id, booking.status, booking.requiresReconfirmation]), [[bookingId, 'confirmed', true]]);
+  assert.deepEqual(listed.bookings[0]!.reconfirmFor, { startsAt: newStart.toISOString(), endsAt: newEnd.toISOString() },
+    'each row says where the booking would move');
+  const sql = db.calls.find(call => call.sql.includes('vb.requires_reconfirmation AND'))!.sql;
+  assert.match(sql, /vb\.status = 'confirmed'/);
+  assert.match(sql, /e\.status NOT IN \('completed', 'cancelled'\)/);
+  await assert.rejects(listBookingsToReconfirm(db.query, coordinator), { status: 403 });
+});
+
+test('a reconfirmation notice falls back to "Venue Staff" when the staff name is missing', async () => {
+  const db = reconfirmDatabase({}, sql => sql.startsWith('SELECT full_name FROM users') ? [] : undefined);
+  assert.equal((await reconfirmBooking(db.pool, staff, bookingId)).status, 200);
+  const notice = db.calls.find(call => call.sql.includes('INSERT INTO notifications'));
+  assert.ok(notice?.values?.some(value => typeof value === 'string' && value.startsWith('Venue Staff reconfirmed Small Room')));
 });

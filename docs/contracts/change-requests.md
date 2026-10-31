@@ -258,6 +258,9 @@ the integration increment above):
 - No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
   of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
 - The Coordinator's preview screen is the frontend increment (SCRUM-237, PR #380).
+- Closed by E08-S04 (SCRUM-242, 31 October): Venue Staff now clear a booking's
+  `requires_reconfirmation` by reconfirming it (`docs/contracts/venue-bookings.md`),
+  the follow-up raised on #376. Equipment was already cleared by re-reserving (E07-S04).
 
 ## Refused-edit handoff (SCRUM-205)
 

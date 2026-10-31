@@ -3,6 +3,7 @@
 // record (docs/plans/scrum-54-implementation-status.md).
 import type { Pool, PoolClient } from 'pg';
 import { inTransaction } from '../../database/pool.js';
+import { enterSafetyReviewIfReady } from '../eventReadiness/autoSafetyReview.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
@@ -382,7 +383,14 @@ async function run(
       body: { error: 'validation_failed', errors: valid.errors },
     };
   const input = valid.input;
-  return inTransaction(database, (client) => work(client, actor, input));
+  return inTransaction(database, async (client) => {
+    const result = await work(client, actor, input);
+    // E08-S04 Scenario 4: reserving or re-reserving can be a reverted
+    // event's last arrangement; releasing never is.
+    if (result.status < 300 && action !== 'release')
+      result.body.enteredSafetyReview = await enterSafetyReviewIfReady(client, identifier, actor.id);
+    return result;
+  });
 }
 
 export function reserveEquipment(

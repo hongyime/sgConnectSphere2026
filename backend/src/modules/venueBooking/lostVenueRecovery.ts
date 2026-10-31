@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError } from '../eventVisibility/service.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
+import { enterSafetyReviewIfReady } from '../eventReadiness/autoSafetyReview.js';
 
 // The Event lock held by callers serializes this chain with submission/decisions.
 // Keep rejected rows and T-96's unique predecessor slot: retries extend the chain.
@@ -127,7 +128,10 @@ export async function cancelLostVenueBooking(
         changeId: audit.id, occurredAt: audit.occurred_at, actorId: user.id, before: audience, after: audience,
         change: { kind: 'lost_venue_cancelled' },
       });
-      return { status: 200, body: { booking: { id, status: 'released' }, replayed: false } };
+      // E08-S04 Scenario 4 (SCRUM-242): a replacement must already be confirmed,
+      // so releasing the lost booking is the last venue step after a venue loss.
+      const enteredSafetyReview = await enterSafetyReviewIfReady(client, event.id, user.id);
+      return { status: 200, body: { booking: { id, status: 'released' }, replayed: false, enteredSafetyReview } };
     });
   } catch (error) {
     if ((error as { code?: string }).code === '55P03') {

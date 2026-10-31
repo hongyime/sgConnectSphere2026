@@ -13,6 +13,7 @@ import { decideBooking, getBooking, listPendingBookings, type BookingRequest, ty
 import { getVenue, listVenues } from './venueApi';
 import { bookingCalendarRange, detectBookingConflict } from './conflictDetection';
 import { getVenueCalendar } from './venueCalendarApi';
+import { BookingsToReconfirm } from './BookingReconfirmation';
 
 const QUEUE = '/venue/bookings';
 const bookingLink = (booking: BookingRequest) => `${QUEUE}/${encodeURIComponent(booking.id)}`;
@@ -61,6 +62,7 @@ export function BookingRequests() {
           ]}
         />
       ) : null}
+      <BookingsToReconfirm />
     </PageLayout>
   );
 }
