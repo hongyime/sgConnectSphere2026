@@ -35,3 +35,11 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
   regenerated tc-coverage.md to resolve its sole generated-file conflict.
   Fresh combined-tree units: 643 backend passes/1 database-only skip,
   749 frontend passes, both TypeScript checks passed.
+
+- Implementation PR #389 is Ready for review at 0c5082ac, with the PostPlan
+  linked in its top-level comment. Jira comment 10398 links delivery and
+  remaining acceptance; status remains In Progress and estimate unset.
+- Hosted doc guard exposed its broad Shared contracts mapping: any backend
+  module requires venue-bookings.md even for Event-only validation. Use the
+  documented Docs-Impact waiver: Event date contract/API/architecture/frontend
+  docs are updated; this increment does not change venue-booking semantics.
