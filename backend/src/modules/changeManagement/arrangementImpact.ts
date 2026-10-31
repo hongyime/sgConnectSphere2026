@@ -20,7 +20,8 @@ export type ArrangementSnapshot = {
 export type ImpactReason = 'time' | 'capacity' | 'layout' | 'accessibility';
 export type AffectedBooking = { id: string; sessionId: string | null; venueId: string; venueName: string; reasons: ImpactReason[]; governingHeadcount: number | null; capacity: number };
 export type AffectedReservation = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string; reasons: ImpactReason[] };
-export type AffectedSupport = SupportState & { reasons: ImpactReason[] };
+// shiftMs: how far the request moves when reconfirmed, keeping its length.
+export type AffectedSupport = SupportState & { reasons: ImpactReason[]; shiftMs: number };
 export type ArrangementImpact = { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[]; supports: AffectedSupport[] };
 
 // T-78/T-79: a booking's own headcount governs; without one, its Session's
@@ -71,12 +72,18 @@ export function assessArrangementImpact(before: ArrangementSnapshot, after: Arra
     .filter(reservation => moved(reservation.sessionId))
     .map(reservation => ({ ...reservation, reasons: ['time'] }));
   // T-103: support requests keep their own window (T-79), not a Session's. An
-  // Event-wide change flags every staffed request; a Session change flags
-  // those overlapping the Session's previous time (touching ends do not overlap).
+  // Event-wide change flags every staffed request and moves it as far as the
+  // Event start moved; a Session change flags those overlapping the Session's
+  // previous time (touching ends do not overlap) and moves them as far as that
+  // Session's start moved, the earliest such Session when several did (Le Xin,
+  // 31 Oct). Sessions are read in time order.
+  const shift = (from: string, to: string) => Date.parse(to) - Date.parse(from);
   const movedSessions = before.sessions.filter(session => moved(session.id));
-  const supports: AffectedSupport[] = (after.supports ?? [])
-    .filter(support => eventMoved || movedSessions.some(session => support.startsAt < session.endsAt && session.startsAt < support.endsAt))
-    .map(support => ({ ...support, reasons: ['time'] }));
+  const supports: AffectedSupport[] = (after.supports ?? []).flatMap(support => {
+    if (eventMoved) return [{ ...support, reasons: ['time'], shiftMs: shift(before.event.startsAt, after.event.startsAt) }];
+    const session = movedSessions.find(was => support.startsAt < was.endsAt && was.startsAt < support.endsAt);
+    return session ? [{ ...support, reasons: ['time'], shiftMs: shift(session.startsAt, current.get(session.id)!.startsAt) }] : [];
+  });
   return { affected: bookings.length > 0 || reservations.length > 0 || supports.length > 0, bookings, reservations, supports };
 }
 

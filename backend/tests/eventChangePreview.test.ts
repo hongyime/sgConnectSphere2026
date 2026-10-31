@@ -70,13 +70,14 @@ test('applyArrangementImpact flags each affected arrangement and logs why, once 
     affected: true,
     bookings: [{ id: 'booking-a', sessionId: 'session-a', venueId: 'hall', venueName: 'Riverside Hall', reasons: ['time', 'capacity'], governingHeadcount: 250, capacity: 200 }],
     reservations: [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] }],
-    supports: [{ id: 'support-a', description: 'Sound desk', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z', reasons: ['time'] }],
+    supports: [{ id: 'support-a', description: 'Sound desk', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z', reasons: ['time'], shiftMs: 86400000 }],
   });
   assert.deepEqual(calls.slice(0, 3).map(call => [call.sql.split(' SET')[0], call.values]), [
     ['UPDATE venue_bookings', [['booking-a']]],
     ['UPDATE equipment_reservations', [['reservation-a']]],
-    ['UPDATE tech_support_requests', [['support-a']]],
+    ['UPDATE tech_support_requests r', [['support-a'], [86400000]]],
   ]);
+  assert.match(calls[2]!.sql, /THEN r\.reconfirm_range ELSE r\.support_range END/, 'moved again while flagged, it moves on from the kept time');
   assert.deepEqual(calls.slice(3).map(call => call.values), [
     ['coordinator-1', 'venue_booking', 'booking-a', 'event-1', 'Reconfirmation required: date or time changed, attendance above capacity'],
     ['coordinator-1', 'equipment_reservation', 'reservation-a', 'event-1', 'Reconfirmation required: date or time changed'],

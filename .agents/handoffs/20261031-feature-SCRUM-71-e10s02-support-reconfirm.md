@@ -31,7 +31,8 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 5. Backend: Technical Support Staff reconfirm a flagged request: the request and
    its staff assignments move to the new time, refused if an assigned technician
    is busy then; flag cleared, audited, Coordinator told,
-   `enterSafetyReviewIfReady` run.
+   `enterSafetyReviewIfReady` run. Done: `supportReconfirmation.ts`,
+   `GET ?task=staffing&reconfirm=list`, `POST ?task=staffing {action:'reconfirm'}`.
 6. Frontend: support in the "Check what this change affects" box; a "Support to
    reconfirm" section for Technical Support Staff.
 7. Tests (unit, database, Playwright) with deliberate breaks; contracts and docs.
@@ -50,6 +51,17 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 - A reconfirmed support request moves by the same amount the Event start moved,
   keeping its length (Le Xin chose option A on 31 October: custom windows such
   as early setup survive; Technical Support Staff can still edit assignments).
+  Refined in Task 5 (Le Xin, 31 October): a Session change moves it as far as
+  the overlapping Session's start moved (the earliest, if several), since the
+  Event start may not move at all.
+- The new time is worked out when the date changes and kept in
+  `reconfirm_range`, added to migration 0026 before its PR (Le Xin chose a
+  column over the audit log). Moved again while flagged, it moves on from the
+  kept time.
+- Reconfirming: any Technical Support Staff member, as for assigning. Audit row
+  `Support Reconfirmed`, field `support_range`, values "start to end" in UTC
+  ISO (Task 6 shows them in Singapore time). Other moved colleagues get
+  "Technical support assignment moved"; the actor gets no notice (T-64).
 - TC_E10S02_05 carried a leftover second block from the 17 September migration
   (an Event-wide date change, typed Negative) that filled its exported row; it
   is removed, so the row now shows the Session case.
@@ -69,7 +81,10 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 - TC_E10S02_10 says the unflagged request's technician "is not notified". They
   get no reconfirmation notice, but an Event date change still sends every
   Event participant, technicians included, the existing generic date notice.
+  Le Xin agreed: reword to "is not asked to reconfirm" in Task 7.
 
 ## Next step
 
-Task 5: Technical Support Staff reconfirm a flagged request at the new time.
+Task 6: frontend, support in the "Check what this change affects" box and a
+"Support to reconfirm" section for Technical Support Staff; Activity log shows
+`support_range` in Singapore time.

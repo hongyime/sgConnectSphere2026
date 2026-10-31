@@ -60,8 +60,15 @@ export async function applyArrangementImpact(query: Query, actorId: string, even
     await query('UPDATE venue_bookings SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.bookings.map(booking => booking.id)]);
   if (impact.reservations.length)
     await query('UPDATE equipment_reservations SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.reservations.map(reservation => reservation.id)]);
+  // T-103: the time a support request moves to is kept until it is
+  // reconfirmed. Moved again while still flagged, it moves on from that time.
   if (impact.supports.length)
-    await query('UPDATE tech_support_requests SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.supports.map(support => support.id)]);
+    await query(`UPDATE tech_support_requests r SET requires_reconfirmation = true,
+        reconfirm_range = (SELECT tstzrange(lower(base) + moved, upper(base) + moved, '[)') FROM (SELECT
+          CASE WHEN r.requires_reconfirmation AND r.reconfirm_range IS NOT NULL THEN r.reconfirm_range ELSE r.support_range END AS base,
+          s.shift_ms * interval '1 millisecond' AS moved) target)
+      FROM unnest($1::uuid[], $2::float8[]) AS s(id, shift_ms)
+      WHERE r.id = s.id`, [impact.supports.map(support => support.id), impact.supports.map(support => support.shiftMs)]);
   const entries = [
     ...impact.bookings.map(booking => ({ type: 'venue_booking', item: booking })),
     ...impact.reservations.map(reservation => ({ type: 'equipment_reservation', item: reservation })),

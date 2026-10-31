@@ -45,7 +45,7 @@ async function recordDenied(query: Query, user: AuthenticatedUser) {
 }
 
 // Only active Technical Support Staff staff requests and see the queue.
-async function requireTechnician(query: Query, user: AuthenticatedUser | undefined) {
+export async function requireTechnician(query: Query, user: AuthenticatedUser | undefined) {
   if (!user) throw new AccessError(401, 'Sign in to continue.');
   if (!canActAsRole(user, ['technical_support_staff']).allowed) {
     await recordDenied(query, user);
@@ -114,16 +114,16 @@ export async function mySchedule(query: Query, user: AuthenticatedUser | undefin
   return { assignments };
 }
 
-const name = (event: { eventCode: string | null; eventTitle: string }) =>
+export const name = (event: { eventCode: string | null; eventTitle: string }) =>
   event.eventCode && !event.eventTitle.startsWith(event.eventCode) ? `${event.eventCode} ${event.eventTitle}` : event.eventTitle;
-const conflictSentence = (who: string, conflict: Conflict) =>
+export const conflictSentence = (who: string, conflict: Conflict) =>
   `${who} is already assigned to ${name({ eventCode: conflict.eventCode, eventTitle: conflict.title })} at an overlapping time.`;
 
 type LockedRequest = { id: string; eventId: string; eventCode: string | null; eventTitle: string; eventStatus: string; description: string; status: string; range: string };
 
 // Assigning needs a staffable event; removing is always allowed, so a
 // cancelled or finished event never keeps a colleague's time blocked.
-async function lockRequest(client: PoolClient, id: string, forRemoval = false) {
+export async function lockRequest(client: PoolClient, id: string, forRemoval = false) {
   const request = (await client.query<LockedRequest>(`SELECT r.id, r.event_id AS "eventId", e.event_code AS "eventCode",
       e.title AS "eventTitle", e.status AS "eventStatus", r.support_description AS description, r.status,
       r.support_range::text AS range
@@ -137,7 +137,7 @@ async function lockRequest(client: PoolClient, id: string, forRemoval = false) {
 // 23P01: the exclusion constraint refused the insert. 40P01: a deadlock
 // between two such inserts. The colleague lock above should prevent both;
 // they stay as a backstop, reported as the same clash.
-const isOverlapViolation = (error: unknown) =>
+export const isOverlapViolation = (error: unknown) =>
   ['23P01', '40P01'].includes((error as { code?: string })?.code ?? '');
 
 export async function assignTechnician(database: Pool, user: AuthenticatedUser | undefined, body: unknown) {

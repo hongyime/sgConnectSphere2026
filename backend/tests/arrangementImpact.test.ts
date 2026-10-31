@@ -34,6 +34,8 @@ function snapshot(overrides: Partial<ArrangementSnapshot> = {}): ArrangementSnap
 }
 
 const ids = (items: { id: string }[]) => items.map(item => item.id);
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
 
 test('TC_E10S02_02/_09: an unchanged snapshot (description-only edit) flags nothing', () => {
   const impact = assessArrangementImpact(snapshot(), snapshot());
@@ -96,7 +98,8 @@ test('TC_E10S02_05: a Session date change flags only that Session booking and eq
   assert.deepEqual(ids(impact.bookings), ['booking-a']);
   assert.deepEqual(impact.bookings[0]!.reasons, ['time']);
   assert.deepEqual(impact.reservations, [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] }]);
-  assert.deepEqual(impact.supports, [{ ...supportA, reasons: ['time'] }], 'support overlapping the previous Session time; Session B support untouched');
+  assert.deepEqual(impact.supports, [{ ...supportA, reasons: ['time'], shiftMs: DAY }],
+    'support overlapping the previous Session time moves as far as the Session; Session B support untouched');
 });
 
 test('TC_E10S02_10: a Session change does not flag support that does not overlap it', () => {
@@ -143,7 +146,23 @@ test('TC_E10S02_08: an Event-wide date change flags every Session arrangement', 
   const impact = assessArrangementImpact(snapshot(), after);
   assert.deepEqual(ids(impact.bookings), ['booking-a', 'booking-b']);
   assert.deepEqual(ids(impact.reservations), ['reservation-a', 'reservation-b']);
-  assert.deepEqual(impact.supports.map(support => [support.id, support.reasons]), [['support-a', ['time']], ['support-b', ['time']]]);
+  assert.deepEqual(impact.supports.map(support => [support.id, support.reasons, support.shiftMs]), [['support-a', ['time'], 7 * DAY], ['support-b', ['time'], 7 * DAY]]);
+});
+
+test('T-103: an Event-wide change moves support as far as the Event start, even when only the end moved', () => {
+  const earlier = snapshot({ event: { startsAt: '2027-03-11T22:30:00.000Z', endsAt: '2027-03-12T07:00:00.000Z' } });
+  assert.deepEqual(assessArrangementImpact(snapshot(), earlier).supports.map(support => support.shiftMs), [-2.5 * HOUR, -2.5 * HOUR]);
+  const longer = snapshot({ event: { startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z' } });
+  assert.deepEqual(assessArrangementImpact(snapshot(), longer).supports.map(support => support.shiftMs), [0, 0], 'flagged, but its time stays');
+});
+
+test('T-103: support overlapping several moved Sessions moves as far as the earliest of them', () => {
+  const wide: SupportState = { id: 'support-wide', description: 'Whole day', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z' };
+  const after = snapshot({ supports: [wide], sessions: [
+    { ...sessionA, startsAt: '2027-03-12T03:00:00.000Z', endsAt: '2027-03-12T05:00:00.000Z' },
+    { ...sessionB, startsAt: '2027-03-13T05:00:00.000Z', endsAt: '2027-03-13T07:00:00.000Z' },
+  ] });
+  assert.deepEqual(assessArrangementImpact(snapshot({ supports: [wide] }), after).supports.map(support => support.shiftMs), [2 * HOUR], 'Session A, not B');
 });
 
 test('an Event end-only change is still an Event-wide time change', () => {
