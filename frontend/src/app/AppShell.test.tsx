@@ -10,11 +10,16 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 function stubApi(role: string | null) {
   vi.stubGlobal('fetch', vi.fn(async (input: string) => {
-    const path = new URL(input, 'http://localhost').pathname;
+    const url = new URL(input, 'http://localhost');
+    const path = url.pathname;
     const reply = path === '/api/auth/session'
       ? (role ? { status: 200, body: { user: { id: 'u-1', email: 'u@example.com', role, clientOrgId: null } } } : { status: 401, body: { error: 'Sign in to continue.' } })
       : path === '/api/notifications'
         ? { status: 200, body: { notifications: [] } }
+        : path === '/api/attendee/events' && url.searchParams.get('registration') === '1'
+          ? { status: 200, body: { event: { id: 'e-1', eventCode: 'EVT-1', name: 'Community Meetup', registrationState: 'open' },
+              sessions: [], details: { name: 'Casey', email: 'casey@example.test', contactNumber: '+65 8000 0000' }, missingDetails: [],
+              registration: null, capacity: { eventFull: true, waitlistEnabled: true, fullSessionIds: [] }, withdrawal: null } }
         : { status: 200, body: { events: [], incoming: [], outgoing: [], venues: [] } };
     return { ok: reply.status < 300, status: reply.status, json: async () => reply.body } as Response;
   }));
@@ -68,10 +73,9 @@ test('/home sends a signed-out visitor to sign in', async () => {
   expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
 });
 
-test('a placeholder route shows the Coming soon page with its story', async () => {
+test('the attendee waiting-list route offers a full Event with its list enabled', async () => {
   stubApi('attendee');
   renderAt('/attendee/waitlist/EVT-1');
-  expect(await screen.findByRole('heading', { level: 1, name: 'Waiting list' })).toBeInTheDocument();
-  expect(screen.getByText('Coming soon · E09-S04')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Back to my home page' })).toHaveAttribute('href', '/home');
+  expect(await screen.findByRole('heading', { level: 1, name: 'Community Meetup' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Join the waiting list' })).toBeInTheDocument();
 });

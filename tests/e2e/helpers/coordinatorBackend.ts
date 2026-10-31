@@ -12,13 +12,23 @@ export const coordB: Coordinator = { id: '22222222-2222-4222-8222-222222222222',
 
 type Notice = { id: string; title: string; message: string; is_read: boolean; read_at: null; created_at: string; event_id: string };
 
+type Change = { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[] }; overSubscription: unknown[] };
+
 export async function fakeCoordinatorBackend(page: Page, options: {
   eventCode: string;
   title: string;
   assignedTo: Coordinator;
   pendingTo?: Coordinator;
   status?: string;
+  // E10-S02: what the preview and the save report the edit affects (#376).
+  change?: Change;
+  // #380 review: what the edit affects once the first preview has been shown,
+  // as if another booking were confirmed while the Coordinator reviews.
+  changeAfterPreview?: Change;
 }) {
+  let change = options.change ?? { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] };
+  // The server's revision fingerprints the list; a new list gets a new one.
+  let revision = 'rev-1';
   const eventId = `event-${options.eventCode.toLowerCase()}`;
   const state = {
     user: options.assignedTo,
@@ -29,6 +39,9 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     // E03-S07: current editable values and the audit rows each edit writes.
     fields: { title: options.title, description: 'Charity fundraiser run.', venue_requirements: 'Outdoor start line', expected_attendance: 250 } as Record<string, unknown>,
     audit: [] as { actor: string; field: string; value: string }[],
+    previews: 0,
+    // The &reviewed= each save carried (null when none was sent).
+    reviewed: [] as (string | null)[],
   };
 
   function notify(to: Coordinator, title: string, message: string) {
@@ -114,13 +127,25 @@ export async function fakeCoordinatorBackend(page: Page, options: {
       if (!mine || !['approved', 'planning', 'confirmed', 'completed'].includes(state.status)) {
         return json(route, 403, { error: 'Only the assigned Coordinator may edit an approved event.' });
       }
+      // E10-S02 (#376): the preview runs the same checks and changes nothing.
+      if (params.get('preview') === '1') {
+        state.previews += 1;
+        const shown = { ...change, revision };
+        if (options.changeAfterPreview && state.previews === 1) { change = options.changeAfterPreview; revision = 'rev-2'; }
+        return json(route, 200, shown);
+      }
+      const reviewed = params.get('reviewed');
+      state.reviewed.push(reviewed);
+      if (reviewed !== null && reviewed !== revision) {
+        return json(route, 409, { error: 'arrangements_changed', message: 'What this change affects has changed since you checked. Review the updated list before saving.', ...change, revision });
+      }
       const patch = request.postDataJSON() as Record<string, unknown>;
       const columns: Record<string, string> = { title: 'title', description: 'description', venueRequirements: 'venue_requirements', expectedAttendance: 'expected_attendance' };
       for (const [field, value] of Object.entries(patch)) {
         if (columns[field]) state.fields[columns[field]] = value;
         state.audit.push({ actor: state.user.email, field, value: String(value) });
       }
-      return json(route, 200, { updated: true, eventId, fields: Object.keys(patch) });
+      return json(route, 200, { updated: true, eventId, fields: Object.keys(patch), ...change, revision });
     }
     return json(route, 404, { error: 'Not handled by the test backend.' });
   });
@@ -129,5 +154,7 @@ export async function fakeCoordinatorBackend(page: Page, options: {
     signInAs(user: Coordinator) { state.user = user; },
     get assignedTo() { return state.assignedTo; },
     get audit() { return state.audit; },
+    get previews() { return state.previews; },
+    get reviewed() { return state.reviewed; },
   };
 }

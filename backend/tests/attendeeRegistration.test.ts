@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import {
-  getRegistrationForm, listOpenEvents, missingDetails, parseSessionIds, registerForEvent, registrationState,
+  getRegistrationForm, joinWaitingList, listOpenEvents, missingDetails, parseSessionIds, registerForEvent, registrationState,
   withdrawalOpen, withdrawRegistration,
 } from '../src/modules/attendeeRegistration/service.js';
 import type { Query } from '../src/modules/eventVisibility/service.js';
@@ -24,6 +24,7 @@ type State = {
   sessions?: Record<string, unknown>[];
   capacity?: Record<string, unknown>[];
   eventRegistered?: number;
+  updateNoRows?: boolean;
   withdrawable?: { id: string; status: string } | null;
   contact?: string;
   waitlisted?: string[];
@@ -67,7 +68,9 @@ function script(state: State = {}) {
       { session_id: sessionA, session_capacity: 10, registered: 0 }, { session_id: sessionB, session_capacity: 10, registered: 0 }];
     else if (sql.includes('AS registered FROM event_registrations')) rows = [{ registered: state.eventRegistered ?? 0 }];
     else if (sql.includes('FROM sessions s')) rows = state.sessions ?? sessionRows();
-    else if (sql.includes('INSERT INTO event_registrations')) rows = [{ id: randomUUID(), status: values?.[2] ?? 'registered', registered_at: now }];
+    else if (sql.startsWith('UPDATE event_registrations SET status = $2')) rows = state.existing && !state.updateNoRows
+      ? [{ id: values?.[0], status: values?.[1], registered_at: values?.[2] }] : [];
+    else if (sql.includes('INSERT INTO event_registrations')) rows = [{ id: randomUUID(), status: sql.includes("'waitlisted'") ? 'waitlisted' : values?.[2] ?? 'registered', registered_at: now }];
     else if (sql.includes('INSERT INTO notifications')) rows = [{ id: randomUUID() }];
     else if (sql.includes('INSERT INTO notification_deliveries')) rows = [{ id: randomUUID() }];
     else if (sql.includes('SELECT d.delivery_status')) rows = [{ delivery_status: 'queued', dispatch_state: 'pending', recipient_email: null, email: 'casey@example.test', title: 'Registration confirmed', message: 'Synthetic notice' }];
@@ -171,6 +174,7 @@ test('registerForEvent refuses before touching the database when the body or rol
   const { pool, calls } = script();
   assert.deepEqual(await registerForEvent(pool, attendee, eventId, { sessionIds: [] }), { status: 400, body: { error: 'Choose at least one Session.' } });
   assert.deepEqual(await registerForEvent(pool, attendee, eventId, { sessionIds: ['not-a-uuid'] }), { status: 400, body: { error: 'Choose valid Sessions from this event.' } });
+  assert.deepEqual(await registerForEvent(pool, attendee, eventId, []), { status: 400, body: { error: 'Choose at least one Session.' } });
   assert.equal(calls.some(call => call.sql === 'BEGIN'), false);
   await assert.rejects(registerForEvent(pool, { ...attendee, role: 'event_coordinator' }, eventId, { sessionIds: [sessionA] }), { status: 403 });
   await assert.rejects(registerForEvent(pool, attendee, '', { sessionIds: [sessionA] }), { status: 400 });
@@ -250,6 +254,108 @@ test('registerForEvent keeps an over-capacity request Pending with its own notic
     assert.equal(notice.values![2], 'Registration request received');
     assert.match(String(notice.values![3]), /your choice is at capacity, so the organiser will review your request for Morning/);
   }
+});
+
+// E09-S04: Event-level waiting list, no positions or automatic promotion (T-46, T-98).
+test('joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01)', async () => {
+  const full = script({ event: eventRow({ waitlist_enabled: true }), eventRegistered: 20,
+    capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }, { session_id: sessionB, session_capacity: 10, registered: 10 }] });
+  const result = await joinWaitingList(full.pool, attendee, 'EVT-9001');
+  assert.equal(result.status, 201);
+  assert.deepEqual((result.body.registration as { status: string; sessionIds: string[] }).status, 'waitlisted');
+  assert.deepEqual((result.body.registration as { sessionIds: string[] }).sessionIds, []);
+  const insert = full.calls.find(call => call.sql.includes('INSERT INTO event_registrations'))!;
+  assert.deepEqual(insert.values, [eventId, attendee.id]);
+  const locks = ['FOR UPDATE OF e', 'FOR SHARE NOWAIT', 'SELECT r.id, r.status, r.registered_at'].map(lock =>
+    full.calls.findIndex(call => call.sql.includes(lock)));
+  assert.ok(locks.every(index => index >= 0));
+  assert.deepEqual([...locks].sort((a, b) => a - b), locks);
+});
+
+test('joinWaitingList refuses a disabled list, an Event with room, and an Event without places', async () => {
+  const disabled = await joinWaitingList(script({ eventRegistered: 20 }).pool, attendee, eventId);
+  assert.deepEqual(disabled, { status: 409, body: { error: 'This event is not accepting waiting-list entries.' } });
+  const room = await joinWaitingList(script({ event: eventRow({ waitlist_enabled: true }), eventRegistered: 19 }).pool, attendee, eventId);
+  assert.deepEqual(room, { status: 409, body: { error: 'This event has places available; register directly.' } });
+  const noPlaces = await joinWaitingList(script({ event: eventRow({ waitlist_enabled: true }), capacity: [], eventRegistered: 0 }).pool, attendee, eventId);
+  assert.deepEqual(noPlaces, { status: 409, body: { error: 'This event has no places available to wait for.' } });
+});
+
+test('joinWaitingList rejects unavailable Events, closed windows, existing registrations and invalid accounts', async () => {
+  assert.deepEqual(await joinWaitingList(script({ event: null }).pool, attendee, eventId),
+    { status: 409, body: { error: 'Registration is only open for confirmed events that take registrations.' } });
+  assert.deepEqual(await joinWaitingList(script({ event: eventRow({ registration_enabled: false }) }).pool, attendee, eventId),
+    { status: 409, body: { error: 'Registration is only open for confirmed events that take registrations.' } });
+  assert.deepEqual(await joinWaitingList(script({ event: eventRow({ closes_at: at('2027-02-28T00:00:00Z') }) }).pool, attendee, eventId),
+    { status: 409, body: { error: 'Registration for this event has closed.', registrationState: 'closed' } });
+  for (const status of ['waitlisted', 'registered', 'pending']) {
+    const existing = { id: 'existing', status, registered_at: now, session_ids: [] };
+    const result = await joinWaitingList(script({ existing }).pool, attendee, eventId);
+    assert.equal(result.status, 409);
+    assert.match(String(result.body.error), status === 'waitlisted' ? /already on the waiting list/ : /already registered/);
+  }
+  await assert.rejects(joinWaitingList(script({ details: null }).pool, attendee, eventId), { status: 403 });
+  await assert.rejects(joinWaitingList(script().pool, { ...attendee, role: 'event_organiser' }, eventId), { status: 403 });
+  await assert.rejects(joinWaitingList(script().pool, attendee, ''), { status: 400 });
+});
+
+test('joinWaitingList handles races, locked accounts and unexpected failures transactionally', async () => {
+  const duplicate = Object.assign(new Error('duplicate'), { code: '23505' });
+  assert.deepEqual(await joinWaitingList(script({ event: eventRow({ waitlist_enabled: true }), eventRegistered: 20,
+    failAt: 'INSERT INTO event_registrations', failure: duplicate }).pool, attendee, eventId),
+  { status: 409, body: { error: "You're already registered for this event." } });
+  const busy = Object.assign(new Error('lock'), { code: '55P03' });
+  await assert.rejects(joinWaitingList(script({ event: eventRow({ waitlist_enabled: true }), failAt: 'FOR SHARE NOWAIT', failure: busy }).pool, attendee, eventId),
+    { status: 409, message: 'Your account is being updated. Please try again.' });
+  const broken = new Error('connection lost');
+  const failed = script({ event: eventRow({ waitlist_enabled: true }), failAt: 'AS session_capacity', failure: broken });
+  await assert.rejects(joinWaitingList(failed.pool, attendee, eventId), broken);
+  assert.ok(failed.calls.some(call => call.sql === 'ROLLBACK'));
+});
+
+test('registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, _03)', async () => {
+  const existing = { id: 'waitlisted-entry', status: 'waitlisted', registered_at: now, session_ids: [] };
+  const { pool, calls } = script({ existing, eventRegistered: 19 });
+  const result = await registerForEvent(pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true });
+  assert.equal(result.status, 201);
+  assert.equal((result.body.registration as { id: string }).id, existing.id);
+  assert.equal((result.body.registration as { status: string }).status, 'registered');
+  const update = calls.find(call => call.sql.startsWith('UPDATE event_registrations SET status = $2'))!;
+  assert.deepEqual(update.values, [existing.id, 'registered', now, eventId, attendee.id]);
+  assert.ok(calls.some(call => call.sql.includes('INSERT INTO event_registration_sessions')));
+  assert.ok(calls.some(call => call.sql.includes('INSERT INTO notifications')));
+});
+
+test('a lost place keeps the Attendee waitlisted; a full selected Session follows Pending (T-85, T-98)', async () => {
+  const existing = { id: 'waitlisted-entry', status: 'waitlisted', registered_at: now, session_ids: [] };
+  const raced = script({ existing, eventRegistered: 20,
+    capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }, { session_id: sessionB, session_capacity: 10, registered: 10 }] });
+  assert.deepEqual(await registerForEvent(raced.pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true }),
+    { status: 409, body: { error: "That place has just been taken; you're still on the waiting list." } });
+  assert.equal(raced.calls.some(call => call.sql.startsWith('UPDATE event_registrations SET status = $2')), false);
+  const pending = script({ existing, eventRegistered: 19,
+    capacity: [{ session_id: sessionA, session_capacity: 10, registered: 10 }, { session_id: sessionB, session_capacity: 10, registered: 9 }] });
+  const result = await registerForEvent(pending.pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true });
+  assert.equal((result.body.registration as { status: string }).status, 'pending');
+  assert.deepEqual(pending.calls.find(call => call.sql.startsWith('UPDATE event_registrations SET status = $2'))!.values?.slice(0, 2),
+    [existing.id, 'pending']);
+});
+
+test('claimWaitlist accepts only a boolean and an active waitlist row', async () => {
+  assert.deepEqual(await registerForEvent(script().pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: 'yes' }),
+    { status: 400, body: { error: 'claimWaitlist must be true or false.' } });
+  assert.deepEqual(await registerForEvent(script().pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true }),
+    { status: 409, body: { error: "You're no longer on the waiting list for this event." } });
+  const registered = script({ existing: { id: 'r', status: 'registered', registered_at: now, session_ids: [sessionA] } });
+  assert.deepEqual(await registerForEvent(registered.pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true }),
+    { status: 409, body: { error: "You're no longer on the waiting list for this event." } });
+  const stillWaitlisted = script({ existing: { id: 'r', status: 'waitlisted', registered_at: now, session_ids: [] } });
+  const duplicate = await registerForEvent(stillWaitlisted.pool, attendee, eventId, { sessionIds: [sessionA] });
+  assert.equal(duplicate.status, 409);
+  assert.match(String(duplicate.body.error), /already registered/);
+  const claimRace = script({ existing: { id: 'r', status: 'waitlisted', registered_at: now, session_ids: [] }, updateNoRows: true });
+  assert.deepEqual(await registerForEvent(claimRace.pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true }),
+    { status: 409, body: { error: "You're no longer on the waiting list for this event." } });
 });
 
 // ─── E09-S05 Withdraw my registration ─────────────────────────────────────

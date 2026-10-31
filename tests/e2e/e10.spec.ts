@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { signInAs } from './helpers/fakeSession';
+import { coordA, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 
 // E10 - 20 cases. Source: docs/testing/cases/E10.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -154,6 +155,29 @@ test.describe("E10-S01", () => {
 
 test.describe("E10-S02", () => {
 
+  // E10-S02 (SCRUM-237): the Coordinator's event page against faked API replies
+  // shaped like #376's preview and save. These prove the screen; the
+  // PostgreSQL behaviour is backend/tests/arrangementImpact.integration.test.ts.
+  const riverside = { id: 'booking-a', sessionId: 'session-a', venueId: 'hall', venueName: 'Riverside Hall', reasons: ['time'], governingHeadcount: 200, capacity: 200 };
+  const projector = { id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector', reasons: ['time'] };
+  const dateChange = { impact: { affected: true, bookings: [riverside], reservations: [projector] }, overSubscription: [] };
+
+  type BackendOptions = Parameters<typeof fakeCoordinatorBackend>[1];
+  async function openEdit(page: Page, change?: BackendOptions['change'], changeAfterPreview?: BackendOptions['changeAfterPreview']) {
+    const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-TECH', title: 'Tech Conference 2026', assignedTo: coordA, status: 'planning', change, changeAfterPreview });
+    await page.goto('/coordinator/events/EVT-TECH');
+    await page.getByRole('button', { name: 'Edit details' }).click();
+    return { backend, form: page.getByRole('form', { name: 'Edit event details' }) };
+  }
+
+  async function moveDates(page: Page, changeAfterPreview?: BackendOptions['changeAfterPreview']) {
+    const { backend, form } = await openEdit(page, dateChange, changeAfterPreview);
+    await form.getByLabel('Starts').fill('2026-11-20T09:00');
+    await form.getByLabel('Ends').fill('2026-11-20T12:00');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    return backend;
+  }
+
   /**
    * TC_E10S02_01
    * AC:      E10-S02 - Scenario 1 (Attendance beyond capacity flagged)
@@ -169,6 +193,7 @@ test.describe("E10-S02", () => {
    *   The venue booking for "Riverside Hall" is flagged for review, and venue_staff_1@connectsphere.com is notified
    */
   test.fixme("TC_E10S02_01 - Verify that increasing a event's expected attendance beyond its confirmed venue's capacity should flag the venue booking for review and notify Venue Staff", async ({ page }) => {
+    // Proved against PostgreSQL (arrangementImpact.integration.test.ts) and in the manual run; the screen text is covered by TC_E10S02_03/_06 here.
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Increase the event's Expected Attendance to 250
@@ -190,13 +215,16 @@ test.describe("E10-S02", () => {
    * Expected result:
    *   No arrangements are flagged as a result of this edit
    */
-  test.fixme("TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Edit only the Description field
-    // 3. Save
-    // 4. Check for any flagged arrangements
-    void page;
+  test("TC_E10S02_02 - Verify that editing only the event description on an event with confirmed venue and equipment should flag nothing", async ({ page }) => {
+    const { backend, form } = await openEdit(page);
+    await form.getByLabel('Description').fill('Updated description only');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText("Saved your changes to the description. They're recorded in the event's activity log.");
+    await expect(page.getByText(/flagged for reconfirmation/)).toHaveCount(0);
+    await expect(page.getByRole('form', { name: 'Check what this change affects' })).toHaveCount(0);
+    expect(backend.previews).toBe(1);
+    expect(backend.reviewed).toEqual(['rev-1']);
+    expect(backend.audit.map(row => row.field)).toEqual(['description']);
   });
 
   /**
@@ -213,12 +241,32 @@ test.describe("E10-S02", () => {
    * Expected result:
    *   Before the change is applied, a confirmation screen lists the affected arrangement (venue booking) for review
    */
-  test.fixme("TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Make the edit that affects the venue booking
-    // 3. Click "Save"
-    void page;
+  test("TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect", async ({ page }) => {
+    const backend = await moveDates(page);
+    const review = page.getByRole('form', { name: 'Check what this change affects' });
+    await expect(review.getByRole('listitem').filter({ hasText: 'Riverside Hall' })).toHaveText('Riverside Hall: date or time changed');
+    await expect(review.getByRole('listitem').filter({ hasText: 'Projector' })).toHaveText('Projector: date or time changed');
+    expect(backend.audit).toEqual([]);
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('2 arrangements were flagged for reconfirmation');
+    expect(backend.reviewed).toEqual(['rev-1']);
+    expect(backend.audit.map(row => row.field)).toEqual(['startAt', 'endAt']);
+  });
+
+  // #380 review: the save is bound to the list the Coordinator saw.
+  test('a save refused because the arrangements changed during the review shows the fresh list before anything is saved', async ({ page }) => {
+    const garden = { ...riverside, id: 'booking-b', venueId: 'garden', venueName: 'Garden Hall' };
+    const backend = await moveDates(page, { impact: { affected: true, bookings: [riverside, garden], reservations: [projector] }, overSubscription: [] });
+    const review = page.getByRole('form', { name: 'Check what this change affects' });
+    await expect(review.getByRole('listitem').filter({ hasText: 'Garden Hall' })).toHaveCount(0);
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(review.getByRole('alert')).toHaveText('What this change affects has changed since you checked. Review the updated list before saving.');
+    await expect(review.getByRole('listitem').filter({ hasText: 'Garden Hall' })).toHaveText('Garden Hall: date or time changed');
+    expect(backend.audit).toEqual([]);
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('3 arrangements were flagged for reconfirmation');
+    expect(backend.reviewed).toEqual(['rev-1', 'rev-2']);
+    expect(backend.audit.map(row => row.field)).toEqual(['startAt', 'endAt']);
   });
 
   /**
@@ -235,12 +283,20 @@ test.describe("E10-S02", () => {
    * Expected result:
    *   coordinator_1@connectsphere.com is warned and shown the over-subscription (100 vs 80); no Attendee is automatically removed or waitlisted
    */
-  test.fixme("TC_E10S02_04 - Verify that a venue change that reduces a event's capacity below its registration count should warn the Coordinator and show the over-subscription without automatically removing or waitlisting anyone", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Change the event's venue to one with capacity 80
-    // 3. Save
-    void page;
+  test("TC_E10S02_04 - Verify that a venue change that reduces a event's capacity below its registration count should warn the Coordinator and show the over-subscription without automatically removing or waitlisting anyone", async ({ page }) => {
+    // No Coordinator edit lowers capacity yet (approved change requests will),
+    // so the reply carries the over-subscription a capacity drop produces.
+    const { backend, form } = await openEdit(page, { impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [
+      { scope: 'event', sessionId: null, registered: 100, capacity: 80 },
+    ] });
+    await form.getByLabel('Description').fill('After the layout change');
+    await form.getByRole('button', { name: 'Save changes' }).click();
+    const review = page.getByRole('form', { name: 'Check what this change affects' });
+    await expect(review.getByRole('alert')).toContainText('The whole event: 100 registered for 80 places.');
+    await expect(review.getByRole('alert')).toContainText('No one will be removed or moved to the waiting list.');
+    await review.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('no one was removed or moved to the waiting list');
+    expect(backend.audit.map(row => row.field)).toEqual(['description']);
   });
 
   /**
@@ -258,6 +314,7 @@ test.describe("E10-S02", () => {
    *   Both the venue booking and the equipment reservations for this event are flagged as requiring reconfirmation
    */
   test.fixme("TC_E10S02_05 - Verify that changing a event's date or time should flag its venue booking and equipment reservations as requiring reconfirmation", async ({ page }) => {
+    // Proved against PostgreSQL (arrangementImpact.integration.test.ts) and in the manual run: flags live in the database, which faked replies cannot show.
     // Steps from the specification:
     // 1. Log in as coordinator_1@connectsphere.com
     // 2. Change the event's date from 15/11/2026 to 20/11/2026
@@ -279,13 +336,14 @@ test.describe("E10-S02", () => {
    * Expected result:
    *   Both venue_staff_1@connectsphere.com and tech_support_1@connectsphere.com receive a notification about the change requiring reconfirmation
    */
-  test.fixme("TC_E10S02_06 - Verify that when a date or time change flags arrangements for reconfirmation, the assigned Technical Support Staff should also be notified, not just Venue Staff", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Change the event's date
-    // 3. Save
-    // 4. Check notifications for both venue_staff_1@connectsphere.com and tech_support_1@connectsphere.com
-    void page;
+  test("TC_E10S02_06 - Verify that when a date or time change flags arrangements for reconfirmation, the assigned Technical Support Staff should also be notified, not just Venue Staff", async ({ page }) => {
+    // The notices themselves are proved against PostgreSQL; the screen must
+    // tell the Coordinator that both kinds of staff will be and were told.
+    await moveDates(page);
+    const review = page.getByRole('form', { name: 'Check what this change affects' });
+    await expect(review).toContainText('notifies the Venue Staff and Technical Support Staff.');
+    await review.getByRole('button', { name: 'Save and ask staff to reconfirm' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('the Venue Staff and Technical Support Staff were notified.');
   });
 
 });
