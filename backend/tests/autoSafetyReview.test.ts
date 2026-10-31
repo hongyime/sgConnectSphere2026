@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { PoolClient } from 'pg';
-import { AUTO_SAFETY_REVIEW_ACTION, enterSafetyReviewIfReady } from '../src/modules/eventReadiness/autoSafetyReview.js';
+import { AUTO_SAFETY_REVIEW_ACTION, CHANGE_REQUEST_REPLANNING_ACTION, enterSafetyReviewIfReady } from '../src/modules/eventReadiness/autoSafetyReview.js';
 
 const range = { starts_at: new Date('2027-03-19T01:00:00Z'), ends_at: new Date('2027-03-19T09:00:00Z') };
 type Script = { status?: string; confirmedBefore?: boolean; bookingFlagged?: boolean; coordinator?: string | null; officers?: string[] };
@@ -50,6 +50,9 @@ const titled = (notices: unknown[][], title: string) => notices.filter(values =>
 test('a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change', async () => {
   const { client, calls, notices } = scriptedClient();
   assert.equal(await enterSafetyReviewIfReady(client, 'EVT-1', 'staff-1'), true);
+  const eligibility = calls.find(call => call.sql.includes("new_value = 'confirmed'"));
+  assert.deepEqual(eligibility?.values, ['event-1', CHANGE_REQUEST_REPLANNING_ACTION]);
+  assert.match(eligibility!.sql, /old_value = 'safety_review' AND new_value = 'planning' AND action = \$2/);
   const audit = calls.find(call => call.sql.includes('INSERT INTO audit_logs'));
   assert.deepEqual(audit?.values, ['staff-1', 'event-1', AUTO_SAFETY_REVIEW_ACTION, 'planning', 'safety_review']);
   assert.equal(titled(notices, 'Awaiting safety check').length, 1);
