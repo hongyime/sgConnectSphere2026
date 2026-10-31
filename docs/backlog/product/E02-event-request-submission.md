@@ -200,13 +200,15 @@ Given a document is attached to an event When I delete it Then it is removed and
 ## E02-S07 — Validate the event date horizon
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-71, C-72, T-87
 - **Owner**:
 
 ### User story
 
 As an Event Organiser, I want to submit a request without a fixed minimum lead time while dates more than two years ahead are rejected so that a Coordinator can assess feasibility within a bounded planning horizon.
+
+No estimate was previously recorded. A three-point estimate was proposed on 31 October 2026 for teammate/PO review, sized against E09-S03 registration-period control (3), E02-S01 request submission (5) and E04-S02 multi-Session authoring (5). The bounded scope reuses the existing submission and form paths: Singapore-local calendar-year validation for Event and Session dates, an inclusive two-year boundary, preserved past-date checks, field-specific feedback, and timezone/leap-day/draft-resubmission regression tests. Building the E04-S02 Session write path is a dependency, not work counted again here; no new booking, registration, notification or database-schema feature is included. Jira remains unestimated until the matching backlog PR merges and the estimation basis is confirmed. T-73 estimates in-flight stories for their remaining work only. Because Event-level implementation already exists on an unmerged branch, team/PO confirmation is required on whether three points is the whole-story reference size or must be adjusted to remaining scope, and how it is counted for sprint reporting. This proposal does not claim three points of work remain, change sprint commitments, or backdate an estimate.
 
 ### Acceptance criteria
 

@@ -555,7 +555,7 @@ async function handlePost(request: VercelRequest, response: VercelResponse) {
 // re-save it as a draft, or submit it. Only the owning organiser, only while
 // the event is still a draft (enforced in updateEventRequest).
 async function handlePatch(request: VercelRequest, response: VercelResponse) {
-  await respond(response, async () => {
+  await respondWithResult(response, async () => {
     const user = await requireOrganiserWithClient(request);
 
     const id = new URL(request.url || '/', 'http://localhost').searchParams.get('id');
@@ -570,22 +570,12 @@ async function handlePatch(request: VercelRequest, response: VercelResponse) {
 
     try {
       const event = await updateEventRequest(repository, id, user.id, patch);
-      return { event: serializeEventDetail(event) };
+      return { status: 200, body: { event: serializeEventDetail(event) } };
     } catch (error) {
       if (error instanceof EventNotFoundError) throw new AccessError(404, 'not_found');
       if (error instanceof EventAccessError) throw new AccessError(403, 'forbidden');
       if (error instanceof EventValidationError) {
-        // Preserve the shape of the previous error response, which packed
-        // error.details alongside the message. AccessError only carries a
-        // string message, so we surface the detail directly through
-        // sendJson before respond() can wrap it.
-        response.setHeader('Cache-Control', 'private, no-store');
-        response.setHeader('Vary', 'Cookie');
-        sendJson(response, 400, { error: error.message, ...error.details });
-        // Return a sentinel so respond() does not emit again. The wrapper
-        // treats a non-object return as "already responded" via its
-        // Cache-Control header double-setting no-op.
-        return {} as Record<string, unknown>;
+        return { status: 400, body: { error: error.message, ...error.details } };
       }
       throw error;
     }

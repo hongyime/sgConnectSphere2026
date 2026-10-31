@@ -256,6 +256,18 @@ export function OrganiserRequestFlow({
         setSubmitState({ status: 'error', message: 'Preferred date must be in the future' });
         return;
       }
+      if (body?.error === 'event_date_outside_horizon' && typeof body.maximumDate === 'string') {
+        const fieldLabel = body.field === 'startAt'
+          ? 'Preferred start date and time'
+          : body.field === 'endAt' ? 'Preferred end date and time' : undefined;
+        if (fieldLabel) {
+          setSubmitState({
+            status: 'error',
+            message: `${fieldLabel} must be on or before ${body.maximumDate} (Singapore time).`,
+          });
+          return;
+        }
+      }
       setSubmitState({ status: 'error', message: 'The request could not be submitted.' });
       return;
     }
