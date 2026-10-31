@@ -52,9 +52,12 @@ export async function enterSafetyReviewIfReady(client: PoolClient, identifier: s
       lower(event_range) AS starts_at, upper(event_range) AS ends_at, equipment_requirements
     FROM events WHERE id::text = $1 OR event_code = $1 FOR NO KEY UPDATE`, [identifier])).rows[0];
   if (event?.status !== 'planning') return false;
-  // Confirmed before: its status history holds a change to Confirmed.
+  // Confirmed before: its status history holds a change to or from Confirmed.
+  // An event Confirmed before the status history existed has no change to
+  // Confirmed, but its reversion or venue loss still records one from it.
   const confirmedBefore = await client.query(`SELECT 1 FROM audit_logs
-    WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status' AND new_value = 'confirmed' LIMIT 1`, [event.id]);
+    WHERE event_id = $1 AND entity_type = 'event' AND field_changed = 'status'
+      AND (new_value = 'confirmed' OR old_value = 'confirmed') LIMIT 1`, [event.id]);
   if (!confirmedBefore.rowCount) return false;
   const readiness = await loadReadiness((sql, values) => client.query(sql, values), event);
   if (readiness.blockers.length) return false;
