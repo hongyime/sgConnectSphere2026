@@ -68,7 +68,7 @@ Given an Event has confirmed venue and equipment arrangements When only its Even
 
 #### Scenario 3 — Affected Session arrangements shown first
 
-Given a change affects confirmed arrangements When I save it Then I am shown the affected Session bookings and equipment reservations before the change takes effect
+Given a change affects confirmed arrangements When I save it Then I am shown the affected Session bookings, equipment reservations and staffed Technical Support requests before the change takes effect (T-103)
 
 #### Scenario 4 — Over-subscription warns only
 

@@ -96,6 +96,14 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
   `tech_support_request` rows whose action is `Support Reconfirmed` (not the
   flag rows); the Organiser view is unchanged. DB check added and break-tested;
   the E14-S02 unit test that matches the query text updated.
+- AC audit after the manual run (Le Xin's choices, 31 October): Scenario 3
+  now names the staffed Technical Support requests the change preview lists
+  (T-103 already says so), in both backlog views and the backlog workbook (2
+  cells); TC_E10S02_03 says the same. TC_E10S02_01's leftover second block (the
+  old single-Session Riverside Hall case, which filled its exported steps and
+  result) is removed, as TC_05's was; TC_05's AC reference adds T-103. Other
+  stories' cases with the same leftover: E09-S01 _01, _03, _06; E09-S02 _03,
+  _04, _06, _07; E10-S04 _01 (not changed here).
 - Le Xin's manual run (Task 9): TC_E10S02_13 expects the refusal to name the
   overlapping time, but it named only the technician and event. Le Xin chose to
   show it: the reconfirm refusal now ends "(13 Dec 2026, 10:00 am – 2:00 pm)"
@@ -120,5 +128,7 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 
 ## Next step
 
-Task 9: Le Xin's manual T-93 run of sections H to J (fresh data: reset, seed,
-setup).
+Task 10: PRs within T-101 (two open per author, 40 files each): the migration
+PR first (merged and applied before the code PR), then the code split. Jira:
+check SCRUM-71's description matches Scenarios 3, 5 and 6 (the Jira connector
+was unavailable on 31 October).

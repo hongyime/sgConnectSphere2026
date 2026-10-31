@@ -180,24 +180,26 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_01
-   * AC:      E10-S02 - Scenario 1 (Attendance beyond capacity flagged)
+   * AC:      E10-S02 - Scenario 1 (Session attendance beyond capacity flagged); T-78/T-79
    * Sprint:  4.0
    *
    * Pre-conditions:
-   *   A event of "Tech Conference 2026" has a confirmed venue "Riverside Hall" with capacity 200
+   *   Event E-1 has two Session venue bookings; each booking has its own approved capacity
    *
    * Test data:
-   *   Expected Attendance: 200 -> 250 (venue capacity: 200)
+   *   Session A booking capacity: 80, attendance: 81 | Session B capacity: 120, attendance: 100
    *
    * Expected result:
-   *   The venue booking for "Riverside Hall" is flagged for review, and venue_staff_1@connectsphere.com is notified
+   *   Only Session A’s booking is flagged and Venue Staff are notified; Session B remains unchanged
    */
-  test.fixme("TC_E10S02_01 - Verify that increasing a event's expected attendance beyond its confirmed venue's capacity should flag the venue booking for review and notify Venue Staff", async ({ page }) => {
-    // Proved against PostgreSQL (arrangementImpact.integration.test.ts) and in the manual run; the screen text is covered by TC_E10S02_03/_06 here.
+  test.fixme("TC_E10S02_01 - An attendance change should flag only bookings whose governing Session headcount exceeds capacity", async ({ page }) => {
+    // Proved against PostgreSQL (arrangementImpact.integration.test.ts): no
+    // screen edits one Session of a multi-Session Event yet (E04-S02). The
+    // single-Session version is the manual run's section D; the screen text is
+    // covered by TC_E10S02_03/_06 here.
     // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Increase the event's Expected Attendance to 250
-    // 3. Save
+    // 1. Increase Session A attendance above its venue capacity
+    // 2. Review both booking statuses
     void page;
   });
 
@@ -229,17 +231,17 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_03
-   * AC:      E10-S02 - Scenario 3 (Affected arrangements shown first)
+   * AC:      E10-S02 - Scenario 3 (Affected arrangements shown first); T-103
    * Sprint:  4.0
    *
    * Pre-conditions:
-   *   A pending edit to "Tech Conference 2026" would affect its confirmed venue booking
+   *   A pending edit to "Tech Conference 2026" would affect its confirmed venue booking and its staffed Technical Support request
    *
    * Test data:
-   *   Edit: affects the confirmed venue booking
+   *   Edit: a date change that affects the confirmed venue booking and the staffed Technical Support request
    *
    * Expected result:
-   *   Before the change is applied, a confirmation screen lists the affected arrangement (venue booking) for review
+   *   Before the change is applied, a confirmation screen lists the affected arrangements for review: the venue booking, and the staffed Technical Support request with the time it moves to
    */
   test("TC_E10S02_03 - Verify that saving a change that affects confirmed arrangements should show which arrangements are affected before the change takes effect", async ({ page }) => {
     const backend = await moveDates(page);
