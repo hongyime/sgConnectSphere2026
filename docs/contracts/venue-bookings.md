@@ -459,3 +459,9 @@ existing effective-arrangement notification path. The accompanying registration
 notice fix changes public naming only: it does not alter booking approval,
 primary selection, assignment or reconfirmation rules. Production Venue Staff
 recipient verification still depends on the approved roster under SCRUM-195.
+
+The E10-S01 request review uses the same readable impact labels as E10-S02,
+including governing headcount/capacity when supplied. Required late-close
+consent disables confirmation until ticked. These UI safeguards do not change
+booking state rules or define automatic Safety Review reversion to Planning;
+that lifecycle question remains subject to PO confirmation.

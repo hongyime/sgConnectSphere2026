@@ -206,3 +206,9 @@ the shared E09 warning calculation and never removes registered attendees.
 fallback for unsupported fields. Draft submission rechecks saved dates. See
 [the Event/Session handoff](contracts/event-date-horizon.md) for the remaining
 Session acceptance scope.
+
+The E10-S01 request panel and E10-S02 review panel share `arrangementReasons.ts`
+for readable reason labels. `ConfirmPanel.confirmDisabled` supports required
+consent while leaving Cancel available; disabled/busy submissions are ignored.
+Late-close request approval/application uses this control and retains server
+validation. Other callers default to the existing enabled confirmation behaviour.
