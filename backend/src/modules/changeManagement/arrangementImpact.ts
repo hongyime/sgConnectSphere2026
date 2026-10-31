@@ -71,7 +71,7 @@ export function assessArrangementImpact(before: ArrangementSnapshot, after: Arra
   const reservations: AffectedReservation[] = after.reservations
     .filter(reservation => moved(reservation.sessionId))
     .map(reservation => ({ ...reservation, reasons: ['time'] }));
-  // T-103: support requests keep their own window (T-79), not a Session's. An
+  // T-104: support requests keep their own window (T-79), not a Session's. An
   // Event-wide change flags every staffed request and moves it as far as the
   // Event start moved; a Session change flags those overlapping the Session's
   // previous time (touching ends do not overlap) and moves them as far as that

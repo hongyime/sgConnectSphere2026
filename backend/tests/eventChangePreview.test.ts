@@ -91,7 +91,7 @@ test('applyArrangementImpact writes nothing when nothing is affected', async () 
   assert.deepEqual(calls, []);
 });
 
-// `supportOnly`: the Event has a staffed support request and no equipment (T-103).
+// `supportOnly`: the Event has a staffed support request and no equipment (T-104).
 type Script = { event?: boolean; rejected?: boolean; registered?: number; status?: string; staff?: boolean; supportOnly?: boolean };
 function scriptedClient(script: Script = {}) {
   const sql: string[] = [];
@@ -243,7 +243,7 @@ test('TC_E10S02_06: a date change tells the affected Venue Staff and the assigne
   }
 });
 
-test('TC_E10S02_06: with no equipment flagged, only the technicians on a flagged support request are told to reconfirm (T-103)', async () => {
+test('TC_E10S02_06: with no equipment flagged, only the technicians on a flagged support request are told to reconfirm (T-104)', async () => {
   const { client, notices, options } = scriptedClient({ staff: true, supportOnly: true });
   const result = await updateEventInformationWithNotifications(poolFor(client), coordinator, 'EVT-1', { startAt: '2026-11-20T01:00:00Z', endAt: '2026-11-20T09:00:00Z' }, options);
   assert.deepEqual(result.impact.supports.map(support => [support.id, support.reasons]), [['support-a', ['time']]]);

@@ -1,5 +1,5 @@
 -- E10-S02 (SCRUM-71, subtask SCRUM-244): Technical Support staffing is
--- flagged for reconfirmation when an event's date or time changes (T-103).
+-- flagged for reconfirmation when an event's date or time changes (T-104).
 --
 -- Venue bookings and equipment reservations have carried this flag since
 -- 0001; a staffed Technical Support request now gets the same one. The reason

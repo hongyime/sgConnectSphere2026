@@ -341,7 +341,7 @@ test('TC_E10S01_04: unsupported mixed request explicitly waits as a whole', asyn
   expect(screen.getByText(/entire request will remain Approved and unchanged/)).toBeInTheDocument();
 });
 
-test('TC_E10S02_05 (T-103): an approved date change lists the staffed Technical Support it flags before apply', async () => {
+test('TC_E10S02_05 (T-104): an approved date change lists the staffed Technical Support it flags before apply', async () => {
   const request = { ...pending(), requested_changes: { fields: { startAt: '2026-12-12T00:00:00.000Z' }, before: { startAt: '2026-12-05T00:00:00.000Z' } } };
   stubApi({ [read]: { body: data({ requests: [request] }) }, [decide]: { body: { request: { ...request,
     preview: { canApply: true, token: 'support-preview', lateClose: false,

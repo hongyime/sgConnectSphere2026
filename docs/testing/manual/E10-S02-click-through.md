@@ -22,7 +22,7 @@ psql "<local URL>" -q -v stage=setup -f ../docs/testing/manual/E10-S02-precondit
 It prints eight events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
 Summit**, **EVT-1023 Studio Workshop**, **EVT-1024 Product Launch** (100
 registered), **EVT-1025 Two-Day Forum** (2 Sessions), and for the Technical
-Support follow-up (T-103, subtask SCRUM-244) **EVT-1026 Charity Run**,
+Support follow-up (T-104, subtask SCRUM-244) **EVT-1026 Charity Run**,
 **EVT-1027 Board Briefing** and **EVT-1028 Year-end Gala**. Start the API with only
 `DATABASE_URL` (leave `DATABASE_POOLER_URL` empty) and Vite on
 http://localhost:5173. Every account uses the seed password
@@ -57,7 +57,7 @@ so in TC_E10S02_04 the capacity drop is made by Venue Staff on the venue form
 (E05-S01) and the Coordinator's next save shows the warning. Record these limits
 in the row remarks.
 
-The same limit applies to Technical Support (T-103): which staffed requests a
+The same limit applies to Technical Support (T-104): which staffed requests a
 change to **one** Session flags (only those overlapping its previous time) is
 the database part of TC_E10S02_05 and the whole of TC_E10S02_10, proved in
 `backend/tests/supportReconfirmation.integration.test.ts`. Sections H to J use
@@ -285,7 +285,7 @@ psql "<local URL>" -q -v stage=check -f docs/testing/manual/E10-S02-precondition
 Expected: Grand Hall, Riverside Hall and both Seminar Rooms flagged, Studio and
 Auditorium's E10-S02 flags as above (the Auditorium is also flagged by the
 E05-S01 capacity cut), one audit row per flagged arrangement, the notices above,
-and 100 Registered for EVT-1024. For T-103: EVT-1026 Sound desk unflagged at 12 Dec
+and 100 Registered for EVT-1024. For T-104: EVT-1026 Sound desk unflagged at 12 Dec
 06:00 with tech_a's assignment there, one "Reconfirmation required" and one
 "Support Reconfirmed" row, EVT-1026 in safety_review; EVT-1027 Lighting still
 flagged at 6 Dec 09:00, moving to 13 Dec 09:00, with no "Support Reconfirmed"

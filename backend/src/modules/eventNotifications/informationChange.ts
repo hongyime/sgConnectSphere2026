@@ -49,7 +49,7 @@ export async function updateEventInformationWithNotificationsWith(
     const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0].now;
     if (impact.affected) {
       const audience = await captureEventAudience(client, event.id, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
-      // T-103: with no equipment flagged, only the technicians assigned to a
+      // T-104: with no equipment flagged, only the technicians assigned to a
       // flagged support request must reconfirm, so only they are told.
       const technicalStaff = impact.reservations.length ? audience.technicalStaff : impact.supports.length
         ? (await client.query<{ staff_id: string }>(

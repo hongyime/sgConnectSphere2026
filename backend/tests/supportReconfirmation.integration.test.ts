@@ -1,4 +1,4 @@
-// E10-S02 follow-up (SCRUM-244, T-103) against PostgreSQL: a date change flags
+// E10-S02 follow-up (SCRUM-244, T-104) against PostgreSQL: a date change flags
 // staffed Technical Support with the time it moves to, readiness holds a
 // reverted event out of Safety Review, and Technical Support Staff reconfirm
 // the request: it and its assignments move, the flag clears, the Activity log
@@ -34,7 +34,7 @@ async function fixture() {
   const q = (sql: string, values: unknown[] = []) => db.pool.query(sql, values);
   try {
     const org = randomUUID();
-    await q("INSERT INTO client_organisations(id,name) VALUES($1,'T-103 test')", [org]);
+    await q("INSERT INTO client_organisations(id,name) VALUES($1,'T-104 test')", [org]);
     const user = async (role: string, fullName: string): Promise<AuthenticatedUser> => {
       const id = randomUUID();
       await q('INSERT INTO users(id,email,password_hash,full_name,role,client_org_id) VALUES($1,$2,\'synthetic\',$3,$4,$5)',
@@ -162,7 +162,7 @@ test('TC_E10S02_13: a technician busy at the new time refuses the reconfirmation
   } finally { await f.db.close(); }
 });
 
-test('T-103: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed', async () => {
+test('T-104: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed', async () => {
   const f = await fixture();
   try {
     await assert.rejects(reconfirmSupport(f.db.pool, f.techA, { request: f.support }), (e: { status?: number; message?: string }) =>

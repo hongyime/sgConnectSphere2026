@@ -38,12 +38,12 @@ test('TC_E10S01_04: layout/accessibility impacts name their requirements rather 
 
 const support = { id: 's', description: 'Sound desk', startsAt: '2026-12-04T22:00:00.000Z', endsAt: '2026-12-05T04:00:00.000Z', reasons: ['time' as const] };
 
-test('TC_E10S02_06: staffed support alone is reconfirmed by Technical Support Staff (T-103)', () => {
+test('TC_E10S02_06: staffed support alone is reconfirmed by Technical Support Staff (T-104)', () => {
   expect(staffToNotify({ impact: { affected: true, bookings: [], reservations: [], supports: [{ ...support, shiftMs: 0 }] }, overSubscription: [] })).toBe('Technical Support Staff');
   expect(staffToNotify({ impact: { affected: false, bookings: [], reservations: [], supports: [] }, overSubscription: [] })).toBe('');
 });
 
-test('TC_E10S02_03: the preview lists flagged support with the time it moves to, or says it stays (T-103)', () => {
+test('TC_E10S02_03: the preview lists flagged support with the time it moves to, or says it stays (T-104)', () => {
   const week = 7 * 24 * 60 * 60 * 1000;
   render(<ArrangementReview check={{ impact: { affected: true, bookings: [], reservations: [], supports: [
     { ...support, shiftMs: week }, { ...support, id: 't', description: '', shiftMs: 0 },

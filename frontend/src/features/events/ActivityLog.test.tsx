@@ -197,7 +197,7 @@ test('TC_E08S04_04: reversion to planning preserves action label in activity log
   expect(describeAction(reverted)).toBe('Reverted to Planning');
 });
 
-test('TC_E10S02_12: a reconfirmed support request shows its old and new time in Singapore time (T-103)', () => {
+test('TC_E10S02_12: a reconfirmed support request shows its old and new time in Singapore time (T-104)', () => {
   const reconfirmed: ActivityEntry = {
     occurred_at: '2026-10-31T10:00:00.000Z',
     action: 'Support Reconfirmed',

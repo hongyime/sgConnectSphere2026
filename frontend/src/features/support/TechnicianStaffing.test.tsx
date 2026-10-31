@@ -12,7 +12,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 const REQ = '11111111-1111-4111-8111-111111111111';
 const QUEUE = 'GET /api/venues?task=staffing';
-// The queue page also loads support to reconfirm (T-103); listed first, as the
+// The queue page also loads support to reconfirm (T-104); listed first, as the
 // fake matches the queue's URL as a prefix.
 const NONE_TO_RECONFIRM = { 'GET /api/venues?task=staffing&reconfirm=list': { body: { requests: [] } } };
 const DETAIL = `GET /api/venues?task=staffing&request=${REQ}`;

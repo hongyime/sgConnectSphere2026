@@ -48,7 +48,7 @@ export function removeAssignment(assignment: string) {
     jsonRequest('POST', { action: 'remove', assignment }), 'The assignment could not be removed.');
 }
 
-// E10-S02 follow-up (SCRUM-244, T-103): staffed requests a date change flagged,
+// E10-S02 follow-up (SCRUM-244, T-104): staffed requests a date change flagged,
 // with the time each moves to, and reconfirming one there.
 export type SupportToReconfirm = StaffingRequest & { reconfirmFor: { startsAt: string; endsAt: string } };
 

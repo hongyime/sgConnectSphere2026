@@ -1,4 +1,4 @@
-// E10-S02 follow-up (SCRUM-244, T-103): Technical Support Staff reconfirm a
+// E10-S02 follow-up (SCRUM-244, T-104): Technical Support Staff reconfirm a
 // staffed support request that an Event date or time change flagged.
 //
 // The change worked out where the request moves (reconfirm_range: shifted as

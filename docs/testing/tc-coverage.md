@@ -421,7 +421,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
 | `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
 | `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/supportReconfirmation.integration.test.ts: TC_ |
-| `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-103); backend/tests/supportReconfirmation |
+| `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104); backend/tests/supportReconfirmation |
 | `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
 | `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
@@ -501,12 +501,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - attendance raised to exactly the capacity is still sufficient (boundary)
 - attendance lowered but still above capacity stays flagged; lowered within capacity does not
 - Scenario 1: an attendance change flags a booking whose own headcount is already above capacity
-- T-103: overlap is judged against the previous Session time, and touching ends do not overlap
-- T-103: a flagged support request alone marks the change as affecting arrangements
+- T-104: overlap is judged against the previous Session time, and touching ends do not overlap
+- T-104: a flagged support request alone marks the change as affecting arrangements
 - a snapshot without support requests flags none
 - a Session end-time-only change also counts as a time change
-- T-103: an Event-wide change moves support as far as the Event start, even when only the end moved
-- T-103: support overlapping several moved Sessions moves as far as the earliest of them
+- T-104: an Event-wide change moves support as far as the Event start, even when only the end moved
+- T-104: support overlapping several moved Sessions moves as far as the earliest of them
 - an Event end-only change is still an Event-wide time change
 - a single-session move with too many people lists both reasons once
 - arrangements without a known Session move only with the Event
@@ -1056,7 +1056,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/supportReconfirmation.integration.test.ts`
 
-- T-103: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed
+- T-104: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed
 
 ### `backend/tests/supportReconfirmation.test.ts`
 

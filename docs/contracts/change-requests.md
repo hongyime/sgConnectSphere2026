@@ -261,7 +261,7 @@ the integration increment above):
 - Closed by E08-S04 (SCRUM-242, 31 October): Venue Staff now clear a booking's
   `requires_reconfirmation` by reconfirming it (`docs/contracts/venue-bookings.md`),
   the follow-up raised on #376. Equipment was already cleared by re-reserving (E07-S04).
-- T-103 (SCRUM-244, 31 October): a date or time change also flags staffed
+- T-104 (SCRUM-244, 31 October): a date or time change also flags staffed
   Technical Support requests, on the direct edit and on an applied change
   request alike, since both run `applyArrangementImpact`. A Session change
   flags the requests overlapping the Session's previous time and an Event-wide

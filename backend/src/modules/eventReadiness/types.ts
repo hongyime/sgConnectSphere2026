@@ -47,7 +47,7 @@ export type ReadinessBlocker =
       message: string;
     }
   | {
-      // E10-S02 (T-103): a staffed request flagged by a date change.
+      // E10-S02 (T-104): a staffed request flagged by a date change.
       kind: 'support-unassigned' | 'support-needs-review';
       supportRequestId: string;
       description: string;

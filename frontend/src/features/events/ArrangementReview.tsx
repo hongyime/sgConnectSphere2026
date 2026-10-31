@@ -1,6 +1,6 @@
 // E10-S02 (SCRUM-237) Scenarios 3 and 4: before the Coordinator's change takes
 // effect, show the Session venue bookings, equipment reservations and staffed
-// Technical Support (T-103) it affects and any over-subscription. Nothing is
+// Technical Support (T-104) it affects and any over-subscription. Nothing is
 // saved until they confirm.
 import { arrangementReasons } from './arrangementReasons';
 import { Alert, ConfirmPanel, formatDateRange } from '../../shared';

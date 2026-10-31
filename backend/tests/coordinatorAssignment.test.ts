@@ -332,7 +332,7 @@ test('TC_E14S02_01: the assigned Coordinator reads the event Activity log withou
   const activity = find(calls, 'FROM audit_logs a')!;
   assert.deepEqual(activity.values, [eventId]);
   // E06-S04 Scenario 5: the Coordinator view also includes venue booking
-  // decisions, and T-103 (SCRUM-244) Technical Support reconfirmations.
+  // decisions, and T-104 (SCRUM-244) Technical Support reconfirmations.
   assert.match(activity.sql, /\(a\.entity_type IN \('event', 'venue_booking'\) OR \(a\.entity_type = 'tech_support_request' AND a\.action = 'Support Reconfirmed'\)\) AND a\.action <> 'Access Denied'/);
   assert.doesNotMatch(activity.sql, /email/);
   assert.equal(has(calls, "'Access Denied', "), false);

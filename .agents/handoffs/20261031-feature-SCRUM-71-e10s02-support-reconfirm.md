@@ -1,7 +1,7 @@
 # SCRUM-244 E10-S02 follow-up — flag and reconfirm Technical Support staffing on a date change
 
 Extend E10-S02 "Distinguish minor edits from arrangement-affecting changes"
-(story SCRUM-71, owner Le Xin, In Progress) with T-103: a Session or Event
+(story SCRUM-71, owner Le Xin, In Progress) with T-104: a Session or Event
 date/time change also flags staffed Technical Support requests for
 reconfirmation, lists them in the change preview and notifies the assigned
 Technical Support Staff. A flagged request is outstanding for readiness, so a
@@ -20,7 +20,7 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 
 ## Plan
 
-1. Branch, Jira subtask SCRUM-244, T-103 in `docs/bdr/`, E10-S02 Scenarios 5
+1. Branch, Jira subtask SCRUM-244, T-104 in `docs/bdr/`, E10-S02 Scenarios 5
    and 6 and checklist in both backlog views, re-estimate 5 to 8, backlog
    workbook, this handoff. Done (this commit).
 2. Test cases for the new criteria; test-case workbook; tc-coverage. Done:
@@ -57,6 +57,12 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
 10. PR(s) within the T-101 limits; Jira.
 
 ## Decisions
+
+- Decision number: T-104. It was T-103 until 31 October, when Ji Ning's #395
+  ("affected approved changes interrupt Safety Review") also took T-103 and
+  merges first; every reference was renumbered on this branch, #396 and #397.
+  The run records `20261031-211333` and `20261031-214805` were committed before
+  and say T-103; they are immutable (T-65) and mean T-104.
 
 - Placement: E10-S02 is In Progress, so it is updated in place (T-74), not a new
   story. Re-estimated 5 to 8 points by the story owner (T-37, T-73); the
@@ -98,10 +104,10 @@ lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
   the E14-S02 unit test that matches the query text updated.
 - AC audit after the manual run (Le Xin's choices, 31 October): Scenario 3
   now names the staffed Technical Support requests the change preview lists
-  (T-103 already says so), in both backlog views and the backlog workbook (2
+  (T-104 already says so), in both backlog views and the backlog workbook (2
   cells); TC_E10S02_03 says the same. TC_E10S02_01's leftover second block (the
   old single-Session Riverside Hall case, which filled its exported steps and
-  result) is removed, as TC_05's was; TC_05's AC reference adds T-103. Other
+  result) is removed, as TC_05's was; TC_05's AC reference adds T-104. Other
   stories' cases with the same leftover: E09-S01 _01, _03, _06; E09-S02 _03,
   _04, _06, _07; E10-S04 _01 (not changed here).
 - Le Xin's manual run (Task 9): TC_E10S02_13 expects the refusal to name the

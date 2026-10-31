@@ -26,8 +26,8 @@
 --     (25 Nov and 26 Nov, 09:00-12:00), each with its own room (E10 Seminar
 --     Room A and B, 80 each) and Projector: TC_E10S02_08, _09.
 -- EVT-1021 to EVT-1025 keep an open support request (tech_a assigned, status
--- left open as before T-103), so T-103 does not flag them and sections A to G
--- read as they did. The T-103 follow-up (SCRUM-244) adds staffed requests:
+-- left open as before T-104), so T-104 does not flag them and sections A to G
+-- read as they did. The T-104 follow-up (SCRUM-244) adds staffed requests:
 --   EVT-1026 "Charity Run", 5 Dec 2026 07:00-12:00, was Confirmed and is back in
 --     Planning, at E10 Garden Hall (200) with an E10 Projector, and a staffed
 --     "Sound desk" request 06:00-12:00 with tech_a: TC_E10S02_03/_06/_08
@@ -138,7 +138,7 @@ INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_r
 SELECT support.id, support.event_id, t.id, support.support_range FROM support, users t
 WHERE t.email = 'tech_a@connectsphere.com';
 
--- T-103: staffed support requests, each with tech_a assigned for its window.
+-- T-104: staffed support requests, each with tech_a assigned for its window.
 WITH support AS (
   INSERT INTO tech_support_requests (event_id, support_required, support_description, support_range, status, requested_by)
   SELECT e.id, true, r.description, r.range::tstzrange, 'staffed', e.coordinator_id
@@ -214,7 +214,7 @@ WHERE e.event_code LIKE 'EVT-102_' ORDER BY n.created_at, e.event_code, u.email;
 SELECT e.event_code, r.status, count(*) FROM event_registrations r JOIN events e ON e.id = r.event_id
 WHERE e.event_code = 'EVT-1024' GROUP BY e.event_code, r.status;
 
--- T-103: the support requests, their flag and the time each moves to, the
+-- T-104: the support requests, their flag and the time each moves to, the
 -- technicians' assignments, the reconfirmations and the event statuses.
 SELECT e.event_code, coalesce(t.support_description, '(none)') AS support, t.status,
   t.requires_reconfirmation AS needs_reconfirmation,

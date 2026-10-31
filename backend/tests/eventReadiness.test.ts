@@ -138,7 +138,7 @@ test('TC_E08S03_04: only an open required support request blocks; text is tidied
   assert.equal(assessReadiness(event(), [booking()], [], []).supportNoneRequired, false, 'nothing recorded is not "none needed"');
 });
 
-test('TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-103)', () => {
+test('TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104)', () => {
   const flagged = assessReadiness(event(), [booking()], [], [support({ id: 'f', requires_reconfirmation: true, description: '  Sound\ndesk ' })]);
   assert.deepEqual(flagged.blockers, [{ kind: 'support-needs-review', supportRequestId: 'f', description: '  Sound\ndesk ',
     message: 'Technical support — needs reconfirmation at the new time: Sound desk' }]);

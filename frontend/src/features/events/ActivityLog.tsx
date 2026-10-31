@@ -31,7 +31,7 @@ const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue
 // other values, even ones that look like a date, stay as written.
 export function formatEditedValue(field: string | null, value: string): string {
   if (field === 'startAt' || field === 'endAt') return formatDate(value, true);
-  // T-103: a reconfirmed support request's time, stored the same way.
+  // T-104: a reconfirmed support request's time, stored the same way.
   if (field === 'registrationDates' || field === 'support_range') {
     const [opens, closes] = value.split(' to ');
     return closes === undefined ? formatDate(value, true) : `${formatDate(opens, true)} to ${formatDate(closes, true)}`;

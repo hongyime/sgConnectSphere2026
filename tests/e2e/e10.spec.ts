@@ -231,7 +231,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_03
-   * AC:      E10-S02 - Scenario 3 (Affected arrangements shown first); T-103
+   * AC:      E10-S02 - Scenario 3 (Affected arrangements shown first); T-104
    * Sprint:  4.0
    *
    * Pre-conditions:
@@ -328,7 +328,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_06
-   * AC:      E10-S02 - Scenario 6 (Affected staff notified); T-103
+   * AC:      E10-S02 - Scenario 6 (Affected staff notified); T-104
    * Sprint:  4.0
    *
    * Pre-conditions:
@@ -350,7 +350,7 @@ test.describe("E10-S02", () => {
     await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('the Venue Staff and Technical Support Staff were notified.');
   });
 
-  // T-103 (SCRUM-244): staffed Technical Support is flagged with the time it
+  // T-104 (SCRUM-244): staffed Technical Support is flagged with the time it
   // moves to. The flags, notices and moves are proved against PostgreSQL in
   // backend/tests/supportReconfirmation.integration.test.ts; these check what
   // the Coordinator and Technical Support Staff see.
@@ -374,7 +374,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_10
-   * AC:      E10-S02 - Scenario 5 (Session date/time change flags its arrangements); T-103
+   * AC:      E10-S02 - Scenario 5 (Session date/time change flags its arrangements); T-104
    * Sprint:  4.0
    *
    * Pre-conditions:
@@ -399,7 +399,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_11
-   * AC:      E10-S02 - Scenario 5 (flagged support is outstanding); T-103; E08-S04 Scenario 4
+   * AC:      E10-S02 - Scenario 5 (flagged support is outstanding); T-104; E08-S04 Scenario 4
    * Sprint:  4.0
    *
    * Pre-conditions:
@@ -474,7 +474,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_12
-   * AC:      E10-S02 - Scenario 5 (reconfirmed at the new time); T-103
+   * AC:      E10-S02 - Scenario 5 (reconfirmed at the new time); T-104
    * Sprint:  4.0
    *
    * Pre-conditions:
@@ -509,7 +509,7 @@ test.describe("E10-S02", () => {
 
   /**
    * TC_E10S02_13
-   * AC:      E10-S02 - Scenario 5 (reconfirmed at the new time); T-103
+   * AC:      E10-S02 - Scenario 5 (reconfirmed at the new time); T-104
    * Sprint:  4.0
    *
    * Pre-conditions:

@@ -1,6 +1,6 @@
 # SCRUM-244 migration 0026 — reconfirmation flag on Technical Support requests
 
-Migration-only branch for the E10-S02 follow-up (T-103, story SCRUM-71,
+Migration-only branch for the E10-S02 follow-up (T-104, story SCRUM-71,
 subtask SCRUM-244, owner Le Xin). Under `docs/ops/production-migrations.md`
 ("Release sequence") the schema change ships in its own PR, is merged and
 applied by the deploy owner, and only then may the code PR that uses it

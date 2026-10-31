@@ -1,4 +1,4 @@
-// E10-S02 follow-up (SCRUM-244, T-103) against a stubbed API shaped like
+// E10-S02 follow-up (SCRUM-244, T-104) against a stubbed API shaped like
 // backend/src/modules/equipmentSupport/supportReconfirmation.ts: the "Support
 // to reconfirm" section on the staffing page, reconfirming, and a refusal.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';

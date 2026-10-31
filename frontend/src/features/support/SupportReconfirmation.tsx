@@ -1,4 +1,4 @@
-// E10-S02 follow-up (SCRUM-244, T-103) for Technical Support Staff: staffed
+// E10-S02 follow-up (SCRUM-244, T-104) for Technical Support Staff: staffed
 // support requests an Event date or time change flagged, shown above the
 // staffing queue. Reconfirming moves the request and its technicians'
 // assignments to the new time and clears the flag; a technician busy then

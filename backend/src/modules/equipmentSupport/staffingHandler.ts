@@ -4,7 +4,7 @@
 //   GET  /api/venues?task=staffing&schedule=mine        the signed-in technician's schedule
 //   POST /api/venues?task=staffing  { action: 'assign', request, staff }
 //   POST /api/venues?task=staffing  { action: 'remove', assignment }
-//   GET  /api/venues?task=staffing&reconfirm=list       flagged requests to reconfirm (T-103)
+//   GET  /api/venues?task=staffing&reconfirm=list       flagged requests to reconfirm (T-104)
 //   POST /api/venues?task=staffing  { action: 'reconfirm', request }
 // Routed through api/venues/index.ts like ?task=support, to stay within the
 // Vercel Hobby plan's serverless function limit.

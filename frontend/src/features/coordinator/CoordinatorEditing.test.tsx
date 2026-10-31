@@ -148,7 +148,7 @@ test('TC_E10S02_03: a date change shows the affected booking and equipment, and 
   expect(patches[1].body).toEqual(patches[0].body);
 });
 
-test('TC_E10S02_06 (T-103): a change flagging only staffed support counts it and names Technical Support Staff', async () => {
+test('TC_E10S02_06 (T-104): a change flagging only staffed support counts it and names Technical Support Staff', async () => {
   const sound = { id: 'support-a', description: 'Sound desk', startsAt: '2026-11-15T00:00:00.000Z', endsAt: '2026-11-15T04:00:00.000Z', reasons: ['time'], shiftMs: 5 * 86400000 };
   const supportOnly = { impact: { affected: true, bookings: [], reservations: [], supports: [sound] }, overSubscription: [] };
   stub({ previewReply: { status: 200, body: supportOnly }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...supportOnly } } });

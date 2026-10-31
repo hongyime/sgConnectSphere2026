@@ -12,7 +12,7 @@
 //   (D61). An event with no request lines passes, whether its equipment was
 //   recorded as 'none required' or as free text (D61).
 // - Support (Scenario 5): no required support request is still open, and
-//   none is flagged for reconfirmation after a date change (E10-S02, T-103).
+//   none is flagged for reconfirmation after a date change (E10-S02, T-104).
 //
 // The check covers the whole event, whatever Session a booking belongs to
 // (D70). The rows are read by loadReadiness() and judged by the pure

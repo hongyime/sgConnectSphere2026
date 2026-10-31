@@ -93,7 +93,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 // a value that is not a user ID ("No eligible Event Coordinator") is kept.
 // E06-S04 Scenario 5 (T-75, T-76): the assigned Coordinator also sees Venue
 // Staff booking decisions, which are stored against the booking, with the
-// venue named, and Technical Support reconfirmations (T-103, SCRUM-244), which
+// venue named, and Technical Support reconfirmations (T-104, SCRUM-244), which
 // are stored against the support request. The Organiser view leaves them out.
 export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
   const targets = options.includeBookings

@@ -14,7 +14,7 @@ const sessionA: SessionState = { id: 'session-a', startsAt: '2027-03-12T01:00:00
 const sessionB: SessionState = { id: 'session-b', startsAt: '2027-03-12T05:00:00.000Z', endsAt: '2027-03-12T07:00:00.000Z', expectedAttendance: 100 };
 const bookingA: BookingState = { id: 'booking-a', sessionId: 'session-a', venueId: 'venue-a', venueName: 'Small Room', headcount: null, capacity: 80 };
 const bookingB: BookingState = { id: 'booking-b', sessionId: 'session-b', venueId: 'venue-b', venueName: 'Main Hall', headcount: null, capacity: 120 };
-// T-103: staffed support requests keep their own window. A starts an hour
+// T-104: staffed support requests keep their own window. A starts an hour
 // before Session A (setup); B covers Session B and runs past it.
 const supportA: SupportState = { id: 'support-a', description: 'Sound desk', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z' };
 const supportB: SupportState = { id: 'support-b', description: 'Lighting', startsAt: '2027-03-12T06:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z' };
@@ -110,7 +110,7 @@ test('TC_E10S02_10: a Session change does not flag support that does not overlap
   assert.deepEqual(ids(impact.bookings), ['booking-a'], 'the Session A arrangements are still flagged');
 });
 
-test('T-103: overlap is judged against the previous Session time, and touching ends do not overlap', () => {
+test('T-104: overlap is judged against the previous Session time, and touching ends do not overlap', () => {
   // Session A moves onto support B's window: B overlaps only the new time.
   const intoB = snapshot({ sessions: [{ ...sessionA, startsAt: '2027-03-12T06:00:00.000Z', endsAt: '2027-03-12T08:00:00.000Z' }, sessionB] });
   assert.deepEqual(ids(assessArrangementImpact(snapshot(), intoB).supports), ['support-a']);
@@ -121,7 +121,7 @@ test('T-103: overlap is judged against the previous Session time, and touching e
   assert.deepEqual(impact.supports, []);
 });
 
-test('T-103: a flagged support request alone marks the change as affecting arrangements', () => {
+test('T-104: a flagged support request alone marks the change as affecting arrangements', () => {
   const only = { sessions: [sessionA], bookings: [], reservations: [], supports: [supportA] };
   const after = snapshot({ ...only, sessions: [{ ...sessionA, endsAt: '2027-03-12T04:00:00.000Z' }] });
   const impact = assessArrangementImpact(snapshot(only), after);
@@ -149,14 +149,14 @@ test('TC_E10S02_08: an Event-wide date change flags every Session arrangement', 
   assert.deepEqual(impact.supports.map(support => [support.id, support.reasons, support.shiftMs]), [['support-a', ['time'], 7 * DAY], ['support-b', ['time'], 7 * DAY]]);
 });
 
-test('T-103: an Event-wide change moves support as far as the Event start, even when only the end moved', () => {
+test('T-104: an Event-wide change moves support as far as the Event start, even when only the end moved', () => {
   const earlier = snapshot({ event: { startsAt: '2027-03-11T22:30:00.000Z', endsAt: '2027-03-12T07:00:00.000Z' } });
   assert.deepEqual(assessArrangementImpact(snapshot(), earlier).supports.map(support => support.shiftMs), [-2.5 * HOUR, -2.5 * HOUR]);
   const longer = snapshot({ event: { startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z' } });
   assert.deepEqual(assessArrangementImpact(snapshot(), longer).supports.map(support => support.shiftMs), [0, 0], 'flagged, but its time stays');
 });
 
-test('T-103: support overlapping several moved Sessions moves as far as the earliest of them', () => {
+test('T-104: support overlapping several moved Sessions moves as far as the earliest of them', () => {
   const wide: SupportState = { id: 'support-wide', description: 'Whole day', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z' };
   const after = snapshot({ supports: [wide], sessions: [
     { ...sessionA, startsAt: '2027-03-12T03:00:00.000Z', endsAt: '2027-03-12T05:00:00.000Z' },
@@ -235,7 +235,7 @@ test('loadArrangementSnapshot reads live arrangements and converts dates to ISO 
   assert.match(calls[2]!.sql, /b\.status = 'confirmed'/, 'only Confirmed bookings can need reconfirmation');
   assert.match(calls[2]!.sql, /COALESCE\(l\.capacity, v\.max_capacity\)/, 'layout capacity first, venue maximum otherwise');
   assert.match(calls[3]!.sql, /r\.status IN \('reserved', 'partial'\)/, 'only live reservations');
-  assert.match(calls[4]!.sql, /status = 'staffed'/, 'only staffed support requests (T-103)');
+  assert.match(calls[4]!.sql, /status = 'staffed'/, 'only staffed support requests (T-104)');
 });
 
 test('loadArrangementSnapshot refuses an unknown Event', async () => {
