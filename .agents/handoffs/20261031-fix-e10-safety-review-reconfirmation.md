@@ -9,3 +9,5 @@ Observed verification: 39 focused unit/database checks passed; 656 backend units
 PR #390 documentation follow-up: reconciled both contract references with T-103 and SCRUM-70 comment 10401 on this implementation branch, as requested. PO confirmation is no longer pending; #390 remains the separate UI scope. No PR creation or push authorized for this follow-up.
 
 Publication authorized after verification. #390 merged as 6ae0c4b2 and freed a WIP slot. Synchronized main, keeping the corrected approved-policy contract text and preserving the merged UI safeguard details. Existing runtime evidence remains explicitly combined-tree evidence; no new manual acceptance claimed.
+
+PR #395 conflict follow-up: merged main 4b55bf34 (#391), preserving the E11 publication-boundary audit and the approved E10 lifecycle notes in both conflicting documentation files. Removed superseded PO-pending wording. No runtime edits in the conflict resolution. Inventory regenerated after the E11 test additions.
