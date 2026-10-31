@@ -96,3 +96,6 @@ artifacts/sbom/*
 !artifacts/scrum-206-completion-obsolete.html
 
 !artifacts/scrum-180-date-horizon.html
+
+# Durable E02-S07 estimate review
+!artifacts/e02-s07-date-horizon-estimate.html

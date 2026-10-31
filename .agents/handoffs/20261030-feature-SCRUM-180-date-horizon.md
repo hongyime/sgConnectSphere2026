@@ -43,3 +43,12 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
   module requires venue-bookings.md even for Event-only validation. Use the
   documented Docs-Impact waiver: Event date contract/API/architecture/frontend
   docs are updated; this increment does not change venue-booking semantics.
+
+## PR #389 merge-conflict follow-up — 31 October
+
+Merged main 4e5b3f3e (estimate PR #388). Resolved the sole .gitignore conflict
+by preserving both durable PostPlan exceptions. No application code changed.
+The preceding Ponytail review of head 1ad7bb0 found no blocking Event-level
+code issue and passed 43 lifecycle unit tests plus 17 request-form tests; its
+new immutable record is included. Session integration and human acceptance
+remain open. The estimate proposal is now merged; Jira was not edited here.
