@@ -52,8 +52,8 @@ const reasonText = { time: 'date or time changed', capacity: 'attendance above c
 
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag
-// is what readiness already shows as "needs review"; staff clear it when
-// they reconfirm (E06-S04, E07-S04).
+// is what readiness already shows as "needs review"; Venue Staff clear it by
+// reconfirming the booking (E08-S04) and Technical Support by re-reserving (E07-S04).
 export async function applyArrangementImpact(query: Query, actorId: string, eventId: string, impact: ArrangementImpact): Promise<void> {
   if (impact.bookings.length)
     await query('UPDATE venue_bookings SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.bookings.map(booking => booking.id)]);
