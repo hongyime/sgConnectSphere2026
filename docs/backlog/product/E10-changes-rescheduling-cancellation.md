@@ -49,7 +49,7 @@ Given the Event becomes Completed or Cancelled while one or more change requests
 
 - **Sprint**: Sprint 4
 - **Points**: 8
-- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27, C-107, T-79, T-103
+- **BDR references**: C-05, T-16, B-05, B-11, C-67, T-68, O-27, C-107, T-79, T-104
 - **Owner**:
 
 ### User story
@@ -68,7 +68,7 @@ Given an Event has confirmed venue and equipment arrangements When only its Even
 
 #### Scenario 3 — Affected Session arrangements shown first
 
-Given a change affects confirmed arrangements When I save it Then I am shown the affected Session bookings, equipment reservations and staffed Technical Support requests before the change takes effect (T-103)
+Given a change affects confirmed arrangements When I save it Then I am shown the affected Session bookings, equipment reservations and staffed Technical Support requests before the change takes effect (T-104)
 
 #### Scenario 4 — Over-subscription warns only
 
@@ -76,7 +76,7 @@ Given a change would make a Session or combined Event registration capacity lowe
 
 #### Scenario 5 — Session date/time change flags its arrangements
 
-Given a Session date or time changes When the change takes effect Then that Session's venue booking and equipment reservations, and any staffed Technical Support request overlapping its previous time, are flagged for reconfirmation; an Event-wide date/time change flags all of its Session arrangements and every staffed Technical Support request; a flagged Technical Support request counts as outstanding for readiness until Technical Support Staff reconfirm it at the new time (T-103)
+Given a Session date or time changes When the change takes effect Then that Session's venue booking and equipment reservations, and any staffed Technical Support request overlapping its previous time, are flagged for reconfirmation; an Event-wide date/time change flags all of its Session arrangements and every staffed Technical Support request; a flagged Technical Support request counts as outstanding for readiness until Technical Support Staff reconfirm it at the new time (T-104)
 
 #### Scenario 6 — Affected staff notified
 
@@ -89,7 +89,7 @@ Given a change flags a venue, equipment or Technical Support staffing arrangemen
 - Show affected Session bookings/reservations before applying a change
 - Warn about over-subscription without automatically removing or waitlisting Attendees
 - Flag the affected Session or all Sessions for date/time changes as appropriate
-- Flag staffed Technical Support requests on a date/time change and let Technical Support Staff reconfirm them at the new time (T-103)
+- Flag staffed Technical Support requests on a date/time change and let Technical Support Staff reconfirm them at the new time (T-104)
 - Notify staff responsible for the affected arrangements
 
 ## E10-S03 — Reschedule an event
