@@ -424,6 +424,21 @@ The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_b
 
 The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Lifting or shortening unavailability follows same-event replacement descendants through rejected attempts. An active descendant prevents restoring the original; a Released attempt ends that path. This preserves explicit original cancellation after a successful retry. Database integration tests exercise real E05-S06 loss, recovery approval, publication/notification timing and block lifting/editing. Human manual acceptance remains required.
 
+## Reconfirming a flagged booking (E08-S04 Scenario 4)
+
+A Confirmed booking flagged `requires_reconfirmation` (an E10-S02 date or
+attendance change, an E05-S01 capacity drop) stays on its original time until
+Venue Staff reconfirm it: `POST /api/venues` with `action: reconfirm`. Any
+active Venue Staff member may, as for decisions. The booking then takes its
+Session's current time (the Event's without a Session), which must be clear of
+other bookings and blocks with setup and turnaround time; the flag is cleared,
+one `Booking Reconfirmed` audit row is written and the Coordinator is notified.
+`GET /api/venues?bookings=reconfirm` lists what is waiting with the time each
+booking would take. When that was a reverted event's last outstanding
+arrangement, the event enters Safety Review (`eventReadiness/autoSafetyReview.ts`);
+`cancel_lost_booking` runs the same check, since a lost booking is released only
+after its replacement is confirmed.
+
 ## Approved Event change requests and reconfirmation
 
 E10-S01 applies supported arrangement changes through E10-S02's shared save
@@ -438,3 +453,19 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+The 31 October E11 audit confirms that venue moves/recovery continue to use the
+existing effective-arrangement notification path. The accompanying registration
+notice fix changes public naming only: it does not alter booking approval,
+primary selection, assignment or reconfirmation rules. Production Venue Staff
+recipient verification still depends on the approved roster under SCRUM-195.
+
+The readable impact labels and late-close consent safeguards in PR #390 are
+UI-only. Bryan has approved the separate Safety Review-to-Planning rule (T-103;
+SCRUM-70 comment 10401); it is no longer awaiting PO confirmation. The backend
+implementation below returns the Event to Planning only when applying an
+approved request flags arrangements for reconfirmation.
+
+### E10-S01 Safety Review interruption
+
+E10-S01 approved changes that interrupt Safety Review leave Confirmed bookings in place with reconfirmation flags. Reconfirming the last required arrangement uses the shared readiness transition and sends a fresh SO notice, including the first safety cycle; previous safety history remains unchanged.

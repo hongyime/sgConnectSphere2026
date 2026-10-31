@@ -1,18 +1,18 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 379 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 383 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **302** (79.7%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+- Total test cases: **383**
+- Automated (explicit TC_ID in an active test title): **304** (79.4%)
+  - Real-database (`.integration.test` / `.db.test`): **44**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **258**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **55** (14.5%)
-- No test yet (no test file mentions the TC_ID): **22** (5.8%)
+  - Live-assertion (other active tests): **259**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
+- No test yet (no test file mentions the TC_ID): **25** (6.5%)
 
 ## Coverage by epic
 
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 16 | 11 | 1 |
+| E08 | 28 | 18 | 10 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
-| E10 | 29 | 25 | 0 | 4 |
+| E10 | 33 | 25 | 0 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **302** | **55** | **22** |
+| **Total** | **383** | **304** | **54** | **25** |
 
 ## Case-by-case status
 
@@ -333,10 +333,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
 | `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_03: a Technical Support equipment failure on a Confirmed event is flagged and the event stays Confirmed; tests/e2e/e |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
-| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
+| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; tests/e2e |
+| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_06: a venue block over a Confirmed booking returns the event to Planning, tells its Coordinator and does not cancel  |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -420,6 +420,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_07: a booking headcount governs over Session attendance; only the Session-governed booking is flagged (SQL Session ch |
 | `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
 | `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
+| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ❌ none | — |
+| `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ❌ none | — |
+| `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ❌ none | — |
+| `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ❌ none | — |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -440,17 +444,17 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
 | `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E11S01_02 published primary change captures both scoped audiences; self-only audiences emit nothing; backend/tests/bookingSubmission.integr |
-| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically; tests/e2e/e11.spec.ts: |
+| `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically; backend/tests/e11Curre |
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
 | `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
 | `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E11S01_09: email-outbox failure rolls back creation, draft submission, reassignment request and each response; backen |
-| `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\; backend/tests/equipmentNotifications.test.ts: TC_E11S0 |
+| `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\; backend/tests/e11CurrentFlows.integration.test.ts: TC_ |
 | `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
 | `TC_E11S01_12` | E11-S01 | Preserve before/after recipients during cancellation and venue moves | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_12: cancellation notifications retain recipients after registrations and staff are released; backend/tests/eventNoti |
 | `TC_E11S01_13` | E11-S01 | Expose missing Venue Staff assignments without an unsafe fallback | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_13: decided_by and unrelated Venue Staff never stand in for assignments; backend/tests/eventNotifications.integratio |
-| `TC_E11S01_14` | E11-S01 | Protect attendee notification content and membership boundaries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_02 TC_E11S01_14: actual date edit notifies active linked users using public attendee content; backend/tests/eventNot |
+| `TC_E11S01_14` | E11-S01 | Protect attendee notification content and membership boundaries | ✅ active | backend/tests/e11CurrentFlows.integration.test.ts: TC_E11S01_02 TC_E11S01_03 TC_E11S01_11 TC_E11S01_14: real E09 memberships receive E10 applied dates once with public content; bac |
 | `TC_E11S01_15` | E11-S01 | Deduplicate concurrent notification-hook retries | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_15: concurrent retries yield one in-app and email record per recipient |
 | `TC_E11S01_16` | E11-S01 | Keep uncommitted notifications invisible and roll back all writes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_16: uncommitted messages are invisible and rollback leaves no jobs |
 
@@ -551,6 +555,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
 
+### `backend/tests/autoSafetyReview.integration.test.ts`
+
+- the earlier safety approval is not reused: only a Safety Officer can confirm the event again
+- the event waits until the last arrangement: booking, then equipment, then Technical Support staff
+- re-reserving the last flagged equipment puts a reverted event in Safety Review
+- approving the last pending booking of a reverted event puts it in Safety Review
+- an event that was never Confirmed stays in Planning for its Coordinator to submit
+- a legacy Confirmed event with no earlier confirmation entry still enters Safety Review once reverted and reconfirmed
+- rejecting a booking never moves a reverted event, even with nothing left outstanding
+
+### `backend/tests/autoSafetyReview.test.ts`
+
+- a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change
+- without an assigned Coordinator only the Organiser and the Safety Officers are told
+- nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding
+
 ### `backend/tests/bookingPrimary.test.ts`
 
 - primary selection shares origin/authentication HTTP boundary, without submission key
@@ -639,6 +659,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/decision.test.ts`
 
 - SCRUM-34: the reason is trimmed, an approval ignores any reason, and an unknown decision is refused
+
+### `backend/tests/e08s04Arrangements.integration.test.ts`
+
+- after a venue loss, the event waits for the replacement and the lost booking, then enters Safety Review (Scenarios 5 then 4)
+- after a venue loss on an event that was never Confirmed, cancelling the lost booking leaves it for the Coordinator to submit
 
 ### `backend/tests/emailTemplate.test.ts`
 
@@ -1023,6 +1048,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - handler: methods, origin and actions
 - handler: GET routes to the queue, one request or the schedule; POST to assign or remove
 
+### `backend/tests/supportReconfirmationSchema.integration.test.ts`
+
+- 0026 adds a not-null reconfirmation flag to Technical Support requests, defaulting to false
+- a request written as the deployed code writes it is unflagged, and the flag can be set and cleared but not emptied
+
 ### `backend/tests/supportRequests.test.ts`
 
 - validation accepts a trimmed description and an ISO range
@@ -1118,6 +1148,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
+- reconfirming moves a flagged booking to its Session time, clears the flag, logs it and tells the Coordinator
+- reconfirming with no assigned Coordinator still clears the flag and tells nobody
+- only Venue Staff reconfirm, and the refusal is recorded
+- reconfirming needs a booking id
+- reconfirming refuses a missing, unconfirmed or unflagged booking, or a closed event, and changes nothing
+- reconfirming is refused when the new time clashes with another booking or a block
+- reconfirming that loses a race to the 0016 guard is a 409, not a server error
+- reconfirming rechecks the staff account like a decision
+- the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events
+- a reconfirmation notice falls back to
 
 ### `backend/tests/venueBookingRequests.test.ts`
 
@@ -1210,6 +1250,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - handler: methods, origin and actions
 - handler: GET routes to the event or staff list; POST to hold, convert, release or extend
 - database buffer-guard refusals become 409 and rollback a hold creation
+
+### `backend/tests/venueReconfirmation.integration.test.ts`
+
+- reconfirming moves the booking to its Session time, clears the flag, logs it and tells the Coordinator once
+- reconfirming is refused when another booking holds the venue at the new time, and nothing changes
+- reconfirming is refused when a maintenance block covers the new time
+- only a flagged Confirmed booking on an open event is reconfirmed, and only by Venue Staff
+- two Venue Staff reconfirming the same booking at once: one succeeds, the other is told nothing is left
+
+### `backend/tests/venueReconfirmationRoute.integration.test.ts`
+
+- Venue Staff list and reconfirm a flagged booking through /api/venues
 
 ### `backend/tests/venueSearch.test.ts`
 
@@ -1668,6 +1720,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a malformed reply is a failed load, not a crash
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
+
+### `frontend/src/features/venue/BookingReconfirmation.test.tsx`
+
+- the list shows each flagged booking with its booked time and the time it would move to
+- reconfirming asks first, then says who was told and that the reverted event is back in Safety Review
+- a booking kept at the same time says so, and an event without a Coordinator or other outstanding work says that
+- a refused reconfirmation shows the reason in the panel and keeps the booking listed
+- cancelling closes the panel and sends nothing; choosing again clears the last result
+- the Reconfirm buttons are disabled while a reconfirmation is being saved
+- an empty list and a failed load each say so
+- the Booking requests page shows the bookings to reconfirm under the pending requests
+- a reply without a list counts as nothing to reconfirm and never breaks the page
 
 ### `frontend/src/features/venue/BookingRequests.test.tsx`
 

@@ -258,6 +258,9 @@ the integration increment above):
 - No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
   of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
 - The Coordinator's preview screen is the frontend increment (SCRUM-237, PR #380).
+- Closed by E08-S04 (SCRUM-242, 31 October): Venue Staff now clear a booking's
+  `requires_reconfirmation` by reconfirming it (`docs/contracts/venue-bookings.md`),
+  the follow-up raised on #376. Equipment was already cleared by re-reserving (E07-S04).
 
 ## Refused-edit handoff (SCRUM-205)
 
@@ -281,3 +284,34 @@ Frontend component and intercepted desktop/mobile browser tests validate this
 handoff. They are not evidence of real-database persistence or human execution.
 Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
 this frontend increment does not close parent SCRUM-70.
+
+
+## Review usability follow-up to #383 (PR #390)
+
+PR #390 provides shared readable impact labels and explicit late-close consent
+for both review panels, retaining governing headcount/capacity details. Approval
+or application stays disabled until consent is ticked, with form-submit and
+server validation guards. Those UI safeguards do not implement lifecycle changes.
+Bryan has approved the Safety Review-to-Planning rule (T-103; SCRUM-70 comment
+10401). The separate backend implementation and its verification are described
+below; PO policy confirmation is no longer pending.
+
+### Approved changes during Safety Review (PO approval recorded 31 October)
+
+Bryan approved the following interpretation, relayed by the story owner and
+recorded in SCRUM-70 comment 10401: applying an approved request during Safety
+Review returns the same Event to Planning only if arrangements are flagged for
+reconfirmation. Safe-only changes and structured changes with no affected
+arrangements retain Safety Review. Preview and Pending requests do not replan.
+The Event, approval, bookings, reservations, assignments and history remain;
+nothing is automatically cancelled or restarted. Apply, flags, lifecycle audit
+and notices commit or roll back together under the Event lock.
+
+After the last required arrangement is ready, the shared E08 readiness path
+re-enters Safety Review and sends a fresh Safety Officer notification, including
+when a request interrupted the first Safety Review before any Confirmed history.
+Previous decisions remain in history and do not substitute for a fresh safety
+approval. C-132, T-82 and E08-S04 Scenario 4 establish the re-entry/notification
+behaviour; the E10-S01 interruption trigger is the PO-approved interpretation,
+not a new client quotation. This supersedes earlier pending-decision notes;
+implementation evidence and final human acceptance remain separate gates.

@@ -21,6 +21,7 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
+import { enterSafetyReviewIfReady } from '../eventReadiness/autoSafetyReview.js';
 
 // Support is staffed for events that are going ahead: approved, being
 // planned, or confirmed. Not for drafts, rejected, cancelled or past events.
@@ -173,7 +174,9 @@ export async function assignTechnician(database: Pool, user: AuthenticatedUser |
         title: 'Technical support assignment',
         message: `You're assigned to ${name(request)}: ${request.description}`,
       });
-      return { status: 201, body: { assignment: { id: assignmentId, staffId: colleague.id, name: colleague.name } } };
+      // E08-S04 Scenario 4: staffing can be a reverted event's last arrangement.
+      const enteredSafetyReview = await enterSafetyReviewIfReady(client, request.eventId, actor.id);
+      return { status: 201, body: { assignment: { id: assignmentId, staffId: colleague.id, name: colleague.name }, enteredSafetyReview } };
     });
   } catch (error) {
     // Someone else assigned the same colleague at the same moment: the

@@ -148,10 +148,19 @@ the account's grants, and each backend action remains independently authorized.
 - Each module owns a distinct business responsibility and communicates with other modules through defined application-level interactions.
 - The modules share one PostgreSQL database but should keep their business logic separated.
 - Venue and equipment readiness determine whether an approved event can be confirmed.
-- A Planning Event enters Safety Review automatically after required venue,
-  equipment and technical-support arrangements confirm. A venue block that
-  invalidates an active Confirmed booking returns the Event to Planning and
-  notifies its Coordinator (T-81/T-82).
+- A Planning Event that was Confirmed before (deliberate reversion or venue
+  loss) enters Safety Review automatically after required venue, equipment and
+  technical-support arrangements confirm again; a first-time Planning Event is
+  still submitted by its Coordinator (E08-S03). A venue block that invalidates
+  an active Confirmed booking returns the Event to Planning and notifies its
+  Coordinator (T-81/T-82).
+- E08-S04 delivery: Event Lifecycle's `enterSafetyReviewIfReady`
+  (`eventReadiness/autoSafetyReview.ts`) runs inside the transaction of each
+  action that can confirm the last arrangement: Venue and Booking's booking
+  approval, reconfirmation and lost-booking cancellation, and Equipment and
+  Support's reservation, re-reservation and staff assignment. The earlier
+  approval stays in the audit history and is not reused. A date change does not
+  yet flag Event-level technical support for reconfirmation (open PO question).
 - Venue bookings and equipment requirements are Session-scoped; Event lifecycle,
   registration windows and technical-support assignment remain Event-scoped
   (T-79). Registration selects Sessions and enforces both Session and combined
@@ -175,3 +184,18 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+## E11 registration-notice publication boundary
+
+Organiser-managed registration approval/rejection/manual addition reads the
+published Event name for attendee notifications, while the Organiser's own
+registration screen keeps its internal Event view. Without a publication the
+public notice is suppressed, following T-64's shared recipient policy. Business
+writes, audit and any eligible in-app/email-outbox rows share the transaction;
+no live provider call runs in that transaction. The E11 cross-flow database
+suite is part of `backend`'s `test:db` command. See the 31 October E11 evidence
+audit for exact local/production/human delivery boundaries.
+
+### E10-S01 Safety Review interruption
+
+E10-S01 applies affected approved changes during Safety Review through the shared arrangement transaction, then uses the central lifecycle writer to return to Planning. The explicit change-request replan audit also qualifies a first Safety Review for automatic re-entry after readiness clears; ordinary never-reviewed Planning Events keep their existing submission path.
