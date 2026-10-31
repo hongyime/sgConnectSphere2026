@@ -260,7 +260,7 @@ test.describe("E08-S04", () => {
    *   Broken arrangement: Technical Support (Projector, stock changed); venue booking remains confirmed
    *
    * Expected result:
-   *   The Event stays Confirmed; the technical arrangement is flagged for review; no automatic status change occurs
+   *   The Event stays Confirmed; the technical arrangement is flagged for review; no automatic status change occurs; "Revert to Planning" is still offered to the Coordinator
    */
   test("TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event", async ({ page }) => {
     // The real flag and the unchanged status are proved against PostgreSQL in
@@ -271,7 +271,11 @@ test.describe("E08-S04", () => {
     await page.route('**/api/events?**', route => {
       const params = new URL(route.request().url()).searchParams;
       if (route.request().method() !== 'GET') { writes.push(route.request().url()); return route.fulfill({ status: 500, json: { error: 'No write expected.' } }); }
-      if (params.get('readiness') !== '1') return route.fallback();
+      if (params.get('readiness') !== '1') return route.fulfill({ json: { event: {
+        id: 'evt-leader', event_code: 'EVT-LEADER', title: 'Leadership Summit', status: 'confirmed',
+        starts_at: '2027-01-15T01:00:00.000Z', ends_at: '2027-01-15T09:00:00.000Z', expected_attendance: 200,
+        coordinator_id: 'coord-1', coordinator_name: 'Coordinator One', organiser_name: 'Organiser A', activityLog: [],
+      } } });
       return route.fulfill({ json: { readiness: {
         eventId: 'evt-leader', eventCode: 'EVT-LEADER', title: 'Leadership Summit', status: 'confirmed',
         startsAt: '2027-01-15T01:00:00.000Z', endsAt: '2027-01-15T09:00:00.000Z', equipmentNoneRequired: false, supportNoneRequired: false,
@@ -288,6 +292,10 @@ test.describe("E08-S04", () => {
     await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Confirmed');
     await expect(page.locator('.readiness-outstanding li')).toHaveText(['Projector — needs review: stock changed (2 of 2 reserved)']);
     await expect(page.getByRole('row').filter({ hasText: 'Summit Hall' })).toContainText('Ready');
+
+    // Scenario 3: the deliberate reversion stays open to the Coordinator.
+    await page.goto('/coordinator/events/EVT-LEADER');
+    await expect(page.getByRole('button', { name: 'Revert to Planning' })).toBeVisible();
     expect(writes).toEqual([]);
   });
 
@@ -303,7 +311,7 @@ test.describe("E08-S04", () => {
    *   Event: Leadership Summit
    *
    * Expected result:
-   *   An activity log entry exists recording the reversion, with actor = coordinator_1@connectsphere.com, action = "Reverted to Planning", and a timestamp
+   *   An activity log entry exists recording the reversion, with actor = coordinator_1 (shown by name), action = "Reverted to Planning", and a timestamp
    */
   test("TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log", async ({ page }) => {
     await page.route('**/api/auth/session', route => route.fulfill({

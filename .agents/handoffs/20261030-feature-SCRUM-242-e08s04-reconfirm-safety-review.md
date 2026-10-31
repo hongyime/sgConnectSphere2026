@@ -55,6 +55,12 @@ if the team disagrees.
 - Only events that were Confirmed before and came back to Planning (deliberate
   reversion or venue loss) move automatically. A first-time Planning event
   keeps E08-S03's manual "Submit for safety check".
+- Test cases aligned to the ACs before the manual run (31 October): the old
+  leftover second version of TC_E08S04_05 (Coordinator clicks "Submit for
+  safety check") is removed and the case now checks the history is kept;
+  TC_E08S04_03 also checks "Revert to Planning" is still offered (Scenario 3);
+  TC_E08S04_04 reads the Coordinator's Activity log (no System Administrator
+  role exists). Bryan wrote these cases; PO to see in the PR.
 - The Venue Staff reconfirm action is built here; any active Venue Staff member
   may reconfirm, as for booking decisions.
 - Reconfirming moves the booking to its Session's current time.
@@ -81,12 +87,14 @@ if the team disagrees.
   change. A neutral "needs reconfirmation" is a one-line change in
   `eventReadiness/readiness.ts` plus E08-S03's test expectations. Le Xin chose
   not to include it here.
-- Test-case wording for its owner: TC_E08S04_05 in `docs/testing/cases/E08.md`
-  still carries an older second version (the Coordinator clicks "Submit for
-  safety check"); TC_E08S04_04 signs in as a System Administrator, a role the
-  app does not have.
 - E08-S06 will add the safety decision record; the Change 6 plan rows in
-  `docs/api-changes-week7.md` describe it.
+  `docs/api-changes-week7.md` describe it. Three things for its builder:
+  approval must still be written through `applyEventStatusChange` (the
+  "Confirmed before" check reads that history); the new decision record must
+  not carry over after a reversion; and its Scenario 4 "request changes" says
+  the Coordinator resubmits through E08-S03, but on an event that was Confirmed
+  before, `enterSafetyReviewIfReady` moves it back to Safety Review by itself
+  once the flagged arrangements are reconfirmed. E08-S06 decides which wins.
 - PO acceptance of SCRUM-61 is Bryan's (#330).
 
 ## Next step

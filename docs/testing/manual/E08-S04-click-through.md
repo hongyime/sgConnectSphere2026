@@ -41,10 +41,8 @@ Fixture substitutions: the cases name `coordinator_1`, `venue_staff_1` and
 `tech_support_1`, which the seed does not have; use the seed accounts above,
 which have the same roles. Separate events replace the cases' single "Leadership
 Summit" so they do not affect each other: EVT-1083 Leadership Briefing for
-TC_E08S04_03 and EVT-1084 Leadership Seminar for TC_E08S04_06. TC_E08S04_04
-signs in as a System Administrator, a role the app does not have: read the
-reversion in the assigned Coordinator's Activity log instead. Say so in the run
-record.
+TC_E08S04_03 and EVT-1084 Leadership Seminar for TC_E08S04_06. Say so in the
+run record.
 
 Do the sections in order. Times are Singapore time.
 
@@ -80,6 +78,9 @@ Do the sections in order. Times are Singapore time.
 4. **Expected:** the status is still **Confirmed**; Outstanding items lists
    "E08 AV Projector — needs review: stock changed"; E08 Briefing Room is
    **Ready**. Nothing reverted it. Screenshot `TC_E08S04_03-2`.
+5. Open http://localhost:5173/coordinator/events/EVT-1083. **Expected:** the
+   **Revert to Planning** button is still there for the Coordinator. Do not
+   click it. Screenshot `TC_E08S04_03-3`.
 
 ## C. TC_E08S04_05 — Charity Run comes back to Safety Review by itself (EVT-1082)
 
@@ -118,6 +119,14 @@ Do the sections in order. Times are Singapore time.
    confirmed again, so it is back in Safety Review. It needs a new Operational
    Safety Check: the earlier approval does not carry over." Screenshot
    `TC_E08S04_05-7`.
+9. Sign in as `coord_a@connectsphere.com`. Open
+   http://localhost:5173/coordinator/events/EVT-1082 and scroll to the
+   Activity log. **Expected:** the earlier approval is still there (Status
+   changed, Safety Review → Confirmed, by the Safety Officer); further down,
+   after Reverted to Planning and the edit and booking rows, is a newer Status
+   changed row Planning → Safety Review. Rows go oldest first. The
+   status is still **Safety Review**, not Confirmed. Screenshot
+   `TC_E08S04_05-8`.
 
 ## D. TC_E08S04_06 — a venue block returns Leadership Seminar to Planning (EVT-1084)
 
