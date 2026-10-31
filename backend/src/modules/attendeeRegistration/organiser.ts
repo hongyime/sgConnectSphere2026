@@ -22,7 +22,7 @@ import {
 // Event's own Organiser approves, declines or adds.
 
 type OrganiserEvent = {
-  id: string; event_code: string | null; title: string; status: string;
+  id: string; event_code: string | null; title: string; public_name: string | null; status: string;
   waitlist_enabled: boolean; organiser_id: string; starts_at: Date; ends_at: Date;
   registration_enabled: boolean; opens_at: Date | null; closes_at: Date | null; withdrawal_deadline: Date | null;
 };
@@ -47,7 +47,7 @@ async function organisationEvent(query: Query, user: AuthenticatedUser, ref: str
   if (!canActAsRole(user, ['event_organiser']).allowed || !user.clientOrgId) {
     throw new AccessError(403, 'Only Event Organisers can view registrations.');
   }
-  const event = (await query(`SELECT id, event_code, title, status, waitlist_enabled, organiser_id,
+  const event = (await query(`SELECT id, event_code, title, (SELECT name FROM event_publications WHERE event_id=events.id) AS public_name, status, waitlist_enabled, organiser_id,
       lower(event_range) AS starts_at, upper(event_range) AS ends_at, registration_enabled,
       registration_opens_at AS opens_at, registration_closes_at AS closes_at, withdrawal_deadline
     FROM events WHERE (id::text = $1 OR event_code = $1) AND client_org_id = $2 AND status <> 'draft'${lock ? ' FOR UPDATE' : ''}`,
@@ -152,8 +152,11 @@ async function audit(client: PoolClient, user: AuthenticatedUser, registrationId
     VALUES ($1, $2, 'event_registration', $3, $4, $5, 'status', $6, $7)`, [randomUUID(), user.id, registrationId, eventId, action, from, to]);
 }
 
-function when(event: OrganiserEvent) {
-  return `${event.title}, ${formatEventDates(event.starts_at, event.ends_at)}`;
+// T-64: callers suppress attendee notices without a publication, as in
+// selectEventRecipients. Formatting requires a non-null name explicitly and
+// cannot accidentally read a missing publication or the private Event title.
+function when(event: Pick<OrganiserEvent, 'starts_at' | 'ends_at'>, publicName: string) {
+  return `${publicName}, ${formatEventDates(event.starts_at, event.ends_at)}`;
 }
 
 async function decide(client: PoolClient, user: AuthenticatedUser, event: OrganiserEvent, capacity: EventCapacity,
@@ -173,12 +176,12 @@ async function decide(client: PoolClient, user: AuthenticatedUser, event: Organi
   const changed = (await client.query(`UPDATE event_registrations SET status = $2 WHERE id = $1 RETURNING clock_timestamp() AS at`,
     [row.id, status])).rows[0] as { at: Date };
   await audit(client, user, row.id, event.id, approve ? 'Registration Approved' : 'Registration Rejected', 'pending', status);
-  await writeEventNotification(client, {
+  if (event.public_name) await writeEventNotification(client, {
     eventId: event.id, changeId: `registration-${status}:${row.id}`, userId: row.attendee_id, occurredAt: changed.at,
     title: approve ? 'Registration confirmed' : 'Registration request declined',
     message: approve
-      ? `${when(event)}: the organiser approved your request, so you're registered.`
-      : `${when(event)}: the organiser couldn't offer you a place this time.`,
+      ? `${when(event, event.public_name)}: the organiser approved your request, so you're registered.`
+      : `${when(event, event.public_name)}: the organiser couldn't offer you a place this time.`,
   });
   return { status: 200, body: { registration: { id: row.id, status, sessionIds: row.session_ids } } };
 }
@@ -205,9 +208,9 @@ async function addAttendee(client: PoolClient, user: AuthenticatedUser, event: O
   await client.query(`INSERT INTO event_registration_sessions (registration_id, event_id, session_id, selected_at)
     SELECT $1, $2, unnest($3::uuid[]), $4`, [registration.id, event.id, input.sessionIds, registration.registered_at]);
   await audit(client, user, registration.id, event.id, 'Attendee Added Manually', null, 'registered');
-  await writeEventNotification(client, {
+  if (event.public_name) await writeEventNotification(client, {
     eventId: event.id, changeId: `registration-manual:${registration.id}`, userId: attendee.id, occurredAt: registration.registered_at,
-    title: 'Registration confirmed', message: `${when(event)}: the organiser registered you for this event.`,
+    title: 'Registration confirmed', message: `${when(event, event.public_name)}: the organiser registered you for this event.`,
   });
   return { status: 201, body: { registration: { id: registration.id, status: 'registered', manuallyAdded: true, sessionIds: input.sessionIds } } };
 }
