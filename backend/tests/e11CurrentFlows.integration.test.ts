@@ -93,7 +93,6 @@ test('TC_E11S01_10 TC_E11S01_11: withdrawing a real registered place notifies el
   } finally { await f.close(); }
 });
 
-
 for (const action of ['approve','reject','add'] as const) test(`TC_E11S01_14: unpublished E09 ${action} does not expose the planning title`,async () => {
   const f = await fixture();
   try {
@@ -111,7 +110,6 @@ for (const action of ['approve','reject','add'] as const) test(`TC_E11S01_14: un
     assert.equal((await f.pool.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND message LIKE '%INTERNAL%'",[target.id])).rows[0].count,'0');
   } finally { await f.close(); }
 });
-
 
 test('TC_E11S01_09: organiser decision and notice roll back together on outbox failure',async () => {
   const f = await fixture();

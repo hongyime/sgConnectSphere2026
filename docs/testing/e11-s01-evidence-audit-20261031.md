@@ -13,8 +13,12 @@ One real content-boundary bug was reproduced: organiser approval, rejection and
 manual addition used the private Event title in attendee notices. Those three
 notices now use the publication name. With no publication they generate no
 attendee notice, matching the shared recipient policy; no private-title fallback
-is allowed. Registration/audit writes retain their existing behaviour and
-transaction. No Done E09 story is reopened by this E11 integration follow-up.
+is allowed. The formatter requires an explicit non-null public name rather
+than reading a nullable property itself. Registration/audit writes retain their existing behaviour and
+transaction. As noted in review, manual-add acknowledgement currently confirms
+the registration without separately warning the Organiser that no attendee
+notice was generated when a publication is absent. This is a documented UX
+limitation, not a new notice exception or a UI change in this fix. No Done E09 story is reopened by this E11 integration follow-up.
 
 Fresh automated execution: [session record](runs/20261031-174600-jininggg-full-regression.md) (111 combined backend checks,
 646 backend units/one existing skip, 25 controlled dispatcher checks, 16 inbox checks).
@@ -31,7 +35,7 @@ Changed organiser module coverage is 100% across all four metrics.
 | TC_E11S01_06 | [inbox integration](../../backend/tests/notificationInbox.integration.test.ts); historical human records below | Ownership, ordering and unread state tested; no new human screenshots fabricated. |
 | TC_E11S01_07 | Same inbox suite; 18 October focused bell/read retest | Idempotent persistent read state and the recorded human live-bell fix; do not repeat unchanged evidence just to replace provenance. |
 | TC_E11S01_08 | Inbox provider-rejection test and controlled dispatcher/provider tests | Simulated rejection preserves the in-app notice; bounded retry/uncertain handling tested separately. The exact human booking/unreachable-provider sequence was not executed here. Canonical case still says SMTP/failed, whereas the adapter uses an API and ambiguous transport outcomes can be uncertain; align that execution wording with ADR-006 before claiming the exact sequence, without inventing a new delivery guarantee. |
-| TC_E11S01_09 | [organiser outbox-failure regression](../../backend/tests/e11CurrentFlows.integration.test.ts#L116), E10 request/cancellation/recovery rollback tests, dispatcher PostgreSQL rollback test | Business state, audit, notice and delivery roll back together; committed delivery remains separate from provider outcomes. |
+| TC_E11S01_09 | [organiser outbox-failure regression](../../backend/tests/e11CurrentFlows.integration.test.ts#L114), E10 request/cancellation/recovery rollback tests, dispatcher PostgreSQL rollback test | Business state, audit, notice and delivery roll back together; committed delivery remains separate from provider outcomes. |
 | TC_E11S01_10 | [shared routing matrix](../../backend/src/modules/eventNotifications/service.ts), [real waitlist release](../../backend/tests/e11CurrentFlows.integration.test.ts#L80), E09 registration integration | Release after real withdrawal notifies eligible waiting members. Join/claim API behaviours are retained from E09; no automatic promotion inferred. |
 | TC_E11S01_11 | New cross-flow/repeated-withdrawal tests, shared recipient suites | One notice per logical change/user; actor exclusion and repeat withdrawal generate no duplicates. Explicit registration confirmations are distinct from routine self-notification suppression. |
 | TC_E11S01_12 | Cancellation, primary-venue and lost-venue integration tests | Pre-release recipients and old/new affected staff preserved; these are database tests, not new deployed recipient observations. |
@@ -62,3 +66,7 @@ Changed organiser module coverage is 100% across all four metrics.
 2. Bryan approves the actual production venue/staff pairs under [SCRUM-195](https://theprawnworkspace.atlassian.net/browse/SCRUM-195); the designated deploy owner provisions them, then the story owner verifies behaviour. This audit performs no production reads/writes and does not claim the load happened.
 3. Coordinate a controlled actual-mailbox receipt run with the deploy owner for TC_E11S01_05 and the appropriate provider-failure evidence for TC_08. No email enablement, provider/config changes or live sends are authorized by this audit.
 4. Complete only genuinely missing human E09/E10 notification observations on the final integrated tree; retain existing valid screenshots. Obtain explicit PO/delegate AC-to-evidence acceptance. SCRUM-75 stays In Progress; SCRUM-227's In Review status is not full-story acceptance.
+
+PR #391 review follow-up: [clean reviewed-head rerun](runs/20261031-185939-jininggg-backend-db.md)
+and [post-refactor verification](runs/20261031-190221-jininggg-full-regression.md) preserve the exact
+source provenance without rewriting the original run.

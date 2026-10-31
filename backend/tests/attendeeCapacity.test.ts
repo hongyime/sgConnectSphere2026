@@ -246,7 +246,6 @@ test("manageRegistrations is for the Event's own Organiser: another organisation
   assert.equal(colleague.calls.some(call => call.sql.includes('UPDATE event_registrations')), false);
 });
 
-
 for (const action of ['approve', 'reject', 'add'] as const) test(`TC_E11S01_14: organiser ${action} uses publication and suppresses notices without it`, async () => {
   const input = action === 'add' ? { action, email: 'attendee@example.test', sessionIds: [sessionA] } : { action, registrationId: requestId };
   const published = script({ event: { title: 'PRIVATE planning title', public_name: 'Public community event' } });
