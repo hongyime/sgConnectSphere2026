@@ -32,7 +32,9 @@ export const submitChangeRequest = (identifier: string, description: string, cha
 export type ChangePreview = { canApply: false; blockedFields: string[] } | {
   canApply: true; token: string; lateClose: boolean;
   impact: { affected: boolean; bookings: { id: string; venueName: string; reasons: string[] }[];
-    reservations: { id: string; equipmentName: string; reasons: string[] }[] };
+    reservations: { id: string; equipmentName: string; reasons: string[] }[];
+    // T-103 (SCRUM-244): staffed Technical Support a date change flags.
+    supports?: { id: string; description: string; reasons: string[] }[] };
   overSubscription: { scope: string; registered: number; capacity: number }[];
 };
 export const previewChangeRequest = (identifier: string, requestId: string) =>

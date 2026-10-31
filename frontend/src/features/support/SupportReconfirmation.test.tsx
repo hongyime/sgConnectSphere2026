@@ -86,6 +86,10 @@ test('a failed load can be retried; a malformed reply is a failed load', async (
   reply = { body: { nothing: true } };
   fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
   expect(await screen.findByText('Support to reconfirm could not be loaded.')).toBeInTheDocument();
+  // A queue-shaped reply, without the new time, is not shown as one.
+  reply = { body: { requests: [{ ...charity, reconfirmFor: undefined }] } };
+  fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
+  expect(await screen.findByText('Support to reconfirm could not be loaded.')).toBeInTheDocument();
   reply = { body: { requests: [] } };
   fireEvent.click(screen.getByRole('button', { name: /Try again/ }));
   expect(await screen.findByText(/Nothing to reconfirm/)).toBeInTheDocument();

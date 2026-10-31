@@ -152,6 +152,8 @@ async function staffingWorld(page: Page, me = 's-a') {
       notices.push({ userId: who.id, title: 'Technical support assignment', message: `You're assigned to ${on.eventCode} ${on.eventTitle}: ${on.description}` });
       return route.fulfill({ status: 201, json: { assignment: { id, staffId: who.id, name: who.name } } });
     }
+    // Support to reconfirm (T-103) is covered in e10.spec.ts; none here.
+    if (params.get('reconfirm') === 'list') return route.fulfill({ json: { requests: [] } });
     if (params.get('schedule') === 'mine') {
       return route.fulfill({ json: { assignments: assignments.filter(item => item.staffId === me).map(item => {
         const on = requests.find(r => r.id === item.requestId)!;

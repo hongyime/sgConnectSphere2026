@@ -40,6 +40,11 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
    (reloads the queue after a reconfirmation), Activity log shows
    `support_range` in Singapore time as "Support reconfirmed".
 7. Tests (unit, database, Playwright) with deliberate breaks; contracts and docs.
+   Done: Playwright TC_03/_06 support, _10 to _13 (e10.spec.ts, faked replies);
+   TC_05/_06 headers; TC_10 reworded; workbook 311026 + undated copy;
+   api-changes-week7 and change-requests contract. Two gaps fixed: the
+   Coordinator's saved message and the E10-S01 change-request preview
+   (Ji Ning's `ChangeRequests.tsx`) now count support.
 8. Click-through guide, preconditions SQL, automated real local run.
 9. Le Xin's manual T-65/T-93 run.
 10. PR(s) within the T-101 limits; Jira.
@@ -78,10 +83,15 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 
 ## Found on the way
 
-- `tests/e2e/e10.spec.ts` headers for TC_E10S02_05 and _06 still quote the old
-  leftover wording; update them in Task 7 with the support assertions.
-- tc-coverage marks TC_E10S02_05, _06 and _08 active from their existing tests,
-  which do not yet check support; Task 7 adds those checks.
+- `tests/e2e/e10.spec.ts` headers for TC_E10S02_05 and _06 quoted the old
+  leftover wording; updated in Task 7.
+- tc-coverage marks TC_E10S02_05, _06 and _08 active; their support checks are
+  in `arrangementImpact.test.ts`, `eventChangePreview.test.ts` and
+  `supportReconfirmation.integration.test.ts` (Tasks 4 and 5).
+- The staffing Playwright fakes (`technicalSupport.spec.ts`, `support.spec.ts`)
+  answered every `?task=staffing` GET with the queue, which the new list would
+  have read; they now answer `reconfirm=list` with none, and the client treats
+  a list without `reconfirmFor` as a failed load.
 - TC_E10S02_10 says the unflagged request's technician "is not notified". They
   get no reconfirmation notice, but an Event date change still sends every
   Event participant, technicians included, the existing generic date notice.
@@ -89,6 +99,5 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
 
 ## Next step
 
-Task 7: Playwright (support assertions in TC_E10S02_05/_06/_08 and new
-TC_10 to _13; old e10.spec headers), TC_10 wording "is not asked to
-reconfirm", contracts (`docs/contracts/`, api-changes-week7) and docs.
+Task 8: click-through guide (extend `docs/testing/manual/E10-S02-click-through.md`),
+preconditions SQL and an automated real local run (migration 0026 applied).

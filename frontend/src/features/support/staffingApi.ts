@@ -54,7 +54,7 @@ export type SupportToReconfirm = StaffingRequest & { reconfirmFor: { startsAt: s
 
 export function listSupportToReconfirm(signal?: AbortSignal) {
   return load<{ requests: SupportToReconfirm[] }>(`${URL}&reconfirm=list`, signal, 'Support to reconfirm could not be loaded.',
-    data => Array.isArray(data?.requests));
+    data => Array.isArray(data?.requests) && data.requests.every(request => typeof request?.reconfirmFor?.startsAt === 'string'));
 }
 
 export function reconfirmSupport(request: string) {

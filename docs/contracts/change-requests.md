@@ -261,6 +261,21 @@ the integration increment above):
 - Closed by E08-S04 (SCRUM-242, 31 October): Venue Staff now clear a booking's
   `requires_reconfirmation` by reconfirming it (`docs/contracts/venue-bookings.md`),
   the follow-up raised on #376. Equipment was already cleared by re-reserving (E07-S04).
+- T-103 (SCRUM-244, 31 October): a date or time change also flags staffed
+  Technical Support requests, on the direct edit and on an applied change
+  request alike, since both run `applyArrangementImpact`. A Session change
+  flags the requests overlapping the Session's previous time and an Event-wide
+  change flags them all; `impact.supports` lists them with `shiftMs`, how far
+  each moves (the Event start's shift, or that Session's). The time each moves
+  to is kept in `tech_support_requests.reconfirm_range` (migration 0026), moved
+  on again if the date changes while it is still flagged. Readiness counts a
+  flagged request as outstanding (`support-needs-review`). Technical Support
+  Staff clear it with `POST /api/venues?task=staffing { action: 'reconfirm',
+  request }` (listed by `GET /api/venues?task=staffing&reconfirm=list`): the
+  request and its assignments move there unless an assigned technician is busy
+  then (409 naming the event); the Coordinator and moved colleagues are told and
+  `enterSafetyReviewIfReady` runs. With no equipment flagged, the reconfirmation
+  notice goes only to technicians on a flagged request.
 
 ## Refused-edit handoff (SCRUM-205)
 
