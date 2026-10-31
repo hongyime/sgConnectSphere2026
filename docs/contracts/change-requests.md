@@ -285,15 +285,33 @@ handoff. They are not evidence of real-database persistence or human execution.
 Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
 this frontend increment does not close parent SCRUM-70.
 
-## Review usability follow-up to #383
 
-Both E10 review panels use shared readable impact labels, retaining the
-headcount/capacity figures when provided. A late-close preview disables approval
-or application until explicit consent is ticked; form submission is guarded as
-well. The server's consent validation remains authoritative.
+## Review usability follow-up to #383 (PR #390)
 
-Open product question from Amareet's #383 review: should an arrangement-affecting
-approved request applied during Safety Review return the Event to Planning?
-The current contract permits requests/application in Safety Review; it does not
-specify that automatic transition. No transition is added by this UI follow-up.
-Bryan must confirm the lifecycle policy before that separate behaviour changes.
+PR #390 provides shared readable impact labels and explicit late-close consent
+for both review panels, retaining governing headcount/capacity details. Approval
+or application stays disabled until consent is ticked, with form-submit and
+server validation guards. Those UI safeguards do not implement lifecycle changes.
+Bryan has approved the Safety Review-to-Planning rule (T-103; SCRUM-70 comment
+10401). The separate backend implementation and its verification are described
+below; PO policy confirmation is no longer pending.
+
+### Approved changes during Safety Review (PO approval recorded 31 October)
+
+Bryan approved the following interpretation, relayed by the story owner and
+recorded in SCRUM-70 comment 10401: applying an approved request during Safety
+Review returns the same Event to Planning only if arrangements are flagged for
+reconfirmation. Safe-only changes and structured changes with no affected
+arrangements retain Safety Review. Preview and Pending requests do not replan.
+The Event, approval, bookings, reservations, assignments and history remain;
+nothing is automatically cancelled or restarted. Apply, flags, lifecycle audit
+and notices commit or roll back together under the Event lock.
+
+After the last required arrangement is ready, the shared E08 readiness path
+re-enters Safety Review and sends a fresh Safety Officer notification, including
+when a request interrupted the first Safety Review before any Confirmed history.
+Previous decisions remain in history and do not substitute for a fresh safety
+approval. C-132, T-82 and E08-S04 Scenario 4 establish the re-entry/notification
+behaviour; the E10-S01 interruption trigger is the PO-approved interpretation,
+not a new client quotation. This supersedes earlier pending-decision notes;
+implementation evidence and final human acceptance remain separate gates.
