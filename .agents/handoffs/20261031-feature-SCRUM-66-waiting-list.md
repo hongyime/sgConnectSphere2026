@@ -11,11 +11,12 @@ Finish E09-S04 "Join the waiting list" (SCRUM-66) after Bryan's #379 (merged 30 
 - `backend/src/modules/accessControl/deactivation.ts`: `withdrawn = registrations.length` replaces #379's moved `rowCount ?? 0`, an unreachable branch after the rows are locked.
 - `docs/plans/scrum-66-implementation-status.md` rewritten in Aaron's story-record format, keeping Bryan's run rows.
 
+- Aaron's manual run on 31 Oct, 18:28-18:41, at `bb64b9e`: TC_E09S04_01 to _05 all PASS, ten screenshots, database checked afterwards (`docs/testing/runs/20261031-184113-Bl0oper-frontend-e2e.md`).
+- Gates on `ab99f61`: backend unit 643 passed (1 skipped), `test:db` 293/293 plus the deactivation file 1/1, Vitest 749/749; workbook exported as `CAA 311026`.
+
 ## Not done / next step
 
-- Aaron's manual click-through (TC_E09S04_01 to _05) with screenshots, its T-65 record, and the database check afterwards.
-- Final gate runs on the committed head and their records; workbook export; `tc-coverage.md` last; PR with `Closes SCRUM-224`; postplan.
-- PO acceptance on SCRUM-66 (Bryan).
+- PR review by a teammate other than Aaron; PO acceptance on SCRUM-66 (Bryan); SCRUM-66 moved to Done by hand after that (stories are report-only in the Jira sync).
 
 ## Decisions taken without team sign-off
 
