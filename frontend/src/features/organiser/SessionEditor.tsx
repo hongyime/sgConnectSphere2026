@@ -56,9 +56,10 @@ export function SessionEditor({ eventId }: { eventId: string }) {
       return;
     }
     const body = await response.json() as { sessions: Session[]; eventStatus?: string };
-    setSessions(body.sessions);
+    const loaded = body.sessions ?? [];
+    setSessions(loaded);
     setEventStatus(body.eventStatus ?? 'draft');
-    setFields(Object.fromEntries(body.sessions.map(session => [session.id, toField(session)])));
+    setFields(Object.fromEntries(loaded.map(session => [session.id, toField(session)])));
   };
 
   useEffect(() => {
