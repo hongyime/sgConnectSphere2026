@@ -135,7 +135,7 @@ Given an event is Cancelled When its original end time passes Then it is not aut
 ## E08-S06 — Conduct the Operational Safety Check as the Safety Officer
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 8
 - **BDR references**: C-70, T-71, T-72, T-73, T-74, O-39, O-40, O-41, O-42, O-43
 - **Owner**:
 
@@ -144,6 +144,8 @@ Given an event is Cancelled When its original end time passes Then it is not aut
 As a Safety Officer, I want to review the operational safety of each event whose venue and technical arrangements are confirmed, and approve it, reject its safety arrangement or request changes, so that no event proceeds to preparation until it is safe to run.
 
 New story from the Week 7 Customer Changes (C-70) and the seventh role (T-72). The Safety Review status it works on sits between Planning and Confirmed as an interim placement (T-71); O-39 asks the customer to confirm. The customer guarantees a response, so there is no timeout path. Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+
+No estimate was recorded at Sprint 3 planning. An eight-point estimate was proposed on 31 October 2026 for teammate/PO review, sized against E08-S03 event confirmation (5), E10-S01 change requests (8) and E05-S06 venue unavailability (8): ten scenarios across backend and frontend, covering a new Safety Officer queue, a seven-factor checklist, approve, request-changes and reject decisions with status changes, re-review flags, notices, audit entries and status-display and deactivation changes. The Safety Review status, migration 0017 and the submission step already delivered by other stories (#282, #283) are not counted. Jira stays blank until this backlog PR merges and the estimate is accepted. T-73 estimates in-flight stories for their remaining work only; this story is not yet in flight, so the size is a whole-story reference, and team/PO confirmation is required on how it is counted for sprint reporting. This proposal does not change the sprint, owner, accepted criteria or history.
 
 ### Acceptance criteria
 

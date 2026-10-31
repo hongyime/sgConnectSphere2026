@@ -282,7 +282,7 @@ Given a request has been assigned from the queue When the Organiser tracks the e
 ## E03-S09 — Reassign an event as the Lead
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-69, C-56, T-15, T-70, T-73, T-74, O-36, O-37
 - **Owner**:
 
@@ -291,6 +291,8 @@ Given a request has been assigned from the queue When the Organiser tracks the e
 As an Event Coordinator Lead, I want to reassign an event to a different Event Coordinator where necessary so that workload, absences and conflicts can be managed without waiting on the current Coordinator.
 
 New story from the Week 7 Customer Changes (C-69). The Coordinator-initiated reassignment with acceptance delivered by E03-S01 Scenarios 3 to 6 stays in force (T-15 amended, not replaced). Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
+
+No estimate was recorded at Sprint 3 planning. A three-point estimate was proposed on 31 October 2026 for teammate/PO review, sized against E03-S01 Coordinator assignment (3) and E03-S02 clarification requests (3): the Lead's immediate reassignment with notices to both Coordinators and the Organiser and an activity-log entry, a new request-to-the-Lead path with decline, and a role refusal. Scenario 2 reuses E03-S01 unchanged and is not counted again. Jira stays blank until this backlog PR merges and the estimate is accepted. T-73 estimates in-flight stories for their remaining work only; this story is not yet in flight, so the size is a whole-story reference, and team/PO confirmation is required on how it is counted for sprint reporting. This proposal does not change the sprint, owner, accepted criteria or history.
 
 ### Acceptance criteria
 

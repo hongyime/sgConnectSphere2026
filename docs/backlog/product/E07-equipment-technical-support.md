@@ -240,13 +240,15 @@ Given I have removed an assignment When I assign a replacement Then the same con
 ## E07-S08 — Link equipment requests and reservations to Sessions
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-107, T-74, T-79
 - **Owner**:
 
 ### User story
 
 As a Technical Support Staff member, I want equipment requests and reservations to identify the Session they support so that availability and fulfilment use the correct Session period.
+
+No estimate was previously recorded. A three-point estimate was proposed on 31 October 2026 for teammate/PO review, sized against E07-S02 equipment requests (3), E07-S04 equipment reservations (5) and E02-S07 date horizon (3): a Session link on equipment requests and reservations, availability checked on the Session period, cross-event refusal, and event-level staff assignment left unchanged. The E04-S02 Session write path is a dependency, not work counted again here. Jira stays blank until this backlog PR merges and the estimate is accepted. T-73 estimates in-flight stories for their remaining work only; this story is not yet in flight, so the size is a whole-story reference, and team/PO confirmation is required on how it is counted for sprint reporting. This proposal does not change the sprint, owner, accepted criteria or history.
 
 ### Acceptance criteria
 
