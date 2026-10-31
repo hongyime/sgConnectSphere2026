@@ -1,0 +1,9 @@
+Address Amareet's non-blocking #383 review for E10-S01 / SCRUM-70: share readable impact labels, require late-close consent before confirmation, and record the unresolved Safety Review lifecycle question without inventing a PO decision.
+
+#383 had merged before this task. Branch created from main 4da52a45; root checkout's unrelated staged history remains untouched. Shared ConfirmPanel gets optional confirmDisabled plus a submission guard. Both review panels use one formatting helper; request consent guards cover Pending approval and older Approved application. Browser assertions follow readable labels. No backend changes.
+
+Safety Review question remains open: no existing rule establishes automatic Planning reversion on approved change application. Bryan confirmation is required; no message to Bryan or Jira transition is claimed. Individual Session mutation integration still has no application contract in this main checkout. Human combined manual evidence and PO acceptance remain story gates.
+
+Verification: 64 focused UI checks, 757 full UI tests and 20 real-stack desktop/mobile tests passed. New formatter measured 100% across all four coverage metrics. Types/build, hygiene/186 tooling tests, doc guard and whitespace passed. Immutable record `20261031-172549-jininggg-full-regression.md`. Publish this small follow-up separately from merged #383. Safety Review question remains documented for Bryan, not silently decided.
+
+Le Xin review follow-up: import/header ordering and test blank lines tidied; shared ConfirmPanel consent regression now carries TC_E10S01_04 and inventory regenerated. Before any edits, exact reviewed head d936c1e was rerun from a clean tree: 64 focused tests passed. New immutable record `20261031-185349-jininggg-frontend-vitest.md`; the original working-diff record is retained. No runtime behaviour changed by these tidy-ups.

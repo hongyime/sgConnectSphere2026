@@ -7,3 +7,5 @@ Implementation: request apply uses central lifecycle writer only for Safety Revi
 Observed verification: 39 focused unit/database checks passed; 656 backend units passed with one existing skip; backend typecheck and doc guard passed. See new immutable 20261031-201320-jininggg-full-regression.md. Exploratory test failures were corrected fixture naming and audit filtering, not accepted as passing evidence.
 
 PR #390 documentation follow-up: reconciled both contract references with T-103 and SCRUM-70 comment 10401 on this implementation branch, as requested. PO confirmation is no longer pending; #390 remains the separate UI scope. No PR creation or push authorized for this follow-up.
+
+Publication authorized after verification. #390 merged as 6ae0c4b2 and freed a WIP slot. Synchronized main, keeping the corrected approved-policy contract text and preserving the merged UI safeguard details. Existing runtime evidence remains explicitly combined-tree evidence; no new manual acceptance claimed.

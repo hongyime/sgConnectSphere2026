@@ -289,7 +289,9 @@ this frontend increment does not close parent SCRUM-70.
 ## Review usability follow-up to #383 (PR #390)
 
 PR #390 provides shared readable impact labels and explicit late-close consent
-for both review panels; those UI safeguards do not implement lifecycle changes.
+for both review panels, retaining governing headcount/capacity details. Approval
+or application stays disabled until consent is ticked, with form-submit and
+server validation guards. Those UI safeguards do not implement lifecycle changes.
 Bryan has approved the Safety Review-to-Planning rule (T-103; SCRUM-70 comment
 10401). The separate backend implementation and its verification are described
 below; PO policy confirmation is no longer pending.
