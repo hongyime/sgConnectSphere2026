@@ -137,7 +137,7 @@ test('TC_E10S02_01: raising the Event attendance above the venue capacity flags 
     assert.equal((await f.flags()).bookings[a.booking], true);
     const notices = await f.notices();
     assert.deepEqual(notices.map(notice => notice.user_id), [a.staff.id], 'only the Venue Staff of the flagged venue');
-    assert.match(notices[0].message, /attendance above capacity\) means venue bookings or equipment reservations need reconfirmation/);
+    assert.match(notices[0].message, /attendance above capacity\) means venue bookings, equipment reservations or Technical Support requests need reconfirmation/);
   } finally { await f.db.close(); }
 });
 
@@ -267,7 +267,7 @@ test('TC_E10S02_05 and TC_E10S02_06: an Event date change flags the booking and 
     const recipients = notices.map(notice => notice.user_id);
     assert.deepEqual([...recipients].sort(), [a.staff.id, f.tech.id].sort(), 'one notice each; Venue Staff of other venues are not told');
     assert.ok(!recipients.includes(f.otherVenueStaff.id));
-    for (const notice of notices) assert.match(notice.message, /date or time\) means venue bookings or equipment reservations need reconfirmation/);
+    for (const notice of notices) assert.match(notice.message, /date or time\) means venue bookings, equipment reservations or Technical Support requests need reconfirmation/);
     const organiserNotice = (await f.q("SELECT count(*)::int AS n FROM notifications WHERE event_id=$1 AND message LIKE '%Event date, time changed%'", [f.event])).rows[0].n;
     assert.equal(organiserNotice, 1, 'the Organiser still gets the generic date notice, not the staff one');
   } finally { await f.db.close(); }

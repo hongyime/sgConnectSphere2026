@@ -34,7 +34,8 @@ const line = (overrides: Partial<ReadinessEquipmentRow> = {}): ReadinessEquipmen
   ...overrides,
 });
 const support = (overrides: Partial<ReadinessSupportRow> = {}): ReadinessSupportRow => ({
-  id: 's-1', support_required: true, description: 'Sound desk', starts_at: START, ends_at: END, status: 'staffed', ...overrides,
+  id: 's-1', support_required: true, description: 'Sound desk', starts_at: START, ends_at: END, status: 'staffed',
+  requires_reconfirmation: false, ...overrides,
 });
 const messages = (snapshot: ReturnType<typeof assessReadiness>) => snapshot.blockers.map(row => row.message);
 
@@ -135,6 +136,20 @@ test('TC_E08S03_04: only an open required support request blocks; text is tidied
   assert.equal(snapshot.supportNoneRequired, false);
   assert.equal(assessReadiness(event(), [booking()], [], [support({ support_required: false })]).supportNoneRequired, true);
   assert.equal(assessReadiness(event(), [booking()], [], []).supportNoneRequired, false, 'nothing recorded is not "none needed"');
+});
+
+test('TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104)', () => {
+  const flagged = assessReadiness(event(), [booking()], [], [support({ id: 'f', requires_reconfirmation: true, description: '  Sound\ndesk ' })]);
+  assert.deepEqual(flagged.blockers, [{ kind: 'support-needs-review', supportRequestId: 'f', description: '  Sound\ndesk ',
+    message: 'Technical support — needs reconfirmation at the new time: Sound desk' }]);
+  assert.equal(flagged.support[0]!.state, 'outstanding');
+  assert.equal(flagged.canSubmit, false);
+  const cleared = assessReadiness(event(), [booking()], [], [support({ id: 'f' })]);
+  assert.deepEqual(cleared.blockers, []);
+  assert.equal(cleared.support[0]!.state, 'ready');
+  // An open request is already outstanding; it is listed once, as unassigned.
+  const open = assessReadiness(event(), [booking()], [], [support({ status: 'open', requires_reconfirmation: true })]);
+  assert.deepEqual(open.blockers.map(row => row.kind), ['support-unassigned']);
 });
 
 test('TC_E08S03_09: Planning goes to Safety Review, never straight to Confirmed; Safety Review exits to Confirmed, Planning or Cancelled', () => {

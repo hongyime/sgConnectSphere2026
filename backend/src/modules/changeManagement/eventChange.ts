@@ -53,15 +53,26 @@ const reasonText = { time: 'date or time changed', capacity: 'attendance above c
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag
 // is what readiness already shows as "needs review"; Venue Staff clear it by
-// reconfirming the booking (E08-S04) and Technical Support by re-reserving (E07-S04).
+// reconfirming the booking (E08-S04) and Technical Support by re-reserving (E07-S04)
+// or by reconfirming a support request at the new time (T-104).
 export async function applyArrangementImpact(query: Query, actorId: string, eventId: string, impact: ArrangementImpact): Promise<void> {
   if (impact.bookings.length)
     await query('UPDATE venue_bookings SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.bookings.map(booking => booking.id)]);
   if (impact.reservations.length)
     await query('UPDATE equipment_reservations SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.reservations.map(reservation => reservation.id)]);
+  // T-104: the time a support request moves to is kept until it is
+  // reconfirmed. Moved again while still flagged, it moves on from that time.
+  if (impact.supports.length)
+    await query(`UPDATE tech_support_requests r SET requires_reconfirmation = true,
+        reconfirm_range = (SELECT tstzrange(lower(base) + moved, upper(base) + moved, '[)') FROM (SELECT
+          CASE WHEN r.requires_reconfirmation AND r.reconfirm_range IS NOT NULL THEN r.reconfirm_range ELSE r.support_range END AS base,
+          s.shift_ms * interval '1 millisecond' AS moved) target)
+      FROM unnest($1::uuid[], $2::float8[]) AS s(id, shift_ms)
+      WHERE r.id = s.id`, [impact.supports.map(support => support.id), impact.supports.map(support => support.shiftMs)]);
   const entries = [
     ...impact.bookings.map(booking => ({ type: 'venue_booking', item: booking })),
     ...impact.reservations.map(reservation => ({ type: 'equipment_reservation', item: reservation })),
+    ...impact.supports.map(support => ({ type: 'tech_support_request', item: support })),
   ];
   for (const { type, item } of entries) {
     await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)

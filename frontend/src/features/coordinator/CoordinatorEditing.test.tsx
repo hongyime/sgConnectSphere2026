@@ -148,6 +148,17 @@ test('TC_E10S02_03: a date change shows the affected booking and equipment, and 
   expect(patches[1].body).toEqual(patches[0].body);
 });
 
+test('TC_E10S02_06 (T-104): a change flagging only staffed support counts it and names Technical Support Staff', async () => {
+  const sound = { id: 'support-a', description: 'Sound desk', startsAt: '2026-11-15T00:00:00.000Z', endsAt: '2026-11-15T04:00:00.000Z', reasons: ['time'], shiftMs: 5 * 86400000 };
+  const supportOnly = { impact: { affected: true, bookings: [], reservations: [], supports: [sound] }, overSubscription: [] };
+  stub({ previewReply: { status: 200, body: supportOnly }, patchReply: { status: 200, body: { updated: true, fields: ['startAt'], ...supportOnly } } });
+  await editStart();
+  const review = await screen.findByRole('form', { name: 'Check what this change affects' });
+  expect(within(review).getByRole('heading', { name: 'Technical Support to reconfirm' })).toBeInTheDocument();
+  fireEvent.click(within(review).getByRole('button', { name: 'Save and ask staff to reconfirm' }));
+  expect(await screen.findByText(/1 arrangement was flagged for reconfirmation and the Technical Support Staff were notified\./)).toBeInTheDocument();
+});
+
 test('TC_E10S02_01: attendance above capacity names the headcount and places; one flag tells the Venue Staff', async () => {
   const capacity = { impact: { affected: true, bookings: [{ ...hall, reasons: ['capacity'], governingHeadcount: 250 }], reservations: [] }, overSubscription: [] };
   stub({ previewReply: { status: 200, body: capacity }, patchReply: { status: 200, body: { updated: true, fields: ['expectedAttendance'], ...capacity } } });

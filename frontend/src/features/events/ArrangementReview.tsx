@@ -1,9 +1,17 @@
 // E10-S02 (SCRUM-237) Scenarios 3 and 4: before the Coordinator's change takes
-// effect, show the Session venue bookings and equipment reservations it
-// affects and any over-subscription. Nothing is saved until they confirm.
+// effect, show the Session venue bookings, equipment reservations and staffed
+// Technical Support (T-104) it affects and any over-subscription. Nothing is
+// saved until they confirm.
 import { arrangementReasons } from './arrangementReasons';
-import { Alert, ConfirmPanel } from '../../shared';
-import type { ChangeCheck, OverSubscription } from './eventEditApi';
+import { Alert, ConfirmPanel, formatDateRange } from '../../shared';
+import type { AffectedSupport, ChangeCheck, OverSubscription } from './eventEditApi';
+
+// Where the request moves when reconfirmed: the same length, shifted.
+function supportMove(support: AffectedSupport) {
+  if (support.shiftMs === 0) return `${formatDateRange(support.startsAt, support.endsAt)}, time stays the same`;
+  const shifted = (value: string) => new Date(new Date(value).getTime() + support.shiftMs).toISOString();
+  return `${formatDateRange(support.startsAt, support.endsAt)} → ${formatDateRange(shifted(support.startsAt), shifted(support.endsAt))}`;
+}
 
 function overText(over: OverSubscription) {
   return `${over.scope === 'event' ? 'The whole event' : 'A Session'}: ${over.registered} registered for ${over.capacity} places.`;
@@ -13,7 +21,7 @@ function overText(over: OverSubscription) {
 export function staffToNotify(check: ChangeCheck) {
   return [
     check.impact.bookings.length > 0 ? 'Venue Staff' : null,
-    check.impact.reservations.length > 0 ? 'Technical Support Staff' : null,
+    check.impact.reservations.length > 0 || (check.impact.supports ?? []).length > 0 ? 'Technical Support Staff' : null,
   ].filter(Boolean).join(' and ');
 }
 
@@ -25,7 +33,7 @@ export function ArrangementReview({ check, changed = false, busy, onConfirm, onC
   onConfirm: () => void;
   onCancel: () => void;
 }) {
-  const { bookings, reservations } = check.impact;
+  const { bookings, reservations, supports = [] } = check.impact;
   return (
     <ConfirmPanel
       title="Check what this change affects"
@@ -43,6 +51,10 @@ export function ArrangementReview({ check, changed = false, busy, onConfirm, onC
         {reservations.length > 0 ? <>
           <h3>Equipment to reconfirm</h3>
           <ul>{reservations.map(reservation => <li key={reservation.id}><strong>{reservation.equipmentName}</strong>: {arrangementReasons(reservation)}</li>)}</ul>
+        </> : null}
+        {supports.length > 0 ? <>
+          <h3>Technical Support to reconfirm</h3>
+          <ul>{supports.map(support => <li key={support.id}><strong>{support.description || 'Technical support'}</strong>: {supportMove(support)}</li>)}</ul>
         </> : null}
         {check.impact.affected ? <p>Saving flags these for reconfirmation and notifies the {staffToNotify(check)}.</p> : null}
         {check.overSubscription.length > 0 ? (
