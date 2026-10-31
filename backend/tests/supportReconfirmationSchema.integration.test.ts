@@ -1,4 +1,4 @@
-// SCRUM-244 / E10-S02 (T-103): migration 0026 against a real, disposable
+// SCRUM-244 / E10-S02 (T-104): migration 0026 against a real, disposable
 // PostgreSQL schema with every repository migration applied.
 //
 // Proves what the follow-up code will rely on: Technical Support requests

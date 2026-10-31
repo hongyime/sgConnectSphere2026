@@ -495,7 +495,7 @@ erDiagram
 - Migration `0026_support_reconfirmation.sql` adds `requires_reconfirmation`
   (default false) to `TECH_SUPPORT_REQUESTS`, the flag venue bookings and
   equipment reservations already carry, so an event date/time change can flag
-  staffed Technical Support for reconfirmation (E10-S02, T-103). The reason is
+  staffed Technical Support for reconfirmation (E10-S02, T-104). The reason is
   in the audit log, as for bookings and equipment. It also adds
   `reconfirm_range`, the time a flagged request moves to when Technical Support
   Staff reconfirm it, worked out when the date changes because a request keeps
