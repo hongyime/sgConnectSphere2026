@@ -148,10 +148,19 @@ the account's grants, and each backend action remains independently authorized.
 - Each module owns a distinct business responsibility and communicates with other modules through defined application-level interactions.
 - The modules share one PostgreSQL database but should keep their business logic separated.
 - Venue and equipment readiness determine whether an approved event can be confirmed.
-- A Planning Event enters Safety Review automatically after required venue,
-  equipment and technical-support arrangements confirm. A venue block that
-  invalidates an active Confirmed booking returns the Event to Planning and
-  notifies its Coordinator (T-81/T-82).
+- A Planning Event that was Confirmed before (deliberate reversion or venue
+  loss) enters Safety Review automatically after required venue, equipment and
+  technical-support arrangements confirm again; a first-time Planning Event is
+  still submitted by its Coordinator (E08-S03). A venue block that invalidates
+  an active Confirmed booking returns the Event to Planning and notifies its
+  Coordinator (T-81/T-82).
+- E08-S04 delivery: Event Lifecycle's `enterSafetyReviewIfReady`
+  (`eventReadiness/autoSafetyReview.ts`) runs inside the transaction of each
+  action that can confirm the last arrangement: Venue and Booking's booking
+  approval, reconfirmation and lost-booking cancellation, and Equipment and
+  Support's reservation, re-reservation and staff assignment. The earlier
+  approval stays in the audit history and is not reused. A date change does not
+  yet flag Event-level technical support for reconfirmation (open PO question).
 - Venue bookings and equipment requirements are Session-scoped; Event lifecycle,
   registration windows and technical-support assignment remain Event-scoped
   (T-79). Registration selects Sessions and enforces both Session and combined

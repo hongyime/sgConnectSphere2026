@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **379**
-- Automated (explicit TC_ID in an active test title): **302** (79.7%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+- Automated (explicit TC_ID in an active test title): **304** (80.2%)
+  - Real-database (`.integration.test` / `.db.test`): **44**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **258**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **55** (14.5%)
-- No test yet (no test file mentions the TC_ID): **22** (5.8%)
+  - Live-assertion (other active tests): **259**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.2%)
+- No test yet (no test file mentions the TC_ID): **21** (5.5%)
 
 ## Coverage by epic
 
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 16 | 11 | 1 |
+| E08 | 28 | 18 | 10 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 29 | 25 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **379** | **302** | **55** | **22** |
+| **Total** | **379** | **304** | **54** | **21** |
 
 ## Case-by-case status
 
@@ -333,10 +333,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
 | `TC_E08S04_01` | E08-S04 | Verify that reverting a Confirmed event to Planning with a recorded reason shoul | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | tests/e2e/e08.spec.ts: TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event |
+| `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_03: a Technical Support equipment failure on a Confirmed event is flagged and the event stays Confirmed; tests/e2e/e |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again |
-| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ❌ none | — |
+| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; tests/e2e |
+| `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_06: a venue block over a Confirmed booking returns the event to Planning, tells its Coordinator and does not cancel  |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
 | `TC_E08S05_03` | E08-S05 | Verify that attempting to mark an event complete before its first event has star | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -552,6 +552,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - deleting a draft event keeps its activity log entries and only clears the event link
 - deleting a user keeps their activity log entries and only clears the actor
 
+### `backend/tests/autoSafetyReview.integration.test.ts`
+
+- the earlier safety approval is not reused: only a Safety Officer can confirm the event again
+- the event waits until the last arrangement: booking, then equipment, then Technical Support staff
+- re-reserving the last flagged equipment puts a reverted event in Safety Review
+- approving the last pending booking of a reverted event puts it in Safety Review
+- an event that was never Confirmed stays in Planning for its Coordinator to submit
+- a legacy Confirmed event with no earlier confirmation entry still enters Safety Review once reverted and reconfirmed
+- rejecting a booking never moves a reverted event, even with nothing left outstanding
+
+### `backend/tests/autoSafetyReview.test.ts`
+
+- a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change
+- without an assigned Coordinator only the Organiser and the Safety Officers are told
+- nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding
+
 ### `backend/tests/bookingPrimary.test.ts`
 
 - primary selection shares origin/authentication HTTP boundary, without submission key
@@ -640,6 +656,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/decision.test.ts`
 
 - SCRUM-34: the reason is trimmed, an approval ignores any reason, and an unknown decision is refused
+
+### `backend/tests/e08s04Arrangements.integration.test.ts`
+
+- after a venue loss, the event waits for the replacement and the lost booking, then enters Safety Review (Scenarios 5 then 4)
+- after a venue loss on an event that was never Confirmed, cancelling the lost booking leaves it for the Coordinator to submit
 
 ### `backend/tests/emailTemplate.test.ts`
 
@@ -1119,6 +1140,16 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a rejection is not checked for clashes
 - a clash committed by someone else first is refused as
 - a booking that disappears before its venue is locked is not found
+- reconfirming moves a flagged booking to its Session time, clears the flag, logs it and tells the Coordinator
+- reconfirming with no assigned Coordinator still clears the flag and tells nobody
+- only Venue Staff reconfirm, and the refusal is recorded
+- reconfirming needs a booking id
+- reconfirming refuses a missing, unconfirmed or unflagged booking, or a closed event, and changes nothing
+- reconfirming is refused when the new time clashes with another booking or a block
+- reconfirming that loses a race to the 0016 guard is a 409, not a server error
+- reconfirming rechecks the staff account like a decision
+- the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events
+- a reconfirmation notice falls back to
 
 ### `backend/tests/venueBookingRequests.test.ts`
 
@@ -1211,6 +1242,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - handler: methods, origin and actions
 - handler: GET routes to the event or staff list; POST to hold, convert, release or extend
 - database buffer-guard refusals become 409 and rollback a hold creation
+
+### `backend/tests/venueReconfirmation.integration.test.ts`
+
+- reconfirming moves the booking to its Session time, clears the flag, logs it and tells the Coordinator once
+- reconfirming is refused when another booking holds the venue at the new time, and nothing changes
+- reconfirming is refused when a maintenance block covers the new time
+- only a flagged Confirmed booking on an open event is reconfirmed, and only by Venue Staff
+- two Venue Staff reconfirming the same booking at once: one succeeds, the other is told nothing is left
+
+### `backend/tests/venueReconfirmationRoute.integration.test.ts`
+
+- Venue Staff list and reconfirm a flagged booking through /api/venues
 
 ### `backend/tests/venueSearch.test.ts`
 
@@ -1670,6 +1713,18 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a malformed reply is a failed load, not a crash
 - an empty schedule explains how assignments arrive; a schedule with only past work says nothing is upcoming
 - event names avoid repeating a code the title already starts with
+
+### `frontend/src/features/venue/BookingReconfirmation.test.tsx`
+
+- the list shows each flagged booking with its booked time and the time it would move to
+- reconfirming asks first, then says who was told and that the reverted event is back in Safety Review
+- a booking kept at the same time says so, and an event without a Coordinator or other outstanding work says that
+- a refused reconfirmation shows the reason in the panel and keeps the booking listed
+- cancelling closes the panel and sends nothing; choosing again clears the last result
+- the Reconfirm buttons are disabled while a reconfirmation is being saved
+- an empty list and a failed load each say so
+- the Booking requests page shows the bookings to reconfirm under the pending requests
+- a reply without a list counts as nothing to reconfirm and never breaks the page
 
 ### `frontend/src/features/venue/BookingRequests.test.tsx`
 
