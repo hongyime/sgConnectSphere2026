@@ -19,7 +19,7 @@ import { listAccessibilityFeatures } from '../../backend/src/modules/venueBookin
 import {
   createVenueBlock, editVenueBlock, getVenueBlockHistory, liftVenueBlock, listVenueBlocks, removeVenueBlock, shortenVenueBlock,
 } from '../../backend/src/modules/venueBooking/blocks.js';
-import { decideBooking, getBooking, listPendingBookings } from '../../backend/src/modules/venueBooking/decisions.js';
+import { decideBooking, getBooking, listBookingsToReconfirm, listPendingBookings, reconfirmBooking } from '../../backend/src/modules/venueBooking/decisions.js';
 import type { VercelRequest, VercelResponse } from '../../backend/src/vercel.js';
 
 // GET and POST share one file (create/update/retire/layout mutations all
@@ -81,6 +81,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
       // E06-S04 (SCRUM-48): Venue Staff's pending booking requests, and one
       // booking with its decision.
       if (params.get('bookings') === 'pending') return listPendingBookings(query, user);
+      // E08-S04 Scenario 4 (SCRUM-242): Confirmed bookings to reconfirm.
+      if (params.get('bookings') === 'reconfirm') return listBookingsToReconfirm(query, user);
       const bookingId = params.get('booking');
       if (bookingId) return getBooking(query, user, bookingId.slice(0, 64));
 
@@ -173,10 +175,12 @@ export default async function handler(request: VercelRequest, response: VercelRe
       const { booking_id: bookingId, ...decision } = fields;
       return decideBooking(databasePool(), user, bookingId, decision);
     }
+    // E08-S04 Scenario 4 (SCRUM-242): reconfirm a flagged Confirmed booking.
+    if (action === 'reconfirm') return reconfirmBooking(databasePool(), user, fields.booking_id);
 
     return { status: 400, body: {
       error: 'invalid_action',
-      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'edit_block', 'shorten_block', 'lift_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', or 'decide'."] },
+      errors: { action: ["Must be 'create', 'update', 'retire', 'add_layout', 'update_layout', 'remove_layout', 'block', 'edit_block', 'shorten_block', 'lift_block', 'remove_block', 'hold', 'convert_hold', 'release', 'extend_hold', 'decide', or 'reconfirm'."] },
     } };
   });
 }

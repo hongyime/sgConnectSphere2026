@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 // E08 - 28 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -249,51 +250,53 @@ test.describe("E08-S04", () => {
 
   /**
    * TC_E08S04_03
-   * AC:      E08-S04 - Scenario 3 (No automatic reversion)
+   * AC:      E08-S04 - Scenario 3 (Other broken arrangements remain flagged)
    * Sprint:  4.0
    *
    * Pre-conditions:
-   *   Event "Leadership Summit" has status "Confirmed"; its venue booking has just been flagged due to a broken arrangement, but no one has reverted the event
+   *   Event "Leadership Summit" is Confirmed; its Technical Support equipment is flagged as unavailable; no Coordinator has reverted it
    *
    * Test data:
-   *   Flagged arrangement: venue booking
+   *   Broken arrangement: Technical Support (Projector, stock changed); venue booking remains confirmed
    *
    * Expected result:
-   *   The event status remains "Confirmed"; the affected venue booking is shown flagged, but no automatic status change has occurred
+   *   The Event stays Confirmed; the technical arrangement is flagged for review; no automatic status change occurs; "Revert to Planning" is still offered to the Coordinator
    */
   test("TC_E08S04_03 - A non-venue arrangement failure should be flagged without automatically reverting the Event", async ({ page }) => {
-    await page.route('**/api/auth/session', route => route.fulfill({
-      json: { user: { id: 'coord-1', email: 'coordinator_1@connectsphere.com', role: 'event_coordinator', clientOrgId: null } },
-    }));
-    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [] } }));
-    await page.route('**/api/events?conflict=1&id=*', route => route.fulfill({
-      json: { conflicts: [{ id: 'cf-1', message: 'Venue booking flagged: potential maintenance conflict.' }] },
-    }));
-    await page.route('**/api/events?*', route => route.fulfill({
-      json: {
-        event: {
-          id: 'evt-leader',
-          event_code: 'EVT-LEADER',
-          title: 'Leadership Summit',
-          status: 'confirmed',
-          status_changed_at: '2026-10-20T01:00:00.000Z',
-          starts_at: '2027-01-15T01:00:00.000Z',
-          ends_at: '2027-01-15T09:00:00.000Z',
-          expected_attendance: 200,
-          coordinator_id: 'coord-1',
-          coordinator_name: 'Coordinator One',
-          organiser_name: 'Organiser A',
-          organiser_email: 'organiser_a@clienta.com',
-          hasConflict: true,
-        },
-      },
-    }));
+    // The real flag and the unchanged status are proved against PostgreSQL in
+    // backend/tests/e08s04Arrangements.integration.test.ts; this checks what
+    // the Coordinator sees.
+    await signInAs(page, 'event_coordinator', { email: 'coordinator_1@connectsphere.com' });
+    const writes: string[] = [];
+    await page.route('**/api/events?**', route => {
+      const params = new URL(route.request().url()).searchParams;
+      if (route.request().method() !== 'GET') { writes.push(route.request().url()); return route.fulfill({ status: 500, json: { error: 'No write expected.' } }); }
+      if (params.get('readiness') !== '1') return route.fulfill({ json: { event: {
+        id: 'evt-leader', event_code: 'EVT-LEADER', title: 'Leadership Summit', status: 'confirmed',
+        starts_at: '2027-01-15T01:00:00.000Z', ends_at: '2027-01-15T09:00:00.000Z', expected_attendance: 200,
+        coordinator_id: 'coord-1', coordinator_name: 'Coordinator One', organiser_name: 'Organiser A', activityLog: [],
+      } } });
+      return route.fulfill({ json: { readiness: {
+        eventId: 'evt-leader', eventCode: 'EVT-LEADER', title: 'Leadership Summit', status: 'confirmed',
+        startsAt: '2027-01-15T01:00:00.000Z', endsAt: '2027-01-15T09:00:00.000Z', equipmentNoneRequired: false, supportNoneRequired: false,
+        venueBookings: [{ id: 'b1', venueName: 'Summit Hall', status: 'confirmed', purpose: null, startsAt: '2027-01-15T01:00:00.000Z', endsAt: '2027-01-15T09:00:00.000Z', state: 'ready' }],
+        equipment: [{ id: 'r1', name: 'Projector', requested: 2, reserved: 2, state: 'outstanding' }],
+        support: [],
+        blockers: [{ kind: 'equipment-shortfall', message: 'Projector — needs review: stock changed (2 of 2 reserved)' }],
+        canSubmit: false,
+      } } });
+    });
 
-    await page.goto('/coordinator/events/EVT-LEADER');
-    // Status remains Confirmed despite conflict/broken arrangement
+    await page.goto('/coordinator/events/EVT-LEADER/readiness');
+    await expect(page.getByRole('heading', { level: 1, name: 'Readiness: Leadership Summit' })).toBeVisible();
     await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Confirmed');
-    // Revert action remains available for Coordinator to deliberately revert if needed
+    await expect(page.locator('.readiness-outstanding li')).toHaveText(['Projector — needs review: stock changed (2 of 2 reserved)']);
+    await expect(page.getByRole('row').filter({ hasText: 'Summit Hall' })).toContainText('Ready');
+
+    // Scenario 3: the deliberate reversion stays open to the Coordinator.
+    await page.goto('/coordinator/events/EVT-LEADER');
     await expect(page.getByRole('button', { name: 'Revert to Planning' })).toBeVisible();
+    expect(writes).toEqual([]);
   });
 
   /**
@@ -308,7 +311,7 @@ test.describe("E08-S04", () => {
    *   Event: Leadership Summit
    *
    * Expected result:
-   *   An activity log entry exists recording the reversion, with actor = coordinator_1@connectsphere.com, action = "Reverted to Planning", and a timestamp
+   *   An activity log entry exists recording the reversion, with actor = coordinator_1 (shown by name), action = "Reverted to Planning", and a timestamp
    */
   test("TC_E08S04_04 - Verify that a reversion from Confirmed to Planning should be recorded in the activity log", async ({ page }) => {
     await page.route('**/api/auth/session', route => route.fulfill({
@@ -503,12 +506,85 @@ test.describe("E08-S03 — Week 7 case scaffolds", () => {
 
 });
 
-test.describe("E08-S04 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E08S04_05 — Verify that a reverted event should pass the Operational Safety Check again before it is Confirmed again", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S04_05).
-    void page;
-  });
+test.describe("E08-S04 — Scenario 4", () => {
+  const START = '2027-03-19T01:00:00.000Z';
+  const END = '2027-03-19T09:00:00.000Z';
 
+  // One fake server for both roles: Venue Staff reconfirm the last flagged
+  // booking, and the reverted event's status follows, as autoSafetyReview.ts
+  // does (proved against PostgreSQL in autoSafetyReview.integration.test.ts).
+  async function backend(page: Page) {
+    const state = { flagged: true, status: 'planning', reconfirms: 0 };
+    const booking = () => ({
+      id: 'b-charity', status: 'confirmed', startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T09:00:00.000Z',
+      reconfirmFor: { startsAt: START, endsAt: END }, requiresReconfirmation: state.flagged,
+      venue: { id: 'v-charity', name: 'Charity Hall' },
+      event: { id: 'evt-charity', code: 'EVT-CHARITY', title: 'Charity Run', expectedAttendance: 150, coordinatorName: 'Coordinator One' },
+      decisionReason: null, suggestedVenue: null, decidedBy: 'Venue Staff A', decidedAt: '2027-01-02T00:00:00.000Z', requestedAt: '2027-01-01T00:00:00.000Z',
+    });
+    await page.route('**/api/venues**', route => {
+      const request = route.request();
+      const params = new URL(request.url()).searchParams;
+      if (request.method() === 'GET' && params.get('bookings') === 'pending') return route.fulfill({ json: { bookings: [] } });
+      if (request.method() === 'GET' && params.get('bookings') === 'reconfirm') return route.fulfill({ json: { bookings: state.flagged ? [booking()] : [] } });
+      if (request.method() === 'POST' && (request.postDataJSON() as { action?: string }).action === 'reconfirm') {
+        state.reconfirms += 1;
+        state.flagged = false;
+        state.status = 'safety_review';
+        return route.fulfill({ json: { booking: booking(), coordinatorNotified: true, enteredSafetyReview: true } });
+      }
+      return route.fallback();
+    });
+    await page.route('**/api/events?**', route => {
+      const params = new URL(route.request().url()).searchParams;
+      if (route.request().method() === 'POST') return route.fulfill({ status: 500, json: { error: 'The Coordinator should not need to submit.' } });
+      if (params.get('readiness') !== '1') return route.fallback();
+      return route.fulfill({ json: { readiness: {
+        eventId: 'evt-charity', eventCode: 'EVT-CHARITY', title: 'Charity Run', status: state.status, startsAt: START, endsAt: END,
+        equipmentNoneRequired: true, supportNoneRequired: false,
+        venueBookings: [{ id: 'b-charity', venueName: 'Charity Hall', status: 'confirmed', purpose: null, startsAt: START, endsAt: END, state: state.flagged ? 'outstanding' : 'ready' }],
+        equipment: [], support: [],
+        blockers: state.flagged ? [{ kind: 'venue-booking-outstanding', message: 'Charity Hall — needs review: its capacity is now below the expected attendance' }] : [],
+        canSubmit: state.status === 'planning' && !state.flagged,
+      } } });
+    });
+    return state;
+  }
+
+  /**
+   * TC_E08S04_05
+   * AC:      E08-S04 - Scenario 4 (Arrangements reconfirmed and safety review starts automatically)
+   * Sprint:  4.0
+   *
+   * Pre-conditions:
+   *   Event Charity Run was Confirmed through a safety approval, then returned to Planning; its venue booking is being reconfirmed
+   *
+   * Test data:
+   *   Last required arrangement: the Charity Hall booking, reconfirmed by Venue Staff
+   *
+   * Expected result:
+   *   The Event enters Safety Review automatically and the Safety Officer is notified; no Coordinator submission action is required
+   */
+  test("TC_E08S04_05 - A reverted Event should enter Safety Review automatically after all arrangements are reconfirmed", async ({ page }) => {
+    const state = await backend(page);
+    await signInAs(page, 'venue_staff', { email: 'venue_staff_1@connectsphere.com' });
+    await page.goto('/venue/bookings');
+    const row = page.getByRole('row').filter({ hasText: 'Charity Run' });
+    await expect(row).toContainText('Charity Hall');
+    await row.getByRole('button', { name: 'Reconfirm Charity Hall for Charity Run' }).click();
+    await page.getByRole('form', { name: 'Reconfirm this booking?' }).getByRole('button', { name: 'Reconfirm booking' }).click();
+    await expect(page.getByText(/^Reconfirmed Charity Hall for "Charity Run"/)).toContainText(
+      'The Coordinator was notified. All its arrangements are confirmed again, so the event is now in Safety Review.');
+    await expect(page.getByText(/^Nothing to reconfirm\./)).toBeVisible();
+    expect(state.reconfirms).toBe(1);
+
+    // The Coordinator finds it in Safety Review without submitting it.
+    await signInAs(page, 'event_coordinator', { email: 'coordinator_1@connectsphere.com' });
+    await page.goto('/coordinator/events/EVT-CHARITY/readiness');
+    await expect(page.locator('.ui-page-heading .status-pill')).toHaveText('Safety Review');
+    await expect(page.getByText('This event is in Safety Review. It is confirmed only once the Safety Officer approves it.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Submit for safety check…' })).toHaveCount(0);
+  });
 });
 
 test.describe("E08-S06 — Week 7 case scaffolds", () => {

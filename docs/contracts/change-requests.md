@@ -258,6 +258,9 @@ the integration increment above):
 - No route edits a single Session (E04-S02, SCRUM-39), so the two-Session parts
   of TC_E10S02_01, _05 and _07 are proved only against PostgreSQL.
 - The Coordinator's preview screen is the frontend increment (SCRUM-237, PR #380).
+- Closed by E08-S04 (SCRUM-242, 31 October): Venue Staff now clear a booking's
+  `requires_reconfirmation` by reconfirming it (`docs/contracts/venue-bookings.md`),
+  the follow-up raised on #376. Equipment was already cleared by re-reserving (E07-S04).
 
 ## Refused-edit handoff (SCRUM-205)
 
@@ -281,3 +284,16 @@ Frontend component and intercepted desktop/mobile browser tests validate this
 handoff. They are not evidence of real-database persistence or human execution.
 Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
 this frontend increment does not close parent SCRUM-70.
+
+## Review usability follow-up to #383
+
+Both E10 review panels use shared readable impact labels, retaining the
+headcount/capacity figures when provided. A late-close preview disables approval
+or application until explicit consent is ticked; form submission is guarded as
+well. The server's consent validation remains authoritative.
+
+Open product question from Amareet's #383 review: should an arrangement-affecting
+approved request applied during Safety Review return the Event to Planning?
+The current contract permits requests/application in Safety Review; it does not
+specify that automatic transition. No transition is added by this UI follow-up.
+Bryan must confirm the lifecycle policy before that separate behaviour changes.

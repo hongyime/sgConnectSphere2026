@@ -424,6 +424,21 @@ The original remains Conflicting. `POST /api/venues` with `action: cancel_lost_b
 
 The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/venue-recovery`. Lifting or shortening unavailability follows same-event replacement descendants through rejected attempts. An active descendant prevents restoring the original; a Released attempt ends that path. This preserves explicit original cancellation after a successful retry. Database integration tests exercise real E05-S06 loss, recovery approval, publication/notification timing and block lifting/editing. Human manual acceptance remains required.
 
+## Reconfirming a flagged booking (E08-S04 Scenario 4)
+
+A Confirmed booking flagged `requires_reconfirmation` (an E10-S02 date or
+attendance change, an E05-S01 capacity drop) stays on its original time until
+Venue Staff reconfirm it: `POST /api/venues` with `action: reconfirm`. Any
+active Venue Staff member may, as for decisions. The booking then takes its
+Session's current time (the Event's without a Session), which must be clear of
+other bookings and blocks with setup and turnaround time; the flag is cleared,
+one `Booking Reconfirmed` audit row is written and the Coordinator is notified.
+`GET /api/venues?bookings=reconfirm` lists what is waiting with the time each
+booking would take. When that was a reverted event's last outstanding
+arrangement, the event enters Safety Review (`eventReadiness/autoSafetyReview.ts`);
+`cancel_lost_booking` runs the same check, since a lost booking is released only
+after its replacement is confirmed.
+
 ## Approved Event change requests and reconfirmation
 
 E10-S01 applies supported arrangement changes through E10-S02's shared save
@@ -438,3 +453,9 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+The E10-S01 request review uses the same readable impact labels as E10-S02,
+including governing headcount/capacity when supplied. Required late-close
+consent disables confirmation until ticked. These UI safeguards do not change
+booking state rules or define automatic Safety Review reversion to Planning;
+that lifecycle question remains subject to PO confirmation.
