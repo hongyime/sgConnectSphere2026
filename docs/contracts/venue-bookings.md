@@ -453,3 +453,9 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+The 31 October E11 audit confirms that venue moves/recovery continue to use the
+existing effective-arrangement notification path. The accompanying registration
+notice fix changes public naming only: it does not alter booking approval,
+primary selection, assignment or reconfirmation rules. Production Venue Staff
+recipient verification still depends on the approved roster under SCRUM-195.

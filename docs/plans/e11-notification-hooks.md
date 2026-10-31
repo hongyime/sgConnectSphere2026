@@ -227,3 +227,10 @@ changes, release and selected operational shortfalls reuse the transactional
 writer; preferences remain separate under E01-S05. See the
 [implementation boundaries and evidence](../testing/e11-s01-integration-audit-20261017.md#equipment-routing-implementation--18-october).
 This is unfinished E11 integration, not a reopening of Done E07 stories.
+
+## Current E09/E10 reconciliation - 31 October 2026
+
+See [the current acceptance/evidence audit](../testing/e11-s01-evidence-audit-20261031.md) for merged producers,
+the organiser-registration public-name fix, retained human records and remaining
+production roster/mailbox acceptance gates. Earlier tables remain historical
+snapshots; absent callers listed there must not be treated as the current tree.
