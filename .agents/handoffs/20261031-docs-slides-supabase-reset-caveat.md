@@ -18,7 +18,11 @@ Goal: Follow up merged PR #374 by updating slide 6 to distinguish Claude's recor
 - `python scripts/check.py` passed 186 tooling tests, hooks, and repository checks; its run record is `docs/testing/runs/20261031-105122-bryanseah234-tooling.md`. It warned about the two existing review worktrees and this task worktree; the warning is non-blocking.
 - No application tests or manual acceptance steps apply to this presentation wording change.
 
+## Branch and PR
+
+- The slide change was committed as `fd6fe4b1` and pushed on `docs/slides-supabase-reset-caveat`.
+- Draft follow-up PR #387 is open against `main`; its required checks are running and independent review is required.
+
 ## Next steps
 
-- Commit the slide, run record, and handoff on this branch.
-- Push and open a draft follow-up PR to #374, then inspect its current-head CI checks.
+- Wait for green checks and teammate review on the latest PR head. Keep it in draft until those gates are satisfied.
