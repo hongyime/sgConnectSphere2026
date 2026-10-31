@@ -18,3 +18,15 @@ Goal: implement E02-S07 / SCRUM-180 so Event request submission accepts any non-
 2. Jira SCRUM-180 is assigned to Xiang Ying and remains To Do; an implementation/verification comment records the branch, commit and remaining Session-path limitation.
 3. No PR was opened because the authenticated author already has three open PRs. Preserve SCRUM-66's closed PR state and do not close unrelated PRs to free a slot.
 4. Keep the story open: E02-S07's multi-Session date cases need an E04 Session write path, and the team still owns independent review and acceptance. No manual tester steps or screenshots were created.
+
+## 31 October delivery follow-up (Xiang Ying)
+
+- Preserved Bryan's implementation and merged main f0797f59 without conflicts.
+- Real API/PostgreSQL regression reproduced a double response on refused draft
+  submission. PATCH now uses respondWithResult for one structured response.
+- Added Event-only API/persistence tests and wired them into existing CI.
+- Session authoring remains absent; contract and human-test handoff are in
+  docs/contracts/event-date-horizon.md. No manual evidence was fabricated.
+- Jira SCRUM-180 is In Progress. Estimate #388 proposes 3 points pending review;
+  leave Jira estimate unset until accepted. Prepare a partial implementation PR,
+  with Session acceptance and independent human review explicitly outstanding.

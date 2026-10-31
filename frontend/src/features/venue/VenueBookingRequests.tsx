@@ -64,6 +64,8 @@ export function VenueBookingRequests() {
           ['Location', booking.location], ['Booking period', formatDateRange(booking.starts_at, booking.ends_at)],
         ]} />
         {booking.status === 'conflicting' && <Alert tone="warning" title="Venue unavailable">{conflictText(booking)}</Alert>}
+        {/* E10-S02 (SCRUM-237): an event change or a venue capacity cut flagged this confirmed booking. */}
+        {booking.status === 'confirmed' && booking.requires_reconfirmation && <Alert tone="info" title="Needs reconfirmation">A change to the event or the venue means Venue Staff need to reconfirm this booking. They have been notified.</Alert>}
         {booking.purpose && <p><strong>Purpose:</strong> {booking.purpose}</p>}
         {booking.headcount != null && <p><strong>Booking headcount:</strong> {booking.headcount}</p>}
         {booking.is_primary && <p>Primary venue</p>}

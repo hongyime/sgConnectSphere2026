@@ -38,6 +38,14 @@ async function venueStaff(page: Page, options: { clash?: boolean } = {}) {
     }
     if (url.searchParams.get('bookings') === 'pending') return route.fulfill({ json: { bookings: state.booking.status === 'pending' ? [state.booking] : [] } });
     if (url.searchParams.has('booking')) return route.fulfill({ json: { booking: state.booking } });
+    if (url.searchParams.get('calendar') === '1') return route.fulfill({ json: {
+      venue: { id: 'v-orchid', name: 'Orchid Hall', opens_at: '08:00', closes_at: '22:00', is_active: true },
+      from: url.searchParams.get('from'), to: url.searchParams.get('to'), timezone: 'Asia/Singapore', entries: [],
+    } });
+    if (url.searchParams.has('id')) return route.fulfill({ json: { venue: {
+      id: 'v-orchid', name: 'Orchid Hall', location: 'Singapore', max_capacity: 200, opens_at: '08:00', closes_at: '22:00',
+      facilities: [], accessibility_features: [], supported_layouts: [], setup_time_minutes: 0, turnaround_time_minutes: 0,
+    } } });
     return route.fulfill({ json: { venues: [{ id: 'v-orchid', name: 'Orchid Hall' }, { id: 'v-jasmine', name: 'Jasmine Hall' }] } });
   });
   return state;
@@ -56,7 +64,7 @@ test('TC_E06S04_01: approving a pending request confirms it and tells Venue Staf
   await expect(page.getByRole('form', { name: 'Approve this booking request?' })).toContainText('shows it on its calendar');
   await page.getByRole('button', { name: 'Approve request' }).click();
 
-  await expect(page.getByRole('status')).toContainText('Approved. The booking is confirmed. Coordinator A has been notified.');
+  await expect(page.getByRole('status').filter({ hasText: 'Approved. The booking is confirmed. Coordinator A has been notified.' })).toBeVisible();
   expect(state.posts).toEqual([{ action: 'decide', booking_id: 'b-1', decision: 'approve' }]);
   await page.getByRole('link', { name: 'View request' }).click();
   await expect(page.getByText('Confirmed').first()).toBeVisible();
@@ -74,7 +82,7 @@ test('TC_E06S04_02: rejecting records the reason and a suggested venue, and both
   await panel.getByLabel('Reason (required)').fill(REASON);
   await panel.getByRole('button', { name: 'Reject request' }).click();
 
-  await expect(page.getByRole('status')).toContainText('Rejected. Coordinator A has been notified, with your reason.');
+  await expect(page.getByRole('status').filter({ hasText: 'Rejected. Coordinator A has been notified, with your reason.' })).toBeVisible();
   expect(state.posts).toEqual([{ action: 'decide', booking_id: 'b-1', decision: 'reject', reason: REASON, suggested_venue_id: 'v-jasmine' }]);
   await page.getByRole('link', { name: 'View request' }).click();
   await expect(page.getByText(REASON)).toBeVisible();
@@ -90,7 +98,7 @@ test('TC_E06S04_03: rejecting without a reason is blocked and nothing is sent', 
 
   await expect(panel).toContainText('Add a reason for rejecting this request.');
   expect(state.posts).toEqual([]);
-  await expect(page.getByRole('status')).toHaveCount(0);
+  await expect(page.getByRole('status').filter({ hasText: /Rejected\. Coordinator A has been notified/ })).toHaveCount(0);
 });
 
 test('TC_E06S04_04: an approval blocked by a buffered clash names the booking in the way', async ({ page }) => {
@@ -101,7 +109,7 @@ test('TC_E06S04_04: an approval blocked by a buffered clash names the booking in
 
   await expect(page.getByRole('alert')).toContainText(CLASH);
   expect(state.posts).toHaveLength(1);
-  await expect(page.getByRole('button', { name: 'Approve request' })).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Approve…' })).toBeDisabled();
 });
 
 // Coordinator side (T-75): the assigned Coordinator reads the decision in the

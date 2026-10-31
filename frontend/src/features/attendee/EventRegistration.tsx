@@ -6,12 +6,12 @@
 // E09-S02 (SCRUM-211): a request over a Session's or the Event's capacity is
 // still sent, and waits as Pending for the Organiser (T-85, C-98). A full Event
 // offers its Event-level waiting list where enabled; there's no per-Session
-// list (T-98, O-50).
+// list (T-98).
 // E09-S05 (SCRUM-220): an approved place or a Pending request is withdrawn
 // from the event page through a ConfirmPanel (D100, D106); the deadline shows
 // until it passes, then the contact replaces the button (D101).
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { CalendarCheck, Search, Ticket } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, ConfirmPanel, DataTable, EmptyState, ErrorState, FactList, FormActions, FormSection,
@@ -127,7 +127,7 @@ export function EventDetail() {
       {withdrawn ? <Alert tone="success">{withdrawn}</Alert> : null}
       {form ? (
         <>
-          {registration ? <RegistrationAlert status={registration.status} /> : null}
+          {registration ? <RegistrationAlert event={form.event} status={registration.status} /> : null}
           {canRegister ? <FullNotice form={form} /> : null}
           <Card title="Event"><EventFacts event={form.event} /></Card>
           <Card title="Sessions">
@@ -170,7 +170,7 @@ function FullNotice({ form }: { form: RegistrationForm }) {
 // Keep the event banner aligned with the registration status. Capacity remains
 // handled by FullNotice and the form below; this status banner is only for an
 // existing registration (including a waitlisted one).
-function RegistrationAlert({ status }: { status: string }) {
+function RegistrationAlert({ event, status }: { event: PublicEvent; status: string }) {
   if (status === 'pending') {
     return <Alert tone="warning" title="Your request is waiting for the organiser">
       Your choice was at capacity, so the organiser will review it. Your Sessions are marked below.
@@ -178,7 +178,7 @@ function RegistrationAlert({ status }: { status: string }) {
   }
   if (status === 'waitlisted') {
     return <Alert tone="info" title="You're on the waiting list">
-      We'll let you know if a place comes up. Your Sessions are marked below.
+      We'll notify you when a place is released. <ButtonLink to={waitlistLink(event)}>View waiting list</ButtonLink>
     </Alert>;
   }
   return <Alert tone="success" title="You're registered for this event">
@@ -248,6 +248,8 @@ function ClosedNotice({ form }: { form: RegistrationForm }) {
 
 export function RegisterForEvent() {
   const { eventCode = '' } = useParams();
+  const [searchParams] = useSearchParams();
+  const claimWaitlist = searchParams.get('claim') === '1';
   const { result, reload } = useLoad(signal => getRegistrationForm(eventCode, signal), [eventCode]);
   const form = result.state === 'ready' ? result.data : null;
   return (
@@ -257,7 +259,7 @@ export function RegisterForEvent() {
         <ErrorState failure={result.failure} context="registration for this event" onRetry={reload}
           backTo="/attendee/discover" backLabel="Back to Discover" />
       ) : null}
-      {form ? <RegistrationBody key={eventCode} form={form} /> : null}
+      {form ? <RegistrationBody key={`${eventCode}:${claimWaitlist}`} form={form} claimWaitlist={claimWaitlist} /> : null}
     </PageLayout>
   );
 }
@@ -266,10 +268,14 @@ function backToEvent(event: PublicEvent) {
   return `/attendee/discover/${encodeURIComponent(eventRef(event))}`;
 }
 
-function RegistrationBody({ form }: { form: RegistrationForm }) {
+function RegistrationBody({ form, claimWaitlist }: { form: RegistrationForm; claimWaitlist: boolean }) {
   const [done, setDone] = useState<{ registration: Registration; sessions: SessionChoice[] } | null>(null);
-  const [already, setAlready] = useState<Registration | null>(form.registration);
+  const [already, setAlready] = useState<Registration | null>(claimWaitlist && form.registration?.status === 'waitlisted' ? null : form.registration);
   if (done) return <Confirmation event={form.event} status={done.registration.status} sessions={done.sessions} allSessions={form.sessions} />;
+  if (claimWaitlist && form.registration?.status !== 'waitlisted') {
+    return <><Alert tone="error">You're no longer on the waiting list for this event.</Alert>
+      <p><ButtonLink to={`/attendee/waitlist/${encodeURIComponent(eventRef(form.event))}`}>Back to the waiting list</ButtonLink></p></>;
+  }
   if (already) {
     const chosen = form.sessions.filter(session => already.sessionIds.includes(session.id));
     return (
@@ -294,15 +300,16 @@ function RegistrationBody({ form }: { form: RegistrationForm }) {
       </>
     );
   }
-  return <RegistrationFormView form={form} onDone={setDone} onAlready={setAlready} />;
+  return <RegistrationFormView form={form} claimWaitlist={claimWaitlist} onDone={setDone} onAlready={setAlready} />;
 }
 
 export function missingMessage(missing: string[]) {
   return `Add your ${missing.join(', ').toLowerCase()} to your profile before registering.`;
 }
 
-function RegistrationFormView({ form, onDone, onAlready }: {
+function RegistrationFormView({ form, claimWaitlist, onDone, onAlready }: {
   form: RegistrationForm;
+  claimWaitlist: boolean;
   onDone: (result: { registration: Registration; sessions: SessionChoice[] }) => void;
   onAlready: (registration: Registration) => void;
 }) {
@@ -332,7 +339,7 @@ function RegistrationFormView({ form, onDone, onAlready }: {
       return;
     }
     setSaving(true);
-    const result = await register(eventRef(form.event), selected);
+    const result = await register(eventRef(form.event), selected, claimWaitlist);
     if (!mounted.current) return;
     setSaving(false);
     if (result.ok) { onDone(result.data); return; }
@@ -351,7 +358,9 @@ function RegistrationFormView({ form, onDone, onAlready }: {
     <Card>
       <form onSubmit={submit} noValidate className="ui-form">
         {serverError ? <Alert tone="error">{serverError}</Alert> : null}
-        <FullNotice form={form} />
+        {claimWaitlist ? <Alert tone="info" title="Claim a released place">
+          Claims are first come. If the place has just been taken, you'll stay on the waiting list. A full Session still goes to the organiser for review.
+        </Alert> : <FullNotice form={form} />}
         <FactList columns={2} items={[
           ['Event', form.event.name],
           ['When', formatDateRange(form.event.startsAt, form.event.endsAt)],
@@ -402,8 +411,8 @@ function RegistrationFormView({ form, onDone, onAlready }: {
         </FormSection>
         <FormActions>
           <ButtonLink to={backToEvent(form.event)}>Cancel</ButtonLink>
-          <Button type="submit" variant="primary" busy={saving} busyLabel={forReview ? 'Sending…' : 'Registering…'}
-            icon={<CalendarCheck size={14} aria-hidden="true" />}>{forReview ? 'Send request for review' : 'Confirm registration'}</Button>
+          <Button type="submit" variant="primary" busy={saving} busyLabel={claimWaitlist ? 'Claiming…' : forReview ? 'Sending…' : 'Registering…'}
+            icon={<CalendarCheck size={14} aria-hidden="true" />}>{claimWaitlist ? 'Claim a place' : forReview ? 'Send request for review' : 'Confirm registration'}</Button>
         </FormActions>
       </form>
     </Card>

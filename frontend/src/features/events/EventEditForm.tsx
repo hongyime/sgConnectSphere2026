@@ -10,8 +10,9 @@ import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent, type Re
 import { Link } from 'react-router-dom';
 import { refusedEditOffer } from './changeRequestPrefill';
 import { Lock, Save } from 'lucide-react';
-import { Alert, Button, FormActions, FormSection } from '../../shared';
-import { updateEventInformation, type EditableField, type EventPatch } from './eventEditApi';
+import { Alert, Button, FormActions, FormSection, type ApiFailure } from '../../shared';
+import { changedCheck, needsReview, previewEventInformation, updateEventInformation, type ChangeCheck, type EditableField, type EventPatch } from './eventEditApi';
+import { ArrangementReview } from './ArrangementReview';
 import { fieldList } from './eventEditFields';
 import './eventEdit.css';
 
@@ -124,13 +125,15 @@ export function buildPatch(initial: Draft, draft: Draft): { patch: EventPatch; e
   return { patch, errors };
 }
 
-export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, onCancel, intro, offerChangeRequest = false }: {
+export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, onCancel, intro, offerChangeRequest = false, checkArrangements = false }: {
   eventId: string;
   values: EventEditValues;
   editable: ReadonlySet<EditableField>;
   lockedNote?: ReactNode | ((field: EditableField) => ReactNode);
   offerChangeRequest?: boolean;
-  onSaved: (fields: string[]) => void;
+  // E10-S02 (SCRUM-237): the Coordinator first sees what the change affects.
+  checkArrangements?: boolean;
+  onSaved: (fields: string[], check: ChangeCheck) => void;
   onCancel: () => void;
   intro?: ReactNode;
 }) {
@@ -140,8 +143,21 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
   const [serverError, setServerError] = useState<string | null>(null);
   const [changeOffer, setChangeOffer] = useState<ReturnType<typeof refusedEditOffer>>(null);
   const [saving, setSaving] = useState(false);
+  const [review, setReview] = useState<{ patch: EventPatch; check: ChangeCheck; changed?: boolean } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const alertRef = useRef<HTMLDivElement>(null);
+  const reviewRef = useRef<HTMLDivElement>(null);
+  const reviewed = useRef(false);
+  // Each Save press gets a number. Leaving the form, switching to another
+  // event or editing again makes it stale, so a late preview answer cannot
+  // go on to save a change nobody is looking at (#380 review).
+  const attempt = useRef(0);
+  useEffect(() => () => { attempt.current += 1; }, [eventId]);
+  // The mutating save itself cannot be cancelled by an edit, unlike a preview:
+  // while it is pending the fields are read-only and Save does nothing, so two
+  // writes never overlap (#380 re-review). The ref answers before a re-render.
+  const [writing, setWriting] = useState(false);
+  const writingRef = useRef(false);
 
   // Bring the form into view when it opens, and move focus to any error so
   // keyboard and screen-reader users hear why the save didn't go through.
@@ -150,9 +166,17 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
     headingRef.current?.focus({ preventScroll: true });
   }, []);
   useEffect(() => { if (serverError) alertRef.current?.focus(); }, [serverError]);
+  // Moving between the form and the review step keeps keyboard focus with it.
+  useEffect(() => {
+    if (review) { reviewed.current = true; reviewRef.current?.focus(); }
+    else if (reviewed.current) headingRef.current?.focus({ preventScroll: true });
+  }, [review]);
   const changed = (Object.keys(draft) as EditableField[]).some(field => (draft[field] ?? '').trim() !== (initial[field] ?? '').trim());
 
   function update(field: EditableField, value: string) {
+    if (writingRef.current) return;
+    attempt.current += 1;
+    setSaving(false);
     setDraft(current => ({ ...current, [field]: value }));
     setErrors(current => ({ ...current, [field]: undefined }));
     setServerError(null);
@@ -161,6 +185,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (writingRef.current) return;
     const { patch, errors: found } = buildPatch(initial, draft);
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -168,17 +193,49 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
       return;
     }
     if (Object.keys(patch).length === 0) return;
+    const current = ++attempt.current;
     setSaving(true);
     setServerError(null);
     setChangeOffer(null);
-    const result = await updateEventInformation(eventId, patch);
-    setSaving(false);
-    if (!result.ok) {
-      setServerError(result.message);
-      setChangeOffer(offerChangeRequest ? refusedEditOffer(result, eventId, patch) : null);
+    if (checkArrangements) {
+      const preview = await previewEventInformation(eventId, patch);
+      if (current !== attempt.current) return;
+      if (!preview.ok) { setSaving(false); refused(preview, patch); return; }
+      if (needsReview(preview)) { setSaving(false); setReview({ patch, check: preview }); return; }
+      await save(patch, preview.revision);
       return;
     }
-    onSaved(result.fields);
+    await save(patch);
+  }
+
+  // `reviewed` binds the save to the preview it follows; when the server
+  // finds the arrangements changed, show the fresh list instead of saving.
+  async function save(patch: EventPatch, reviewed?: string) {
+    writingRef.current = true;
+    setWriting(true);
+    setSaving(true);
+    const result = await updateEventInformation(eventId, patch, reviewed);
+    writingRef.current = false;
+    setWriting(false);
+    setSaving(false);
+    const fresh = result.ok ? null : changedCheck(result);
+    if (fresh) { setReview({ patch, check: fresh, changed: true }); return; }
+    if (!result.ok) { setReview(null); refused(result, patch); return; }
+    onSaved(result.fields, { impact: result.impact, overSubscription: result.overSubscription });
+  }
+
+  function refused(result: ApiFailure, patch: EventPatch) {
+    setServerError(result.message);
+    setChangeOffer(offerChangeRequest ? refusedEditOffer(result, eventId, patch) : null);
+  }
+
+  if (review) {
+    return (
+      <div ref={reviewRef} tabIndex={-1} className="event-edit-review">
+        <ArrangementReview check={review.check} changed={review.changed} busy={saving}
+          onConfirm={() => void save(review.patch, review.check.revision)} onCancel={() => setReview(null)} />
+      </div>
+    );
   }
 
   // Registration dates that are locked and empty (the Coordinator read doesn't
@@ -211,7 +268,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
             const error = errors[spec.field];
             const describedBy = [error ? `${id}-error` : null, spec.hint ? `${id}-hint` : null, locked ? `${id}-locked` : null].filter(Boolean).join(' ') || undefined;
             const common = {
-              id, value: draft[spec.field], readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
+              id, value: draft[spec.field], readOnly: locked || writing, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy,
               onChange: (change: { target: { value: string } }) => update(spec.field, change.target.value),
             };
             const lock = locked ? <Lock size={12} aria-hidden="true" /> : null;
@@ -222,7 +279,7 @@ export function EventEditForm({ eventId, values, editable, lockedNote, onSaved, 
               // Two ordinary fields side by side in the section grid, rather
               // than a nested fieldset the section's legend rule would float.
               const [opens = '', closes = ''] = (draft.registrationDates ?? '').split('|');
-              const dateProps = { type: 'datetime-local', readOnly: locked, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy };
+              const dateProps = { type: 'datetime-local', readOnly: locked || writing, 'aria-invalid': error ? true : undefined, 'aria-describedby': describedBy };
               return (
                 <Fragment key={spec.field}>
                   <div className={`field-control${state}`}>

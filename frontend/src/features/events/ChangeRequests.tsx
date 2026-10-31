@@ -6,7 +6,7 @@ import {
   FormActions, FormField, FormSection, LoadingState, PageLayout, StatusPill, formatDate, useLoad,
 } from '../../shared';
 import {
-  changeFields, decideChangeRequest, getChangeRequests, submitChangeRequest, waitingMessage,
+  changeFields, decideChangeRequest, getChangeRequests, submitChangeRequest, waitingMessage, previewChangeRequest, type ChangePreview,
   type ChangeField, type ChangeRequestRecord, type ChangeRequestView, type ChangeValues,
 } from './changeRequestsApi';
 
@@ -171,7 +171,9 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
 function RequestCard({ request, current, coordinator, identifier, onDecided, references }: {
   request: ChangeRequestRecord; current: ChangeValues; coordinator: boolean; identifier: string; onDecided: (message: string) => void; references?: ChangeRequestView['references'];
 }) {
-  const [choice, setChoice] = useState<'approve' | 'decline' | null>(null);
+  const [choice, setChoice] = useState<'approve' | 'decline' | 'apply' | null>(null);
+  const [preview, setPreview] = useState<ChangePreview | null>(null);
+  const [lateCloseConfirmed, setLateCloseConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -187,7 +189,8 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
   async function confirm() {
     if (!choice || sending.current) return;
     sending.current = true; setBusy(true); setError(null);
-    const result = await decideChangeRequest(identifier, request.id, choice, note.trim());
+    const result = await decideChangeRequest(identifier, request.id, choice, note.trim(),
+      preview?.canApply ? preview.token : undefined, lateCloseConfirmed);
     if (!mounted.current) return;
     sending.current = false; setBusy(false);
     if (!result.ok) { setError(result.message); return; }
@@ -196,6 +199,19 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
       : result.data.request.status === 'approved' ? waitingMessage : 'Change declined. Current Event details are unchanged.');
   }
   const fields = Object.entries(request.requested_changes.fields ?? {});
+  async function review(event: React.MouseEvent<HTMLButtonElement>) {
+    if (sending.current) return;
+    trigger.current = event.currentTarget.id;
+    setError(null); setPreview(null); setLateCloseConfirmed(false);
+    const action = request.status === 'approved' ? 'apply' : 'approve';
+    if (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))) { setChoice(action); return; }
+    sending.current = true; setBusy(true);
+    const result = await previewChangeRequest(identifier, request.id);
+    if (!mounted.current) return;
+    sending.current = false; setBusy(false);
+    if (!result.ok) { setError(result.message); return; }
+    setPreview(result.data.request.preview); setChoice(action);
+  }
   return <Card title={request.description} actions={<StatusPill status={request.status} />}>
     <p>Submitted {formatDate(request.created_at, true)}</p>
     {request.status === 'approved' ? <Alert tone="info">{waitingMessage}. Current Event details have not changed.</Alert> : null}
@@ -206,19 +222,30 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
         { header: 'Current Event details', cell: ([key]) => display(key, current[key as ChangeField], references) },
         { header: 'Requested value', cell: ([key, value]) => display(key, value, references) },
       ]} /> : <p>No structured field changes recorded.</p>}
-    {coordinator && request.status === 'pending' ? choice ? <div ref={panel} tabIndex={-1}>
-      <ConfirmPanel title={choice === 'approve' ? 'Approve this change request?' : 'Decline this change request?'}
-        description={<><p>{choice === 'approve' ? (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))
+    {error && !choice ? <Alert tone="error">{error}</Alert> : null}
+    {coordinator && ['pending', 'approved'].includes(request.status) ? choice ? <div ref={panel} tabIndex={-1}>
+      <ConfirmPanel title={choice === 'decline' ? 'Decline this change request?' : choice === 'apply' ? 'Apply this approved change request?' : 'Approve this change request?'}
+        description={<><p>{choice !== 'decline' ? (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))
           ? 'This request changes only name, description or purpose. The changes are applied when approved.'
-          : 'This request includes arrangement changes. Nothing in this request is applied until the arrangement check, including any name, description or purpose changes.') : 'The Event stays unchanged.'}</p>
+          : preview?.canApply ? 'Review the affected arrangements below. Confirming applies this entire request together.'
+            : 'This request includes fields the shared arrangement path cannot apply yet. The entire request will remain Approved and unchanged.') : 'The Event stays unchanged.'}</p>
+          {choice !== 'decline' && preview?.canApply ? <>
+            <p>Affected venue bookings: {preview.impact.bookings.length}. Affected equipment reservations: {preview.impact.reservations.length}.</p>
+            {preview.impact.bookings.map(item => <p key={item.id}>{item.venueName}: {item.reasons.join(', ')}</p>)}
+            {preview.impact.reservations.map(item => <p key={item.id}>{item.equipmentName}: {item.reasons.join(', ')}</p>)}
+            {preview.overSubscription.map((item, index) => <Alert key={index} tone="warning">{item.scope}: {item.registered} registered places exceed capacity {item.capacity}. Registrations will be retained.</Alert>)}
+            {preview.lateClose ? <label><input type="checkbox" checked={lateCloseConfirmed} disabled={busy}
+              onChange={event => setLateCloseConfirmed(event.target.checked)} /> Confirm registration closing after the Event starts</label> : null}
+          </> : null}
+          {choice !== 'decline' && preview && !preview.canApply ? <p>Waiting fields: {preview.blockedFields.map(label).join(', ')}.</p> : null}
           <FormField label="Decision note (optional)">{props => <textarea {...props} rows={2} maxLength={4000}
             disabled={busy} value={note} onChange={event => setNote(event.target.value)} />}</FormField></>}
-        confirmLabel={choice === 'approve' ? 'Approve change request' : 'Decline change request'} busy={busy}
+        confirmLabel={choice === 'decline' ? 'Decline change request' : choice === 'apply' ? 'Apply change request' : 'Approve change request'} busy={busy}
         danger={choice === 'decline'} error={error ?? undefined} onConfirm={confirm}
         onCancel={() => { if (busy) return; setChoice(null); setError(null); setNote(''); }} />
     </div> : <div className="ui-actions">
-      <Button id={`${request.id}-approve`} variant="primary" onClick={event => { trigger.current = event.currentTarget.id; setChoice('approve'); }}>Approve…</Button>
-      <Button id={`${request.id}-decline`} onClick={event => { trigger.current = event.currentTarget.id; setChoice('decline'); }}>Decline…</Button>
+      <Button id={`${request.id}-approve`} variant="primary" busy={busy} onClick={review}>{request.status === 'approved' ? 'Review and apply…' : 'Approve…'}</Button>
+      {request.status === 'pending' ? <Button id={`${request.id}-decline`} disabled={busy} onClick={event => { trigger.current = event.currentTarget.id; setChoice('decline'); }}>Decline…</Button> : null}
     </div> : null}
   </Card>;
 }
