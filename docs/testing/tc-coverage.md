@@ -559,6 +559,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - re-reserving the last flagged equipment puts a reverted event in Safety Review
 - approving the last pending booking of a reverted event puts it in Safety Review
 - an event that was never Confirmed stays in Planning for its Coordinator to submit
+- a legacy Confirmed event with no earlier confirmation entry still enters Safety Review once reverted and reconfirmed
 - rejecting a booking never moves a reverted event, even with nothing left outstanding
 
 ### `backend/tests/autoSafetyReview.test.ts`
