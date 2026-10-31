@@ -148,3 +148,21 @@ The Week 9 architecture PR updates contracts and target schema only. These API
 changes are implementation follow-ups; existing migrations and routes are not
 claimed to implement them. Code changes need story-sized PRs, coverage and the
 Definition of Done after the requirements/design changes merge.
+
+## E10-S01 arrangement application continuation
+
+Change-request decisions accept `decision: "preview"` without deciding or
+persisting the proposed edit. Supported results include `preview.token`, the
+shared E10-S02 revision, along with impacts and capacity warnings. Approval
+(or `decision: "apply"` for an older Approved request) sends `previewToken`
+and, when needed, `confirmLateClose: true`. Stale previews return 409; missing
+late-close consent returns 428. Registration enablement and nullable window
+boundaries are supported only in trusted approved-request application context.
+Layout/accessibility fields now apply atomically with mixed requests; venue
+review reasons include layout/accessibility. Individual Session edits remain separate. Terminal Event, stale-field and assigned-Coordinator checks remain.
+
+Layout/accessibility continuation: changed Event requirements flag confirmed venue
+bookings for review (T-16), with explicit reasons. Equipment is unaffected by
+these requirements alone. The existing sole-Session layout trigger is retained;
+no individual multi-Session requirements are overwritten. Layout capacity uses
+the shared E09 warning calculation and never removes registered attendees.

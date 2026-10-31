@@ -19,7 +19,7 @@ export type EventPatch = Partial<Record<Exclude<EditableField, 'expectedAttendan
 // E10-S02 (SCRUM-71): the Session venue bookings and equipment reservations an
 // edit affects, and any over-subscription, from the Coordinator's save and from
 // its `&preview=1` dry run (#376). Shapes match docs/api-changes-week7.md.
-export type ImpactReason = 'time' | 'capacity';
+export type ImpactReason = 'time' | 'capacity' | 'layout' | 'accessibility';
 export type AffectedBooking = {
   id: string; sessionId: string | null; venueId: string; venueName: string;
   reasons: ImpactReason[]; governingHeadcount: number | null; capacity: number;

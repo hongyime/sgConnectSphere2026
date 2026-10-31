@@ -147,7 +147,8 @@ const STARTS = new Intl.DateTimeFormat('en-SG', {
   timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit',
 });
 
-export async function updateEventInformation(query: Query, user: AuthenticatedUser, identifier: string, input: unknown) {
+export async function updateEventInformation(query: Query, user: AuthenticatedUser, identifier: string, input: unknown,
+  approvedChangeRequest = false) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new AccessError(400, 'invalid_payload');
   const patch = input as Record<string, unknown>;
   const org = user.clientOrgId;
@@ -160,12 +161,14 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
     throw new AccessError(403, 'Edit access denied.');
   }
   if (event.status === 'cancelled' && (user.role === 'event_organiser' || event.coordinator_id === user.id)) throw new AccessError(409, 'Cancelled events are read-only.');
-  if (user.role === 'event_coordinator' && (event.coordinator_id !== user.id || !['approved', 'planning', 'confirmed', 'completed'].includes(event.status))) {
+  if (user.role === 'event_coordinator' && (event.coordinator_id !== user.id
+    || !['approved', 'planning', 'confirmed', 'completed', ...(approvedChangeRequest ? ['safety_review'] : [])].includes(event.status))) {
     throw new AccessError(403, 'Only the assigned Coordinator may edit an approved event.');
   }
   if (event.status === 'cancelled') throw new AccessError(409, 'Cancelled events are read-only.');
   const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(event.status);
-  const changed = Object.keys(patch).filter(field => editableFields.has(field));
+  const changed = Object.keys(patch).filter(field => editableFields.has(field)
+    || (approvedChangeRequest && ['registrationEnabled', 'layoutId', 'accessibilityFeatureIds'].includes(field)));
   if (!changed.length) throw new AccessError(400, 'No editable fields supplied.');
   if (user.role === 'event_organiser' && approved) {
     const restricted = changed.find(field => !unrestrictedAfterApproval.has(field));
@@ -192,7 +195,10 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
     } else if (field === 'registrationDates') {
       if (!value || typeof value !== 'object' || Array.isArray(value)) throw new AccessError(400, 'registrationDates must include opensAt and closesAt.');
       const dates = value as { opensAt?: unknown; closesAt?: unknown };
-      if (typeof dates.opensAt !== 'string' || typeof dates.closesAt !== 'string' || Number.isNaN(Date.parse(dates.opensAt)) || Number.isNaN(Date.parse(dates.closesAt)) || new Date(dates.closesAt) <= new Date(dates.opensAt)) {
+      const boundary = (value: unknown) => (approvedChangeRequest && value === null)
+        || (typeof value === 'string' && !Number.isNaN(Date.parse(value)));
+      if (!boundary(dates.opensAt) || !boundary(dates.closesAt)
+        || (typeof dates.opensAt === 'string' && typeof dates.closesAt === 'string' && new Date(dates.closesAt) <= new Date(dates.opensAt))) {
         throw new AccessError(400, 'registrationDates must contain a valid opening and closing date.');
       }
       assignments.push(`registration_opens_at = $${values.length + 1}, registration_closes_at = $${values.length + 2}`);
@@ -202,6 +208,18 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
       // null clears the deadline.
       if (value !== null && (typeof value !== 'string' || Number.isNaN(Date.parse(value)))) throw new AccessError(400, 'withdrawalDeadline must be a valid date or null.');
       add(`withdrawal_deadline = $${values.length + 1}`, value, field);
+    } else if (field === 'layoutId') {
+      if (value !== null && (typeof value !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value))) throw new AccessError(400, 'Select a valid layout.');
+      if (value !== null && !(await query('SELECT id FROM room_layouts WHERE id=$1 FOR KEY SHARE', [value])).rows.length) throw new AccessError(400, 'The selected layout no longer exists.');
+      add(`layout_id = $${values.length + 1}`, value, field);
+    } else if (field === 'accessibilityFeatureIds') {
+      if (!Array.isArray(value) || value.some(id => typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))) throw new AccessError(400, 'Select valid accessibility features.');
+      const ids = [...new Set(value.map(id => (id as string).toLowerCase()))].sort();
+      if (ids.length && (await query('SELECT id FROM accessibility_features WHERE id=ANY($1::uuid[]) FOR KEY SHARE', [ids])).rows.length !== ids.length) throw new AccessError(400, 'A selected accessibility feature no longer exists.');
+      audit.push({ field, value: ids });
+    } else if (field === 'registrationEnabled') {
+      if (typeof value !== 'boolean') throw new AccessError(400, 'registrationEnabled must be true or false.');
+      add(`registration_enabled = $${values.length + 1}`, value, field);
     } else if (field === 'waitlistEnabled') {
       if (typeof value !== 'boolean') throw new AccessError(400, 'waitlistEnabled must be true or false.');
       add(`waitlist_enabled = $${values.length + 1}`, value, field);
@@ -225,7 +243,14 @@ export async function updateEventInformation(query: Query, user: AuthenticatedUs
     values.push(start, end);
   }
   values.push(event.id);
-  await query(`UPDATE events SET ${assignments.join(', ')} WHERE id = $${values.length}`, values);
+  if (assignments.length) await query(`UPDATE events SET ${assignments.join(', ')} WHERE id = $${values.length}`, values);
+  if (changed.includes('accessibilityFeatureIds')) {
+    // Replace the Event requirement set atomically; do not overwrite separately
+    // authored Session requirements on a multi-Session Event.
+    const ids = [...new Set((patch.accessibilityFeatureIds as string[]).map(id => id.toLowerCase()))].sort();
+    await query('DELETE FROM event_accessibility_needs WHERE event_id=$1', [event.id]);
+    await query('INSERT INTO event_accessibility_needs(event_id,feature_id) SELECT $1,unnest($2::uuid[])', [event.id, ids]);
+  }
   for (const change of audit) {
     await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
       VALUES ($1, 'event', $2, $2, 'Record updated', $3, $4)`, [user.id, event.id, change.field, String(change.value)]);

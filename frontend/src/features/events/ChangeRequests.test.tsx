@@ -266,10 +266,67 @@ test.each([
   { fields: { expectedAttendance: 50 }, arrangement: true },
   { fields: { title: 'New title', expectedAttendance: 50 }, arrangement: true },
 ])('TC_E10S01_04: approval confirmation describes all-or-nothing apply for $fields', async ({ fields, arrangement }) => {
-  stubApi({ [read]: { body: data({ requests: [{ ...pending(), requested_changes: { fields, before: {} } }] }) } });
+  stubApi({ [read]: { body: data({ requests: [{ ...pending(), requested_changes: { fields, before: {} } }] }) },
+    [decide]: { body: { request: { ...pending(), preview: { canApply: true, token: 'review-token', lateClose: false,
+      impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] } } } } });
   mount(true, '/coordinator/events/EVT-A/changes');
   fireEvent.click(await screen.findByRole('button', { name: /^Approve/ }));
-  expect(screen.getByText(arrangement
-    ? 'This request includes arrangement changes. Nothing in this request is applied until the arrangement check, including any name, description or purpose changes.'
+  expect(await screen.findByText(arrangement
+    ? 'Review the affected arrangements below. Confirming applies this entire request together.'
     : 'This request changes only name, description or purpose. The changes are applied when approved.')).toBeInTheDocument();
+});
+
+test('TC_E10S01_04: preview lists affected arrangements and capacity warnings before apply; cancel writes nothing', async () => {
+  const request = { ...pending(), requested_changes: { fields: { expectedAttendance: 50 }, before: { expectedAttendance: 40 } } };
+  const calls = stubApi({ [read]: { body: data({ requests: [request] }) }, [decide]: { body: { request: { ...request,
+    preview: { canApply: true, token: 'current-preview', lateClose: false,
+      impact: { affected: true, bookings: [{ id: 'b', venueName: 'Hall A', reasons: ['capacity'] }],
+        reservations: [{ id: 'r', equipmentName: 'Projector', reasons: ['time'] }] },
+      overSubscription: [{ scope: 'event', registered: 50, capacity: 45 }] } } } } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
+  await screen.findByText('Hall A: capacity');
+  expect(screen.getByText('Projector: time')).toBeInTheDocument();
+  expect(screen.getByText(/50 registered places exceed capacity 45/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+  expect(calls.filter(call => call.method === 'POST').map(call => call.body)).toEqual([{ decision: 'preview' }]);
+});
+
+test('TC_E10S01_04: applying an older approved request sends its preview token and explicit late-close consent', async () => {
+  const request = { ...pending('approved'), requested_changes: { fields: { expectedAttendance: 50 } } };
+  let applied = false;
+  const calls = stubApi({ [read]: () => ({ body: data({ requests: [{ ...request, status: applied ? 'applied' : 'approved' }] }) }),
+    [decide]: (_url, init) => {
+      if (JSON.parse(String(init?.body)).decision === 'preview') return { body: { request: { ...request,
+        preview: { canApply: true, token: 'approved-preview', lateClose: true,
+          impact: { affected: false, bookings: [], reservations: [] }, overSubscription: [] } } } };
+      applied = true; return { body: { request: { ...request, status: 'applied' } } };
+    } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: 'Review and apply…' }));
+  fireEvent.click(await screen.findByRole('checkbox', { name: 'Confirm registration closing after the Event starts' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Apply change request' }));
+  await screen.findByText('Change applied to the Event.');
+  expect(calls.filter(call => call.method === 'POST').at(-1)?.body).toEqual({ decision: 'apply', reason: '', previewToken: 'approved-preview', confirmLateClose: true });
+});
+
+test('TC_E10S01_04: preview failure preserves request and allows retry without a decision', async () => {
+  const request = { ...pending(), requested_changes: { fields: { expectedAttendance: 50 } } };
+  const calls = stubApi({ [read]: { body: data({ requests: [request] }) },
+    [decide]: { status: 409, body: { error: 'The Event changed since submission.' } } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
+  await screen.findByText('The Event changed since submission.');
+  expect(screen.queryByRole('button', { name: 'Approve change request' })).not.toBeInTheDocument();
+  expect(calls.filter(call => call.method === 'POST').map(call => call.body)).toEqual([{ decision: 'preview' }]);
+});
+
+test('TC_E10S01_04: unsupported mixed request explicitly waits as a whole', async () => {
+  const request = { ...pending(), requested_changes: { fields: { title: 'Changed', layoutId: 'layout-a' } } };
+  stubApi({ [read]: { body: data({ requests: [request] }) }, [decide]: { body: { request: { ...request,
+    preview: { canApply: false, blockedFields: ['layoutId'] } } } } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
+  await screen.findByText('Waiting fields: Room layout.');
+  expect(screen.getByText(/entire request will remain Approved and unchanged/)).toBeInTheDocument();
 });

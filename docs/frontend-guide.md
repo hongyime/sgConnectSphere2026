@@ -183,3 +183,18 @@ When you change a shared block or a shared style:
 
 The repository-wide PR rules (title format, Jira key, verification section,
 postplan) are in `CONTRIBUTING.md` and `AGENTS.md`.
+
+## Reviewing E10-S01 arrangement changes
+
+`features/events/ChangeRequests.tsx` lets the assigned Coordinator preview a
+Pending request before approval, or review/apply an older Approved request.
+The dialog lists arrangement impacts and registration capacity warnings, sends
+the preview token on confirmation, and requires explicit late-close consent.
+A stale preview requires review again. All currently accepted Event fields apply atomically, including mixed requests. Registration enablement and
+nullable registration dates are supported through this request workflow.
+
+Layout/accessibility continuation: changed Event requirements flag confirmed venue
+bookings for review (T-16), with explicit reasons. Equipment is unaffected by
+these requirements alone. The existing sole-Session layout trigger is retained;
+no individual multi-Session requirements are overwritten. Layout capacity uses
+the shared E09 warning calculation and never removes registered attendees.
