@@ -47,10 +47,20 @@ closing clause, so merging must not transition any issue.
 - T1 branch (worktree, main folder untouched) and this handoff.
 - T2 points and estimate paragraph in both backlog views.
 - T3 regenerate CAA 311026, keep source-of-truth on it, compare with a fresh
-  main baseline: expect exactly six changed cells.
+  main baseline: expect exactly 12 changed cells (User Story and Points).
 - T4 check.py, T-65 tooling record, commit.
 - T5 PR for review; after merge and acceptance, set the three Jira estimates.
 
+## Done so far
+
+- T2 `3164739`: Points 3/8/3 and the estimate paragraph in both views.
+- T3 `2aa13b6`: CAA 311026 regenerated; exactly 12 cells differ from main
+  (User Story and Points for the three stories on both sheets).
+- T4: check.py pass (186 tooling tests, 804 records), doc guard 0 errors;
+  T-65 record `20261031-182232-lexinphun2024-debug-tooling.md`. The worktree
+  links `.venv-tools` to the main folder's copy (junction).
+
 ## Not done / next step
 
-T2.
+T5: push and open the PR for teammate/PO review. After merge and acceptance,
+set the three Jira estimates; then remove this worktree.
