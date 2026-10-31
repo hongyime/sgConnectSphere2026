@@ -5,15 +5,17 @@ import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, updateEventInformation, type Query } from '../eventVisibility/service.js';
 import { assertEditableAfterDecision } from '../eventLifecycle/decision.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
-import { applyArrangementImpact, loadOverSubscription } from '../changeManagement/eventChange.js';
+import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from './service.js';
 
 // Existing E03-S06 edit behaviour, now atomic with its audit and E11 deliveries.
 // SCRUM-71 (E10-S02) flags the confirmed Session arrangements the saved edit
 // affects, in the same transaction, and returns them with any
 // over-subscription. E10-S01 approval and venue-change workflows are separate.
+// `reviewed` is the preview's revision: when given and the save's own check
+// differs, the whole edit rolls back before anything is flagged or sent.
 export async function updateEventInformationWithNotifications(
-  pool: Pool, user: AuthenticatedUser, identifier: string, input: unknown, options: NotificationOptions = {},
+  pool: Pool, user: AuthenticatedUser, identifier: string, input: unknown, options: NotificationOptions & { reviewed?: string } = {},
 ) {
   return inTransaction(pool, async client => {
     const event = (await client.query<{ id: string }>(
@@ -26,8 +28,10 @@ export async function updateEventInformationWithNotifications(
     const result = await updateEventInformation(query, user, identifier, input);
     const arrangementsAfter = await loadArrangementSnapshot(query, event.id);
     const impact = assessArrangementImpact(arrangementsBefore, arrangementsAfter);
-    await applyArrangementImpact(query, user.id, event.id, impact);
     const overSubscription = await loadOverSubscription(query, event.id);
+    const check = withRevision({ impact, overSubscription });
+    if (options.reviewed !== undefined && options.reviewed !== check.revision) throw new ArrangementsChangedError(check);
+    await applyArrangementImpact(query, user.id, event.id, impact);
     const after = await captureEventAudience(client, event.id, options);
     const dateChanged = after.status!=='draft' && (before.startsAt!==after.startsAt || before.endsAt!==after.endsAt);
     if (impact.affected || dateChanged) {
@@ -44,6 +48,6 @@ export async function updateEventInformationWithNotifications(
       if (dateChanged) await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id,
         before, after, change: { kind: 'arrangements', fields: ['date','time'] } });
     }
-    return { ...result, impact, overSubscription };
+    return { ...result, ...check };
   });
 }

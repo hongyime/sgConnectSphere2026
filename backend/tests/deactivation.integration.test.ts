@@ -50,9 +50,10 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
         return client.query(sql, values);
       }, release() {} };
     } } as unknown as Pool;
-    const org = randomUUID(), layout = randomUUID();
+    const org = randomUUID(), layout = randomUUID(), venue = randomUUID();
     await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
     await client.query('INSERT INTO room_layouts (id, code, label) VALUES ($1, $2, $3)', [layout, layout, 'Synthetic']);
+    await client.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,'Place Release Room','Level 1',2,'07:00','23:00')", [venue]);
     const credential = randomBytes(20).toString('hex');
     const digest = await hashPassword(credential);
     async function makeUser(role: AuthenticatedUser['role']) {
@@ -80,6 +81,13 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
     for (const [eventId, status] of [[future, 'registered'], [boundary, 'registered'], [started, 'registered'], [ended, 'registered'], [waiting, 'waitlisted'], [alreadyWithdrawn, 'withdrawn']]) {
       await client.query('INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, $3)', [eventId, attendee.id, status]);
     }
+    const placeWaiter = await makeUser('attendee');
+    await client.query("INSERT INTO event_registrations(event_id,attendee_id,status) VALUES ($1,$2,'waitlisted')", [future, placeWaiter.id]);
+    const futureSession = (await client.query('SELECT id FROM sessions WHERE event_id=$1', [future])).rows[0].id;
+    await client.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary)
+      SELECT $1,id,$2,event_range,'confirmed',true FROM events WHERE id=$3`, [venue, futureSession, future]);
+    await client.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
+      SELECT id,'Place Release Event',lower(event_range),upper(event_range),'Place Release Room','Level 1' FROM events WHERE id=$1`, [future]);
     const token = await login(servicePool, attendee.email, credential);
     await client.query(`INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '1 hour')`, [tokenDigest(randomBytes(32).toString('hex')), attendee.id]);
     const result = await deactivateAccount(servicePool, attendee, { confirm: true });
@@ -94,6 +102,10 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
     for (const id of [boundary, started, ended]) { const row = registrations.find(row => row.event_id === id); assert.equal(row.status, 'registered'); assert.equal(row.withdrawn_at, null); }
     assert.equal(registrations.find(row => row.event_id === alreadyWithdrawn).withdrawn_at, null);
     assert.equal((await client.query(`SELECT count(*)::int AS occupied FROM event_registrations WHERE event_id = $1 AND status = 'registered'`, [future])).rows[0].occupied, 0);
+    const placeNotice = (await client.query(`SELECT n.message,d.channel FROM notifications n JOIN notification_deliveries d ON d.notification_id=n.id
+      WHERE n.event_id=$1 AND n.user_id=$2 AND n.title='Event update'`, [future, placeWaiter.id])).rows;
+    assert.equal(placeNotice.length, 1); assert.equal(placeNotice[0].channel, 'email');
+    assert.match(placeNotice[0].message, /^Place Release Event: A place is available\./);
     const audits = (await client.query(`SELECT * FROM audit_logs WHERE entity_id = $1 AND action = 'Account Deactivated'`, [attendee.id])).rows;
     assert.equal(audits.length, 1); assert.equal(audits[0].actor_id, attendee.id); assert.ok(audits[0].occurred_at);
     await assert.rejects(deactivateAccount(servicePool, attendee, { confirm: true }), { status: 409 });

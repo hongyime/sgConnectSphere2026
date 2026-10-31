@@ -178,3 +178,22 @@ The script only trusts a SCRUM key when it appears in the branch name, the
 PR title, or as an explicit `Closes SCRUM-42` / `Fixes SCRUM-42` clause in
 the body. Bare body mentions ("follow-up to SCRUM-42") are ignored so a PR
 that names an unrelated ticket does not accidentally close it.
+
+## Doc-sync guard
+
+Run `python scripts/doc_guard.py` before committing. CI runs the same guard
+on pull requests via `.github/workflows/doc-guard.yml`, and
+`python scripts/check.py` remains the pre-commit gate.
+
+`docs/doc-map.json` maps code areas to the docs they affect. If your commit
+touches mapped code without touching a mapped doc, either update that doc or
+add this commit trailer:
+
+```
+Docs-Impact: none — <reason>
+```
+
+`docs/FREEZE` activates strict mode. Create it only at release freeze.
+
+The guard is direction-agnostic: it checks that docs and code move together.
+It does not reverse the Markdown-authoritative order in decisions 0004/0005.

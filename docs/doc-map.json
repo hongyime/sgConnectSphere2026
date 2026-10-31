@@ -1,0 +1,36 @@
+{
+  "exempt": [
+    "docs/_data/*",
+    "docs/DOC_CHANGELOG.md",
+    "docs/*.xlsx",
+    "docs/*.docx",
+    "docs/*.pdf",
+    "docs/decisions/README.md",
+    "docs/backlog/README.md",
+    "docs/testing/README.md",
+    "docs/testing/*.xlsx",
+    "docs/testing/tc-coverage.md",
+    "docs/testing/runs/*",
+    "docs/testing/history/*",
+    "docs/testing/manual/*",
+    "docs/plans/*",
+    "docs/README.md",
+    "docs/*/README.md"
+  ],
+  "rules": [
+    {"name": "API handlers", "paths": ["api/**/*.ts"],
+     "docs": ["docs/architecture.md", "docs/c4-diagrams.md", "docs/api-changes-week7.md", "docs/modular-monolith-architecture.md"]},
+    {"name": "Backend modules and services", "paths": ["backend/src/**/*.ts"],
+     "docs": ["docs/architecture.md", "docs/modular-monolith-architecture.md", "docs/c4-diagrams.md"]},
+    {"name": "Data model and migrations", "paths": ["backend/database/**/*", "backend/src/database/**/*"],
+     "docs": ["docs/db_schema.md", "docs/architecture.md"]},
+    {"name": "Frontend", "paths": ["frontend/src/**/*"],
+     "docs": ["design.md", "docs/frontend-guide.md", "docs/c4-diagrams.md", "docs/dynamic-user-flows.md"]},
+    {"name": "Shared contracts", "paths": ["docs/contracts/**/*", "backend/src/modules/**/*"],
+     "docs": ["docs/contracts/venue-bookings.md"]},
+    {"name": "Dependencies and infra", "paths": ["**/package.json", "**/Dockerfile", "**/docker-compose*", ".github/workflows/*", "vercel.json"],
+     "docs": ["docs/decisions/*", "docs/c4-diagrams.md"]},
+    {"name": "Tests", "paths": ["**/*test*", "tests/**/*", "backend/tests/**/*"],
+     "docs": ["docs/testing/cases/*", "docs/testing/tc-coverage.md"]}
+  ]
+}

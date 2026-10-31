@@ -1,6 +1,8 @@
 import type { Pool } from 'pg';
 import { inTransaction } from '../../database/pool.js';
-import { AccessError } from '../eventVisibility/service.js';
+import { eventCapacity } from '../attendeeRegistration/capacity.js';
+import { captureEventAudience, notifyEventChange } from '../eventNotifications/service.js';
+import { AccessError, type Query } from '../eventVisibility/service.js';
 import type { AuthenticatedUser } from './types.js';
 
 export const DEACTIVATION_BLOCKING_STATUSES = [
@@ -40,12 +42,27 @@ export async function deactivateAccount(database: Pool, user: AuthenticatedUser,
     if (account.role === 'attendee') {
       // T-53: equality at the start boundary is historical, not upcoming.
       // T-54/T-55: no deadline predicate; withdraw waitlisted entries as well.
-      const registrations = await client.query(`
-        UPDATE event_registrations r SET status = 'withdrawn', withdrawn_at = now()
-        FROM events e WHERE r.event_id = e.id AND r.attendee_id = $1
-          AND r.status IN ('registered', 'waitlisted') AND lower(e.event_range) > now()
-        RETURNING r.id`, [account.id]);
-      withdrawn = registrations.rowCount ?? 0;
+      const registrations = (await client.query<{ id: string; event_id: string; status: string; occurred_at: Date }>(`
+        SELECT r.id, r.event_id, r.status, now() AS occurred_at
+        FROM event_registrations r JOIN events e ON e.id = r.event_id
+        WHERE r.attendee_id = $1 AND r.status IN ('registered', 'waitlisted') AND lower(e.event_range) > now()
+        ORDER BY e.id, r.id FOR UPDATE OF e, r`, [account.id])).rows;
+      if (registrations.length) {
+        const removed = await client.query(`UPDATE event_registrations SET status = 'withdrawn', withdrawn_at = now()
+          WHERE id = ANY($1::uuid[]) RETURNING id`, [registrations.map(registration => registration.id)]);
+        withdrawn = removed.rowCount ?? 0;
+        const query: Query = (sql, values) => client.query(sql, values);
+        for (const registration of registrations.filter(row => row.status === 'registered')) {
+          const capacity = await eventCapacity(query, registration.event_id);
+          if (capacity.registered < capacity.capacity) {
+            const audience = await captureEventAudience(client, registration.event_id);
+            await notifyEventChange(client, {
+              changeId: `place_released:${registration.id}`, occurredAt: registration.occurred_at, actorId: account.id,
+              before: audience, after: audience, change: { kind: 'place_released' },
+            });
+          }
+        }
+      }
     }
     await client.query('UPDATE users SET is_active = false, deactivated_at = now() WHERE id = $1', [account.id]);
     await client.query('DELETE FROM auth_sessions WHERE user_id = $1', [account.id]);
