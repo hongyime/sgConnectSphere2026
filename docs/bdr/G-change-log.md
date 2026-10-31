@@ -429,3 +429,14 @@ booking-request refusal. The hold refusal now gives only the occupied buffered
 window. E06-S05 Scenario 2 and TC_E06S05_01 are reworded in both backlog views
 and the case catalogue. E06-S05 is not reopened; its Done flag and earlier run
 records stay as they are.
+
+## 31 October 2026: date changes flag Technical Support staffing too (T-103)
+
+The Product Owner answered yes to flagging Technical Support staffing when an
+event's date or time changes, after the E08-S04 manual run showed a moved event
+entering Safety Review with its support crew still booked for the old day.
+E10-S02 is not Done, so Scenarios 5 and 6 are updated in place in both backlog
+views and the story is re-estimated from 5 to 8 points. Scenario 3 was aligned
+the same day to name the staffed Technical Support requests the change preview
+lists, as T-103 says. New and updated
+E10-S02 test cases follow in the same branch.
