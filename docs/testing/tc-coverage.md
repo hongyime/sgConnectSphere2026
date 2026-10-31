@@ -1045,6 +1045,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - handler: methods, origin and actions
 - handler: GET routes to the queue, one request or the schedule; POST to assign or remove
 
+### `backend/tests/supportReconfirmationSchema.integration.test.ts`
+
+- 0026 adds a not-null reconfirmation flag to Technical Support requests, defaulting to false
+- a request written as the deployed code writes it is unflagged, and the flag can be set and cleared but not emptied
+
 ### `backend/tests/supportRequests.test.ts`
 
 - validation accepts a trimmed description and an ISO range
