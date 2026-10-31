@@ -79,15 +79,17 @@ test('TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, conver
     const held = calendar.entries.find(entry => entry.kind === 'booking') as { state: string; event?: { code: string } };
     assert.deepEqual([held.state, held.event?.code], ['tentative', 'EVT-TC']);
 
-    // TC_E06S05_01: another Coordinator's overlapping hold is refused and names the hold in the way.
+    // TC_E06S05_01 (T-102): another Coordinator's overlapping hold is refused with
+    // the occupied window only; the hold's event is not named. Buffers are 0 here.
     const refused = await placeHold(f.pool, f.coordB, { event_id: 'EVT-CR', venue_id: f.ids.hall });
     assert.equal(refused.status, 409);
     assert.equal((refused.body as { error: string }).error,
-      'This venue already has a tentative hold for EVT-TC Tech Conference 2027 from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm.');
+      'This venue is unavailable from 10 Mar 2027, 9:00 am to 10 Mar 2027, 5:00 pm, including setup and turnaround.');
     // A pending request or a maintenance block is in the way too.
     await f.q(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status) VALUES ($1, $2, '[2027-03-11 08:00+08,2027-03-11 10:00+08)', 'pending')`, [f.ids.studio, charity]);
     const onRequest = await placeHold(f.pool, f.coordB, { event_id: 'EVT-GA', venue_id: f.ids.studio, starts_at: '2027-03-11T09:00:00+08:00', ends_at: '2027-03-11T12:00:00+08:00' });
-    assert.match((onRequest.body as { error: string }).error, /^This venue already has a pending booking request for EVT-CR Charity Run/);
+    assert.equal((onRequest.body as { error: string }).error,
+      'This venue is unavailable from 11 Mar 2027, 8:00 am to 11 Mar 2027, 10:00 am, including setup and turnaround.');
     await f.q(`INSERT INTO venue_blocks (venue_id, block_range, reason) VALUES ($1, '[2027-03-11 12:00+08,2027-03-12 00:00+08)', 'Floor polishing')`, [f.ids.studio]);
     const onBlock = await placeHold(f.pool, f.coordB, { event_id: 'EVT-GA', venue_id: f.ids.studio, starts_at: '2027-03-11T13:00:00+08:00', ends_at: '2027-03-11T15:00:00+08:00' });
     assert.deepEqual(onBlock, { status: 409, body: { error: 'This venue is blocked for that period (Floor polishing).' } });

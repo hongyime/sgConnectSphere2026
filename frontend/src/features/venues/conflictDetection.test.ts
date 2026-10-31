@@ -78,15 +78,24 @@ describe('detectBookingConflict', () => {
     })])).toBe('Booking Conflict: overlaps with confirmed booking [EVT-1]');
   });
 
-  it('warns when the request itself is flagged after venue buffers changed', () => {
-    expect(detectBookingConflict(booking, 0, 0, [entry({
+  // TC_E06S06_06: once the other request is rejected or withdrawn, the stale flag must not block approval.
+  it('does not block a flagged request once nothing overlaps it any more', () => {
+    const flaggedSelf = entry({
       state: 'tentative', start: booking.startsAt, end: booking.endsAt,
       event: { id: booking.eventId, code: booking.eventCode, title: 'This request' }, bufferConflict: true,
-    })])).toBe('Booking Conflict: [EVT-1] is flagged after the venue buffers changed.');
-    expect(detectBookingConflict({ ...booking, eventCode: null }, 0, 0, [entry({
+    });
+    expect(detectBookingConflict(booking, 30, 45, [flaggedSelf])).toBeNull();
+  });
+
+  it('still blocks a flagged request while its buffered window overlaps another claim', () => {
+    const flaggedSelf = entry({
       state: 'tentative', start: booking.startsAt, end: booking.endsAt,
-      event: { id: booking.eventId, code: null, title: 'This request' }, bufferConflict: true,
-    })])).toBe('Booking Conflict: this request is flagged after the venue buffers changed.');
+      event: { id: booking.eventId, code: booking.eventCode, title: 'This request' }, bufferConflict: true,
+    });
+    // The other request ends at 09:45 UTC; with 30 minutes' setup this request occupies from 09:30 UTC.
+    expect(detectBookingConflict(booking, 30, 45, [flaggedSelf,
+      entry({ state: 'tentative', start: '2026-10-25T08:00:00Z', end: '2026-10-25T09:45:00Z' })]))
+      .toBe('Booking Conflict: overlaps with active booking or hold [EVT-2]');
   });
 
   it('returns no warning for invalid candidate times', () => {
