@@ -281,3 +281,16 @@ Frontend component and intercepted desktop/mobile browser tests validate this
 handoff. They are not evidence of real-database persistence or human execution.
 Human TC_E10S01_03 acceptance remains a separately logged run under SCRUM-204;
 this frontend increment does not close parent SCRUM-70.
+
+## Review usability follow-up to #383
+
+Both E10 review panels use shared readable impact labels, retaining the
+headcount/capacity figures when provided. A late-close preview disables approval
+or application until explicit consent is ticked; form submission is guarded as
+well. The server's consent validation remains authoritative.
+
+Open product question from Amareet's #383 review: should an arrangement-affecting
+approved request applied during Safety Review return the Event to Planning?
+The current contract permits requests/application in Safety Review; it does not
+specify that automatic transition. No transition is added by this UI follow-up.
+Bryan must confirm the lifecycle policy before that separate behaviour changes.

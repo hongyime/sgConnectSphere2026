@@ -177,7 +177,7 @@ test('TC_E10S01_04: real arrangement preview, cancel and changed-capacity review
     await signIn(coordinator,f.coordinator);
     await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
     await coordinator.getByRole('button', {name:'Approve…',exact:true}).click();
-    await expect(coordinator.getByText(`${a.venueName}: capacity`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.venueName}: 75 people for 50 places`, {exact:true})).toBeVisible();
     const request = (await database.pool.query('SELECT id,status FROM change_requests WHERE event_id=$1',[f.event])).rows[0];
     expect(request.status).toBe('pending');
     expect((await database.pool.query('SELECT expected_attendance FROM events WHERE id=$1',[f.event])).rows[0].expected_attendance).toBe(40);
@@ -186,7 +186,7 @@ test('TC_E10S01_04: real arrangement preview, cancel and changed-capacity review
     await coordinator.getByRole('button', {name:'Cancel',exact:true}).click();
     await expect(coordinator.getByRole('button', {name:'Approve…',exact:true})).toBeFocused();
     await coordinator.getByRole('button', {name:'Approve…',exact:true}).click();
-    await expect(coordinator.getByText(`${a.venueName}: capacity`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.venueName}: 75 people for 50 places`, {exact:true})).toBeVisible();
     // A real catalogue change after preview must invalidate the confirmation.
     await database.pool.query('UPDATE venues SET max_capacity=60 WHERE id=$1',[a.venue]);
     await coordinator.getByRole('button', {name:'Approve change request',exact:true}).click();
@@ -194,7 +194,7 @@ test('TC_E10S01_04: real arrangement preview, cancel and changed-capacity review
     expect((await database.pool.query('SELECT status FROM change_requests WHERE id=$1',[request.id])).rows[0].status).toBe('pending');
     await coordinator.getByRole('button', {name:'Cancel',exact:true}).click();
     await coordinator.getByRole('button', {name:'Approve…',exact:true}).click();
-    await expect(coordinator.getByText(`${a.venueName}: capacity`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.venueName}: 75 people for 60 places`, {exact:true})).toBeVisible();
     await coordinator.getByRole('button', {name:'Approve change request',exact:true}).click();
     await expect(coordinator.getByText('Change applied to the Event.', {exact:true})).toBeVisible();
     await page.reload();
@@ -218,8 +218,8 @@ test('TC_E10S01_04: real date application flags venue/equipment and persists one
     await signIn(coordinator,f.coordinator);
     await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
     await coordinator.getByRole('button', {name:'Approve…',exact:true}).click();
-    await expect(coordinator.getByText(`${a.venueName}: time`, {exact:true})).toBeVisible();
-    await expect(coordinator.getByText(`${a.equipmentName}: time`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.venueName}: date or time changed`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.equipmentName}: date or time changed`, {exact:true})).toBeVisible();
     await coordinator.getByRole('button', {name:'Approve change request',exact:true}).click();
     await expect(coordinator.getByText('Change applied to the Event.', {exact:true})).toBeVisible();
     expect((await database.pool.query('SELECT starts_at FROM event_publications WHERE event_id=$1',[f.event])).rows[0].starts_at.toISOString()).toBe('2027-03-01T02:00:00.000Z');
@@ -249,7 +249,7 @@ test('TC_E10S01_04: mixed layout/accessibility approval previews venue review an
     await signIn(coordinator,f.coordinator);
     await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
     await coordinator.getByRole('button', {name:'Approve…',exact:true}).click();
-    await expect(coordinator.getByText(`${a.venueName}: layout, accessibility, capacity`, {exact:true})).toBeVisible();
+    await expect(coordinator.getByText(`${a.venueName}: room layout changed; accessibility requirements changed; 40 people for 20 places`, {exact:true})).toBeVisible();
     expect((await database.pool.query('SELECT layout_id FROM events WHERE id=$1',[f.event])).rows[0].layout_id).toBeNull();
     expect((await database.pool.query('SELECT count(*) FROM event_accessibility_needs WHERE event_id=$1',[f.event])).rows[0].count).toBe('0');
     await coordinator.getByRole('button', {name:'Approve change request',exact:true}).click();
@@ -279,8 +279,7 @@ test('TC_E10S01_04: older Approved request reviews and applies only after explic
   await page.getByRole('button', {name:'Review and apply…',exact:true}).click();
   const consent = page.getByRole('checkbox', {name:'Confirm registration closing after the Event starts',exact:true});
   await expect(consent).toBeVisible();
-  await page.getByRole('button', {name:'Apply change request',exact:true}).click();
-  await expect(page.getByText('Confirm registration closing after the Event starts.', {exact:true})).toBeVisible();
+  await expect(page.getByRole('button', {name:'Apply change request',exact:true})).toBeDisabled();
   expect((await database.pool.query('SELECT status FROM change_requests WHERE id=$1',[request])).rows[0].status).toBe('approved');
   await consent.check();
   await page.getByRole('button', {name:'Apply change request',exact:true}).click();

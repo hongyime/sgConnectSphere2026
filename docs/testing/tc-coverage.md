@@ -1833,6 +1833,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - errors and warnings are announced immediately; success politely
 - a busy button is disabled and shows its busy label
 - the /ui-kit reference page renders every block without calling the API
+- ConfirmPanel refuses disabled or busy form submission while keeping Cancel available without consent
 
 ### `frontend/src/templates/templates.test.tsx`
 

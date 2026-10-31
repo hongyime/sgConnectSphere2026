@@ -438,3 +438,9 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+The E10-S01 request review uses the same readable impact labels as E10-S02,
+including governing headcount/capacity when supplied. Required late-close
+consent disables confirmation until ticked. These UI safeguards do not change
+booking state rules or define automatic Safety Review reversion to Planning;
+that lifecycle question remains subject to PO confirmation.

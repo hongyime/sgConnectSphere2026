@@ -1,3 +1,4 @@
+import { arrangementReasons } from './arrangementReasons';
 // E10-S02 (SCRUM-237): who the Coordinator is told will be asked to reconfirm,
 // and the edit client's reading of save and preview replies.
 import { afterEach, expect, test, vi } from 'vitest';
@@ -34,4 +35,16 @@ test('TC_E10S01_04: layout/accessibility impacts name their requirements rather 
   render(<ArrangementReview check={{ impact: { affected: true, bookings: [{ id: 'b', sessionId: 's', venueId: 'v', venueName: 'Seminar Hall', governingHeadcount: 40, capacity: 50, reasons: ['layout', 'accessibility'] }], reservations: [] }, overSubscription: [] }} busy={false} onConfirm={() => {}} onCancel={() => {}} />);
   expect(screen.getByText(/room layout changed; accessibility requirements changed/)).toBeTruthy();
   expect(screen.queryByText(/40 people for 50 places/)).toBeNull();
+});
+
+
+test.each([
+  [{ reasons: ['time', 'layout', 'accessibility'] }, 'date or time changed; room layout changed; accessibility requirements changed'],
+  [{ reasons: ['capacity'], governingHeadcount: 0, capacity: 0 }, '0 people for 0 places'],
+  [{ reasons: ['capacity'], governingHeadcount: null, capacity: 50 }, 'attendance above capacity'],
+  [{ reasons: ['capacity'], governingHeadcount: 40 }, 'attendance above capacity'],
+  [{ reasons: ['future reason'] }, 'future reason'],
+  [{ reasons: [] }, ''],
+])('TC_E10S01_04: shared review labels preserve meaningful impact details (%j)', (item, expected) => {
+  expect(arrangementReasons(item)).toBe(expected);
 });
