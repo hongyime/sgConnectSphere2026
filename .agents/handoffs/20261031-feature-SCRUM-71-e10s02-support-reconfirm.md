@@ -11,8 +11,12 @@ manual run (record `20261031-173321`): EVT-1082 moved to 12 December but its
 support request kept 5 December and counted as Ready. PO Bryan answered yes on
 31 October (question on #392). Subtask SCRUM-244, Sprint 4.
 
-The branch starts from #392's branch (`feature/SCRUM-242-e08s04-reconfirm-safety-review`)
-because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merges.
+The branch started from #392's branch (`feature/SCRUM-242-e08s04-reconfirm-safety-review`)
+because it reuses `enterSafetyReviewIfReady`. #392 merged (squash, 44d08267) and
+`main` was merged in on 31 October with #390 (6ae0c4b2): `main`'s
+`autoSafetyReview.ts` (Ji Ning's legacy-Confirmed fix) taken whole; the support
+lines in `ArrangementReview.tsx` and `ChangeRequests.tsx` now use #390's shared
+`arrangementReasons` labels.
 
 ## Plan
 

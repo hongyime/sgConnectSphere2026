@@ -1,3 +1,4 @@
+// E10-S01: submit and review Event change requests with shared arrangement previews.
 import { readChangeRequestPrefill, type ChangeRequestPrefill } from './changeRequestPrefill';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLocation, useParams, useSearchParams } from 'react-router-dom';
@@ -9,6 +10,7 @@ import {
   changeFields, decideChangeRequest, getChangeRequests, submitChangeRequest, waitingMessage, previewChangeRequest, type ChangePreview,
   type ChangeField, type ChangeRequestRecord, type ChangeRequestView, type ChangeValues,
 } from './changeRequestsApi';
+import { arrangementReasons } from './arrangementReasons';
 
 const activeStatuses = ['approved', 'planning', 'safety_review', 'confirmed'];
 const label = (key: string) => changeFields.find(([field]) => field === key)?.[1] ?? key;
@@ -186,8 +188,9 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
     if (choice) { panel.current?.focus(); panel.current?.scrollIntoView?.({ block: 'nearest' }); }
     else if (trigger.current) document.getElementById(trigger.current)?.focus();
   }, [choice]);
+  const needsLateCloseConsent = choice !== 'decline' && preview?.canApply === true && preview.lateClose && !lateCloseConfirmed;
   async function confirm() {
-    if (!choice || sending.current) return;
+    if (!choice || sending.current || needsLateCloseConsent) return;
     sending.current = true; setBusy(true); setError(null);
     const result = await decideChangeRequest(identifier, request.id, choice, note.trim(),
       preview?.canApply ? preview.token : undefined, lateCloseConfirmed);
@@ -231,9 +234,9 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
             : 'This request includes fields the shared arrangement path cannot apply yet. The entire request will remain Approved and unchanged.') : 'The Event stays unchanged.'}</p>
           {choice !== 'decline' && preview?.canApply ? <>
             <p>Affected venue bookings: {preview.impact.bookings.length}. Affected equipment reservations: {preview.impact.reservations.length}. Affected Technical Support requests: {preview.impact.supports?.length ?? 0}.</p>
-            {preview.impact.bookings.map(item => <p key={item.id}>{item.venueName}: {item.reasons.join(', ')}</p>)}
-            {preview.impact.reservations.map(item => <p key={item.id}>{item.equipmentName}: {item.reasons.join(', ')}</p>)}
-            {preview.impact.supports?.map(item => <p key={item.id}>{item.description || 'Technical support'}: {item.reasons.join(', ')}</p>)}
+            {preview.impact.bookings.map(item => <p key={item.id}>{item.venueName}: {arrangementReasons(item)}</p>)}
+            {preview.impact.reservations.map(item => <p key={item.id}>{item.equipmentName}: {arrangementReasons(item)}</p>)}
+            {preview.impact.supports?.map(item => <p key={item.id}>{item.description || 'Technical support'}: {arrangementReasons(item)}</p>)}
             {preview.overSubscription.map((item, index) => <Alert key={index} tone="warning">{item.scope}: {item.registered} registered places exceed capacity {item.capacity}. Registrations will be retained.</Alert>)}
             {preview.lateClose ? <label><input type="checkbox" checked={lateCloseConfirmed} disabled={busy}
               onChange={event => setLateCloseConfirmed(event.target.checked)} /> Confirm registration closing after the Event starts</label> : null}
@@ -242,7 +245,7 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
           <FormField label="Decision note (optional)">{props => <textarea {...props} rows={2} maxLength={4000}
             disabled={busy} value={note} onChange={event => setNote(event.target.value)} />}</FormField></>}
         confirmLabel={choice === 'decline' ? 'Decline change request' : choice === 'apply' ? 'Apply change request' : 'Approve change request'} busy={busy}
-        danger={choice === 'decline'} error={error ?? undefined} onConfirm={confirm}
+        confirmDisabled={needsLateCloseConsent} danger={choice === 'decline'} error={error ?? undefined} onConfirm={confirm}
         onCancel={() => { if (busy) return; setChoice(null); setError(null); setNote(''); }} />
     </div> : <div className="ui-actions">
       <Button id={`${request.id}-approve`} variant="primary" busy={busy} onClick={review}>{request.status === 'approved' ? 'Review and apply…' : 'Approve…'}</Button>

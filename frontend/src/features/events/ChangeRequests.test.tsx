@@ -285,18 +285,18 @@ test('TC_E10S01_04: preview lists affected arrangements and capacity warnings be
       overSubscription: [{ scope: 'event', registered: 50, capacity: 45 }] } } } } });
   mount(true, '/coordinator/events/EVT-A/changes');
   fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
-  await screen.findByText('Hall A: capacity');
-  expect(screen.getByText('Projector: time')).toBeInTheDocument();
+  await screen.findByText('Hall A: attendance above capacity');
+  expect(screen.getByText('Projector: date or time changed')).toBeInTheDocument();
   expect(screen.getByText(/Affected Technical Support requests: 0\./)).toBeInTheDocument();
   expect(screen.getByText(/50 registered places exceed capacity 45/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(calls.filter(call => call.method === 'POST').map(call => call.body)).toEqual([{ decision: 'preview' }]);
 });
 
-test('TC_E10S01_04: applying an older approved request sends its preview token and explicit late-close consent', async () => {
-  const request = { ...pending('approved'), requested_changes: { fields: { expectedAttendance: 50 } } };
+test.each(['pending', 'approved'] as const)('TC_E10S01_04: %s request requires late-close consent before confirmation', async status => {
+  const request = { ...pending(status), requested_changes: { fields: { expectedAttendance: 50 } } };
   let applied = false;
-  const calls = stubApi({ [read]: () => ({ body: data({ requests: [{ ...request, status: applied ? 'applied' : 'approved' }] }) }),
+  const calls = stubApi({ [read]: () => ({ body: data({ requests: [{ ...request, status: applied ? 'applied' : status }] }) }),
     [decide]: (_url, init) => {
       if (JSON.parse(String(init?.body)).decision === 'preview') return { body: { request: { ...request,
         preview: { canApply: true, token: 'approved-preview', lateClose: true,
@@ -304,11 +304,20 @@ test('TC_E10S01_04: applying an older approved request sends its preview token a
       applied = true; return { body: { request: { ...request, status: 'applied' } } };
     } });
   mount(true, '/coordinator/events/EVT-A/changes');
-  fireEvent.click(await screen.findByRole('button', { name: 'Review and apply…' }));
-  fireEvent.click(await screen.findByRole('checkbox', { name: 'Confirm registration closing after the Event starts' }));
-  fireEvent.click(screen.getByRole('button', { name: 'Apply change request' }));
+  fireEvent.click(await screen.findByRole('button', { name: status === 'approved' ? 'Review and apply…' : 'Approve…' }));
+  const consent = await screen.findByRole('checkbox', { name: 'Confirm registration closing after the Event starts' });
+  const confirm = screen.getByRole('button', { name: status === 'approved' ? 'Apply change request' : 'Approve change request' });
+  expect(confirm).toBeDisabled();
+  fireEvent.submit(confirm.closest('form')!);
+  expect(calls.filter(call => call.method === 'POST')).toHaveLength(1);
+  fireEvent.click(consent);
+  expect(confirm).toBeEnabled();
+  fireEvent.click(consent);
+  expect(confirm).toBeDisabled();
+  fireEvent.click(consent);
+  fireEvent.click(confirm);
   await screen.findByText('Change applied to the Event.');
-  expect(calls.filter(call => call.method === 'POST').at(-1)?.body).toEqual({ decision: 'apply', reason: '', previewToken: 'approved-preview', confirmLateClose: true });
+  expect(calls.filter(call => call.method === 'POST').at(-1)?.body).toEqual({ decision: status === 'approved' ? 'apply' : 'approve', reason: '', previewToken: 'approved-preview', confirmLateClose: true });
 });
 
 test('TC_E10S01_04: preview failure preserves request and allows retry without a decision', async () => {
@@ -341,7 +350,7 @@ test('TC_E10S02_05 (T-103): an approved date change lists the staffed Technical 
       overSubscription: [] } } } } });
   mount(true, '/coordinator/events/EVT-A/changes');
   fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
-  expect(await screen.findByText('Sound desk: time')).toBeInTheDocument();
-  expect(screen.getByText('Technical support: time')).toBeInTheDocument();
+  expect(await screen.findByText('Sound desk: date or time changed')).toBeInTheDocument();
+  expect(screen.getByText('Technical support: date or time changed')).toBeInTheDocument();
   expect(screen.getByText(/Affected Technical Support requests: 2\./)).toBeInTheDocument();
 });

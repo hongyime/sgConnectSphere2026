@@ -184,6 +184,24 @@ test('an event that was never Confirmed stays in Planning for its Coordinator to
   assert.deepEqual(await f.noticesFor(event, 'Safety check needed'), []);
 }));
 
+// #392 review: a legacy event Confirmed before the status history existed has
+// no change to Confirmed; only its reversion records one from Confirmed.
+test('a legacy Confirmed event with no earlier confirmation entry still enters Safety Review once reverted and reconfirmed', () => withFixture(async f => {
+  const { event, booking } = await f.plannedEvent('EVT-8408');
+  await f.q(`UPDATE events SET status = 'confirmed' WHERE id = $1`, [event]);
+  assert.deepEqual(await f.statusHistory(event), [], 'no confirmation entry, as for a legacy event');
+  await revertEventToPlanning(f.pool, f.coordinator, event, { reason: 'The date has to move a week' });
+  await f.moveDate(event, booking);
+
+  const result = await reconfirmBooking(f.pool, f.staff, booking);
+
+  assert.equal((result.body as { enteredSafetyReview: boolean }).enteredSafetyReview, true);
+  assert.equal(await f.status(event), 'safety_review');
+  assert.deepEqual((await f.statusHistory(event)).map(row => [row.old_value, row.new_value]),
+    [['confirmed', 'planning'], ['planning', 'safety_review']]);
+  assert.deepEqual((await f.noticesFor(event, 'Safety check needed')).map(row => row.user_id), [f.officer.id]);
+}));
+
 test('rejecting a booking never moves a reverted event, even with nothing left outstanding', () => withFixture(async f => {
   const { event } = await f.revertedEvent('EVT-8407');
   const other = randomUUID();

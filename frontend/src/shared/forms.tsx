@@ -56,7 +56,7 @@ export function FormActions({ children }: { children: ReactNode }) {
 // Inline "are you sure?" step for decisions: approve, reject, cancel, withdraw,
 // revert. With `reasonLabel`, a reason is required before confirming.
 export function ConfirmPanel({
-  title, description, confirmLabel, busyLabel, reasonLabel, reasonRequiredMessage, danger = false, busy = false, error, onConfirm, onCancel,
+  title, description, confirmLabel, busyLabel, reasonLabel, reasonRequiredMessage, danger = false, busy = false, confirmDisabled = false, error, onConfirm, onCancel,
 }: {
   title: string;
   description?: ReactNode;
@@ -69,6 +69,8 @@ export function ConfirmPanel({
   reasonRequiredMessage?: string;
   danger?: boolean;
   busy?: boolean;
+  // Disable confirmation while required consent is missing; Cancel stays usable.
+  confirmDisabled?: boolean;
   // Server refusal to show inside the panel.
   error?: string;
   onConfirm: (reason: string) => void;
@@ -78,6 +80,7 @@ export function ConfirmPanel({
   const [missing, setMissing] = useState(false);
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || confirmDisabled) return;
     if (reasonLabel && !reason.trim()) { setMissing(true); return; }
     onConfirm(reason.trim());
   }
@@ -93,7 +96,7 @@ export function ConfirmPanel({
       ) : null}
       <FormActions>
         <Button onClick={onCancel} disabled={busy}>Cancel</Button>
-        <Button type="submit" variant={danger ? 'danger' : 'primary'} busy={busy} busyLabel={busyLabel}>{confirmLabel}</Button>
+        <Button type="submit" variant={danger ? 'danger' : 'primary'} busy={busy} disabled={confirmDisabled} busyLabel={busyLabel}>{confirmLabel}</Button>
       </FormActions>
     </form>
   );
