@@ -95,7 +95,8 @@ after Cancel), `TC_E10S02_05-1.png` (saved message), `TC_E10S02_05-2.png`
 
 1. Sign in as `venue_a@connectsphere.com`. Open the notification bell.
    Expected: a **Tech Conference 2026** notice that an event change (date or
-   time) means venue bookings or equipment reservations need reconfirmation.
+   time) means venue bookings, equipment reservations or Technical Support
+   requests need reconfirmation.
 2. Sign in as `tech_a@connectsphere.com`. Open the notification bell.
    Expected: the same reconfirmation notice.
 3. Still as `tech_a`, open

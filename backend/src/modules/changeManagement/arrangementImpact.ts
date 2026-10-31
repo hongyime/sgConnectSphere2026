@@ -8,17 +8,20 @@ import type { Query } from '../eventVisibility/service.js';
 export type SessionState = { id: string; startsAt: string; endsAt: string; expectedAttendance: number };
 export type BookingState = { id: string; sessionId: string | null; venueId: string; venueName: string; headcount: number | null; capacity: number };
 export type ReservationState = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string };
+export type SupportState = { id: string; description: string; startsAt: string; endsAt: string };
 export type ArrangementSnapshot = {
   event: { startsAt: string; endsAt: string; layoutId?: string | null; accessibilityFeatureIds?: string[] };
   sessions: SessionState[];
   bookings: BookingState[];
   reservations: ReservationState[];
+  supports?: SupportState[];
 };
 
 export type ImpactReason = 'time' | 'capacity' | 'layout' | 'accessibility';
 export type AffectedBooking = { id: string; sessionId: string | null; venueId: string; venueName: string; reasons: ImpactReason[]; governingHeadcount: number | null; capacity: number };
 export type AffectedReservation = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string; reasons: ImpactReason[] };
-export type ArrangementImpact = { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[] };
+export type AffectedSupport = SupportState & { reasons: ImpactReason[] };
+export type ArrangementImpact = { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[]; supports: AffectedSupport[] };
 
 // T-78/T-79: a booking's own headcount governs; without one, its Session's
 // expected attendance does. Null when the Session cannot be found.
@@ -67,14 +70,22 @@ export function assessArrangementImpact(before: ArrangementSnapshot, after: Arra
   const reservations: AffectedReservation[] = after.reservations
     .filter(reservation => moved(reservation.sessionId))
     .map(reservation => ({ ...reservation, reasons: ['time'] }));
-  return { affected: bookings.length > 0 || reservations.length > 0, bookings, reservations };
+  // T-103: support requests keep their own window (T-79), not a Session's. An
+  // Event-wide change flags every staffed request; a Session change flags
+  // those overlapping the Session's previous time (touching ends do not overlap).
+  const movedSessions = before.sessions.filter(session => moved(session.id));
+  const supports: AffectedSupport[] = (after.supports ?? [])
+    .filter(support => eventMoved || movedSessions.some(session => support.startsAt < session.endsAt && session.startsAt < support.endsAt))
+    .map(support => ({ ...support, reasons: ['time'] }));
+  return { affected: bookings.length > 0 || reservations.length > 0 || supports.length > 0, bookings, reservations, supports };
 }
 
 const iso = (value: Date | string) => new Date(value).toISOString();
 
-// Only live arrangements can need reconfirmation: Confirmed venue bookings and
-// reserved (or partly reserved) equipment. Pending requests are still to be
-// decided, and released or rejected ones no longer hold anything.
+// Only live arrangements can need reconfirmation: Confirmed venue bookings,
+// reserved (or partly reserved) equipment and staffed support requests.
+// Pending requests are still to be decided, released or rejected ones no
+// longer hold anything, and an open support request is already outstanding.
 export async function loadArrangementSnapshot(query: Query, eventId: string): Promise<ArrangementSnapshot> {
   const event = (await query<{ starts_at: Date; ends_at: Date; layout_id: string | null; accessibility_feature_ids: string[] }>(
     `SELECT lower(event_range) AS starts_at, upper(event_range) AS ends_at, layout_id,
@@ -97,10 +108,16 @@ export async function loadArrangementSnapshot(query: Query, eventId: string): Pr
     `SELECT r.id, r.session_id, r.equipment_id, e.name AS equipment_name
      FROM equipment_reservations r JOIN equipment e ON e.id = r.equipment_id
      WHERE r.event_id = $1 AND r.status IN ('reserved', 'partial') ORDER BY r.id`, [eventId])).rows;
+  // The edit never moves a support request, so its window reads the same
+  // before and after; the Session's previous time decides overlap.
+  const supports = (await query<{ id: string; description: string; starts_at: Date; ends_at: Date }>(
+    `SELECT id, coalesce(support_description, '') AS description, lower(support_range) AS starts_at, upper(support_range) AS ends_at
+     FROM tech_support_requests WHERE event_id = $1 AND status = 'staffed' ORDER BY lower(support_range), id`, [eventId])).rows;
   return {
     event: { startsAt: iso(event.starts_at), endsAt: iso(event.ends_at), layoutId: event.layout_id ?? null, accessibilityFeatureIds: event.accessibility_feature_ids ?? [] },
     sessions: sessions.map(row => ({ id: row.id, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at), expectedAttendance: row.expected_attendance })),
     bookings: bookings.map(row => ({ id: row.id, sessionId: row.session_id, venueId: row.venue_id, venueName: row.venue_name, headcount: row.headcount, capacity: row.capacity })),
     reservations: reservations.map(row => ({ id: row.id, sessionId: row.session_id, equipmentId: row.equipment_id, equipmentName: row.equipment_name })),
+    supports: supports.map(row => ({ id: row.id, description: row.description, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at) })),
   };
 }

@@ -154,7 +154,7 @@ export function describeEventChange(change: EventChange): string {
     case 'booking_withdrawn': return 'The Coordinator withdrew a Pending venue booking request. There is no longer a request to decide.';
     case 'booking_decided': return `The venue booking was ${change.decision}.`;
     case 'equipment_changed': return 'Equipment arrangements or availability changed; review the affected work.';
-    case 'reconfirmation_required': return `An event change (${[...new Set(change.reasons)].map(reason => ({ time: 'date or time', capacity: 'attendance above capacity', layout: 'room layout', accessibility: 'accessibility requirements' }[reason])).join(', ')}) means venue bookings or equipment reservations need reconfirmation. Review the flagged arrangements.`;
+    case 'reconfirmation_required': return `An event change (${[...new Set(change.reasons)].map(reason => ({ time: 'date or time', capacity: 'attendance above capacity', layout: 'room layout', accessibility: 'accessibility requirements' }[reason])).join(', ')}) means venue bookings, equipment reservations or Technical Support requests need reconfirmation. Review the flagged arrangements.`;
     case 'place_released': return 'A place is available. Apply on a first-come basis; no place has been reserved for you.';
     case 'description_only': return '';
   }

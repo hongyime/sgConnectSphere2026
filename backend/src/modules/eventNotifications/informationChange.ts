@@ -48,10 +48,19 @@ export async function updateEventInformationWithNotificationsWith(
     const changeId = randomUUID();
     const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0].now;
     if (impact.affected) {
-      const staff = await captureEventAudience(client, event.id, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
+      const audience = await captureEventAudience(client, event.id, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
+      // T-103: with no equipment flagged, only the technicians assigned to a
+      // flagged support request must reconfirm, so only they are told.
+      const technicalStaff = impact.reservations.length ? audience.technicalStaff : impact.supports.length
+        ? (await client.query<{ staff_id: string }>(
+          `SELECT DISTINCT staff_id FROM tech_staff_assignments WHERE request_id = ANY($1::uuid[]) AND status = 'assigned'`,
+          [impact.supports.map(support => support.id)])).rows.map(row => row.staff_id).filter(id => audience.technicalStaff.includes(id))
+        : [];
+      const staff = { ...audience, technicalStaff };
       await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id, before: staff, after: staff,
-        change: { kind: 'reconfirmation_required', venueAffected: impact.bookings.length > 0, technicalAffected: impact.reservations.length > 0,
-          reasons: [...impact.bookings, ...impact.reservations].flatMap(item => item.reasons) } });
+        change: { kind: 'reconfirmation_required', venueAffected: impact.bookings.length > 0,
+          technicalAffected: impact.reservations.length > 0 || impact.supports.length > 0,
+          reasons: [...impact.bookings, ...impact.reservations, ...impact.supports].flatMap(item => item.reasons) } });
     }
     if (dateChanged) await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id,
       before: { ...before, organiser: before.organiser.filter(id => id !== decisionRecipientId) },

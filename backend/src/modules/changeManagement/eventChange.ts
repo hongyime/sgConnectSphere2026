@@ -53,15 +53,19 @@ const reasonText = { time: 'date or time changed', capacity: 'attendance above c
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag
 // is what readiness already shows as "needs review"; Venue Staff clear it by
-// reconfirming the booking (E08-S04) and Technical Support by re-reserving (E07-S04).
+// reconfirming the booking (E08-S04) and Technical Support by re-reserving (E07-S04)
+// or by reconfirming a support request at the new time (T-103).
 export async function applyArrangementImpact(query: Query, actorId: string, eventId: string, impact: ArrangementImpact): Promise<void> {
   if (impact.bookings.length)
     await query('UPDATE venue_bookings SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.bookings.map(booking => booking.id)]);
   if (impact.reservations.length)
     await query('UPDATE equipment_reservations SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.reservations.map(reservation => reservation.id)]);
+  if (impact.supports.length)
+    await query('UPDATE tech_support_requests SET requires_reconfirmation = true WHERE id = ANY($1::uuid[])', [impact.supports.map(support => support.id)]);
   const entries = [
     ...impact.bookings.map(booking => ({ type: 'venue_booking', item: booking })),
     ...impact.reservations.map(reservation => ({ type: 'equipment_reservation', item: reservation })),
+    ...impact.supports.map(support => ({ type: 'tech_support_request', item: support })),
   ];
   for (const { type, item } of entries) {
     await query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)

@@ -21,11 +21,13 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
    workbook, this handoff. Done (this commit).
 2. Test cases for the new criteria; test-case workbook; tc-coverage. Done:
    TC_E10S02_05/_06/_08 extended with support, TC_E10S02_10 to _13 added.
-3. Migration 0026: a reconfirmation flag on `tech_support_requests`.
+3. Migration 0026: a reconfirmation flag on `tech_support_requests`. Done on
+   its own branch `chore/e10-s02-support-reconfirmation-schema` (merged in here).
 4. Backend: a date change flags staffed support requests (Session change: those
    overlapping the Session's previous time; Event-wide change: all), shows them
    in the change preview, notifies Technical Support Staff; readiness counts a
-   flagged request as outstanding.
+   flagged request as outstanding. Done: `impact.supports`, audit entity
+   `tech_support_request`, readiness blocker `support-needs-review`.
 5. Backend: Technical Support Staff reconfirm a flagged request: the request and
    its staff assignments move to the new time, refused if an assigned technician
    is busy then; flag cleared, audited, Coordinator told,
@@ -52,13 +54,22 @@ because it reuses `enterSafetyReviewIfReady`; move it onto `main` once #392 merg
   (an Event-wide date change, typed Negative) that filled its exported row; it
   is removed, so the row now shows the Session case.
 
+- Notice audience (Task 4): with equipment flagged, every assigned technician
+  on the Event is told, as before; with only support flagged, only the
+  technicians assigned to a flagged request. The reconfirmation notice now names
+  Technical Support requests, so three existing test checks and the E10-S02
+  click-through guide quote the new wording.
+
 ## Found on the way
 
 - `tests/e2e/e10.spec.ts` headers for TC_E10S02_05 and _06 still quote the old
   leftover wording; update them in Task 7 with the support assertions.
 - tc-coverage marks TC_E10S02_05, _06 and _08 active from their existing tests,
   which do not yet check support; Task 7 adds those checks.
+- TC_E10S02_10 says the unflagged request's technician "is not notified". They
+  get no reconfirmation notice, but an Event date change still sends every
+  Event participant, technicians included, the existing generic date notice.
 
 ## Next step
 
-Task 3: migration 0026 (reconfirmation flag on `tech_support_requests`).
+Task 5: Technical Support Staff reconfirm a flagged request at the new time.
