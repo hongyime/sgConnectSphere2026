@@ -13,6 +13,12 @@ applied by the deploy owner, and only then may the code PR that uses it
   `tech_support_requests` (`ADD COLUMN IF NOT EXISTS`). The reason stays in the
   audit log, as for venue bookings and equipment reservations, which carry the
   same flag since 0001.
+- Also adds `reconfirm_range tstzrange` (nullable, never empty): the time a
+  flagged request moves to, worked out when the date changes, since a request
+  keeps its own window (T-79) and the old Session time is gone by the time
+  Technical Support Staff reconfirm. Le Xin chose a column over keeping it in
+  the audit log (31 October). Added before the PR opened, so still one
+  migration.
 - Backward compatible: existing rows read false; the deployed code never names
   the column, and its insert still works (proved in the schema test).
 - `backend/tests/supportReconfirmationSchema.integration.test.ts` (listed in
@@ -24,6 +30,9 @@ applied by the deploy owner, and only then may the code PR that uses it
   merge.
 
 ## Next step
+
+The database run record `20261031-190403` predates `reconfirm_range`; record a
+new run before citing evidence in the PR.
 
 Open the PR when an author slot is free (T-101: two open per author; #392 and
 #393 are open). After merge, the deploy owner applies 0026 and records the run

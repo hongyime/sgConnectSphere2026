@@ -4,7 +4,8 @@
 // Proves what the follow-up code will rely on: Technical Support requests
 // carry a reconfirmation flag like venue bookings and equipment reservations,
 // a request written the way the deployed code writes it is unflagged, and the
-// flag can be set and cleared but never left empty.
+// flag can be set and cleared but never left empty. The time a flagged request
+// moves to is optional and never an empty range.
 //
 // Requires TEST_DATABASE_URL; see helpers/loginDatabase.ts.
 
@@ -38,15 +39,20 @@ test('0026 adds a not-null reconfirmation flag to Technical Support requests, de
     `SELECT data_type, is_nullable, column_default FROM information_schema.columns
      WHERE table_schema = current_schema() AND table_name = 'tech_support_requests' AND column_name = 'requires_reconfirmation'`)).rows[0];
   assert.deepEqual(column, { data_type: 'boolean', is_nullable: 'NO', column_default: 'false' });
+  const target = (await f.pool.query<{ data_type: string; is_nullable: string; column_default: string | null }>(
+    `SELECT data_type, is_nullable, column_default FROM information_schema.columns
+     WHERE table_schema = current_schema() AND table_name = 'tech_support_requests' AND column_name = 'reconfirm_range'`)).rows[0];
+  assert.deepEqual(target, { data_type: 'tstzrange', is_nullable: 'YES', column_default: null });
 }));
 
 test('a request written as the deployed code writes it is unflagged, and the flag can be set and cleared but not emptied', () => withEvent(async (f, event, coordinator) => {
   // The column list supportRequests.ts uses today, which does not name the flag.
-  const request = (await f.pool.query<{ id: string; requires_reconfirmation: boolean }>(
+  const request = (await f.pool.query<{ id: string; requires_reconfirmation: boolean; reconfirm_range: string | null }>(
     `INSERT INTO tech_support_requests (event_id, support_required, support_description, support_range, status, requested_by)
      VALUES ($1, true, 'Sound desk and timing system', '[2027-03-05 06:00+08,2027-03-05 12:00+08)', 'staffed', $2)
-     RETURNING id, requires_reconfirmation`, [event, coordinator])).rows[0]!;
+     RETURNING id, requires_reconfirmation, reconfirm_range`, [event, coordinator])).rows[0]!;
   assert.equal(request.requires_reconfirmation, false);
+  assert.equal(request.reconfirm_range, null);
 
   await f.pool.query(`UPDATE tech_support_requests SET requires_reconfirmation = true WHERE id = $1`, [request.id]);
   assert.equal((await f.pool.query(`SELECT requires_reconfirmation FROM tech_support_requests WHERE id = $1`, [request.id])).rows[0].requires_reconfirmation, true);
@@ -55,4 +61,9 @@ test('a request written as the deployed code writes it is unflagged, and the fla
   await assert.rejects(
     f.pool.query(`UPDATE tech_support_requests SET requires_reconfirmation = NULL WHERE id = $1`, [request.id]),
     (error: { code?: string }) => error.code === '23502');
+
+  await f.pool.query(`UPDATE tech_support_requests SET reconfirm_range = '[2027-03-12 06:00+08,2027-03-12 12:00+08)' WHERE id = $1`, [request.id]);
+  await assert.rejects(
+    f.pool.query(`UPDATE tech_support_requests SET reconfirm_range = 'empty' WHERE id = $1`, [request.id]),
+    (error: { code?: string }) => error.code === '23514');
 }));
