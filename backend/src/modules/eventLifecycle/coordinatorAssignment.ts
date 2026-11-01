@@ -328,6 +328,11 @@ export async function reassignEventAsLead(
       `UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now(), assigned_by = $3 WHERE id = $1`,
       [event.id, coordinatorId, lead.id],
     );
+    await client.query(
+      `UPDATE lead_reassignment_requests SET status = 'accepted', decided_at = now()
+       WHERE event_id = $1 AND status = 'pending'`,
+      [event.id],
+    );
     const audit = await client.query<{ id: string; occurred_at: Date }>(
       `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
        VALUES ($1, 'event', $2, $2, 'Lead reassigned', 'coordinator_id', $3, $4) RETURNING id, occurred_at`,
@@ -440,6 +445,35 @@ function toReassignment(row: ReassignmentRow) {
 
 export type Reassignment = ReturnType<typeof toReassignment>;
 
+type LeadReassignmentRequestRow = {
+  id: string; event_id: string; event_code: string | null; event_title: string;
+  status: 'pending' | 'accepted' | 'declined'; requested_at: Date; decided_at: Date | null;
+  coordinator_id: string; coordinator_name: string; reason: string; decision_note: string | null;
+};
+
+function toLeadReassignmentRequest(row: LeadReassignmentRequestRow) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    eventCode: row.event_code,
+    eventTitle: row.event_title,
+    status: row.status,
+    requestedAt: row.requested_at,
+    decidedAt: row.decided_at,
+    coordinator: { id: row.coordinator_id, name: row.coordinator_name },
+    reason: row.reason,
+    decisionNote: row.decision_note,
+  };
+}
+
+export type LeadReassignmentRequest = ReturnType<typeof toLeadReassignmentRequest>;
+
+const LEAD_REASSIGNMENT_SELECT = `SELECT r.id, r.event_id, e.event_code, e.title AS event_title,
+  r.status, r.requested_at, r.decided_at, r.coordinator_id, c.full_name AS coordinator_name,
+  r.reason, r.decision_note
+  FROM lead_reassignment_requests r JOIN events e ON e.id = r.event_id
+  JOIN users c ON c.id = r.coordinator_id`;
+
 // Pending requests the caller must answer (incoming) or is waiting on (outgoing).
 export async function listPendingReassignments(database: Pool, user: AuthenticatedUser | undefined) {
   const coordinator = await requireCoordinator(database, user, 'coordinator_reassignment');
@@ -458,6 +492,137 @@ export async function listPendingReassignments(database: Pool, user: Authenticat
 
 function isUniqueViolation(error: unknown) {
   return typeof error === 'object' && error !== null && (error as { code?: string }).code === '23505';
+}
+
+export async function listLeadReassignmentRequests(database: Pool, user: AuthenticatedUser | undefined) {
+  await requireLead(database, user, 'lead_reassignment_requests');
+  const result = await database.query<LeadReassignmentRequestRow>(
+    `${LEAD_REASSIGNMENT_SELECT}
+     WHERE r.status = 'pending' ORDER BY r.requested_at, r.id`,
+  );
+  return { requests: result.rows.map(toLeadReassignmentRequest) };
+}
+
+export async function requestLeadReassignment(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  identifier: string,
+  body: unknown,
+): Promise<LeadReassignmentRequest> {
+  const coordinator = await requireCoordinator(database, user, 'lead_reassignment_request');
+  const reason = body && typeof body === 'object' && !Array.isArray(body)
+    ? (body as { reason?: unknown }).reason : undefined;
+  if (typeof reason !== 'string' || !reason.trim()) {
+    throw new AccessError(400, 'Add a reason for asking the Lead to reassign this event.');
+  }
+  if (reason.trim().length > 2000) throw new AccessError(400, 'The reason must be 2000 characters or fewer.');
+
+  let outcome: { denied: true } | { denied: false; request: LeadReassignmentRequest };
+  try {
+    outcome = await inTransaction(database, async client => {
+      const eventResult = await client.query<{
+        id: string; event_code: string | null; title: string; status: string; coordinator_id: string | null;
+      }>(
+        `SELECT id, event_code, title, status, coordinator_id FROM events
+         WHERE id::text = $1 OR event_code = $1 FOR UPDATE`,
+        [identifier],
+      );
+      const event = eventResult.rows[0];
+      if (!event || event.coordinator_id !== coordinator.id) return { denied: true as const };
+      if (!(ACTIVE_EVENT_STATUSES as readonly string[]).includes(event.status)) {
+        throw new AccessError(409, 'Only an active event can be referred to the Lead.');
+      }
+
+      const pending = await client.query(
+        `SELECT id FROM coordinator_reassignments WHERE event_id = $1 AND status = 'pending'
+         UNION ALL
+         SELECT id FROM lead_reassignment_requests WHERE event_id = $1 AND status = 'pending'`,
+        [event.id],
+      );
+      if (pending.rows[0]) throw new AccessError(409, 'A reassignment request for this event is already awaiting a response.');
+
+      const inserted = await client.query<{ id: string }>(
+        `INSERT INTO lead_reassignment_requests (event_id, coordinator_id, reason)
+         VALUES ($1, $2, $3) RETURNING id`,
+        [event.id, coordinator.id, reason.trim()],
+      );
+      const requestId = inserted.rows[0]!.id;
+      await client.query(
+        `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
+         VALUES ($1, 'event', $2, $2, 'Lead reassignment requested', 'coordinator_id', $3)`,
+        [coordinator.id, event.id, reason.trim()],
+      );
+      const saved = await client.query<LeadReassignmentRequestRow>(
+        `${LEAD_REASSIGNMENT_SELECT} WHERE r.id = $1`, [requestId],
+      );
+      const request = toLeadReassignmentRequest(saved.rows[0]!);
+      const leads = await client.query<{ id: string }>(
+        `SELECT id FROM users WHERE role::text = 'event_coordinator_lead' AND is_active ORDER BY id`,
+      );
+      for (const lead of leads.rows) {
+        await notifyUser(client, {
+          userId: lead.id,
+          eventId: event.id,
+          changeId: `${requestId}:${lead.id}`,
+          title: 'Reassignment requested for your decision',
+          message: `${coordinator.email} asked you to review reassignment of ${eventLabel(event)}. Reason: ${reason.trim()}`,
+        });
+      }
+      return { denied: false as const, request };
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new AccessError(409, 'A reassignment request for this event is already awaiting a response.');
+    }
+    throw error;
+  }
+
+  if (outcome.denied) {
+    await recordEventDenial(database, coordinator, identifier, 'lead_reassignment_request');
+    throw new AccessError(403, 'Only the assigned Coordinator can ask the Lead to reassign this event.');
+  }
+  return outcome.request;
+}
+
+export async function respondToLeadReassignment(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  requestId: string,
+  decision: 'decline',
+  decisionNote?: string,
+): Promise<LeadReassignmentRequest> {
+  const lead = await requireLead(database, user, 'lead_reassignment_request');
+  if (!UUID_PATTERN.test(requestId)) throw new AccessError(404, 'Reassignment request not found.');
+  const note = decisionNote?.trim() || null;
+  if (note && note.length > 2000) throw new AccessError(400, 'The decision note must be 2000 characters or fewer.');
+
+  const outcome = await inTransaction(database, async client => {
+    const found = await client.query<LeadReassignmentRequestRow>(
+      `${LEAD_REASSIGNMENT_SELECT} WHERE r.id = $1 FOR UPDATE`, [requestId],
+    );
+    const row = found.rows[0];
+    if (!row) throw new AccessError(404, 'Reassignment request not found.');
+    if (row.status !== 'pending') throw new AccessError(409, 'This reassignment request has already been answered.');
+    await client.query(
+      `UPDATE lead_reassignment_requests SET status = 'declined', decided_at = now(), decision_note = $2 WHERE id = $1`,
+      [requestId, note],
+    );
+    await client.query(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+       VALUES ($1, 'event', $2, $2, 'Lead reassignment declined', 'coordinator_id', $3, $4)`,
+      [lead.id, row.event_id, row.reason, note],
+    );
+    await notifyUser(client, {
+      userId: row.coordinator_id,
+      eventId: row.event_id,
+      changeId: `${requestId}:declined`,
+      title: 'Reassignment request declined',
+      message: `The Lead declined your request for ${eventLabel({ event_code: row.event_code, title: row.event_title })}.${note ? ` Note: ${note}` : ''}`,
+    });
+    const saved = await client.query<LeadReassignmentRequestRow>(`${LEAD_REASSIGNMENT_SELECT} WHERE r.id = $1`, [requestId]);
+    return toLeadReassignmentRequest(saved.rows[0]!);
+  });
+  return outcome;
 }
 
 // Scenario 3 (request recorded, colleague notified, requester stays

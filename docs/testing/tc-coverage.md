@@ -909,6 +909,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E03-S08 non-Leads cannot assign a queued event
 - E03-S08 invalid targets and non-queued events are refused
 
+### `backend/tests/leadEscalation.test.ts`
+
+- E03-S09 assigned Coordinator can ask the Lead to reassign with a reason
+- E03-S09 Lead can decline a pending request and the Coordinator is notified
+- E03-S09 a non-assigned Coordinator cannot ask the Lead to reassign
+
 ### `backend/tests/leadReassignment.test.ts`
 
 - E03-S09 Lead reassignment changes ownership immediately and notifies three parties
@@ -1440,6 +1446,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
 - requesting a reassignment sends the chosen colleague and keeps the current Coordinator assigned
+- asking the Lead sends the reason and keeps the current Coordinator assigned
 - sending without choosing a colleague is blocked with a message
 - a refused reassignment shows the server reason
 - an unassigned Coordinator is refused and sees no reassignment action

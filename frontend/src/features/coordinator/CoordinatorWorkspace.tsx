@@ -21,7 +21,7 @@ import type { ChangeCheck, EditableField } from '../events/eventEditApi';
 import { staffToNotify } from '../events/ArrangementReview';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
-  listReassignments, requestReassignment, respondToReassignment,
+  listReassignments, requestLeadReassignment, requestReassignment, respondToReassignment,
   type AssignedEventDetail, type AssignedEventSummary, type Colleague, type Reassignment,
 } from './coordinatorApi';
 import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
@@ -366,6 +366,10 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
   const [sending, setSending] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadReason, setLeadReason] = useState('');
+  const [leadSending, setLeadSending] = useState(false);
+  const [leadRefusal, setLeadRefusal] = useState<string | null>(null);
   const pending = event.pendingReassignment;
   const reassignable = ACTIVE_STATUSES.includes(event.status);
 
@@ -399,6 +403,20 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
     onChanged();
   }
 
+  async function askLead(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    if (!leadReason.trim()) { setLeadRefusal('Add a reason for asking the Lead to reassign this event.'); return; }
+    setLeadSending(true);
+    setLeadRefusal(null);
+    const outcome = await requestLeadReassignment(event.id, leadReason);
+    setLeadSending(false);
+    if (!outcome.ok) { setLeadRefusal(outcome.message); return; }
+    setLeadReason('');
+    setLeadOpen(false);
+    setSent('Your request was sent to the Event Coordinator Lead. You stay assigned until the Lead acts.');
+    onChanged();
+  }
+
   return (
     <Card title="Reassignment">
       <div aria-live="polite" className="coordinator-live">
@@ -413,7 +431,21 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
       ) : !open ? (
         <>
           <p className="coordinator-subtle">Hand this event to a colleague. They must accept before it moves to them.</p>
-          <div><Button icon={<Users size={14} aria-hidden="true" />} onClick={() => { setOpen(true); setSent(null); }}>Reassign event</Button></div>
+          <div>
+            <Button icon={<Users size={14} aria-hidden="true" />} onClick={() => { setOpen(true); setLeadOpen(false); setSent(null); }}>Reassign event</Button>{' '}
+            <Button onClick={() => { setLeadOpen(true); setSent(null); }}>Ask Lead to reassign</Button>
+          </div>
+          {leadOpen ? (
+            <form onSubmit={askLead} className="coordinator-reassign-form" noValidate>
+              <FormField label="Reason" error={leadRefusal ?? undefined}>
+                {props => <textarea {...props} value={leadReason} onChange={change => setLeadReason(change.target.value)} rows={4} maxLength={2000} placeholder="Explain why the Lead should review this assignment." />}
+              </FormField>
+              <FormActions>
+                <Button onClick={() => { setLeadOpen(false); setLeadReason(''); setLeadRefusal(null); }}>Cancel</Button>
+                <Button type="submit" variant="primary" busy={leadSending} busyLabel="Sending…">Send to Lead</Button>
+              </FormActions>
+            </form>
+          ) : null}
         </>
       ) : (
         <form onSubmit={submit} className="coordinator-reassign-form" noValidate>

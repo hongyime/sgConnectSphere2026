@@ -46,9 +46,12 @@ import {
   listAssignedEvents,
   listAssignableCoordinators,
   listCoordinatorColleagues,
+  listLeadReassignmentRequests,
   listPendingReassignments,
   listUnassignedEvents,
+  requestLeadReassignment,
   requestCoordinatorReassignment,
+  respondToLeadReassignment,
   respondToCoordinatorReassignment,
 } from '../backend/src/modules/eventLifecycle/coordinatorAssignment.js';
 import {
@@ -159,6 +162,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('reassign') === '1' && params.get('by_lead') === '1') {
       await handleLeadReassignmentPost(request, response, params);
+      return;
+    }
+    if (params.get('leadReassignment') === '1') {
+      await handleLeadReassignmentRequestPost(request, response, params);
       return;
     }
     if (params.get('reassign') === '1' || params.has('reassignment')) {
@@ -327,6 +334,24 @@ async function handleQueueAssignment(request: VercelRequest, response: VercelRes
     if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
     const user = await currentUser(request);
     return { status: 200, body: { assignment: await assignQueuedEvent(getDatabasePool(), user, identifier, request.body) } };
+  });
+}
+
+async function handleLeadReassignmentRequestPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const database = getDatabasePool();
+    const requestId = params.get('requestId');
+    if (requestId) {
+      if (params.get('decision') !== 'decline') throw new AccessError(400, 'Choose whether to decline the request.');
+      const note = request.body && typeof request.body === 'object' && !Array.isArray(request.body)
+        && typeof (request.body as { note?: unknown }).note === 'string'
+        ? (request.body as { note: string }).note : undefined;
+      return { status: 200, body: { request: await respondToLeadReassignment(database, user, requestId.slice(0, 64), 'decline', note) } };
+    }
+    const eventId = params.get('id');
+    if (!eventId) throw new AccessError(400, 'missing_id');
+    return { status: 201, body: { request: await requestLeadReassignment(database, user, eventId.slice(0, 240), request.body) } };
   });
 }
 
@@ -503,7 +528,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('leadReassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -543,6 +568,7 @@ async function handleChangeRequests(request: VercelRequest, response: VercelResp
 //                                                    and outstandingQuestions (SCRUM-33)
 //   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
 //   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
+//   GET /api/events?leadReassignments=1            -> { requests } for the Lead
 //   GET /api/events?readiness=1&id=<id or code>   -> { readiness } (SCRUM-60, E08-S03)
 async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   await respond(response, async () => {
@@ -557,6 +583,7 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
         : await listCoordinatorColleagues(database, user) };
     }
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
+    if (params.get('leadReassignments') === '1') return await listLeadReassignmentRequests(database, user);
     const id = params.get('id');
     if (id) {
       const event = await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240)));
