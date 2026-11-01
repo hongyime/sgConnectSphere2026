@@ -35,8 +35,13 @@ frontend, SCRUM-249 tests) in one PR that carries only SCRUM-158's work.
 ## Decisions for the reviewer and the Product Owner
 
 - Approval itself sets Confirmed (backlog Scenario 3, T-71), not a later
-  Coordinator step as C-101 and C-131 describe. Needs a recorded PO
-  decision.
+  Coordinator step as C-101 and C-131 describe. Recorded as T-107 in
+  `docs/bdr/B-team-decisions.md`, proposed by the story owner and agreed
+  through this PR's review; not a recorded Product Owner decision. Bryan
+  has been asked to confirm it as PO.
+- A rejected Event shows "Safety arrangement rejected" while it is in
+  Planning and its latest safety decision is a rejection, read from that
+  decision's Activity log row; no migration.
 - The checklist is kept in the decision's immutable `audit_logs` row; no
   new table and no migration.
 - "Request changes" flags confirmed venue bookings for venue factors and
