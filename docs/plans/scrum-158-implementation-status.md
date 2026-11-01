@@ -67,3 +67,8 @@ None recorded yet.
 
 | When (SGT) | Commit | Gate | TC IDs | Command | Where | Result | What was seen | Run by |
 |---|---|---|---|---|---|---|---|---|
+| 2026-11-02 ≈00:46 | `8fdf63b+local` (committed as `a89272a`) | typecheck | - | `npm run typecheck` (root) | local | clean | checks the cherry-pick conflict resolution compiles | Claude (for Aaron) |
+| 2026-11-02 ≈00:46 | `8fdf63b+local` (committed as `a89272a`) | unit | _05 | `npx tsx --test tests/safetyCheck.test.ts tests/roleQueues.test.ts` (backend) | local | 10/10 passed | Bryan's tests, unchanged | Claude (for Aaron) |
+| 2026-11-02 ≈00:46 | `8fdf63b+local` (committed as `a89272a`) | Vitest | - | `npx vitest run --no-file-parallelism src/features/roleQueues src/app/routes.test.tsx src/features/accessControl/LoginPage.test.tsx` | local | 34/34 passed in 3 files | Bryan's tests, unchanged | Claude (for Aaron) |
+| 2026-11-02 ≈00:48 | `ac5bf31` | unit | _05 | `npm test --workspace backend` | local | 696 passed, 1 skipped | the skip is a database contract with no `TEST_DATABASE_URL` | Claude (for Aaron) |
+| 2026-11-02 ≈00:48 | `ac5bf31` | repository | - | `python scripts/doc_guard.py origin/main` | local | 0 errors, 156 warnings | - | Claude (for Aaron) |
