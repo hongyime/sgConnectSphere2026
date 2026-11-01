@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **307** (80.2%)
+- Automated (explicit TC_ID in an active test title): **308** (80.4%)
   - Real-database (`.integration.test` / `.db.test`): **47**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **259**
+  - Live-assertion (other active tests): **260**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
-- No test yet (no test file mentions the TC_ID): **22** (5.7%)
+- No test yet (no test file mentions the TC_ID): **21** (5.5%)
 
 ## Coverage by epic
 
@@ -26,12 +26,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 18 | 10 | 0 |
-| E09 | 45 | 38 | 4 | 3 |
+| E09 | 45 | 39 | 4 | 2 |
 | E10 | 33 | 25 | 0 | 8 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **307** | **54** | **22** |
+| **Total** | **383** | **308** | **54** | **21** |
 
 ## Case-by-case status
 
@@ -387,7 +387,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList refuses a disabled list (TC_E09S04_04), an Event with room, and an Event without places; frontend/src/features/attendee/ |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | frontend/src/features/attendee/WaitingList.test.tsx: TC_E09S04_05 - cancel leaving, then confirm leaving and offer rejoin |
 | `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
-| `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
+| `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ✅ active | backend/tests/attendeeRegistration.test.ts: withdrawing from one event cancels only that registration and leaves the rest untouched (TC_E09S05_02) |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |

@@ -392,6 +392,20 @@ test('withdrawRegistration releases an approved place and tells the waiting list
   assert.ok(calls.some(call => call.sql === 'COMMIT'));
 });
 
+test('withdrawing from one event cancels only that registration and leaves the rest untouched (TC_E09S05_02)', async () => {
+  const registration = { id: randomUUID(), status: 'registered' };
+  const { pool, calls } = script({ event: eventRow({ withdrawal_deadline: now }), withdrawable: registration, waitlisted: [], eventRegistered: 5 });
+  const result = await withdrawRegistration(pool, attendee, 'EVT-9001');
+  assert.equal(result.status, 200);
+  assert.equal((result.body as { registration: { status: string } }).registration.status, 'withdrawn');
+  // One row is written, addressed by its own id: a withdrawal cannot reach a
+  // second event's registration because the statement is not keyed on event_id.
+  const updates = calls.filter(call => call.sql.includes('UPDATE event_registrations'));
+  assert.equal(updates.length, 1, 'exactly one registration row is written');
+  assert.match(updates[0]!.sql, /WHERE id = \$1/);
+  assert.doesNotMatch(updates[0]!.sql, /event_id/);
+  assert.deepEqual(updates[0]!.values, [registration.id, now]);
+});
 test('withdrawRegistration tells nobody when the Event is still full or the row held no place (D82, D88)', async () => {
   const full = script({ withdrawable: { id: randomUUID(), status: 'registered' }, waitlisted: [randomUUID()], eventRegistered: 20 });
   assert.equal((await withdrawRegistration(full.pool, attendee, eventId)).status, 200);
