@@ -140,6 +140,8 @@ A product backlog item is considered done only when all of these conditions are 
   is marked Done and no later than the Sprint Review
   using the test case template in `docs/testing/cases/`, and each run is logged
   in `docs/testing/runs/` with the tester, date and outcome (T-65).
+  Release 1 exception: **T-106** waives the manual run for any story not yet
+  accepted; those stories are accepted on automated evidence only.
 - Code and its test cases have been reviewed by at least one other developer,
   who checks that the code works and that the tests are correct and valid, not
   faked. AI-generated code and tests are inspected by a human before review.
