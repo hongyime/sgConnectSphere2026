@@ -31,4 +31,6 @@ This branch implements immediate reassignment by an Event Coordinator Lead. The 
 - Implementation commit: `c3ba22a9`.
 - Verification commit: `844023f9`.
 - Branch pushed to `origin/feature/SCRUM-154-lead-reassignment`; no pull request opened.
+- Provenance check: C-129 explicitly says the client selected no in-system Coordinator request; C-56 supports peer acceptance, and C-104/C-128 support immediate Lead reassignment. T-83 now records the PO's separate 2026-11-01 Release 1 decision to add Coordinator-to-Lead escalation without mislabeling it as a client requirement.
+- Documentation sync commit: `7d5a9a9f`.
 - Human review and manual acceptance remain with the team and are intentionally not run by this agent.
