@@ -226,11 +226,17 @@
 .session-list { list-style: none; display: grid; gap: 12px; margin: 0; padding: 0; }
 .session-row {
   display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
   border: 1px solid var(--line, #d8dee9);
   border-radius: 10px;
-  padding: 12px;
+  padding: 14px;
 }
-.session-row label { display: grid; gap: 4px; font-size: 0.9rem; }
-.session-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+/* Date, time and attendance on one line on wide screens; stacked on phones. */
+.session-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); align-items: start; }
+.session-grid > * { min-width: 0; }
+.session-grid input, .session-grid select, .session-grid textarea { width: 100%; box-sizing: border-box; }
+.session-requirements { display: grid; gap: 12px; padding-top: 12px; border-top: 1px dashed var(--line, #d8dee9); }
+.session-needs { margin: 0; padding: 0; border: 0; min-width: 0; }
+.session-needs legend { padding: 0; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; }
+.session-needs .field-checkbox-group { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.session-row .form-actions { margin: 0; }

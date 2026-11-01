@@ -62,6 +62,8 @@ export function VenueBookingRequests() {
         ? <StatusPill status="warning" label="Conflicting" /> : <StatusPill status={booking.status} />}>
         <FactList columns={2} items={[
           ['Location', booking.location], ['Booking period', formatDateRange(booking.starts_at, booking.ends_at)],
+          // E04-S02 Scenario 4: each booking names the Session it covers (a sole Session is untitled).
+          ...(booking.session_title ? [['Session', booking.session_title] as [string, string]] : []),
         ]} />
         {booking.status === 'conflicting' && <Alert tone="warning" title="Venue unavailable">{conflictText(booking)}</Alert>}
         {/* E10-S02 (SCRUM-237): an event change or a venue capacity cut flagged this confirmed booking. */}

@@ -18,6 +18,18 @@ function date(value: unknown): Date {
   return parsed;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_NEEDS = 50;
+
+// Absent means "leave as is"; an empty array clears the Session's needs.
+function ids(value: unknown, error: string): string[] | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (!Array.isArray(value) || value.length > MAX_NEEDS || value.some(id => typeof id !== 'string' || !UUID.test(id))) {
+    throw new Error(error);
+  }
+  return [...new Set(value.map(id => (id as string).toLowerCase()))].sort();
+}
+
 // Rejects the whole body rather than dropping fields, so an Organiser never
 // saves a Session whose date or attendance silently became different.
 export function parseSessionBody(body: unknown): SessionInput {
@@ -51,5 +63,7 @@ export function parseSessionBody(body: unknown): SessionInput {
     accessibilityNote: text(fields.accessibilityNote),
     equipmentRequirements: text(fields.equipmentRequirements),
     layoutPreference: text(fields.layoutPreference),
+    accessibilityFeatureIds: ids(fields.accessibilityFeatureIds, 'invalid_session_accessibility'),
+    facilityIds: ids(fields.facilityIds, 'invalid_session_facilities'),
   };
 }

@@ -215,13 +215,28 @@ validation. Other callers default to the existing enabled confirmation behaviour
 
 ## Event Sessions (E04-S02)
 
-`SessionEditor` (`src/features/organiser/SessionEditor.tsx`) renders only when the
-flow receives a `draftId`. Sessions are children of a saved Event, so they cannot
-be created in the same POST that creates the draft: save the draft first, then
-add, edit or remove Sessions.
+`SessionEditor` (`src/features/organiser/SessionEditor.tsx`) renders on the draft
+editor once the flow has a `draftId`, and on the Organiser's request page
+(`SubmittedDetail`) while the Event is in planning. Sessions are children of a
+saved Event, so they cannot be created in the same POST that creates the draft:
+save the draft first, then add, edit or remove Sessions. In planning there is no
+Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
+the Session's bookings and reservations are released before anything is sent.
 
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
-keeps the Event's own dates and attendance as the overall planning envelope. The
-API owns ownership, draft-only editing and the last-Session rule; the editor does
-not re-implement those checks client-side, so a refusal surfaces as a message and
-the list reloads the server state.
+keeps the Event's own dates and attendance as the overall planning envelope.
+With one Session the editor shows only its date, time and attendance, because
+the request form's Event-level requirements describe it. With two or more, each
+Session also shows its venue and equipment requirements, room layout,
+accessibility needs and required facilities, from the `options` the GET returns.
+Every save sends the Session's stored text requirements and layout back, so
+saving a date never clears them. The API owns ownership, draft/planning rules
+and the last-Session rule; the editor only disables Remove on the last Session,
+so a refusal surfaces as a message and the list reloads the server state.
+
+`VenueSearch` shows a Session picker when the event has more than one Session
+(`?session_id=` in the URL). Choosing one refills the criteria from that
+Session, sends `session_id` with the search, and carries it into the
+suitability page, whose booking form submits it. Holds have no Session, so
+"Hold this venue" is offered only for single-Session events. The Coordinator's
+booking list names each booking's Session.
