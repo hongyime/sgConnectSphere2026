@@ -282,7 +282,7 @@ test('handler: methods, origin and actions', async () => {
   await handler({ method: 'POST', url: '/api/venues?task=staffing', headers: { origin: 'https://evil.example.test' }, body: { action: 'assign' } }, response);
   assert.deepEqual([captured.status, captured.body], [403, { error: 'Request origin not allowed.' }]);
   await handler({ method: 'POST', url: '/api/venues?task=staffing', headers: { origin: 'https://app.example.test' }, body: { action: 'delete' } }, response);
-  assert.deepEqual([captured.status, captured.body], [400, { error: 'Choose assign or remove.' }]);
+  assert.deepEqual([captured.status, captured.body], [400, { error: 'Choose assign, remove or reconfirm.' }]);
 });
 
 test('handler: GET routes to the queue, one request or the schedule; POST to assign or remove', async () => {

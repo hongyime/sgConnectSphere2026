@@ -25,11 +25,14 @@ export type AffectedBooking = {
   reasons: ImpactReason[]; governingHeadcount: number | null; capacity: number;
 };
 export type AffectedReservation = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string; reasons: ImpactReason[] };
+// T-104 (SCRUM-244): a staffed Technical Support request the change flags, and
+// how far it moves when Technical Support Staff reconfirm it (same length).
+export type AffectedSupport = { id: string; description: string; startsAt: string; endsAt: string; reasons: ImpactReason[]; shiftMs: number };
 export type OverSubscription = { scope: 'session' | 'event'; sessionId: string | null; registered: number; capacity: number };
 // `revision` fingerprints what the preview listed; the save sends it back so
 // the server can refuse when the arrangements changed meanwhile (#380 review).
 export type ChangeCheck = {
-  impact: { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[] };
+  impact: { affected: boolean; bookings: AffectedBooking[]; reservations: AffectedReservation[]; supports?: AffectedSupport[] };
   overSubscription: OverSubscription[];
   revision?: string;
 };

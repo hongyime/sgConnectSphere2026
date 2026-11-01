@@ -244,6 +244,14 @@ for the current repository implications.
   `docs/decisions/`, including alternatives and tradeoffs.
 - Keep issue, PR, and test evidence useful for coursework assessment. Check the
   course policy on individual contributions and AI use before relying on bots.
+- **Retire and create test cases in the same PR as the backlog change.** When a PR
+  changes what a scenario means, deletes it or marks it `[Superseded ...]`, that PR
+  must retire the affected `TC_ID` cases or replace them, in the same diff. The
+  backlog records intent and the code records fact; they drift apart exactly while
+  nobody links the two. `scripts/check_test_case_references.py` enforces the
+  mechanical half of this - every case must cite a scenario that exists, and a
+  superseded citation must be retired or listed in
+  `docs/testing/tc-drift-allowlist.json` with the story that will replace it.
 - Do not add a package manager, framework, cloud service, or deployment target
   until the relevant team decision is recorded.
 

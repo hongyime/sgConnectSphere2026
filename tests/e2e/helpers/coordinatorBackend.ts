@@ -12,7 +12,7 @@ export const coordB: Coordinator = { id: '22222222-2222-4222-8222-222222222222',
 
 type Notice = { id: string; title: string; message: string; is_read: boolean; read_at: null; created_at: string; event_id: string };
 
-type Change = { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[] }; overSubscription: unknown[] };
+type Change = { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[]; supports?: unknown[] }; overSubscription: unknown[] };
 
 export async function fakeCoordinatorBackend(page: Page, options: {
   eventCode: string;

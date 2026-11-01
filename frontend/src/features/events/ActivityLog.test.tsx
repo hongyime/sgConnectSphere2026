@@ -196,3 +196,17 @@ test('TC_E08S04_04: reversion to planning preserves action label in activity log
   };
   expect(describeAction(reverted)).toBe('Reverted to Planning');
 });
+
+test('TC_E10S02_12: a reconfirmed support request shows its old and new time in Singapore time (T-104)', () => {
+  const reconfirmed: ActivityEntry = {
+    occurred_at: '2026-10-31T10:00:00.000Z',
+    action: 'Support Reconfirmed',
+    entity_type: 'tech_support_request',
+    field_changed: 'support_range',
+    old_value: '2026-12-04T22:00:00.000Z to 2026-12-05T04:00:00.000Z',
+    new_value: '2026-12-11T22:00:00.000Z to 2026-12-12T04:00:00.000Z',
+    actor_name: 'Tech B',
+  };
+  expect(describeAction(reconfirmed)).toBe('Support reconfirmed');
+  expect(describeChange(reconfirmed)).toBe('Technical support time: 5 Dec 2026, 6:00 am to 5 Dec 2026, 12:00 pm → 12 Dec 2026, 6:00 am to 12 Dec 2026, 12:00 pm');
+});

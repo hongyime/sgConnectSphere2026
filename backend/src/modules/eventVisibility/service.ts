@@ -93,9 +93,12 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 // a value that is not a user ID ("No eligible Event Coordinator") is kept.
 // E06-S04 Scenario 5 (T-75, T-76): the assigned Coordinator also sees Venue
 // Staff booking decisions, which are stored against the booking, with the
-// venue named. The Organiser view leaves them out.
+// venue named, and Technical Support reconfirmations (T-104, SCRUM-244), which
+// are stored against the support request. The Organiser view leaves them out.
 export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
-  const targets = options.includeBookings ? `a.entity_type IN ('event', 'venue_booking')` : `a.entity_type = 'event'`;
+  const targets = options.includeBookings
+    ? `(a.entity_type IN ('event', 'venue_booking') OR (a.entity_type = 'tech_support_request' AND a.action = 'Support Reconfirmed'))`
+    : `a.entity_type = 'event'`;
   return query(`SELECT a.occurred_at, a.action, a.field_changed, a.entity_type,
       CASE WHEN a.entity_type = 'venue_booking' THEN a.entity_id END AS booking_id,
       coalesce(was.full_name, a.old_value) AS old_value,

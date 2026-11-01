@@ -158,9 +158,17 @@ the account's grants, and each backend action remains independently authorized.
   (`eventReadiness/autoSafetyReview.ts`) runs inside the transaction of each
   action that can confirm the last arrangement: Venue and Booking's booking
   approval, reconfirmation and lost-booking cancellation, and Equipment and
-  Support's reservation, re-reservation and staff assignment. The earlier
-  approval stays in the audit history and is not reused. A date change does not
-  yet flag Event-level technical support for reconfirmation (open PO question).
+  Support's reservation, re-reservation, staff assignment and support
+  reconfirmation. The earlier approval stays in the audit history and is not
+  reused.
+- E10-S02 Technical Support delivery (T-104, SCRUM-244): Change Management's
+  date-change impact also flags staffed Event-level support requests (a Session
+  change: those overlapping its old time; an Event-wide change: all) and keeps
+  the new time in `reconfirm_range` (migration 0026). Event Lifecycle's
+  readiness counts a flagged request as outstanding. Equipment and Support's
+  `supportReconfirmation.ts` lets Technical Support Staff reconfirm: it moves
+  the request and its assignments, refuses a clash, audits, notifies and calls
+  `enterSafetyReviewIfReady`.
 - Venue bookings and equipment requirements are Session-scoped; Event lifecycle,
   registration windows and technical-support assignment remain Event-scoped
   (T-79). Registration selects Sessions and enforces both Session and combined

@@ -4,6 +4,8 @@
 //   GET  /api/venues?task=staffing&schedule=mine        the signed-in technician's schedule
 //   POST /api/venues?task=staffing  { action: 'assign', request, staff }
 //   POST /api/venues?task=staffing  { action: 'remove', assignment }
+//   GET  /api/venues?task=staffing&reconfirm=list       flagged requests to reconfirm (T-104)
+//   POST /api/venues?task=staffing  { action: 'reconfirm', request }
 // Routed through api/venues/index.ts like ?task=support, to stay within the
 // Vercel Hobby plan's serverless function limit.
 import type { Pool } from 'pg';
@@ -15,6 +17,7 @@ import type { VercelRequest, VercelResponse } from '../../vercel.js';
 import { currentUser, databasePool, query, respondWithResult } from '../eventVisibility/runtime.js';
 import { AccessError } from '../eventVisibility/service.js';
 import { assignTechnician, getRequest, listQueue, mySchedule, removeAssignment } from './staffAssignments.js';
+import { listSupportToReconfirm, reconfirmSupport } from './supportReconfirmation.js';
 
 export function createStaffingHandler(deps: {
   authenticate: (request: VercelRequest) => Promise<AuthenticatedUser>;
@@ -32,13 +35,15 @@ export function createStaffingHandler(deps: {
         const params = new URL(request.url ?? '/', 'http://localhost').searchParams;
         if (params.has('request')) return { status: 200, body: await getRequest(deps.query, user, params.get('request')) };
         if (params.get('schedule') === 'mine') return { status: 200, body: await mySchedule(deps.query, user) };
+        if (params.get('reconfirm') === 'list') return { status: 200, body: await listSupportToReconfirm(deps.query, user) };
         return { status: 200, body: await listQueue(deps.query, user) };
       }
       if (!deps.allowedOrigin(request.headers.origin)) throw new AccessError(403, 'Request origin not allowed.');
       const body = request.body as Record<string, unknown> | undefined;
       if (body?.action === 'assign') return assignTechnician(deps.pool(), user, body);
       if (body?.action === 'remove') return removeAssignment(deps.pool(), user, body);
-      throw new AccessError(400, 'Choose assign or remove.');
+      if (body?.action === 'reconfirm') return reconfirmSupport(deps.pool(), user, body);
+      throw new AccessError(400, 'Choose assign, remove or reconfirm.');
     });
   };
 }

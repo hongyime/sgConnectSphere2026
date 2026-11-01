@@ -6,6 +6,9 @@
 .vercel/
 *.pem
 *.key
+# Public CA certificate for the Supabase pooler, used to verify TLS on the guarded
+# production migration. A CA certificate is public material, not a credential.
+!backend/database/certs/supabase-pooler-ca.pem
 
 # Dependencies and development environments
 node_modules/

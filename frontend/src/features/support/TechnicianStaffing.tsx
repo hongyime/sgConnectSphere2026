@@ -1,6 +1,7 @@
 // E07-S07 (SCRUM-57, frontend SCRUM-150): Technical Support Staff assign
 // colleagues to events' technical support requests.
-//   - StaffingQueue       /support/technicians             requests needing or having technicians
+//   - StaffingQueue       /support/technicians             requests needing or having technicians,
+//                                                          under any support to reconfirm (SupportReconfirmation.tsx)
 //   - StaffingRequestPage /support/technicians/:requestId  who is on it, who is free, assign and remove
 //   - MySchedule          /support/schedule                the signed-in technician's assignments
 // Data comes from staffingApi.ts; the server runs the overlap check.
@@ -15,6 +16,7 @@ import {
   assignTechnician, getMySchedule, getStaffingRequest, listStaffingQueue, removeAssignment,
   type Candidate, type Conflict, type StaffingRequest,
 } from './staffingApi';
+import { SupportToReconfirmList } from './SupportReconfirmation';
 import './support.css';
 
 const QUEUE = '/support/technicians';
@@ -51,6 +53,7 @@ export function StaffingQueue() {
   return (
     <PageLayout eyebrow="Technical support" title="Technician staffing"
       actions={<ButtonLink to="/support/schedule" icon={<CalendarClock size={14} aria-hidden="true" />}>My schedule</ButtonLink>}>
+      <SupportToReconfirmList onReconfirmed={reload} />
       {result.state === 'loading' ? <LoadingState label="Loading support requests…" rows={4} /> : null}
       {result.state === 'error' ? <ErrorState failure={result.failure} onRetry={reload} context="support requests" backTo="/support" backLabel="Back to dashboard" /> : null}
       {result.state === 'ready' ? (

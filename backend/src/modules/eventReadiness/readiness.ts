@@ -11,7 +11,8 @@
 //   with the outstanding quantity; a flagged one blocks as "needs review"
 //   (D61). An event with no request lines passes, whether its equipment was
 //   recorded as 'none required' or as free text (D61).
-// - Support (Scenario 5): no required support request is still open.
+// - Support (Scenario 5): no required support request is still open, and
+//   none is flagged for reconfirmation after a date change (E10-S02, T-104).
 //
 // The check covers the whole event, whatever Session a booking belongs to
 // (D70). The rows are read by loadReadiness() and judged by the pure
@@ -38,6 +39,7 @@ export type ReadinessEquipmentRow = {
 };
 export type ReadinessSupportRow = {
   id: string; support_required: boolean; description: string; starts_at: Date; ends_at: Date; status: string;
+  requires_reconfirmation: boolean;
 };
 
 export const NO_CONFIRMED_VENUE = 'No venue booking is Confirmed yet.';
@@ -116,14 +118,18 @@ export function assessReadiness(
   const required = supportRows.filter(row => row.support_required);
   const support: ReadinessSupportRequest[] = required.map(row => {
     const open = row.status === 'open';
+    const flagged = !open && row.requires_reconfirmation;
     if (open) {
       blockers.push({ kind: 'support-unassigned', supportRequestId: row.id, description: row.description,
         message: `Technical support — no staff assigned yet: ${shortText(row.description)}` });
+    } else if (flagged) {
+      blockers.push({ kind: 'support-needs-review', supportRequestId: row.id, description: row.description,
+        message: `Technical support — needs reconfirmation at the new time: ${shortText(row.description)}` });
     }
     return {
       id: row.id, description: row.description, status: row.status,
       startsAt: row.starts_at.toISOString(), endsAt: row.ends_at.toISOString(),
-      state: open ? 'outstanding' : 'ready',
+      state: open || flagged ? 'outstanding' : 'ready',
     };
   });
 
@@ -168,7 +174,8 @@ export async function loadReadiness(query: Query, event: ReadinessEventRow): Pro
      ORDER BY eq.name, r.id`, [event.id]);
   const support = await query<ReadinessSupportRow>(
     `SELECT id, support_required, coalesce(support_description, '') AS description,
-       lower(support_range) AS starts_at, upper(support_range) AS ends_at, status::text AS status
+       lower(support_range) AS starts_at, upper(support_range) AS ends_at, status::text AS status,
+       requires_reconfirmation
      FROM tech_support_requests
      WHERE event_id = $1 AND status <> 'cancelled'
      ORDER BY lower(support_range), id`, [event.id]);
