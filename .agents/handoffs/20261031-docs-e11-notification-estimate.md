@@ -1,0 +1,5 @@
+Propose re-estimating E11-S01 / SCRUM-75 from five to thirteen points through the reviewed backlog/workbook process used by #356 and #364, without changing Jira before approval.
+
+Started from main 4b55bf34 in an isolated documentation worktree. Preserve root staged history, existing E10 implementation PR #395, original sprint allocations and the five-point historical baseline. The proposed thirteen is full-story scope only, not remaining effort or extra velocity. T-73 reporting basis and T-37's current maximum XL=8 explicitly require team/PO confirmation. No acceptance criteria, runtime code, issue status or delivery claims change. Keep SCRUM-75 out of branch/title/closing clauses so estimate review does not close the story.
+
+Verified regenerated CAA 311026 changes only four E11 cells (rationale/points in each sheet). Repository checks passed and doc guard reports zero errors/156 existing warnings. T-65 record 20261031-223905-jininggg-tooling.md. No application tests or Jira writes. On merge, reconcile Jira only after explicit team/PO agreement to thirteen and its accounting basis; do not treat PR merge as story completion.

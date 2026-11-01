@@ -200,3 +200,32 @@ bookings for review (T-16), with explicit reasons. Equipment is unaffected by
 these requirements alone. The existing sole-Session layout trigger is retained;
 no individual multi-Session requirements are overwritten. Layout capacity uses
 the shared E09 warning calculation and never removes registered attendees.
+
+## Session authoring (E04-S02, SCRUM-39)
+
+| Endpoint | Who | Contract |
+| --- | --- | --- |
+| `GET /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Returns `{ sessions }`: each Session with `id`, `title`, `startAt`, `endAt`, `expectedAttendance`, `layoutId`, `venueRequirements`, `accessibilityNote`, `equipmentRequirements`, `layoutPreference`, ordered by start. Another Organiser's or an unknown Event is 404. |
+| `POST /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Adds a child Session to a **draft** Event and returns 201 `{ session }`. `startAt`/`endAt` must be finite with end after start, `expectedAttendance` a positive integer, text fields at most 2000 characters and `title` at most 240. Anything else is 400. |
+| `PATCH /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Replaces the editable fields of one Session of that Event; 404 when the Session is not in that Event. |
+| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session. The last remaining Session is refused with 409, because an Event always has at least one. |
+
+Editing is refused with 409 once the Event is no longer a draft: Sessions carry
+the requirements that confirmed bookings were approved against, so
+post-submission Session changes go through the E10-S02 arrangement-impact flow.
+Releasing a deleted Session's confirmed booking, notifying Venue Staff and
+writing the audit rows remain open work for TC_E04S02_05.
+Once the Event is in planning, the same `PATCH` runs E10-S02's arrangement
+check. `&preview=1` returns `{ preview: { impact, overSubscription, revision } }`
+without saving; `&reviewed=<revision>` fails a stale review with 409
+`{ error: "arrangements_changed", impact, overSubscription, revision }`; a save
+flags each affected confirmed booking and reserved equipment reservation
+(`requires_reconfirmation`), writes one audit row per arrangement and sends one
+reconfirmation notice. Venue search (`/api/venues?search=1`) and the suitability
+mode accept `session_id`, which uses that Session's date, attendance, layout and
+accessibility/facility needs instead of the Event's.
+`POST /api/venues` with `action: "request_booking"` accepts `session_id`.
+Without it, the event must still have exactly one Session; with it, the booking
+is linked to that Session and its period must fall inside the Session range.
+Two Sessions may hold separate bookings of the same venue (E04-S02 Scenario 4,
+TC_E04S02_04).

@@ -1,0 +1,15 @@
+{
+  "_comment": "Cases that cite a scenario the backlog marks [Superseded ...] but that still describe shipped behaviour, because the replacing story is not built yet. Every entry names the story that will replace it and must be deleted from here in the same PR that ships that story. scripts/check_test_case_references.py fails on a stale entry, so the list cannot quietly grow.",
+  "entries": [
+    {
+      "case": "TC_E03S01_01",
+      "superseded_by": "E03-S08",
+      "reason": "C-69 ends automatic assignment on submission, but E03-S08 is To Do and backend/src/modules/eventLifecycle/coordinatorAssignment.ts still auto-assigns, so this case describes what ships today. Retire it in the PR that ships E03-S08."
+    },
+    {
+      "case": "TC_E03S01_02",
+      "superseded_by": "E03-S08",
+      "reason": "Same as TC_E03S01_01: fewest-active-events assignment is still live code. Retire it in the PR that ships E03-S08."
+    }
+  ]
+}

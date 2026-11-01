@@ -11,6 +11,7 @@ import {
   Send,
 } from 'lucide-react';
 import { listAccessibilityFeatures, type AccessibilityFeature } from './accessibilityApi';
+import { SessionEditor } from './SessionEditor';
 
 // Must match backend/src/modules/eventLifecycle/service.ts NONE_REQUIRED.
 const NONE_REQUIRED = 'none_required';
@@ -503,6 +504,7 @@ export function OrganiserRequestFlow({
           {draftSaveState.status === 'saved' ? (
             <p role="status" className="field-control">Draft saved.</p>
           ) : null}
+          {draftId ? <SessionEditor eventId={draftId} /> : null}
         </section>
 
         <aside className="review-panel" aria-label="Validation and status">

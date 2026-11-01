@@ -212,3 +212,16 @@ for readable reason labels. `ConfirmPanel.confirmDisabled` supports required
 consent while leaving Cancel available; disabled/busy submissions are ignored.
 Late-close request approval/application uses this control and retains server
 validation. Other callers default to the existing enabled confirmation behaviour.
+
+## Event Sessions (E04-S02)
+
+`SessionEditor` (`src/features/organiser/SessionEditor.tsx`) renders only when the
+flow receives a `draftId`. Sessions are children of a saved Event, so they cannot
+be created in the same POST that creates the draft: save the draft first, then
+add, edit or remove Sessions.
+
+It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
+keeps the Event's own dates and attendance as the overall planning envelope. The
+API owns ownership, draft-only editing and the last-Session rule; the editor does
+not re-implement those checks client-side, so a refusal surfaces as a message and
+the list reloads the server state.

@@ -272,7 +272,7 @@ test('joinWaitingList accepts only a full enabled Event and creates one empty Ev
   assert.deepEqual([...locks].sort((a, b) => a - b), locks);
 });
 
-test('joinWaitingList refuses a disabled list, an Event with room, and an Event without places', async () => {
+test('joinWaitingList refuses a disabled list (TC_E09S04_04), an Event with room, and an Event without places', async () => {
   const disabled = await joinWaitingList(script({ eventRegistered: 20 }).pool, attendee, eventId);
   assert.deepEqual(disabled, { status: 409, body: { error: 'This event is not accepting waiting-list entries.' } });
   const room = await joinWaitingList(script({ event: eventRow({ waitlist_enabled: true }), eventRegistered: 19 }).pool, attendee, eventId);
@@ -313,7 +313,7 @@ test('joinWaitingList handles races, locked accounts and unexpected failures tra
   assert.ok(failed.calls.some(call => call.sql === 'ROLLBACK'));
 });
 
-test('registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, _03)', async () => {
+test('registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, TC_E09S04_03)', async () => {
   const existing = { id: 'waitlisted-entry', status: 'waitlisted', registered_at: now, session_ids: [] };
   const { pool, calls } = script({ existing, eventRegistered: 19 });
   const result = await registerForEvent(pool, attendee, eventId, { sessionIds: [sessionA], claimWaitlist: true });

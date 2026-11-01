@@ -76,6 +76,8 @@ import {
   updateEventRequest,
 } from '../backend/src/modules/eventLifecycle/service.js';
 import { parseCreateEventBody, parseUpdateEventBody } from '../backend/src/modules/eventLifecycle/parseRequest.js';
+import { addSession, editSession, getSessions, removeSession } from '../backend/src/modules/eventSessions/service.js';
+import { createSessionRepository } from '../backend/src/modules/eventSessions/repository.js';
 import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
@@ -105,6 +107,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
   const registrations = new URL(request.url || '/', 'http://localhost').searchParams;
   if (registrations.get('registrations') === '1' && (request.method === 'GET' || request.method === 'POST')) {
     await handleRegistrations(request, response, registrations.get('id') || '');
+    return;
+  }
+  if (registrations.get('sessions') === '1') {
+    await handleSessions(request, response, registrations);
     return;
   }
   if (request.method === 'GET') {
@@ -183,6 +189,53 @@ export default async function handler(request: VercelRequest, response: VercelRe
   }
   response.setHeader('allow', 'GET, POST, PATCH, DELETE');
   sendJson(response, 405, { error: 'method_not_allowed' });
+}
+
+// E04-S02 (SCRUM-39): Session authoring for the owning Organiser's draft.
+//   GET    /api/events?sessions=1&id=<event id or code>                 -> { sessions }
+//   POST   /api/events?sessions=1&id=<event id or code>                 -> 201 { session }
+//   PATCH  /api/events?sessions=1&id=<event id or code>&sessionId=<id>  -> { session }
+//   DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<id>  -> { deleted: true }
+// Ownership, draft-only editing and the last-Session rule live in
+// backend/src/modules/eventSessions/service.ts.
+async function handleSessions(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  const eventId = params.get('id');
+  if (!eventId || eventId.length > 240) {
+    sendJson(response, 400, { error: 'missing_id' });
+    return;
+  }
+  if (request.method === 'GET') {
+    await respond(response, async () =>
+      getSessions(createSessionRepository(), (await currentUser(request)).id, eventId));
+    return;
+  }
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    if (request.method === 'POST') {
+      return { status: 201, body: await addSession(createSessionRepository(), user.id, eventId, request.body) };
+    }
+    const sessionId = params.get('sessionId') || '';
+    if (request.method === 'PATCH') {
+      try {
+        return {
+          status: 200,
+          body: await editSession(createSessionRepository(), user.id, eventId, sessionId, request.body, {
+            preview: params.get('preview') === '1',
+            reviewed: params.get('reviewed') ?? undefined,
+          }),
+        };
+      } catch (error) {
+        if (error instanceof ArrangementsChangedError) {
+          return { status: 409, body: { error: error.message, ...error.preview } };
+        }
+        throw error;
+      }
+    }
+    if (request.method === 'DELETE') {
+      return { status: 200, body: await removeSession(createSessionRepository(), user.id, eventId, sessionId) };
+    }
+    return { status: 405, body: { error: 'method_not_allowed' } };
+  });
 }
 
 // E09-S02: the Organiser's capacity view, Pending decisions and manual additions.

@@ -1,4 +1,14 @@
-export const PRODUCTION_DATABASE_HOST = 'db.kqpjuwogtaykonhxzvna.supabase.co';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const PRODUCTION_SSL_CA_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../database/certs/supabase-pooler-ca.pem');
+
+// The direct db.<ref>.supabase.co host is IPv6-only, and GitHub Actions runners have
+// no IPv6, so the guarded run must reach the project through the IPv4 session pooler.
+// The project ref stays pinned in the username below, so this is still exactly one project.
+export const PRODUCTION_DATABASE_HOST = 'aws-0-ap-southeast-1.pooler.supabase.com';
+export const PRODUCTION_DATABASE_USER = 'postgres.kqpjuwogtaykonhxzvna';
 
 export type MigrationLedgerSnapshot = {
   migration: string;
@@ -26,7 +36,7 @@ export function assertProductionDatabaseUrl(value: string | undefined) {
   if (url.port && url.port !== '5432') {
     throw new Error('Production DATABASE_URL must use the PostgreSQL service port.');
   }
-  if (decodeURIComponent(url.username) !== 'postgres' || !url.password) {
+  if (decodeURIComponent(url.username) !== PRODUCTION_DATABASE_USER || !url.password) {
     throw new Error('Production DATABASE_URL must use the configured production database account.');
   }
   if (url.pathname !== '/postgres') {
@@ -44,7 +54,7 @@ export function productionDatabaseClientConfig(value: string | undefined) {
     database: url.pathname.slice(1),
     user: decodeURIComponent(url.username),
     password: decodeURIComponent(url.password),
-    ssl: { rejectUnauthorized: true },
+    ssl: { ca: readFileSync(PRODUCTION_SSL_CA_PATH, 'utf8'), rejectUnauthorized: true },
   };
 }
 

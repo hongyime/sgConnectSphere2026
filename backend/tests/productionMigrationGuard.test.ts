@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   PRODUCTION_DATABASE_HOST,
+  PRODUCTION_DATABASE_USER,
   assertNextProductionMigration,
   assertOnlySelectedMigrationWasApplied,
   assertProductionDatabaseUrl,
@@ -16,7 +17,7 @@ const migrations = [
 
 function databaseUrl(options: { username?: string; authenticated?: boolean; database?: string; host?: string } = {}) {
   const url = new URL(`postgresql://${options.host ?? PRODUCTION_DATABASE_HOST}:5432/${options.database ?? 'postgres'}`);
-  url.username = options.username ?? 'postgres';
+  url.username = options.username ?? PRODUCTION_DATABASE_USER;
   if (options.authenticated !== false) Reflect.set(url, 'pass' + 'word', 'unit-test-only');
   return url.toString();
 }
@@ -53,7 +54,7 @@ test('production URL guard accepts the configured PostgreSQL target and rejects 
 
 test('guarded database config ignores URL parameters and forces verified TLS', () => {
   const connectionUrl = new URL(`postgresql://${PRODUCTION_DATABASE_HOST}:5432/postgres`);
-  connectionUrl.username = 'postgres';
+  connectionUrl.username = PRODUCTION_DATABASE_USER;
   Reflect.set(connectionUrl, 'pass' + 'word', 'unit-test-only');
   connectionUrl.searchParams.set('sslmode', 'disable');
   connectionUrl.searchParams.set('ssl', 'no-verify');
@@ -62,7 +63,8 @@ test('guarded database config ignores URL parameters and forces verified TLS', (
   const config = productionDatabaseClientConfig(connectionUrl.toString());
   assert.equal(config.host, PRODUCTION_DATABASE_HOST);
   assert.equal(config.database, 'postgres');
-  assert.deepEqual(config.ssl, { rejectUnauthorized: true });
+  assert.equal(config.ssl.rejectUnauthorized, true);
+  assert.match(String(config.ssl.ca), /^-----BEGIN CERTIFICATE-----/);
   assert.equal('connectionString' in config, false);
   assert.equal('options' in config, false);
 });
