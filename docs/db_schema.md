@@ -533,10 +533,11 @@ without inventing defaults; unresolved legacy tentative holds must be reviewed
 before the migration can require per-hold configuration. No migration is included
 in this documentation PR.
 
-The legacy `COORDINATOR_REASSIGNMENTS` relation remains readable for historical
-records only. New Lead assignment/reassignment is captured in the Event and audit
-history; no Coordinator request, incoming acceptance or decline is written under
-T-83.
+`COORDINATOR_REASSIGNMENTS` stores named Coordinator-to-Coordinator requests,
+which remain pending until the named colleague accepts or declines. The
+`LEAD_REASSIGNMENT_REQUESTS` relation stores an assigned Coordinator's request
+for Lead review; direct Lead reassignment closes that request and the Lead may
+also decline it with a note (T-83 PO decision, C-56).
 
 ### Week 7 migration sequence
 

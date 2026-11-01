@@ -288,9 +288,9 @@ classDiagram
     User "1" --> "0..*" SafetyCheck : decides (Safety Officer)
     UnassignedQueue ..> Event : reads submitted and unassigned
 
-    note for Event "Table EVENTS. Event expectedAttendance is the overall planning total; each Session has its own attendance used for that Session's booking-suitability fallback (T-79). A Lead assigns or reassigns Coordinators directly; no Coordinator request/acceptance workflow is available (T-83). When arrangementsComplete() becomes true, the system creates SafetyCheck and moves Planning to Safety Review (T-82)."
+    note for Event "Table EVENTS. Event expectedAttendance is the overall planning total; each Session has its own attendance used for that Session's booking-suitability fallback (T-79). A Lead assigns or reassigns Coordinators directly; an assigned Coordinator may ask the Lead to review reassignment, while a named peer still accepts before ownership moves (T-83 PO decision, C-56). When arrangementsComplete() becomes true, the system creates SafetyCheck and moves Planning to Safety Review (T-82)."
     note for SafetyCheck "Table SAFETY_CHECKS; decision/comments are null while pending. SAFETY_CHECK_FACTORS stores the team-added checklist. The pending record is automatic; the Safety Officer records overall decision/comments plus each factor. Approval moves the Event to Confirmed; changes/rejection return it to Planning and never cancel it. Every transition is audited (ADR-009 amended)."
-    note for CoordinatorReassignment "Legacy history only. New reassignment is written as a Lead action in the audit log; no new request, accept or decline rows are created after T-83."
+    note for CoordinatorReassignment "Named peer requests remain active and require acceptance (C-56). Coordinator-to-Lead requests use the LeadReassignmentRequest relation; direct Lead reassignment is immediate and audited (T-83 PO decision)."
 ```
 
 ### Sessions and Event registration

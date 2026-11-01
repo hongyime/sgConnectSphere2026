@@ -375,7 +375,16 @@ sequenceDiagram
         EVT->>DB: Replace coordinator_id, set assigned_by, append audit entry
         EVT->>NOT: Notify outgoing and incoming Coordinators and the Organiser
     end
-    Note over LD,EVT: The Lead owns assignment/reassignment; no Coordinator request or incoming acceptance workflow (T-83)
+    opt Assigned Coordinator asks Lead to review reassignment (T-83 PO decision)
+        participant CO as Assigned Coordinator
+        CO->>UI: Submit reason without naming a colleague
+        UI->>EVT: Create Lead reassignment request
+        EVT->>DB: Keep current coordinator and record request/audit
+        EVT->>NOT: Notify active Leads
+        LD->>UI: Review request and either decline or reassign directly
+        EVT->>NOT: Notify requesting Coordinator of the outcome
+    end
+    Note over LD,EVT: Lead reassignment remains immediate; peer Coordinator reassignment retains colleague acceptance (C-56, T-83 PO decision)
 
     LD->>UI: Open oversight view (E03-S10)
     UI->>EVT: Read every active event with its Coordinator or Unassigned

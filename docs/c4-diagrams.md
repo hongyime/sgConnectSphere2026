@@ -19,7 +19,7 @@ ConnectSphere coordinates event requests, venue bookings, equipment, technical s
 | **Event Coordinator** | Internal User | Internal staff member who owns planning for an event and acts as the main point of contact. |
 | **Venue Staff** | Internal User | Internal staff responsible for the venue catalogue, availability and booking decisions. |
 | **Technical Support Staff** | Internal User | Internal staff responsible for equipment availability, reservations and support-staff assignment. |
-| **Event Coordinator Lead** | Internal User | Internal staff member who works the unassigned queue, assigns and reassigns Event Coordinators, and oversees every assignment and active event. Coordinators do not submit in-system reassignment requests (T-83). |
+| **Event Coordinator Lead** | Internal User | Internal staff member who works the unassigned queue, assigns and reassigns Event Coordinators, reviews Coordinator escalation requests, and oversees every assignment and active event. Only Leads see the queue; the assigned Coordinator may ask the Lead to review reassignment (T-83 PO decision). |
 | **Safety Officer** | Internal User | Internal staff member who reviews an Event after arrangements are confirmed; the system starts Safety Review automatically and records the decision/comments plus the team's factor checklist (C-132, C-134, T-82). |
 
 ---
@@ -124,7 +124,7 @@ The container table below is the reference detail for the diagram above.
 |---|---|---|
 | **API Router** | REST controllers | Routes requests and validates payloads. |
 | **Access Control** | Application service | Authentication, lockout, password reset, many-to-many role grants and client-organisation scoping; checks a caller's grants on every request (ADR-019). |
-| **Event Lifecycle** | Application service | Request, review, clarification, approval, Session structure, status transitions, the unassigned queue and Lead-only assignment/reassignment, automatic Safety Review after readiness, reversion and completion; closes pending change requests as Obsolete on terminal status. |
+| **Event Lifecycle** | Application service | Request, review, clarification, approval, Session structure, status transitions, the unassigned queue, Lead assignment/reassignment and Coordinator escalation, automatic Safety Review after readiness, reversion and completion; closes pending change requests as Obsolete on terminal status. |
 | **Venue Management** | Application service | Session-linked bookings, per-venue setup/turnaround buffers, layouts, open-ended editable blocks with retained history, Session-level suitability, configured hold expiry/warning and reasoned extensions, booking decisions and routing from setup assignments. |
 | **Equipment and Support** | Application service | Session-linked equipment requests/reservations and availability; Event-level technical-support requests and staff assignment. |
 | **Registration** | Application service | Event-level registration window, attendee-selected Sessions, one active registration per account/Event, per-Session and combined Event capacity, Pending Organiser review, Event-level waitlist, withdrawal and attendance. |

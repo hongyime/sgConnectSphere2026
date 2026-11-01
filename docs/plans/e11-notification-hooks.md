@@ -183,10 +183,11 @@ The 27 September and 2 October sections above are implementation snapshots; keep
 their historical account of the then-current workflow. Week 9 decisions T-83
 and T-89 now govern future work:
 
-- Lead assignment and direct reassignment are the routed actions. Do not create
-  new Coordinator reassignment requests, Lead request queues or incoming
-  acceptance/decline notifications. Existing request rows remain readable as
-  history; preserve completed story evidence under T-74.
+- Lead assignment and direct reassignment remain routed actions. Under the T-83
+  PO decision recorded 2026-11-01, also route an assigned Coordinator's
+  escalation request to active Leads and notify the requester when the Lead
+  declines or reassigns. Named Coordinator-to-Coordinator requests retain their
+  incoming acceptance/decline notifications under C-56.
 - Venue-to-staff assignments belong in setup data for targeted notification
   routing. Release 1 has no roster-management screen and must not broadcast to
   every Venue Staff account. The target relation is `VENUE_STAFF_ASSIGNMENTS`;
