@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **383**
 - Automated (explicit TC_ID in an active test title): **311** (81.2%)
-  - Real-database (`.integration.test` / `.db.test`): **47**
+  - Real-database (`.integration.test` / `.db.test`): **42**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **263**
+  - Live-assertion (other active tests): **268**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
 - No test yet (no test file mentions the TC_ID): **18** (4.7%)
 
@@ -177,11 +177,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back |
-| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; tests/e2e/e04.spec.ts: TC_E04S |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; tests/e2e/e04.spec.ts: TC_E04S |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back; backend/tests/eventSessionsRoutes.integration. |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back; tests/e2e/e04.spec.ts: TC_E04S02_03 TC_E04S02_04: |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back; tests/e2e/e04.spec.ts |
 
 ### E05
 
@@ -880,6 +880,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: a Session can be removed while the event is in planning
 - E04-S02: removal is refused once the event is past planning
 - E04-S02: a malformed Session id is rejected before any query
+- E04-S02 Scenario 1: a Session carries its own accessibility and facility needs
+- E04-S02 Scenario 1: needs that are not lists of ids are rejected before any write
+- E04-S02 Scenario 1: leaving the needs out keeps whatever the Session already has
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1676,6 +1679,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: adding a Session posts to the sessions endpoint
 - E04-S02: removing a Session deletes that Session only
 - E04-S02: a planning edit previews its impact before saving
+- E04-S02: a new Session starts with the first Session requirements
+- E04-S02: cancelling the removal keeps the Session and sends nothing
+- E04-S02: a refused save shows the reason and a failed load can be retried
+- E04-S02: a late answer for an earlier event never replaces the current one
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 
@@ -1883,6 +1890,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/venue/VenueSearch.navigation.test.tsx`
 
 - event-scoped results offer Hold this venue only for an available venue
+
+### `frontend/src/features/venue/VenueSearch.sessions.test.tsx`
+
+- E04-S02: the whole-event view asks for a Session before a venue can be checked
+- E04-S02: a single-Session event keeps the original search, with no picker
 
 ### `frontend/src/features/venue/VenueSuitability.test.tsx`
 

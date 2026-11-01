@@ -66,6 +66,8 @@ export function describeChange(entry: ActivityEntry) {
     if (after) return before ? `Hold expiry: ${before} → ${after}` : `Hold expires ${after}`;
     return 'Venue booking';
   }
+  // E04-S02 Scenario 5: a deleted Session keeps its title as the old value.
+  if (entry.field_changed === 'session') return entry.old_value ? `Session: ${entry.old_value}` : 'Session';
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;
   // Coordinator assignment and reassignment keep the previous Coordinator.
@@ -82,6 +84,7 @@ export function describeAction(entry: ActivityEntry) {
   if (isBookingDecision(entry)) return entry.action.charAt(0) + entry.action.slice(1).toLowerCase();
   if (entry.action === 'Reverted to Planning') return 'Reverted to Planning';
   if (entry.action === 'Support Reconfirmed') return 'Support reconfirmed';
+  if (entry.action === 'Session Deleted') return 'Session deleted';
   if (entry.field_changed === 'status') return 'Status changed';
   if (entry.action === 'Record updated') return 'Details edited';
   return entry.action;

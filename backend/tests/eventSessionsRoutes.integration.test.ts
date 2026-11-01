@@ -164,6 +164,12 @@ test('TC_E04S02_05: deleting a Session releases its booking, audits it and notif
     assert.equal(audit.rowCount, 1);
     assert.equal(audit.rows[0]!.action, 'Booking Released');
 
+    const deletion = await client.query(
+      `SELECT action, old_value FROM audit_logs WHERE entity_type = 'event' AND event_id = $1 AND field_changed = 'session'`, [eventId],
+    );
+    assert.deepEqual(deletion.rows, [{ action: 'Session Deleted', old_value: 'Untitled Session' }],
+      'the deletion itself is in the activity log');
+
     const notices = await client.query(
       'SELECT title FROM notifications WHERE user_id = $1 AND event_id = $2', [staffId, eventId],
     );
@@ -407,6 +413,136 @@ test('TC_E04S02_04: one Event books the same venue for two Sessions, rolled back
       'SELECT session_id FROM venue_bookings WHERE event_id = $1 ORDER BY session_id', [eventId],
     )).rows;
     assert.equal(rows.length, 2, 'the same venue holds one booking per Session');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});
+
+test('TC_E04S02_03: each Session is judged on its own accessibility needs, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_needs_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_needs_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_needs_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_needs_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_needs_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const eventId = randomUUID();
+    const stepFree = randomUUID();
+    const accessibleVenue = randomUUID();
+    const stairsVenue = randomUUID();
+    const digest = await hashPassword('synthetic-session-needs-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query('INSERT INTO accessibility_features (id, code, label) VALUES ($1, $2, $3)', [stepFree, `step-free-${stepFree}`, 'Step-free access']);
+    for (const [id, name] of [[accessibleVenue, 'Step-free hall'], [stairsVenue, 'Stairs-only hall']] as const) {
+      await client.query(
+        `INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, $2, 'Level 1', 200, '00:00', '23:59')`,
+        [id, name],
+      );
+    }
+    await client.query('INSERT INTO venue_accessibility_features (venue_id, feature_id) VALUES ($1, $2)', [accessibleVenue, stepFree]);
+    await client.query(
+      `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+       VALUES ($1, $2, $3, $4, 'Synthetic needs event', 'draft',
+         tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+      [eventId, organiserId, coordinatorId, org],
+    );
+    // The request form records accessibility on the Event, not on its Session.
+    await client.query('INSERT INTO event_accessibility_needs (event_id, feature_id) VALUES ($1, $2)', [eventId, stepFree]);
+
+    const user = { id: coordinatorId, email: `${coordinatorId}@example.test`, role: 'event_coordinator' as const, clientOrgId: org, isActive: true };
+    const query = (sql: string, values?: unknown[]) => client.query(sql, values);
+    const suitable = async (sessionId: string) => {
+      const result = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, session_id: sessionId, search: '1' }));
+      return Object.fromEntries(result.venues!.filter(venue => [accessibleVenue, stairsVenue].includes(venue.id))
+        .map(venue => [venue.id, venue.suitable]));
+    };
+
+    const [sole] = (await getSessions(repository, organiserId, eventId)).sessions;
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+    assert.deepEqual(await suitable(sole!.id), { [accessibleVenue]: true, [stairsVenue]: false },
+      'a sole Session with no needs of its own follows the Event');
+
+    await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [eventId]);
+    const afternoon = await addSession(repository, organiserId, eventId, {
+      title: 'Afternoon',
+      startAt: '2027-03-13T05:00:00.000Z',
+      endAt: '2027-03-13T08:00:00.000Z',
+      expectedAttendance: 120,
+      accessibilityFeatureIds: [],
+    });
+    assert.deepEqual(afternoon.session.accessibilityFeatureIds, []);
+    const listed = await getSessions(repository, organiserId, eventId);
+    assert.deepEqual(listed.sessions.find(item => item.id === sole!.id)!.accessibilityFeatureIds, [stepFree],
+      'the first Session keeps the Event needs once a second Session exists');
+    assert.ok(listed.options.accessibility.some(option => option.id === stepFree));
+
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+    assert.deepEqual(await suitable(sole!.id), { [accessibleVenue]: true, [stairsVenue]: false });
+    assert.deepEqual(await suitable(afternoon.session.id), { [accessibleVenue]: true, [stairsVenue]: true },
+      'the Afternoon Session needs no step-free access');
+
+    const edited = await editSession(repository, organiserId, eventId, afternoon.session.id, {
+      title: 'Afternoon',
+      startAt: '2027-03-13T05:00:00.000Z',
+      endAt: '2027-03-13T08:00:00.000Z',
+      expectedAttendance: 120,
+      accessibilityFeatureIds: [stepFree],
+    });
+    assert.ok('session' in edited);
+    assert.deepEqual(await suitable(afternoon.session.id), { [accessibleVenue]: true, [stairsVenue]: false });
+
+    await assert.rejects(
+      editSession(repository, organiserId, eventId, afternoon.session.id, {
+        startAt: '2027-03-13T05:00:00.000Z',
+        endAt: '2027-03-13T08:00:00.000Z',
+        expectedAttendance: 120,
+        facilityIds: [randomUUID()],
+      }),
+      (error: { status?: number }) => error.status === 400,
+    );
+
+    const setup = await venueSearch(query, user, new URLSearchParams({ event_id: eventId }));
+    assert.deepEqual((setup as { sessions: { id: string }[] }).sessions.map(item => item.id), [sole!.id, afternoon.session.id],
+      'venue search lists the Sessions to choose from');
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

@@ -205,16 +205,28 @@ the shared E09 warning calculation and never removes registered attendees.
 
 | Endpoint | Who | Contract |
 | --- | --- | --- |
-| `GET /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Returns `{ sessions }`: each Session with `id`, `title`, `startAt`, `endAt`, `expectedAttendance`, `layoutId`, `venueRequirements`, `accessibilityNote`, `equipmentRequirements`, `layoutPreference`, ordered by start. Another Organiser's or an unknown Event is 404. |
-| `POST /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Adds a child Session to a **draft** Event and returns 201 `{ session }`. `startAt`/`endAt` must be finite with end after start, `expectedAttendance` a positive integer, text fields at most 2000 characters and `title` at most 240. Anything else is 400. |
-| `PATCH /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Replaces the editable fields of one Session of that Event; 404 when the Session is not in that Event. |
-| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session. The last remaining Session is refused with 409, because an Event always has at least one. |
+| `GET /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Returns `{ sessions, eventStatus, options }`: each Session with `id`, `title`, `startAt`, `endAt`, `expectedAttendance`, `layoutId`, `venueRequirements`, `accessibilityNote`, `equipmentRequirements`, `layoutPreference`, `accessibilityFeatureIds` and `facilityIds`, ordered by start; `options` lists the `layouts`, `accessibility` features and `facilities` (`{ id, label }`) a Session can name. Another Organiser's or an unknown Event is 404. |
+| `POST /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Adds a child Session to a **draft** Event and returns 201 `{ session }`. `startAt`/`endAt` must be finite with end after start, `expectedAttendance` a positive integer, text fields at most 2000 characters and `title` at most 240. `accessibilityFeatureIds` and `facilityIds` are optional lists of at most 50 ids; left out, the new Session starts with the Event's needs. Anything else is 400, including an id that no longer exists. |
+| `PATCH /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Replaces the editable fields of one Session of that Event; 404 when the Session is not in that Event. `accessibilityFeatureIds`/`facilityIds` replace that Session's needs when sent and are left unchanged when omitted. |
+| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session while the Event is a draft or in planning, and returns `{ deleted, releasedBookings, releasedReservations, notifiedStaff }`. The last remaining Session is refused with 409, because an Event always has at least one. |
 
-Editing is refused with 409 once the Event is no longer a draft: Sessions carry
-the requirements that confirmed bookings were approved against, so
-post-submission Session changes go through the E10-S02 arrangement-impact flow.
-Releasing a deleted Session's confirmed booking, notifying Venue Staff and
-writing the audit rows remain open work for TC_E04S02_05.
+Adding a Session is refused with 409 once the Event is no longer a draft, and
+editing once it is past planning: Sessions carry the requirements that
+confirmed bookings were approved against, so post-submission Session changes go
+through the E10-S02 arrangement-impact flow. Deleting a Session releases its
+active venue bookings and equipment reservations in one transaction, writes a
+`Booking Released` / `Equipment reservation released` audit row for each, tells
+only that Session's venues' assigned Venue Staff, and records a `Session
+Deleted` row on the Event (`field_changed: 'session'`, old value the Session
+title), which both the Organiser's and the Coordinator's activity log show
+(TC_E04S02_05).
+
+Accessibility and facility needs live in `session_accessibility_needs` and
+`session_facility_needs`. While an Event has one Session, the request form's
+Event-level needs describe it: venue search uses the Event's needs for a sole
+Session that has none of its own. Adding a second Session first copies the
+Event's needs onto the existing Session, so each Session is then judged on its
+own needs.
 Once the Event is in planning, the same `PATCH` runs E10-S02's arrangement
 check. `&preview=1` returns `{ preview: { impact, overSubscription, revision } }`
 without saving; `&reviewed=<revision>` fails a stale review with 409
@@ -223,7 +235,12 @@ flags each affected confirmed booking and reserved equipment reservation
 (`requires_reconfirmation`), writes one audit row per arrangement and sends one
 reconfirmation notice. Venue search (`/api/venues?search=1`) and the suitability
 mode accept `session_id`, which uses that Session's date, attendance, layout and
-accessibility/facility needs instead of the Event's.
+accessibility/facility needs instead of the Event's. The search set-up call
+(`mode=suitability` with an `event_id` and no `search=1`) also returns
+`sessions` (`id`, `title`, `start`, `end`, `attendance`) for the Coordinator's
+Session picker, and the suitability mode returns `session: { id, title }` when a
+Session was named. `GET /api/venues?mode=booking_requests` returns each
+booking's `session_id` and `session_title`.
 `POST /api/venues` with `action: "request_booking"` accepts `session_id`.
 Without it, the event must still have exactly one Session; with it, the booking
 is linked to that Session and its period must fall inside the Session range.

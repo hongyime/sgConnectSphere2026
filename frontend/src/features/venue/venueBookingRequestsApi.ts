@@ -18,6 +18,8 @@ export type VenueBookingRequestsData = {
     suggested_venue_id?: string | null; suggested_venue_name?: string | null; replaces_booking_id?: string | null; has_replacement?: boolean;
     conflict_block_id?: string | null; conflict_category?: string | null; conflict_reason?: string | null; conflict_starts_at?: string | null; conflict_ends_at?: string | null; requires_reconfirmation?: boolean;
     purpose?: string | null; headcount?: number | null; is_primary?: boolean;
+    // E04-S02 Scenario 4: the Session whose period this booking covers.
+    session_id?: string | null; session_title?: string | null;
     suitability_snapshot?: { mismatches: string[] } | null } & ConflictDetails)[];
 };
 

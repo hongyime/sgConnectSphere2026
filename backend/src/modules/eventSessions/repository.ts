@@ -1,13 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
 import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
 import { captureEventAudience, notifyEventChange, resolveAssignedVenueStaff, writeEventNotification } from '../eventNotifications/service.js';
-import type { Query } from '../eventVisibility/service.js';
+import { AccessError, type Query } from '../eventVisibility/service.js';
 import type { SessionRepository } from './service.js';
-import type { SessionEditScope, SessionInput, SessionRecord } from './types.js';
+import type { SessionEditScope, SessionInput, SessionOption, SessionRecord } from './types.js';
 
 type SessionRow = {
   id: string;
@@ -21,11 +21,61 @@ type SessionRow = {
   accessibility_note: string | null;
   equipment_requirements: string | null;
   layout_preference: string | null;
+  accessibility_feature_ids?: string[];
+  facility_ids?: string[];
 };
 
 const COLUMNS = `id, event_id, title, lower(session_range) AS start_at, upper(session_range) AS end_at,
   expected_attendance, layout_id, venue_requirements, accessibility_note,
-  equipment_requirements, layout_preference`;
+  equipment_requirements, layout_preference,
+  ARRAY(SELECT n.feature_id::text FROM session_accessibility_needs n WHERE n.session_id = sessions.id ORDER BY n.feature_id) AS accessibility_feature_ids,
+  ARRAY(SELECT n.facility_id::text FROM session_facility_needs n WHERE n.session_id = sessions.id ORDER BY n.facility_id) AS facility_ids`;
+
+type Client = Pick<PoolClient, 'query'>;
+
+async function readSession(client: Client, sessionId: string): Promise<SessionRecord> {
+  return toRecord((await client.query<SessionRow>(`SELECT ${COLUMNS} FROM sessions WHERE id = $1`, [sessionId])).rows[0]!);
+}
+
+// Replaces a Session's accessibility and facility needs when the request names
+// them. Unknown ids are refused here rather than surfacing as a foreign-key error.
+async function writeNeeds(client: Client, sessionId: string, input: SessionInput) {
+  const tables = [
+    { ids: input.accessibilityFeatureIds, lookup: 'accessibility_features', table: 'session_accessibility_needs', column: 'feature_id', label: 'accessibility feature' },
+    { ids: input.facilityIds, lookup: 'facilities', table: 'session_facility_needs', column: 'facility_id', label: 'facility' },
+  ] as const;
+  for (const { ids, lookup, table, column, label } of tables) {
+    if (ids === undefined) continue;
+    if (ids.length) {
+      const found = Number((await client.query<{ count: string }>(
+        `SELECT count(*)::text AS count FROM ${lookup} WHERE id = ANY($1::uuid[])`, [ids],
+      )).rows[0]!.count);
+      if (found !== ids.length) throw new AccessError(400, `A selected ${label} no longer exists.`);
+    }
+    await client.query(`DELETE FROM ${table} WHERE session_id = $1`, [sessionId]);
+    if (ids.length) {
+      await client.query(`INSERT INTO ${table} (session_id, ${column}) SELECT $1, unnest($2::uuid[])`, [sessionId, ids]);
+    }
+  }
+}
+
+// Until an Event has a second Session, venue search judges its sole Session by
+// the Event's own needs. Copy them onto a Session that has none of its own, so
+// they survive once each Session is judged on its own needs.
+async function inheritEventNeeds(client: Client, eventId: string, sessionId: string) {
+  await client.query(
+    `INSERT INTO session_accessibility_needs (session_id, feature_id)
+     SELECT $2, n.feature_id FROM event_accessibility_needs n WHERE n.event_id = $1
+       AND NOT EXISTS (SELECT 1 FROM session_accessibility_needs own WHERE own.session_id = $2)`,
+    [eventId, sessionId],
+  );
+  await client.query(
+    `INSERT INTO session_facility_needs (session_id, facility_id)
+     SELECT $2, n.facility_id FROM event_facility_needs n WHERE n.event_id = $1
+       AND NOT EXISTS (SELECT 1 FROM session_facility_needs own WHERE own.session_id = $2)`,
+    [eventId, sessionId],
+  );
+}
 
 function toRecord(row: SessionRow): SessionRecord {
   return {
@@ -40,6 +90,8 @@ function toRecord(row: SessionRow): SessionRecord {
     accessibilityNote: row.accessibility_note ?? undefined,
     equipmentRequirements: row.equipment_requirements ?? undefined,
     layoutPreference: row.layout_preference ?? undefined,
+    accessibilityFeatureIds: row.accessibility_feature_ids ?? [],
+    facilityIds: row.facility_ids ?? [],
   };
 }
 
@@ -73,22 +125,39 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
     return result.rows.map(toRecord);
   },
 
+  async listOptions() {
+    const list = async (table: string) => (await db.query<SessionOption>(`SELECT id, label FROM ${table} ORDER BY label, id`)).rows;
+    return { layouts: await list('room_layouts'), accessibility: await list('accessibility_features'), facilities: await list('facilities') };
+  },
+
   async insertSession(eventId: string, input: SessionInput): Promise<SessionRecord> {
-    const result = await db.query<SessionRow>(
-      `INSERT INTO sessions (event_id, title, session_range, expected_attendance, layout_id,
-         venue_requirements, accessibility_note, equipment_requirements, layout_preference)
-       VALUES (${VALUES}) RETURNING ${COLUMNS}`,
-      values(eventId, input),
-    );
-    return toRecord(result.rows[0]!);
+    return inTransaction(db, async client => {
+      await client.query(`SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId]);
+      const existing = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
+      if (existing.length === 1) await inheritEventNeeds(client, eventId, existing[0]!.id);
+      const { id } = (await client.query<{ id: string }>(
+        `INSERT INTO sessions (event_id, title, session_range, expected_attendance, layout_id,
+           venue_requirements, accessibility_note, equipment_requirements, layout_preference)
+         VALUES (${VALUES}) RETURNING id`,
+        values(eventId, input),
+      )).rows[0]!;
+      // A new Session starts from the Event's needs unless the request names its own.
+      await inheritEventNeeds(client, eventId, id);
+      await writeNeeds(client, id, input);
+      return readSession(client, id);
+    });
   },
 
   async updateSession(sessionId: string, eventId: string, input: SessionInput): Promise<SessionRecord | null> {
-    const result = await db.query<SessionRow>(
-      `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2 RETURNING ${COLUMNS}`,
-      [sessionId, eventId, ...values(eventId, input).slice(1)],
-    );
-    return result.rows[0] ? toRecord(result.rows[0]) : null;
+    return inTransaction(db, async client => {
+      const updated = (await client.query<{ id: string }>(
+        `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2 RETURNING id`,
+        [sessionId, eventId, ...values(eventId, input).slice(1)],
+      )).rows[0];
+      if (!updated) return null;
+      await writeNeeds(client, sessionId, input);
+      return readSession(client, sessionId);
+    });
   },
 
   // E10-S02 applied to a single Session: the edit runs inside a savepoint for a
@@ -111,10 +180,12 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       const before = await loadArrangementSnapshot(query, eventId);
       if (options.preview) await client.query('SAVEPOINT session_preview');
 
-      const updated = (await client.query<SessionRow>(
-        `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2 RETURNING ${COLUMNS}`,
+      await client.query(
+        `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2`,
         [sessionId, eventId, ...values(eventId, input).slice(1)],
-      )).rows[0]!;
+      );
+      await writeNeeds(client, sessionId, input);
+      const updated = await readSession(client, sessionId);
 
       const after = await loadArrangementSnapshot(query, eventId);
       const impact = assessArrangementImpact(before, after);
@@ -150,7 +221,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
           },
         });
       }
-      return { status: 'updated' as const, session: toRecord(updated), ...check };
+      return { status: 'updated' as const, session: updated, ...check };
     });
   },
 
@@ -164,8 +235,8 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       )).rows[0];
       if (!event) return { status: 'not_found' as const };
 
-      const session = (await client.query<{ id: string }>(
-        `SELECT id FROM sessions WHERE id = $1 AND event_id = $2 FOR UPDATE`, [sessionId, eventId],
+      const session = (await client.query<{ id: string; title: string | null }>(
+        `SELECT id, title FROM sessions WHERE id = $1 AND event_id = $2 FOR UPDATE`, [sessionId, eventId],
       )).rows[0];
       if (!session) return { status: 'not_found' as const };
 
@@ -225,6 +296,13 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         }
       }
 
+      // Scenario 5: the deletion itself is in the Event's activity log, which
+      // shows 'event' rows to the Organiser and the Coordinator alike.
+      await client.query(
+        `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,old_value)
+         VALUES($1,'event',$2,$2,'Session Deleted','session',$3)`,
+        [actorId, eventId, session.title ?? 'Untitled Session'],
+      );
       await client.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
       return {
         status: 'deleted' as const,
