@@ -288,6 +288,69 @@ export async function assignQueuedEvent(
   });
 }
 
+// E03-S09: a Lead can replace the current Coordinator immediately; this does
+// not create or answer a Coordinator-to-Coordinator acceptance request.
+export async function reassignEventAsLead(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  identifier: string,
+  body: unknown,
+) {
+  const lead = await requireLead(database, user, 'lead_reassignment');
+  const coordinatorId = body && typeof body === 'object' && !Array.isArray(body)
+    ? (body as { coordinator_id?: unknown }).coordinator_id : undefined;
+  if (typeof coordinatorId !== 'string' || !UUID_PATTERN.test(coordinatorId)) {
+    throw new AccessError(400, 'Choose an Event Coordinator.');
+  }
+
+  return inTransaction(database, async client => {
+    const eventResult = await client.query<{
+      id: string; event_code: string | null; title: string; status: string;
+      coordinator_id: string | null; organiser_id: string;
+    }>(
+      `SELECT id, event_code, title, status, coordinator_id, organiser_id
+       FROM events WHERE id::text = $1 OR event_code = $1 FOR UPDATE`,
+      [identifier],
+    );
+    const event = eventResult.rows[0];
+    if (!event || !event.coordinator_id || !(ACTIVE_EVENT_STATUSES as readonly string[]).includes(event.status)) {
+      throw new AccessError(409, 'Only an active assigned event can be reassigned.');
+    }
+    if (event.coordinator_id === coordinatorId) throw new AccessError(400, 'Choose a different Event Coordinator.');
+
+    const target = await client.query<{ id: string; full_name: string }>(
+      `SELECT u.id, u.full_name FROM users u WHERE u.id = $2 AND ${ELIGIBLE_COORDINATOR}`,
+      [LOCKOUT_FAILURE_THRESHOLD, coordinatorId],
+    );
+    if (!target.rows[0]) throw new AccessError(400, 'That user is not an active Event Coordinator.');
+
+    await client.query(
+      `UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now(), assigned_by = $3 WHERE id = $1`,
+      [event.id, coordinatorId, lead.id],
+    );
+    const audit = await client.query<{ id: string; occurred_at: Date }>(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+       VALUES ($1, 'event', $2, $2, 'Lead reassigned', 'coordinator_id', $3, $4) RETURNING id, occurred_at`,
+      [lead.id, event.id, event.coordinator_id, coordinatorId],
+    );
+    const change = audit.rows[0]!;
+    const label = eventLabel(event);
+    await notifyUser(client, {
+      userId: event.coordinator_id, eventId: event.id, changeId: `${change.id}:outgoing`, occurredAt: change.occurred_at,
+      title: 'Event reassigned', message: `The Lead reassigned ${label} to another Event Coordinator.`,
+    });
+    await notifyUser(client, {
+      userId: coordinatorId, eventId: event.id, changeId: `${change.id}:incoming`, occurredAt: change.occurred_at,
+      title: 'Event assigned', message: `The Lead assigned ${label} to you.`,
+    });
+    await notifyUser(client, {
+      userId: event.organiser_id, eventId: event.id, changeId: `${change.id}:organiser`, occurredAt: change.occurred_at,
+      title: 'Coordinator changed', message: `${target.rows[0].full_name} is now coordinating ${label}.`,
+    });
+    return { eventId: event.id, coordinatorId };
+  });
+}
+
 export async function getAssignedEvent(database: Pool, user: AuthenticatedUser | undefined, identifier: string) {
   const coordinator = await requireCoordinator(database, user, 'coordinator_events');
   const result = await database.query(

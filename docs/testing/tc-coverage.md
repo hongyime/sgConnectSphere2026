@@ -909,6 +909,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E03-S08 non-Leads cannot assign a queued event
 - E03-S08 invalid targets and non-queued events are refused
 
+### `backend/tests/leadReassignment.test.ts`
+
+- E03-S09 Lead reassignment changes ownership immediately and notifies three parties
+- E03-S09 non-Leads cannot reassign an event
+- E03-S09 unknown events, same target and inactive stages are refused
+
 ### `backend/tests/loginRecovery.integration.test.ts`
 
 - E01-S01 real database, API, registration and recovery acceptance cases

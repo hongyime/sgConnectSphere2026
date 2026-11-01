@@ -42,6 +42,7 @@ import { getDatabasePool } from '../backend/src/database/client.js';
 import {
   getAssignedEvent,
   assignQueuedEvent,
+  reassignEventAsLead,
   listAssignedEvents,
   listAssignableCoordinators,
   listCoordinatorColleagues,
@@ -154,6 +155,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('assign') === '1') {
       await handleQueueAssignment(request, response, params);
+      return;
+    }
+    if (params.get('reassign') === '1' && params.get('by_lead') === '1') {
+      await handleLeadReassignmentPost(request, response, params);
       return;
     }
     if (params.get('reassign') === '1' || params.has('reassignment')) {
@@ -322,6 +327,15 @@ async function handleQueueAssignment(request: VercelRequest, response: VercelRes
     if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
     const user = await currentUser(request);
     return { status: 200, body: { assignment: await assignQueuedEvent(getDatabasePool(), user, identifier, request.body) } };
+  });
+}
+
+async function handleLeadReassignmentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const user = await currentUser(request);
+    return { status: 200, body: { reassignment: await reassignEventAsLead(getDatabasePool(), user, identifier, request.body) } };
   });
 }
 

@@ -9,6 +9,14 @@ This branch implements immediate reassignment by an Event Coordinator Lead. The 
 - Existing Coordinator request/accept/decline behavior is covered and retained.
 - No manual test execution is planned.
 
+## Verification
+
+- `npx tsx --test backend/tests/leadReassignment.test.ts`: 3 passed.
+- Targeted frontend Vitest for `RoleQueues.test.tsx`: 2 passed.
+- Backend and frontend typechecks passed.
+- Frontend build passed; Vite reported the existing ineffective dynamic import warning for `OrganiserRequestFlow`.
+- `python scripts/tc_coverage_audit.py` regenerated `docs/testing/tc-coverage.md`.
+
 ## Next steps
 
 - Add red tests for Lead-only immediate reassignment and refusal paths.

@@ -45,3 +45,11 @@ export function assignQueuedEvent(eventId: string, coordinatorId: string) {
     'Unable to assign this event.',
   );
 }
+
+export function reassignAsLead(eventId: string, coordinatorId: string) {
+  return apiCall<{ reassignment: { eventId: string; coordinatorId: string } }>(
+    `/api/events?reassign=1&by_lead=1&id=${encodeURIComponent(eventId)}`,
+    { method: 'POST', body: JSON.stringify({ coordinator_id: coordinatorId }) },
+    'Unable to reassign this event.',
+  );
+}
