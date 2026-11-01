@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, expect, test, vi } from 'vitest';
-import { LeadQueue, SafetyQueue } from './RoleQueues';
+import { LeadOversight, LeadQueue, SafetyQueue } from './RoleQueues';
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
@@ -45,4 +45,19 @@ test('Safety queue loads events awaiting Operational Safety Check', async () => 
   expect(await screen.findByText('Annual Gala')).toBeInTheDocument();
   expect(screen.getByText('Coordinator A')).toBeInTheDocument();
   expect(fetchMock).toHaveBeenCalledWith('/api/events?safetyQueue=1', expect.objectContaining({ credentials: 'same-origin' }));
+});
+
+test('Lead oversight loads workload and active event assignments', async () => {
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify({ events: [{
+    id: 'event-3', event_code: 'EVT-3', title: 'Annual Gala', status: 'planning',
+    starts_at: '2026-12-02T01:00:00Z', ends_at: '2026-12-02T04:00:00Z', expected_attendance: 80,
+    coordinator_id: 'coord-1', coordinator_name: 'Coordinator A', organiser_name: 'Olivia Tan',
+  }], workloads: [{ id: 'coord-1', full_name: 'Coordinator A', active_events: 1 }] }), { status: 200, headers: { 'content-type': 'application/json' } }));
+  vi.stubGlobal('fetch', fetchMock);
+  renderQueue(LeadOversight);
+
+  expect(await screen.findByText('Assignment oversight')).toBeInTheDocument();
+  expect(screen.getAllByText('Coordinator A').length).toBeGreaterThan(0);
+  expect(screen.getByText('Annual Gala')).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenCalledWith('/api/events?oversight=1', expect.objectContaining({ credentials: 'same-origin' }));
 });

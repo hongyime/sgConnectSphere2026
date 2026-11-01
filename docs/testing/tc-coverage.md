@@ -909,6 +909,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E03-S08 non-Leads cannot assign a queued event
 - E03-S08 invalid targets and non-queued events are refused
 
+### `backend/tests/leadOversight.test.ts`
+
+- E03-S10 Lead oversight returns active events and workload counts with filters
+- E03-S10 non-Leads cannot read oversight
+- E03-S10 invalid filters are rejected before reading events
+
 ### `backend/tests/leadReassignment.test.ts`
 
 - E03-S09 Lead reassignment changes ownership immediately and notifies three parties
@@ -1685,6 +1691,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - Lead queue loads submitted unassigned requests and assigns one
 - Safety queue loads events awaiting Operational Safety Check
+- Lead oversight loads workload and active event assignments
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 

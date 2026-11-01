@@ -409,6 +409,44 @@ export async function listAssignableCoordinators(database: Pool, user: Authentic
   return result.rows;
 }
 
+export async function listLeadOversight(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  filters: { status?: string | null; coordinator?: string | null } = {},
+) {
+  await requireLead(database, user, 'lead_oversight');
+  const status = filters.status || null;
+  const coordinator = filters.coordinator || null;
+  if (status && !(ACTIVE_EVENT_STATUSES as readonly string[]).includes(status)) {
+    throw new AccessError(400, 'Unknown active event status filter.');
+  }
+  if (coordinator && !UUID_PATTERN.test(coordinator)) throw new AccessError(400, 'Invalid Coordinator filter.');
+  const events = await database.query(
+    `SELECT e.id, e.event_code, e.title, e.status,
+       lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
+       e.expected_attendance, e.coordinator_id, c.full_name AS coordinator_name,
+       o.full_name AS organiser_name
+     FROM events e JOIN users o ON o.id = e.organiser_id
+     LEFT JOIN users c ON c.id = e.coordinator_id
+     WHERE e.status = ANY($1::event_status[])
+       AND ($2::event_status IS NULL OR e.status = $2::event_status)
+       AND ($3::uuid IS NULL OR e.coordinator_id = $3)
+     ORDER BY lower(e.event_range), e.id
+     LIMIT 500`,
+    [[...ACTIVE_EVENT_STATUSES], status, coordinator],
+  );
+  const workloads = await database.query(
+    `SELECT u.id, u.full_name,
+       (SELECT count(*)::int FROM events e
+        WHERE e.coordinator_id = u.id AND e.status = ANY($1::event_status[])) AS active_events
+     FROM users u
+     WHERE u.role = 'event_coordinator' AND u.is_active
+     ORDER BY u.full_name, u.id`,
+    [[...ACTIVE_EVENT_STATUSES]],
+  );
+  return { events: events.rows, workloads: workloads.rows };
+}
+
 // --- Reassignment (Scenarios 3 to 6) ----------------------------------------
 
 type ReassignmentRow = {

@@ -37,6 +37,7 @@ const EquipmentFormPage = lazy(() => import('../features/support/EquipmentCatalo
 const EquipmentDetail = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentDetail })));
 const MarkUnavailablePage = lazy(() => import('../features/support/EquipmentUnavailability').then(m => ({ default: m.MarkUnavailablePage })));
 const LeadQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.LeadQueue })));
+const LeadOversight = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.LeadOversight })));
 const SafetyQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.SafetyQueue })));
 
 const LandingPage = lazy(() => import('../features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -225,6 +226,7 @@ export const routes: AppRoute[] = [
 
   // Event Coordinator Lead and Safety Officer
   page('/coordinator-lead/queue', <LeadQueue />, 'live', 'E01-S13'),
+  page('/coordinator-lead/oversight', <LeadOversight />, 'live', 'E03-S10'),
   page('/safety/queue', <SafetyQueue />, 'live', 'E01-S13'),
 
   // Venue Staff

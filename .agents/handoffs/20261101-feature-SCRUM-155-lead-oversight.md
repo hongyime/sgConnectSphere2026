@@ -9,6 +9,14 @@ This branch implements the Event Coordinator Lead oversight view: every active e
 - Lead queue and immediate Lead reassignment APIs are available from the base branch.
 - No manual test execution is planned.
 
+## Verification
+
+- `npx tsx --test backend/tests/leadOversight.test.ts`: 3 passed.
+- Targeted frontend Vitest for route and role queue tests: 25 passed.
+- Backend and frontend typechecks passed.
+- Backend and frontend builds passed; Vite reported the existing ineffective dynamic import warning for `OrganiserRequestFlow`.
+- `python scripts/tc_coverage_audit.py` regenerated `docs/testing/tc-coverage.md`.
+
 ## Next steps
 
 - Add red tests for oversight filtering, workload counts, and role refusal.
