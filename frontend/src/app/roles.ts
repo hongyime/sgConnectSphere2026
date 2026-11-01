@@ -7,7 +7,7 @@
 // in the route table, so importing the table from them would be circular.
 
 export const ROLES = [
-  'attendee', 'event_organiser', 'event_coordinator', 'venue_staff', 'technical_support_staff', 'admin',
+  'attendee', 'event_organiser', 'event_coordinator', 'event_coordinator_lead', 'safety_officer', 'venue_staff', 'technical_support_staff', 'admin',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -18,6 +18,8 @@ export const roleLabel: Record<Role, string> = {
   attendee: 'Attendee',
   event_organiser: 'Event Organiser',
   event_coordinator: 'Event Coordinator',
+  event_coordinator_lead: 'Event Coordinator Lead',
+  safety_officer: 'Safety Officer',
   venue_staff: 'Venue Staff',
   technical_support_staff: 'Technical Support',
   admin: 'Administrator',
@@ -30,6 +32,8 @@ export const roleHome: Record<Role, string> = {
   attendee: '/attendee/events',
   event_organiser: '/events',
   event_coordinator: '/coordinator',
+  event_coordinator_lead: '/coordinator-lead/queue',
+  safety_officer: '/safety/queue',
   venue_staff: '/venue/inventory',
   technical_support_staff: '/support',
   admin: '/admin',
@@ -55,6 +59,12 @@ export const roleNavigation: Record<Role, NavItem[]> = {
     { to: '/coordinator/reassignments', label: 'Reassignments' },
     { to: '/coordinator/venues', label: 'Venue search', end: true },
     { to: '/coordinator/calendar', label: 'Venue calendar' },
+  ],
+  event_coordinator_lead: [
+    { to: '/coordinator-lead/queue', label: 'Unassigned queue', end: true },
+  ],
+  safety_officer: [
+    { to: '/safety/queue', label: 'Safety review queue', end: true },
   ],
   venue_staff: [
     { to: '/venue/bookings', label: 'Booking requests' },

@@ -141,6 +141,19 @@ export async function requireCoordinator(database: Pool, user: AuthenticatedUser
   return user;
 }
 
+export async function requireLead(database: Pool, user: AuthenticatedUser | undefined, screen: string) {
+  if (!user) throw new AccessError(401, 'Sign in to continue.');
+  if (!canActAsRole(user, ['event_coordinator_lead']).allowed) {
+    await database.query(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, action, new_value)
+       VALUES ($1, 'screen', gen_random_uuid(), 'Access Denied', $2)`,
+      [user.id, screen],
+    );
+    throw new AccessError(403, 'Access denied. This action is for Event Coordinator Leads.');
+  }
+  return user;
+}
+
 // E14-S02: an event-level refusal is committed on its own, outside the
 // refused transaction, so rolling that transaction back cannot lose it.
 // Unknown identifiers are recorded the same way, without revealing whether
@@ -173,6 +186,23 @@ export async function listAssignedEvents(database: Pool, user: AuthenticatedUser
      ORDER BY lower(e.event_range), e.id
      LIMIT 200`,
     [coordinator.id, status || null],
+  );
+  return result.rows;
+}
+
+// E01-S13 / E03-S08: the Lead's landing queue contains only submitted,
+// unassigned requests, oldest first. Assignment actions are added separately.
+export async function listUnassignedEvents(database: Pool, user: AuthenticatedUser | undefined) {
+  await requireLead(database, user, 'lead_unassigned_events');
+  const result = await database.query(
+    `SELECT e.id, e.event_code, e.title, e.status, e.created_at,
+       lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
+       e.expected_attendance, o.name AS organisation_name
+     FROM events e
+     JOIN client_organisations o ON o.id = e.client_org_id
+     WHERE e.status = 'submitted' AND e.coordinator_id IS NULL
+     ORDER BY e.created_at ASC, e.id ASC
+     LIMIT 200`,
   );
   return result.rows;
 }

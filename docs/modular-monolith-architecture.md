@@ -135,7 +135,7 @@ flowchart TB
 | Technical Support Staff | Identity and Access Control, Equipment and Support, Event Lifecycle, Notification Dispatcher |
 | Attendee | Identity and Access Control, Attendee Registration, Event Lifecycle, Notification Dispatcher |
 | Event Coordinator Lead | Identity and Access Control, Event Lifecycle (unassigned queue, assignment, reassignment, oversight), Notification Dispatcher |
-| Safety Officer | Identity and Access Control, Event Lifecycle (Operational Safety Check), Venue and Booking and Equipment and Support (read-only, for the factors), Notification Dispatcher |
+| Safety Officer | Identity and Access Control, Event Lifecycle (Operational Safety Check and Safety Review queue), Venue and Booking and Equipment and Support (read-only, for the factors), Notification Dispatcher |
 
 An account can appear in multiple role rows because role membership is many-to-many.
 The matrix defines the role's allowed modules; it does not require a dedicated

@@ -87,6 +87,7 @@ does:
 | `GET /api/events?oversight=1[&status=][&coordinator=]` | Lead | New branch. Every active event with its Coordinator or `Unassigned`, filterable. | E03-S10 | TC_E03S10_01, _02 |
 | `GET /api/events?assigned=1` and `?id=<id>` | Coordinator | Scoped to the caller's own assignments (E01-S12): the unassigned queue is excluded, a colleague's event returns 403 with nothing revealed and the attempt is audited; venue availability states stay visible with other events' details withheld. | E01-S12 | TC_E01S12_01 to _04 |
 | `GET /api/auth/session` | Lead | The response exposes `roles: [event_coordinator_lead, ...]`; the shared skeleton shows only routes granted to this account. | E01-S13 | TC_E01S13_01, _02 |
+| `GET /api/events?safetyQueue=1` | Safety Officer | The signed-in Safety Officer's landing queue lists events currently in `safety_review`; approval remains owned by E08-S06. | E01-S13 | TC_E01S13_01 |
 
 ### Change 6 — Safety Officer and the Operational Safety Check (C-70, E08-S03, E08-S04, E08-S06)
 
