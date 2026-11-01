@@ -55,7 +55,7 @@ export async function venueSuitability(query: Query, user: AuthenticatedUser | u
   if (!eventId || !venueId || eventId.length > 240 || venueId.length > 240) {
     throw new AccessError(400, 'An event and venue are required.');
   }
-  const search = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, search: '1' }), true);
+  const search = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, search: '1', ...(params.get('session_id') ? { session_id: params.get('session_id')! } : {}) }), true);
   if (search.errors) throw new AccessError(400, 'The event needs valid recorded requirements before suitability can be checked.');
   const venue = search.venues!.find(v => v.id === venueId);
   if (!venue) throw new AccessError(404, 'Active venue not found.');

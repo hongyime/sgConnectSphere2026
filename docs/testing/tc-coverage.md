@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **308** (80.4%)
-  - Real-database (`.integration.test` / `.db.test`): **44**
+- Automated (explicit TC_ID in an active test title): **311** (81.2%)
+  - Real-database (`.integration.test` / `.db.test`): **47**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **263**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
-- No test yet (no test file mentions the TC_ID): **21** (5.5%)
+- No test yet (no test file mentions the TC_ID): **18** (4.7%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E01 | 38 | 21 | 17 | 0 |
 | E02 | 21 | 16 | 1 | 4 |
 | E03 | 62 | 49 | 13 | 0 |
-| E04 | 5 | 2 | 0 | 3 |
+| E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **308** | **54** | **21** |
+| **Total** | **383** | **311** | **54** | **18** |
 
 ## Case-by-case status
 
@@ -179,9 +179,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | --- | --- | --- | --- | --- |
 | `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
 | `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ❌ none | — |
-| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ❌ none | — |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ❌ none | — |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back |
 
 ### E05
 
@@ -381,11 +381,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
 | `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
 | `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions |
-| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01); tests/e2e/e09.spec.ts: TC_E09S |
-| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, _03); tests/e2e/e09.spec.ts: TC_E09S04_02  |
-| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_03 - Verify that claiming a released place should remove the Attendee from the waiting list for that event; frontend/src/features/attendee/WaitingL |
-| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_04 - Verify that a full event should not offer a waiting list when the Organiser has disabled it; frontend/src/features/attendee/WaitingList.test.t |
-| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | tests/e2e/e09.spec.ts: TC_E09S04_05 - Verify that an Attendee should be able to voluntarily leave the waiting list before a place is released; frontend/src/features/attendee/Waitin |
+| `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01); frontend/src/features/attendee |
+| `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, TC_E09S04_03); frontend/src/features/atten |
+| `TC_E09S04_03` | E09-S04 | Verify that claiming a released place should remove the Attendee from the waitin | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, TC_E09S04_03); frontend/src/features/atten |
+| `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList refuses a disabled list (TC_E09S04_04), an Event with room, and an Event without places; frontend/src/features/attendee/ |
+| `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | frontend/src/features/attendee/WaitingList.test.tsx: TC_E09S04_05 - cancel leaving, then confirm leaving and offer rejoin |
 | `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
@@ -542,7 +542,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - registerForEvent keeps one active registration and rejects foreign Sessions (Scenario 2)
 - registerForEvent maps a lost unique race, a busy account and rethrows other failures
 - getRegistrationForm reports full Sessions, a full Event and the waiting-list setting (E09-S02 Scenario 5)
-- joinWaitingList refuses a disabled list, an Event with room, and an Event without places
 - joinWaitingList rejects unavailable Events, closed windows, existing registrations and invalid accounts
 - joinWaitingList handles races, locked accounts and unexpected failures transactionally
 - a lost place keeps the Attendee waitlisted; a full selected Session follows Pending (T-85, T-98)
@@ -866,6 +865,21 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Scenario 4 / C-132 / T-82: a reverted event in Planning cannot be confirmed directly; it must pass Safety Review again
 - revertEventToPlanning falls back to coordinator email if full_name is empty or whitespace
 - revertEventToPlanning refuses unassigned events (coordinator_id is null) and draft events
+
+### `backend/tests/eventSessions.test.ts`
+
+- E04-S02: the owning Organiser sees the Sessions of their Event
+- E04-S02: another Organiser cannot read or add Sessions
+- E04-S02: Sessions can be added to a draft Event
+- E04-S02: Sessions cannot be changed once the event is past planning
+- E04-S02: a Session whose end is not after its start is rejected before any write
+- E04-S02: editing a Session that does not belong to the Event is a 404
+- E04-S02: the last Session cannot be deleted
+- E04-S02: deleting one of several Sessions removes only that Session
+- E04-S02: a planning edit and its preview both run the arrangement-impact check
+- E04-S02: a Session can be removed while the event is in planning
+- E04-S02: removal is refused once the event is past planning
+- E04-S02: a malformed Session id is rejected before any query
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1387,7 +1401,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the server’s missing-details refusal is shown when the form had none missing
 - an existing registration, a closed window and other refusals are shown before or after submitting
 - leaving the form while registering drops the late reply
-- a full event with its waiting list off offers only a request for review, on the event page too
 - a Pending request is described as waiting for the organiser, on the event page and the form
 - a waitlisted registration is described consistently on the event page and form
 - an approved place shows the deadline, asks to confirm, then reads as not registered (D100, D101, D102)
@@ -1655,6 +1668,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a seeded rejection with no recorded reason says so (D30)
 - a request that is not rejected shows no rejection notice
+
+### `frontend/src/features/organiser/SessionEditor.test.tsx`
+
+- E04-S02: the editor lists the Sessions of the draft
+- E04-S02: adding a Session posts to the sessions endpoint
+- E04-S02: removing a Session deletes that Session only
+- E04-S02: a planning edit previews its impact before saving
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 

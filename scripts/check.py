@@ -25,6 +25,10 @@ def main() -> int:
         # teammate's clone silently misses DATABASE_URL / Supabase / Upstash
         # keys because the hand-maintained template drifted from reality.
         [str(tool_python), "scripts/generate_env_template.py", "--check"],
+        # A test case that cites a deleted, renumbered or superseded backlog
+        # scenario is silently orphaned: no other check reads the AC reference
+        # line. This makes the backlog-to-case link fail loudly instead.
+        [str(tool_python), "scripts/check_test_case_references.py"],
         [str(tool_python), "-m", "unittest", "discover", "-s", "tooling/tests", "-v"],
     ]
     tool_env = os.environ.copy()

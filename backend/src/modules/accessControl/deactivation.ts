@@ -48,9 +48,10 @@ export async function deactivateAccount(database: Pool, user: AuthenticatedUser,
         WHERE r.attendee_id = $1 AND r.status IN ('registered', 'waitlisted') AND lower(e.event_range) > now()
         ORDER BY e.id, r.id FOR UPDATE OF e, r`, [account.id])).rows;
       if (registrations.length) {
-        const removed = await client.query(`UPDATE event_registrations SET status = 'withdrawn', withdrawn_at = now()
-          WHERE id = ANY($1::uuid[]) RETURNING id`, [registrations.map(registration => registration.id)]);
-        withdrawn = removed.rowCount ?? 0;
+        // The rows are locked above, so every one of them is withdrawn.
+        await client.query(`UPDATE event_registrations SET status = 'withdrawn', withdrawn_at = now()
+          WHERE id = ANY($1::uuid[])`, [registrations.map(registration => registration.id)]);
+        withdrawn = registrations.length;
         const query: Query = (sql, values) => client.query(sql, values);
         for (const registration of registrations.filter(row => row.status === 'registered')) {
           const capacity = await eventCapacity(query, registration.event_id);
