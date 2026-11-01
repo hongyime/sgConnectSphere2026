@@ -175,6 +175,38 @@ test('T-104: moved again before reconfirming, the request moves on from its kept
   } finally { await f.db.close(); }
 });
 
+test('T-104 (#399 review): a Session moved twice before reconfirming is matched against the kept time, so the request moves on with it', async () => {
+  const f = await fixture();
+  try {
+    // An earlier Briefing keeps the Event start fixed, so only Session A moves.
+    await f.q(`UPDATE events SET event_range=$2 WHERE id=$1`, [f.event, `[2026-12-04 09:00+08,2026-12-14 17:00+08)`]);
+    const sessionA = (await f.q('SELECT id FROM sessions WHERE event_id=$1', [f.event])).rows[0].id as string;
+    await f.q(`UPDATE sessions SET session_range=$2 WHERE id=$1`, [sessionA, range('2026-12-05', '07:00', '12:00')]);
+    await f.q(`INSERT INTO sessions(id,event_id,title,session_range,expected_attendance) VALUES(gen_random_uuid(),$1,'Briefing',$2,20)`,
+      [f.event, range('2026-12-04', '09:00', '10:00')]);
+    const moveSessionA = async (day: string) => {
+      const client = await f.db.pool.connect();
+      try {
+        await client.query('BEGIN');
+        const query = (sql: string, values?: unknown[]) => client.query(sql, values);
+        const before = await loadArrangementSnapshot(query, f.event);
+        await client.query('UPDATE sessions SET session_range=$2 WHERE id=$1', [sessionA, range(day, '07:00', '12:00')]);
+        const impact = assessArrangementImpact(before, await loadArrangementSnapshot(query, f.event));
+        await applyArrangementImpact(query, f.coordinator.id, f.event, impact);
+        await client.query('COMMIT');
+        return impact;
+      } finally { client.release(); }
+    };
+    assert.deepEqual((await moveSessionA('2026-12-12')).supports.map(s => [s.id, s.shiftMs]), [[f.support, 7 * 24 * 60 * 60 * 1000]]);
+    const second = await moveSessionA('2026-12-13');
+    assert.deepEqual(second.supports.map(s => [s.id, s.startsAt, s.shiftMs]), [[f.support, iso('2026-12-12', '06:00'), 24 * 60 * 60 * 1000]],
+      'the 12 Dec Session overlaps the request waiting on 12 Dec, not its staffed 5 Dec time');
+    const row = await f.row();
+    assert.deepEqual([row.flagged, row.starts.toISOString(), row.to_start.toISOString(), row.to_end.toISOString()],
+      [true, iso('2026-12-05', '06:00'), iso('2026-12-13', '06:00'), iso('2026-12-13', '12:00')], 'reconfirming moves it to 13 Dec');
+  } finally { await f.db.close(); }
+});
+
 test('TC_E10S02_05 and TC_E10S02_10: a Session change flags only overlapping staffed support, moved as far as that Session (SQL Session change)', async () => {
   const f = await fixture();
   try {

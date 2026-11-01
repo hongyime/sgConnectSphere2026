@@ -116,10 +116,15 @@ export async function loadArrangementSnapshot(query: Query, eventId: string): Pr
      FROM equipment_reservations r JOIN equipment e ON e.id = r.equipment_id
      WHERE r.event_id = $1 AND r.status IN ('reserved', 'partial') ORDER BY r.id`, [eventId])).rows;
   // The edit never moves a support request, so its window reads the same
-  // before and after; the Session's previous time decides overlap.
+  // before and after; the Session's previous time decides overlap. A request
+  // still flagged reads at the time it is waiting to move to (#399 review), so
+  // a Session moved twice before reconfirmation is matched against that time.
   const supports = (await query<{ id: string; description: string; starts_at: Date; ends_at: Date }>(
-    `SELECT id, coalesce(support_description, '') AS description, lower(support_range) AS starts_at, upper(support_range) AS ends_at
-     FROM tech_support_requests WHERE event_id = $1 AND status = 'staffed' ORDER BY lower(support_range), id`, [eventId])).rows;
+    `SELECT id, coalesce(support_description, '') AS description, lower(w.range) AS starts_at, upper(w.range) AS ends_at
+     FROM tech_support_requests r
+     CROSS JOIN LATERAL (SELECT CASE WHEN r.requires_reconfirmation AND r.reconfirm_range IS NOT NULL
+       THEN r.reconfirm_range ELSE r.support_range END AS range) w
+     WHERE event_id = $1 AND status = 'staffed' ORDER BY lower(w.range), id`, [eventId])).rows;
   return {
     event: { startsAt: iso(event.starts_at), endsAt: iso(event.ends_at), layoutId: event.layout_id ?? null, accessibilityFeatureIds: event.accessibility_feature_ids ?? [] },
     sessions: sessions.map(row => ({ id: row.id, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at), expectedAttendance: row.expected_attendance })),

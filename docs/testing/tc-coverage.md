@@ -1071,6 +1071,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/supportReconfirmation.integration.test.ts`
 
 - T-104: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed
+- T-104 (#399 review): a Session moved twice before reconfirming is matched against the kept time, so the request moves on with it
 
 ### `backend/tests/supportReconfirmation.test.ts`
 
