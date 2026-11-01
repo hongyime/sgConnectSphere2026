@@ -19,9 +19,11 @@ DATABASE_URL="<local URL>" DATABASE_POOLER_URL= npx tsx src/database/cli.ts rese
 psql "<local URL>" -q -v stage=setup -f ../docs/testing/manual/E10-S02-preconditions.sql
 ```
 
-It prints five events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
+It prints eight events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
 Summit**, **EVT-1023 Studio Workshop**, **EVT-1024 Product Launch** (100
-registered) and **EVT-1025 Two-Day Forum** (2 Sessions). Start the API with only
+registered), **EVT-1025 Two-Day Forum** (2 Sessions), and for the Technical
+Support follow-up (T-104, subtask SCRUM-244) **EVT-1026 Charity Run**,
+**EVT-1027 Board Briefing** and **EVT-1028 Year-end Gala**. Start the API with only
 `DATABASE_URL` (leave `DATABASE_POOLER_URL` empty) and Vite on
 http://localhost:5173. Every account uses the seed password
 (`tests/seed/SEED_DATA.md`).
@@ -32,6 +34,7 @@ http://localhost:5173. Every account uses the seed password
 | `organiser_a@clienta.com` | Event Organiser of every E10 event |
 | `venue_a@connectsphere.com` | Venue Staff for every E10 venue |
 | `tech_a@connectsphere.com` | Technical Support Staff for every E10 event |
+| `safety_officer@connectsphere.com` | Safety Officer (section J only) |
 
 Fixture substitutions: the cases name `coordinator_1`, `venue_staff_1` and
 `tech_support_1`, which the seed does not have; use the seed accounts above,
@@ -39,7 +42,8 @@ which have the same roles. Separate events (EVT-1021 to EVT-1025) replace the
 single "Tech Conference 2026" so the cases do not affect each other, keeping each
 case's numbers and dates. Say so in the run record.
 
-Do the sections in order: B continues from A on the same event. Date and time
+Do the sections in order: B continues from A on the same event, and I and J
+continue from H on EVT-1026. Date and time
 fields use your browser's local time; the steps assume Singapore time.
 
 ## What this run cannot cover yet, and why
@@ -52,6 +56,13 @@ No Coordinator screen lowers capacity (approved E10-S01 change requests will),
 so in TC_E10S02_04 the capacity drop is made by Venue Staff on the venue form
 (E05-S01) and the Coordinator's next save shows the warning. Record these limits
 in the row remarks.
+
+The same limit applies to Technical Support (T-104): which staffed requests a
+change to **one** Session flags (only those overlapping its previous time) is
+the database part of TC_E10S02_05 and the whole of TC_E10S02_10, proved in
+`backend/tests/supportReconfirmation.integration.test.ts`. Sections H to J use
+whole-event date changes. In TC_E10S02_11 and _12 the event's earlier Confirmed
+status and its reversion are setup rows (E08-S04), not steps.
 
 ## A. TC_E10S02_02 — description-only edit flags nothing (EVT-1021)
 
@@ -95,7 +106,8 @@ after Cancel), `TC_E10S02_05-1.png` (saved message), `TC_E10S02_05-2.png`
 
 1. Sign in as `venue_a@connectsphere.com`. Open the notification bell.
    Expected: a **Tech Conference 2026** notice that an event change (date or
-   time) means venue bookings or equipment reservations need reconfirmation.
+   time) means venue bookings, equipment reservations or Technical Support
+   requests need reconfirmation.
 2. Sign in as `tech_a@connectsphere.com`. Open the notification bell.
    Expected: the same reconfirmation notice.
 3. Still as `tech_a`, open
@@ -176,6 +188,94 @@ Screenshots: `TC_E10S02_09-1.png` (saved message), `TC_E10S02_09-2.png` (no
 notes), `TC_E10S02_08-1.png` (review with four items), `TC_E10S02_08-2.png`
 (both rooms flagged).
 
+## H. TC_E10S02_03, _06 and _08 (Technical Support) — staffed support is flagged with its new time (EVT-1026)
+
+EVT-1026 **Charity Run** is on 5 Dec 2026 07:00–12:00 at **E10 Garden Hall**,
+with an **E10 Projector** and a staffed **Sound desk** request from 06:00 to
+12:00 with `tech_a` on it. It was Confirmed and is back in Planning.
+
+1. Sign in as `coord_a`. Open http://localhost:5173/coordinator/events/EVT-1026
+   and click **Edit details**.
+2. Set **Starts** to 12 Dec 2026 07:00 and **Ends** to 12 Dec 2026 12:00.
+   Click **Save changes**.
+3. Expected (TC_03): the review step lists **E10 Garden Hall: date or time
+   changed**, **E10 Projector: date or time changed**, and under *Technical
+   Support to reconfirm* **Sound desk: 5 Dec 2026, 6:00 am – 12:00 pm → 12 Dec
+   2026, 6:00 am – 12:00 pm**; saving notifies the Venue Staff and Technical
+   Support Staff.
+4. Click **Save and ask staff to reconfirm**. Expected (TC_08, every staffed
+   request on a whole-event change): "… 3 arrangements were flagged for
+   reconfirmation and the Venue Staff and Technical Support Staff were notified."
+5. Sign in as `tech_a`. Open the notification bell. Expected (TC_06): a
+   **Charity Run** notice that an event change (date or time) means venue
+   bookings, equipment reservations or Technical Support requests need
+   reconfirmation.
+
+Screenshots: `TC_E10S02_03-3.png` (review with Sound desk), `TC_E10S02_08-3.png`
+(saved message), `TC_E10S02_06-4.png` (tech_a notice).
+
+## I. TC_E10S02_11 — flagged support keeps the event out of Safety Review (EVT-1026)
+
+1. Sign in as `venue_a`. Open http://localhost:5173/venue/bookings. Under
+   **Bookings to reconfirm**, click **Reconfirm…** for E10 Garden Hall, then
+   **Reconfirm booking**. Expected: "Reconfirmed E10 Garden Hall for "Charity
+   Run" (12 Dec 2026, 7:00 am – 12:00 pm). The Coordinator was notified." and
+   **no** Safety Review sentence.
+2. Sign in as `tech_a`. Open
+   http://localhost:5173/support/events/EVT-1026/equipment, click **Change E10
+   Projector reservation**, keep the quantity and click **Save reservation**.
+3. Sign in as `coord_a`. Open
+   http://localhost:5173/coordinator/events/EVT-1026/readiness. Expected: status
+   **Planning**; the only outstanding item is **Technical support — needs
+   reconfirmation at the new time: Sound desk**; its row says *Staff assigned*
+   and *Outstanding*; Garden Hall and the Projector are Ready. No "Back in
+   Safety Review" notice in the bell.
+
+Screenshots: `TC_E10S02_11-1.png` (venue_a reconfirmed), `TC_E10S02_11-2.png`
+(projector saved), `TC_E10S02_11-3.png` (readiness, support outstanding).
+
+## J. TC_E10S02_12 and TC_E10S02_13 — Technical Support Staff reconfirm (EVT-1026, EVT-1027)
+
+1. Sign in as `tech_a`. Open http://localhost:5173/support/technicians.
+   Expected (TC_12): under **Support to reconfirm**, **EVT-1026 Charity Run**,
+   Sound desk, *Staffed for* 5 Dec 2026, 6:00 am – 12:00 pm, *Reconfirm for*
+   12 Dec 2026, 6:00 am – 12:00 pm, Technicians **Technical Support A**.
+2. Click **Reconfirm…**. Expected: "Sound desk moves from 5 Dec 2026, 6:00 am –
+   12:00 pm to 12 Dec 2026, 6:00 am – 12:00 pm for EVT-1026 Charity Run.
+   Technical Support A's assignment moves with it." Click **Reconfirm support**.
+3. Expected: "Reconfirmed Sound desk for EVT-1026 Charity Run (12 Dec 2026, 6:00
+   am – 12:00 pm). The Coordinator was notified. All its arrangements are
+   confirmed again, so the event is now in Safety Review." **My schedule** shows
+   Charity Run on 12 Dec 2026, 6:00 am – 12:00 pm.
+4. Sign in as `coord_a`. Open the notification bell. Expected: **Technical
+   support reconfirmed** ("Technical Support A reconfirmed technical support for
+   EVT-1026 Charity Run (12 Dec …): Sound desk. It no longer needs
+   reconfirmation.") and **Back in Safety Review**. Open
+   http://localhost:5173/coordinator/events/EVT-1026: status **Safety Review**;
+   the Activity log shows **Support reconfirmed** by Technical Support A,
+   "Technical support time: 5 Dec 2026, 6:00 am to 5 Dec 2026, 12:00 pm → 12 Dec
+   2026, 6:00 am to 12 Dec 2026, 12:00 pm".
+5. Sign in as `safety_officer`. Open http://localhost:5173/notifications.
+   Expected: **Safety check needed** for Charity Run.
+6. TC_13: sign in as `coord_a`. Open
+   http://localhost:5173/coordinator/events/EVT-1027, click **Edit details**,
+   set **Starts** to 13 Dec 2026 10:00 and **Ends** to 13 Dec 2026 12:00, click
+   **Save changes**. Expected: the review lists **Lighting: 6 Dec 2026, 9:00 am –
+   12:00 pm → 13 Dec 2026, 9:00 am – 12:00 pm**. Click **Save and ask staff to
+   reconfirm**.
+7. Sign in as `tech_a`. Open http://localhost:5173/support/technicians, click
+   **Reconfirm…** for EVT-1027 Board Briefing, then **Reconfirm support**.
+   Expected: "Technical Support A is already assigned to EVT-1028 Year-end Gala at
+   an overlapping time (13 Dec 2026, 10:00 am – 2:00 pm)." in the panel; after **Cancel**, Board Briefing is still
+   listed with *Staffed for* 6 Dec.
+
+Screenshots: `TC_E10S02_12-1.png` (Support to reconfirm), `TC_E10S02_12-2.png`
+(confirm panel), `TC_E10S02_12-3.png` (reconfirmed message),
+`TC_E10S02_12-4.png` (My schedule), `TC_E10S02_12-5.png` (Coordinator notices),
+`TC_E10S02_12-6.png` (Safety Review and Activity log), `TC_E10S02_12-7.png`
+(Safety Officer notice), `TC_E10S02_13-1.png` (Board Briefing review),
+`TC_E10S02_13-2.png` (refusal), `TC_E10S02_13-3.png` (still listed).
+
 ## Check the database afterwards (optional, read-only)
 
 ```bash
@@ -185,4 +285,8 @@ psql "<local URL>" -q -v stage=check -f docs/testing/manual/E10-S02-precondition
 Expected: Grand Hall, Riverside Hall and both Seminar Rooms flagged, Studio and
 Auditorium's E10-S02 flags as above (the Auditorium is also flagged by the
 E05-S01 capacity cut), one audit row per flagged arrangement, the notices above,
-and 100 Registered for EVT-1024.
+and 100 Registered for EVT-1024. For T-104: EVT-1026 Sound desk unflagged at 12 Dec
+06:00 with tech_a's assignment there, one "Reconfirmation required" and one
+"Support Reconfirmed" row, EVT-1026 in safety_review; EVT-1027 Lighting still
+flagged at 6 Dec 09:00, moving to 13 Dec 09:00, with no "Support Reconfirmed"
+row; EVT-1027 and EVT-1028 in planning.

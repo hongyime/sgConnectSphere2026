@@ -265,6 +265,19 @@ sequenceDiagram
         Note over EQ,DB: EXCLUDE constraint rejects overlapping assignments for the same colleague
     end
 
+    opt Support request flagged by a date change (T-104)
+        TS->>UI: Open Support to reconfirm on the staffing page
+        UI->>EQ: Reconfirm the request for its new time
+        EQ->>DB: Recheck each assigned colleague at the new time
+        alt Every colleague free
+            EQ->>DB: Move request and assignments, clear flag, append audit entry
+            EQ->>NOT: Notify Coordinator and moved colleagues
+            EQ->>EVT: Enter Safety Review if the Event was Confirmed before and is ready
+        else A colleague is busy
+            EQ-->>UI: Refuse, naming the clashing Event and time
+        end
+    end
+
     opt Item damaged or entering maintenance
         TS->>UI: Mark item unavailable for a period with a reason
         EQ->>DB: Write dated unavailability row
@@ -432,7 +445,9 @@ Event that was Confirmed before and returned to Planning; a first-time Planning
 Event keeps the Coordinator's "Submit for safety check" (E08-S03). Venue Staff
 reconfirm a flagged booking from **Bookings to reconfirm** on their Booking
 requests page, which moves it to the Session's current time; Technical Support
-Staff re-save a flagged reservation. When that is the last outstanding
+Staff re-save a flagged reservation and, since T-104 (E10-S02, SCRUM-244),
+reconfirm a flagged Technical Support request from **Support to reconfirm** on
+the staffing page. When that is the last outstanding
 arrangement, the Event enters Safety Review in the same transaction and the
 Safety Officer, Organiser and Coordinator are notified. No `safety_checks` row is
 created yet; E08-S06 adds the decision record.
