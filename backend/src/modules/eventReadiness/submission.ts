@@ -67,6 +67,29 @@ export async function getEventReadiness(database: Pool, user: AuthenticatedUser 
   return loadReadiness((sql, values) => database.query(sql, values), event);
 }
 
+// E01-S13 / E08-S06: the Safety Officer's landing queue is read-only here;
+// approval remains owned by the E08-S06 workflow.
+export async function listSafetyReviewEvents(database: Pool, user: AuthenticatedUser | undefined) {
+  if (!user) throw new AccessError(401, 'Sign in to continue.');
+  if (!canActAsRole(user, ['safety_officer']).allowed) {
+    await recordEventDenial(database, user, '', 'safety_review_queue');
+    throw new AccessError(403, 'Access denied. This action is for Safety Officers.');
+  }
+  const result = await database.query(
+    `SELECT e.id, e.event_code, e.title, e.status,
+       lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
+       e.expected_attendance, c.full_name AS coordinator_name,
+       o.full_name AS organiser_name
+     FROM events e
+     JOIN users o ON o.id = e.organiser_id
+     LEFT JOIN users c ON c.id = e.coordinator_id
+     WHERE e.status = 'safety_review'
+     ORDER BY lower(e.event_range), e.id
+     LIMIT 200`,
+  );
+  return result.rows;
+}
+
 async function notifySubmission(client: PoolClient, event: EventRow, coordinator: AuthenticatedUser, change: {
   auditId: string; occurredAt: Date;
 }) {

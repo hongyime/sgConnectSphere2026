@@ -358,6 +358,8 @@ sequenceDiagram
     EVT->>DB: Read events with status Submitted and no coordinator, oldest first
     EVT-->>UI: Queue with basic event information
 
+    Note over UI,EVT: E01-S13 uses /coordinator-lead/queue for the Lead and /safety/queue for the Safety Officer; both are role-specific signed-in landing pages.
+
     LD->>UI: Open a queued request and choose a Coordinator
     UI->>EVT: List Coordinators with active-event counts
     EVT->>DB: Count events per Coordinator in active statuses

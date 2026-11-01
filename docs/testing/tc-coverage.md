@@ -1014,6 +1014,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - in-memory EventLifecycleRepository satisfies the shared contract
 - PostgresEventLifecycleRepository satisfies the shared contract
 
+### `backend/tests/roleQueues.test.ts`
+
+- Lead queue requires the Lead role and returns submitted unassigned events oldest first
+- non-Leads cannot read the unassigned queue and the attempt is audited
+- Safety Officer queue requires the Safety Officer role and lists Safety Review events
+- non-Safety Officers cannot read the Safety Review queue and the attempt is audited
+
 ### `backend/tests/securityHardening.test.ts`
 
 - currentUser: rejects request with missing session cookie with 401
@@ -1362,6 +1369,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - story IDs use the backlog format
 - sign-in and registration pages are public; profile and notifications are not
 - an unknown or missing role goes to the landing page
+- Lead and Safety Officer land on their own work queues
 
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 
@@ -1658,6 +1666,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: adding a Session posts to the sessions endpoint
 - E04-S02: removing a Session deletes that Session only
 - E04-S02: a planning edit previews its impact before saving
+
+### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
+
+- Lead queue loads submitted unassigned requests
+- Safety queue loads events awaiting Operational Safety Check
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 

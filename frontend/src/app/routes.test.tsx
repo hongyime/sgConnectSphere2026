@@ -4,7 +4,7 @@
 import { matchPath } from 'react-router-dom';
 import { describe, expect, test } from 'vitest';
 import { routes } from './routes';
-import { homeFor, ROLES, roleHome, roleNavigation } from './roles';
+import { homeFor, ROLES, roleHome, roleLabel, roleNavigation } from './roles';
 
 const signedIn = routes.filter(route => route.access === 'signed-in');
 
@@ -35,7 +35,7 @@ describe('route table', () => {
     for (const path of ['/', '/login', '/register', '/forgot-password', '/reset-password', '/verify']) {
       expect(routeFor(path)?.access, path).toBe('public');
     }
-    for (const path of ['/profile', '/notifications', '/coordinator', '/events', '/venue/inventory']) {
+    for (const path of ['/profile', '/notifications', '/coordinator', '/events', '/venue/inventory', '/coordinator-lead/queue', '/safety/queue']) {
       expect(routeFor(path)?.access, path).toBe('signed-in');
     }
   });
@@ -59,5 +59,12 @@ describe('roles', () => {
   test('an unknown or missing role goes to the landing page', () => {
     expect(homeFor('not_a_role')).toBe('/');
     expect(homeFor(undefined)).toBe('/');
+  });
+
+  test('Lead and Safety Officer land on their own work queues', () => {
+    expect(homeFor('event_coordinator_lead')).toBe('/coordinator-lead/queue');
+    expect(homeFor('safety_officer')).toBe('/safety/queue');
+    expect(roleLabel.event_coordinator_lead).toBe('Event Coordinator Lead');
+    expect(roleLabel.safety_officer).toBe('Safety Officer');
   });
 });

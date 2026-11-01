@@ -24,6 +24,8 @@ function renderLogin() {
         <Route path="/support" element={<p>Support dashboard</p>} />
         <Route path="/admin" element={<p>Admin dashboard</p>} />
         <Route path="/attendee/events" element={<p>Attendee events</p>} />
+        <Route path="/coordinator-lead/queue" element={<p>Lead queue</p>} />
+        <Route path="/safety/queue" element={<p>Safety queue</p>} />
         <Route path="/" element={<p>Landing page</p>} />
       </Routes>
     </MemoryRouter>,
@@ -39,6 +41,8 @@ test.each([
   ['technical_support_staff', 'Support dashboard'],
   ['admin', 'Admin dashboard'],
   ['attendee', 'Attendee events'],
+  ['event_coordinator_lead', 'Lead queue'],
+  ['safety_officer', 'Safety queue'],
   ['an_unknown_role', 'Landing page'],
 ])('signing in as %s lands on its home', async (role, home) => {
   let signedIn = false;
