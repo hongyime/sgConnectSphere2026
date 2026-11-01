@@ -1,31 +1,12 @@
 import type { Pool, PoolClient } from 'pg';
 import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
-import { assignCoordinatorOnSubmit } from './coordinatorAssignment.js';
+import { notifyLeadOfQueuedEvent } from './coordinatorAssignment.js';
 import { validateEventStatusTransition } from './status.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
 import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
 
 type SqlRunner = { query: Pool['query'] };
-
-// E03-S01 Scenario 1: a request that has just become Submitted is assigned a
-// Coordinator (and moved to Under Review) inside the same transaction, so no
-// submitted request is ever committed without the assignment attempt. The
-// returned record reflects the post-assignment state.
-async function assignIfSubmitted(client: PoolClient, event: EventRecord): Promise<EventRecord> {
-  if (event.status !== 'submitted') return event;
-  const assignment = await assignCoordinatorOnSubmit(client, event.id);
-  if (!assignment) return event;
-  const current = await client.query<{ status: EventRecord['status']; status_changed_at: Date }>(
-    `SELECT status, status_changed_at FROM events WHERE id = $1`, [event.id],
-  );
-  return {
-    ...event,
-    coordinatorId: assignment.coordinatorId,
-    status: current.rows[0]!.status,
-    statusChangedAt: current.rows[0]!.status_changed_at,
-  };
-}
 
 // E02-S03: event_accessibility_needs is a pure join table (event_id,
 // feature_id), same shape as venue_accessibility_features. Mirrors the
@@ -324,8 +305,9 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
           actorId:request.organiserId, before:{...after,status:'draft'}, after,
           change:{kind:'status',from:'draft',to:'submitted'} });
+        await notifyLeadOfQueuedEvent(client, event.id, event.title, audit.rows[0].id, audit.rows[0].occurred_at);
       }
-      return assignIfSubmitted(client, { ...event, accessibilityFeatureIds: featureIds });
+      return { ...event, accessibilityFeatureIds: featureIds };
     });
   }
 
@@ -486,8 +468,9 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
         await notifyEventChange(client, { changeId:audit.rows[0].id, occurredAt:audit.rows[0].occurred_at,
           actorId:current.rows[0].organiser_id, before:{...after,status:'draft'}, after,
           change:{kind:'status',from:'draft',to:'submitted'} });
+        await notifyLeadOfQueuedEvent(client, eventId, event.title, audit.rows[0].id, audit.rows[0].occurred_at);
       }
-      return assignIfSubmitted(client, { ...event, accessibilityFeatureIds: featureIds });
+      return { ...event, accessibilityFeatureIds: featureIds };
     });
   }
 

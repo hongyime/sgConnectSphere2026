@@ -41,7 +41,9 @@ import { getEventRegistrations, manageRegistrations } from '../backend/src/modul
 import { getDatabasePool } from '../backend/src/database/client.js';
 import {
   getAssignedEvent,
+  assignQueuedEvent,
   listAssignedEvents,
+  listAssignableCoordinators,
   listCoordinatorColleagues,
   listPendingReassignments,
   listUnassignedEvents,
@@ -148,6 +150,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
     }
     if (params.get('comment') === '1') {
       await handleCommentPost(request, response, params);
+      return;
+    }
+    if (params.get('assign') === '1') {
+      await handleQueueAssignment(request, response, params);
       return;
     }
     if (params.get('reassign') === '1' || params.has('reassignment')) {
@@ -307,6 +313,15 @@ async function handleReassignmentPost(request: VercelRequest, response: VercelRe
     if (!eventId) throw new AccessError(400, 'missing_id');
     const reassignment = await requestCoordinatorReassignment(getDatabasePool(), user, eventId.slice(0, 240), request.body);
     return { status: 201, body: { reassignment } };
+  });
+}
+
+async function handleQueueAssignment(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const user = await currentUser(request);
+    return { status: 200, body: { assignment: await assignQueuedEvent(getDatabasePool(), user, identifier, request.body) } };
   });
 }
 
@@ -522,7 +537,11 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
     if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('unassigned') === '1') return { events: await listUnassignedEvents(database, user) };
     if (params.get('safetyQueue') === '1') return { events: await listSafetyReviewEvents(database, user) };
-    if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
+    if (params.get('coordinators') === '1') {
+      return { coordinators: user?.role === 'event_coordinator_lead'
+        ? await listAssignableCoordinators(database, user)
+        : await listCoordinatorColleagues(database, user) };
+    }
     if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
     const id = params.get('id');
     if (id) {

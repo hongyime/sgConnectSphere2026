@@ -9,6 +9,14 @@ This branch implements the Lead assignment action for submitted, unassigned even
 - The Lead queue read endpoint and role landing page already exist from SCRUM-157.
 - No manual test execution is planned.
 
+## Verification
+
+- `npx tsx --test backend/tests/leadAssignment.test.ts`: 4 passed.
+- Targeted frontend Vitest for `RoleQueues.test.tsx`: 2 passed.
+- Backend and frontend typechecks passed.
+- Frontend and backend builds passed; Vite reported the existing ineffective dynamic import warning for `OrganiserRequestFlow`.
+- `python scripts/tc_coverage_audit.py` regenerated `docs/testing/tc-coverage.md`.
+
 ## Next steps
 
 - Add red tests for Lead assignment and non-Lead refusal.

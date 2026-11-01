@@ -902,6 +902,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - notifications without an authorised database record cannot be delivered
 - E09-S03 - the withdrawal deadline can be cleared, and bad values are refused
 
+### `backend/tests/leadAssignment.test.ts`
+
+- E03-S08 Lead assignment moves a queued event to Under Review and notifies both parties
+- E03-S08 submitted requests notify every active Lead
+- E03-S08 non-Leads cannot assign a queued event
+- E03-S08 invalid targets and non-queued events are refused
+
 ### `backend/tests/loginRecovery.integration.test.ts`
 
 - E01-S01 real database, API, registration and recovery acceptance cases
@@ -1016,6 +1023,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/roleQueues.test.ts`
 
+- unauthenticated users cannot read either role queue
 - Lead queue requires the Lead role and returns submitted unassigned events oldest first
 - non-Leads cannot read the unassigned queue and the attempt is audited
 - Safety Officer queue requires the Safety Officer role and lists Safety Review events
@@ -1669,7 +1677,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
 
-- Lead queue loads submitted unassigned requests
+- Lead queue loads submitted unassigned requests and assigns one
 - Safety queue loads events awaiting Operational Safety Check
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
