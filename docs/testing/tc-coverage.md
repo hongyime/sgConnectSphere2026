@@ -1041,6 +1041,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - Safety Officer queue requires the Safety Officer role and lists Safety Review events
 - non-Safety Officers cannot read the Safety Review queue and the attempt is audited
 
+### `backend/tests/safetyCheck.test.ts`
+
+- E08-S06 accepts one completed assessment for every safety factor
+- E08-S06 refuses approval when a factor is missing or unsatisfactory
+- E08-S06 requires a reason for rejection or requested changes
+- E08-S06 rejects malformed factors and overlong comments
+- E08-S06 refuses a decision from a non-Safety Officer before opening a transaction
+
 ### `backend/tests/securityHardening.test.ts`
 
 - currentUser: rejects request with missing session cookie with 401

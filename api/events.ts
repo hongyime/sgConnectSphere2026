@@ -72,6 +72,8 @@ import {
   revertEventToPlanning,
   submitForSafetyReview,
   listSafetyReviewEvents,
+  getSafetyReviewEvent,
+  decideSafetyReview,
 } from '../backend/src/modules/eventReadiness/submission.js';
 import {
   createEventRequest,
@@ -402,6 +404,7 @@ async function handleSafetyReviewPost(request: VercelRequest, response: VercelRe
     const user = await currentUser(request);
     const eventId = params.get('id');
     if (!eventId) throw new AccessError(400, 'missing_id');
+    if (params.get('safetyDecision') === '1') return { status: 200, body: { decision: await decideSafetyReview(getDatabasePool(), user, eventId.slice(0, 240), request.body) } };
     if (params.get('confirm') === '1') return await confirmEvent(getDatabasePool(), user, eventId.slice(0, 240));
     try {
       const submission = await submitForSafetyReview(getDatabasePool(), user, eventId.slice(0, 240));
@@ -504,7 +507,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('oversight') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('safetyReview') === '1' || params.get('oversight') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -553,6 +556,7 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
       status: params.get('status'), coordinator: params.get('coordinator'),
     });
     if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
+    if (params.get('safetyReview') === '1') return { review: await getSafetyReviewEvent(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('unassigned') === '1') return { events: await listUnassignedEvents(database, user) };
     if (params.get('safetyQueue') === '1') return { events: await listSafetyReviewEvents(database, user) };
     if (params.get('coordinators') === '1') {
