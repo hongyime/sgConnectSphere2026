@@ -171,7 +171,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
       });
       return;
     }
-    if (params.get('safetyReview') === '1' || params.get('confirm') === '1') {
+    if (params.get('safetyReview') === '1' || params.get('confirm') === '1' || params.get('safetyDecision') === '1') {
       await handleSafetyReviewPost(request, response, params);
       return;
     }
