@@ -15,6 +15,7 @@ type SessionRow = {
   title: string | null;
   start_at: Date;
   end_at: Date;
+  dates_pending?: boolean;
   expected_attendance: number;
   layout_id: string | null;
   venue_requirements: string | null;
@@ -24,7 +25,7 @@ type SessionRow = {
 };
 
 const COLUMNS = `id, event_id, title, lower(session_range) AS start_at, upper(session_range) AS end_at,
-  expected_attendance, layout_id, venue_requirements, accessibility_note,
+  dates_pending, expected_attendance, layout_id, venue_requirements, accessibility_note,
   equipment_requirements, layout_preference`;
 
 function toRecord(row: SessionRow): SessionRecord {
@@ -34,6 +35,7 @@ function toRecord(row: SessionRow): SessionRecord {
     title: row.title ?? undefined,
     startAt: row.start_at,
     endAt: row.end_at,
+    datesPending: row.dates_pending ?? false,
     expectedAttendance: row.expected_attendance,
     layoutId: row.layout_id ?? undefined,
     venueRequirements: row.venue_requirements ?? undefined,
@@ -53,6 +55,7 @@ function values(eventId: string, input: SessionInput) {
 }
 
 const SET = `title = $3, session_range = tstzrange($4, $5, '[)'), expected_attendance = $6,
+  dates_pending = false,
   layout_id = $7, venue_requirements = $8, accessibility_note = $9,
   equipment_requirements = $10, layout_preference = $11`;
 

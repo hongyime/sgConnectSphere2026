@@ -12,6 +12,7 @@ export type EventRecord = {
   statusChangedAt: Date;
   startAt?: Date;
   endAt?: Date;
+  datesPending?: boolean;
   expectedAttendance?: number;
   layoutId?: string;
   venueRequirements?: string;

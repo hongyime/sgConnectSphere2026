@@ -20,17 +20,21 @@ type DraftSummary = {
   title: string;
   startAt?: string;
   endAt?: string;
+  datesPending?: boolean;
   status: string;
 };
 
 type ListState =
   | { status: 'loading' }
-  | { status: 'loaded'; drafts: DraftSummary[] }
+  | { status: 'loaded'; drafts: DraftSummary[]; previous: DraftSummary[] }
   | { status: 'error'; message: string };
 
 export function OrganiserDrafts() {
   const [state, setState] = useState<ListState>({ status: 'loading' });
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copyingId, setCopyingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copyWarnings, setCopyWarnings] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setState({ status: 'loading' });
@@ -59,7 +63,15 @@ export function OrganiserDrafts() {
     }
 
     const body = await response.json().catch(() => null);
-    setState({ status: 'loaded', drafts: Array.isArray(body?.events) ? body.events : [] });
+    const previousResponse = await fetch('/api/events?mine=1', { credentials: 'same-origin' }).catch(() => null);
+    const previousBody = previousResponse?.ok ? await previousResponse.json().catch(() => null) : null;
+    setState({
+      status: 'loaded',
+      drafts: Array.isArray(body?.events) ? body.events : [],
+      previous: Array.isArray(previousBody?.events)
+        ? previousBody.events.filter((event: DraftSummary) => event.status !== 'draft')
+        : [],
+    });
   }, []);
 
   useEffect(() => {
@@ -81,6 +93,22 @@ export function OrganiserDrafts() {
       setDeletingId(null);
       await load();
     }
+  };
+
+  const copyEvent = async (id: string) => {
+    setCopyingId(id);
+    setCopiedId(null);
+    setCopyWarnings([]);
+    const response = await fetch(`/api/events?copy=1&id=${encodeURIComponent(id)}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+    }).catch(() => null);
+    const body = response?.ok ? await response.json().catch(() => null) : null;
+    setCopyingId(null);
+    if (!response?.ok || !body?.event?.id) return;
+    setCopiedId(body.event.id);
+    setCopyWarnings(Array.isArray(body.warnings) ? body.warnings : []);
+    await load();
   };
 
   return (
@@ -109,7 +137,7 @@ export function OrganiserDrafts() {
               {state.drafts.map((draftItem) => (
                 <tr key={draftItem.id}>
                   <td>{draftItem.title || '(untitled)'}</td>
-                  <td>{draftItem.startAt ? new Date(draftItem.startAt).toLocaleString() : '—'}</td>
+                  <td>{draftItem.datesPending ? 'Dates to be entered' : draftItem.startAt ? new Date(draftItem.startAt).toLocaleString() : '—'}</td>
                   <td><span className="status-pill status-neutral">Draft</span></td>
                   <td>
                     <Link to={`/organiser/drafts/${draftItem.id}`}>
@@ -130,6 +158,30 @@ export function OrganiserDrafts() {
             </tbody>
           </table>
         )
+      ) : null}
+
+      {state.status === 'loaded' ? (
+        <section aria-labelledby="previous-events-heading">
+          <h2 id="previous-events-heading">Reuse a previous event</h2>
+          {state.previous.length === 0 ? <p>No completed or past events are available to copy.</p> : (
+            <table className="organiser-table" aria-label="Previous events">
+              <thead><tr><th>Event</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody>{state.previous.map(event => (
+                <tr key={event.id}>
+                  <td>{event.title || '(untitled)'}</td>
+                  <td>{event.startAt ? new Date(event.startAt).toLocaleString() : '—'}</td>
+                  <td>
+                    <button type="button" className="secondary-action" disabled={copyingId === event.id} onClick={() => copyEvent(event.id)}>
+                      {copyingId === event.id ? 'Copying…' : 'Copy details'}
+                    </button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          )}
+          {copiedId ? <p role="status">Copied into a new draft. <Link to={`/organiser/drafts/${copiedId}`}>Continue editing</Link></p> : null}
+          {copyWarnings.length ? <ul role="alert">{copyWarnings.map(warning => <li key={warning}>{warning}</li>)}</ul> : null}
+        </section>
       ) : null}
     </main>
   );
@@ -219,8 +271,8 @@ export function OrganiserDraftEdit() {
           eventName: event.title ?? '',
           description: event.description ?? '',
           purpose: event.purpose ?? '',
-          startDate: event.startAt ? toLocalInputValue(event.startAt) : '',
-          endDate: event.endAt ? toLocalInputValue(event.endAt) : '',
+          startDate: event.datesPending ? '' : event.startAt ? toLocalInputValue(event.startAt) : '',
+          endDate: event.datesPending ? '' : event.endAt ? toLocalInputValue(event.endAt) : '',
           expectedAttendance: event.expectedAttendance != null ? String(event.expectedAttendance) : '',
           venueRequirements: event.venueRequirements ?? '',
           accessibilityNeeds: event.accessibilityNote ?? '',

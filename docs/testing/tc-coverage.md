@@ -638,6 +638,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - the assigned-event list is limited to the caller and never includes drafts
 - an event not assigned to the caller is refused like an unknown one, and audited
 
+### `backend/tests/copyEvent.test.ts`
+
+- E02-S05 only an active Event Organiser can copy an own previous event
+- E02-S05 refuses a missing, draft, or future source event
+- E02-S05 copies requirements and Session structure with pending dates only
+- E02-S05 copies accessibility and facility links for the Event and each Session
+- E02-S05 warns when an old arrangement points at an inactive reference and names its Session
+
 ### `backend/tests/deactivation.integration.test.ts`
 
 - PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback
@@ -1659,6 +1667,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/organiser/OrganiserDraftEdit.navigation.test.tsx`
 
 - switching drafts shows the new draft\
+
+### `frontend/src/features/organiser/OrganiserDrafts.test.tsx`
+
+- E02-S05 lists an own previous event and copies it into a draft
 
 ### `frontend/src/features/organiser/OrganiserRequestFlow.test.tsx`
 

@@ -62,6 +62,7 @@ type EventRow = {
   status_changed_at: Date;
   start_at: Date;
   end_at: Date;
+  dates_pending?: boolean;
   expected_attendance: number;
   layout_id: string | null;
   venue_requirements: string | null;
@@ -84,6 +85,7 @@ function mapEvent(row: EventRow): EventRecord {
     statusChangedAt: row.status_changed_at,
     startAt: row.start_at,
     endAt: row.end_at,
+    datesPending: row.dates_pending ?? false,
     expectedAttendance: row.expected_attendance,
     layoutId: row.layout_id ?? undefined,
     venueRequirements: row.venue_requirements ?? undefined,
@@ -266,6 +268,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           status_changed_at,
           lower(event_range) AS start_at,
           upper(event_range) AS end_at,
+          dates_pending,
           expected_attendance,
           layout_id,
           venue_requirements,
@@ -326,6 +329,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           status_changed_at,
           lower(event_range) AS start_at,
           upper(event_range) AS end_at,
+          dates_pending,
           expected_attendance,
           layout_id,
           venue_requirements,
@@ -370,6 +374,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           status_changed_at,
           lower(event_range) AS start_at,
           upper(event_range) AS end_at,
+          dates_pending,
           expected_attendance,
           layout_id,
           venue_requirements,
@@ -412,6 +417,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           equipment_requirements = $12,
           layout_preference = $13,
           registration_setup = $14,
+          dates_pending = false,
           status_changed_at = now()
         WHERE id = $1
         RETURNING
@@ -426,6 +432,7 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
           status_changed_at,
           lower(event_range) AS start_at,
           upper(event_range) AS end_at,
+          dates_pending,
           expected_attendance,
           layout_id,
           venue_requirements,

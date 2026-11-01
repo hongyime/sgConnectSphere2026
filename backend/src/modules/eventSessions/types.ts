@@ -10,6 +10,7 @@ export type SessionRecord = {
   title?: string;
   startAt: Date;
   endAt: Date;
+  datesPending?: boolean;
   expectedAttendance: number;
   layoutId?: string;
   venueRequirements?: string;

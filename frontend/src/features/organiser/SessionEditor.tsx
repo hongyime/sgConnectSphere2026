@@ -5,6 +5,7 @@ type Session = {
   title?: string;
   startAt: string;
   endAt: string;
+  datesPending?: boolean;
   expectedAttendance: number;
   venueRequirements?: string;
   equipmentRequirements?: string;
@@ -21,8 +22,8 @@ function toLocalInput(iso: string) {
 function toField(session: Session): Field {
   return {
     title: session.title ?? '',
-    startAt: toLocalInput(session.startAt),
-    endAt: toLocalInput(session.endAt),
+    startAt: session.datesPending ? '' : toLocalInput(session.startAt),
+    endAt: session.datesPending ? '' : toLocalInput(session.endAt),
     expectedAttendance: String(session.expectedAttendance),
   };
 }

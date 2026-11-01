@@ -64,6 +64,7 @@ import {
   withDecision,
 } from '../backend/src/modules/eventLifecycle/decision.js';
 import { PostgresEventLifecycleRepository } from '../backend/src/modules/eventLifecycle/repository.js';
+import { copyPreviousEvent } from '../backend/src/modules/eventLifecycle/copyEvent.js';
 import { withArrangements } from '../backend/src/modules/eventReadiness/arrangements.js';
 import {
   confirmEvent,
@@ -88,6 +89,7 @@ import { addSession, editSession, getSessions, removeSession } from '../backend/
 import { createSessionRepository } from '../backend/src/modules/eventSessions/repository.js';
 import { isEventStatus, ACTIVE_EVENT_STATUSES } from '../backend/src/modules/eventLifecycle/status.js';
 import type { EventRecord } from '../backend/src/modules/eventLifecycle/types.js';
+import type { SessionRecord } from '../backend/src/modules/eventSessions/types.js';
 import type { AuthenticatedUser } from '../backend/src/modules/accessControl/types.js';
 import { refusePlanning } from '../backend/src/modules/attendeeVisibility/service.js';
 import { currentUser, query, respond, respondWithResult } from '../backend/src/modules/eventVisibility/runtime.js';
@@ -168,6 +170,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       await handleReassignmentPost(request, response, params);
       return;
     }
+    if (params.get('copy') === '1') {
+      await handleCopyPost(request, response, params);
+      return;
+    }
     if (params.has('clarification')) {
       await handleClarificationPost(request, response, params);
       return;
@@ -221,8 +227,10 @@ async function handleSessions(request: VercelRequest, response: VercelResponse, 
     return;
   }
   if (request.method === 'GET') {
-    await respond(response, async () =>
-      getSessions(createSessionRepository(), (await currentUser(request)).id, eventId));
+    await respond(response, async () => {
+      const result = await getSessions(createSessionRepository(), (await currentUser(request)).id, eventId);
+      return { ...result, sessions: result.sessions.map(serializeSession) };
+    });
     return;
   }
   await respondWithResult(response, async () => {
@@ -446,8 +454,9 @@ function serializeEventDetail(event: EventRecord) {
     description: event.description,
     purpose: event.purpose,
     status: event.status,
-    startAt: event.startAt?.toISOString(),
-    endAt: event.endAt?.toISOString(),
+    startAt: event.datesPending ? undefined : event.startAt?.toISOString(),
+    endAt: event.datesPending ? undefined : event.endAt?.toISOString(),
+    datesPending: event.datesPending ?? false,
     expectedAttendance: event.expectedAttendance,
     venueRequirements: event.venueRequirements,
     accessibilityNote: event.accessibilityNote,
@@ -456,6 +465,33 @@ function serializeEventDetail(event: EventRecord) {
     layoutPreference: event.layoutPreference,
     registrationSetup: event.registrationSetup,
   };
+}
+
+function serializeSession(session: SessionRecord) {
+  return {
+    ...session,
+    startAt: session.datesPending ? undefined : session.startAt.toISOString(),
+    endAt: session.datesPending ? undefined : session.endAt.toISOString(),
+  };
+}
+
+// E02-S05: copy an own completed or past Event into an organiser-owned draft.
+// The copy service deliberately excludes operational child records.
+async function handleCopyPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const user = await currentUser(request);
+    const id = params.get('id');
+    if (!id || id.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const copied = await copyPreviousEvent(getDatabasePool(), user, id);
+    return {
+      status: 201,
+      body: {
+        event: serializeEventDetail(copied.event),
+        sessions: copied.sessions.map(serializeSession),
+        warnings: copied.warnings,
+      },
+    };
+  });
 }
 
 // Post-ADR-015 auth: all authenticated /api/events branches read the
