@@ -20,9 +20,15 @@ This branch implements immediate reassignment by an Event Coordinator Lead. The 
 - Red run: `npx tsx --test tests/leadEscalation.test.ts` failed before the new exports existed.
 - `npx tsx --test tests/leadEscalation.test.ts`: 3 passed.
 - `npm test --workspace frontend -- src/features/roleQueues/RoleQueues.test.tsx src/features/coordinator/CoordinatorWorkspace.test.tsx`: 16 passed.
+- `npm test --workspace backend`: 687 tests, 686 passed, 0 failed, 1 skipped because `TEST_DATABASE_URL` was not set.
 - Backend and frontend typechecks passed after the escalation changes.
+- `npm run build --workspace frontend` passed with the existing ineffective dynamic-import warning.
+- `python scripts/check.py` passed repository hygiene/tooling tests; intentional secondary-worktree warnings remain.
+- `python scripts/doc_guard.py` reported 0 errors and existing missing-front-matter warnings.
 
 ## Next steps
 
-- Run the full backend suite, regenerate test coverage, record verification, commit, and push without opening a pull request.
+- Implementation commit: `c3ba22a9`.
+- Verification commit: `844023f9`.
+- Branch pushed to `origin/feature/SCRUM-154-lead-reassignment`; no pull request opened.
 - Human review and manual acceptance remain with the team and are intentionally not run by this agent.
