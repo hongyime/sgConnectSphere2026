@@ -22,7 +22,7 @@ type Row = ActivityEntry & { key: string };
 
 const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
-const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator' };
+const fieldLabels: Record<string, string> = { ...editableFieldLabels, coordinator_id: 'coordinator', support_range: 'technical support time' };
 
 const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue_booking' && entry.field_changed !== 'primary_venue';
 
@@ -31,7 +31,8 @@ const isBookingDecision = (entry: ActivityEntry) => entry.entity_type === 'venue
 // other values, even ones that look like a date, stay as written.
 export function formatEditedValue(field: string | null, value: string): string {
   if (field === 'startAt' || field === 'endAt') return formatDate(value, true);
-  if (field === 'registrationDates') {
+  // T-104: a reconfirmed support request's time, stored the same way.
+  if (field === 'registrationDates' || field === 'support_range') {
     const [opens, closes] = value.split(' to ');
     return closes === undefined ? formatDate(value, true) : `${formatDate(opens, true)} to ${formatDate(closes, true)}`;
   }
@@ -80,6 +81,7 @@ export function describeAction(entry: ActivityEntry) {
   // "Booking Approved" -> "Booking approved" (sentence case, design.md 8.1).
   if (isBookingDecision(entry)) return entry.action.charAt(0) + entry.action.slice(1).toLowerCase();
   if (entry.action === 'Reverted to Planning') return 'Reverted to Planning';
+  if (entry.action === 'Support Reconfirmed') return 'Support reconfirmed';
   if (entry.field_changed === 'status') return 'Status changed';
   if (entry.action === 'Record updated') return 'Details edited';
   return entry.action;

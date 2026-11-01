@@ -287,6 +287,7 @@ test('TC_E10S01_04: preview lists affected arrangements and capacity warnings be
   fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
   await screen.findByText('Hall A: attendance above capacity');
   expect(screen.getByText('Projector: date or time changed')).toBeInTheDocument();
+  expect(screen.getByText(/Affected Technical Support requests: 0\./)).toBeInTheDocument();
   expect(screen.getByText(/50 registered places exceed capacity 45/)).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(calls.filter(call => call.method === 'POST').map(call => call.body)).toEqual([{ decision: 'preview' }]);
@@ -338,4 +339,18 @@ test('TC_E10S01_04: unsupported mixed request explicitly waits as a whole', asyn
   fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
   await screen.findByText('Waiting fields: Room layout.');
   expect(screen.getByText(/entire request will remain Approved and unchanged/)).toBeInTheDocument();
+});
+
+test('TC_E10S02_05 (T-104): an approved date change lists the staffed Technical Support it flags before apply', async () => {
+  const request = { ...pending(), requested_changes: { fields: { startAt: '2026-12-12T00:00:00.000Z' }, before: { startAt: '2026-12-05T00:00:00.000Z' } } };
+  stubApi({ [read]: { body: data({ requests: [request] }) }, [decide]: { body: { request: { ...request,
+    preview: { canApply: true, token: 'support-preview', lateClose: false,
+      impact: { affected: true, bookings: [], reservations: [],
+        supports: [{ id: 's', description: 'Sound desk', reasons: ['time'] }, { id: 't', description: '', reasons: ['time'] }] },
+      overSubscription: [] } } } } });
+  mount(true, '/coordinator/events/EVT-A/changes');
+  fireEvent.click(await screen.findByRole('button', { name: 'Approve…' }));
+  expect(await screen.findByText('Sound desk: date or time changed')).toBeInTheDocument();
+  expect(screen.getByText('Technical support: date or time changed')).toBeInTheDocument();
+  expect(screen.getByText(/Affected Technical Support requests: 2\./)).toBeInTheDocument();
 });

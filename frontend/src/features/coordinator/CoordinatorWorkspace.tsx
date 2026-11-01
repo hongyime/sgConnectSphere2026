@@ -291,8 +291,8 @@ const COORDINATOR_EDITABLE: ReadonlySet<EditableField> = new Set<EditableField>(
 // E10-S02 Scenarios 4 to 6: say what the save flagged, who was told, and that
 // an over-subscription removed nobody.
 function savedMessage(fields: string[], check: ChangeCheck) {
-  const { bookings, reservations } = check.impact;
-  const flagged = bookings.length + reservations.length;
+  const { bookings, reservations, supports = [] } = check.impact;
+  const flagged = bookings.length + reservations.length + supports.length;
   return [
     `Saved your changes to the ${fieldList(fields)}. They're recorded in the event's activity log.`,
     flagged ? `${flagged} ${flagged === 1 ? 'arrangement was' : 'arrangements were'} flagged for reconfirmation and the ${staffToNotify(check)} were notified.` : null,

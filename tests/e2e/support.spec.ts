@@ -41,7 +41,7 @@ for (const path of ['/support/queue', '/support/requests/R-2004'])
 // E07-S07 (SCRUM-150): the live staffing queue replaced the mock screen.
 test('technician staffing lists support requests needing a technician', async ({ page }) => {
   await signInAs(page, 'technical_support_staff');
-  await page.route(/\/api\/venues\?task=staffing/, route => route.fulfill({ json: { requests: [{
+  await page.route(/\/api\/venues\?task=staffing/, route => route.fulfill({ json: { requests: route.request().url().includes('reconfirm=list') ? [] : [{
     id: '11111111-1111-4111-8111-111111111111', eventId: 'evt-1', eventCode: 'EVT-TC', eventTitle: 'Tech Conference 2026',
     eventStatus: 'planning', description: '1 AV technician', startsAt: '2026-11-12T01:00:00.000Z',
     endsAt: '2026-11-12T04:00:00.000Z', status: 'open', assignees: [],

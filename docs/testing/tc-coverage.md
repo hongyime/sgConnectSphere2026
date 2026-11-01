@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **307** (80.2%)
+- Automated (explicit TC_ID in an active test title): **311** (81.2%)
   - Real-database (`.integration.test` / `.db.test`): **47**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **259**
+  - Live-assertion (other active tests): **263**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
-- No test yet (no test file mentions the TC_ID): **22** (5.7%)
+- No test yet (no test file mentions the TC_ID): **18** (4.7%)
 
 ## Coverage by epic
 
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 18 | 10 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
-| E10 | 33 | 25 | 0 | 8 |
+| E10 | 33 | 29 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **307** | **54** | **22** |
+| **Total** | **383** | **311** | **54** | **18** |
 
 ## Case-by-case status
 
@@ -420,10 +420,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_07: a booking headcount governs over Session attendance; only the Session-governed booking is flagged (SQL Session ch |
 | `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
 | `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
-| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ❌ none | — |
-| `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ❌ none | — |
-| `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ❌ none | — |
-| `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ❌ none | — |
+| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/supportReconfirmation.integration.test.ts: TC_ |
+| `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104); backend/tests/supportReconfirmation |
+| `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
+| `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -501,7 +501,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - attendance raised to exactly the capacity is still sufficient (boundary)
 - attendance lowered but still above capacity stays flagged; lowered within capacity does not
 - Scenario 1: an attendance change flags a booking whose own headcount is already above capacity
+- T-104: overlap is judged against the previous Session time, and touching ends do not overlap
+- T-104: a flagged support request alone marks the change as affecting arrangements
+- a snapshot without support requests flags none
 - a Session end-time-only change also counts as a time change
+- T-104: an Event-wide change moves support as far as the Event start, even when only the end moved
+- T-104: support overlapping several moved Sessions moves as far as the earliest of them
 - an Event end-only change is still an Event-wide time change
 - a single-session move with too many people lists both reasons once
 - arrangements without a known Session move only with the Event
@@ -1062,6 +1067,19 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - removing one of several keeps the request staffed; removing twice is refused
 - handler: methods, origin and actions
 - handler: GET routes to the queue, one request or the schedule; POST to assign or remove
+
+### `backend/tests/supportReconfirmation.integration.test.ts`
+
+- T-104: moved again before reconfirming, the request moves on from its kept time; unflagged requests cannot be reconfirmed
+- T-104 (#399 review): a Session moved twice before reconfirming is matched against the kept time, so the request moves on with it
+
+### `backend/tests/supportReconfirmation.test.ts`
+
+- reconfirming needs Technical Support Staff and a support request id
+- a cancelled request, an event not going ahead, or one with nothing to reconfirm is refused and nothing moves
+- a colleague taken at the same moment is reported as the same clash, or plainly when it cannot be named
+- a reconfirmation without a Coordinator or other colleagues tells nobody else
+- handler: GET reconfirm=list lists flagged requests; POST reconfirm reconfirms one
 
 ### `backend/tests/supportReconfirmationSchema.integration.test.ts`
 
@@ -1731,6 +1749,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 a second submit while saving sends nothing more, and a reply after leaving the page is ignored
 - E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored
 - E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form
+
+### `frontend/src/features/support/SupportReconfirmation.test.tsx`
+
+- a request whose time stays, with no description and no Coordinator, says so
+- a failed load can be retried; a malformed reply is a failed load
+- the staffing page shows support to reconfirm above the queue and reloads the queue after a reconfirmation
 
 ### `frontend/src/features/support/TechnicianStaffing.test.tsx`
 

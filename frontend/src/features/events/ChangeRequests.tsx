@@ -233,9 +233,10 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
           : preview?.canApply ? 'Review the affected arrangements below. Confirming applies this entire request together.'
             : 'This request includes fields the shared arrangement path cannot apply yet. The entire request will remain Approved and unchanged.') : 'The Event stays unchanged.'}</p>
           {choice !== 'decline' && preview?.canApply ? <>
-            <p>Affected venue bookings: {preview.impact.bookings.length}. Affected equipment reservations: {preview.impact.reservations.length}.</p>
+            <p>Affected venue bookings: {preview.impact.bookings.length}. Affected equipment reservations: {preview.impact.reservations.length}. Affected Technical Support requests: {preview.impact.supports?.length ?? 0}.</p>
             {preview.impact.bookings.map(item => <p key={item.id}>{item.venueName}: {arrangementReasons(item)}</p>)}
             {preview.impact.reservations.map(item => <p key={item.id}>{item.equipmentName}: {arrangementReasons(item)}</p>)}
+            {preview.impact.supports?.map(item => <p key={item.id}>{item.description || 'Technical support'}: {arrangementReasons(item)}</p>)}
             {preview.overSubscription.map((item, index) => <Alert key={index} tone="warning">{item.scope}: {item.registered} registered places exceed capacity {item.capacity}. Registrations will be retained.</Alert>)}
             {preview.lateClose ? <label><input type="checkbox" checked={lateCloseConfirmed} disabled={busy}
               onChange={event => setLateCloseConfirmed(event.target.checked)} /> Confirm registration closing after the Event starts</label> : null}
