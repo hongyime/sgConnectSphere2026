@@ -32,7 +32,7 @@ export type EventAudience = {
 };
 export type EventChange =
   | { kind: 'status'; from: EventStatus; to: EventStatus }
-  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[]; venueName?: string }
+  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[]; venueName?: string; session?: boolean }
   | { kind: 'booking_requested' }
   | { kind: 'booking_withdrawn' }
   | { kind: 'lost_venue_cancelled' }
@@ -145,7 +145,7 @@ export function describeEventChange(change: EventChange): string {
   switch (change.kind) {
     case 'status': return change.from==='confirmed' && change.to==='planning' ? 'Previously confirmed arrangements are being revised.' : `Event status changed to ${change.to.replaceAll('_',' ')}.`;
     case 'arrangements': {
-      const summary = `Event ${[...new Set(change.fields)].join(', ')} changed.`;
+      const summary = `${change.session ? 'Session' : 'Event'} ${[...new Set(change.fields)].join(', ')} changed.`;
       return change.fields.includes('venue') && change.venueName?.trim()
         ? `${summary} New venue: ${change.venueName.trim()}.` : summary;
     }

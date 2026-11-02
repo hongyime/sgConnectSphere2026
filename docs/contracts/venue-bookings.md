@@ -478,3 +478,13 @@ approved request flags arrangements for reconfirmation.
 ### E10-S01 Safety Review interruption
 
 E10-S01 approved changes that interrupt Safety Review leave Confirmed bookings in place with reconfirmation flags. Reconfirming the last required arrangement uses the shared readiness transition and sends a fresh SO notice, including the first safety cycle; previous safety history remains unchanged.
+
+
+### E10-S01 Session request application
+
+Approved Session-targeted requests reuse E04-S02 Session storage and E10-S02
+impact assessment. Only bookings for the changed Session are flagged by that
+change; their rows stay Confirmed pending reconfirmation. A preview cannot flag
+or notify. The request service applies the same stale-revision and atomic
+rollback rules as Event-wide changes, including T-104 crew readiness and the
+T-103 Safety Review interruption/re-entry path.

@@ -67,3 +67,15 @@ test('TC_E10S01_01: malformed structured fields cannot reach SQL', () => {
     { registrationDates: { opensAt: 'bad', closesAt: null } }, { withdrawalDeadline: '2027-01-01T12:00' },
   ]) assert.throws(() => parseChangeRequest({ description: 'Update settings', changes }));
 });
+
+
+test('TC_E10S01_01: Session target validates identifiers and restricts fields without widening Event requests', () => {
+  const sessionId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  assert.deepEqual(parseChangeRequest({description:'Session change',sessionId,changes:{title:null,facilityIds:[]}}),{description:'Session change',sessionId,fields:{title:null,facilityIds:[]}});
+  for(const body of [
+    {description:'X',sessionId:'bad',changes:{title:'X'}},
+    {description:'X',sessionId,changes:{registrationEnabled:true}},
+    {description:'X',changes:{facilityIds:[]}},
+    {description:'X',sessionId,changes:{facilityIds:Array(51).fill(sessionId)}},
+  ]) assert.throws(()=>parseChangeRequest(body));
+});
