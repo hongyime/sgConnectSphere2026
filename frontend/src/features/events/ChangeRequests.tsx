@@ -12,12 +12,13 @@ import {
 } from './changeRequestsApi';
 import { arrangementReasons } from './arrangementReasons';
 
+const sessionFields = new Set(['title','startAt','endAt','expectedAttendance','layoutId','venueRequirements','equipmentRequirements','accessibilityNote','layoutPreference','accessibilityFeatureIds','facilityIds']);
 const activeStatuses = ['approved', 'planning', 'safety_review', 'confirmed'];
-const label = (key: string) => changeFields.find(([field]) => field === key)?.[1] ?? key;
+const label = (key: string, session = false) => session && key === 'title' ? 'Session name' : changeFields.find(([field]) => field === key)?.[1] ?? key;
 function display(key: string, value: ChangeValues[ChangeField] | undefined, references?: ChangeRequestView['references']) {
   if (value === null || value === undefined || value === '') return 'None recorded';
   if (typeof value === 'boolean') return value ? 'Enabled' : 'Disabled';
-  if (Array.isArray(value)) return value.length ? value.map(id => references?.accessibility.find(item => item.id === id)?.label ?? 'Unavailable feature').join(', ') : 'None selected';
+  if (Array.isArray(value)) return value.length ? value.map(id => (key === 'facilityIds' ? references?.facilities : references?.accessibility)?.find(item => item.id === id)?.label ?? 'Unavailable feature').join(', ') : 'None selected';
   if (typeof value === 'object') return `${value.opensAt ? formatDate(value.opensAt, true) : 'No opening date'} — ${value.closesAt ? formatDate(value.closesAt, true) : 'No closing date'}`;
   if (key === 'layoutId') return references?.layouts.find(item => item.id === value)?.label ?? 'Unavailable layout';
   if (key === 'startAt' || key === 'endAt' || key === 'withdrawalDeadline') return formatDate(String(value), true);
@@ -66,7 +67,7 @@ function RequestPage({ identifier, coordinator, params, navigationState }: { ide
       }} /> : null}
       <Card title="Recorded change requests">
         {!view.requests.length ? <EmptyState title="No change requests yet">Submitted changes will appear here.</EmptyState> :
-          view.requests.map(request => <RequestCard key={`${request.id}:${request.status}`} request={request} current={view.current} references={view.references}
+          view.requests.map(request => <RequestCard key={`${request.id}:${request.status}`} request={request} current={request.requested_changes.sessionId ? view.sessions?.find(session => session.id === request.requested_changes.sessionId)?.current ?? {} : view.current} references={view.references} sessionTitle={view.sessions?.find(session => session.id === request.requested_changes.sessionId)?.title}
             coordinator={coordinator && Boolean(active) && view.permissions.canDecide} identifier={identifier} onDecided={message => { setDone(message); reload(); }} />)}
       </Card>
     </> : null}
@@ -74,9 +75,11 @@ function RequestPage({ identifier, coordinator, params, navigationState }: { ide
 }
 
 function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefill: ChangeRequestPrefill; onSent: () => void }) {
+  const [sessionId, setSessionId] = useState('');
+  const currentDetails = view.sessions?.find(session => session.id === sessionId)?.current ?? view.current;
   const [selected, setSelected] = useState<ChangeField[]>(prefill.fields);
   const [values, setValues] = useState<Partial<Record<ChangeField, string>>>(() => Object.fromEntries(
-    prefill.fields.map(key => [key, fieldInput(key, prefill.changes[key] ?? view.current[key])]),
+    prefill.fields.map(key => [key, fieldInput(key, prefill.changes[key] ?? currentDetails[key])]),
   ));
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +91,7 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
   useEffect(() => { if (error) { refusal.current?.focus(); refusal.current?.scrollIntoView?.({ block: 'nearest' }); } }, [error]);
   function select(key: ChangeField, checked: boolean) {
     setSelected(current => checked ? [...current, key] : current.filter(field => field !== key));
-    const raw = fieldInput(key, view.current[key]);
+    const raw = fieldInput(key, currentDetails[key]);
     setValues(current => ({ ...current, [key]: raw }));
     setError(null);
   }
@@ -100,7 +103,7 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
     for (const key of selected) {
       const raw = (values[key] ?? '').trim();
       if (key === 'layoutId') { changes[key] = raw || null; continue; }
-      if (key === 'accessibilityFeatureIds') { changes[key] = raw ? raw.split(',') : []; continue; }
+      if (key === 'accessibilityFeatureIds' || key === 'facilityIds') { changes[key] = raw ? raw.split(',') : []; continue; }
       if (key === 'registrationEnabled' || key === 'waitlistEnabled') { changes[key] = raw === 'true'; continue; }
       if (key === 'withdrawalDeadline' && !raw) { changes[key] = null; continue; }
       if (key === 'registrationDates') {
@@ -115,6 +118,7 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
         if (opensAt && closesAt && opensAt >= closesAt) { setError('Registration closing must be after opening.'); return; }
         changes[key] = { opensAt, closesAt }; continue;
       }
+      if (!raw && sessionId && !['expectedAttendance','startAt','endAt'].includes(key)) { changes[key] = null; continue; }
       if (!raw) { setError(`Enter a new value for ${label(key).toLowerCase()}.`); return; }
       if (key === 'expectedAttendance') {
         if (!Number.isSafeInteger(Number(raw)) || Number(raw) <= 0) { setError('Expected attendance must be a positive whole number.'); return; }
@@ -126,7 +130,7 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
       } else changes[key] = raw;
     }
     sending.current = true; setBusy(true); setError(null);
-    const result = await submitChangeRequest(view.event.id, description.trim(), changes);
+    const result = await submitChangeRequest(view.event.id, description.trim(), changes, sessionId || undefined);
     if (!mounted.current) return;
     sending.current = false; setBusy(false);
     if (!result.ok) { setError(result.message); return; }
@@ -140,19 +144,24 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
         {props => <textarea {...props} required maxLength={4000} rows={3} value={description} disabled={busy}
           onChange={event => setDescription(event.target.value)} />}
       </FormField>
+      {(view.sessions?.length ?? 0) > 1 ? <FormField label="Change target" hint="Choose Event-wide details or one existing Session.">
+        {props => <select {...props} disabled={busy} value={sessionId} onChange={event => {
+          setSessionId(event.target.value); setSelected([]); setValues({}); setError(null);
+        }}><option value="">Event-wide details</option>{view.sessions?.map(session => <option key={session.id} value={session.id}>{session.title}</option>)}</select>}
+      </FormField> : null}
       <FormSection title="Details to change">
-        {changeFields.map(([key, name, kind]) => <div key={key}>
+        {changeFields.filter(([key]) => sessionId ? sessionFields.has(key) : key !== 'facilityIds').map(([key, name, kind]) => <div key={key}>
           <label><input type="checkbox" checked={selected.includes(key)} disabled={busy}
-            onChange={event => select(key, event.target.checked)} /> Change {name.toLowerCase()}</label>
-          {selected.includes(key) ? <FormField label={`New ${name.toLowerCase()}`}
-            hint={`Current: ${display(key, view.current[key], view.references)}${kind === 'date' || kind === 'nullable-date' || kind === 'window' ? '. Enter Singapore time (UTC+8).' : ''}`}>
+            onChange={event => select(key, event.target.checked)} /> Change {(sessionId && key === 'title' ? 'Session name' : name).toLowerCase()}</label>
+          {selected.includes(key) ? <FormField label={`New ${(sessionId && key === 'title' ? 'Session name' : name).toLowerCase()}`}
+            hint={`Current: ${display(key, currentDetails[key], view.references)}${kind === 'date' || kind === 'nullable-date' || kind === 'window' ? '. Enter Singapore time (UTC+8).' : ''}`}>
             {props => kind === 'layout' ? <select {...props} value={values[key] ?? ''} disabled={busy} onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))}>
               <option value="">No layout selected</option>{view.references?.layouts.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select> : kind === 'switch' ? <select {...props} value={values[key] ?? 'false'} disabled={busy} onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))}>
               <option value="false">Disabled</option><option value="true">Enabled</option>
-            </select> : kind === 'accessibility' ? <select {...props} multiple value={values[key] ? values[key]!.split(',') : []} disabled={busy}
+            </select> : kind === 'accessibility' || kind === 'facilities' ? <select {...props} multiple value={values[key] ? values[key]!.split(',') : []} disabled={busy}
               onChange={event => setValues(current => ({ ...current, [key]: Array.from(event.target.selectedOptions, option => option.value).join(',') }))}>
-              {view.references?.accessibility.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
+              {(kind === 'facilities' ? view.references?.facilities : view.references?.accessibility)?.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
             </select> : kind === 'window' ? <>
               <input {...props} aria-label="Registration opens (Singapore time)" type="datetime-local" disabled={busy} value={(values[key] ?? '|').split('|')[0]}
                 onChange={event => setValues(current => ({ ...current, [key]: `${event.target.value}|${(current[key] ?? '|').split('|')[1]}` }))} />
@@ -170,8 +179,8 @@ function RequestForm({ view, prefill, onSent }: { view: ChangeRequestView; prefi
   </Card>;
 }
 
-function RequestCard({ request, current, coordinator, identifier, onDecided, references }: {
-  request: ChangeRequestRecord; current: ChangeValues; coordinator: boolean; identifier: string; onDecided: (message: string) => void; references?: ChangeRequestView['references'];
+function RequestCard({ request, current, coordinator, identifier, onDecided, references, sessionTitle }: {
+  request: ChangeRequestRecord; current: ChangeValues; coordinator: boolean; identifier: string; onDecided: (message: string) => void; references?: ChangeRequestView['references']; sessionTitle?: string;
 }) {
   const [choice, setChoice] = useState<'approve' | 'decline' | 'apply' | null>(null);
   const [preview, setPreview] = useState<ChangePreview | null>(null);
@@ -207,7 +216,7 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
     trigger.current = event.currentTarget.id;
     setError(null); setPreview(null); setLateCloseConfirmed(false);
     const action = request.status === 'approved' ? 'apply' : 'approve';
-    if (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))) { setChoice(action); return; }
+    if (!request.requested_changes.sessionId && fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))) { setChoice(action); return; }
     sending.current = true; setBusy(true);
     const result = await previewChangeRequest(identifier, request.id);
     if (!mounted.current) return;
@@ -217,18 +226,19 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
   }
   return <Card title={request.description} actions={<StatusPill status={request.status} />}>
     <p>Submitted {formatDate(request.created_at, true)}</p>
+    {request.requested_changes.sessionId ? <p>Target Session: {sessionTitle ?? 'Removed Session'}</p> : null}
     {request.status === 'approved' ? <Alert tone="info">{waitingMessage}. Current Event details have not changed.</Alert> : null}
     {request.decision_reason ? <p>Decision reason: {request.decision_reason}</p> : null}
     {fields.length ? <DataTable caption={`Details for ${request.description}`} rows={fields} rowKey={([key]) => key}
       columns={[
-        { header: 'Field', primary: true, cell: ([key]) => label(key) },
-        { header: 'Current Event details', cell: ([key]) => display(key, current[key as ChangeField], references) },
+        { header: 'Field', primary: true, cell: ([key]) => label(key,Boolean(request.requested_changes.sessionId)) },
+        { header: request.requested_changes.sessionId ? 'Current Session details' : 'Current Event details', cell: ([key]) => display(key, current[key as ChangeField], references) },
         { header: 'Requested value', cell: ([key, value]) => display(key, value, references) },
       ]} /> : <p>No structured field changes recorded.</p>}
     {error && !choice ? <Alert tone="error">{error}</Alert> : null}
     {coordinator && ['pending', 'approved'].includes(request.status) ? choice ? <div ref={panel} tabIndex={-1}>
       <ConfirmPanel title={choice === 'decline' ? 'Decline this change request?' : choice === 'apply' ? 'Apply this approved change request?' : 'Approve this change request?'}
-        description={<><p>{choice !== 'decline' ? (fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))
+        description={<><p>{choice !== 'decline' ? (!request.requested_changes.sessionId && fields.every(([key]) => ['title', 'description', 'purpose'].includes(key))
           ? 'This request changes only name, description or purpose. The changes are applied when approved.'
           : preview?.canApply ? 'Review the affected arrangements below. Confirming applies this entire request together.'
             : 'This request includes fields the shared arrangement path cannot apply yet. The entire request will remain Approved and unchanged.') : 'The Event stays unchanged.'}</p>
@@ -241,7 +251,7 @@ function RequestCard({ request, current, coordinator, identifier, onDecided, ref
             {preview.lateClose ? <label><input type="checkbox" checked={lateCloseConfirmed} disabled={busy}
               onChange={event => setLateCloseConfirmed(event.target.checked)} /> Confirm registration closing after the Event starts</label> : null}
           </> : null}
-          {choice !== 'decline' && preview && !preview.canApply ? <p>Waiting fields: {preview.blockedFields.map(label).join(', ')}.</p> : null}
+          {choice !== 'decline' && preview && !preview.canApply ? <p>Waiting fields: {preview.blockedFields.map(key => label(key)).join(', ')}.</p> : null}
           <FormField label="Decision note (optional)">{props => <textarea {...props} rows={2} maxLength={4000}
             disabled={busy} value={note} onChange={event => setNote(event.target.value)} />}</FormField></>}
         confirmLabel={choice === 'decline' ? 'Decline change request' : choice === 'apply' ? 'Apply change request' : 'Approve change request'} busy={busy}
