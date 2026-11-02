@@ -12,11 +12,11 @@ case repeated for the evidence; the record says so.
 
 ## Open
 
-- **The manual run predates the merged code.** `handNeedsToEvent` (a18b6b2) runs
-  when deleting goes from two Sessions to one, which is TC_E04S02_05. The merged
-  record `20261102-140900` and an earlier PR comment wrongly say the run does not
-  reach changed code; that record cannot be edited. CI's database test covers it.
-  Whether to re-run by hand or accept on that is with Bryan.
+- **TC_E04S02_05 was re-run on the merged code** (record `20261102-232300`), because
+  `handNeedsToEvent` (a18b6b2) runs when deleting goes from two Sessions to one. The
+  other four cases were not repeated. The merged record `20261102-140900` and an
+  earlier PR comment wrongly say the first run does not reach changed code; that
+  record cannot be edited.
 - **Weak screenshots:** `02-2` (Snipping Tool overlay, reload not visible), `03-1`
   and `03-3` (filled criteria not shown). Any re-run is a new record.
 - **`20261102-140900` on main** says test case version 311026; 011126 was in force.
