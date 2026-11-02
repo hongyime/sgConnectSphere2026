@@ -11,18 +11,19 @@
     .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.card,table{background:var(--panel);border:1px solid var(--line);border-radius:10px}.card{padding:16px}.card strong{display:block;font-size:28px;color:var(--accent)}
     table{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{color:var(--accent);font-weight:650}
     .chart{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:16px 0;overflow:auto}.chart svg{display:block;width:100%;min-width:680px;height:auto}.grid{stroke:var(--line);stroke-width:1}.series{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.velocity{fill:var(--accent)}.label{fill:var(--muted);font-size:13px}.value{fill:var(--text);font-size:14px;font-weight:650}.caption{color:var(--muted);margin:8px 4px 0}.warn{color:var(--warn)}
+    a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#b5ffed}.jira-links{background:var(--panel);border-left:3px solid var(--accent);padding:14px 18px;border-radius:0 8px 8px 0}.jira-links li{margin:6px 0}
     li{margin:8px 0}code{color:var(--accent)}
   </style>
 </head>
 <body>
   <h1>ConnectSphere sprint burndown and velocity</h1>
-  <p class="lede">Jira board 1 reconciliation · SCRUM · refreshed 3 November 2026 (Singapore time)</p>
+  <p class="lede">Jira board 1 reconciliation · SCRUM · refreshed 3 November 2026 (Singapore time) · <a href="https://theprawnworkspace.atlassian.net/secure/RapidBoard.jspa?rapidView=1">verify in Jira board 1</a></p>
 
   <section id="overview">
     <h2>Sprint 4 is closed at 53 of 85 points</h2>
     <p>At the Jira boundary, Sprint 4 delivered 62.4%, with 32 points carried forward. Its 53 points are the final velocity; status changes after the boundary are excluded.</p>
     <div class="cards">
-      <div class="card"><small>Sprint 4 delivery</small><strong>62.4%</strong><span>53 / 85 points</span></div>
+      <div class="card"><small>Sprint 4 delivery</small><strong>62.4%</strong><span>53 / 85 points · <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Jira issues</a></span></div>
       <div class="card"><small>Sprint 4 velocity</small><strong>53</strong><span>product-story points</span></div>
       <div class="card"><small>Carryover</small><strong>32</strong><span>seven Jira issues</span></div>
       <div class="card"><small>Closed average</small><strong>76.5%</strong><span>Sprints 1–4 only</span></div>
@@ -46,13 +47,24 @@
     <table>
       <thead><tr><th>Sprint</th><th>Boundary (SGT)</th><th>Committed</th><th>Scope</th><th>Done / velocity</th><th>Carryover</th><th>Delivery</th></tr></thead>
       <tbody>
-        <tr><td>Sprint 1</td><td>20 Sep 2026</td><td>36</td><td>69</td><td>66</td><td>3</td><td>95.7%</td></tr>
-        <tr><td>Sprint 2</td><td><strong>4 Oct 2026</strong></td><td>74</td><td>74</td><td>66</td><td>8</td><td>89.2%</td></tr>
-        <tr><td>Sprint 3</td><td>18 Oct 2026</td><td>43</td><td>58</td><td>34</td><td>24</td><td>58.6%</td></tr>
-        <tr><td>Sprint 4</td><td><strong>1 Nov 2026</strong></td><td>64</td><td>85</td><td><strong>53</strong></td><td>32</td><td><strong>62.4%</strong></td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2034%20ORDER%20BY%20key">Sprint 1</a></td><td>20 Sep 2026</td><td>36</td><td>69</td><td>66</td><td>3</td><td>95.7%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2035%20ORDER%20BY%20key">Sprint 2</a></td><td><strong>4 Oct 2026</strong></td><td>74</td><td>74</td><td>66</td><td>8</td><td>89.2%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2036%20ORDER%20BY%20key">Sprint 3</a></td><td>18 Oct 2026</td><td>43</td><td>58</td><td>34</td><td>24</td><td>58.6%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Sprint 4</a></td><td><strong>1 Nov 2026</strong></td><td>64</td><td>85</td><td><strong>53</strong></td><td>32</td><td><strong>62.4%</strong></td></tr>
       </tbody>
     </table>
     <p><strong>Definition:</strong> delivery is product-story Done at the boundary divided by product-story scope at the boundary. The closed-sprint mean is 76.5% (weighted: 76.6%, or 219/286).</p>
+
+    <h2>Verify the claims in Jira</h2>
+    <div class="jira-links">
+      <ul>
+        <li><a href="https://theprawnworkspace.atlassian.net/secure/RapidBoard.jspa?rapidView=1">Board 1</a> — open the SCRUM board directly.</li>
+        <li><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2034%20ORDER%20BY%20key">Sprint 1 issue view</a>, <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2035%20ORDER%20BY%20key">Sprint 2 issue view</a>, <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2036%20ORDER%20BY%20key">Sprint 3 issue view</a>, and <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Sprint 4 issue view</a> — inspect the sprint membership, status, and story points.</li>
+        <li>Sprint 4 carryover: <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-50">SCRUM-50</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-61">SCRUM-61</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-66">SCRUM-66</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-70">SCRUM-70</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-71">SCRUM-71</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-75">SCRUM-75</a>, and <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-158">SCRUM-158</a>.</li>
+        <li>Post-boundary transitions referenced in the audit: <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-50">SCRUM-50</a> and <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-66">SCRUM-66</a>. Open each issue's History panel to verify its transition timestamp.</li>
+      </ul>
+      <p class="caption">Jira links may require your Atlassian login. The URLs expose no credentials or API tokens.</p>
+    </div>
 
     <h2>Burndown by sprint</h2>
     <div class="chart"><svg viewBox="0 0 900 230" role="img" aria-labelledby="s1-title s1-desc"><title id="s1-title">Sprint 1 burndown</title><desc id="s1-desc">Remaining points fall from 36 to 3 during Sprint 1.</desc><line class="grid" x1="55" y1="180" x2="850" y2="180"/><line class="grid" x1="55" y1="110" x2="850" y2="110"/><line class="grid" x1="55" y1="40" x2="850" y2="40"/><polyline class="series" points="70,130 180,130 290,130 400,132 510,157 620,170 730,176 840,176"/><g class="label"><text x="8" y="184">0</text><text x="3" y="114">50</text><text x="3" y="44">100</text><text x="62" y="207">14 Sep</text><text x="785" y="207">20 Sep</text></g><text class="value" x="75" y="120">36</text><text class="value" x="812" y="169">3</text></svg><p class="caption">Sprint 1 scope at close is 69 product-story points; the former 88-point spike is removed as unsupported.</p></div>
