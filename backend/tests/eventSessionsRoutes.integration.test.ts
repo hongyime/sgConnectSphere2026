@@ -709,3 +709,107 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     await pool.end();
   }
 });
+
+test('TC_E10S02_06 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support and tells its technician, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_support_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_support_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_support_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_support_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_support_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const techA = randomUUID();
+    const techB = randomUUID();
+    const eventId = randomUUID();
+    const digest = await hashPassword('synthetic-session-support-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator'],
+      [techA, 'technical_support_staff'], [techB, 'technical_support_staff']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query(
+      `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+       VALUES ($1, $2, $3, $4, 'Synthetic support event', 'draft', tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+      [eventId, organiserId, coordinatorId, org],
+    );
+    const later = { title: 'Second', startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 40 };
+    const added = await addSession(repository, organiserId, eventId, later);
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+
+    // Sound desk overlaps the second Session's current time; Lighting does not.
+    const staffed = async (description: string, staffId: string, from: string, to: string) => {
+      const id = randomUUID();
+      await client.query(
+        `INSERT INTO tech_support_requests (id, event_id, support_required, support_description, support_range, status, requested_by)
+         VALUES ($1, $2, true, $3, tstzrange($4::timestamptz, $5::timestamptz, '[)'), 'staffed', $6)`,
+        [id, eventId, description, from, to, coordinatorId],
+      );
+      await client.query(
+        `INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
+         VALUES ($1, $2, $3, tstzrange($4::timestamptz, $5::timestamptz, '[)'))`,
+        [id, eventId, staffId, from, to],
+      );
+      return id;
+    };
+    const soundDesk = await staffed('Sound desk', techA, '2027-03-13T04:00:00Z', '2027-03-13T06:00:00Z');
+    const lighting = await staffed('Lighting', techB, '2027-03-12T02:00:00Z', '2027-03-12T04:00:00Z');
+    const flagged = async (id: string) => (await client.query<{ requires_reconfirmation: boolean }>(
+      'SELECT requires_reconfirmation FROM tech_support_requests WHERE id = $1', [id])).rows[0]!.requires_reconfirmation;
+    const notices = async (staffId: string) => (await client.query<{ message: string }>(
+      'SELECT message FROM notifications WHERE user_id = $1 AND event_id = $2', [staffId, eventId])).rows.map(row => row.message);
+
+    const moved = { ...later, startAt: '2027-03-13T06:00:00.000Z', endAt: '2027-03-13T08:30:00.000Z' };
+    const preview = await editSession(repository, organiserId, eventId, added.session.id, moved, { preview: true });
+    assert.deepEqual(preview.preview!.impact.supports.map(support => support.id), [soundDesk]);
+    assert.deepEqual(preview.preview!.impact.bookings, []);
+    assert.deepEqual(preview.preview!.impact.reservations, []);
+    assert.equal(await flagged(soundDesk), false, 'a preview saves nothing');
+
+    await editSession(repository, organiserId, eventId, added.session.id, moved, { reviewed: preview.preview!.revision });
+    assert.equal(await flagged(soundDesk), true, 'the support overlapping the old time needs reconfirmation');
+    assert.equal(await flagged(lighting), false, 'support away from the moved Session is left alone');
+    const told = await notices(techA);
+    assert.equal(told.length, 1, 'the Sound desk technician is told once');
+    assert.match(told[0]!, /An event change \(date or time\) means .*Technical Support requests need reconfirmation/);
+    assert.deepEqual(await notices(techB), [], 'the Lighting technician is not asked to reconfirm');
+    assert.deepEqual(await notices(coordinatorId), [], 'no venue or equipment notice goes out');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});

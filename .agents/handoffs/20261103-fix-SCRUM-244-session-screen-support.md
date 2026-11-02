@@ -16,8 +16,11 @@ the Session save as it was.
    requests. Done: `SessionEditor.tsx`, Vitest `TC_E10S02_03` case (support
    only), break-tested.
 3. Backend: `updateSessionInPlanning` uses `notifyArrangementImpact`; DB test
-   (Session move flags only support, its technician is told). Waiting on Ji
-   Ning's answer (asked 2 November) whether she takes it.
+   (Session move flags only support, its technician is told). Done: Ji Ning
+   was busy, so Le Xin took it (3 November). DB case
+   `TC_E10S02_06 TC_E10S02_10` in `eventSessionsRoutes.integration.test.ts`;
+   with `main`'s notice code the technician got 0 notices (bug confirmed);
+   frontend guide, venue-bookings contract and architecture doc updated.
 4. Test cases TC_E10S02_03 and _06: add the Session-screen case; workbook;
    tc-coverage.
 5. Checks, break tests, real local run, run records.
@@ -34,7 +37,18 @@ the Session save as it was.
 - Task 2: Session screen Vitest 12/12; full frontend 798/798; typecheck OK;
   with the change removed the new case fails. tc-coverage unchanged
   (`TC_E10S02_03` already active).
+- Task 3: backend typecheck OK; unit 692/1 skip; DB on native 5432
+  `connectsphere_notification_test`: Session routes 6/6, with the related
+  E10-S02, E10-S01, E11 and Safety Review suites 81/81; tc-coverage
+  regenerated; doc_guard 0 errors.
+
+## Open question
+
+Ji Ning (E10-S01 owner) was asked whether Organisers should still edit
+Sessions directly in Planning now that #414 adds Session change requests. If
+not, this direct path goes away and these fixes with it.
 
 ## Next step
 
-Task 3 once Ji Ning answers; otherwise Task 4.
+Task 4: TC_E10S02_03 and _06 name the Session-screen case; workbook;
+tc-coverage.
