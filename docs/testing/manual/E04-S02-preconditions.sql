@@ -1,8 +1,8 @@
--- E04-S02 (SCRUM-39) manual-run preconditions, run subtask SCRUM-241. Local
--- disposable database only (connectsphere_dev_stack), after a fresh reset and
--- seed. Setup only: never a test step. See E04-S02-click-through.md.
+-- E04-S02 (SCRUM-39) manual-run preconditions, run subtask SCRUM-241. Native
+-- local PostgreSQL, disposable database only (connectsphere_dev_stack), after a
+-- fresh reset and seed. Setup only: never a test step. See E04-S02-click-through.md.
 --
---   docker exec -i <container> psql -U postgres -d connectsphere_dev_stack -q -v stage=setup -f - < docs/testing/manual/E04-S02-preconditions.sql
+--   psql "$LOCAL_DB" -q -v stage=setup -f docs/testing/manual/E04-S02-preconditions.sql
 --
 -- TC_E04S02_01 and _02 need nothing here: organiser_a creates the draft by hand.
 -- What `setup` makes (Singapore time, +08; organiser_a owns both events, coord_a

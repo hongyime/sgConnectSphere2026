@@ -11,12 +11,15 @@ committed with the record under `docs/testing/runs/evidence/<record filename wit
 
 ## Set up first
 
-Use the local, disposable database in Docker, never the shared one.
+Use a native PostgreSQL installation on this machine with a disposable database,
+never the shared one. The reset guard (`isSafeResetTarget()`) refuses anything
+that is not a safe target, so do not bypass it. Point `LOCAL_DB` at the loopback
+address, for example
+`export LOCAL_DB="postgres://postgres:<local password>@127.0.0.1:5432/connectsphere_dev_stack"`.
 
-1. **Database.** Start the container (`docker start connectsphere-test-pg`), reset
-   and seed `connectsphere_dev_stack`
-   (`cd backend && DATABASE_URL="$LOCAL_DB" npx tsx src/database/cli.ts reset`), then
-   `docker exec -i connectsphere-test-pg psql -U postgres -d connectsphere_dev_stack -q -v stage=setup -f - < docs/testing/manual/E04-S02-preconditions.sql`.
+1. **Database.** Create the empty database once (`createdb -h 127.0.0.1 -U postgres connectsphere_dev_stack`),
+   reset and seed it (`cd backend && DATABASE_URL="$LOCAL_DB" npx tsx src/database/cli.ts reset && cd ..`), then
+   `psql "$LOCAL_DB" -q -v stage=setup -f docs/testing/manual/E04-S02-preconditions.sql`.
    It prints EVT-9401's two Sessions (no bookings) and EVT-9402's two Sessions,
    each with a Confirmed Lotus Room booking.
 2. **API:** `cd backend && DATABASE_URL="$LOCAL_DB" ADDITIONAL_ALLOWED_ORIGINS="http://127.0.0.1:5173" npx tsx src/dev.ts`.
