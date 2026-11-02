@@ -127,7 +127,7 @@ test('TC_E08S06_03: requesting changes returns the Event to Planning, flags what
   assert.match(ran(calls, /UPDATE equipment_reservations/)[0]!.sql, /status <> 'released'/);
   assert.equal(notices.length, 2);
   assert.ok(notices[0]!.includes('Safety check: changes requested'));
-  assert.ok(notices[0]!.includes('The Safety Officer requested changes, so EVT-1 Charity Run is back in Planning. Reason: Move the rig '
+  assert.ok(notices[0]!.includes('The Safety Officer requested changes, so EVT-1 Charity Run is back in Planning. Reason: Move the rig. '
     + 'Items to address: Equipment placement: Stage rig blocks the east exit.'));
 
   const venue = scriptedDatabase();
@@ -146,7 +146,7 @@ test('TC_E08S06_04: rejecting returns the Event to Planning, flags nothing and s
   assert.equal(ran(calls, /requires_reconfirmation=true|cancelled/).length, 0);
   assert.deepEqual(ran(calls, /INSERT INTO audit_logs/)[0]!.values, [officer.id, 'event-1', SAFETY_ACTIONS.reject, 'safety_review', 'planning']);
   assert.ok(notices[0]!.includes('Safety arrangement rejected'));
-  assert.ok(notices[0]!.includes('The Safety Officer rejected its safety arrangement, so EVT-1 Charity Run is back in Planning. Reason: Unsafe overall'));
+  assert.ok(notices[0]!.includes('The Safety Officer rejected its safety arrangement, so EVT-1 Charity Run is back in Planning. Reason: Unsafe overall.'));
 });
 
 test('TC_E08S06_05: a decision needs a signed-in Safety Officer, a valid body and an Event in Safety Review', async () => {
@@ -177,4 +177,10 @@ test('TC_E08S06_04: the Coordinator\'s readiness read carries the rejection (D10
   const { pool } = scriptedDatabase({ status: 'planning', lastAction: SAFETY_ACTIONS.reject });
   const readiness = await getEventReadiness(pool, user('event_coordinator', 'coordinator-1'), 'EVT-1');
   assert.deepEqual(readiness.safetyReturn, { decision: 'reject', reason: 'Exit blocked', decidedAt: START });
+});
+
+test('TC_E08S06_04: a reason that already ends a sentence is not given a second full stop', async () => {
+  const { pool, notices } = scriptedDatabase();
+  await decideSafetyReview(pool, officer, 'EVT-1', { decision: 'reject', factors: factors(), reason: 'Unsafe overall.' });
+  assert.ok(notices[0]!.some(value => typeof value === 'string' && value.endsWith('Reason: Unsafe overall.')));
 });
