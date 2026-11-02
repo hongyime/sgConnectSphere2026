@@ -183,7 +183,7 @@ export function SessionEditor({ eventId }: { eventId: string }) {
     setBusy(true);
     setStatus(null);
     const result = await apiCall<{
-      preview: { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[] }; revision: string };
+      preview: { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[]; supports?: unknown[] }; revision: string };
     }>(`${url(sessionId)}&preview=1`, jsonRequest('PATCH', toPayload(field, perSession)), 'The Session change could not be checked.');
     setBusy(false);
     if (!result.ok) {
@@ -199,7 +199,9 @@ export function SessionEditor({ eventId }: { eventId: string }) {
       sessionId,
       revision,
       field,
-      message: `This change flags ${impact.bookings.length} booking(s) and ${impact.reservations.length} reservation(s) for reconfirmation.`,
+      // E10-S02 Scenario 3 (T-104): a Session time change can flag staffed
+      // Technical Support requests too, so they are counted before saving.
+      message: `This change flags ${impact.bookings.length} booking(s), ${impact.reservations.length} reservation(s) and ${impact.supports?.length ?? 0} Technical Support request(s) for reconfirmation.`,
     });
   };
 

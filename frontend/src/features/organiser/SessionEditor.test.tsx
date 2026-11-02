@@ -105,6 +105,34 @@ test('E04-S02: a planning edit previews its impact before saving', async () => {
   });
 });
 
+test('TC_E10S02_03: a planning Session edit that flags only Technical Support says so before saving', async () => {
+  const fetchMock = vi.fn(async (requestUrl: string, init?: RequestInit) => {
+    if (init?.method === 'PATCH' && String(requestUrl).includes('preview=1')) {
+      return new Response(JSON.stringify({
+        preview: { impact: { affected: true, bookings: [], reservations: [], supports: [{ id: 'support-1' }] }, overSubscription: [], revision: 'rev-2' },
+      }), { status: 200 });
+    }
+    if (init?.method === 'PATCH') return new Response(JSON.stringify({ session: sessions[0] }), { status: 200 });
+    return new Response(JSON.stringify({ sessions, eventStatus: 'planning' }), { status: 200 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<SessionEditor eventId="event-1" />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getByText('Save session'));
+
+  expect(await screen.findByText(
+    'This change flags 0 booking(s), 0 reservation(s) and 1 Technical Support request(s) for reconfirmation.',
+  )).toBeTruthy();
+  const saved = () => fetchMock.mock.calls.filter(([requestUrl, init]) =>
+    (init as RequestInit | undefined)?.method === 'PATCH' && !String(requestUrl).includes('preview=1'));
+  expect(saved()).toHaveLength(0);
+
+  fireEvent.click(screen.getByText('Save anyway'));
+  await waitFor(() => expect(saved()).toHaveLength(1));
+  expect(String(saved()[0]![0])).toContain('reviewed=rev-2');
+});
+
 test('TC_E04S02_02: with two Sessions each keeps its own requirements', async () => {
   const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
     if (init?.method === 'PATCH') return new Response(JSON.stringify({ session: twoSessions[1] }), { status: 200 });
