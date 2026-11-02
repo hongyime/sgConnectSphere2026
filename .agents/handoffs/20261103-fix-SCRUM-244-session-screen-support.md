@@ -21,8 +21,11 @@ the Session save as it was.
    `TC_E10S02_06 TC_E10S02_10` in `eventSessionsRoutes.integration.test.ts`;
    with `main`'s notice code the technician got 0 notices (bug confirmed);
    frontend guide, venue-bookings contract and architecture doc updated.
-4. Test cases TC_E10S02_03 and _06: add the Session-screen case; workbook;
-   tc-coverage.
+4. Test cases: new TC_E10S02_14 (Scenario 3, Session screen counts support)
+   and TC_E10S02_15 (Scenario 6, only the flagged request's technician is
+   told), not extra blocks in _03/_06: the export reads one block per case
+   (the leftover-block trouble in _01/_05). The Vitest and DB tests carry the
+   new IDs; workbook CAA 031126 + undated copy; tc-coverage 385. Done.
 5. Checks, break tests, real local run, run records.
 6. PR (reviewers Amareet, Ji Ning) and Jira comment on SCRUM-244.
 
@@ -42,13 +45,13 @@ the Session save as it was.
   E10-S02, E10-S01, E11 and Safety Review suites 81/81; tc-coverage
   regenerated; doc_guard 0 errors.
 
-## Open question
+## Answered
 
-Ji Ning (E10-S01 owner) was asked whether Organisers should still edit
-Sessions directly in Planning now that #414 adds Session change requests. If
-not, this direct path goes away and these fixes with it.
+Ji Ning (E10-S01 owner, 3 November): Organisers still edit Sessions directly
+in Planning within the existing permissions; E10-S01's change request is the
+path when a direct edit is refused (Scenario 3), not a replacement. The fix
+stays. No PO question: no AC, scope or product rule changes.
 
 ## Next step
 
-Task 4: TC_E10S02_03 and _06 name the Session-screen case; workbook;
-tc-coverage.
+Task 5: real local run on the Session screen, run records; then Task 6 PR.

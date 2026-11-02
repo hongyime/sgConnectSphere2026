@@ -710,7 +710,7 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
   }
 });
 
-test('TC_E10S02_06 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support and tells its technician, rolled back', async () => {
+test('TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support and tells its technician, rolled back', async () => {
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
   assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
   const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });

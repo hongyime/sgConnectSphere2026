@@ -105,7 +105,7 @@ test('E04-S02: a planning edit previews its impact before saving', async () => {
   });
 });
 
-test('TC_E10S02_03: a planning Session edit that flags only Technical Support says so before saving', async () => {
+test('TC_E10S02_14: a planning Session edit that flags only Technical Support says so before saving', async () => {
   const fetchMock = vi.fn(async (requestUrl: string, init?: RequestInit) => {
     if (init?.method === 'PATCH' && String(requestUrl).includes('preview=1')) {
       return new Response(JSON.stringify({
