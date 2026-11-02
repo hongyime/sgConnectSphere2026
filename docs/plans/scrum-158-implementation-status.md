@@ -30,18 +30,33 @@ Scenario 9's tracker and deactivation behaviour.
 
 ## Rules this story applies
 
-| Rule | Test case |
-|---|---|
-| The queue lists every Event in Safety Review, oldest entry first, with what the check needs | TC_E08S06_01 |
-| Every one of the seven factors is marked satisfactory or not, with a comment, before deciding | TC_E08S06_02 |
-| Approval with every factor satisfactory confirms the Event and notifies Organiser and Coordinator | TC_E08S06_02 |
-| Request changes returns the Event to Planning, names the items and flags the affected arrangements | TC_E08S06_03 |
-| Rejection returns the Event to Planning with a visible flag and reason, never cancelling it | TC_E08S06_04 |
-| Reject and request changes need a reason; only a Safety Officer decides | TC_E08S06_05 |
-| Events confirmed earlier are untouched; tracker and deactivation treat Safety Review as active | TC_E08S06_06 |
-| Every decision is one immutable Activity log row with the checklist | TC_E08S06_02 to _05 |
+The messages are the code's wording, word for word.
 
-"What the user sees" for each rule is added once the screens are final.
+| Rule | What the user sees | Test case |
+|---|---|---|
+| The queue lists every Event in Safety Review, oldest entry first, with what the check needs | Safety Officer's **Safety review queue**: table "Events awaiting their Operational Safety Check, oldest first", each title linking to its review, column "In Safety Review since". Review page "Decide: <title>": card "What you're deciding" (Organiser, Coordinator, Event date, Expected attendance, In Safety Review since, Technical Support), then one card per Session (When, Expected attendance, Layout, Accessibility requirements, Venues "<name>: capacity <n>; restrictions: …", Equipment "<n> × <name>, <n> reserved; placement: …") | TC_E08S06_01 |
+| Every one of the seven factors is marked satisfactory or not, with a comment, before deciding | Card "Safety checklist": each factor a select starting at "Choose…" (Satisfactory, Not satisfactory) and a required comment. Deciding with any gap: "Fix the highlighted factors, then decide again.", "Choose satisfactory or not satisfactory.", "Comment is required." Server: 400 "Record every safety factor before deciding." or "Each safety factor needs a comment of 1 to 2000 characters." | TC_E08S06_02 |
+| Approval with every factor satisfactory confirms the Event and notifies Organiser and Coordinator | **Approve…**, panel "Approve the safety check?", button **Approve safety check**; then "Approved. The event is Confirmed, and the Organiser and the Coordinator have been notified." and the pill shows Confirmed. With a factor not satisfactory: "Approval needs every factor to be satisfactory." (server: 409 "Approval is refused while any safety factor is unsatisfactory."). Notice "Event confirmed": "<event> passed the Operational Safety Check and is now Confirmed. When: … Venues: … Equipment: …" | TC_E08S06_02 |
+| Request changes returns the Event to Planning, names the items and flags the affected arrangements | **Request changes…**, panel "Request changes?", Reason, button **Request changes**; then "Changes requested. The event is back in Planning, and the Organiser and the Coordinator have been notified." With no factor marked: "Mark the factors that need changes as not satisfactory." Notice "Safety check: changes requested": "The Safety Officer requested changes, so <event> is back in Planning. Reason: <reason>. Items to address: <factor>: <comment>." Coordinator's readiness page: alert "Safety check: changes requested" with the date and reason, and the flagged item "<name> — needs review (<r> of <n> reserved)"; submitting is refused with "This event can't be submitted for its safety check until every outstanding item is resolved." | TC_E08S06_03 |
+| Rejection returns the Event to Planning with a visible flag and reason, never cancelling it | **Reject…**, panel "Reject the safety arrangement?" ("The event returns to Planning; it is not cancelled. …"), button **Reject safety arrangement**; then "Rejected. The event is back in Planning, not cancelled, and the Organiser and the Coordinator have been notified." Coordinator's readiness page and Organiser's event page: alert "Safety arrangement rejected": "The Safety Officer rejected the safety arrangement on <date>. Reason: <reason>. The event goes back to Safety Review once it's resubmitted for its safety check." | TC_E08S06_04 |
+| Reject and request changes need a reason; only a Safety Officer decides | Empty reason: "Reason is required." under the panel's Reason field (server: 400 "A reason is required for this safety decision."). Any other role: the queue and review page show "Access refused" with "Access denied. This action is for Safety Officers."; a decision is refused with 403 "Only a Safety Officer can confirm an event in Safety Review."; each refusal is an Access Denied row, kept out of user-facing Activity logs | TC_E08S06_05 |
+| Events confirmed earlier are untouched; tracker and deactivation treat Safety Review as active | An Event Confirmed before this story stays Confirmed, with no safety row and no queue entry. Organiser's event page: "Current status" **Safety Review**, "Reached on <date>"; organisation list "<code> · safety review". Coordinator's Deactivate Account: "Reassign your active events before deactivating your account." with "<code>: <title>" | TC_E08S06_06 |
+| Every decision is one immutable Activity log row with the checklist | Activity log: "Safety check approved", "Safety check changes requested" or "Safety arrangement rejected", by the Safety Officer, with "Every factor satisfactory" or "Not satisfactory: <factors>. Reason: <reason>", on the shared Activity log and the Organiser's event page | TC_E08S06_02 to _05 |
+
+## Test plan
+
+| TC ID | What it proves | Automated tests |
+|---|---|---|
+| TC_E08S06_01 | Queue order, the per-Session detail, other roles refused | `roleQueues.test.ts`, `safetyReview.test.ts` (unit); `safetyReview.integration.test.ts` (real database); `RoleQueues.test.tsx`, `SafetyReview.test.tsx` (Vitest); `e08.spec.ts` (Playwright) |
+| TC_E08S06_02 | Approval, its notice and its checklist row, shown in words | `safetyReview.test.ts`; `safetyReview.integration.test.ts`; `SafetyReview.test.tsx`, `ActivityLog.test.tsx`, `ActivityLog.singaporeTime.test.tsx`; `e08.spec.ts` |
+| TC_E08S06_03 | Request changes: Planning, notice, equipment flagged and venue not, resubmission needed | `safetyCheck.test.ts`, `safetyReview.test.ts`; `safetyReview.integration.test.ts`; `SafetyReview.test.tsx`; `e08.spec.ts` |
+| TC_E08S06_04 | Rejection: Planning not Cancelled, arrangements untouched, the flag for both roles | `safetyReview.test.ts`; `safetyReview.integration.test.ts`; `SafetyReview.test.tsx` (including `SafetyReturnAlert`); `e08.spec.ts` |
+| TC_E08S06_05 | Reasons required; every other role refused with an Access Denied row | `safetyCheck.test.ts`, `safetyReview.test.ts`; `safetyReview.integration.test.ts`; `SafetyReview.test.tsx`; `e08.spec.ts` |
+| TC_E08S06_06 | Legacy Confirmed Event untouched; tracker; deactivation | `safetyReview.integration.test.ts` (legacy Event); `e08.spec.ts` (tracker and deactivation, API faked); `deactivation.test.ts` (the blocking statuses include `safety_review`; its title carries no TC ID) |
+
+The Playwright tests answer every API call with a fake server: they prove
+what each role sees and sends, and the real-database test proves the
+server's rules.
 
 ## Known gaps (from Bryan's version) and where each is closed
 
@@ -63,12 +78,46 @@ SCRUM-249 acceptance evidence.
 
 ## Test gates
 
-To be filled with the gates before the PR (unit, real-database, coverage,
-typecheck, Vitest, Playwright, repository checks).
+Each gate is recorded in the Run log below.
+
+| Gate | Where it ran | Result |
+|---|---|---|
+| 1. Backend unit tests (`npm test --workspace backend`) | `8054e44`; CI on `be0eb43` | 713 passed, 1 skipped; CI green |
+| 2. Real database (`safetyReview.integration.test.ts` + 7 related suites, Docker `postgres:17`, never Supabase) | `8054e44`; its own `application-checks` step | 55/55 |
+| 3. Coverage of new and changed lines | backend at `8054e44`, frontend at `f30e9b5` | 100% of the new and changed safety code. The fix commits `be0eb43` and `e49b4c3` came with regression tests but coverage wasn't measured again after them |
+| 4. Typecheck (`npm run typecheck`, root) | `8054e44`, `f30e9b5`, `c2de0a1`; CI on `be0eb43`, `e49b4c3` | clean |
+| 5. Vitest (whole frontend suite) | `f30e9b5`; CI on `e49b4c3` | 812/812; CI green |
+| 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1` | 462 passed, 218 skipped, 0 failed |
+| 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3` |
+| 8. Repository checks (`python scripts/check.py`, `doc_guard.py`, `tc-coverage.md` regenerated last) | each branch before pushing; CI on #412 (`be0eb43`) and #413 (`e49b4c3`) | pass. #413's other required checks run once it targets `main` |
 
 ## Known limits
 
-None recorded yet.
+- **A refused safety decision mentions confirming.** Another role's
+  decision gets 403 "Only a Safety Officer can confirm an event in Safety
+  Review." even for a rejection or a request for changes. It is Bryan's
+  wording, shared with the old confirm route; Aaron chose to keep it.
+- **Deactivation is proved in two halves.** The server's blocking list
+  includes `safety_review` (`deactivation.test.ts`), and Playwright shows
+  the refusal naming the Event with the API faked. No real-database test
+  deactivates a Coordinator whose only active Event is in Safety Review:
+  `deactivation.integration.test.ts` has no such case and no CI step (a
+  follow-up from #394). Aaron's manual run didn't isolate it either, since
+  `coord_a` had other active Events.
+- **A flag doesn't record its cause.** The readiness page says "needs
+  review" for any flagged item, whether a stock change, a date change or
+  the Safety Officer flagged it.
+- **The checklist lives in the decision's `audit_logs` row** (D110).
+  `docs/db_schema.md` still shows planned `SAFETY_CHECKS` and
+  `SAFETY_CHECK_FACTORS` tables, which this story doesn't build.
+- **The checklist's error message sits above the factors**, at the top of
+  the "Safety checklist" card (`design.md` 5.2). On a long page you see
+  the highlighted fields before the message.
+- **The cases name accounts the seed doesn't have** (`safety_1`, `lead_1`,
+  `coordinator_1`). The manual runs used the seeded
+  `safety_officer@connectsphere.com`, `coord_a`, `coord_lead` and
+  `organiser_a`, and set up their Events with
+  `docs/testing/manual/E08-S06-preconditions.sql`.
 
 ## Run log
 
@@ -87,5 +136,7 @@ None recorded yet.
 | 2026-11-02 18:10 | `f30e9b5` | Playwright regression | - | `npx playwright test` on 9 specs (coordinator, e03, e06, e08, e10, e14, eventReadiness, venueBookingDecisions, skeleton) | local, desktop + Pixel 7 | 122 passed, 126 skipped, 0 failed | the skips are `test.fixme` scaffolds; record `20261102-181032-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
 | 2026-11-02 19:13–19:42 | `d8ba321` | manual (T-93) | _01 to _06 | Aaron's click-through of TC_E08S06_01 to _06, setup `docs/testing/manual/E08-S06-preconditions.sql` | local real stack (Docker `postgres:17`) | **TC_02 and TC_03 FAIL**, others PASS | the Organiser's Activity log showed the checklist as raw JSON (fixed in `e49b4c3`); also fixed: stale review pill, notice full stop, "stock changed" wording (`be0eb43`, `e49b4c3`); record `20261102-191300-Bl0oper-frontend-e2e.md`, 22 screenshots | Aaron |
 | 2026-11-02 19:57–20:04 | `6c319a3` | manual (T-93) rerun | _02, _03 | Aaron's rerun of the failed and changed steps, same setup SQL, API restarted on this commit | local real stack (Docker `postgres:17`) | PASS | Organiser Activity log in words; pill Confirmed / Planning; notice full stop; "needs review (1 of 1 reserved)"; record `20261102-195700-Bl0oper-frontend-e2e.md`, 6 screenshots | Aaron |
+| 2026-11-02 19:52–20:05 | `be0eb43` | CI (#412) | _01 to _06 | GitHub Actions: `CI` (repository checks) run 41440195262, `Application Checks` run 41440195114 (typecheck, unit, real-database steps, Vitest, Playwright) | CI | all required checks green | - | GitHub Actions |
+| 2026-11-02 19:52–20:07 | `e49b4c3` | CI (#413) | _01 to _05 | GitHub Actions: `Application Checks` run 41440229925 | CI | green | the PR targets #412's branch, so only `application-checks` runs | GitHub Actions |
 | 2026-11-02 ≈20:24 | `f78a8a8+local` (committed as `c2de0a1`) | Playwright | _01 to _06 | `npx playwright test tests/e2e/e08.spec.ts -g "E08-S06"` | local, desktop + Pixel 7 | **11 passed, 1 failed** | TC_01 on Pixel 7: the test counted the queue's header row, which the mobile layout hides; fixed in the test before committing | Claude (for Aaron) |
 | 2026-11-02 20:26–20:29 | `c2de0a1` | Playwright | _01 to _06 | `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | 462 passed, 218 skipped, 0 failed | TC_E08S06_01 to _06 pass on both projects, including deactivation with Safety Review as the only active Event; the skips are other stories' `test.fixme` scaffolds; record `20261102-202637-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
