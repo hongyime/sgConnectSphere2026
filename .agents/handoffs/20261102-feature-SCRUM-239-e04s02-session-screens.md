@@ -32,7 +32,23 @@ planning.
   new row as "Session deleted / Session: <title>".
 - No migration: every table already exists (0014).
 
+## Review fixes (Ji Ning, Xiang Ying on 1f2f149)
+
+- `arrangementImpact.ts`: the snapshot now holds each Session's layout,
+  accessibility and facility needs, so a requirement-only planning edit flags
+  that Session's confirmed bookings and no others. New reason `facilities`.
+- `removeSession`: going from two Sessions to one hands the survivor's needs to
+  the Event and clears its own rows, so a deliberately empty list stays empty.
+- The new real-database regression could not run locally (no native PostgreSQL
+  here, Docker Desktop is not part of the workflow); CI's service container
+  runs it.
+
 ## Not done here
+
+- A later Event edit on a sole Session still overwrites that Session's date,
+  attendance, layout and text through the 0014 sync trigger. After deleting
+  down to one Session, the Event's values may differ from the survivor's. Not
+  changed here; worth a separate look.
 
 - Lost-venue replacement on a multi-Session event: the coordinator must pick
   the Session in search first; the backend does not yet infer it from the

@@ -181,7 +181,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; tests/e2e/e04.spec.ts: TC_E04S |
 | `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back; backend/tests/eventSessionsRoutes.integration. |
 | `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back; tests/e2e/e04.spec.ts: TC_E04S02_03 TC_E04S02_04: |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back; tests/e2e/e04.spec.ts |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back; backend/tests/eventSe |
 
 ### E05
 
@@ -514,6 +514,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - governingHeadcount: override, then Session attendance, then unknown
 - loadArrangementSnapshot reads live arrangements and converts dates to ISO strings
 - loadArrangementSnapshot refuses an unknown Event
+- E04-S02 #408 review: a Session requirement change flags only that Session bookings
+- E04-S02 #408 review: a sole Session following an Event layout edit is one layout reason, not two
 
 ### `backend/tests/attendeeCapacity.integration.test.ts`
 

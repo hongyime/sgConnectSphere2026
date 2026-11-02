@@ -226,7 +226,15 @@ Accessibility and facility needs live in `session_accessibility_needs` and
 Event-level needs describe it: venue search uses the Event's needs for a sole
 Session that has none of its own. Adding a second Session first copies the
 Event's needs onto the existing Session, so each Session is then judged on its
-own needs.
+own needs. Deleting back down to one Session does the reverse: the Event takes
+the survivor's needs and the survivor's own rows are cleared, so what it needs
+does not change, including a deliberately empty list.
+
+In planning, changing a Session's layout, accessibility needs or facilities
+counts as an arrangement change even when its times, attendance and capacity
+stay the same. Only that Session's confirmed bookings are flagged, with the
+reason `layout`, `accessibility` or `facilities` (new); equipment reservations
+and support requests are not.
 Once the Event is in planning, the same `PATCH` runs E10-S02's arrangement
 check. `&preview=1` returns `{ preview: { impact, overSubscription, revision } }`
 without saving; `&reviewed=<revision>` fails a stale review with 409

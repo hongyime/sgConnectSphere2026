@@ -225,7 +225,7 @@ test('loadArrangementSnapshot reads live arrangements and converts dates to ISO 
   const result = await loadArrangementSnapshot(query, 'event-1');
   assert.deepEqual(result, {
     event: { startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T07:00:00.000Z', layoutId: null, accessibilityFeatureIds: [] },
-    sessions: [{ id: 'session-a', startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z', expectedAttendance: 80 }],
+    sessions: [{ id: 'session-a', startsAt: '2027-03-12T01:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z', expectedAttendance: 80, layoutId: null, accessibilityFeatureIds: [], facilityIds: [] }],
     bookings: [{ id: 'booking-a', sessionId: 'session-a', venueId: 'venue-a', venueName: 'Small Room', headcount: null, capacity: 80 }],
     reservations: [{ id: 'reservation-a', sessionId: 'session-a', equipmentId: 'projector', equipmentName: 'Projector' }],
     supports: [{ id: 'support-a', description: 'Sound desk', startsAt: '2027-03-12T00:00:00.000Z', endsAt: '2027-03-12T03:00:00.000Z' }],
@@ -255,4 +255,28 @@ test('TC_E10S01_04: Event layout/accessibility changes flag venues only and incl
   assert.equal(assessArrangementImpact(after, after).affected, false);
   const cleared = snapshot({ event: { ...after.event, layoutId: null, accessibilityFeatureIds: [] } });
   assert.deepEqual(assessArrangementImpact(after, cleared).bookings[0].reasons, ['layout', 'accessibility']);
+});
+
+test('E04-S02 #408 review: a Session requirement change flags only that Session bookings', () => {
+  const needs = { layoutId: null, accessibilityFeatureIds: [], facilityIds: [] };
+  const before = snapshot({ sessions: [{ ...sessionA, ...needs }, { ...sessionB, ...needs }] });
+  const edited = (change: Partial<SessionState>) => snapshot({ sessions: [{ ...sessionA, ...needs }, { ...sessionB, ...needs, ...change }] });
+
+  for (const [change, reason] of [
+    [{ layoutId: 'theatre' }, 'layout'],
+    [{ accessibilityFeatureIds: ['step-free'] }, 'accessibility'],
+    [{ facilityIds: ['projector'] }, 'facilities'],
+  ] as const) {
+    const impact = assessArrangementImpact(before, edited(change as Partial<SessionState>));
+    assert.deepEqual(impact.bookings.map(booking => [booking.id, booking.reasons]), [['booking-b', [reason]]]);
+    assert.deepEqual(impact.reservations, [], 'requirement changes do not move equipment');
+    assert.deepEqual(impact.supports, [], 'nor support requests');
+  }
+  assert.equal(assessArrangementImpact(before, edited({})).affected, false);
+});
+
+test('E04-S02 #408 review: a sole Session following an Event layout edit is one layout reason, not two', () => {
+  const before = snapshot({ event: { startsAt: sessionA.startsAt, endsAt: sessionA.endsAt, layoutId: 'old' }, sessions: [{ ...sessionA, layoutId: 'old' }], bookings: [bookingA] });
+  const after = snapshot({ event: { startsAt: sessionA.startsAt, endsAt: sessionA.endsAt, layoutId: 'new' }, sessions: [{ ...sessionA, layoutId: 'new' }], bookings: [bookingA] });
+  assert.deepEqual(assessArrangementImpact(before, after).bookings[0]!.reasons, ['layout']);
 });
