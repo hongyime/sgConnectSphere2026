@@ -26,6 +26,7 @@ import {
   StatusPill, formatDate, formatDateRange, statusLabel, useLoad, type Column, type Failure,
 } from '../../shared';
 import { OutstandingQuestions } from '../events/OutstandingQuestions';
+import { SessionEditor } from './SessionEditor';
 import { findOrganiserEvent, type OrganiserStatus } from './mocks';
 import {
   getRequestDetail, listOwnRequests, type ConfirmedArrangements, type EventStatus, type OwnRequest, type RequestDetail,
@@ -265,6 +266,8 @@ export function SubmittedDetail() {
             </Card>
             <Timeline history={[...request.statusHistory].reverse()} />
           </section>
+          {/* E04-S02 Scenario 5: in planning a Session can still be changed or removed, releasing its bookings. */}
+          {request.status === 'planning' ? <Card><SessionEditor eventId={request.id} /></Card> : null}
           {request.status === 'safety_review' ? (
             <Alert tone="info">Your event is awaiting its safety check. It is confirmed once the Safety Officer approves it.</Alert>
           ) : null}

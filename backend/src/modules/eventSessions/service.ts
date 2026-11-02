@@ -2,7 +2,7 @@ import { AccessError } from '../eventVisibility/service.js';
 import type { ArrangementImpact } from '../changeManagement/arrangementImpact.js';
 import type { OverSubscription } from '../changeManagement/eventChange.js';
 import { parseSessionBody } from './parseSession.js';
-import type { SessionEditScope, SessionInput, SessionRecord } from './types.js';
+import type { SessionEditScope, SessionInput, SessionOptions, SessionRecord } from './types.js';
 
 // E04-S02 authoring rules. Kept behind a repository so the guards and the
 // request parsing are unit-testable without PostgreSQL; the SQL lives in
@@ -18,6 +18,7 @@ export type SessionImpactResult =
 export type SessionRepository = {
   findEditScope(eventId: string): Promise<SessionEditScope | null>;
   listSessions(eventId: string): Promise<SessionRecord[]>;
+  listOptions(): Promise<SessionOptions>;
   insertSession(eventId: string, input: SessionInput): Promise<SessionRecord>;
   updateSession(sessionId: string, eventId: string, input: SessionInput): Promise<SessionRecord | null>;
   updateSessionInPlanning(
@@ -76,7 +77,7 @@ function toAccessError(error: unknown): never {
 
 export async function getSessions(repository: SessionRepository, userId: string, eventId: string) {
   const scope = await requireOwner(repository, userId, eventId);
-  return { sessions: await repository.listSessions(eventId), eventStatus: scope.status };
+  return { sessions: await repository.listSessions(eventId), eventStatus: scope.status, options: await repository.listOptions() };
 }
 
 export async function addSession(repository: SessionRepository, userId: string, eventId: string, body: unknown) {

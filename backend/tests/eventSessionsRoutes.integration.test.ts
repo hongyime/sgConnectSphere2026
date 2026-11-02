@@ -164,6 +164,12 @@ test('TC_E04S02_05: deleting a Session releases its booking, audits it and notif
     assert.equal(audit.rowCount, 1);
     assert.equal(audit.rows[0]!.action, 'Booking Released');
 
+    const deletion = await client.query(
+      `SELECT action, old_value FROM audit_logs WHERE entity_type = 'event' AND event_id = $1 AND field_changed = 'session'`, [eventId],
+    );
+    assert.deepEqual(deletion.rows, [{ action: 'Session Deleted', old_value: 'Untitled Session' }],
+      'the deletion itself is in the activity log');
+
     const notices = await client.query(
       'SELECT title FROM notifications WHERE user_id = $1 AND event_id = $2', [staffId, eventId],
     );
@@ -407,6 +413,296 @@ test('TC_E04S02_04: one Event books the same venue for two Sessions, rolled back
       'SELECT session_id FROM venue_bookings WHERE event_id = $1 ORDER BY session_id', [eventId],
     )).rows;
     assert.equal(rows.length, 2, 'the same venue holds one booking per Session');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});
+
+test('TC_E04S02_03: each Session is judged on its own accessibility needs, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_needs_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_needs_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_needs_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_needs_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_needs_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const eventId = randomUUID();
+    const stepFree = randomUUID();
+    const accessibleVenue = randomUUID();
+    const stairsVenue = randomUUID();
+    const digest = await hashPassword('synthetic-session-needs-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query('INSERT INTO accessibility_features (id, code, label) VALUES ($1, $2, $3)', [stepFree, `step-free-${stepFree}`, 'Step-free access']);
+    for (const [id, name] of [[accessibleVenue, 'Step-free hall'], [stairsVenue, 'Stairs-only hall']] as const) {
+      await client.query(
+        `INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, $2, 'Level 1', 200, '00:00', '23:59')`,
+        [id, name],
+      );
+    }
+    await client.query('INSERT INTO venue_accessibility_features (venue_id, feature_id) VALUES ($1, $2)', [accessibleVenue, stepFree]);
+    await client.query(
+      `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+       VALUES ($1, $2, $3, $4, 'Synthetic needs event', 'draft',
+         tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+      [eventId, organiserId, coordinatorId, org],
+    );
+    // The request form records accessibility on the Event, not on its Session.
+    await client.query('INSERT INTO event_accessibility_needs (event_id, feature_id) VALUES ($1, $2)', [eventId, stepFree]);
+
+    const user = { id: coordinatorId, email: `${coordinatorId}@example.test`, role: 'event_coordinator' as const, clientOrgId: org, isActive: true };
+    const query = (sql: string, values?: unknown[]) => client.query(sql, values);
+    const suitable = async (sessionId: string) => {
+      const result = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, session_id: sessionId, search: '1' }));
+      return Object.fromEntries(result.venues!.filter(venue => [accessibleVenue, stairsVenue].includes(venue.id))
+        .map(venue => [venue.id, venue.suitable]));
+    };
+
+    const [sole] = (await getSessions(repository, organiserId, eventId)).sessions;
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+    assert.deepEqual(await suitable(sole!.id), { [accessibleVenue]: true, [stairsVenue]: false },
+      'a sole Session with no needs of its own follows the Event');
+
+    await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [eventId]);
+    const afternoon = await addSession(repository, organiserId, eventId, {
+      title: 'Afternoon',
+      startAt: '2027-03-13T05:00:00.000Z',
+      endAt: '2027-03-13T08:00:00.000Z',
+      expectedAttendance: 120,
+      accessibilityFeatureIds: [],
+    });
+    assert.deepEqual(afternoon.session.accessibilityFeatureIds, []);
+    const listed = await getSessions(repository, organiserId, eventId);
+    assert.deepEqual(listed.sessions.find(item => item.id === sole!.id)!.accessibilityFeatureIds, [stepFree],
+      'the first Session keeps the Event needs once a second Session exists');
+    assert.ok(listed.options.accessibility.some(option => option.id === stepFree));
+
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+    assert.deepEqual(await suitable(sole!.id), { [accessibleVenue]: true, [stairsVenue]: false });
+    assert.deepEqual(await suitable(afternoon.session.id), { [accessibleVenue]: true, [stairsVenue]: true },
+      'the Afternoon Session needs no step-free access');
+
+    const edited = await editSession(repository, organiserId, eventId, afternoon.session.id, {
+      title: 'Afternoon',
+      startAt: '2027-03-13T05:00:00.000Z',
+      endAt: '2027-03-13T08:00:00.000Z',
+      expectedAttendance: 120,
+      accessibilityFeatureIds: [stepFree],
+    });
+    assert.ok('session' in edited);
+    assert.deepEqual(await suitable(afternoon.session.id), { [accessibleVenue]: true, [stairsVenue]: false });
+
+    await assert.rejects(
+      editSession(repository, organiserId, eventId, afternoon.session.id, {
+        startAt: '2027-03-13T05:00:00.000Z',
+        endAt: '2027-03-13T08:00:00.000Z',
+        expectedAttendance: 120,
+        facilityIds: [randomUUID()],
+      }),
+      (error: { status?: number }) => error.status === 400,
+    );
+
+    const setup = await venueSearch(query, user, new URLSearchParams({ event_id: eventId }));
+    assert.deepEqual((setup as { sessions: { id: string }[] }).sessions.map(item => item.id), [sole!.id, afternoon.session.id],
+      'venue search lists the Sessions to choose from');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});
+
+// #408 review (Ji Ning, Xiang Ying): a requirement-only Planning edit must flag
+// that Session's bookings, and deleting a Session must not change what the
+// survivor needs, including a deliberately empty list.
+test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a survivor keeps its needs, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_review_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_review_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_review_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_review_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_review_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const stepFree = randomUUID();
+    const projector = randomUUID();
+    const theatre = randomUUID();
+    const equippedVenue = randomUUID();
+    const plainVenue = randomUUID();
+    // Holds the part 1 bookings, so the two venues being compared stay available.
+    const bookedVenue = randomUUID();
+    const digest = await hashPassword('synthetic-session-review-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query('INSERT INTO accessibility_features (id, code, label) VALUES ($1, $2, $3)', [stepFree, `step-free-${stepFree}`, 'Step-free access']);
+    await client.query('INSERT INTO facilities (id, code, label) VALUES ($1, $2, $3)', [projector, `projector-${projector}`, 'Projector']);
+    await client.query('INSERT INTO room_layouts (id, code, label) VALUES ($1, $2, $3)', [theatre, `theatre-${theatre}`, 'Theatre']);
+    for (const [id, name] of [[equippedVenue, 'Equipped hall'], [plainVenue, 'Plain hall'], [bookedVenue, 'Booked hall']] as const) {
+      await client.query(
+        `INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, $2, 'Level 1', 200, '00:00', '23:59')`,
+        [id, name],
+      );
+    }
+    await client.query('INSERT INTO venue_accessibility_features (venue_id, feature_id) VALUES ($1, $2)', [equippedVenue, stepFree]);
+    await client.query('INSERT INTO venue_facilities (venue_id, facility_id) VALUES ($1, $2)', [equippedVenue, projector]);
+
+    const user = { id: coordinatorId, email: `${coordinatorId}@example.test`, role: 'event_coordinator' as const, clientOrgId: org, isActive: true };
+    const query = (sql: string, values?: unknown[]) => client.query(sql, values);
+    const later = { startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 40 };
+
+    // A draft whose Event needs step-free access and a projector, with a second
+    // Session given its own needs; the first Session keeps the Event's.
+    async function twoSessionEvent(second: { accessibilityFeatureIds: string[]; facilityIds: string[] }) {
+      const eventId = randomUUID();
+      await client.query(
+        `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+         VALUES ($1, $2, $3, $4, 'Synthetic review event', 'draft', tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+        [eventId, organiserId, coordinatorId, org],
+      );
+      await client.query('INSERT INTO event_accessibility_needs (event_id, feature_id) VALUES ($1, $2)', [eventId, stepFree]);
+      await client.query('INSERT INTO event_facility_needs (event_id, facility_id) VALUES ($1, $2)', [eventId, projector]);
+      const [first] = (await getSessions(repository, organiserId, eventId)).sessions;
+      const added = await addSession(repository, organiserId, eventId, { title: 'Second', ...later, ...second });
+      await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+      return { eventId, firstId: first!.id, secondId: added.session.id };
+    }
+    const suitable = async (eventId: string, sessionId: string) => {
+      const result = await venueSearch(query, user, new URLSearchParams({ event_id: eventId, session_id: sessionId, search: '1' }));
+      return Object.fromEntries(result.venues!.filter(venue => [equippedVenue, plainVenue].includes(venue.id))
+        .map(venue => [venue.id, venue.suitable]));
+    };
+
+    // 1. Requirement-only edits, with times, attendance and capacity unchanged.
+    const edited = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    const bookingFor = async (sessionId: string, hours: string) => {
+      const id = randomUUID();
+      await client.query(
+        `INSERT INTO venue_bookings (id, venue_id, event_id, session_id, booking_range, status)
+         VALUES ($1, $2, $3, $4, tstzrange($5::timestamptz, $5::timestamptz + interval '1 hour', '[)'), 'confirmed')`,
+        [id, bookedVenue, edited.eventId, sessionId, hours],
+      );
+      return id;
+    };
+    const otherBooking = await bookingFor(edited.firstId, '2027-03-12T01:00:00Z');
+    const editedBooking = await bookingFor(edited.secondId, '2027-03-13T05:00:00Z');
+    const flagged = async (id: string) => (await client.query<{ requires_reconfirmation: boolean }>(
+      'SELECT requires_reconfirmation FROM venue_bookings WHERE id = $1', [id])).rows[0]!.requires_reconfirmation;
+    const edit = (change: object, options = {}) => editSession(repository, organiserId, edited.eventId, edited.secondId, { title: 'Second', ...later, ...change }, options);
+
+    const unchanged = await edit({ accessibilityFeatureIds: [], facilityIds: [] }, { preview: true });
+    assert.equal(unchanged.preview!.impact.affected, false, 'resending the same needs changes nothing');
+
+    const preview = await edit({ accessibilityFeatureIds: [stepFree], facilityIds: [] }, { preview: true });
+    assert.deepEqual(preview.preview!.impact.bookings.map(booking => [booking.id, booking.reasons]), [[editedBooking, ['accessibility']]]);
+    assert.equal(await flagged(editedBooking), false, 'a preview saves nothing');
+
+    const saved = await edit({ accessibilityFeatureIds: [stepFree], facilityIds: [] }, { reviewed: preview.preview!.revision });
+    assert.deepEqual(saved.impact!.bookings.map(booking => booking.id), [editedBooking]);
+    assert.equal(await flagged(editedBooking), true, 'the edited Session needs reconfirmation');
+    assert.equal(await flagged(otherBooking), false, 'the other Session keeps its booking as it was');
+    const audit = await client.query<{ action: string }>(
+      `SELECT action FROM audit_logs WHERE entity_id = $1 AND field_changed = 'requires_reconfirmation'`, [editedBooking]);
+    assert.match(audit.rows[0]!.action, /accessibility requirements changed/);
+
+    const facilities = await edit({ accessibilityFeatureIds: [stepFree], facilityIds: [projector] }, { preview: true });
+    assert.deepEqual(facilities.preview!.impact.bookings[0]!.reasons, ['facilities']);
+    const layout = await edit({ layoutId: theatre, accessibilityFeatureIds: [stepFree], facilityIds: [] }, { preview: true });
+    assert.deepEqual(layout.preview!.impact.bookings[0]!.reasons, ['layout']);
+
+    // 2. Two Sessions down to one: an explicitly empty list stays empty.
+    const empty = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    assert.deepEqual(await suitable(empty.eventId, empty.secondId), { [equippedVenue]: true, [plainVenue]: true });
+    await removeSession(repository, organiserId, empty.eventId, empty.firstId);
+    assert.deepEqual(await suitable(empty.eventId, empty.secondId), { [equippedVenue]: true, [plainVenue]: true },
+      'the survivor does not pick up the needs the Event had');
+
+    // ...and a survivor's own needs stay, then carry into a later second Session.
+    const own = await twoSessionEvent({ accessibilityFeatureIds: [stepFree], facilityIds: [projector] });
+    await client.query('DELETE FROM session_accessibility_needs WHERE session_id = $1', [own.firstId]);
+    await client.query('DELETE FROM session_facility_needs WHERE session_id = $1', [own.firstId]);
+    await client.query('DELETE FROM event_accessibility_needs WHERE event_id = $1', [own.eventId]);
+    await client.query('DELETE FROM event_facility_needs WHERE event_id = $1', [own.eventId]);
+    await removeSession(repository, organiserId, own.eventId, own.firstId);
+    assert.deepEqual(await suitable(own.eventId, own.secondId), { [equippedVenue]: true, [plainVenue]: false });
+    await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [own.eventId]);
+    const again = await addSession(repository, organiserId, own.eventId, { title: 'Third', ...later, startAt: '2027-03-13T01:00:00.000Z', endAt: '2027-03-13T02:00:00.000Z' });
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [own.eventId]);
+    assert.deepEqual(again.session.accessibilityFeatureIds, [stepFree]);
+    assert.deepEqual(await suitable(own.eventId, own.secondId), { [equippedVenue]: true, [plainVenue]: false },
+      'the survivor keeps its needs when a Session is added again');
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

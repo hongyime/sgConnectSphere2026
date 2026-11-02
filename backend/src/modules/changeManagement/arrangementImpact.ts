@@ -5,7 +5,7 @@ import type { Query } from '../eventVisibility/service.js';
 // and compare: the database keeps a sole Session in step with Event edits
 // (migration 0014), so a single-session Event needs no special case here.
 
-export type SessionState = { id: string; startsAt: string; endsAt: string; expectedAttendance: number };
+export type SessionState = { id: string; startsAt: string; endsAt: string; expectedAttendance: number; layoutId?: string | null; accessibilityFeatureIds?: string[]; facilityIds?: string[] };
 export type BookingState = { id: string; sessionId: string | null; venueId: string; venueName: string; headcount: number | null; capacity: number };
 export type ReservationState = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string };
 export type SupportState = { id: string; description: string; startsAt: string; endsAt: string };
@@ -17,7 +17,7 @@ export type ArrangementSnapshot = {
   supports?: SupportState[];
 };
 
-export type ImpactReason = 'time' | 'capacity' | 'layout' | 'accessibility';
+export type ImpactReason = 'time' | 'capacity' | 'layout' | 'accessibility' | 'facilities';
 export type AffectedBooking = { id: string; sessionId: string | null; venueId: string; venueName: string; reasons: ImpactReason[]; governingHeadcount: number | null; capacity: number };
 export type AffectedReservation = { id: string; sessionId: string | null; equipmentId: string; equipmentName: string; reasons: ImpactReason[] };
 // shiftMs: how far the request moves when reconfirmed, keeping its length.
@@ -52,14 +52,23 @@ export function assessArrangementImpact(before: ArrangementSnapshot, after: Arra
     return !!was && !!now && was.expectedAttendance !== now.expectedAttendance;
   };
 
+  // E04-S02: a Session's own requirements are what its bookings were approved
+  // against, so changing them flags that Session's bookings and no others.
+  const sessionNeedChanged = (sessionId: string | null, read: (session: SessionState) => unknown) => {
+    const was = sessionId ? previous.get(sessionId) : undefined;
+    const now = sessionId ? current.get(sessionId) : undefined;
+    return !!was && !!now && JSON.stringify(read(was) ?? null) !== JSON.stringify(read(now) ?? null);
+  };
+
   const bookings: AffectedBooking[] = [];
   for (const booking of after.bookings) {
     const session = booking.sessionId ? current.get(booking.sessionId) : undefined;
     const headcount = governingHeadcount(booking, session);
     const reasons: ImpactReason[] = [];
     if (moved(booking.sessionId)) reasons.push('time');
-    if (layoutChanged) reasons.push('layout');
-    if (accessibilityChanged) reasons.push('accessibility');
+    if (layoutChanged || sessionNeedChanged(booking.sessionId, item => item.layoutId)) reasons.push('layout');
+    if (accessibilityChanged || sessionNeedChanged(booking.sessionId, item => item.accessibilityFeatureIds ?? [])) reasons.push('accessibility');
+    if (sessionNeedChanged(booking.sessionId, item => item.facilityIds ?? [])) reasons.push('facilities');
     // Scenario 1: when a Session's attendance changes, flag each of its
     // bookings whose governing headcount (its own, else the Session's) is
     // strictly above capacity, including one whose own headcount already was
@@ -99,8 +108,10 @@ export async function loadArrangementSnapshot(query: Query, eventId: string): Pr
       ARRAY(SELECT feature_id::text FROM event_accessibility_needs WHERE event_id=events.id ORDER BY feature_id) AS accessibility_feature_ids
      FROM events WHERE id = $1`, [eventId])).rows[0];
   if (!event) throw new Error(`Event ${eventId} not found for arrangement impact.`);
-  const sessions = (await query<{ id: string; starts_at: Date; ends_at: Date; expected_attendance: number }>(
-    `SELECT id, lower(session_range) AS starts_at, upper(session_range) AS ends_at, expected_attendance
+  const sessions = (await query<{ id: string; starts_at: Date; ends_at: Date; expected_attendance: number; layout_id?: string | null; accessibility_feature_ids?: string[]; facility_ids?: string[] }>(
+    `SELECT id, lower(session_range) AS starts_at, upper(session_range) AS ends_at, expected_attendance, layout_id,
+      ARRAY(SELECT feature_id::text FROM session_accessibility_needs WHERE session_id=sessions.id ORDER BY feature_id) AS accessibility_feature_ids,
+      ARRAY(SELECT facility_id::text FROM session_facility_needs WHERE session_id=sessions.id ORDER BY facility_id) AS facility_ids
      FROM sessions WHERE event_id = $1 ORDER BY lower(session_range), id`, [eventId])).rows;
   // A Session layout supported by the venue sets the capacity; otherwise the
   // venue's maximum does, as in the E06 suitability assessment.
@@ -127,7 +138,7 @@ export async function loadArrangementSnapshot(query: Query, eventId: string): Pr
      WHERE event_id = $1 AND status = 'staffed' ORDER BY lower(w.range), id`, [eventId])).rows;
   return {
     event: { startsAt: iso(event.starts_at), endsAt: iso(event.ends_at), layoutId: event.layout_id ?? null, accessibilityFeatureIds: event.accessibility_feature_ids ?? [] },
-    sessions: sessions.map(row => ({ id: row.id, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at), expectedAttendance: row.expected_attendance })),
+    sessions: sessions.map(row => ({ id: row.id, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at), expectedAttendance: row.expected_attendance, layoutId: row.layout_id ?? null, accessibilityFeatureIds: row.accessibility_feature_ids ?? [], facilityIds: row.facility_ids ?? [] })),
     bookings: bookings.map(row => ({ id: row.id, sessionId: row.session_id, venueId: row.venue_id, venueName: row.venue_name, headcount: row.headcount, capacity: row.capacity })),
     reservations: reservations.map(row => ({ id: row.id, sessionId: row.session_id, equipmentId: row.equipment_id, equipmentName: row.equipment_name })),
     supports: supports.map(row => ({ id: row.id, description: row.description, startsAt: iso(row.starts_at), endsAt: iso(row.ends_at) })),

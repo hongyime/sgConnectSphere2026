@@ -2,9 +2,10 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Alert, Button, ButtonLink, Card, FormActions, FormField, FormSection, apiCall, jsonRequest } from '../../shared';
 import { toLocalInput } from '../events/EventEditForm';
 
-type Props = { eventId: string; eventCode: string; venueId: string; start: string; end: string; onSubmitted?: () => void; replacementLabel?: string; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
+// sessionId (E04-S02): the Session the booking is for; start/end are then that Session's period.
+type Props = { eventId: string; eventCode: string; venueId: string; sessionId?: string; start: string; end: string; onSubmitted?: () => void; replacementLabel?: string; replacement?: { id: string; starts_at: string; ends_at: string; purpose: string; headcount: number | null } };
 type Result = { booking: { id: string }; suitability: { suitable: boolean; mismatches: string[] } };
-export function VenueBookingForm({ eventId, eventCode, venueId, start, end, replacement, replacementLabel, onSubmitted }: Props) {
+export function VenueBookingForm({ eventId, eventCode, venueId, sessionId, start, end, replacement, replacementLabel, onSubmitted }: Props) {
   const [fields, setFields] = useState({ starts_at: toLocalInput(replacement?.starts_at ?? start), ends_at: toLocalInput(replacement?.ends_at ?? end), purpose: replacement?.purpose ?? '', headcount: replacement?.headcount == null ? '' : String(replacement.headcount) });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [failure, setFailure] = useState('');
@@ -19,11 +20,11 @@ export function VenueBookingForm({ eventId, eventCode, venueId, start, end, repl
     const first = new Date(fields.starts_at), last = new Date(fields.ends_at);
     if (!Number.isFinite(first.getTime())) invalid.starts_at = ['Enter when the booking starts.'];
     if (!Number.isFinite(last.getTime()) || last <= first) invalid.ends_at = ['The booking must end after it starts.'];
-    else if (first < new Date(start) || last > new Date(end)) invalid.ends_at = ['The booking period must fall within the event.'];
+    else if (first < new Date(start) || last > new Date(end)) invalid.ends_at = [sessionId ? 'The booking period must fall within its Session.' : 'The booking period must fall within the event.'];
     if (fields.headcount && (!/^\d+$/.test(fields.headcount) || Number(fields.headcount) < 1 || Number(fields.headcount) > 2147483647)) invalid.headcount = ['Enter a whole number greater than zero.'];
     if (fields.purpose.trim().length > 80) invalid.purpose = ['Purpose must be at most 80 characters.'];
     setErrors(invalid); setFailure(''); if (Object.keys(invalid).length) return;
-    const payload = { ...(replacement ? { replaces_booking_id: replacement.id } : {}), action: 'request_booking', event_id: eventId, venue_id: venueId, starts_at: first.toISOString(), ends_at: last.toISOString(), purpose: fields.purpose.trim() || null, headcount: fields.headcount ? Number(fields.headcount) : null };
+    const payload = { ...(replacement ? { replaces_booking_id: replacement.id } : {}), action: 'request_booking', event_id: eventId, venue_id: venueId, ...(sessionId ? { session_id: sessionId } : {}), starts_at: first.toISOString(), ends_at: last.toISOString(), purpose: fields.purpose.trim() || null, headcount: fields.headcount ? Number(fields.headcount) : null };
     const encoded = JSON.stringify(payload);
     if (submission.current?.payload !== encoded) submission.current = { payload: encoded, key: crypto.randomUUID() };
     setBusy(true);
@@ -36,7 +37,7 @@ export function VenueBookingForm({ eventId, eventCode, venueId, start, end, repl
     {!!saved.suitability.mismatches.length && <><h3>Advisory unmet requirements</h3><ul>{saved.suitability.mismatches.map(message => <li key={message}>{message}</li>)}</ul></>}
     <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-bookings`}>View venue booking requests</ButtonLink>
   </Card>;
-  return <Card title={replacement ? (replacementLabel ?? "Request suggested venue") : "Request this venue"}><p>Suitability is advisory. The submitted period must be within the event; availability is checked again when you submit.</p>
+  return <Card title={replacement ? (replacementLabel ?? "Request suggested venue") : "Request this venue"}><p>Suitability is advisory. The submitted period must be within {sessionId ? 'its Session' : 'the event'}; availability is checked again when you submit.</p>
     {failure && <Alert tone="error">{failure}</Alert>}
     <form aria-label="Request venue booking" onSubmit={submit} noValidate>
       <FormSection title="Booking details">
