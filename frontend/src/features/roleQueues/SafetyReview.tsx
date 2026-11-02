@@ -56,18 +56,21 @@ export function SafetyReview() {
   const { eventId = '' } = useParams();
   const { result, reload } = useLoad(signal => getSafetyReview(eventId, signal), [eventId]);
   const review = result.state === 'ready' ? result.data.review : null;
+  // After a decision the pill shows where the Event went, not Safety Review.
+  const [decided, setDecided] = useState<{ id: string; status: string } | null>(null);
+  const status = decided && decided.id === review?.event.id ? decided.status : review?.event.status;
   return (
     <PageLayout eyebrow={review?.event.event_code ?? 'Safety review'} title={review ? `Decide: ${review.event.title}` : 'Safety review'}
-      actions={review ? <StatusPill status={review.event.status} /> : undefined} width="narrow">
+      actions={status ? <StatusPill status={status} /> : undefined} width="narrow">
       {result.state === 'loading' ? <LoadingState label="Loading the safety review…" rows={4} /> : null}
       {result.state === 'error' ? <ErrorState failure={result.failure} context="this safety review" onRetry={reload} backTo={QUEUE} backLabel="Back to the safety review queue" /> : null}
       {/* Keyed so another Event's review never keeps this one's answers. */}
-      {review ? <ReviewDecision key={review.event.id} review={review} /> : null}
+      {review ? <ReviewDecision key={review.event.id} review={review} onDecided={next => setDecided({ id: review.event.id, status: next })} /> : null}
     </PageLayout>
   );
 }
 
-function ReviewDecision({ review }: { review: Review }) {
+function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (status: string) => void }) {
   const { event, sessions, venues, equipment, support } = review;
   const [answers, setAnswers] = useState(unanswered);
   const [checked, setChecked] = useState(false);
@@ -96,6 +99,7 @@ function ReviewDecision({ review }: { review: Review }) {
     const outcome = await submitSafetyDecision(event.id, { decision: choice, factors, ...(reason ? { reason } : {}) });
     setBusy(false);
     if (!outcome.ok) { setRefusal(outcome.message); return; }
+    onDecided(outcome.data.decision.status);
     setDone(CHOICES[choice].done);
   }
 

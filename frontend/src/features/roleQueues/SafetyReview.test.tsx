@@ -93,6 +93,9 @@ test('TC_E08S06_02: approving with every factor satisfactory confirms the event 
   fireEvent.click(screen.getByRole('button', { name: 'Approve…' }));
   fireEvent.click(screen.getByRole('button', { name: 'Approve safety check' }));
   expect(await screen.findByText('Approved. The event is Confirmed, and the Organiser and the Coordinator have been notified.')).toBeInTheDocument();
+  // The heading's pill follows the decision.
+  expect(screen.getByText('Confirmed')).toBeInTheDocument();
+  expect(screen.queryByText('Safety Review')).toBeNull();
   const post = calls.find(call => call.method === 'POST')!;
   expect(post.body).toEqual({ decision: 'approve', factors: Object.fromEntries(SAFETY_FACTORS.map(factor => [factor, { satisfactory: true, comment: `${factor} checked` }])) });
   fireEvent.click(screen.getByRole('link', { name: 'Back to the safety review queue' }));
@@ -114,6 +117,7 @@ test('TC_E08S06_03: requesting changes needs a factor marked not satisfactory an
   fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Move the rig' } });
   fireEvent.click(screen.getByRole('button', { name: 'Request changes' }));
   expect(await screen.findByText('Changes requested. The event is back in Planning, and the Organiser and the Coordinator have been notified.')).toBeInTheDocument();
+  expect(screen.getByText('Planning')).toBeInTheDocument();
   const post = calls.find(call => call.method === 'POST')!.body as { decision: string; reason: string; factors: Record<string, { satisfactory: boolean }> };
   expect([post.decision, post.reason, post.factors.equipment_placement.satisfactory]).toEqual(['request_changes', 'Move the rig', false]);
 });

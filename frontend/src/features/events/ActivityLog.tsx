@@ -37,6 +37,8 @@ export function formatEditedValue(field: string | null, value: string): string {
     const [opens, closes] = value.split(' to ');
     return closes === undefined ? formatDate(value, true) : `${formatDate(opens, true)} to ${formatDate(closes, true)}`;
   }
+  // E08-S06: the Organiser's event page formats values here too, so the checklist reads as words there as well.
+  if (field === 'safety_check') return describeSafetyCheck(value);
   return value;
 }
 

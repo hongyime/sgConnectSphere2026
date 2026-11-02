@@ -162,3 +162,13 @@ test('TC_E14S03_06: formatting changes only what is shown; the entries from the 
   expect(stored).toEqual(snapshot);
   expect(calls.filter(call => call.method !== 'GET')).toHaveLength(0);
 });
+
+test('TC_E08S06_02 / _03: the Organiser reads a Safety Officer decision as words, not the stored JSON', async () => {
+  const factors = Object.fromEntries(['attendance_capacity', 'venue_layout', 'emergency_access', 'accessibility', 'equipment_placement',
+    'crowd_movement', 'venue_restrictions'].map(key => [key, { satisfactory: key !== 'equipment_placement', comment: 'Checked' }]));
+  renderOrganiserLog([{ ...entry('safety_check', JSON.stringify({ decision: 'request_changes', reason: 'Move the rig', factors })),
+    action: 'Safety check changes requested' }]);
+  const [item] = await organiserItems();
+  expect(item).toContain('(Not satisfactory: Equipment placement. Reason: Move the rig)');
+  expect(item).not.toContain('"factors"');
+});
