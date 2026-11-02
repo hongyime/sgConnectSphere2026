@@ -26,7 +26,12 @@ the Session save as it was.
    told), not extra blocks in _03/_06: the export reads one block per case
    (the leftover-block trouble in _01/_05). The Vitest and DB tests carry the
    new IDs; workbook CAA 031126 + undated copy; tc-coverage 385. Done.
-5. Checks, break tests, real local run, run records.
+5. Checks, break tests, real local run, run records. Real run done: guide
+   section K + EVT-1029 Design Week in the preconditions SQL (75980fe8);
+   automated real-stack run 11/11 checks, record `20261103-002400`
+   (4bb6cf3d). Le Xin's manual run of section K next (T-93; T-106 never
+   merged). Local API needs `APP_URL=http://localhost:5173` or sign-in is
+   refused (csrf).
 6. PR (reviewers Amareet, Ji Ning) and Jira comment on SCRUM-244.
 
 ## Decisions
@@ -54,4 +59,6 @@ stays. No PO question: no AC, scope or product rule changes.
 
 ## Next step
 
-Task 5: real local run on the Session screen, run records; then Task 6 PR.
+Task 6: push, PR (base `main`, reviewers Amareet and Ji Ning; no PO tag), CI,
+Jira comment on SCRUM-244. Le Xin's manual run of section K is done: record
+`20261103-003200`, 2/2 PASS, 5 screenshots.
