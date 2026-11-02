@@ -15,7 +15,8 @@ Update the burndown/velocity Markdown and standalone HTML dashboard from the Jir
 - [x] Create the short-lived docs branch from current `origin/main`.
 - [x] Add the two dashboard deliverables and allowlist the durable HTML artifact.
 - [x] Run the HTML checker, repository check, and doc guard.
-- [ ] Commit only the dashboard, run record, allowlist, and handoff files, push the branch, and open a draft PR.
+- [x] Commit only the dashboard, run records, allowlist, and handoff files, and push the branch.
+- [ ] Open a draft PR for teammate review.
 
 ## Scope limits
 
