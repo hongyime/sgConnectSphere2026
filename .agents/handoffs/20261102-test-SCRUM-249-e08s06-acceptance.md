@@ -19,11 +19,13 @@ PR is the story's last and carries the story key.
   FAIL on the Organiser's Activity log (raw JSON), the rest PASS. Record,
   22 screenshots and the setup SQL committed. The fixes are in #412
   (`be0eb43`) and #413 (`e49b4c3`).
+- Aaron's rerun of TC_02 and TC_03 (19:57–20:04, at `6c319a3`): PASS.
+- Playwright TC_E08S06_01 to _06 (`c2de0a1`), including deactivation with
+  Safety Review as the Coordinator's only active Event: PASS on desktop
+  and Pixel 7, record `20261102-202637-Bl0oper-frontend-e2e.md`.
 
 ## Not done / next step
 
-1. Aaron reruns the affected steps on the fixed code; record it.
-2. Playwright for TC_E08S06_01 to _06, including Scenario 9's tracker and
-   deactivation with Safety Review as the only active status.
-3. Mark #412 ready; after it merges, retarget #413 to `main`; then open this
-   PR with the AC-to-evidence checklist for Bryan's PO acceptance.
+1. After #412 merges, retarget #413 to `main`; then open this PR with the
+   AC-to-evidence checklist for Bryan's PO acceptance, and fill the status
+   record's "Test gates" and "Known limits" sections.
