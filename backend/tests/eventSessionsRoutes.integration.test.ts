@@ -788,12 +788,14 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
 
     // With 2 or more Sessions left, deleting a Session keeps the Event's time and attendance.
     const threeSession = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [threeSession.eventId]);
     const third = await addSession(repository, organiserId, threeSession.eventId, {
       title: 'Third',
       startAt: '2027-03-14T01:00:00.000Z',
       endAt: '2027-03-14T03:00:00.000Z',
       expectedAttendance: 25,
     });
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [threeSession.eventId]);
     const eventDetailsBefore3 = (await client.query<{ event_range: string; expected_attendance: number }>(
       'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
     )).rows[0]!;
