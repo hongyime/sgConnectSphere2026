@@ -4,7 +4,7 @@ runner: amareetkm2024-del
 scope: backend/db
 environment: local
 run_type: automated
-test_case_version: 311026
+test_case_version: 011126
 database: real
 commit: c7e59e7
 ---

@@ -4,7 +4,7 @@ runner: amareetkm2024-del
 scope: frontend/e2e
 environment: local
 run_type: manual
-test_case_version: 311026
+test_case_version: 011126
 database: real
 commit: 1f2f149
 pr: 408
@@ -16,9 +16,9 @@ pr: 408
 | TC_E04S02_02 | Multiple Sessions should retain their own dates, times, attendance, and requirements | PASS | Added a second Session on the same draft. First Session (kept the title "Opening"): 12 Mar 09:00-11:00, 40, venue "Hall A", equipment "Projector", facility Projector. Second "Session B": 13 Mar 13:00-16:00, 120, venue "Hall B", equipment "Microphones", layout Theatre, facility PA system. After a reload both kept their own values (also confirmed in the database). |
 | TC_E04S02_03 | Venue suitability should use each Session's own attendance and requirements | PASS | As coord_a on EVT-9401 venue search: Session A - Talks filled 40 attendees and Wheelchair access, and Lotus Room (50) was Suitable. Session B - Panel filled 120 attendees and Theatre, and the same Lotus Room was a Near match ("Required room layout is not supported") while Orchid Hall (Theatre 120) was Suitable. Lotus Room did not also list a capacity shortfall because capacity is judged by the requested layout (existing E06-S02 rule). |
 | TC_E04S02_04 | The same venue may have separate bookings for different Sessions of one Event | PASS | Requested Orchid Hall for Session B (13:00-15:00), then for Session A (09:00-11:00). The booking list showed two separate Pending Orchid Hall requests, each naming its Session and its own period; the Event moved to Planning. |
-| TC_E04S02_05 | Deleting a Session should release its confirmed booking and retain history | PASS | As organiser_a on EVT-9403, Remove session on Session A - Morning asked for confirmation first; confirming showed "Session removed. 1 venue booking released. The venue's staff have been notified." with only Session B left. As coord_a: Session A's Lotus Room booking Released, Session B's still Confirmed; activity log showed "Session deleted - Session: Session A - Morning" and "Booking released"; the Lotus Room calendar for 27 Mar 2027 showed only 13:00-15:00 Confirmed. venue_a had "Venue booking released". The first attempt on EVT-9402 also passed (database checked) but was not screenshotted, so EVT-9403, an identical copy, was set up and the case repeated for the evidence. |
+| TC_E04S02_05 | Deleting a Session should release its confirmed booking and retain history | PASS | As organiser_a on EVT-9403, Remove session on Session A - Morning asked for confirmation first; confirming showed "Session removed. 1 venue booking released. The venue's staff have been notified." with only Session B left. As coord_a: Session A's Lotus Room booking Released, Session B's still Confirmed; activity log showed "Session deleted - Session: Session A - Morning" and "Booking released"; the Lotus Room calendar for 27 Mar 2027 showed only 13:00-15:00 Confirmed. venue_a had "Venue booking released". The first attempt on EVT-9402 also passed (database checked) but was not screenshotted, so EVT-9403, a copy with its own title ("(repeat)") and date (27 Mar 2027) and the same Session times and bookings, was set up by hand and the case repeated for the evidence. |
 
-Set up with `docs/testing/manual/E04-S02-preconditions.sql` on a fresh reset and seed of the local Docker database `connectsphere_dev_stack`, plus a copy of EVT-9402 as EVT-9403 for the repeat. Steps are in `docs/testing/manual/E04-S02-click-through.md`. Seen in passing, outside this story: "Event update" notices to Venue Staff show a raw UTC timestamp ("Changed at 2026-11-01T17:28:16.415Z"), visible in TC_E04S02_05-6; passed on for E11-S01.
+Set up with `docs/testing/manual/E04-S02-preconditions.sql` on a fresh reset and seed of the local Docker database `connectsphere_dev_stack`, plus the hand-made copy EVT-9403 for the repeat (not in that script). Steps are in `docs/testing/manual/E04-S02-click-through.md`. Seen in passing, outside this story: "Event update" notices to Venue Staff show a raw UTC timestamp ("Changed at 2026-11-01T17:28:16.415Z"), visible in TC_E04S02_05-6; passed on for E11-S01.
 
 ## Screenshots
 

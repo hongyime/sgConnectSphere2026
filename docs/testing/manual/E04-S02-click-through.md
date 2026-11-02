@@ -16,13 +16,16 @@ never the shared one. The reset guard (`isSafeResetTarget()`) refuses anything
 that is not a safe target, so do not bypass it. Point `LOCAL_DB` at the loopback
 address, for example
 `export LOCAL_DB="postgres://postgres:<local password>@127.0.0.1:5432/connectsphere_dev_stack"`.
+Leave `DATABASE_POOLER_URL` empty in every command below: the API prefers it over
+`DATABASE_URL`, so a value set in your shell would send the test events to that
+database instead, and the reset guard does not check it.
 
 1. **Database.** Create the empty database once (`createdb -h 127.0.0.1 -U postgres connectsphere_dev_stack`),
-   reset and seed it (`cd backend && DATABASE_URL="$LOCAL_DB" npx tsx src/database/cli.ts reset && cd ..`), then
+   reset and seed it (`cd backend && DATABASE_URL="$LOCAL_DB" DATABASE_POOLER_URL= npx tsx src/database/cli.ts reset && cd ..`), then
    `psql "$LOCAL_DB" -q -v stage=setup -f docs/testing/manual/E04-S02-preconditions.sql`.
    It prints EVT-9401's two Sessions (no bookings) and EVT-9402's two Sessions,
    each with a Confirmed Lotus Room booking.
-2. **API:** `cd backend && DATABASE_URL="$LOCAL_DB" ADDITIONAL_ALLOWED_ORIGINS="http://127.0.0.1:5173" npx tsx src/dev.ts`.
+2. **API:** `cd backend && DATABASE_URL="$LOCAL_DB" DATABASE_POOLER_URL= ADDITIONAL_ALLOWED_ORIGINS="http://127.0.0.1:5173" npx tsx src/dev.ts`.
 3. **Website:** `cd frontend && npx vite --host 127.0.0.1 --port 5173 --strictPort`.
 4. Every account uses the seed password (`tests/seed/SEED_DATA.md`). Use a normal
    window for organiser_a and a private window for coord_a and venue_a.
@@ -57,3 +60,8 @@ been notified." coord_a: `/coordinator/events/EVT-9402/venue-bookings` (A
 Released, B Confirmed), `/coordinator/events/EVT-9402` activity log (Session
 deleted, Booking released), Lotus Room calendar for 20 Mar 2027 (only
 13:00-15:00). venue_a: `/notifications`, "Venue booking released".
+
+Deleting uses up EVT-9402. To repeat the case without a fresh reset, copy it by
+hand under a new code, title and date. The 2 November run did this: EVT-9403,
+"Two-Session Design Workshop (repeat)", 27 Mar 2027, same Session times and the
+same Confirmed Lotus Room bookings. Its copy script is not committed.
