@@ -705,7 +705,8 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       'the survivor keeps its needs when a Session is added again');
 
     // 3. T-94: deleting the Session holding the primary clears it, with no
-    // automatic promotion, and T-79 keeps the Event's overall details.
+    // automatic promotion; when one Session is left, the Event's time,
+    // attendance, requirements and layout update to match it.
     const primary = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
     const book = async (sessionId: string, at: string, isPrimary: boolean) => {
       const id = randomUUID();
@@ -718,7 +719,17 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     };
     await book(primary.firstId, '2027-04-12T01:00:00Z', true);
     const remainingBooking = await book(primary.secondId, '2027-04-13T05:00:00Z', false);
-    const detailsBefore = (await client.query('SELECT event_range, expected_attendance FROM events WHERE id = $1', [primary.eventId])).rows[0];
+    await client.query(
+      `UPDATE sessions SET expected_attendance = 30, layout_id = $2, venue_requirements = 'Whiteboard and projector screen'
+       WHERE id = $1`,
+      [primary.secondId, theatre],
+    );
+    const supportId = randomUUID();
+    await client.query(
+      `INSERT INTO tech_support_requests (id, event_id, support_required, support_range, status, requested_by)
+       VALUES ($1, $2, true, tstzrange('2027-04-12T00:00:00Z', '2027-04-12T06:00:00Z', '[)'), 'open', $3)`,
+      [supportId, primary.eventId, organiserId],
+    );
     const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
     assert.equal(prompted.primaryNeeded, true);
     assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
@@ -726,8 +737,68 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     assert.equal((await client.query<{ status: string }>('SELECT status FROM venue_bookings WHERE id = $1', [remainingBooking])).rows[0]!.status, 'confirmed');
     const notices = await client.query<{ title: string }>('SELECT title FROM notifications WHERE user_id = $1 AND event_id = $2', [coordinatorId, primary.eventId]);
     assert.deepEqual(notices.rows.map(row => row.title), ['Primary venue needed']);
-    assert.deepEqual((await client.query('SELECT event_range, expected_attendance FROM events WHERE id = $1', [primary.eventId])).rows[0], detailsBefore,
-      "the Event keeps its overall time and attendance");
+
+    const survivorSession = (await client.query<{
+      session_range: string;
+      expected_attendance: number;
+      layout_id: string | null;
+      venue_requirements: string | null;
+    }>('SELECT session_range, expected_attendance, layout_id, venue_requirements FROM sessions WHERE id = $1', [primary.secondId])).rows[0]!;
+    const eventAfter = (await client.query<{
+      event_range: string;
+      expected_attendance: number;
+      layout_id: string | null;
+      venue_requirements: string | null;
+    }>('SELECT event_range, expected_attendance, layout_id, venue_requirements FROM events WHERE id = $1', [primary.eventId])).rows[0]!;
+    assert.deepEqual(
+      {
+        range: eventAfter.event_range,
+        attendance: eventAfter.expected_attendance,
+        layout: eventAfter.layout_id,
+        requirements: eventAfter.venue_requirements,
+      },
+      {
+        range: survivorSession.session_range,
+        attendance: survivorSession.expected_attendance,
+        layout: survivorSession.layout_id,
+        requirements: survivorSession.venue_requirements,
+      },
+      "when one Session is left, the Event's time, attendance, requirements and layout update to match it",
+    );
+
+    // Editing the event afterward must not overwrite the survivor with stale details.
+    await client.query(`UPDATE events SET title = 'Renamed forum' WHERE id = $1`, [primary.eventId]);
+    const survivorAfterEdit = (await client.query<{
+      session_range: string;
+      expected_attendance: number;
+      layout_id: string | null;
+      venue_requirements: string | null;
+    }>('SELECT session_range, expected_attendance, layout_id, venue_requirements FROM sessions WHERE id = $1', [primary.secondId])).rows[0]!;
+    assert.deepEqual(survivorAfterEdit, survivorSession, 'a later Event edit does not overwrite the survivor Session with stale details');
+
+    // Technical support requests and equipment keep their times until someone edits them.
+    const supportAfter = (await client.query<{ support_range: string }>(
+      'SELECT support_range FROM tech_support_requests WHERE id = $1', [supportId],
+    )).rows[0]!;
+    assert.equal(supportAfter.support_range, '[2027-04-12 00:00:00+00,2027-04-12 06:00:00+00)',
+      'technical support requests keep their times until someone edits them');
+
+    // With 2 or more Sessions left, deleting a Session keeps the Event's time and attendance.
+    const threeSession = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    const third = await addSession(repository, organiserId, threeSession.eventId, {
+      title: 'Third',
+      startAt: '2027-03-14T01:00:00.000Z',
+      endAt: '2027-03-14T03:00:00.000Z',
+      expectedAttendance: 25,
+    });
+    const eventDetailsBefore3 = (await client.query<{ event_range: string; expected_attendance: number }>(
+      'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
+    )).rows[0]!;
+    await removeSession(repository, organiserId, threeSession.eventId, third.session.id);
+    const eventDetailsAfter3 = (await client.query<{ event_range: string; expected_attendance: number }>(
+      'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
+    )).rows[0]!;
+    assert.deepEqual(eventDetailsAfter3, eventDetailsBefore3, 'with 2 or more Sessions left, the Event time and attendance stay the same');
 
     // With no Confirmed booking left, the next one becomes primary by itself (O-30).
     const noneLeft = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });

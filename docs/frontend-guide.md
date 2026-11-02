@@ -224,7 +224,8 @@ Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
 the Session's bookings and reservations are released before anything is sent.
 
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
-keeps the Event's own dates and attendance as the overall planning envelope.
+keeps the Event's own dates and attendance as the overall planning envelope,
+updating them to match when deleting down to a sole Session.
 With one Session the editor shows only its date, time and attendance, because
 the request form holds the Event-level requirements. With two or more, each
 Session also shows its venue and equipment requirements, room layout,

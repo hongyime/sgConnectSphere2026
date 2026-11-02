@@ -234,8 +234,10 @@ When the deleted Session's booking was the primary venue and another Confirmed
 booking remains, the primary is cleared with no automatic promotion (T-94),
 `primaryNeeded` is true, and the Coordinator, who chooses the primary (T-78), gets
 a "Primary venue needed" notice. With no Confirmed booking left, the next one
-becomes primary as usual (O-30). The Event keeps its overall dates and attendance
-(T-79).
+becomes primary as usual (O-30). When one Session is left, the Event's time,
+attendance, requirements and layout update to match it; with two or more Sessions
+left, the Event's time stays the same, and equipment reservations and Technical
+Support times keep their existing times until edited.
 
 In planning, changing a Session's layout, accessibility needs or facilities
 counts as an arrangement change even when its times, attendance and capacity

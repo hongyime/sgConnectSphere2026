@@ -121,8 +121,28 @@ export async function writeSessionWith(client: Client, sessionId: string, eventI
 // The reverse step, when deleting leaves one Session. A sole Session with no
 // rows follows the Event, so an explicitly empty list would otherwise pick up
 // the Event's needs: the Event takes the survivor's needs, which stay the same.
-async function handNeedsToEvent(client: Client, eventId: string) {
+// When one Session is left, the Event's time, attendance, requirements and
+// layout also update to match it. Equipment reservations and Technical Support
+// keep their old times until edited, and with 2 or more Sessions left, the
+// Event's time stays the same.
+export async function handNeedsToEvent(client: Client, eventId: string) {
   const [survivor] = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
+  if (!survivor) return;
+
+  await client.query(
+    `UPDATE events e
+     SET event_range = s.session_range,
+         expected_attendance = s.expected_attendance,
+         layout_id = s.layout_id,
+         venue_requirements = s.venue_requirements,
+         accessibility_note = s.accessibility_note,
+         equipment_requirements = s.equipment_requirements,
+         layout_preference = s.layout_preference
+     FROM sessions s
+     WHERE e.id = $1 AND s.id = $2`,
+    [eventId, survivor.id],
+  );
+
   const tables = [
     { event: 'event_accessibility_needs', session: 'session_accessibility_needs', column: 'feature_id' },
     { event: 'event_facility_needs', session: 'session_facility_needs', column: 'facility_id' },
@@ -131,9 +151,9 @@ async function handNeedsToEvent(client: Client, eventId: string) {
     await client.query(`DELETE FROM ${event} WHERE event_id = $1`, [eventId]);
     await client.query(
       `INSERT INTO ${event} (event_id, ${column}) SELECT $1, ${column} FROM ${session} WHERE session_id = $2`,
-      [eventId, survivor!.id],
+      [eventId, survivor.id],
     );
-    await client.query(`DELETE FROM ${session} WHERE session_id = $1`, [survivor!.id]);
+    await client.query(`DELETE FROM ${session} WHERE session_id = $1`, [survivor.id]);
   }
 }
 

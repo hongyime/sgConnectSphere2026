@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { AccessError } from '../src/modules/eventVisibility/service.js';
 import { addSession, editSession, getSessions, removeSession, type SessionRepository } from '../src/modules/eventSessions/service.js';
+import { handNeedsToEvent } from '../src/modules/eventSessions/repository.js';
 import type { SessionEditScope, SessionInput, SessionRecord } from '../src/modules/eventSessions/types.js';
 
 const EVENT_ID = '11111111-1111-4111-8111-111111111111';
@@ -220,4 +221,48 @@ test('E04-S02 Scenario 1: leaving the needs out keeps whatever the Session alrea
   assert.ok('session' in result);
   assert.equal(result.session!.accessibilityFeatureIds, undefined);
   assert.equal(result.session!.facilityIds, undefined);
+});
+
+test('E04-S02: handNeedsToEvent updates Event details to match the survivor Session and hands over needs', async () => {
+  const queries: Array<{ sql: string; values?: unknown[] }> = [];
+  const mockClient = {
+    async query(sql: string, values?: unknown[]) {
+      queries.push({ sql, values });
+      if (sql.includes('SELECT id FROM sessions WHERE event_id = $1')) {
+        return { rows: [{ id: SESSION_ID }] };
+      }
+      return { rows: [] };
+    },
+  };
+  await handNeedsToEvent(mockClient, EVENT_ID);
+  const updateEvent = queries.find(q => q.sql.includes('UPDATE events e'));
+  assert.ok(updateEvent, 'updates event details');
+  assert.ok(updateEvent.sql.includes('event_range = s.session_range'));
+  assert.ok(updateEvent.sql.includes('expected_attendance = s.expected_attendance'));
+  assert.ok(updateEvent.sql.includes('layout_id = s.layout_id'));
+  assert.ok(updateEvent.sql.includes('venue_requirements = s.venue_requirements'));
+  assert.ok(updateEvent.sql.includes('accessibility_note = s.accessibility_note'));
+  assert.ok(updateEvent.sql.includes('equipment_requirements = s.equipment_requirements'));
+  assert.ok(updateEvent.sql.includes('layout_preference = s.layout_preference'));
+  assert.deepEqual(updateEvent.values, [EVENT_ID, SESSION_ID]);
+
+  assert.ok(queries.some(q => q.sql.includes('DELETE FROM event_accessibility_needs')));
+  assert.ok(queries.some(q => q.sql.includes('INSERT INTO event_accessibility_needs')));
+  assert.ok(queries.some(q => q.sql.includes('DELETE FROM session_accessibility_needs')));
+  assert.ok(queries.some(q => q.sql.includes('DELETE FROM event_facility_needs')));
+  assert.ok(queries.some(q => q.sql.includes('INSERT INTO event_facility_needs')));
+  assert.ok(queries.some(q => q.sql.includes('DELETE FROM session_facility_needs')));
+});
+
+test('E04-S02: handNeedsToEvent does nothing if no survivor session exists', async () => {
+  const queries: Array<{ sql: string; values?: unknown[] }> = [];
+  const mockClient = {
+    async query(sql: string, values?: unknown[]) {
+      queries.push({ sql, values });
+      return { rows: [] };
+    },
+  };
+  await handNeedsToEvent(mockClient, EVENT_ID);
+  assert.equal(queries.length, 1);
+  assert.ok(queries[0]?.sql.includes('SELECT id FROM sessions WHERE event_id = $1'));
 });
