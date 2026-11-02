@@ -13,12 +13,12 @@ the Session save as it was.
 
 1. Branch from `main` a954231b, this handoff. Done.
 2. Frontend: the Session screen's confirm message counts Technical Support
-   requests. Done: `SessionEditor.tsx`, Vitest `TC_E10S02_03` case (support
-   only), break-tested.
+   requests. Done: `SessionEditor.tsx`, Vitest case (support only, now
+   `TC_E10S02_14`), break-tested.
 3. Backend: `updateSessionInPlanning` uses `notifyArrangementImpact`; DB test
    (Session move flags only support, its technician is told). Done: Ji Ning
    was busy, so Le Xin took it (3 November). DB case
-   `TC_E10S02_06 TC_E10S02_10` in `eventSessionsRoutes.integration.test.ts`;
+   `TC_E10S02_15 TC_E10S02_10` in `eventSessionsRoutes.integration.test.ts`;
    with `main`'s notice code the technician got 0 notices (bug confirmed);
    frontend guide, venue-bookings contract and architecture doc updated.
 4. Test cases: new TC_E10S02_14 (Scenario 3, Session screen counts support)

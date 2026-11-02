@@ -23,7 +23,8 @@ It prints eight events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
 Summit**, **EVT-1023 Studio Workshop**, **EVT-1024 Product Launch** (100
 registered), **EVT-1025 Two-Day Forum** (2 Sessions), and for the Technical
 Support follow-up (T-104, subtask SCRUM-244) **EVT-1026 Charity Run**,
-**EVT-1027 Board Briefing** and **EVT-1028 Year-end Gala**. Start the API with only
+**EVT-1027 Board Briefing** and **EVT-1028 Year-end Gala**, and for the Session
+screen (E04-S02) **EVT-1029 Design Week** (2 Sessions). Start the API with only
 `DATABASE_URL` (leave `DATABASE_POOLER_URL` empty) and Vite on
 http://localhost:5173. Every account uses the seed password
 (`tests/seed/SEED_DATA.md`).
@@ -35,6 +36,7 @@ http://localhost:5173. Every account uses the seed password
 | `venue_a@connectsphere.com` | Venue Staff for every E10 venue |
 | `tech_a@connectsphere.com` | Technical Support Staff for every E10 event |
 | `safety_officer@connectsphere.com` | Safety Officer (section J only) |
+| `tech_b@connectsphere.com` | Technical Support Staff on EVT-1029's Lighting (section K only) |
 
 Fixture substitutions: the cases name `coordinator_1`, `venue_staff_1` and
 `tech_support_1`, which the seed does not have; use the seed accounts above,
@@ -276,6 +278,39 @@ Screenshots: `TC_E10S02_12-1.png` (Support to reconfirm), `TC_E10S02_12-2.png`
 (Safety Officer notice), `TC_E10S02_13-1.png` (Board Briefing review),
 `TC_E10S02_13-2.png` (refusal), `TC_E10S02_13-3.png` (still listed).
 
+## K. TC_E10S02_14 and TC_E10S02_15 — moving a Session on the Organiser's Session screen (EVT-1029)
+
+EVT-1029 **Design Week** is in Planning with **Day 1** (12 Mar 2027, 9:00 am –
+12:00 pm) and **Day 2** (13 Mar 2027, 1:00 pm – 4:00 pm), and no venue or
+equipment. A staffed **Sound desk** request (13 Mar, 12:00 pm – 2:00 pm,
+`tech_a`) overlaps Day 2; a staffed **Lighting** request (12 Mar, 10:00 am –
+12:00 pm, `tech_b`) covers only Day 1. The cases' `organiser_1`,
+`tech_support_1` and `tech_support_2` are `organiser_a`, `tech_a` and `tech_b`.
+
+1. Sign in as `organiser_a`. Open
+   http://localhost:5173/organiser/requests/EVT-1029. Under **Event Sessions**,
+   in **Day 2**, set **Starts** to 13/03/2027 02:00 pm and **Ends** to
+   13/03/2027 04:30 pm. Click **Save session**.
+2. Expected (TC_14): **Save this Session change?** "This change flags 0
+   booking(s), 0 reservation(s) and 1 Technical Support request(s) for
+   reconfirmation." Nothing is saved yet.
+3. Click **Save anyway**. Expected: "Session saved."; after a page reload Day 2
+   still starts 13/03/2027 02:00 pm.
+4. Sign in as `tech_a`. Open http://localhost:5173/notifications. Expected
+   (TC_15): one **Event update** for Design Week: "An event change (date or time)
+   means venue bookings, equipment reservations or Technical Support requests need
+   reconfirmation. …"
+5. Still as `tech_a`, open http://localhost:5173/support/technicians. Expected:
+   under **Support to reconfirm**, **EVT-1029 Design Week**, Sound desk, *Staffed
+   for* 13 Mar 2027, 12:00 pm – 2:00 pm, *Reconfirm for* 13 Mar 2027, 1:00 pm –
+   3:00 pm; Lighting is not listed.
+6. Sign in as `tech_b`. Open http://localhost:5173/notifications. Expected: no
+   Design Week notice.
+
+Screenshots: `TC_E10S02_14-2.png` (confirm message), `TC_E10S02_14-3.png`
+(saved, new time), `TC_E10S02_15-4.png` (tech_a notice), `TC_E10S02_15-5.png`
+(Support to reconfirm), `TC_E10S02_15-6.png` (tech_b, no notice).
+
 ## Check the database afterwards (optional, read-only)
 
 ```bash
@@ -289,4 +324,6 @@ and 100 Registered for EVT-1024. For T-104: EVT-1026 Sound desk unflagged at 12 
 06:00 with tech_a's assignment there, one "Reconfirmation required" and one
 "Support Reconfirmed" row, EVT-1026 in safety_review; EVT-1027 Lighting still
 flagged at 6 Dec 09:00, moving to 13 Dec 09:00, with no "Support Reconfirmed"
-row; EVT-1027 and EVT-1028 in planning.
+row; EVT-1027 and EVT-1028 in planning. For section K: EVT-1029 Sound desk
+flagged at 13 Mar 12:00, moving to 13 Mar 13:00, Lighting not flagged, and one
+notice for tech_a and none for tech_b.
