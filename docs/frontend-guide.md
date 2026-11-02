@@ -240,3 +240,20 @@ Session, sends `session_id` with the search, and carries it into the
 suitability page, whose booking form submits it. Holds have no Session, so
 "Hold this venue" is offered only for single-Session events. The Coordinator's
 booking list names each booking's Session.
+
+## Operational Safety Check (E08-S06)
+
+The Safety Officer's queue (`/safety/queue`, `RoleQueues.tsx`) lists Events in
+Safety Review oldest entry first; each title opens `/safety/review/:eventId`
+(`SafetyReview.tsx`, from the Decision template). The page shows one card per
+Session with its venues, equipment and accessibility needs, from
+`?safetyReview=1`, plus a card for anything not tied to a Session. The seven
+factors start unanswered (a `select` with "Choose…" and a comment each); the
+page refuses a decision until every factor has both, and checks the
+approve / request-changes rules before the `ConfirmPanel`, which asks for the
+reason on request changes and reject. The server repeats every check.
+
+`SafetyReturnAlert` shows "Safety arrangement rejected" (or "changes
+requested") with the reason on the Coordinator's readiness page and the
+Organiser's event page, from the `safetyReturn` both reads carry. The Activity
+log shows a decision's checklist row as the unsatisfactory factors and reason.

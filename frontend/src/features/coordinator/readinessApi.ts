@@ -5,6 +5,7 @@
 //   POST /api/events?safetyReview=1&id=<id or code>  -> { submission }
 //     409 { error, readiness } when an arrangement is outstanding
 import { apiCall, jsonRequest, type ApiResult } from '../../shared';
+import type { SafetyReturn } from '../roleQueues/roleQueueApi';
 
 export type ReadinessBlocker = { kind: string; message: string };
 
@@ -25,6 +26,8 @@ export type Readiness = {
   support: { id: string; description: string; startsAt: string; endsAt: string; status: string; state: 'ready' | 'outstanding' }[];
   blockers: ReadinessBlocker[];
   canSubmit: boolean;
+  // E08-S06 (D109): set while a safety decision has sent the event back.
+  safetyReturn?: SafetyReturn;
 };
 
 export type Submission = { eventId: string; eventCode: string | null; status: 'safety_review'; statusChangedAt: string };

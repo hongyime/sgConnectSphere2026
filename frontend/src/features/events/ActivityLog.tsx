@@ -5,6 +5,7 @@
 // Entries can never be edited or deleted (Scenario 5), so there are no actions.
 import { Card, DataTable, StatusPill, formatDate, statusLabel, type Column } from '../../shared';
 import { editableFieldLabels } from './eventEditFields';
+import { SAFETY_FACTOR_LABELS, SAFETY_FACTORS } from '../roleQueues/roleQueueApi';
 
 export type ActivityEntry = {
   occurred_at: string;
@@ -68,6 +69,8 @@ export function describeChange(entry: ActivityEntry) {
   }
   // E04-S02 Scenario 5: a deleted Session keeps its title as the old value.
   if (entry.field_changed === 'session') return entry.old_value ? `Session: ${entry.old_value}` : 'Session';
+  // E08-S06: a Safety Officer's decision keeps its checklist as JSON (D110).
+  if (entry.field_changed === 'safety_check') return describeSafetyCheck(entry.new_value);
   const label = statusLabel(fieldLabels[entry.field_changed] ?? entry.field_changed);
   if (!entry.new_value) return label;
   // Coordinator assignment and reassignment keep the previous Coordinator.
@@ -75,6 +78,17 @@ export function describeChange(entry: ActivityEntry) {
   return entry.old_value && entry.old_value !== entry.new_value
     ? `${label}: ${formatEditedValue(entry.field_changed, entry.old_value)} → ${after}`
     : `${label}: ${after}`;
+}
+
+function describeSafetyCheck(value: string | null) {
+  try {
+    const check = JSON.parse(value ?? '') as { reason?: string; factors?: Record<string, { satisfactory?: boolean }> };
+    const failed = SAFETY_FACTORS.filter(factor => check.factors?.[factor]?.satisfactory === false).map(factor => SAFETY_FACTOR_LABELS[factor]);
+    return [failed.length ? `Not satisfactory: ${failed.join(', ')}` : 'Every factor satisfactory', check.reason ? `Reason: ${check.reason}` : '']
+      .filter(Boolean).join('. ');
+  } catch {
+    return 'Safety checklist';
+  }
 }
 
 // The stored action is written for the database ("Status changed to

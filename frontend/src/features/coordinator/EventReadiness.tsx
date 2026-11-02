@@ -20,6 +20,7 @@ import {
   formatDateRange, statusLabel, useLoad, type Column,
 } from '../../shared';
 import { getReadiness, readBlockedReadiness, submitForSafetyReview, type Readiness } from './readinessApi';
+import { SafetyReturnAlert } from '../roleQueues/SafetyReturnAlert';
 
 type Booking = Readiness['venueBookings'][number];
 type Line = Readiness['equipment'][number];
@@ -79,6 +80,7 @@ export function EventReadiness() {
       {done ? <Alert tone="success" action={<ButtonLink to={back}>View event</ButtonLink>}>{done}</Alert> : null}
       {readiness ? (
         <>
+          <SafetyReturnAlert value={readiness.safetyReturn} />
           <Card title="What you're submitting">
             <FactList items={[
               ['Event date', formatDateRange(readiness.startsAt, readiness.endsAt)],
