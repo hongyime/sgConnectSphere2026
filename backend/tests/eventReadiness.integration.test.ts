@@ -278,7 +278,7 @@ test('TC_E07S04_07: a missing, released or flagged reservation also blocks submi
     assert.deepEqual(snapshot.blockers.map(row => row.message), [
       'Lectern — not reserved; 1 outstanding',
       'Screen — reservation released; 2 outstanding',
-      'Speaker — needs review: stock changed (5 of 5 reserved)',
+      'Speaker — needs review (5 of 5 reserved)',
     ]);
   });
 });

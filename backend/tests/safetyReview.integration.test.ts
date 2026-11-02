@@ -150,7 +150,7 @@ test('TC_E08S06_03: requesting changes flags the equipment only, and the Event w
   assert.equal((await f.q('SELECT requires_reconfirmation FROM equipment_reservations WHERE id = $1', [reservation])).rows[0].requires_reconfirmation, true);
   const notices = await f.noticesFor(event);
   assert.equal(notices.length, 2);
-  assert.equal(notices[0]!.message, 'The Safety Officer requested changes, so EVT-8604 Charity Run is back in Planning. Reason: Move the rig '
+  assert.equal(notices[0]!.message, 'The Safety Officer requested changes, so EVT-8604 Charity Run is back in Planning. Reason: Move the rig. '
     + 'Items to address: Equipment placement: Stage rig blocks the east exit.');
   assert.deepEqual((await getEventReadiness(f.pool, f.coordinator, 'EVT-8604')).safetyReturn?.decision, 'request_changes');
 

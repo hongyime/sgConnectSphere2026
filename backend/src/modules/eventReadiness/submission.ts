@@ -197,7 +197,9 @@ export async function safetyMessage(query: Query, event: EventRow, decision: Par
   const issues = SAFETY_FACTORS.filter(key => !decision.factors[key].satisfactory)
     .map(key => `${SAFETY_FACTOR_LABELS[key]}: ${decision.factors[key].comment}`);
   const what = decision.decision === 'reject' ? 'rejected its safety arrangement' : 'requested changes';
-  return `The Safety Officer ${what}, so ${label} is back in Planning. Reason: ${decision.reason}`
+  // The reason is the Safety Officer's own words; end it as a sentence before the list.
+  const reason = /[.!?]$/.test(decision.reason ?? '') ? decision.reason : `${decision.reason}.`;
+  return `The Safety Officer ${what}, so ${label} is back in Planning. Reason: ${reason}`
     + (issues.length ? ` Items to address: ${issues.join('; ')}.` : '');
 }
 
