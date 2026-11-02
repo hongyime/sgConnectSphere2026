@@ -730,6 +730,9 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
        VALUES ($1, $2, true, tstzrange('2027-04-12T00:00:00Z', '2027-04-12T06:00:00Z', '[)'), 'open', $3)`,
       [supportId, primary.eventId, organiserId],
     );
+    const supportBefore = (await client.query<{ support_range: string }>(
+      'SELECT support_range FROM tech_support_requests WHERE id = $1', [supportId],
+    )).rows[0]!;
     const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
     assert.equal(prompted.primaryNeeded, true);
     assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
@@ -780,7 +783,7 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     const supportAfter = (await client.query<{ support_range: string }>(
       'SELECT support_range FROM tech_support_requests WHERE id = $1', [supportId],
     )).rows[0]!;
-    assert.equal(supportAfter.support_range, '[2027-04-12 00:00:00+00,2027-04-12 06:00:00+00)',
+    assert.equal(supportAfter.support_range, supportBefore.support_range,
       'technical support requests keep their times until someone edits them');
 
     // With 2 or more Sessions left, deleting a Session keeps the Event's time and attendance.
