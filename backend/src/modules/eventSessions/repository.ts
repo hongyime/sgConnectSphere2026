@@ -108,6 +108,25 @@ const SET = `title = $3, session_range = tstzrange($4, $5, '[)'), expected_atten
   layout_id = $7, venue_requirements = $8, accessibility_note = $9,
   equipment_requirements = $10, layout_preference = $11`;
 
+// The reverse step, when deleting leaves one Session. A sole Session with no
+// rows follows the Event, so an explicitly empty list would otherwise pick up
+// the Event's needs: the Event takes the survivor's needs, which stay the same.
+async function handNeedsToEvent(client: Client, eventId: string) {
+  const [survivor] = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
+  const tables = [
+    { event: 'event_accessibility_needs', session: 'session_accessibility_needs', column: 'feature_id' },
+    { event: 'event_facility_needs', session: 'session_facility_needs', column: 'facility_id' },
+  ] as const;
+  for (const { event, session, column } of tables) {
+    await client.query(`DELETE FROM ${event} WHERE event_id = $1`, [eventId]);
+    await client.query(
+      `INSERT INTO ${event} (event_id, ${column}) SELECT $1, ${column} FROM ${session} WHERE session_id = $2`,
+      [eventId, survivor!.id],
+    );
+    await client.query(`DELETE FROM ${session} WHERE session_id = $1`, [survivor!.id]);
+  }
+}
+
 export function createSessionRepository(db: Pool = getDatabasePool()): SessionRepository {
   return {
   async findEditScope(eventId: string): Promise<SessionEditScope | null> {
@@ -304,6 +323,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         [actorId, eventId, session.title ?? 'Untitled Session'],
       );
       await client.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
+      if (remaining === 2) await handNeedsToEvent(client, eventId);
       return {
         status: 'deleted' as const,
         releasedBookings: bookings.length,

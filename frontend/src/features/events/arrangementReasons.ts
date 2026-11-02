@@ -5,6 +5,7 @@ export function arrangementReasons(item: { reasons: readonly string[]; governing
       case 'time': return 'date or time changed';
       case 'layout': return 'room layout changed';
       case 'accessibility': return 'accessibility requirements changed';
+      case 'facilities': return 'required facilities changed';
       case 'capacity': return item.governingHeadcount != null && item.capacity != null
         ? `${item.governingHeadcount} people for ${item.capacity} places` : 'attendance above capacity';
       default: return reason;
