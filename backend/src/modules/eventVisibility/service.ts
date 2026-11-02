@@ -1,6 +1,7 @@
 import { ACTIVE_EVENT_STATUSES } from '../eventLifecycle/status.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
+import { latestSafetyReturn } from '../eventReadiness/safetyReturn.js';
 
 export type Query = <T extends Record<string, unknown> = Record<string, unknown>>(
   sql: string, values?: unknown[],
@@ -64,6 +65,8 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const activity = await listEventActivity(query, event.id);
     const comments = await listEventComments(query, event.id);
+    // E08-S06 (D109): "Safety arrangement rejected" and its reason until the Event re-enters Safety Review.
+    const safetyReturn = await latestSafetyReturn(query, event.id);
     // E08-S03 (D64): Safety Review counts as approved, so an Organiser can't
     // change restricted details while the safety check runs.
     const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(String(event.status));
@@ -74,7 +77,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       ? ['title', 'description', 'purpose', 'registrationDates']
       : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'];
     const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'] : organiserFields;
-    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canRequestCancellation: organiser && event.organiser_id === user.id && !!event.coordinator_id && (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String(event.status)), canPostComment: organiser && event.status !== 'cancelled', canEdit, editableFields: canEdit ? editable : [] };
+    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, safetyReturn, canRequestCancellation: organiser && event.organiser_id === user.id && !!event.coordinator_id && (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String(event.status)), canPostComment: organiser && event.status !== 'cancelled', canEdit, editableFields: canEdit ? editable : [] };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.

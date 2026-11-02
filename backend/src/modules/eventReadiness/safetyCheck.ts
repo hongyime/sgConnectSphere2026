@@ -11,6 +11,17 @@ export const SAFETY_FACTORS = [
 ] as const;
 
 export type SafetyFactor = typeof SAFETY_FACTORS[number];
+
+// Scenario 2's words, for the notices (D115).
+export const SAFETY_FACTOR_LABELS: Record<SafetyFactor, string> = {
+  attendance_capacity: 'Expected attendance against capacity',
+  venue_layout: 'Venue capacity and layout',
+  emergency_access: 'Emergency access',
+  accessibility: 'Accessibility requirements',
+  equipment_placement: 'Equipment placement',
+  crowd_movement: 'Crowd movement',
+  venue_restrictions: 'Known venue restrictions',
+};
 export type SafetyFactorAssessment = { satisfactory: boolean; comment: string };
 export type SafetyFactors = Record<SafetyFactor, SafetyFactorAssessment>;
 export type SafetyDecision = 'approve' | 'request_changes' | 'reject';
@@ -43,6 +54,10 @@ export function parseSafetyDecision(input: unknown): ParsedSafetyDecision {
   if (reason && reason.length > 2000) throw new AccessError(400, 'The safety decision reason must not exceed 2000 characters.');
   if (decision === 'approve' && SAFETY_FACTORS.some(key => !factors[key].satisfactory)) {
     throw new AccessError(409, 'Approval is refused while any safety factor is unsatisfactory.');
+  }
+  // Scenario 4 starts from at least one unsatisfactory factor: those are the items to address.
+  if (decision === 'request_changes' && SAFETY_FACTORS.every(key => factors[key].satisfactory)) {
+    throw new AccessError(400, 'Mark the factors that need changes as unsatisfactory.');
   }
   return { decision, factors, reason };
 }

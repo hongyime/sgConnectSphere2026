@@ -52,11 +52,11 @@ test('non-Leads cannot read the unassigned queue and the attempt is audited', as
   assert.match(calls[0]!.sql, /Access Denied/);
 });
 
-test('Safety Officer queue requires the Safety Officer role and lists Safety Review events', async () => {
+test('Safety Officer queue requires the Safety Officer role and lists Safety Review events, oldest entry first (TC_E08S06_01)', async () => {
   const { pool, calls } = database([{ id: 'event-2', status: 'safety_review' }]);
   assert.deepEqual(await listSafetyReviewEvents(pool, officer), [{ id: 'event-2', status: 'safety_review' }]);
   assert.match(calls[0]!.sql, /status = 'safety_review'/);
-  assert.match(calls[0]!.sql, /ORDER BY lower\(e\.event_range\)/);
+  assert.match(calls[0]!.sql, /ORDER BY e\.status_changed_at, e\.id/);
 });
 
 test('non-Safety Officers cannot read the Safety Review queue and the attempt is audited', async () => {

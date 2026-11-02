@@ -50,3 +50,19 @@ test('E08-S06 refuses a decision from a non-Safety Officer before opening a tran
   assert.equal(calls.length, 1);
   assert.match(calls[0]!, /Access Denied/);
 });
+
+test('TC_E08S06_03: a request for changes needs at least one unsatisfactory factor to address', () => {
+  assert.throws(() => parseSafetyDecision({ decision: 'request_changes', factors: factors(), reason: 'Move the rig' }),
+    (error: unknown) => error instanceof AccessError && error.status === 400 && /unsatisfactory/.test(error.message));
+});
+
+test('TC_E08S06_05: an unknown decision or a body without factors is refused', () => {
+  for (const input of [null, { decision: 'cancel', factors: factors() }, { decision: 'approve' }]) {
+    assert.throws(() => parseSafetyDecision(input), (error: unknown) => error instanceof AccessError && error.status === 400);
+  }
+});
+
+test('TC_E08S06_05: a reason longer than 2000 characters is refused', () => {
+  assert.throws(() => parseSafetyDecision({ decision: 'reject', factors: factors(), reason: 'x'.repeat(2001) }),
+    (error: unknown) => error instanceof AccessError && error.status === 400 && /2000/.test(error.message));
+});
