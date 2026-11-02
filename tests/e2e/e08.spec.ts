@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { signInAs } from './helpers/fakeSession';
+import { signInAs, type TestRole } from './helpers/fakeSession';
 
 // E08 - 28 cases. Source: docs/testing/cases/E08.md.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -587,35 +587,357 @@ test.describe("E08-S04 — Scenario 4", () => {
   });
 });
 
-test.describe("E08-S06 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_01).
-    void page;
+// E08-S06 (SCRUM-158, SCRUM-249): the browser half of the Operational Safety
+// Check. One fake server answers every role; the server's own rules (queue
+// order, flags, notices, Access Denied rows, the legacy Event) are proved
+// against PostgreSQL in backend/tests/safetyReview.integration.test.ts, and
+// Safety Review blocking deactivation in backend/tests/deactivation.test.ts.
+test.describe("E08-S06", () => {
+  type Decision = { decision: 'approve' | 'request_changes' | 'reject'; reason?: string; factors: Record<string, { satisfactory: boolean; comment: string }> };
+  const FACTORS = [
+    'Expected attendance against capacity', 'Venue capacity and layout', 'Emergency access', 'Accessibility requirements',
+    'Equipment placement', 'Crowd movement', 'Known venue restrictions',
+  ];
+  const ACTIONS = { approve: 'Safety check approved', request_changes: 'Safety check changes requested', reject: 'Safety arrangement rejected' };
+  const START = '2027-03-19T01:00:00.000Z';
+  const END = '2027-03-19T09:00:00.000Z';
+  const ENTERED = '2027-03-01T02:00:00.000Z';
+  const DECIDED = '2027-03-02T02:00:00.000Z';
+  const queued = (code: string, title: string, enteredAt: string) => ({
+    id: `evt-${code}`, event_code: code, title, status: 'safety_review', status_changed_at: enteredAt, starts_at: START, ends_at: END,
+    expected_attendance: 500, coordinator_name: 'Coordinator One', organiser_name: 'Organiser One',
   });
 
-  test.fixme("TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, and log the decision with the checklist", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_02).
-    void page;
+  async function backend(page: Page) {
+    const state = { role: 'safety_officer', status: 'safety_review', decision: null as Decision | null, decisions: [] as Decision[], submits: 0 };
+    const safetyReturn = () => state.decision && state.decision.decision !== 'approve' && state.status === 'planning'
+      ? { decision: state.decision.decision, reason: state.decision.reason ?? null, decidedAt: DECIDED } : null;
+    const organiserEvent = (code: string) => code === 'EVT-LEGACY'
+      ? { id: 'evt-legacy', event_code: 'EVT-LEGACY', title: 'Legacy Gala', description: 'Annual gala.', status: 'confirmed',
+          status_changed_at: '2026-09-01T02:00:00.000Z', starts_at: START, creator_name: 'Organiser One',
+          statusHistory: [{ old_value: 'planning', new_value: 'confirmed', occurred_at: '2026-09-01T02:00:00.000Z' }],
+          activityLog: [{ occurred_at: '2026-09-01T02:00:00.000Z', action: 'Status changed to confirmed', field_changed: 'status',
+            old_value: 'planning', new_value: 'confirmed', actor_name: 'Coordinator One', actor_email: null }] }
+      : { id: 'evt-EVT-CHARITY', event_code: 'EVT-CHARITY', title: 'Charity Run', description: 'A 10 km run.', status: state.status,
+          status_changed_at: state.decision ? DECIDED : ENTERED, starts_at: START, creator_name: 'Organiser One', coordinator_name: 'Coordinator One',
+          statusHistory: [{ old_value: 'planning', new_value: 'safety_review', occurred_at: ENTERED },
+            ...(state.decision ? [{ old_value: 'safety_review', new_value: state.status, occurred_at: DECIDED }] : [])],
+          activityLog: state.decision ? [{ occurred_at: DECIDED, action: ACTIONS[state.decision.decision], field_changed: 'safety_check', old_value: null,
+            new_value: JSON.stringify({ decision: state.decision.decision, reason: state.decision.reason ?? null, factors: state.decision.factors }),
+            actor_name: 'Safety One', actor_email: null }] : [],
+          safetyReturn: safetyReturn() };
+
+    await page.route('**/api/events?**', route => {
+      const request = route.request();
+      const params = new URL(request.url()).searchParams;
+      const safety = params.get('safetyQueue') === '1' || params.get('safetyDecision') === '1' || (params.get('safetyReview') === '1' && request.method() === 'GET');
+      if (safety && state.role !== 'safety_officer') return route.fulfill({ status: 403, json: { error: 'Access denied. This action is for Safety Officers.' } });
+      // The server's order: oldest entry into Safety Review first (D113).
+      if (params.get('safetyQueue') === '1') return route.fulfill({ json: { events: [
+        ...(state.status === 'safety_review' ? [queued('EVT-CHARITY', 'Charity Run', ENTERED)] : []),
+        queued('EVT-NIGHT', 'Night Market', '2027-03-01T03:00:00.000Z'),
+      ] } });
+      if (params.get('safetyReview') === '1' && request.method() === 'GET') return route.fulfill({ json: { review: {
+        event: { ...queued('EVT-CHARITY', 'Charity Run', ENTERED), status: state.status, coordinator_id: 'coord-1' },
+        sessions: [{ id: 's-1', title: null, starts_at: START, ends_at: END, expected_attendance: 500, layout: 'Theatre', accessibility_note: null, accessibility: ['Wheelchair access'] }],
+        venues: [
+          { id: 'v-1', session_id: 's-1', name: 'Riverside Hall', capacity: 600, restrictions: ['No open flames'] },
+          { id: 'v-2', session_id: 's-1', name: 'East Lawn', capacity: 300, restrictions: [] },
+        ],
+        equipment: [{ id: 'q-1', session_id: 's-1', name: 'Projector', requested: 2, reserved: 2, placement: 'Stage left' }],
+        support: [],
+      } } });
+      if (params.get('safetyDecision') === '1') {
+        const body = request.postDataJSON() as Decision;
+        state.decisions.push(body);
+        state.decision = body;
+        state.status = body.decision === 'approve' ? 'confirmed' : 'planning';
+        return route.fulfill({ json: { decision: { status: state.status, decision: body.decision } } });
+      }
+      if (params.get('safetyReview') === '1') {
+        state.submits += 1;
+        return route.fulfill({ status: 409, json: { error: "This event can't be submitted for its safety check until every outstanding item is resolved." } });
+      }
+      if (params.get('readiness') === '1') {
+        const flagged = state.decision?.decision === 'request_changes';
+        return route.fulfill({ json: { readiness: {
+          eventId: 'evt-EVT-CHARITY', eventCode: 'EVT-CHARITY', title: 'Charity Run', status: state.status, startsAt: START, endsAt: END,
+          equipmentNoneRequired: false, supportNoneRequired: true,
+          venueBookings: [{ id: 'b-1', venueName: 'Riverside Hall', status: 'confirmed', purpose: null, startsAt: START, endsAt: END, state: 'ready' }],
+          equipment: [{ id: 'q-1', name: 'Stage rig', requested: 1, reserved: 1, state: flagged ? 'outstanding' : 'ready' }],
+          support: [],
+          blockers: flagged ? [{ kind: 'equipment-shortfall', message: 'Stage rig — needs review (1 of 1 reserved)' }] : [],
+          canSubmit: state.status === 'planning' && !flagged,
+          safetyReturn: safetyReturn(),
+        } } });
+      }
+      if (params.has('id')) return route.fulfill({ json: { event: organiserEvent(params.get('id') ?? '') } });
+      if (params.has('q')) return route.fulfill({ json: { events: [organiserEvent('EVT-CHARITY'), organiserEvent('EVT-LEGACY')], notifications: [] } });
+      return route.fallback();
+    });
+    return state;
+  }
+
+  async function as(page: Page, state: { role: string }, role: TestRole, email: string) {
+    state.role = role;
+    await signInAs(page, role, { email });
+  }
+
+  // Every factor answered with a comment; the ones named are not satisfactory.
+  async function answer(page: Page, notSatisfactory: Record<string, string> = {}) {
+    for (const factor of FACTORS) {
+      await page.getByLabel(factor, { exact: true }).selectOption(factor in notSatisfactory ? 'Not satisfactory' : 'Satisfactory');
+      await page.getByLabel(`Comment on ${factor.toLowerCase()}`).fill(notSatisfactory[factor] ?? 'Checked on site.');
+    }
+  }
+
+  const pill = (page: Page) => page.locator('.ui-page-heading .status-pill');
+
+  /**
+   * TC_E08S06_01
+   * AC:      E08-S06 - Scenario 1 (Events awaiting review listed with what the check needs)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   Two events entered Safety Review at 10:00 and 11:00; the first has two confirmed venues and a projector reservation
+   *
+   * Expected result:
+   *   The 10:00 event is listed first; its page shows date and time, both venues with capacity, layout and known
+   *   restrictions, expected attendance 500, the accessibility requirement, the equipment and its placement, and the
+   *   time it entered Safety Review
+   */
+  test("TC_E08S06_01 - The safety review queue lists waiting events oldest first and the review shows what the check needs", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/queue');
+    // Body rows only: the mobile layout hides the header row.
+    const rows = page.getByRole('table', { name: 'Events awaiting their Operational Safety Check, oldest first' }).locator('tbody tr');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0)).toContainText('Charity Run');
+    await expect(rows.nth(1)).toContainText('Night Market');
+
+    await page.getByRole('link', { name: 'Charity Run' }).click();
+    await expect(page).toHaveURL(/\/safety\/review\/EVT-CHARITY$/);
+    await expect(page.getByRole('heading', { name: 'Decide: Charity Run' })).toBeVisible();
+    await expect(pill(page)).toHaveText('Safety Review');
+    for (const text of ['Riverside Hall: capacity 600; restrictions: No open flames', 'East Lawn: capacity 300', 'Theatre', 'Wheelchair access',
+      '2 × Projector, 2 reserved; placement: Stage left', 'In Safety Review since', 'Event date', '500']) {
+      await expect(page.getByText(text, { exact: true }).first()).toBeVisible();
+    }
   });
 
-  test.fixme("TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from being Confirmed until resubmitted and approved", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_03).
-    void page;
+  /**
+   * TC_E08S06_02
+   * AC:      E08-S06 - Scenario 2 (Structured review of the listed factors); Scenario 3 (Approval confirms the event);
+   *          Scenario 10 (Every decision is auditable)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   "Charity Run" is in Safety Review; safety_1@connectsphere.com is signed in
+   *
+   * Expected result:
+   *   The status is Confirmed; the Organiser and Coordinator are notified; the activity log has "safety check approved"
+   *   by safety_1 with the seven-factor checklist
+   */
+  test("TC_E08S06_02 - Approving with every factor satisfactory confirms the event and logs the checklist", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/review/EVT-CHARITY');
+    await answer(page);
+    await page.getByRole('button', { name: 'Approve…' }).click();
+    await page.getByRole('form', { name: 'Approve the safety check?' }).getByRole('button', { name: 'Approve safety check' }).click();
+    await expect(page.getByText('Approved. The event is Confirmed, and the Organiser and the Coordinator have been notified.')).toBeVisible();
+    await expect(pill(page)).toHaveText('Confirmed');
+    expect(state.decisions).toHaveLength(1);
+    expect(state.decisions[0].decision).toBe('approve');
+    expect(state.decisions[0].reason).toBeUndefined();
+    expect(Object.values(state.decisions[0].factors)).toEqual(Array(7).fill({ satisfactory: true, comment: 'Checked on site.' }));
+
+    // The Organiser reads the checklist in words, not the stored JSON (TC_02 failed on this in Aaron's first run).
+    await as(page, state, 'event_organiser', 'organiser_1@clienta.com');
+    await page.goto('/events/EVT-CHARITY');
+    await expect(page.getByRole('heading', { name: 'Charity Run' })).toBeVisible();
+    const logged = page.getByRole('listitem').filter({ hasText: 'Safety check approved' });
+    await expect(logged).toContainText('by Safety One (Every factor satisfactory)');
+    await expect(logged).not.toContainText('{');
+    await expect(page.getByText(/Safety Review → Confirmed/)).toBeVisible();
   });
 
-  test.fixme("TC_E08S06_04 — Verify that rejecting the safety arrangement should return the event to Planning with a rejection flag without cancelling it", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_04).
-    void page;
+  /**
+   * TC_E08S06_03
+   * AC:      E08-S06 - Scenario 4 (Requesting changes returns the event to planning)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   "Charity Run" is in Safety Review with venue "Riverside Hall" and a stage rig reserved
+   *
+   * Expected result:
+   *   The status is Planning; the technical arrangement is flagged for re-review and the venue is not; the log records
+   *   "safety check changes requested"; the Coordinator can't take it further until the flag is resolved
+   */
+  test("TC_E08S06_03 - Requesting changes returns the event to Planning with the item flagged until it is resubmitted", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/review/EVT-CHARITY');
+    await answer(page, { 'Equipment placement': 'Stage rig blocks the east exit' });
+    await page.getByRole('button', { name: 'Approve…' }).click();
+    await expect(page.getByText('Approval needs every factor to be satisfactory.')).toBeVisible();
+    await page.getByRole('button', { name: 'Request changes…' }).click();
+    const panel = page.getByRole('form', { name: 'Request changes?' });
+    await panel.getByLabel('Reason').fill('Move the stage rig clear of the east exit');
+    await panel.getByRole('button', { name: 'Request changes' }).click();
+    await expect(page.getByText('Changes requested. The event is back in Planning, and the Organiser and the Coordinator have been notified.')).toBeVisible();
+    await expect(pill(page)).toHaveText('Planning');
+    expect(state.decisions[0]).toMatchObject({ decision: 'request_changes', reason: 'Move the stage rig clear of the east exit',
+      factors: { equipment_placement: { satisfactory: false, comment: 'Stage rig blocks the east exit' } } });
+
+    // The Coordinator sees why, the flagged rig (not the venue), and can't resubmit yet.
+    await as(page, state, 'event_coordinator', 'coordinator_1@connectsphere.com');
+    await page.goto('/coordinator/events/EVT-CHARITY/readiness');
+    await expect(page.getByText('Safety check: changes requested')).toBeVisible();
+    await expect(page.getByText(/Reason: Move the stage rig clear of the east exit\./)).toBeVisible();
+    await expect(page.getByText('Stage rig — needs review (1 of 1 reserved)')).toBeVisible();
+    await expect(page.getByRole('row').filter({ hasText: 'Riverside Hall' })).not.toContainText(/needs review/i);
+    await page.getByRole('button', { name: 'Submit for safety check…' }).click();
+    await page.getByRole('button', { name: 'Submit for safety check', exact: true }).click();
+    await expect(page.getByText("This event can't be submitted for its safety check until every outstanding item is resolved.")).toBeVisible();
+    await expect(pill(page)).toHaveText('Planning');
+    expect(state.submits).toBe(1);
+
+    await as(page, state, 'event_organiser', 'organiser_1@clienta.com');
+    await page.goto('/events/EVT-CHARITY');
+    await expect(page.getByText('Safety check: changes requested')).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Safety check changes requested' }))
+      .toContainText('Not satisfactory: Equipment placement. Reason: Move the stage rig clear of the east exit');
   });
 
-  test.fixme("TC_E08S06_05 — Verify that reject and request changes should require a reason and that no role other than Safety Officer can decide", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_05).
-    void page;
+  /**
+   * TC_E08S06_04
+   * AC:      E08-S06 - Scenario 5 (Rejecting the safety arrangement does not cancel the event)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   "Charity Run" is in Safety Review; safety_1@connectsphere.com is signed in
+   *
+   * Expected result:
+   *   The status is Planning, not Cancelled; the event shows "safety arrangement rejected" with the reason; its
+   *   bookings are untouched; coordinator_1 can rework and resubmit
+   */
+  test("TC_E08S06_04 - Rejecting the safety arrangement returns the event to Planning with the reason, not Cancelled", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/review/EVT-CHARITY');
+    await answer(page);
+    await page.getByRole('button', { name: 'Reject…' }).click();
+    const panel = page.getByRole('form', { name: 'Reject the safety arrangement?' });
+    await expect(panel).toContainText('it is not cancelled');
+    await panel.getByLabel('Reason').fill('Capacity exceeds safe egress for the layout');
+    await panel.getByRole('button', { name: 'Reject safety arrangement' }).click();
+    await expect(page.getByText('Rejected. The event is back in Planning, not cancelled, and the Organiser and the Coordinator have been notified.')).toBeVisible();
+    await expect(pill(page)).toHaveText('Planning');
+    expect(state.decisions[0]).toMatchObject({ decision: 'reject', reason: 'Capacity exceeds safe egress for the layout' });
+
+    await as(page, state, 'event_coordinator', 'coordinator_1@connectsphere.com');
+    await page.goto('/coordinator/events/EVT-CHARITY/readiness');
+    await expect(pill(page)).toHaveText('Planning');
+    await expect(page.getByText('Safety arrangement rejected')).toBeVisible();
+    await expect(page.getByText(/Reason: Capacity exceeds safe egress for the layout\./)).toBeVisible();
+    await expect(page.getByRole('row').filter({ hasText: 'Riverside Hall' })).toContainText('Confirmed');
+    await expect(page.getByRole('button', { name: 'Submit for safety check…' })).toBeVisible();
   });
 
-  test.fixme("TC_E08S06_06 — Verify that events confirmed before the safety check existed should be untouched and that Safety Review should count as an active status for the tracker and for deactivation", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S06_06).
-    void page;
+  /**
+   * TC_E08S06_05
+   * AC:      E08-S06 - Scenario 6 (Reason required for reject or request changes); Scenario 7 (Only a Safety Officer decides)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   "Charity Run" is in Safety Review; safety_1, coordinator_1 and lead_1 are available
+   *
+   * Expected result:
+   *   Request changes and reject are refused until a reason is given and the status stays Safety Review; the
+   *   Coordinator and the Lead are refused (the API's refusal and its Access Denied row: safetyReview.integration.test.ts)
+   */
+  test("TC_E08S06_05 - Reject and request changes need a reason, and other roles are refused the review", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/review/EVT-CHARITY');
+    await page.getByRole('button', { name: 'Approve…' }).click();
+    await expect(page.getByText('Fix the highlighted factors, then decide again.')).toBeVisible();
+
+    await answer(page, { 'Crowd movement': 'One entrance for 500 people' });
+    for (const [button, title, confirm] of [
+      ['Request changes…', 'Request changes?', 'Request changes'],
+      ['Reject…', 'Reject the safety arrangement?', 'Reject safety arrangement'],
+    ]) {
+      await page.getByRole('button', { name: button }).click();
+      const panel = page.getByRole('form', { name: title });
+      await panel.getByRole('button', { name: confirm }).click();
+      await expect(panel.getByText('Reason is required.')).toBeVisible();
+      await panel.getByRole('button', { name: 'Cancel' }).click();
+    }
+    expect(state.decisions).toHaveLength(0);
+    await expect(pill(page)).toHaveText('Safety Review');
+
+    for (const [role, email] of [['event_coordinator', 'coordinator_1@connectsphere.com'], ['event_coordinator_lead', 'lead_1@connectsphere.com']] as const) {
+      await as(page, state, role, email);
+      await page.goto('/safety/review/EVT-CHARITY');
+      await expect(page.getByRole('alert')).toContainText('Access denied. This action is for Safety Officers.');
+      await expect(page.getByRole('button', { name: 'Approve…' })).toHaveCount(0);
+    }
+    expect(state.decisions).toHaveLength(0);
   });
 
+  /**
+   * TC_E08S06_06
+   * AC:      E08-S06 - Scenario 8 (Events confirmed before this story are not re-reviewed); Scenario 9 (Status display
+   *          and deactivation treat Safety Review as active)
+   * Sprint:  3
+   *
+   * Pre-conditions:
+   *   "Legacy Gala" was Confirmed before this story; "Charity Run" is in Safety Review and assigned to coordinator_1,
+   *   their only active event
+   *
+   * Expected result:
+   *   "Legacy Gala" is still Confirmed with no safety record and is not in the queue; "Charity Run" shows "Safety
+   *   Review" in plain language with the date reached; deactivation is blocked naming "Charity Run"
+   */
+  test("TC_E08S06_06 - Legacy Confirmed events are untouched and Safety Review counts as active for the tracker and deactivation", async ({ page }) => {
+    const state = await backend(page);
+    await as(page, state, 'event_organiser', 'organiser_1@clienta.com');
+    await page.goto('/events/EVT-LEGACY');
+    await expect(page.getByRole('region', { name: 'Current status' })).toContainText('Confirmed');
+    await expect(page.getByRole('region', { name: 'Status history' })).not.toContainText('Safety Review');
+    await expect(page.getByText(/Safety check|Safety arrangement/)).toHaveCount(0);
+
+    await page.goto('/events');
+    await expect(page.getByRole('article').filter({ hasText: 'Charity Run' })).toContainText('EVT-CHARITY · safety review');
+    await page.goto('/events/EVT-CHARITY');
+    const current = page.getByRole('region', { name: 'Current status' });
+    await expect(current).toContainText('Safety Review');
+    await expect(current).toContainText('Reached on 1 March 2027');
+
+    await as(page, state, 'safety_officer', 'safety_1@connectsphere.com');
+    await page.goto('/safety/queue');
+    await expect(page.getByRole('link', { name: 'Charity Run' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Legacy Gala' })).toHaveCount(0);
+
+    // Charity Run is coordinator_1's only active event, so the server's 409 names it alone.
+    await as(page, state, 'event_coordinator', 'coordinator_1@connectsphere.com');
+    let deletes = 0;
+    await page.route('**/api/account/profile', route => {
+      if (route.request().method() !== 'DELETE') return route.fulfill({ json: { profile: {
+        full_name: 'Coordinator One', email: 'coordinator_1@connectsphere.com', contact_number: '9000 0000', organisation_name: null } } });
+      deletes += 1;
+      return route.fulfill({ status: 409, json: { error: 'Reassign your active events before deactivating your account.',
+        events: [{ id: 'evt-EVT-CHARITY', event_code: 'EVT-CHARITY', title: 'Charity Run' }] } });
+    });
+    await page.goto('/profile');
+    await page.getByRole('button', { name: 'Deactivate Account', exact: true }).click();
+    await page.getByRole('button', { name: 'Confirm deactivation' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'Reassign your active events' })).toBeVisible();
+    await expect(page.getByText('EVT-CHARITY: Charity Run')).toBeVisible();
+    await expect(page).toHaveURL(/\/profile$/);
+    expect(deletes).toBe(1);
+  });
 });
