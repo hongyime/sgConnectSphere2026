@@ -254,3 +254,20 @@ Without it, the event must still have exactly one Session; with it, the booking
 is linked to that Session and its period must fall inside the Session range.
 Two Sessions may hold separate bookings of the same venue (E04-S02 Scenario 4,
 TC_E04S02_04).
+
+
+## E10-S01 Session request target (2 November)
+
+`POST /api/events?changeRequests=1&id=<Event>` accepts optional `sessionId`:
+`{ "description": "Move the morning Session", "sessionId": "<uuid>", "changes": { "startAt": "2027-03-01T09:30:00Z" } }`.
+The target must belong to that Event. Session fields use the E04-S02 contract;
+Event-only registration/description/purpose fields are refused for Session
+targets. `facilityIds` is Session-only. `GET` includes `sessions: [{id,title,current}]`
+and `references.facilities`. Existing requests and callers omitting sessionId
+keep Event semantics. Pending/Approved review/apply routes are unchanged;
+Session approvals always require a current previewToken. Missing/stale targets
+return 409, malformed/invalid values return 400. No new endpoint or migration.
+
+Session targets require at least two Sessions. A sole Session follows the
+existing Event-wide editing/synchronization contract. If a pending target
+becomes the sole Session, application is refused and needs a fresh Event request.

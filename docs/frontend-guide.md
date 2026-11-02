@@ -240,3 +240,18 @@ Session, sends `session_id` with the search, and carries it into the
 suitability page, whose booking form submits it. Holds have no Session, so
 "Hold this venue" is offered only for single-Session events. The Coordinator's
 booking list names each booking's Session.
+
+
+## E10-S01 Session targets
+
+The existing Change requests page offers Event-wide details or a named Session.
+Switching target clears selected fields/values; registration and Event-only
+fields are hidden for Session requests. The request card shows the target and
+current Session values, including label-based facilities/accessibility options.
+All Session approvals, including title-only changes, request the server preview.
+A removed Session is labelled explicitly; the server refuses application but
+allows decline. Manual story acceptance remains separately recorded under T-65.
+
+Session targets require at least two Sessions. A sole Session follows the
+existing Event-wide editing/synchronization contract. If a pending target
+becomes the sole Session, application is refused and needs a fresh Event request.

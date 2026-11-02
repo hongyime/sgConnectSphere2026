@@ -4,7 +4,7 @@ import { inTransaction } from '../../database/pool.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, updateEventInformation, type Query } from '../eventVisibility/service.js';
 import { assertEditableAfterDecision } from '../eventLifecycle/decision.js';
-import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
+import { assessArrangementImpact, loadArrangementSnapshot, type ArrangementImpact } from '../changeManagement/arrangementImpact.js';
 import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from './service.js';
 
@@ -48,19 +48,7 @@ export async function updateEventInformationWithNotificationsWith(
     const changeId = randomUUID();
     const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0].now;
     if (impact.affected) {
-      const audience = await captureEventAudience(client, event.id, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
-      // T-104: with no equipment flagged, only the technicians assigned to a
-      // flagged support request must reconfirm, so only they are told.
-      const technicalStaff = impact.reservations.length ? audience.technicalStaff : impact.supports.length
-        ? (await client.query<{ staff_id: string }>(
-          `SELECT DISTINCT staff_id FROM tech_staff_assignments WHERE request_id = ANY($1::uuid[]) AND status = 'assigned'`,
-          [impact.supports.map(support => support.id)])).rows.map(row => row.staff_id).filter(id => audience.technicalStaff.includes(id))
-        : [];
-      const staff = { ...audience, technicalStaff };
-      await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id, before: staff, after: staff,
-        change: { kind: 'reconfirmation_required', venueAffected: impact.bookings.length > 0,
-          technicalAffected: impact.reservations.length > 0 || impact.supports.length > 0,
-          reasons: [...impact.bookings, ...impact.reservations, ...impact.supports].flatMap(item => item.reasons) } });
+      await notifyArrangementImpact(client, user.id, event.id, impact, changeId, changedAt, options);
     }
     if (dateChanged) await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId: user.id,
       before: { ...before, organiser: before.organiser.filter(id => id !== decisionRecipientId) },
@@ -68,4 +56,22 @@ export async function updateEventInformationWithNotificationsWith(
       change: { kind: 'arrangements', fields: ['date','time'] } });
   }
   return { ...result, ...check };
+}
+
+
+export async function notifyArrangementImpact(client: PoolClient, actorId: string, eventId: string,
+  impact: ArrangementImpact, changeId: string, changedAt: Date, options: NotificationOptions = {}) {
+  const audience = await captureEventAudience(client, eventId, options, [...new Set(impact.bookings.map(booking => booking.venueId))]);
+  // T-104: with no equipment flagged, only the technicians assigned to a
+  // flagged support request must reconfirm, so only they are told.
+  const technicalStaff = impact.reservations.length ? audience.technicalStaff : impact.supports.length
+    ? (await client.query<{ staff_id: string }>(
+      `SELECT DISTINCT staff_id FROM tech_staff_assignments WHERE request_id = ANY($1::uuid[]) AND status = 'assigned'`,
+      [impact.supports.map(support => support.id)])).rows.map(row => row.staff_id).filter(id => audience.technicalStaff.includes(id))
+    : [];
+  const staff = { ...audience, technicalStaff };
+  await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId, before: staff, after: staff,
+    change: { kind: 'reconfirmation_required', venueAffected: impact.bookings.length > 0,
+      technicalAffected: impact.reservations.length > 0 || impact.supports.length > 0,
+      reasons: [...impact.bookings, ...impact.reservations, ...impact.supports].flatMap(item => item.reasons) } });
 }
