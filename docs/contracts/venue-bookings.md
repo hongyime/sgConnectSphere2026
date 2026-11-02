@@ -49,11 +49,13 @@ At PR #231 head on 9 October ([PR #231](https://github.com/hongyime/sgConnectSph
 **Migration ownership:** Migration 0013, `0013_tentative_venue_holds.sql` (merged in PR #245), is holds-only: it adds `tentative` and `expired` to `booking_status`, adds `expires_at`, and creates an expiry lookup index that does not refer to either new enum value. It does not add any constraint or index predicate that uses those new values.
 
 The Session foundation is migration `0014_event_sessions.sql` in SCRUM-183. It creates one Session per existing Event and owns the `session_id` columns, backfills, indexes, and `(session_id, event_id)` ownership foreign keys on venue bookings and equipment requests/reservations. A venue booking must retain its Session link while active; the migration only permits the link to become null for Rejected, Released, or Expired rows when a Session is deleted. The E06 booking contract consumes these
-Session links and must not add them again. Session authoring (SCRUM-39) is
-draft-only in its first increment: the Organiser may add, edit and remove child
-Sessions of their own draft, and an Event always keeps at least one Session. A
-Session that still holds an active booking cannot be deleted until that booking
-is Released, Rejected or Expired, because the link must remain while active.
+Session links and must not add them again. Session authoring (SCRUM-39): the
+Organiser may add Sessions to their own draft, edit them in draft or planning,
+and remove them in draft or planning, and an Event always keeps at least one
+Session. Removing a Session first releases its active bookings in the same
+transaction, so no active booking ever loses its Session link. A booking request
+for an Event with several Sessions must name its `session_id`; holds carry no
+Session, so a hold is possible only while the Event has one Session.
 
 The remaining shared venue booking columns and constraints belong in the next migration, proposed as `0019_venue_bookings_contract.sql`. Migration 0019 depends on migrations 0011 (`occupied_window()`), 0012, committed 0013, and the Session table and links from 0014. It is owned by whichever story requires the shared booking columns first (E06-S03 or E06-S04). E06-S03 owns the request service/API contract; E06-S04/S06 use its booking and conflict invariants. No parallel migration should add overlapping columns or constraints.
 

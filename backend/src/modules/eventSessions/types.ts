@@ -16,7 +16,13 @@ export type SessionRecord = {
   accessibilityNote?: string;
   equipmentRequirements?: string;
   layoutPreference?: string;
+  // Venue search reads these join tables, not the free-text notes above.
+  accessibilityFeatureIds?: string[];
+  facilityIds?: string[];
 };
+
+export type SessionOption = { id: string; label: string };
+export type SessionOptions = { layouts: SessionOption[]; accessibility: SessionOption[]; facilities: SessionOption[] };
 
 // Everything an Organiser can write. `session_id` and `event_id` are owned by
 // the row, never by the request body.

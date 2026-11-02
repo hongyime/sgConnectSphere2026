@@ -48,7 +48,7 @@ export function withRevision(check: EventChangeCheck): EventChangePreview {
   return { ...check, revision: changeRevision(check) };
 }
 
-const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity', layout: 'room layout changed', accessibility: 'accessibility requirements changed' } as const;
+const reasonText = { time: 'date or time changed', capacity: 'attendance above capacity', layout: 'room layout changed', accessibility: 'accessibility requirements changed', facilities: 'required facilities changed' } as const;
 
 // Scenarios 1 and 5: flag what the saved change affected, in the edit's own
 // transaction, with one activity entry per arrangement naming why. The flag

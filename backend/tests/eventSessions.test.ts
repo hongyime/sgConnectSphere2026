@@ -42,6 +42,7 @@ function fakeRepository(
   const repository: SessionRepository = {
     async findEditScope() { return scope; },
     async listSessions() { return sessions; },
+    async listOptions() { return options; },
     async insertSession(_eventId: string, input: SessionInput) {
       calls.push('insert');
       return record(input);
@@ -65,6 +66,12 @@ function fakeRepository(
   return { repository, calls };
 }
 
+const options = {
+  layouts: [{ id: '44444444-4444-4444-8444-444444444444', label: 'Theatre' }],
+  accessibility: [{ id: '55555555-5555-4555-8555-555555555555', label: 'Step-free access' }],
+  facilities: [{ id: '66666666-6666-4666-8666-666666666666', label: 'Projector' }],
+};
+
 const draftOwner: SessionEditScope = { organiserId: 'organiser-1', status: 'draft' };
 
 test('E04-S02: the owning Organiser sees the Sessions of their Event', async () => {
@@ -72,6 +79,8 @@ test('E04-S02: the owning Organiser sees the Sessions of their Event', async () 
   const result = await getSessions(repository, 'organiser-1', EVENT_ID);
   assert.equal(result.sessions.length, 1);
   assert.equal(result.sessions[0]!.title, 'Opening');
+  // E04-S02 Scenario 1: the editor needs the choices for each Session's own needs.
+  assert.deepEqual(result.options, options);
 });
 
 test('E04-S02: another Organiser cannot read or add Sessions', async () => {
@@ -177,4 +186,38 @@ test('E04-S02: a malformed Session id is rejected before any query', async () =>
     (error: unknown) => error instanceof AccessError && error.status === 400,
   );
   assert.deepEqual(calls, []);
+});
+
+test('E04-S02 Scenario 1: a Session carries its own accessibility and facility needs', async () => {
+  const { repository } = fakeRepository(draftOwner);
+  const result = await addSession(repository, 'organiser-1', EVENT_ID, {
+    ...body,
+    accessibilityFeatureIds: ['55555555-5555-4555-8555-555555555555', '55555555-5555-4555-8555-555555555555'.toUpperCase()],
+    facilityIds: [],
+  });
+  // Duplicates collapse, case is normalised, and an empty list clears the needs.
+  assert.deepEqual(result.session.accessibilityFeatureIds, ['55555555-5555-4555-8555-555555555555']);
+  assert.deepEqual(result.session.facilityIds, []);
+});
+
+test('E04-S02 Scenario 1: needs that are not lists of ids are rejected before any write', async () => {
+  const { repository, calls } = fakeRepository(draftOwner);
+  for (const needs of [
+    { accessibilityFeatureIds: 'step-free' },
+    { accessibilityFeatureIds: ['not-a-uuid'] },
+    { facilityIds: [42] },
+    { facilityIds: Array.from({ length: 51 }, (_, index) => `66666666-6666-4666-8666-${String(index).padStart(12, '0')}`) },
+  ]) {
+    await assert.rejects(addSession(repository, 'organiser-1', EVENT_ID, { ...body, ...needs }), (error: unknown) =>
+      error instanceof AccessError && error.status === 400);
+  }
+  assert.deepEqual(calls, []);
+});
+
+test('E04-S02 Scenario 1: leaving the needs out keeps whatever the Session already has', async () => {
+  const { repository } = fakeRepository(draftOwner);
+  const result = await editSession(repository, 'organiser-1', EVENT_ID, SESSION_ID, body);
+  assert.ok('session' in result);
+  assert.equal(result.session!.accessibilityFeatureIds, undefined);
+  assert.equal(result.session!.facilityIds, undefined);
 });
