@@ -226,7 +226,7 @@ the Session's bookings and reservations are released before anything is sent.
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
 keeps the Event's own dates and attendance as the overall planning envelope.
 With one Session the editor shows only its date, time and attendance, because
-the request form's Event-level requirements describe it. With two or more, each
+the request form holds the Event-level requirements. With two or more, each
 Session also shows its venue and equipment requirements, room layout,
 accessibility needs and required facilities, from the `options` the GET returns.
 Every save sends the Session's stored text requirements and layout back, so
@@ -239,4 +239,5 @@ so a refusal surfaces as a message and the list reloads the server state.
 Session, sends `session_id` with the search, and carries it into the
 suitability page, whose booking form submits it. Holds have no Session, so
 "Hold this venue" is offered only for single-Session events. The Coordinator's
-booking list names each booking's Session.
+booking list names each booking's Session, and warns when Confirmed bookings
+have no primary venue, since a released primary is not replaced automatically (T-94).

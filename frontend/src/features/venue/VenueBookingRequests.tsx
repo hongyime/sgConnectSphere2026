@@ -57,6 +57,10 @@ export function VenueBookingRequests() {
         <ButtonLink to={backTo}>Search venues for this event</ButtonLink>
         {result.data.bookings.some(b => b.status === 'conflicting' && b.conflict_block_id) && <ButtonLink to={`/coordinator/events/${encodeURIComponent(eventCode)}/venue-recovery`}>Recover a lost venue</ButtonLink>}
       </Card>
+      {/* T-94: a released primary is cleared, not replaced; the Coordinator chooses another (T-78). */}
+      {['approved', 'planning', 'safety_review', 'confirmed'].includes(result.data.event.status)
+        && result.data.bookings.some(b => b.status === 'confirmed') && !result.data.bookings.some(b => b.is_primary)
+        && <Alert tone="warning" title="No primary venue">Attendees are shown the primary venue, and the event can’t be published without one. Choose one of the Confirmed bookings below with Set as primary venue.</Alert>}
       {result.data.bookings.length === 0 && <EmptyState title="No venue bookings recorded">This event has no recorded venue bookings.</EmptyState>}
       {result.data.bookings.map(booking => <Card key={booking.id} title={booking.venue_name} actions={booking.status === 'conflicting'
         ? <StatusPill status="warning" label="Conflicting" /> : <StatusPill status={booking.status} />}>

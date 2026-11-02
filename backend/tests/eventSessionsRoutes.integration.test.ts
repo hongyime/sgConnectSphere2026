@@ -703,6 +703,41 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     assert.deepEqual(again.session.accessibilityFeatureIds, [stepFree]);
     assert.deepEqual(await suitable(own.eventId, own.secondId), { [equippedVenue]: true, [plainVenue]: false },
       'the survivor keeps its needs when a Session is added again');
+
+    // 3. T-94: deleting the Session holding the primary clears it, with no
+    // automatic promotion, and T-79 keeps the Event's overall details.
+    const primary = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    const book = async (sessionId: string, at: string, isPrimary: boolean) => {
+      const id = randomUUID();
+      await client.query(
+        `INSERT INTO venue_bookings (id, venue_id, event_id, session_id, booking_range, status, is_primary)
+         VALUES ($1, $2, $3, $4, tstzrange($5::timestamptz, $5::timestamptz + interval '1 hour', '[)'), 'confirmed', $6)`,
+        [id, bookedVenue, primary.eventId, sessionId, at, isPrimary],
+      );
+      return id;
+    };
+    await book(primary.firstId, '2027-04-12T01:00:00Z', true);
+    const remainingBooking = await book(primary.secondId, '2027-04-13T05:00:00Z', false);
+    const detailsBefore = (await client.query('SELECT event_range, expected_attendance FROM events WHERE id = $1', [primary.eventId])).rows[0];
+    const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
+    assert.equal(prompted.primaryNeeded, true);
+    assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
+      'no booking is promoted automatically');
+    assert.equal((await client.query<{ status: string }>('SELECT status FROM venue_bookings WHERE id = $1', [remainingBooking])).rows[0]!.status, 'confirmed');
+    const notices = await client.query<{ title: string }>('SELECT title FROM notifications WHERE user_id = $1 AND event_id = $2', [coordinatorId, primary.eventId]);
+    assert.deepEqual(notices.rows.map(row => row.title), ['Primary venue needed']);
+    assert.deepEqual((await client.query('SELECT event_range, expected_attendance FROM events WHERE id = $1', [primary.eventId])).rows[0], detailsBefore,
+      "the Event keeps its overall time and attendance");
+
+    // With no Confirmed booking left, the next one becomes primary by itself (O-30).
+    const noneLeft = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    await client.query(
+      `INSERT INTO venue_bookings (id, venue_id, event_id, session_id, booking_range, status, is_primary)
+       VALUES ($1, $2, $3, $4, tstzrange('2027-05-12T01:00:00Z', '2027-05-12T02:00:00Z', '[)'), 'confirmed', true)`,
+      [randomUUID(), bookedVenue, noneLeft.eventId, noneLeft.firstId],
+    );
+    assert.equal((await removeSession(repository, organiserId, noneLeft.eventId, noneLeft.firstId)).primaryNeeded, false);
+    assert.equal((await client.query('SELECT 1 FROM notifications WHERE user_id = $1 AND event_id = $2', [coordinatorId, noneLeft.eventId])).rowCount, 0);
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

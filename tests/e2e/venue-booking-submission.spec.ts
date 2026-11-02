@@ -154,7 +154,7 @@ test('TC_E06S03_07 stale primary selection refuses and refreshes current status'
   await page.goto('/coordinator/events/EVT-1/venue-bookings');
   await page.getByRole('button',{name:'Set as primary venue',exact:true}).click();
   await page.getByRole('button',{name:'Set primary venue',exact:true}).click();
-  await expect(page.getByRole('alert')).toContainText('Only Confirmed');
+  await expect(page.getByRole('alert').filter({hasText:'Only Confirmed'})).toBeVisible();
   await page.getByRole('button',{name:'Refresh booking list'}).click();
   await expect(page.getByText('Released',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Set as primary venue'})).toHaveCount(0);

@@ -29,14 +29,14 @@ function record(overrides: Partial<SessionRecord> = {}): SessionRecord {
 }
 
 type Removal =
-  | { status: 'deleted'; releasedBookings: number; releasedReservations: number; notifiedStaff: number }
+  | { status: 'deleted'; releasedBookings: number; releasedReservations: number; notifiedStaff: number; primaryNeeded: boolean }
   | { status: 'not_found' }
   | { status: 'last_session' };
 
 function fakeRepository(
   scope: SessionEditScope | null,
   sessions: SessionRecord[] = [record()],
-  removal: Removal = { status: 'deleted', releasedBookings: 0, releasedReservations: 0, notifiedStaff: 0 },
+  removal: Removal = { status: 'deleted', releasedBookings: 0, releasedReservations: 0, notifiedStaff: 0, primaryNeeded: false },
 ) {
   const calls: string[] = [];
   const repository: SessionRepository = {
@@ -144,10 +144,10 @@ test('E04-S02: the last Session cannot be deleted', async () => {
 test('E04-S02: deleting one of several Sessions removes only that Session', async () => {
   const second = record({ id: '44444444-4444-4444-8444-444444444444', title: 'Second' });
   const { repository, calls } = fakeRepository(draftOwner, [record(), second], {
-    status: 'deleted', releasedBookings: 1, releasedReservations: 2, notifiedStaff: 3,
+    status: 'deleted', releasedBookings: 1, releasedReservations: 2, notifiedStaff: 3, primaryNeeded: true,
   });
   const result = await removeSession(repository, 'organiser-1', EVENT_ID, SESSION_ID);
-  assert.deepEqual(result, { deleted: true, releasedBookings: 1, releasedReservations: 2, notifiedStaff: 3 });
+  assert.deepEqual(result, { deleted: true, releasedBookings: 1, releasedReservations: 2, notifiedStaff: 3, primaryNeeded: true });
   assert.deepEqual(calls, ['remove']);
 });
 

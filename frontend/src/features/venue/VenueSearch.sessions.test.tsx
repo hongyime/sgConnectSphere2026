@@ -139,3 +139,26 @@ test('TC_E04S02_04: each booking names the Session it covers', async () => {
   expect(screen.getByText('Afternoon panel')).toBeTruthy();
   expect(screen.getAllByText('Session')).toHaveLength(2);
 });
+
+test('TC_E04S02_05: the Coordinator is told when Confirmed bookings have no primary venue', async () => {
+  const booking = { id: 'b', venue_id: 'hall', venue_name: 'Main Hall', location: 'Level 1', status: 'confirmed',
+    starts_at: '2027-03-12T01:00:00.000Z', ends_at: '2027-03-12T03:00:00.000Z', created_at: '2027-01-01T00:00:00.000Z', decision_reason: null };
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+    event: { id: 'event-1', event_code: 'EVT-1', title: 'Two-day forum', status: 'planning' }, bookings: [booking],
+  }) }) as Response));
+  const { unmount } = render(<MemoryRouter initialEntries={['/coordinator/events/EVT-1/venue-bookings']}><Routes>
+    <Route path="/coordinator/events/:eventCode/venue-bookings" element={<VenueBookingRequests />} />
+  </Routes></MemoryRouter>);
+  expect(await screen.findByText('No primary venue')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Set as primary venue' })).toBeTruthy();
+  unmount();
+
+  vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({
+    event: { id: 'event-1', event_code: 'EVT-1', title: 'Two-day forum', status: 'planning' }, bookings: [{ ...booking, is_primary: true }],
+  }) }) as Response));
+  render(<MemoryRouter initialEntries={['/coordinator/events/EVT-1/venue-bookings']}><Routes>
+    <Route path="/coordinator/events/:eventCode/venue-bookings" element={<VenueBookingRequests />} />
+  </Routes></MemoryRouter>);
+  expect(await screen.findByText('Primary venue')).toBeTruthy();
+  expect(screen.queryByText('No primary venue')).toBeNull();
+});

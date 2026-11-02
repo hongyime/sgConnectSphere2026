@@ -53,7 +53,9 @@ Session links and must not add them again. Session authoring (SCRUM-39): the
 Organiser may add Sessions to their own draft, edit them in draft or planning,
 and remove them in draft or planning, and an Event always keeps at least one
 Session. Removing a Session first releases its active bookings in the same
-transaction, so no active booking ever loses its Session link. A booking request
+transaction, so no active booking ever loses its Session link. If one of those was
+the primary and another Confirmed booking remains, the primary is cleared with no
+automatic promotion and the Coordinator is told to choose another (T-94, T-78). A booking request
 for an Event with several Sessions must name its `session_id`; holds carry no
 Session, so a hold is possible only while the Event has one Session.
 

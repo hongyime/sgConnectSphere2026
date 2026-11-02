@@ -249,8 +249,8 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   // Event -> Venue -> booking order the other arrangement writers use.
   async removeSession(sessionId: string, eventId: string, actorId: string) {
     return inTransaction(db, async client => {
-      const event = (await client.query<{ id: string; title: string }>(
-        `SELECT id, title FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId],
+      const event = (await client.query<{ id: string; title: string; coordinator_id: string | null }>(
+        `SELECT id, title, coordinator_id FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId],
       )).rows[0];
       if (!event) return { status: 'not_found' as const };
 
@@ -273,6 +273,9 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         );
       }
 
+      const heldPrimary = (await client.query(
+        `SELECT 1 FROM venue_bookings WHERE session_id = $1 AND is_primary`, [sessionId],
+      )).rows.length > 0;
       const bookings = (await client.query<{ id: string }>(
         `UPDATE venue_bookings SET status = 'released', is_primary = false, requires_reconfirmation = false
          WHERE session_id = $1 AND status IN ('tentative','pending','confirmed','conflicting')
@@ -324,8 +327,26 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       );
       await client.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
       if (remaining === 2) await handNeedsToEvent(client, eventId);
+
+      // T-94: a released primary is cleared and someone is prompted to choose
+      // another, with no automatic promotion; choosing stays with the Coordinator
+      // (T-78). With no Confirmed booking left, the next one becomes primary (O-30).
+      const primaryNeeded = heldPrimary && (await client.query(
+        `SELECT 1 FROM venue_bookings WHERE event_id = $1 AND status = 'confirmed' LIMIT 1`, [eventId],
+      )).rows.length > 0;
+      if (primaryNeeded && event.coordinator_id) {
+        await writeEventNotification(client, {
+          eventId,
+          changeId: randomUUID(),
+          userId: event.coordinator_id,
+          occurredAt: (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now,
+          title: 'Primary venue needed',
+          message: `${event.title}: a Session was deleted and its booking was the primary venue. Choose a primary venue from the remaining Confirmed bookings.`,
+        });
+      }
       return {
         status: 'deleted' as const,
+        primaryNeeded,
         releasedBookings: bookings.length,
         releasedReservations: reservations.length,
         notifiedStaff: staff.length,
