@@ -43,16 +43,23 @@ Scenario 9's tracker and deactivation behaviour.
 
 "What the user sees" for each rule is added once the screens are final.
 
-## Known gaps (from Bryan's version, to close on this branch)
+## Known gaps (from Bryan's version) and where each is closed
 
-- The queue orders by event date, not by time entered Safety Review.
-- Accessibility shows only the free-text note, not the Event's features.
-- No visible "safety arrangement rejected" flag.
-- Notices carry no confirmed details or list of unsatisfactory factors.
-- The page pre-marks every factor as satisfactory; the review sits in a
-  table cell.
-- The equipment flag also marks released reservations.
-- Tests cover only the decision parser and one role refusal.
+The story ships in three PRs, one per Jira subtask, to stay inside the PR
+guardrails (decision 0017): SCRUM-247 backend, SCRUM-248 frontend,
+SCRUM-249 acceptance evidence.
+
+| Gap | Closed by |
+|---|---|
+| The queue orders by event date, not by time entered Safety Review | SCRUM-247 |
+| Accessibility shows only the free-text note, not the features | SCRUM-247 (per Session, D117) |
+| Venue layout read from the Event, wrong once Sessions differ (#408) | SCRUM-247 (D117) |
+| No "safety arrangement rejected" state to show | SCRUM-247 (`safetyReturn`); shown by SCRUM-248 |
+| Notices carry no confirmed details or unsatisfactory factors | SCRUM-247 (D115) |
+| The equipment flag also marks released reservations | SCRUM-247 |
+| A returned Event that was Confirmed before re-enters Safety Review by itself | SCRUM-247 (D118) |
+| Every factor pre-marked satisfactory; the review sits in a table cell | SCRUM-248 |
+| Tests cover only the parser and one refusal | SCRUM-247 (unit, real database); SCRUM-249 (Playwright, manual) |
 
 ## Test gates
 
@@ -72,3 +79,6 @@ None recorded yet.
 | 2026-11-02 ≈00:46 | `8fdf63b+local` (committed as `a89272a`) | Vitest | - | `npx vitest run --no-file-parallelism src/features/roleQueues src/app/routes.test.tsx src/features/accessControl/LoginPage.test.tsx` | local | 34/34 passed in 3 files | Bryan's tests, unchanged | Claude (for Aaron) |
 | 2026-11-02 ≈00:48 | `ac5bf31` | unit | _05 | `npm test --workspace backend` | local | 696 passed, 1 skipped | the skip is a database contract with no `TEST_DATABASE_URL` | Claude (for Aaron) |
 | 2026-11-02 ≈00:48 | `ac5bf31` | repository | - | `python scripts/doc_guard.py origin/main` | local | 0 errors, 156 warnings | - | Claude (for Aaron) |
+| 2026-11-02 17:53 | `8054e44` | typecheck | - | `npm run typecheck` (root) | local | clean | - | Claude (for Aaron) |
+| 2026-11-02 17:53 | `8054e44` | unit | _01 to _05 | `npm test --workspace backend` | local | 714 tests: 713 passed, 1 skipped | new and changed safety files at 100%; record `20261102-175346-Bl0oper-backend-unit.md` | Claude (for Aaron) |
+| 2026-11-02 17:54 | `8054e44` | real database | _01 to _06 | `npx tsx --test tests/safetyReview.integration.test.ts` + 7 related integration suites (backend), Docker `postgres:17` | local | 55/55 passed | record `20261102-175404-Bl0oper-backend-db.md` | Claude (for Aaron) |
