@@ -81,7 +81,7 @@ test('E04-S02: a planning edit previews its impact before saving', async () => {
   const fetchMock = vi.fn(async (requestUrl: string, init?: RequestInit) => {
     if (init?.method === 'PATCH' && String(requestUrl).includes('preview=1')) {
       return new Response(JSON.stringify({
-        preview: { impact: { affected: true, bookings: [{}], reservations: [] }, overSubscription: [], revision: 'rev-1' },
+        preview: { impact: { affected: true, bookings: [{ id: 'booking-1', venueName: 'Hall A', reasons: ['time'] }], reservations: [] }, overSubscription: [], revision: 'rev-1' },
       }), { status: 200 });
     }
     if (init?.method === 'PATCH') return new Response(JSON.stringify({ session: sessions[0] }), { status: 200 });
@@ -93,11 +93,11 @@ test('E04-S02: a planning edit previews its impact before saving', async () => {
   await screen.findByDisplayValue('Day 1');
   fireEvent.click(screen.getByText('Save session'));
 
-  expect(await screen.findByText(/flags 1 booking/)).toBeTruthy();
+  expect(await screen.findByText('Hall A')).toBeTruthy();
   const previewCall = fetchMock.mock.calls.find(([requestUrl]) => String(requestUrl).includes('preview=1'))!;
   expect(String(previewCall[0])).toContain('sessions=1&id=event-1&sessionId=session-1');
 
-  fireEvent.click(screen.getByText('Save anyway'));
+  fireEvent.click(screen.getByText('Save and ask staff to reconfirm'));
   await waitFor(() => {
     expect(fetchMock.mock.calls.some(([requestUrl, init]) =>
       (init as RequestInit | undefined)?.method === 'PATCH'
@@ -105,32 +105,130 @@ test('E04-S02: a planning edit previews its impact before saving', async () => {
   });
 });
 
-test('TC_E10S02_14: a planning Session edit that flags only Technical Support says so before saving', async () => {
+const supportCheck = {
+  impact: { affected: true, bookings: [], reservations: [], supports: [{
+    id: 'support-1', description: 'Sound desk', startsAt: '2027-03-13T04:00:00.000Z', endsAt: '2027-03-13T06:00:00.000Z',
+    reasons: ['time'], shiftMs: 3600_000,
+  }] },
+  overSubscription: [],
+  revision: 'rev-2',
+};
+
+// A planning screen whose preview and save replies the test chooses.
+function planningFetch(preview: unknown, save: () => Response) {
   const fetchMock = vi.fn(async (requestUrl: string, init?: RequestInit) => {
     if (init?.method === 'PATCH' && String(requestUrl).includes('preview=1')) {
-      return new Response(JSON.stringify({
-        preview: { impact: { affected: true, bookings: [], reservations: [], supports: [{ id: 'support-1' }] }, overSubscription: [], revision: 'rev-2' },
-      }), { status: 200 });
+      return new Response(JSON.stringify({ preview }), { status: 200 });
     }
-    if (init?.method === 'PATCH') return new Response(JSON.stringify({ session: sessions[0] }), { status: 200 });
+    if (init?.method === 'PATCH') return save();
     return new Response(JSON.stringify({ sessions, eventStatus: 'planning' }), { status: 200 });
   });
   vi.stubGlobal('fetch', fetchMock);
+  const saved = () => fetchMock.mock.calls.filter(([requestUrl, init]) =>
+    (init as RequestInit | undefined)?.method === 'PATCH' && !String(requestUrl).includes('preview=1'));
+  return saved;
+}
+const savedSession = () => new Response(JSON.stringify({ session: sessions[0] }), { status: 200 });
+
+test('TC_E10S02_14: a planning Session edit lists the Technical Support it flags, with its new time, before saving', async () => {
+  const saved = planningFetch(supportCheck, savedSession);
   render(<SessionEditor eventId="event-1" />);
 
   await screen.findByDisplayValue('Day 1');
   fireEvent.click(screen.getByText('Save session'));
 
-  expect(await screen.findByText(
-    'This change flags 0 booking(s), 0 reservation(s) and 1 Technical Support request(s) for reconfirmation.',
-  )).toBeTruthy();
-  const saved = () => fetchMock.mock.calls.filter(([requestUrl, init]) =>
-    (init as RequestInit | undefined)?.method === 'PATCH' && !String(requestUrl).includes('preview=1'));
+  expect(await screen.findByText('Technical Support to reconfirm')).toBeTruthy();
+  expect(document.activeElement).toBe(document.querySelector('.event-edit-review'));
+  expect(screen.getByText('Sound desk')).toBeTruthy();
+  expect(screen.getByText(/→/)).toBeTruthy();
+  expect(screen.queryByText('Venue bookings to reconfirm')).toBeNull();
+  expect(screen.queryByText('Equipment to reconfirm')).toBeNull();
   expect(saved()).toHaveLength(0);
 
-  fireEvent.click(screen.getByText('Save anyway'));
+  fireEvent.click(screen.getByText('Save and ask staff to reconfirm'));
   await waitFor(() => expect(saved()).toHaveLength(1));
   expect(String(saved()[0]![0])).toContain('reviewed=rev-2');
+  expect(await screen.findByText('Session saved.')).toBeTruthy();
+});
+
+test('TC_E10S02_16: a planning Session edit that leaves fewer places than registrations warns first, even with nothing flagged', async () => {
+  const saved = planningFetch({
+    impact: { affected: false, bookings: [], reservations: [], supports: [] },
+    overSubscription: [
+      { scope: 'session', sessionId: 'session-1', registered: 30, capacity: 20 },
+      { scope: 'event', sessionId: null, registered: 30, capacity: 20 },
+    ],
+    revision: 'rev-3',
+  }, savedSession);
+  render(<SessionEditor eventId="event-1" />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getByText('Save session'));
+
+  expect(await screen.findByText('More people are registered than there are places')).toBeTruthy();
+  expect(screen.getByText(/A Session: 30 registered for 20 places/)).toBeTruthy();
+  expect(screen.getByText(/The whole event: 30 registered for 20 places/)).toBeTruthy();
+  expect(screen.getByText(/No one will be removed or moved to the waiting list/)).toBeTruthy();
+  expect(saved()).toHaveLength(0);
+
+  fireEvent.click(screen.getByText('Save changes'));
+  await waitFor(() => expect(saved()).toHaveLength(1));
+  expect(String(saved()[0]![0])).toContain('reviewed=rev-3');
+});
+
+test('E10-S02: a Session save refused because its check went stale shows the fresh list, and saves against it', async () => {
+  const fresh = { ...supportCheck, impact: { ...supportCheck.impact, bookings: [{
+    id: 'booking-1', sessionId: 'session-1', venueId: 'venue-1', venueName: 'Hall B', reasons: ['time'], governingHeadcount: null, capacity: 100,
+  }] }, revision: 'rev-fresh' };
+  let refused = false;
+  const saved = planningFetch(supportCheck, () => {
+    if (refused) return savedSession();
+    refused = true;
+    return new Response(JSON.stringify({
+      error: 'arrangements_changed',
+      message: 'What this change affects has changed since you checked. Review the updated list before saving.',
+      ...fresh,
+    }), { status: 409 });
+  });
+  render(<SessionEditor eventId="event-1" />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getByText('Save session'));
+  fireEvent.click(await screen.findByText('Save and ask staff to reconfirm'));
+
+  expect(await screen.findByText('What this change affects has changed since you checked. Review the updated list before saving.')).toBeTruthy();
+  expect(screen.getByText('Hall B')).toBeTruthy();
+  expect(screen.queryByText(/Check the dates and expected attendance/)).toBeNull();
+
+  fireEvent.click(screen.getByText('Save and ask staff to reconfirm'));
+  await waitFor(() => expect(saved()).toHaveLength(2));
+  expect(String(saved()[1]![0])).toContain('reviewed=rev-fresh');
+  expect(await screen.findByText('Session saved.')).toBeTruthy();
+});
+
+test('E10-S02: a stale check is reviewed even when the first check needed no review', async () => {
+  const saved = planningFetch({
+    impact: { affected: false, bookings: [], reservations: [], supports: [] }, overSubscription: [], revision: 'rev-4',
+  }, () => new Response(JSON.stringify({ error: 'arrangements_changed', message: 'Changed.', ...supportCheck }), { status: 409 }));
+  render(<SessionEditor eventId="event-1" />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getByText('Save session'));
+
+  expect(await screen.findByText('Technical Support to reconfirm')).toBeTruthy();
+  expect(saved()).toHaveLength(1);
+});
+
+test('E10-S02: any other refusal closes the review and says why', async () => {
+  planningFetch(supportCheck, () => new Response(JSON.stringify({ error: 'The end must be after the start.' }), { status: 400 }));
+  render(<SessionEditor eventId="event-1" />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getByText('Save session'));
+  fireEvent.click(await screen.findByText('Save and ask staff to reconfirm'));
+
+  expect(await screen.findByText('The end must be after the start.')).toBeTruthy();
+  expect(screen.queryByText('Technical Support to reconfirm')).toBeNull();
 });
 
 test('TC_E04S02_02: with two Sessions each keeps its own requirements', async () => {
