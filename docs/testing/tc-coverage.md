@@ -1,17 +1,17 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 383 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 386 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **318** (83.0%)
-  - Real-database (`.integration.test` / `.db.test`): **41**
+- Total test cases: **386**
+- Automated (explicit TC_ID in an active test title): **321** (83.2%)
+  - Real-database (`.integration.test` / `.db.test`): **43**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **276**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.5%)
+  - Live-assertion (other active tests): **277**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
 - No test yet (no test file mentions the TC_ID): **17** (4.4%)
 
 ## Coverage by epic
@@ -27,11 +27,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E07 | 37 | 33 | 0 | 4 |
 | E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
-| E10 | 33 | 29 | 0 | 4 |
+| E10 | 36 | 32 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **318** | **48** | **17** |
+| **Total** | **386** | **321** | **48** | **17** |
 
 ## Case-by-case status
 
@@ -420,10 +420,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_07: a booking headcount governs over Session attendance; only the Session-governed booking is flagged (SQL Session ch |
 | `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
 | `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
-| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/supportReconfirmation.integration.test.ts: TC_ |
+| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/eventSessionsRoutes.integration.test.ts: TC_E1 |
 | `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104); backend/tests/supportReconfirmation |
 | `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
 | `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
+| `TC_E10S02_14` | E10-S02 | Moving a Session on the Session screen should list the staffed Technical Support | ✅ active | frontend/src/features/organiser/SessionEditor.test.tsx: TC_E10S02_14: a planning Session edit that flags only Technical Support says so before saving |
+| `TC_E10S02_15` | E10-S02 | Moving a Session on the Session screen should ask only the technicians on the fl | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician  |
+| `TC_E10S02_16` | E10-S02 | A Session change on the Session screen that leaves fewer places than registered  | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_16: a Session layout change below its registrations is warned about and removes no one, rolled back |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -783,6 +786,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
 
 - the save route refuses a stale preview revision with the fresh list, and saves with a current one
+- the Session save route refuses a stale preview revision with the fresh list and the same sentence, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -1684,6 +1688,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+- T-108: Save draft after deleting down to one Session sends the Event\
+- T-108: with two Sessions still left the form keeps what the Organiser typed
+- T-108: if the new details cannot be read, saving is blocked instead of overwriting the Session
+- T-108: Save draft and Submit stay blocked from the start of the delete until the new details load, on a slow connection
+- T-108: a slow refresh that then fails leaves Save draft and Submit blocked
+- T-108: a refused delete that left both Sessions unblocks saving and keeps what was typed
+- T-108: a delete whose reply was lost but which went through still refreshes the form
+- T-108: if nothing can be read after a failed delete, Save draft and Submit stay blocked
 
 ### `frontend/src/features/organiser/RegistrationPeriod.test.tsx`
 

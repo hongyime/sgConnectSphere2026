@@ -50,3 +50,10 @@ Complete E02-S07 / SCRUM-180 Session-date submission validation after merged E04
 - Final timestamped files chosen over Draft/refusal/incorrect-date attempts.
 - TC02 full Session range capture and TC05 corrected Session reload capture
   remain documented evidence limits. No human editor correction is claimed.
+
+## Main sync after #419
+
+- Merged main 6df0ce85; retained both date-refusal and sole-Session-refresh
+  tests, regenerated coverage inventory. No product logic discarded.
+- Focused Organiser/Session editor tests: 42 passed; both typechecks passed.
+- Evidence: 20261104-024433-xiangyingg-frontend-vitest.md.

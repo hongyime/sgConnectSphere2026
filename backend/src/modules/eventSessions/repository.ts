@@ -4,6 +4,7 @@ import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
 import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
+import { notifyArrangementImpact } from '../eventNotifications/informationChange.js';
 import { captureEventAudience, notifyEventChange, resolveAssignedVenueStaff, writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import type { SessionRepository } from './service.js';
@@ -259,25 +260,24 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       }
 
       await applyArrangementImpact(query, actorId, eventId, impact);
-      if (impact.affected) {
+      const was = before.sessions.find(session => session.id === sessionId);
+      const now = after.sessions.find(session => session.id === sessionId);
+      const moved = !!was && !!now && (was.startsAt !== now.startsAt || was.endsAt !== now.endsAt);
+      if (impact.affected || moved) {
+        // One change ID for the save: whoever gets the reconfirmation notice is
+        // not sent the date notice as well, as with an Event edit.
         const changeId = randomUUID();
         const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0]!.now;
-        const staff = await captureEventAudience(
-          client, eventId, {}, [...new Set(impact.bookings.map(booking => booking.venueId))],
-        );
-        await notifyEventChange(client, {
-          changeId,
-          occurredAt: changedAt,
-          actorId,
-          before: staff,
-          after: staff,
-          change: {
-            kind: 'reconfirmation_required',
-            venueAffected: impact.bookings.length > 0,
-            technicalAffected: impact.reservations.length > 0,
-            reasons: [...impact.bookings, ...impact.reservations].flatMap(item => item.reasons),
-          },
-        });
+        // E10-S02 Scenario 6 (T-104): the shared notice also tells the
+        // technicians on a flagged Technical Support request.
+        if (impact.affected) await notifyArrangementImpact(client, actorId, eventId, impact, changeId, changedAt);
+        // E11-S01 Scenario 2: a Session date or time change is notified, as an
+        // approved Session change request does.
+        if (moved) {
+          const audience = await captureEventAudience(client, eventId);
+          await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId, before: audience, after: audience,
+            change: { kind: 'arrangements', fields: ['date', 'time'], session: true } });
+        }
       }
       return { status: 'updated' as const, session: updated, ...check };
     });
