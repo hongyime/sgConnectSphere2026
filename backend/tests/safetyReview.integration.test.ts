@@ -17,7 +17,7 @@ import { randomUUID } from 'node:crypto';
 import { reconfirmBooking } from '../src/modules/venueBooking/decisions.js';
 import { SAFETY_FACTORS } from '../src/modules/eventReadiness/safetyCheck.js';
 import { decideSafetyReview, getEventReadiness, getSafetyReviewEvent, listSafetyReviewEvents, submitForSafetyReview } from '../src/modules/eventReadiness/submission.js';
-import { getEvent } from '../src/modules/eventVisibility/service.js';
+import { getEvent, listEventActivity } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { loginDatabase } from './helpers/loginDatabase.js';
 
@@ -122,8 +122,14 @@ test('TC_E08S06_01: the queue lists Safety Review Events oldest entry first, and
 
 test('TC_E08S06_02: approval confirms the Event, keeps one immutable checklist row and sends "Event confirmed" with the details', () => withFixture(async f => {
   const { event } = await f.reviewedEvent('EVT-8603');
-  await decideSafetyReview(f.pool, f.officer, 'EVT-8603', { decision: 'approve', factors: factors() });
+  await f.q(`UPDATE events SET decision_reason = 'Approved request' WHERE id = $1`, [event]);
+  await decideSafetyReview(f.pool, f.officer, 'EVT-8603', { decision: 'approve', factors: factors(), reason: 'Left over' });
   assert.equal(await f.status(event), 'confirmed');
+  // #412 review: approval leaves decision_reason alone, and the Activity log shows the decision once.
+  assert.equal((await f.q('SELECT decision_reason FROM events WHERE id = $1', [event])).rows[0].decision_reason, 'Approved request');
+  const activity = (await listEventActivity((sql, values) => f.pool.query(sql, values) as never, event)).rows
+    .filter(entry => entry.action === 'Safety check approved');
+  assert.deepEqual(activity.map(entry => entry.field_changed), ['safety_check']);
 
   const [row] = await f.decisionRows(event);
   assert.deepEqual([row!.actor_id, row!.action], [f.officer.id, 'Safety check approved']);
@@ -148,6 +154,9 @@ test('TC_E08S06_03: requesting changes flags the equipment only, and the Event w
   assert.equal(await f.status(event), 'planning');
   assert.deepEqual((await f.q('SELECT requires_reconfirmation FROM venue_bookings WHERE event_id = $1', [event])).rows.map(r => r.requires_reconfirmation), [false, false]);
   assert.equal((await f.q('SELECT requires_reconfirmation FROM equipment_reservations WHERE id = $1', [reservation])).rows[0].requires_reconfirmation, true);
+  // #412 review: the flag carries its activity entry, as an edit's flags do.
+  assert.deepEqual((await f.q(`SELECT entity_type, entity_id, action FROM audit_logs WHERE event_id = $1 AND field_changed = 'requires_reconfirmation'`, [event])).rows,
+    [{ entity_type: 'equipment_reservation', entity_id: reservation, action: 'Reconfirmation required: safety check changes requested' }]);
   const notices = await f.noticesFor(event);
   assert.equal(notices.length, 2);
   assert.equal(notices[0]!.message, 'The Safety Officer requested changes, so EVT-8604 Charity Run is back in Planning. Reason: Move the rig. '

@@ -1,7 +1,7 @@
 import { ACTIVE_EVENT_STATUSES } from '../eventLifecycle/status.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
-import { latestSafetyReturn } from '../eventReadiness/safetyReturn.js';
+import { latestSafetyReturn, SAFETY_ACTIONS } from '../eventReadiness/safetyReturn.js';
 
 export type Query = <T extends Record<string, unknown> = Record<string, unknown>>(
   sql: string, values?: unknown[],
@@ -98,6 +98,9 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 // Staff booking decisions, which are stored against the booking, with the
 // venue named, and Technical Support reconfirmations (T-104, SCRUM-244), which
 // are stored against the support request. The Organiser view leaves them out.
+// E08-S06 Scenario 10 (#412 review): a safety decision writes a status row and
+// a checklist row with the same action; only the checklist row is shown, so
+// the decision is one entry.
 export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
   const targets = options.includeBookings
     ? `(a.entity_type IN ('event', 'venue_booking') OR (a.entity_type = 'tech_support_request' AND a.action = 'Support Reconfirmed'))`
@@ -113,7 +116,8 @@ export async function listEventActivity(query: Query, eventId: string, options: 
     LEFT JOIN venue_bookings vb ON a.entity_type = 'venue_booking' AND vb.id = a.entity_id
     LEFT JOIN venues bv ON bv.id = vb.venue_id
     WHERE a.event_id = $1 AND ${targets} AND a.action <> 'Access Denied'
-    ORDER BY a.occurred_at ASC, a.id ASC`, [eventId]);
+      AND NOT (a.field_changed = 'status' AND a.action = ANY($2))
+    ORDER BY a.occurred_at ASC, a.id ASC`, [eventId, Object.values(SAFETY_ACTIONS)]);
 }
 
 export async function listEventComments(query: Query, eventId: string) {

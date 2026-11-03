@@ -71,15 +71,23 @@ export async function getEventReadiness(database: Pool, user: AuthenticatedUser 
   return { ...await loadReadiness(query, event), safetyReturn: await latestSafetyReturn(query, event.id) };
 }
 
+// E08-S06 Scenario 7: the role is checked before the identifier, so anyone
+// else gets 403 and an Access Denied row whatever they send.
+async function requireSafetyOfficer(database: Pool, user: AuthenticatedUser | undefined, identifier: string, screen: string,
+  message = 'Access denied. This action is for Safety Officers.'): Promise<AuthenticatedUser> {
+  if (!user) throw new AccessError(401, 'Sign in to continue.');
+  if (!canActAsRole(user, ['safety_officer']).allowed) {
+    await recordEventDenial(database, user, identifier, screen);
+    throw new AccessError(403, message);
+  }
+  return user;
+}
+
 // E01-S13 / E08-S06 Scenario 1: the Safety Officer's queue, oldest entry into
 // Safety Review first (D113). status_changed_at is that entry time while the
 // Event stays in Safety Review.
 export async function listSafetyReviewEvents(database: Pool, user: AuthenticatedUser | undefined) {
-  if (!user) throw new AccessError(401, 'Sign in to continue.');
-  if (!canActAsRole(user, ['safety_officer']).allowed) {
-    await recordEventDenial(database, user, '', 'safety_review_queue');
-    throw new AccessError(403, 'Access denied. This action is for Safety Officers.');
-  }
+  await requireSafetyOfficer(database, user, '', 'safety_review_queue');
   const result = await database.query(
     `SELECT e.id, e.event_code, e.title, e.status, e.status_changed_at,
        lower(e.event_range) AS starts_at, upper(e.event_range) AS ends_at,
@@ -154,11 +162,7 @@ async function loadArrangements(query: Query, eventId: string) {
 }
 
 export async function getSafetyReviewEvent(database: Pool, user: AuthenticatedUser | undefined, identifier: string): Promise<SafetyReviewDetail> {
-  if (!user) throw new AccessError(401, 'Sign in to continue.');
-  if (!canActAsRole(user, ['safety_officer']).allowed) {
-    await recordEventDenial(database, user, identifier, 'safety_review_detail');
-    throw new AccessError(403, 'Access denied. This action is for Safety Officers.');
-  }
+  await requireSafetyOfficer(database, user, identifier, 'safety_review_detail');
   checkIdentifier(identifier);
   const query: Query = (sql, values) => database.query(sql, values);
   const event = (await query<SafetyReviewDetail['event']>(
@@ -171,7 +175,7 @@ export async function getSafetyReviewEvent(database: Pool, user: AuthenticatedUs
   if (!event) throw new AccessError(404, 'This event is not awaiting a safety review.');
   const support = (await query<SafetyReviewDetail['support'][number]>(
     `SELECT id, COALESCE(support_description,'') AS description, status
-     FROM tech_support_requests WHERE event_id=$1 ORDER BY id`, [event.id])).rows;
+     FROM tech_support_requests WHERE event_id=$1 AND status <> 'cancelled' ORDER BY id`, [event.id])).rows;
   return { event, ...await loadArrangements(query, event.id), support, factors: SAFETY_FACTORS };
 }
 
@@ -224,37 +228,45 @@ async function recordSafetyDecision(client: PoolClient, event: EventRow, reviewe
 
 // D111: venue factors flag the confirmed venue bookings, equipment placement
 // the live equipment reservations; attendance and Technical Support flag nothing.
+// The checklist is for the whole Event, so every one of them is flagged.
 const VENUE_FACTORS = ['venue_layout', 'emergency_access', 'accessibility', 'crowd_movement', 'venue_restrictions'] as const;
+
+// #412 review: each flag gets the activity entry applyArrangementImpact()
+// writes for an edit, so Venue Staff and the Coordinator see why.
+async function flagForSafety(client: PoolClient, table: 'venue_bookings' | 'equipment_reservations', live: string, eventId: string, actorId: string) {
+  await client.query(
+    `WITH flagged AS (UPDATE ${table} SET requires_reconfirmation=true WHERE event_id=$1 AND ${live} RETURNING id)
+     INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
+     SELECT $2, $3, id, $1, 'Reconfirmation required: safety check changes requested', 'requires_reconfirmation', 'true' FROM flagged`,
+    [eventId, actorId, table === 'venue_bookings' ? 'venue_booking' : 'equipment_reservation'],
+  );
+}
 
 // POST /api/events?safetyDecision=1&id=<event id or code>
 export async function decideSafetyReview(
   database: Pool, user: AuthenticatedUser | undefined, identifier: string, input: unknown,
 ): Promise<SafetyDecisionResult> {
-  if (!user) throw new AccessError(401, 'Sign in to continue.');
+  const officer = await requireSafetyOfficer(database, user, identifier, 'safety_review_decision', READINESS_MESSAGES.onlySafetyOfficer);
   checkIdentifier(identifier);
-  if (!canActAsRole(user, ['safety_officer']).allowed) {
-    await recordEventDenial(database, user, identifier, 'safety_review_decision');
-    throw new AccessError(403, READINESS_MESSAGES.onlySafetyOfficer);
-  }
   const decision = parseSafetyDecision(input);
   return inTransaction(database, async client => {
     const event = (await client.query<EventRow>(`${EVENT_SELECT} FOR UPDATE`, [identifier])).rows[0];
     if (!event || event.status === 'draft') throw new AccessError(404, 'This event is not awaiting a safety review.');
     if (event.status !== 'safety_review') throw new AccessError(409, 'Only an event in Safety Review can receive a safety decision.');
     const target = decision.decision === 'approve' ? 'confirmed' : 'planning';
-    const { event: updated } = await applyEventStatusChange(client, event.id, target, user.id, {
+    const { event: updated } = await applyEventStatusChange(client, event.id, target, officer.id, {
       reason: decision.reason,
       auditAction: SAFETY_ACTIONS[decision.decision],
       beforeNotify: async change => {
         if (decision.decision === 'request_changes') {
           if (VENUE_FACTORS.some(key => !decision.factors[key].satisfactory)) {
-            await client.query(`UPDATE venue_bookings SET requires_reconfirmation=true WHERE event_id=$1 AND status='confirmed'`, [event.id]);
+            await flagForSafety(client, 'venue_bookings', `status='confirmed'`, event.id, officer.id);
           }
           if (!decision.factors.equipment_placement.satisfactory) {
-            await client.query(`UPDATE equipment_reservations SET requires_reconfirmation=true WHERE event_id=$1 AND status <> 'released'`, [event.id]);
+            await flagForSafety(client, 'equipment_reservations', `status <> 'released'`, event.id, officer.id);
           }
         }
-        await recordSafetyDecision(client, event, user, decision, change);
+        await recordSafetyDecision(client, event, officer, decision, change);
       },
     });
     return { eventId: updated.id, eventCode: event.event_code, status: target, decision: decision.decision, reason: decision.reason };

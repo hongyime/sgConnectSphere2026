@@ -57,13 +57,14 @@ test('organiser event detail includes current status date and status history', a
       id: 'event-a', status: 'planning', status_changed_at: '2026-09-10T00:00:00.000Z',
     }] };
     if (sql.includes('FROM event_threads')) return { rows: [] };
+    // Before the status history: the Activity log read also names field_changed = 'status' (E08-S06).
+    if (sql.includes('FROM audit_logs a')) { activitySql = sql; return { rows: [
+      { occurred_at: '2026-09-05T00:00:00.000Z', action: 'Record updated', field_changed: 'purpose', old_value: null, new_value: 'Planning', actor_name: 'Organiser A' },
+    ] }; }
     if (sql.includes("field_changed = 'status'")) return { rows: [
       { occurred_at: '2026-09-01T00:00:00.000Z', old_value: 'submitted', new_value: 'under_review' },
       { occurred_at: '2026-09-10T00:00:00.000Z', old_value: 'under_review', new_value: 'planning' },
     ] };
-    if (sql.includes('FROM audit_logs a')) { activitySql = sql; return { rows: [
-      { occurred_at: '2026-09-05T00:00:00.000Z', action: 'Record updated', field_changed: 'purpose', old_value: null, new_value: 'Planning', actor_name: 'Organiser A' },
-    ] }; }
     throw new Error(`Unexpected query: ${sql}`);
   };
 
