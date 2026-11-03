@@ -244,6 +244,11 @@ test('E04-S02: handNeedsToEvent updates Event details to match the survivor Sess
   assert.ok(updateEvent.sql.includes('accessibility_note = s.accessibility_note'));
   assert.ok(updateEvent.sql.includes('equipment_requirements = s.equipment_requirements'));
   assert.ok(updateEvent.sql.includes('layout_preference = s.layout_preference'));
+  const updatePublication = queries.find(q => q.sql.includes('UPDATE event_publications'));
+  assert.ok(updatePublication, 'published dates move with the Event');
+  assert.ok(updatePublication.sql.includes('starts_at = lower(e.event_range)'));
+  assert.ok(updatePublication.sql.includes('ends_at = upper(e.event_range)'));
+  assert.deepEqual(updatePublication.values, [EVENT_ID]);
   assert.deepEqual(updateEvent.values, [EVENT_ID, SESSION_ID]);
 
   assert.ok(queries.some(q => q.sql.includes('DELETE FROM event_accessibility_needs')));

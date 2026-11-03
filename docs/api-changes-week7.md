@@ -239,7 +239,8 @@ attendance, requirements and layout update to match it; with two or more Session
 left, the Event's time stays the same, and equipment reservations and Technical
 Support times keep their existing times until edited. If the Event's time changed
 and it isn't a draft, the people following it get the usual date/time notice
-(E11-S01 Scenario 2).
+(E11-S01 Scenario 2). An existing publication takes the Event's new dates in the
+same transaction, so Attendees see the dates they were told about.
 
 In planning, changing a Session's layout, accessibility needs or facilities
 counts as an arrangement change even when its times, attendance and capacity

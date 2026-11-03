@@ -24,6 +24,7 @@ import { venueSearch } from '../src/modules/venueBooking/search.js';
 import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js';
 import { decideBooking } from '../src/modules/venueBooking/decisions.js';
 import { updateEventInformation } from '../src/modules/eventVisibility/service.js';
+import { attendeeEvents } from '../src/modules/attendeeVisibility/service.js';
 
 test('TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back', async () => {
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
@@ -770,7 +771,23 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       layout_id: string | null;
       venue_requirements: string | null;
     }>('SELECT session_range, expected_attendance, layout_id, venue_requirements FROM sessions WHERE id = $1', [primary.secondId])).rows[0]!;
+    // What a registered Attendee is shown, read the way their own screen reads it.
+    const attendee = { id: attendeeId, email: `${attendeeId}@example.test`, role: 'attendee' as const, clientOrgId: null, isActive: true };
+    const attendeeDates = async (eventId: string) => {
+      const [shown] = await attendeeEvents(query, attendee, eventId) as Array<{ starts_at: Date; ends_at: Date }>;
+      return { start: shown!.starts_at.toISOString(), end: shown!.ends_at.toISOString() };
+    };
+    const sessionDates = async (sessionId: string) => {
+      const { start, end } = (await client.query<{ start: Date; end: Date }>(
+        'SELECT lower(session_range) AS start, upper(session_range) AS end FROM sessions WHERE id = $1', [sessionId],
+      )).rows[0]!;
+      return { start: start.toISOString(), end: end.toISOString() };
+    };
+    assert.notDeepEqual(await attendeeDates(primary.eventId), await sessionDates(primary.secondId),
+      "before the delete the Attendee sees the Event's old dates");
     const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
+    assert.deepEqual(await attendeeDates(primary.eventId), await sessionDates(primary.secondId),
+      'after the delete the Attendee sees the same dates they were told about');
     assert.equal(prompted.primaryNeeded, true);
     assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
       'no booking is promoted automatically');
@@ -851,7 +868,15 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     const eventDetailsBefore3 = (await client.query<{ event_range: string; expected_attendance: number }>(
       'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
     )).rows[0]!;
+    await client.query(
+      `INSERT INTO event_publications (event_id, name, starts_at, ends_at, venue_name, venue_location)
+       SELECT id, title, lower(event_range), upper(event_range), 'Booked hall', 'Level 1' FROM events WHERE id = $1`,
+      [threeSession.eventId],
+    );
+    await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered')`, [threeSession.eventId, attendeeId]);
+    const publishedBefore3 = await attendeeDates(threeSession.eventId);
     await removeSession(repository, organiserId, threeSession.eventId, third.session.id);
+    assert.deepEqual(await attendeeDates(threeSession.eventId), publishedBefore3, 'with 2 or more Sessions left, the published dates stay the same');
     const eventDetailsAfter3 = (await client.query<{ event_range: string; expected_attendance: number }>(
       'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
     )).rows[0]!;
@@ -863,6 +888,8 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [draftEvent.eventId]);
     await removeSession(repository, organiserId, draftEvent.eventId, draftEvent.firstId);
     assert.deepEqual(await told(coordinatorId, draftEvent.eventId), [], 'deleting from a draft sends no time notice');
+    assert.equal((await client.query('SELECT 1 FROM event_publications WHERE event_id = $1', [draftEvent.eventId])).rowCount, 0,
+      'an Event that was never published stays unpublished');
 
     // T-94: approving another booking doesn't choose for the Coordinator while a
     // Confirmed booking is still waiting to be chosen.

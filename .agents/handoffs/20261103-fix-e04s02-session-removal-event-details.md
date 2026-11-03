@@ -43,12 +43,24 @@ a primary booking was released and other Confirmed bookings remain (T-94).
 - Not fixed here, follow-up PR: the draft page keeps old event values after a Session is
   removed, so Save draft or Submit can overwrite the survivor until the page is reloaded.
 
+## Ji Ning's review fixes
+
+- `handNeedsToEvent` also updates an existing `event_publications` row's `starts_at` and
+  `ends_at`, in the same transaction, so Attendees see the dates the notice told them about.
+  The database test reads them through `attendeeEvents`. It fails with the update turned off.
+- Run records for the local automated runs cited on this PR are in `docs/testing/runs/`.
+- The manual record `20261103-143400-amareetkm2024-del-frontend-e2e` and its 18 screenshots
+  moved to #419, unchanged, because this PR was at the 40-file limit. The draft form fix Ji Ning
+  asked for is also in #419, so the two ship together.
+- Not fixed, raised with the user: after the primary Session is deleted, the publication still
+  names the released venue until the Coordinator chooses another.
+
 ## Final manual run
 
-`20261103-143400-amareetkm2024-del-frontend-e2e`: TC_E04S02_01 to _05 all PASS by hand on
+`20261103-143400-amareetkm2024-del-frontend-e2e` (now in #419): TC_E04S02_01 to _05 all PASS by hand on
 `ce335a92`. T-108 records the Product Owner's answer. A later app code change needs
 another run on the code it touches; docs and test-only changes don't. The review fix to
-`decideBooking` came after this run, and TC_E04S02_01 to _05 never approve a booking. The click-through guide's wording for
+`decideBooking` came after this run, and TC_E04S02_01 to _05 never approve a booking. The publication update also came after it and does run on delete; TC_E04S02_05's event has no publication, so that run didn't exercise it. The click-through guide's wording for
 _01 and the _05 removal message predates this PR and still needs updating.
 
 ## Commands and outcomes
