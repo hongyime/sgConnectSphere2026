@@ -19,7 +19,7 @@ DATABASE_URL="<local URL>" DATABASE_POOLER_URL= npx tsx src/database/cli.ts rese
 psql "<local URL>" -q -v stage=setup -f ../docs/testing/manual/E10-S02-preconditions.sql
 ```
 
-It prints eight events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
+It prints nine events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
 Summit**, **EVT-1023 Studio Workshop**, **EVT-1024 Product Launch** (100
 registered), **EVT-1025 Two-Day Forum** (2 Sessions), and for the Technical
 Support follow-up (T-104, subtask SCRUM-244) **EVT-1026 Charity Run**,
