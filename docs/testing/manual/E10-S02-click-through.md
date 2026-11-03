@@ -304,12 +304,15 @@ equipment. A staffed **Sound desk** request (13 Mar, 12:00 pm – 2:00 pm,
    under **Support to reconfirm**, **EVT-1029 Design Week**, Sound desk, *Staffed
    for* 13 Mar 2027, 12:00 pm – 2:00 pm, *Reconfirm for* 13 Mar 2027, 1:00 pm –
    3:00 pm; Lighting is not listed.
-6. Sign in as `tech_b`. Open http://localhost:5173/notifications. Expected: no
-   Design Week notice.
+6. Sign in as `tech_b`. Open http://localhost:5173/notifications. Expected:
+   one **Event update** for Design Week, "Session date, time changed." (E11-S01
+   Scenario 2), and no reconfirmation notice; at
+   http://localhost:5173/support/technicians, nothing under **Support to
+   reconfirm** for Design Week.
 
 Screenshots: `TC_E10S02_14-2.png` (confirm message), `TC_E10S02_14-3.png`
 (saved, new time), `TC_E10S02_15-4.png` (tech_a notice), `TC_E10S02_15-5.png`
-(Support to reconfirm), `TC_E10S02_15-6.png` (tech_b, no notice).
+(Support to reconfirm), `TC_E10S02_15-6.png` (tech_b, Session date notice only).
 
 ## Check the database afterwards (optional, read-only)
 
@@ -326,4 +329,4 @@ and 100 Registered for EVT-1024. For T-104: EVT-1026 Sound desk unflagged at 12 
 flagged at 6 Dec 09:00, moving to 13 Dec 09:00, with no "Support Reconfirmed"
 row; EVT-1027 and EVT-1028 in planning. For section K: EVT-1029 Sound desk
 flagged at 13 Mar 12:00, moving to 13 Mar 13:00, Lighting not flagged, and one
-notice for tech_a and none for tech_b.
+reconfirmation notice for tech_a and only the Session date notice for tech_b.
