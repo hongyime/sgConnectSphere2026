@@ -29,9 +29,20 @@ The three points left for E08-S06's builder in
 3. Done. Wording: a flagged booking reads "needs reconfirmation by Venue Staff" (was "its capacity
    is now below the expected attendance", wrong for an E10-S02 date change and
    an E08-S06 Request changes); update the tests that expect it.
-4. TC_E08S04_05 wording, `tc-coverage.md`, run records.
-5. PR, Jira.
+4. Done. TC_E08S04_05 precondition, workbook 041126, `tc-coverage.md`; click-through
+   section F with EVT-1085 (real Safety Officer page); automated real local run
+   10/10 checks (record 20261104-014530); unit 717/718 (1 skip), DB 349/350
+   (`registration.db.test.ts` local schema only), Vitest 821/821.
+5. Le Xin's manual run of section F (TC_E08S04_05-14 to -20, T-93).
+6. PR, Jira.
 
 ## Next step
 
-Task 4 (TC_E08S04_05 wording, tc-coverage, run records).
+Task 5: Le Xin's manual run of section F.
+
+## Found on the way
+
+- The local API exits when the database it is connected to is reset; restart it
+  after every `cli.ts reset`.
+- On 4 November the shared folder was switched to `test/SCRUM-71-e10s02-session-rerun`
+  mid-run by another session; check the branch before a real run.
