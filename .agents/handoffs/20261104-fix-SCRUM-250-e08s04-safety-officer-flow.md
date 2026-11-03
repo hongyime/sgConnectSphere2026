@@ -26,7 +26,7 @@ The three points left for E08-S06's builder in
 2. Done. Integration test of the real chain: Safety Officer approves through
    `decideSafetyReview` -> revert -> reconfirm -> automatic Safety Review ->
    in the Safety Officer queue, unanswered checklist -> a new decision needed.
-3. Wording: a flagged booking reads "needs reconfirmation" (was "its capacity
+3. Done. Wording: a flagged booking reads "needs reconfirmation by Venue Staff" (was "its capacity
    is now below the expected attendance", wrong for an E10-S02 date change and
    an E08-S06 Request changes); update the tests that expect it.
 4. TC_E08S04_05 wording, `tc-coverage.md`, run records.
@@ -34,4 +34,4 @@ The three points left for E08-S06's builder in
 
 ## Next step
 
-Task 3 (wording).
+Task 4 (TC_E08S04_05 wording, tc-coverage, run records).

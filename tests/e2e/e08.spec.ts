@@ -544,7 +544,7 @@ test.describe("E08-S04 — Scenario 4", () => {
         equipmentNoneRequired: true, supportNoneRequired: false,
         venueBookings: [{ id: 'b-charity', venueName: 'Charity Hall', status: 'confirmed', purpose: null, startsAt: START, endsAt: END, state: state.flagged ? 'outstanding' : 'ready' }],
         equipment: [], support: [],
-        blockers: state.flagged ? [{ kind: 'venue-booking-outstanding', message: 'Charity Hall — needs review: its capacity is now below the expected attendance' }] : [],
+        blockers: state.flagged ? [{ kind: 'venue-booking-outstanding', message: 'Charity Hall — needs reconfirmation by Venue Staff' }] : [],
         canSubmit: state.status === 'planning' && !state.flagged,
       } } });
     });
