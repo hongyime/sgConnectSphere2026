@@ -42,3 +42,11 @@ Complete E02-S07 / SCRUM-180 Session-date submission validation after merged E04
   fixture via API, and 05-2 shows Event fields rather than Session dates.
 - Earlier TC01–04 chat captures are absent from supplied local locations;
   user must restore/reattach originals before the full evidence archive closes.
+
+## Restored TC01–04 originals archived
+
+- Added 11 reviewed final human captures in
+  20261104-024016-xiangyingg-frontend-e2e; earlier records remain immutable.
+- Final timestamped files chosen over Draft/refusal/incorrect-date attempts.
+- TC02 full Session range capture and TC05 corrected Session reload capture
+  remain documented evidence limits. No human editor correction is claimed.
