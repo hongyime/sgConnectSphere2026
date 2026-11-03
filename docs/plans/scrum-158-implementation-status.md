@@ -87,7 +87,7 @@ Each gate is recorded in the Run log below.
 | 3. Coverage of new and changed lines | backend at `578fc4d`, frontend at `3519781` (first measured at `8054e44` / `f30e9b5`) | 100%: #412's backend 347/347 changed lines against `main`, #413's frontend 79/79 against #412, so the fix commits `be0eb43`, `e49b4c3`, `578fc4d`, `524f478` and `3519781` included |
 | 4. Typecheck (`npm run typecheck`, root) | `8054e44`, `f30e9b5`, `c2de0a1`, `578fc4d`, `524f478`, `3519781`, `70ccf7b`; CI on `be0eb43`, `e49b4c3`, `51ca197` | clean |
 | 5. Vitest (whole frontend suite) | `f30e9b5`, `524f478`, `3519781`, `70ccf7b`; CI on `e49b4c3`, `51ca197` | 818/818 at `70ccf7b`; CI green |
-| 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1`, `681f0c7`, `17a22ee` | 462 passed, 218 skipped, 0 failed |
+| 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1`, `681f0c7`, `17a22ee`, `17c280a` | 462 passed, 218 skipped, 0 failed |
 | 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3`, recheck at `d660fff` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3`; rechecked PASS after Le Xin's review fixes (`578fc4d`, `524f478`) |
 | 8. Repository checks (`python scripts/check.py`, `doc_guard.py`, `tc-coverage.md` regenerated last) | each branch before pushing; CI on #412 (`a0e2df0`) and #413 (`51ca197`) | pass; every required check green on both |
 
@@ -161,3 +161,4 @@ Each gate is recorded in the Run log below.
 | 2026-11-03 23:09–23:11 | `70ccf7b` | Playwright | - | `npx playwright test` (whole suite, #413's branch, E08-S06 still scaffolds there) | local, desktop + Pixel 7, API faked | 450 passed, 230 skipped, 0 failed | record `20261103-230931-Bl0oper-frontend-e2e.md` (on #413) | Claude (for Aaron) |
 | 2026-11-03 23:12–23:27 | `51ca197` | CI (#413) | _01 to _05 | GitHub Actions: `CI` run 41661538660, `Application Checks` run 41661539467 | CI | all required checks green | first run with #413 targeting `main` | GitHub Actions |
 | 2026-11-04 00:22–00:24 | `17a22ee` | Playwright | _01 to _06 | `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | 462 passed, 218 skipped, 0 failed | carries #413's review fixes; record `20261104-002230-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
+| 2026-11-04 00:41–00:44 | `17c280a` | typecheck, Playwright | _01 to _06 | `npm run typecheck` (root); `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | clean; 462 passed, 218 skipped, 0 failed | after #413 merged and `main` (with #415) was merged in; record `20261104-004134-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
