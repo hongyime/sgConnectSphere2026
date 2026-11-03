@@ -126,7 +126,7 @@ Returns 200 `{ booking, coordinatorNotified }`.
 - Returns 404 for an unknown booking.
 - Returns 409 when the booking is no longer Pending (e.g. already decided, released, or expired).
 - A booking in `conflicting` status cannot be decided: Venue Staff must wait for the buffer conflict resolution flow (E05-S05 / E05-S06) or coordinator rescheduling, returning 409 with an explanatory message.
-- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row.
+- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row. It does not when another Confirmed booking is already waiting for the Coordinator to choose (T-94).
 - If decision is `reject`, updates status from Pending to Rejected, sets `decision_reason`, optional `suggested_venue_id`, `decided_by`, and `decided_at`.
 - Audit entries: `Booking Approved` or `Booking Rejected` with `entity_type = 'venue_booking'`.
 - Notification sent to the assigned Coordinator.

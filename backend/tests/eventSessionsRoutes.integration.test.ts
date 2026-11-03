@@ -22,6 +22,8 @@ import { addSession, editSession, getSessions, removeSession } from '../src/modu
 import { createSessionRepository } from '../src/modules/eventSessions/repository.js';
 import { venueSearch } from '../src/modules/venueBooking/search.js';
 import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js';
+import { decideBooking } from '../src/modules/venueBooking/decisions.js';
+import { updateEventInformation } from '../src/modules/eventVisibility/service.js';
 
 test('TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back', async () => {
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
@@ -762,6 +764,12 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       [primary.eventId],
     );
     await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered')`, [primary.eventId, attendeeId]);
+    const survivorBefore = (await client.query<{
+      session_range: string;
+      expected_attendance: number;
+      layout_id: string | null;
+      venue_requirements: string | null;
+    }>('SELECT session_range, expected_attendance, layout_id, venue_requirements FROM sessions WHERE id = $1', [primary.secondId])).rows[0]!;
     const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
     assert.equal(prompted.primaryNeeded, true);
     assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
@@ -804,24 +812,19 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       },
       "when one Session is left, the Event's time, attendance, requirements and layout update to match it",
     );
+    assert.deepEqual(survivorSession, survivorBefore, 'the delete leaves the survivor Session with its own details');
 
     // Editing the event afterward must not overwrite the survivor with stale details.
-    // An Event edit writes these columns, which is what fires the 0014 sync trigger;
+    // Requirements are a column the 0014 sync trigger watches, so this edit fires it;
     // changing only the title would not.
-    await client.query(
-      `UPDATE events SET title = 'Renamed forum', event_range = event_range, expected_attendance = expected_attendance,
-         layout_id = layout_id, venue_requirements = venue_requirements, accessibility_note = accessibility_note,
-         equipment_requirements = equipment_requirements, layout_preference = layout_preference
-       WHERE id = $1`,
-      [primary.eventId],
-    );
+    await updateEventInformation(query, user, primary.eventId, { accessibilityNote: 'Ramp at the side door' });
     const survivorAfterEdit = (await client.query<{
       session_range: string;
       expected_attendance: number;
       layout_id: string | null;
       venue_requirements: string | null;
     }>('SELECT session_range, expected_attendance, layout_id, venue_requirements FROM sessions WHERE id = $1', [primary.secondId])).rows[0]!;
-    assert.deepEqual(survivorAfterEdit, survivorSession, 'a later Event edit does not overwrite the survivor Session with stale details');
+    assert.deepEqual(survivorAfterEdit, survivorBefore, 'a later Event edit does not overwrite the survivor Session with stale details');
 
     // Technical support requests and equipment keep their times until someone edits them.
     const supportAfter = (await client.query<{ support_range: string }>(
@@ -861,6 +864,31 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     await removeSession(repository, organiserId, draftEvent.eventId, draftEvent.firstId);
     assert.deepEqual(await told(coordinatorId, draftEvent.eventId), [], 'deleting from a draft sends no time notice');
 
+    // T-94: approving another booking doesn't choose for the Coordinator while a
+    // Confirmed booking is still waiting to be chosen.
+    const venueStaffId = randomUUID();
+    await client.query(
+      `INSERT INTO users (id, full_name, email, password_hash, role) VALUES ($1, 'Venue staff', $2, $3, 'venue_staff')`,
+      [venueStaffId, `${venueStaffId}@example.test`, digest],
+    );
+    await client.query('INSERT INTO venue_staff_assignments (venue_id, staff_id) VALUES ($1, $2)', [bookedVenue, venueStaffId]);
+    const venueStaff = { id: venueStaffId, email: `${venueStaffId}@example.test`, role: 'venue_staff' as const, clientOrgId: null, isActive: true };
+    const pendingBooking = async (eventId: string, sessionId: string, at: string) => {
+      const id = randomUUID();
+      await client.query(
+        `INSERT INTO venue_bookings (id, venue_id, event_id, session_id, booking_range, status, is_primary)
+         VALUES ($1, $2, $3, $4, tstzrange($5::timestamptz, $5::timestamptz + interval '1 hour', '[)'), 'pending', false)`,
+        [id, bookedVenue, eventId, sessionId, at],
+      );
+      return id;
+    };
+    const isPrimary = async (id: string) => (await client.query<{ is_primary: boolean }>(
+      'SELECT is_primary FROM venue_bookings WHERE id = $1', [id])).rows[0]!.is_primary;
+    const laterBooking = await pendingBooking(primary.eventId, primary.secondId, '2027-04-14T05:00:00Z');
+    assert.equal((await decideBooking(savepointPool, venueStaff, laterBooking, { decision: 'approve' })).status, 200);
+    assert.equal(await isPrimary(laterBooking), false, 'an approval does not choose the primary for the Coordinator');
+    assert.equal(await isPrimary(remainingBooking), false);
+
     // With no Confirmed booking left, the next one becomes primary by itself (O-30).
     const noneLeft = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
     await client.query(
@@ -870,6 +898,9 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     );
     assert.equal((await removeSession(repository, organiserId, noneLeft.eventId, noneLeft.firstId)).primaryNeeded, false);
     assert.equal((await client.query(`SELECT 1 FROM notifications WHERE user_id = $1 AND event_id = $2 AND title = 'Primary venue needed'`, [coordinatorId, noneLeft.eventId])).rowCount, 0);
+    const firstConfirmed = await pendingBooking(noneLeft.eventId, noneLeft.secondId, '2027-05-14T05:00:00Z');
+    assert.equal((await decideBooking(savepointPool, venueStaff, firstConfirmed, { decision: 'approve' })).status, 200);
+    assert.equal(await isPrimary(firstConfirmed), true, 'the first Confirmed booking still becomes primary');
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

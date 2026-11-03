@@ -166,7 +166,7 @@ test('TC_E06S03_07 selects another Confirmed primary and retains booking statuse
 
 test('TC_E06S03_07 primary conflict refreshes and busy submission runs only once',async()=>{
   let finish!:(response:unknown)=>void;
-  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'}]})})
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'},{...data.bookings[1],is_primary:true}]})})
     .mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}))
     .mockResolvedValue({ok:true,json:async()=>data});
   vi.stubGlobal('fetch',fetcher);mount();
@@ -176,7 +176,7 @@ test('TC_E06S03_07 primary conflict refreshes and busy submission runs only once
   fireEvent.submit(screen.getByRole('form',{name:'Make Main Hall the primary venue?'}));
   expect(fetcher).toHaveBeenCalledTimes(2);
   await act(async()=>finish({ok:false,status:409,json:async()=>({error:'Only Confirmed bookings can be the primary venue. Refresh the booking list.'})}));
-  expect(await screen.findByText(/Only Confirmed bookings can be the primary venue/)).toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent('Only Confirmed');
   fireEvent.click(screen.getByRole('button',{name:'Refresh booking list'}));
   await waitFor(()=>expect(screen.queryByRole('button',{name:'Set as primary venue'})).not.toBeInTheDocument());
 });

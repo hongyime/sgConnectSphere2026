@@ -328,10 +328,12 @@ export async function decideBooking(database: Pool, user: AuthenticatedUser | un
       throw error;
     }
     // O-30: the first Confirmed booking becomes primary if the event has none.
-    // A later one stays secondary until the Coordinator selects it.
+    // A later one stays secondary until the Coordinator selects it, including when
+    // a released primary left another Confirmed booking to choose from (T-94).
     if (decision.decision === 'approve') {
       await client.query(`UPDATE venue_bookings SET is_primary = true
-        WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM venue_bookings WHERE event_id = $2 AND is_primary)`,
+        WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM venue_bookings WHERE event_id = $2 AND is_primary)
+          AND NOT EXISTS (SELECT 1 FROM venue_bookings WHERE event_id = $2 AND status = 'confirmed' AND id <> $1)`,
       [row.id, row.event_id]);
     }
 

@@ -33,11 +33,22 @@ a primary booking was released and other Confirmed bookings remain (T-94).
 - **No automatic promotion:** T-94 says a released primary is cleared and someone is
   prompted. T-78 keeps choosing with the Coordinator, so the Organiser's prompt points there.
 
+## Le Xin's review fixes
+
+- `decideBooking`: an approval no longer becomes primary while another Confirmed booking
+  is waiting for the Coordinator to choose (T-94). The first Confirmed booking still does (O-30).
+- The later-edit test now compares against the Session's values from before the delete and
+  edits through `updateEventInformation`. The old version could not fail.
+- TC_E06S03_07's alert checks are strict again; the fixtures keep a primary.
+- Not fixed here, follow-up PR: the draft page keeps old event values after a Session is
+  removed, so Save draft or Submit can overwrite the survivor until the page is reloaded.
+
 ## Final manual run
 
 `20261103-143400-amareetkm2024-del-frontend-e2e`: TC_E04S02_01 to _05 all PASS by hand on
 `ce335a92`. T-108 records the Product Owner's answer. A later app code change needs
-another run; docs and test-only changes don't. The click-through guide's wording for
+another run on the code it touches; docs and test-only changes don't. The review fix to
+`decideBooking` came after this run, and TC_E04S02_01 to _05 never approve a booking. The click-through guide's wording for
 _01 and the _05 removal message predates this PR and still needs updating.
 
 ## Commands and outcomes

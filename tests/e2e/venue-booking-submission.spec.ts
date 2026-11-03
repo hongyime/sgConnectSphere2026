@@ -148,13 +148,14 @@ test('TC_E06S03_07 Coordinator selects another Confirmed primary without changin
 test('TC_E06S03_07 stale primary selection refuses and refreshes current status',async({page})=>{
   let released=false;
   await page.route('**/api/venues?*',route=>route.fulfill({json:{event:{id:'event',title:'Synthetic Event',status:'planning'},bookings:[
+    {id:'first',venue_id:'v1',venue_name:'First Hall',location:'Campus',status:'confirmed',is_primary:true,starts_at:'2027-01-15T01:00:00Z',ends_at:'2027-01-15T02:00:00Z'},
     {id:'second',venue_id:'v2',venue_name:'Second Hall',location:'Campus',status:released?'released':'confirmed',is_primary:false,starts_at:'2027-01-15T02:00:00Z',ends_at:'2027-01-15T03:00:00Z'},
   ]}}));
   await page.route('**/api/venues',route=>{released=true;return route.fulfill({status:409,json:{error:'Only Confirmed bookings can be the primary venue. Refresh the booking list.'}});});
   await page.goto('/coordinator/events/EVT-1/venue-bookings');
   await page.getByRole('button',{name:'Set as primary venue',exact:true}).click();
   await page.getByRole('button',{name:'Set primary venue',exact:true}).click();
-  await expect(page.getByRole('alert').filter({hasText:'Only Confirmed'})).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('Only Confirmed');
   await page.getByRole('button',{name:'Refresh booking list'}).click();
   await expect(page.getByText('Released',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'Set as primary venue'})).toHaveCount(0);
