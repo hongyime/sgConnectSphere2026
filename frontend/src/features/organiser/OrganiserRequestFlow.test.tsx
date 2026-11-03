@@ -254,3 +254,26 @@ test('selecting a predefined accessibility feature alone satisfies the mandatory
   expect(body.accessibilityNote).toBe('');
   expect(body.accessibilityFeatureIds).toEqual(['f-1']);
 });
+
+for (const [error, field, expected] of [
+  ['session_date_in_past', 'startAt', 'start date and time must be in the future'],
+  ['session_date_outside_horizon', 'endAt', 'end date and time must be on or before 2028-10-13 (Singapore time)'],
+]) {
+  test(`TC_E02S07_01 TC_E02S07_05: ${error} identifies the offending Session and field`, async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.includes('accessibilityFeatures') ? accessibilityFeaturesResponse()
+      : new Response(JSON.stringify({ error, field, sessionId: 'session-b', sessionTitle: 'Afternoon', sessionNumber: 2, maximumDate: '2028-10-13' }), { status: 400 })));
+    completeForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(`Session 2 (Afternoon): ${expected}. Edit this Session before submitting again.`);
+  });
+}
+
+for (const malformed of [{ field: 'unknown' }, { sessionTitle: undefined }]) {
+  test(`malformed Session-date refusal falls back safely: ${Object.keys(malformed)[0]}`, async () => {
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.includes('accessibilityFeatures') ? accessibilityFeaturesResponse()
+      : new Response(JSON.stringify({ error: 'session_date_in_past', field: 'startAt', sessionId: 'session-b', sessionTitle: 'Afternoon', sessionNumber: 2, maximumDate: '2028-10-13', ...malformed }), { status: 400 })));
+    completeForm();
+    fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The request could not be submitted.');
+  });
+}

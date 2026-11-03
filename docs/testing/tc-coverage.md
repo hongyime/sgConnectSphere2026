@@ -7,19 +7,19 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **317** (82.8%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+- Automated (explicit TC_ID in an active test title): **318** (83.0%)
+  - Real-database (`.integration.test` / `.db.test`): **41**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **273**
+  - Live-assertion (other active tests): **276**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.5%)
-- No test yet (no test file mentions the TC_ID): **18** (4.7%)
+- No test yet (no test file mentions the TC_ID): **17** (4.4%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
-| E02 | 21 | 16 | 1 | 4 |
+| E02 | 21 | 17 | 1 | 3 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **317** | **48** | **18** |
+| **Total** | **383** | **318** | **48** | **17** |
 
 ## Case-by-case status
 
@@ -100,11 +100,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S05_01` | E02-S05 | Copying my completed event should create a draft with its Sessions and requireme | ❌ none | — |
 | `TC_E02S05_02` | E02-S05 | Missing venue or equipment references should be flagged against the copied Sessi | ❌ none | — |
 | `TC_E02S05_03` | E02-S05 | Submitting a copied draft should apply the current date-horizon rules | ❌ none | — |
-| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ❌ none | — |
+| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly |
+| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_04 TC_E02S07_05: a past Session blocks a future Event, then passes after correction; backend/tests/eventLifecycle.test |
 
 ### E03
 
@@ -803,6 +803,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - near-term Event has no minimum lead-time refusal
 - the past Event rule still blocks submission
 - far-future draft saves, refused submission keeps it intact, correction permits submission
+- draft Session writers refuse a missing Event
 - unsigned requests still require authentication
 
 ### `backend/tests/eventLifecycle.integration.test.ts`

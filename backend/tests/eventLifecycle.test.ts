@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  assertSessionSubmissionDates,
   changeEventStatus,
   createEventRequest,
   deleteEventRequest,
@@ -471,4 +472,34 @@ test('changing the status of an unknown event is reported as not found', async (
     changeEventStatus(repository, { eventId: 'no-such-event', actorId: 'coordinator-1', toStatus: 'under_review' }),
     { message: 'Event not found: no-such-event' },
   );
+});
+
+const submissionNow = new Date('2026-10-13T02:00:00Z');
+const validSession = { id: 'session-a', title: 'Opening', startAt: new Date('2026-10-14T01:00:00Z'), endAt: new Date('2026-10-14T02:00:00Z') };
+for (const field of ['startAt', 'endAt'] as const) {
+  for (const [value, code] of [
+    ['2026-10-12T01:00:00Z', 'session_date_in_past'],
+    ['2028-10-13T16:00:00Z', 'session_date_outside_horizon'],
+  ]) {
+    test(`TC_E02S07_01 TC_E02S07_04 TC_E02S07_05: Session ${field} reports ${code}`, () => {
+      assert.throws(() => assertSessionSubmissionDates([validSession, { ...validSession, id: 'session-b', title: 'Afternoon', [field]: new Date(value) }], submissionNow), (error: unknown) => {
+        assert.ok(error instanceof EventValidationError);
+        assert.equal(error.message, code);
+        assert.deepEqual(error.details, { sessionId: 'session-b', sessionTitle: 'Afternoon', sessionNumber: 2, field, maximumDate: '2028-10-13' });
+        return true;
+      });
+    });
+  }
+}
+test('TC_E02S07_02 TC_E02S07_03: all Sessions accept near-term and the entire inclusive Singapore boundary', () => {
+  assert.doesNotThrow(() => assertSessionSubmissionDates([validSession, { ...validSession, startAt: new Date('2028-10-12T16:00:00Z'), endAt: new Date('2028-10-13T15:59:59.999Z') }], submissionNow));
+  assert.doesNotThrow(() => assertSessionSubmissionDates([{ ...validSession, startAt: new Date(Date.now() + 3600000), endAt: new Date(Date.now() + 7200000) }]));
+  assert.doesNotThrow(() => assertSessionSubmissionDates([], submissionNow));
+});
+test('TC_E02S07_05: an unnamed Session and the exact submission instant cannot bypass validation', () => {
+  assert.throws(() => assertSessionSubmissionDates([{ ...validSession, title: undefined, startAt: submissionNow }], submissionNow), (error: unknown) => {
+    assert.ok(error instanceof EventValidationError);
+    assert.equal(error.details?.sessionTitle, 'Untitled Session');
+    return true;
+  });
 });

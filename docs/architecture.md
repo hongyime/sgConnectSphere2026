@@ -34,3 +34,11 @@ create and draft submission; failed PATCH validation returns one structured 400
 through `respondWithResult`. Draft saves may retain farther dates. The sole
 default Session mirrors the Event range; independent Session validation remains
 an E04 integration dependency. See [the contract](contracts/event-date-horizon.md).
+
+### SCRUM-180 Session submission boundary
+
+The Event lifecycle repository validates persisted child Session dates inside
+the draft-submission transaction while holding Event then Session locks. Draft
+Session creation/editing rechecks Draft status under the Event lock, serializing
+those writers with submission. Existing Singapore calendar helpers are reused;
+no schema/service dependency is added. See [the contract](contracts/event-date-horizon.md).

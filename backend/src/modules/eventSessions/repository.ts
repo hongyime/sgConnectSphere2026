@@ -170,6 +170,15 @@ export async function listSessionsWith(client: Client, eventId: string): Promise
   return (await client.query<SessionRow>(`SELECT ${COLUMNS} FROM sessions WHERE event_id = $1 ORDER BY lower(session_range), id`, [eventId])).rows.map(toRecord);
 }
 
+async function requireLockedDraft(client: Client, eventId: string) {
+  const event = (await client.query<{ status: string }>(
+    'SELECT status FROM events WHERE id=$1 FOR NO KEY UPDATE', [eventId],
+  )).rows[0];
+  if (!event || event.status !== 'draft') {
+    throw new AccessError(409, 'Sessions can only be changed while the request is a draft.');
+  }
+}
+
 export function createSessionRepository(db: Pool = getDatabasePool()): SessionRepository {
   return {
   async findEditScope(eventId: string): Promise<SessionEditScope | null> {
@@ -191,7 +200,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
 
   async insertSession(eventId: string, input: SessionInput): Promise<SessionRecord> {
     return inTransaction(db, async client => {
-      await client.query(`SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId]);
+      await requireLockedDraft(client, eventId);
       const existing = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
       if (existing.length === 1) await inheritEventNeeds(client, eventId, existing[0]!.id);
       const { id } = (await client.query<{ id: string }>(
@@ -208,7 +217,10 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   },
 
   async updateSession(sessionId: string, eventId: string, input: SessionInput): Promise<SessionRecord | null> {
-    return inTransaction(db, client => writeSessionWith(client, sessionId, eventId, input));
+    return inTransaction(db, async client => {
+      await requireLockedDraft(client, eventId);
+      return writeSessionWith(client, sessionId, eventId, input);
+    });
   },
 
   // E10-S02 applied to a single Session: the edit runs inside a savepoint for a

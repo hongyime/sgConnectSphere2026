@@ -113,7 +113,6 @@ function assertValidRangeAndFuture(request: Pick<CreateEventRequest, 'startAt' |
   }
 }
 
-// shortcut: Session dates mirror this Event range until E04 adds a multi-Session write path.
 function assertWithinEventDateHorizon(request: Pick<CreateEventRequest, 'startAt' | 'endAt' | 'status'>) {
   if (request.status === 'draft') {
     return;
@@ -123,6 +122,25 @@ function assertWithinEventDateHorizon(request: Pick<CreateEventRequest, 'startAt
   for (const [field, date] of [['startAt', request.startAt], ['endAt', request.endAt]] as const) {
     if (isAfterSingaporeDate(date, maximumDate)) {
       throw new EventValidationError('event_date_outside_horizon', { field, maximumDate });
+    }
+  }
+}
+
+// Called under the submission transaction's Event and Session locks.
+export function assertSessionSubmissionDates(
+  sessions: readonly { id: string; title?: string; startAt: Date; endAt: Date }[],
+  now = new Date(),
+) {
+  const maximumDate = twoCalendarYearsFromSingaporeDate(now);
+  for (const [index, session] of sessions.entries()) {
+    for (const field of ['startAt', 'endAt'] as const) {
+      const details = { sessionId: session.id, sessionTitle: session.title || 'Untitled Session', sessionNumber: index + 1, field, maximumDate };
+      if (session[field].getTime() <= now.getTime()) {
+        throw new EventValidationError('session_date_in_past', details);
+      }
+      if (isAfterSingaporeDate(session[field], maximumDate)) {
+        throw new EventValidationError('session_date_outside_horizon', details);
+      }
     }
   }
 }
