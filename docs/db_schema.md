@@ -460,7 +460,7 @@ erDiagram
   envelope; each `SESSIONS.session_range` stores that Session's period and must be
   within the Event envelope. Event expected attendance remains an overall
   planning total; each Session has its own expected attendance, used as a
-  booking-suitability fallback only for that Session (T-79). There is no minimum
+  booking-suitability fallback only for that Session (T-79). When deleting leaves one Session, the Event takes that Session's period, attendance, requirements and layout (T-108). Any existing `event_publications` row takes the same `starts_at` and `ends_at`. There is no minimum
   lead-time rule; requested event dates more than two years ahead are rejected
   by the application (T-87).
 - Venue bookings and equipment requests/reservations carry both `event_id` and

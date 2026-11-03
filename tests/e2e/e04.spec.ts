@@ -139,7 +139,7 @@ test('TC_E04S02_01: a draft with one Session needs no extra setup', async ({ pag
 
   const editor = page.getByRole('region', { name: 'Event Sessions' });
   await expect(editor.getByLabel('Session title')).toHaveValue('Opening');
-  await expect(editor.getByText(/uses the event’s own requirements/)).toBeVisible();
+  await expect(editor.getByText(/no extra setup needed/)).toBeVisible();
   await expect(editor.getByLabel('Room layout')).toHaveCount(0);
   await expect(editor.getByRole('button', { name: 'Remove session' })).toBeDisabled();
   await editor.getByRole('button', { name: 'Save session' }).click();
