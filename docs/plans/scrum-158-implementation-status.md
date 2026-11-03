@@ -41,7 +41,7 @@ The messages are the code's wording, word for word.
 | Rejection returns the Event to Planning with a visible flag and reason, never cancelling it | **Reject…**, panel "Reject the safety arrangement?" ("The event returns to Planning; it is not cancelled. …"), button **Reject safety arrangement**; then "Rejected. The event is back in Planning, not cancelled, and the Organiser and the Coordinator have been notified." Coordinator's readiness page and Organiser's event page: alert "Safety arrangement rejected": "The Safety Officer rejected the safety arrangement on <date>. Reason: <reason>. The event goes back to Safety Review once it's resubmitted for its safety check." | TC_E08S06_04 |
 | Reject and request changes need a reason; only a Safety Officer decides | Empty reason: "Reason is required." under the panel's Reason field (server: 400 "A reason is required for this safety decision."). Any other role: the queue and review page show "Access refused" with "Access denied. This action is for Safety Officers."; a decision is refused with 403 "Only a Safety Officer can confirm an event in Safety Review."; each refusal is an Access Denied row, kept out of user-facing Activity logs | TC_E08S06_05 |
 | Events confirmed earlier are untouched; tracker and deactivation treat Safety Review as active | An Event Confirmed before this story stays Confirmed, with no safety row and no queue entry. Organiser's event page: "Current status" **Safety Review**, "Reached on <date>"; organisation list "<code> · safety review". Coordinator's Deactivate Account: "Reassign your active events before deactivating your account." with "<code>: <title>" | TC_E08S06_06 |
-| Every decision is one immutable Activity log row with the checklist | Activity log: "Safety check approved", "Safety check changes requested" or "Safety arrangement rejected", by the Safety Officer, with "Every factor satisfactory" or "Not satisfactory: <factors>. Reason: <reason>", on the shared Activity log and the Organiser's event page | TC_E08S06_02 to _05 |
+| Every decision is one immutable Activity log row with the checklist | Activity log: one entry per decision (the status change's own row is left out of the read since Le Xin's #412 review), "Safety check approved", "Safety check changes requested" or "Safety arrangement rejected", by the Safety Officer, with "Now Confirmed. Every factor satisfactory" or "Back in Planning. Not satisfactory: <factors>. Reason: <reason>", on the shared Activity log and the Organiser's event page. A flagged booking or reservation also gets "Reconfirmation required: safety check changes requested" | TC_E08S06_02 to _05 |
 
 ## Test plan
 
@@ -82,13 +82,13 @@ Each gate is recorded in the Run log below.
 
 | Gate | Where it ran | Result |
 |---|---|---|
-| 1. Backend unit tests (`npm test --workspace backend`) | `8054e44`; CI on `be0eb43` | 713 passed, 1 skipped; CI green |
-| 2. Real database (`safetyReview.integration.test.ts` + 7 related suites, Docker `postgres:17`, never Supabase) | `8054e44`; its own `application-checks` step | 55/55 |
-| 3. Coverage of new and changed lines | backend at `8054e44`, frontend at `f30e9b5` | 100% of the new and changed safety code. The fix commits `be0eb43` and `e49b4c3` came with regression tests but coverage wasn't measured again after them |
-| 4. Typecheck (`npm run typecheck`, root) | `8054e44`, `f30e9b5`, `c2de0a1`; CI on `be0eb43`, `e49b4c3` | clean |
-| 5. Vitest (whole frontend suite) | `f30e9b5`; CI on `e49b4c3` | 812/812; CI green |
-| 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1` | 462 passed, 218 skipped, 0 failed |
-| 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3` |
+| 1. Backend unit tests (`npm test --workspace backend`) | `8054e44`, `578fc4d`; CI on `be0eb43` | 714 passed, 1 skipped at `578fc4d`; CI green |
+| 2. Real database (Docker `postgres:17`, never Supabase) | `safetyReview.integration.test.ts` + 7 related suites at `8054e44`; the whole `test:db` batch at `578fc4d`; its own `application-checks` step | 55/55, then 340/340 |
+| 3. Coverage of new and changed lines | backend at `578fc4d`, frontend at `524f478` (first measured at `8054e44` / `f30e9b5`) | 100%: #412's backend 347/347 changed lines against `main`, #413's frontend 76/76 against #412, so the fix commits `be0eb43`, `e49b4c3`, `578fc4d` and `524f478` included |
+| 4. Typecheck (`npm run typecheck`, root) | `8054e44`, `f30e9b5`, `c2de0a1`, `578fc4d`, `524f478`; CI on `be0eb43`, `e49b4c3` | clean |
+| 5. Vitest (whole frontend suite) | `f30e9b5`, `524f478`; CI on `e49b4c3` | 813/813 at `524f478`; CI green |
+| 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1`, `681f0c7` | 462 passed, 218 skipped, 0 failed |
+| 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3`. Le Xin's review fixes (`578fc4d`, `524f478`) change what TC_02 and _03 show; Aaron's recheck of those two is still to do |
 | 8. Repository checks (`python scripts/check.py`, `doc_guard.py`, `tc-coverage.md` regenerated last) | each branch before pushing; CI on #412 (`be0eb43`) and #413 (`e49b4c3`) | pass. #413's other required checks run once it targets `main` |
 
 ## Known limits
@@ -104,9 +104,16 @@ Each gate is recorded in the Run log below.
   `deactivation.integration.test.ts` has no such case and no CI step (a
   follow-up from #394). Aaron's manual run didn't isolate it either, since
   `coord_a` had other active Events.
-- **A flag doesn't record its cause.** The readiness page says "needs
-  review" for any flagged item, whether a stock change, a date change or
-  the Safety Officer flagged it.
+- **A flag's cause is only in the Activity log.** The readiness page says
+  "needs review" for any flagged item, whether a stock change, a date
+  change or the Safety Officer flagged it; since Le Xin's review each
+  safety flag has its "Reconfirmation required: safety check changes
+  requested" row.
+- **A request for changes flags every booking or reservation of its
+  kind.** The checklist is for the whole Event (D111), so a venue factor
+  flags every confirmed venue booking across all Sessions, and equipment
+  placement every live reservation. Scoping a factor to a Session would
+  need the checklist per Session; Aaron kept it event-wide (3 Nov).
 - **The checklist lives in the decision's `audit_logs` row** (D110).
   `docs/db_schema.md` still shows planned `SAFETY_CHECKS` and
   `SAFETY_CHECK_FACTORS` tables, which this story doesn't build.
@@ -140,3 +147,9 @@ Each gate is recorded in the Run log below.
 | 2026-11-02 19:52–20:07 | `e49b4c3` | CI (#413) | _01 to _05 | GitHub Actions: `Application Checks` run 41440229925 | CI | green | the PR targets #412's branch, so only `application-checks` runs | GitHub Actions |
 | 2026-11-02 ≈20:24 | `f78a8a8+local` (committed as `c2de0a1`) | Playwright | _01 to _06 | `npx playwright test tests/e2e/e08.spec.ts -g "E08-S06"` | local, desktop + Pixel 7 | **11 passed, 1 failed** | TC_01 on Pixel 7: the test counted the queue's header row, which the mobile layout hides; fixed in the test before committing | Claude (for Aaron) |
 | 2026-11-02 20:26–20:29 | `c2de0a1` | Playwright | _01 to _06 | `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | 462 passed, 218 skipped, 0 failed | TC_E08S06_01 to _06 pass on both projects, including deactivation with Safety Review as the only active Event; the skips are other stories' `test.fixme` scaffolds; record `20261102-202637-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
+| 2026-11-03 ≈16:30 | `be0eb43+local` (committed as `578fc4d`) | unit | _01 to _05 | `npm test --workspace backend` | local | **712 passed, 2 failed**, 1 skipped | after Le Xin's review fixes: two older tests read the Activity log query by its old values and by the text `field_changed = 'status'`, which the new filter also contains; the tests were updated, no product change | Claude (for Aaron) |
+| 2026-11-03 16:42–16:43 | `578fc4d` | typecheck, unit, coverage | _01 to _05 | `npm run typecheck` (root); `npm test` then `npm run test:coverage` (backend) | local | clean; 714 passed, 1 skipped; 347/347 changed lines covered | record `20261103-164251-Bl0oper-backend-unit.md` | Claude (for Aaron) |
+| 2026-11-03 16:44 | `578fc4d` | real database | _01 to _06 | `npm run test:db --workspace backend`, Docker `postgres:17` | local | 340/340 passed | one Activity log entry per decision; the flag's audit row; approval keeps `decision_reason`; record `20261103-164424-Bl0oper-backend-db.md` | Claude (for Aaron) |
+| 2026-11-03 16:45–16:49 | `524f478` | typecheck, Vitest, coverage | _02, _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend) | local | clean; 813/813 in 76 files; 76/76 changed lines covered | record `20261103-164506-Bl0oper-frontend-vitest.md` | Claude (for Aaron) |
+| 2026-11-03 ≈16:50 | `b186d7c+local` (committed as `681f0c7`) | Playwright | _01 to _06 | `npx playwright test tests/e2e/e08.spec.ts -g "E08S06"` | local, desktop + Pixel 7 | 12/12 passed | after updating the two expected Activity log texts | Claude (for Aaron) |
+| 2026-11-03 16:50–16:52 | `681f0c7` | Playwright | _01 to _06 | `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | 462 passed, 218 skipped, 0 failed | record `20261103-165036-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |

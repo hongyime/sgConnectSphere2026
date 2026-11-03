@@ -23,6 +23,12 @@ PR is the story's last and carries the story key.
 - Playwright TC_E08S06_01 to _06 (`c2de0a1`), including deactivation with
   Safety Review as the Coordinator's only active Event: PASS on desktop
   and Pixel 7, record `20261102-202637-Bl0oper-frontend-e2e.md`.
+- Le Xin's #412 review (3 Nov): fixed in #412 (`578fc4d`) and #413
+  (`524f478`), both merged in here; two Playwright expectations updated
+  (`681f0c7`). Unit, the whole real-database batch, coverage, Vitest and
+  the whole Playwright suite rerun on those commits and recorded
+  (`20261103-*`). Aaron's manual recheck of TC_02 and TC_03 after these
+  fixes is still to do.
 
 ## Not done / next step
 
