@@ -33,6 +33,13 @@ a primary booking was released and other Confirmed bookings remain (T-94).
 - **No automatic promotion:** T-94 says a released primary is cleared and someone is
   prompted. T-78 keeps choosing with the Coordinator, so the Organiser's prompt points there.
 
+## Final manual run
+
+`20261103-143400-amareetkm2024-del-frontend-e2e`: TC_E04S02_01 to _05 all PASS by hand on
+`ce335a92`. T-108 records the Product Owner's answer. A later app code change needs
+another run; docs and test-only changes don't. The click-through guide's wording for
+_01 and the _05 removal message predates this PR and still needs updating.
+
 ## Commands and outcomes
 
 See the PR's Verification section.
