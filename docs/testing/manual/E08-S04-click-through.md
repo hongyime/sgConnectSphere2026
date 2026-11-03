@@ -1,7 +1,8 @@
 # E08-S04 manual click-through: revert a confirmed event to planning
 
 Manual end-to-end check of E08-S04 "Revert a confirmed event to planning"
-(story SCRUM-61; this run is subtask SCRUM-235, code in #377 and SCRUM-242/243).
+(story SCRUM-61; this run is subtask SCRUM-235, code in #377 and SCRUM-242/243;
+section F is SCRUM-250, with E08-S06's real Safety Officer check).
 Run it by hand in a real browser, then record it in `docs/testing/runs/`
 (`run_type: manual`, `scope: frontend/e2e`, `database: real`), with the actual
 result on every row and hand-taken screenshots (T-93) named by TC_ID for each
@@ -22,7 +23,9 @@ psql "<local URL>" -q -v stage=setup -f ../docs/testing/manual/E08-S04-precondit
 It prints four Confirmed events: **EVT-1081 Leadership Summit**, **EVT-1082
 Charity Run**, **EVT-1083 Leadership Briefing** and **EVT-1084 Leadership
 Seminar**. Each was submitted by coord_a and approved by the Safety Officer, so
-its Activity log already holds that approval. Start the API with only
+its Activity log already holds that approval. It also prints **EVT-1085 Charity
+Gala** in **Safety Review**: submitted by coord_a, not yet decided, so the
+Safety Officer approves it on the real review page in section F. Start the API with only
 `DATABASE_URL` (leave `DATABASE_POOLER_URL` empty, add
 `ADDITIONAL_ALLOWED_ORIGINS=http://localhost:5173`) and Vite on
 http://localhost:5173. Every account uses the seed password
@@ -173,6 +176,60 @@ continue that case's numbering.
    "Safety check needed: EVT-1084 Leadership Seminar's arrangements are
    confirmed again …". Screenshot `TC_E08S04_05-13`.
 
+## F. TC_E08S04_05 with the real Safety Officer check — Charity Gala (EVT-1085)
+
+Sections C and E start from an approval loaded by the setup. Here the Safety
+Officer approves on the real review page (E08-S06), so the case runs end to
+end. Record it in TC_E08S04_05's row; its screenshots continue that case's
+numbering.
+
+1. Sign in as `safety_officer@connectsphere.com`. Sign-in opens the **Safety
+   review queue** with **Charity Gala**, EVT-1085, 14 Dec 2026, 6:00 pm –
+   10:00 pm. Click **Charity Gala**. Under **Safety checklist**, set each of
+   the 7 factors to **Satisfactory** and write `Checked on site` in each
+   comment. Click **Approve…**, then **Approve safety check**. **Expected:**
+   "Approved. The event is Confirmed, and the Organiser and the Coordinator
+   have been notified." Screenshot `TC_E08S04_05-14`.
+2. Sign in as `coord_a@connectsphere.com`. Open
+   http://localhost:5173/coordinator/events/EVT-1085. Click **Revert to
+   Planning**, reason `The gala has to move a week`, click **Revert to
+   Planning** in the box. The status is **Planning**.
+3. Click **Edit details**. Change **Starts** to 21 Dec 2026 18:00 and **Ends**
+   to 21 Dec 2026 22:00. Click **Save changes**. The "Check what this change
+   affects" box lists "E08 Gala Hall: date or time changed". Click **Save and
+   ask staff to reconfirm**: "… 1 arrangement was flagged for reconfirmation
+   and the Venue Staff were notified."
+4. Open http://localhost:5173/coordinator/events/EVT-1085/readiness.
+   **Expected:** **Planning**; Outstanding items "E08 Gala Hall — needs
+   reconfirmation by Venue Staff" (not "its capacity is now below the expected
+   attendance": nothing about capacity changed). Screenshot `TC_E08S04_05-15`.
+5. Sign in as `venue_a@connectsphere.com`. Open **Booking requests**
+   (http://localhost:5173/venue/bookings). Under **Bookings to reconfirm**, on
+   Charity Gala click **Reconfirm…**, then **Reconfirm booking**.
+   **Expected:** "Reconfirmed E08 Gala Hall for "Charity Gala" (21 Dec 2026,
+   6:00 pm – 10:00 pm). The Coordinator was notified. All its arrangements are
+   confirmed again, so the event is now in Safety Review." Screenshot
+   `TC_E08S04_05-16`.
+6. Sign in as `safety_officer@connectsphere.com`. **Expected:** Charity Gala is
+   back in the queue. Click it: every factor reads **Choose…** and every
+   comment is empty; nothing from the earlier approval is filled in.
+   Screenshot `TC_E08S04_05-17`. Open
+   http://localhost:5173/notifications: "Safety check needed: EVT-1085 Charity
+   Gala's arrangements are confirmed again, so it is back in Safety Review. It
+   needs a new Operational Safety Check: the earlier approval does not carry
+   over." Screenshot `TC_E08S04_05-18`.
+7. Sign in as `coord_a@connectsphere.com`. Open
+   http://localhost:5173/coordinator/events/EVT-1085 and scroll to the Activity
+   log. **Expected:** **Safety check approved**, "Now Confirmed. Every factor
+   satisfactory", by Safety Officer; then Reverted to Planning, the two Details
+   edited rows, Reconfirmation required and Booking reconfirmed; last, Status
+   changed Planning → Safety Review by Venue Staff A. The status is **Safety
+   Review**, not Confirmed. Screenshot `TC_E08S04_05-19`.
+8. Sign in as `safety_officer@connectsphere.com`, open Charity Gala, answer all
+   7 factors **Satisfactory** with `Checked again for 21 Dec`, **Approve…**,
+   **Approve safety check**. **Expected:** "Approved. The event is Confirmed
+   …": only a new decision confirms it. Screenshot `TC_E08S04_05-20`.
+
 ## Check the database afterwards
 
 ```bash
@@ -183,4 +240,8 @@ Expected: EVT-1081 `planning`; EVT-1082 and EVT-1084 `safety_review`; EVT-1083
 `confirmed` with its E08 AV Projector still flagged; the Charity Hall booking on
 12 Dec and not flagged; E08 Seminar Hall `released` and E08 Garden Hall
 `confirmed`. The status history keeps each earlier approval, and EVT-1082 and
-EVT-1084 end with one **Entered Safety Review after reconfirmation**.
+EVT-1084 end with one **Entered Safety Review after reconfirmation**. EVT-1085
+is `confirmed`, its E08 Gala Hall booking on 21 Dec 18:00 and not flagged; its
+history reads submitted, Safety check approved, Reverted to Planning, Entered
+Safety Review after reconfirmation (by venue_a), Safety check approved; and it
+has two separate **Safety check approved** checklist rows.
