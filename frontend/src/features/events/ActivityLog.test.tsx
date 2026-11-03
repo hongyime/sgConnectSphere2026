@@ -232,8 +232,8 @@ test('TC_E08S06_02 / _03: a Safety Officer decision shows its checklist as words
   const factors = (failed: string[]) => Object.fromEntries(['attendance_capacity', 'venue_layout', 'emergency_access', 'accessibility',
     'equipment_placement', 'crowd_movement', 'venue_restrictions'].map(key => [key, { satisfactory: !failed.includes(key), comment: 'Checked' }]));
   expect(describeChange(entry(JSON.stringify({ decision: 'request_changes', reason: 'Move the rig', factors: factors(['equipment_placement', 'crowd_movement']) }))))
-    .toBe('Not satisfactory: Equipment placement, Crowd movement. Reason: Move the rig');
-  expect(describeChange(entry(JSON.stringify({ decision: 'approve', factors: factors([]) })))).toBe('Every factor satisfactory');
+    .toBe('Back in Planning. Not satisfactory: Equipment placement, Crowd movement. Reason: Move the rig');
+  expect(describeChange(entry(JSON.stringify({ decision: 'approve', factors: factors([]) })))).toBe('Now Confirmed. Every factor satisfactory');
   expect(describeChange(entry('not json'))).toBe('Safety checklist');
   expect(describeChange(entry(null))).toBe('Safety checklist');
   expect(describeAction(entry(null))).toBe('Safety check changes requested');

@@ -169,6 +169,6 @@ test('TC_E08S06_02 / _03: the Organiser reads a Safety Officer decision as words
   renderOrganiserLog([{ ...entry('safety_check', JSON.stringify({ decision: 'request_changes', reason: 'Move the rig', factors })),
     action: 'Safety check changes requested' }]);
   const [item] = await organiserItems();
-  expect(item).toContain('(Not satisfactory: Equipment placement. Reason: Move the rig)');
+  expect(item).toContain('(Back in Planning. Not satisfactory: Equipment placement. Reason: Move the rig)');
   expect(item).not.toContain('"factors"');
 });

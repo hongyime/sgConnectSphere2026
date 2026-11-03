@@ -24,7 +24,10 @@ flag for the Coordinator and the Organiser. Built on the shared skeleton
   Review; Bryan's inline table-cell control is gone.
 - `SafetyReturnAlert` on the Coordinator's readiness page and the
   Organiser's event page.
-- The Activity log summarises a decision's checklist row.
+- The Activity log summarises a decision's checklist row. Since Le Xin's
+  #412 review (3 Nov) the API leaves out the decision's status row, so the
+  summary starts with where the Event went ("Now Confirmed" or "Back in
+  Planning").
 
 ## Not done / next step
 
