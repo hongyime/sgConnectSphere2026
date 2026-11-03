@@ -84,8 +84,22 @@ re-runs section K + TC_E10S02_16 by hand before Bryan's acceptance.
   (fails when the Session save returns no over-subscription); its screen test
   comes with Amareet's PR. Workbook CAA 031126 re-exported, tc-coverage 386.
 
+## Amareet's second review (3 November, at 8d1bcc1a)
+
+Code right, 4 fixes in; approval held only for the merge conflict. Done:
+`main` merged (#415, #412) in 19e6a297, `venue-bookings.md` and the
+architecture row keep both sides, tc-coverage regenerated; Follow-ups no longer
+say SCRUM-244 goes to Done (it already is) and the manual re-run is tracked on
+SCRUM-71 (In Progress, all four subtasks Done). Optional item 3 done:
+TC_E10S02_15 also checks the unmoved booking's Venue Staff and a registered
+Attendee. Optional item 4 (no check keeps a Session inside the Event's dates,
+so attendees could be told of a Session outside the published dates) predates
+this PR; Ji Ning's change-request path checks it, the direct Session save does
+not: left for a follow-up on the E04-S02 Session save. Amareet starts the
+Session-screen PR after #419.
+
 ## Next step
 
-Review Task 4: full runs and records on the new head, push, reply to Amareet
-asking for approval of this part. Then Amareet's Session-screen PR, then Le
-Xin's manual re-run of section K + TC_E10S02_16, then Bryan's acceptance.
+Push, ask Amareet to approve (the push cancels earlier approvals). Then
+Amareet's Session-screen PR, Le Xin's manual re-run of section K +
+TC_E10S02_16 (tracked on SCRUM-71), then Bryan's acceptance.
