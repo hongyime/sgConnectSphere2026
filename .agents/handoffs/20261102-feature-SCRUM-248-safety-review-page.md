@@ -28,16 +28,29 @@ flag for the Coordinator and the Organiser. Built on the shared skeleton
   #412 review (3 Nov) the API leaves out the decision's status row, so the
   summary starts with where the Event went ("Now Confirmed" or "Back in
   Planning").
+- Le Xin's #413 review (3 Nov), fixed in `3519781`: the checklist is locked
+  while the confirm step is open; the readiness page keeps the rejection
+  alert after a blocked resubmit; no double full stop in the notice;
+  Technical Support statuses as words; no "safety_check" on the Organiser's
+  log; editing a factor clears the banner; list rows keyed by position.
+  Left as they are (answered on the PR): the shared `ConfirmPanel` has no
+  reason limit on any screen (the server refuses over 2000 characters), and
+  the client keeps its own factor labels for the Activity log.
+- Aaron's click-through and manual recheck of TC_E08S06_02/_03 passed
+  (3 Nov, record on this branch).
 
 ## Not done / next step
 
-1. Aaron's click-through on a local stack before the PR is marked ready.
+1. After #412 merges: retarget to `main`, merge `main` in (keep both
+   sections in `docs/frontend-guide.md`), mark ready, teammate approval of
+   that push.
 2. Figma: decision 0016 asks the story owner to link a reviewed frame.
-3. SCRUM-249: Playwright, the manual T-93 run with screenshots, run
-   records, PO acceptance.
+3. SCRUM-249: the acceptance PR and PO acceptance.
 
 ## Decisions for the reviewer
 
 - Factors are a `select` ("Choose…", Satisfactory, Not satisfactory), not
   radio buttons, so each is one labelled `FormField` beside its comment.
-- Fields stay editable while a decision is sending (`design.md` section 6).
+- The checklist is locked from "Approve…" (or the other choices) until the
+  decision is sent or cancelled, so the confirmed answers are the ones sent
+  (#413 review).

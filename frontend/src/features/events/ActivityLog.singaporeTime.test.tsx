@@ -171,4 +171,6 @@ test('TC_E08S06_02 / _03: the Organiser reads a Safety Officer decision as words
   const [item] = await organiserItems();
   expect(item).toContain('(Back in Planning. Not satisfactory: Equipment placement. Reason: Move the rig)');
   expect(item).not.toContain('"factors"');
+  // #413 review: the stored field name is not shown next to the decision.
+  expect(item).not.toContain('safety_check');
 });

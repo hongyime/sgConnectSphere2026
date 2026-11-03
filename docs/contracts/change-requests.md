@@ -330,3 +330,37 @@ approval. C-132, T-82 and E08-S04 Scenario 4 establish the re-entry/notification
 behaviour; the E10-S01 interruption trigger is the PO-approved interpretation,
 not a new client quotation. This supersedes earlier pending-decision notes;
 implementation evidence and final human acceptance remain separate gates.
+
+
+## Session-targeted requests (E10-S01, 2 November)
+
+The existing submit endpoint accepts optional `sessionId` alongside description
+and changes. Omitting it retains Event-level behaviour. One request targets one
+existing Session on the same Event; creation/deletion and mixed Event/Session
+requests are not supported. Allowed Session fields reuse E04-S02: title,
+startAt/endAt, expectedAttendance, layoutId, text requirements/preferences,
+accessibilityFeatureIds and facilityIds. Empty needs arrays clear needs; nullable
+optional text/layout clears that value. Session dates must remain inside the
+current Event envelope. Layout/feature/facility references are checked.
+
+The owning Organiser submits; only the currently assigned active Coordinator
+previews/approves/applies. Persist sessionId with changed-field before/after
+values in requested_changes. Lock Event, request and target Session; reject a
+changed snapshot, removed/foreign Session, terminal Event or stale impact preview.
+Decline remains possible for a removed target. Unrequested Session fields are
+preserved. The authenticated listing returns scoped Sessions/current details and
+facility options so the form and comparison never substitute Event values.
+
+Session storage/parser and shared arrangement snapshot, capacity warning,
+reconfirmation flags and recipient policy are reused. Preview writes inside a
+savepoint then rolls back; apply, Session audit, request status, arrangements and
+inbox/outbox commit together. Event/publication fields and other Sessions are not
+rewritten. Session date notices use public Event naming and say Session dates
+changed, without exposing a private Session title. Staff affected by crew changes
+use T-104. Affected Safety Review applications use T-103 and wait for venue and
+crew reconfirmation before automatic re-entry. This closes the earlier Session
+implementation dependency, not the combined human/PO acceptance gates.
+
+Session targets require at least two Sessions. A sole Session follows the
+existing Event-wide editing/synchronization contract. If a pending target
+becomes the sole Session, application is refused and needs a fresh Event request.

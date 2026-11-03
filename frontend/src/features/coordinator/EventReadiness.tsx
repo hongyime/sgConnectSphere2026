@@ -114,7 +114,8 @@ export function EventReadiness() {
               <SubmitChoice
                 key={readiness.eventId}
                 readiness={readiness}
-                onBlocked={snapshot => setLatest(snapshot)}
+                // The 409 snapshot has no safetyReturn, so keep the one already shown (#413 review).
+                onBlocked={snapshot => setLatest({ ...snapshot, safetyReturn: readiness.safetyReturn })}
                 onSubmitted={() => {
                   setLatest(null);
                   setDone('Submitted. The event is now in Safety Review; the Organiser and the Safety Officer have been notified.');

@@ -207,3 +207,14 @@ audit for exact local/production/human delivery boundaries.
 ### E10-S01 Safety Review interruption
 
 E10-S01 applies affected approved changes during Safety Review through the shared arrangement transaction, then uses the central lifecycle writer to return to Planning. The explicit change-request replan audit also qualifies a first Safety Review for automatic re-entry after readiness clears; ordinary never-reviewed Planning Events keep their existing submission path.
+
+
+## E10-S01 Session change requests
+
+changeManagement/sessionChanges.ts composes eventSessions parsing/transactional
+storage with shared arrangement impact, capacity and notification services.
+changeManagement/requests.ts owns Organiser/Coordinator authorization, target
+scope, changed-field snapshots, request transitions and the surrounding
+transaction. It does not call the Organiser's Planning-only Session route to
+apply a Coordinator decision or open direct edits in additional lifecycle states.
+The existing Event-wide request path remains unchanged.

@@ -6,7 +6,7 @@ export const changeFields = [
   ['equipmentRequirements', 'Equipment requirements', 'text'], ['accessibilityNote', 'Accessibility needs', 'text'],
   ['layoutPreference', 'Layout preference', 'text'], ['registrationSetup', 'Registration setup', 'text'],
   ['startAt', 'Start date and time', 'date'], ['endAt', 'End date and time', 'date'],
-  ['layoutId', 'Room layout', 'layout'], ['accessibilityFeatureIds', 'Accessibility features', 'accessibility'],
+  ['facilityIds', 'Facilities', 'facilities'], ['layoutId', 'Room layout', 'layout'], ['accessibilityFeatureIds', 'Accessibility features', 'accessibility'],
   ['registrationEnabled', 'Registration', 'switch'], ['waitlistEnabled', 'Waiting list', 'switch'],
   ['registrationDates', 'Registration window', 'window'], ['withdrawalDeadline', 'Withdrawal deadline', 'nullable-date'],
 ] as const;
@@ -16,19 +16,20 @@ export type ChangeValues = Partial<Record<ChangeField, string | number | boolean
 export type ChangeRequestRecord = {
   id: string; description: string; status: 'pending' | 'approved' | 'applied' | 'declined' | 'obsolete';
   created_at: string; decision_reason: string | null;
-  requested_changes: { fields?: ChangeValues; before?: ChangeValues };
+  requested_changes: { fields?: ChangeValues; before?: ChangeValues; sessionId?: string };
 };
 export type ChangeRequestView = {
   event: { id: string; eventCode: string; status: string };
   permissions: { canSubmit: boolean; canDecide: boolean };
-  references?: { layouts: { id: string; label: string }[]; accessibility: { id: string; label: string }[] };
+  references?: { layouts: { id: string; label: string }[]; accessibility: { id: string; label: string }[]; facilities?: { id: string; label: string }[] };
+  sessions?: { id: string; title: string; current: ChangeValues }[];
   current: ChangeValues; requests: ChangeRequestRecord[];
 };
 const endpoint = (identifier: string) => `/api/events?changeRequests=1&id=${encodeURIComponent(identifier)}`;
 export const getChangeRequests = (identifier: string, signal?: AbortSignal) =>
   apiCall<ChangeRequestView>(endpoint(identifier), { signal }, 'Unable to load change requests.');
-export const submitChangeRequest = (identifier: string, description: string, changes: ChangeValues) =>
-  apiCall<{ request: ChangeRequestRecord }>(endpoint(identifier), jsonRequest('POST', { description, changes }), 'Unable to send the change request.');
+export const submitChangeRequest = (identifier: string, description: string, changes: ChangeValues, sessionId?: string) =>
+  apiCall<{ request: ChangeRequestRecord }>(endpoint(identifier), jsonRequest('POST', { description, changes, ...(sessionId ? { sessionId } : {}) }), 'Unable to send the change request.');
 export type ChangePreview = { canApply: false; blockedFields: string[] } | {
   canApply: true; token: string; lateClose: boolean;
   impact: { affected: boolean; bookings: { id: string; venueName: string; reasons: string[] }[];
