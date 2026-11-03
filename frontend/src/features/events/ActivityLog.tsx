@@ -82,11 +82,13 @@ export function describeChange(entry: ActivityEntry) {
     : `${label}: ${after}`;
 }
 
+// The decision's status row is not listed (#412 review), so this entry also says where the Event went.
 function describeSafetyCheck(value: string | null) {
   try {
-    const check = JSON.parse(value ?? '') as { reason?: string; factors?: Record<string, { satisfactory?: boolean }> };
+    const check = JSON.parse(value ?? '') as { decision?: string; reason?: string; factors?: Record<string, { satisfactory?: boolean }> };
     const failed = SAFETY_FACTORS.filter(factor => check.factors?.[factor]?.satisfactory === false).map(factor => SAFETY_FACTOR_LABELS[factor]);
-    return [failed.length ? `Not satisfactory: ${failed.join(', ')}` : 'Every factor satisfactory', check.reason ? `Reason: ${check.reason}` : '']
+    return [check.decision === 'approve' ? 'Now Confirmed' : 'Back in Planning',
+      failed.length ? `Not satisfactory: ${failed.join(', ')}` : 'Every factor satisfactory', check.reason ? `Reason: ${check.reason}` : '']
       .filter(Boolean).join('. ');
   } catch {
     return 'Safety checklist';

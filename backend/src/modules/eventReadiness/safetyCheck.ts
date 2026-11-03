@@ -49,7 +49,8 @@ export function parseSafetyDecision(input: unknown): ParsedSafetyDecision {
   }
 
   const decision = input.decision as SafetyDecision;
-  const reason = typeof input.reason === 'string' ? input.reason.trim() : undefined;
+  // #412 review: an approval takes no reason, so it never overwrites the Event's decision_reason.
+  const reason = decision !== 'approve' && typeof input.reason === 'string' ? input.reason.trim() : undefined;
   if (decision !== 'approve' && !reason) throw new AccessError(400, 'A reason is required for this safety decision.');
   if (reason && reason.length > 2000) throw new AccessError(400, 'The safety decision reason must not exceed 2000 characters.');
   if (decision === 'approve' && SAFETY_FACTORS.some(key => !factors[key].satisfactory)) {

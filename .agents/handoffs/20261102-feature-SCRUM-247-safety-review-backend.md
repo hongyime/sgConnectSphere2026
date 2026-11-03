@@ -57,7 +57,15 @@ the story key.
   planned `SAFETY_CHECKS` tables are not built.
 - "Request changes" flags confirmed venue bookings for venue factors and
   live equipment reservations for equipment placement; attendance and
-  Technical Support flag nothing.
+  Technical Support flag nothing. Since Le Xin's review (3 Nov) each flag
+  writes a "Reconfirmation required: safety check changes requested" row,
+  as an edit's flags do. The checklist is event-wide, so every such booking
+  or reservation is flagged, across all Sessions.
+- Le Xin's review (3 Nov): the Activity log read skips a safety decision's
+  status row, so the checklist row is its one entry (TC_E08S06_02);
+  approval takes no reason, so `decision_reason` keeps its value; the
+  review leaves cancelled support out; one Safety Officer guard checks the
+  role before the id. `requireLead` (Bryan's SCRUM-157 copy) is left as is.
 - A returned Event re-enters Safety Review only when its Coordinator
   resubmits (Scenario 4), including one that was Confirmed before; this
   adds one condition to Le Xin's `autoSafetyReview.ts`.

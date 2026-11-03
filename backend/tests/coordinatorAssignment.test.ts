@@ -16,6 +16,7 @@ import { ACTIVE_EVENT_STATUSES } from '../src/modules/eventLifecycle/status.js';
 import { DEACTIVATION_BLOCKING_STATUSES } from '../src/modules/accessControl/deactivation.js';
 import { LOCKOUT_FAILURE_THRESHOLD } from '../src/modules/accessControl/service.js';
 import { AccessError } from '../src/modules/eventVisibility/service.js';
+import { SAFETY_ACTIONS } from '../src/modules/eventReadiness/safetyReturn.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
 type Call = { sql: string; values?: unknown[] };
@@ -330,7 +331,9 @@ test('TC_E14S02_01: the assigned Coordinator reads the event Activity log withou
   const event = await getAssignedEvent(pool, coordA, 'EVT-2001') as { activityLog: unknown[] };
   assert.deepEqual(event.activityLog, [entry]);
   const activity = find(calls, 'FROM audit_logs a')!;
-  assert.deepEqual(activity.values, [eventId]);
+  // E08-S06: a safety decision's status row is left out; its checklist row is the entry.
+  assert.deepEqual(activity.values, [eventId, Object.values(SAFETY_ACTIONS)]);
+  assert.match(activity.sql, /NOT \(a\.field_changed = 'status' AND a\.action = ANY\(\$2\)\)/);
   // E06-S04 Scenario 5: the Coordinator view also includes venue booking
   // decisions, and T-104 (SCRUM-244) Technical Support reconfirmations.
   assert.match(activity.sql, /\(a\.entity_type IN \('event', 'venue_booking'\) OR \(a\.entity_type = 'tech_support_request' AND a\.action = 'Support Reconfirmed'\)\) AND a\.action <> 'Access Denied'/);
