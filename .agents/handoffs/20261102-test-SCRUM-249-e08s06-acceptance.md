@@ -31,9 +31,18 @@ PR is the story's last and carries the story key.
   fixes passed (17:37–17:48, at `d660fff`); its record and 10 screenshots
   are on #413 (`20261103-173700-Bl0oper-frontend-e2e.md`), since this
   branch had no room under the 40-file cap.
+- #412 merged on 3 Nov (`267348f`); #413 was retargeted to `main`, took
+  `main` (`70ccf7b`) and Le Xin's #413 review fixes (`3519781`), and was
+  approved by her on `51ca197`. Merged in here as `17a22ee`; the whole
+  Playwright suite passed on it (`20261104-002230-Bl0oper-frontend-e2e.md`).
+  The story record's gates and Run log carry every run up to then.
 
 ## Not done / next step
 
-1. After #412 merges, retarget #413 to `main`; then open this PR with the
-   AC-to-evidence checklist for Bryan's PO acceptance, and fill the status
-   record's "Test gates" and "Known limits" sections.
+1. After #413 merges: merge `main` in here (#413 lands as a squash, so
+   expect the same kind of conflicts #413 had after #412; keep this
+   branch's side where `main` equals #413's last head `51ca197`),
+   regenerate `tc-coverage.md`, push, and get the PR approved after that
+   push.
+2. Bryan's PO acceptance of SCRUM-158 (AC 11) on the PR, then SCRUM-158 to
+   Done by hand.
