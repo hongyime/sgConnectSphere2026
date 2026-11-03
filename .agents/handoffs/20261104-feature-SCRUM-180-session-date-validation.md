@@ -27,3 +27,10 @@ Complete E02-S07 / SCRUM-180 Session-date submission validation after merged E04
   typechecks/build passed and runtime 26 passed. Final immutable regression
   record: 20261104-003500-xiangyingg-full-regression.md.
 - Human acceptance remains open; follow the new click-through guide.
+
+## Human evidence added
+
+- PR #420: supplied TC01 start-field refusal screenshot retained unchanged in
+  20261104-012731-xiangyingg-frontend-e2e. Visible title is New Session.
+- Saved input dates, TC01 end-field refusal and TC02–05 remain to capture.
+  Record does not claim full manual acceptance.
