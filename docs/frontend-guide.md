@@ -256,4 +256,5 @@ reason on request changes and reject. The server repeats every check.
 `SafetyReturnAlert` shows "Safety arrangement rejected" (or "changes
 requested") with the reason on the Coordinator's readiness page and the
 Organiser's event page, from the `safetyReturn` both reads carry. The Activity
-log shows a decision's checklist row as the unsatisfactory factors and reason.
+log shows each decision once, as its checklist row: where the Event went ("Now
+Confirmed" or "Back in Planning"), then the unsatisfactory factors and reason.
