@@ -20,6 +20,7 @@ import { writeEventNotification } from '../eventNotifications/service.js';
 import { eventLabel } from '../eventLifecycle/coordinatorAssignment.js';
 import { applyEventStatusChange } from '../eventLifecycle/repository.js';
 import { loadReadiness, type ReadinessEventRow } from './readiness.js';
+import { latestSafetyReturn } from './safetyReturn.js';
 
 export const CHANGE_REQUEST_REPLANNING_ACTION = 'Returned to Planning after approved change';
 
@@ -66,6 +67,8 @@ export async function enterSafetyReviewIfReady(client: PoolClient, identifier: s
         OR (old_value = 'safety_review' AND new_value = 'planning' AND action = $2)) LIMIT 1`,
   [event.id, CHANGE_REQUEST_REPLANNING_ACTION]);
   if (!reviewHistory.rowCount) return false;
+  // E08-S06 (D118): an Event the Safety Officer sent back waits for its Coordinator to resubmit.
+  if (await latestSafetyReturn((sql, values) => client.query(sql, values), event.id)) return false;
   const readiness = await loadReadiness((sql, values) => client.query(sql, values), event);
   if (readiness.blockers.length) return false;
   await applyEventStatusChange(client, event.id, 'safety_review', actorId, {

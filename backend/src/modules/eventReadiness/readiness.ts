@@ -102,7 +102,8 @@ export function assessReadiness(
     const base = { requestId: row.id, equipmentName: row.name, requiredQuantity: row.requested, reservedQuantity: reserved };
     if (active && row.requires_reconfirmation) {
       blockers.push({ kind: 'equipment-shortfall', ...base, issue: 'needs_review',
-        message: `${row.name} — needs review: stock changed (${reserved} of ${row.requested} reserved)` });
+        // Flagged by a stock change, a date change or the Safety Officer (E08-S06): the cause isn't stored.
+        message: `${row.name} — needs review (${reserved} of ${row.requested} reserved)` });
     } else if (!active) {
       const released = row.reservation_status === 'released';
       blockers.push({ kind: 'equipment-shortfall', ...base, issue: released ? 'released' : 'missing',

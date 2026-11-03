@@ -27,7 +27,7 @@ export type SessionRepository = {
   removeSession(
     sessionId: string, eventId: string, actorId: string,
   ): Promise<
-    | { status: 'deleted'; releasedBookings: number; releasedReservations: number; notifiedStaff: number }
+    | { status: 'deleted'; releasedBookings: number; releasedReservations: number; notifiedStaff: number; primaryNeeded: boolean }
     | { status: 'not_found' }
     | { status: 'last_session' }
   >;
@@ -143,5 +143,6 @@ export async function removeSession(
     releasedBookings: result.releasedBookings,
     releasedReservations: result.releasedReservations,
     notifiedStaff: result.notifiedStaff,
+    primaryNeeded: result.primaryNeeded,
   };
 }

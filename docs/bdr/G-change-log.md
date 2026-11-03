@@ -440,3 +440,11 @@ views and the story is re-estimated from 5 to 8 points. Scenario 3 was aligned
 the same day to name the staffed Technical Support requests the change preview
 lists, as T-104 says. New and updated
 E10-S02 test cases follow in the same branch.
+
+## 3 November 2026: the Event takes a sole remaining Session's details (T-108)
+
+The Product Owner agreed that when deleting leaves one Session, the Event's time,
+attendance, requirements and layout update to match it, so a later Event edit no
+longer overwrites that Session with old details. T-79 otherwise stands. Equipment
+reservations and Technical Support times keep their old times until edited, and
+with 2 or more Sessions left the Event stays as it was. No backlog criteria changed.

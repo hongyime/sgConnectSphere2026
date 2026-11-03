@@ -87,15 +87,17 @@ does:
 | `GET /api/events?oversight=1[&status=][&coordinator=]` | Lead | New branch. Every active event with its Coordinator or `Unassigned`, filterable. | E03-S10 | TC_E03S10_01, _02 |
 | `GET /api/events?assigned=1` and `?id=<id>` | Coordinator | Scoped to the caller's own assignments (E01-S12): the unassigned queue is excluded, a colleague's event returns 403 with nothing revealed and the attempt is audited; venue availability states stay visible with other events' details withheld. | E01-S12 | TC_E01S12_01 to _04 |
 | `GET /api/auth/session` | Lead | The response exposes `roles: [event_coordinator_lead, ...]`; the shared skeleton shows only routes granted to this account. | E01-S13 | TC_E01S13_01, _02 |
+| `GET /api/events?safetyQueue=1` | Safety Officer | The signed-in Safety Officer's landing queue lists events currently in `safety_review`; approval remains owned by E08-S06. | E01-S13 | TC_E01S13_01 |
 
 ### Change 6 — Safety Officer and the Operational Safety Check (C-70, E08-S03, E08-S04, E08-S06)
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
 | Automatic arrangement-complete transition | System | No Coordinator submit endpoint. When all required Session-linked venue/equipment arrangements and Event-level technical support are confirmed, automatically create a pending `safety_checks` row with `created_at`, set status `planning` to `safety_review`, audit the transition and notify Safety Officers and Organiser (C-132/T-82). | E08-S03 | TC_E08S03_08, _09 |
-| `GET /api/events?safety=queue` | Safety Officer | Events in `safety_review`, oldest first, with every input the seven factors need by Session (venue, capacity, layout, Session attendance, accessibility and equipment), plus the overall Event attendance for planning context. | E08-S06 | TC_E08S06_01, _06; T-79 |
-| `GET /api/events?id=<id>` | Safety Officer | Read access to an event in `safety_review` (and its history afterwards); otherwise 403. | E08-S06 | TC_E08S06_05 |
-| `POST /api/events?safety=decide&id=<id>` | Safety Officer | Body `{decision: approved \| changes_requested \| rejected, comments, factors: [{factor, satisfactory, comment}]}`. Persist decision and comments (C-134); comments carry the explanation for changes/rejection (C-133), with no separate reason field. The system checklist for each factor is the T-82 workflow aid. `approved` moves to `confirmed`; the other decisions return to `planning`. Both outcomes notify the Coordinator and Organiser; a safety decision never cancels the Event. | E08-S06 | TC_E08S06_02 to _05 |
+| `GET /api/events?safetyQueue=1` | Safety Officer | Events in `safety_review`, oldest entry into Safety Review first (`status_changed_at`), with Organiser, Coordinator, dates and attendance. Other roles get 403 and an `Access Denied` audit row. | E08-S06 | TC_E08S06_01, _05 |
+| `GET /api/events?safetyReview=1&id=<id or code>` | Safety Officer | `{ review: { event, sessions, venues, equipment, support, factors } }` for an Event in `safety_review`: each Session's period, attendance, layout and accessibility features and note; each confirmed venue booking with its Session, capacity for that layout and open maintenance blocks; each equipment line with its Session, reserved quantity and placement (`technical_notes`). 404 when the Event isn't in Safety Review; other roles 403 with an audit row. | E08-S06 | TC_E08S06_01, _05; T-79 |
+| `POST /api/events?safetyDecision=1&id=<id or code>` | Safety Officer | Body `{ decision: approve \| request_changes \| reject, factors: { <factor>: { satisfactory, comment } }, reason }` for all seven factors, each with a comment. `reason` is required except for `approve`, which ignores it, so `events.decision_reason` keeps its value; `approve` is refused (409) while any factor is unsatisfactory, `request_changes` (400) while none is. `approve` moves to `confirmed`, the others to `planning`; nothing is cancelled. One `audit_logs` row (`field_changed = 'safety_check'`) keeps the decision, reason and checklist, beside the status change's row; the Activity log read lists only this row, so each decision is one entry. A request for changes flags the confirmed venue bookings (venue factors) and live equipment reservations (equipment placement) for reconfirmation, each with a "Reconfirmation required: safety check changes requested" audit row. The Coordinator and Organiser get one notice each: the confirmed details on approval, the unsatisfactory factors and reason otherwise. Returns `{ decision: { eventId, eventCode, status, decision, reason } }`. Other roles get 403 and an `Access Denied` row before the id is checked. | E08-S06 | TC_E08S06_02 to _05 |
+| `GET /api/events?readiness=1&id=<id>` and the Organiser's `GET /api/events?id=<id>` | Coordinator, Organiser | Both gain `safetyReturn: { decision: request_changes \| reject, reason, decidedAt } \| null`, set while the Event is in Planning and its latest status change was a safety decision; the pages show "Safety arrangement rejected" for a rejection. Automatic re-entry into Safety Review skips such an Event: its Coordinator resubmits. | E08-S06 | TC_E08S06_03, _04 |
 | `POST /api/events?revert=1&id=<id>` | Coordinator | Existing revert from Confirmed to Planning now also clears the approved safety check so a later resubmission is reviewed again (E08-S04 Scenario 4). | E08-S04 | TC_E08S04_05 |
 | `GET /api/auth/session` | Safety Officer | The response exposes `roles: [safety_officer, ...]`; authorization checks the account's granted role set. | E01-S13 | TC_E01S13_01, _02 |
 
@@ -208,7 +210,7 @@ the shared E09 warning calculation and never removes registered attendees.
 | `GET /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Returns `{ sessions, eventStatus, options }`: each Session with `id`, `title`, `startAt`, `endAt`, `expectedAttendance`, `layoutId`, `venueRequirements`, `accessibilityNote`, `equipmentRequirements`, `layoutPreference`, `accessibilityFeatureIds` and `facilityIds`, ordered by start; `options` lists the `layouts`, `accessibility` features and `facilities` (`{ id, label }`) a Session can name. Another Organiser's or an unknown Event is 404. |
 | `POST /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Adds a child Session to a **draft** Event and returns 201 `{ session }`. `startAt`/`endAt` must be finite with end after start, `expectedAttendance` a positive integer, text fields at most 2000 characters and `title` at most 240. `accessibilityFeatureIds` and `facilityIds` are optional lists of at most 50 ids; left out, the new Session starts with the Event's needs. Anything else is 400, including an id that no longer exists. |
 | `PATCH /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Replaces the editable fields of one Session of that Event; 404 when the Session is not in that Event. `accessibilityFeatureIds`/`facilityIds` replace that Session's needs when sent and are left unchanged when omitted. |
-| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session while the Event is a draft or in planning, and returns `{ deleted, releasedBookings, releasedReservations, notifiedStaff }`. The last remaining Session is refused with 409, because an Event always has at least one. |
+| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session while the Event is a draft or in planning, and returns `{ deleted, releasedBookings, releasedReservations, notifiedStaff, primaryNeeded }`. The last remaining Session is refused with 409, because an Event always has at least one. |
 
 Adding a Session is refused with 409 once the Event is no longer a draft, and
 editing once it is past planning: Sessions carry the requirements that
@@ -229,6 +231,18 @@ Event's needs onto the existing Session, so each Session is then judged on its
 own needs. Deleting back down to one Session does the reverse: the Event takes
 the survivor's needs and the survivor's own rows are cleared, so what it needs
 does not change, including a deliberately empty list.
+
+When the deleted Session's booking was the primary venue and another Confirmed
+booking remains, the primary is cleared with no automatic promotion (T-94),
+`primaryNeeded` is true, and the Coordinator, who chooses the primary (T-78), gets
+a "Primary venue needed" notice. With no Confirmed booking left, the next one
+becomes primary as usual (O-30). When one Session is left, the Event's time,
+attendance, requirements and layout update to match it; with two or more Sessions
+left, the Event's time stays the same, and equipment reservations and Technical
+Support times keep their existing times until edited. If the Event's time changed
+and it isn't a draft, the people following it get the usual date/time notice
+(E11-S01 Scenario 2). An existing publication takes the Event's new dates in the
+same transaction, so Attendees see the dates they were told about.
 
 In planning, changing a Session's layout, accessibility needs or facilities
 counts as an arrangement change even when its times, attendance and capacity
