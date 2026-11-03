@@ -3,7 +3,7 @@
 // longer takes a getAccessToken callback; fetch calls send the session cookie
 // automatically via credentials: 'same-origin' and the test double for `fetch`
 // captures the request without needing to assert an Authorization header.
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { OrganiserRequestFlow } from './OrganiserRequestFlow';
 
@@ -253,4 +253,92 @@ test('selecting a predefined accessibility feature alone satisfies the mandatory
   const body = JSON.parse(init.body);
   expect(body.accessibilityNote).toBe('');
   expect(body.accessibilityFeatureIds).toEqual(['f-1']);
+});
+
+// T-108: deleting down to one Session gives the Event that Session's details, so the
+// open draft form must not send the old ones back.
+const draftSessions = [
+  { id: 'session-a', title: 'Day 1', startAt: '2027-03-12T01:00:00.000Z', endAt: '2027-03-12T03:00:00.000Z', expectedAttendance: 40 },
+  { id: 'session-b', title: 'Day 2', startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 120 },
+];
+const draftValues = {
+  eventName: 'Draft event', purpose: 'Typed but not saved', startDate: '2027-03-12T09:00', endDate: '2027-03-12T10:00',
+  expectedAttendance: '40', venueRequirements: 'Old hall',
+};
+
+function draftFetch(remaining: typeof draftSessions, eventReply: () => Response) {
+  let current = draftSessions;
+  const fetchMock = vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('accessibilityFeatures') || url.includes('accessibility')) return accessibilityFeaturesResponse();
+    if (url.includes('sessions=1') && init?.method === 'DELETE') {
+      current = remaining;
+      return new Response(JSON.stringify({ deleted: true, releasedBookings: 0, releasedReservations: 0 }), { status: 200 });
+    }
+    if (url.includes('sessions=1')) return new Response(JSON.stringify({ sessions: current, eventStatus: 'draft' }), { status: 200 });
+    if (url.includes('mine=1')) return eventReply();
+    return new Response('{}', { status: 200 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+const savedDraft = (fetchMock: ReturnType<typeof draftFetch>) => {
+  const call = fetchMock.mock.calls.find(([url, init]) => init?.method === 'PATCH' && !url.includes('sessions=1'));
+  return call ? JSON.parse(call[1]!.body) : null;
+};
+
+test('T-108: Save draft after deleting down to one Session sends the Event\'s new details, not the old ones', async () => {
+  const fetchMock = draftFetch([draftSessions[1]!], () => new Response(JSON.stringify({ event: {
+    startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 120, venueRequirements: 'New hall',
+  } }), { status: 200 }));
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={draftValues} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  await waitFor(() => expect(screen.getAllByLabelText('Expected attendance')[0]).toHaveValue(120));
+
+  fireEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+  await screen.findByText('Draft saved.');
+  const body = savedDraft(fetchMock);
+  expect(body.expectedAttendance).toBe(120);
+  expect(body.venueRequirements).toBe('New hall');
+  expect(new Date(body.startAt).toISOString()).toBe('2027-03-13T05:00:00.000Z');
+  expect(body.purpose).toBe('Typed but not saved');
+});
+
+test('T-108: with two Sessions still left the form keeps what the Organiser typed', async () => {
+  const third = { ...draftSessions[1]!, id: 'session-c', title: 'Day 3' };
+  const eventReply = vi.fn(() => new Response('{}', { status: 200 }));
+  let current = [...draftSessions, third];
+  const fetchMock = vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') {
+      current = current.slice(1);
+      return new Response(JSON.stringify({ deleted: true }), { status: 200 });
+    }
+    if (url.includes('sessions=1')) return new Response(JSON.stringify({ sessions: current, eventStatus: 'draft' }), { status: 200 });
+    if (url.includes('mine=1')) return eventReply();
+    return accessibilityFeaturesResponse();
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={draftValues} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  await waitFor(() => expect(screen.queryByDisplayValue('Day 1')).toBeNull());
+  expect(eventReply).not.toHaveBeenCalled();
+  expect(screen.getAllByLabelText('Expected attendance')[0]).toHaveValue(40);
+});
+
+test('T-108: if the new details cannot be read, saving is blocked instead of overwriting the Session', async () => {
+  const fetchMock = draftFetch([draftSessions[1]!], () => new Response('{}', { status: 500 }));
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={draftValues} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  expect(await screen.findByText('The event details could not be refreshed. Reload this page before saving.')).toBeVisible();
+
+  const save = screen.getByRole('button', { name: 'Save draft' });
+  expect(save).toBeDisabled();
+  fireEvent.click(save);
+  expect(savedDraft(fetchMock)).toBeNull();
 });

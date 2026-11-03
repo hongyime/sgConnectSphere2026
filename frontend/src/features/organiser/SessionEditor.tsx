@@ -112,7 +112,9 @@ function NeedsChecklist({ legend, options, selected, disabled, onChange }: {
 // E04-S02: Sessions are children of a saved Event. A draft can add, edit and
 // remove them; in planning an edit runs the arrangement-impact check and a
 // removal releases that Session's bookings, so it is confirmed first.
-export function SessionEditor({ eventId }: { eventId: string }) {
+// `onSoleSession` runs after a delete leaves one Session, because the Event has
+// just taken that Session's details (T-108) and an open form still holds the old ones.
+export function SessionEditor({ eventId, onSoleSession }: { eventId: string; onSoleSession?: () => Promise<void> }) {
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [options, setOptions] = useState<Options>(NO_OPTIONS);
   const [fields, setFields] = useState<Record<string, Field>>({});
@@ -172,7 +174,9 @@ export function SessionEditor({ eventId }: { eventId: string }) {
     }
     setPending(null);
     setRemoving(null);
+    const soleSessionLeft = method === 'DELETE' && sessions?.length === 2;
     await load();
+    if (soleSessionLeft) await onSoleSession?.();
     setBusy(false);
     setStatus({ tone: 'success', message: method === 'DELETE' ? removalMessage(result.data) : method === 'POST' ? 'Session added.' : 'Session saved.' });
   };

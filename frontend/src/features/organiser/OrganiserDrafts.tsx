@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Pencil, Trash2 } from 'lucide-react';
-import { OrganiserRequestFlow } from './OrganiserRequestFlow';
+import { OrganiserRequestFlow, sessionSharedFields } from './OrganiserRequestFlow';
 import './organiser.css';
 
 type DraftSummary = {
@@ -135,12 +135,6 @@ export function OrganiserDrafts() {
   );
 }
 
-function toLocalInputValue(isoString: string) {
-  const date = new Date(isoString);
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 type EditState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -219,14 +213,7 @@ export function OrganiserDraftEdit() {
           eventName: event.title ?? '',
           description: event.description ?? '',
           purpose: event.purpose ?? '',
-          startDate: event.startAt ? toLocalInputValue(event.startAt) : '',
-          endDate: event.endAt ? toLocalInputValue(event.endAt) : '',
-          expectedAttendance: event.expectedAttendance != null ? String(event.expectedAttendance) : '',
-          venueRequirements: event.venueRequirements ?? '',
-          accessibilityNeeds: event.accessibilityNote ?? '',
-          accessibilityFeatureIds: Array.isArray(event.accessibilityFeatureIds) ? event.accessibilityFeatureIds : [],
-          equipmentRequirements: event.equipmentRequirements ?? '',
-          layoutPreference: event.layoutPreference ?? '',
+          ...sessionSharedFields(event),
           registrationSetup: event.registrationSetup ?? '',
         },
       });

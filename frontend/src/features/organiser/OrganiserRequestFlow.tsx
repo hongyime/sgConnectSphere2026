@@ -38,6 +38,35 @@ type DraftEvent = {
 };
 
 type FieldKey = keyof DraftEvent;
+
+export function toLocalInputValue(isoString: string) {
+  const date = new Date(isoString);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+// The form fields a sole Session shares with its Event, read from the Event's API reply.
+export function sessionSharedFields(event: {
+  startAt?: string;
+  endAt?: string;
+  expectedAttendance?: number | null;
+  venueRequirements?: string | null;
+  accessibilityNote?: string | null;
+  accessibilityFeatureIds?: unknown;
+  equipmentRequirements?: string | null;
+  layoutPreference?: string | null;
+}) {
+  return {
+    startDate: event.startAt ? toLocalInputValue(event.startAt) : '',
+    endDate: event.endAt ? toLocalInputValue(event.endAt) : '',
+    expectedAttendance: event.expectedAttendance != null ? String(event.expectedAttendance) : '',
+    venueRequirements: event.venueRequirements ?? '',
+    accessibilityNeeds: event.accessibilityNote ?? '',
+    accessibilityFeatureIds: Array.isArray(event.accessibilityFeatureIds) ? event.accessibilityFeatureIds as string[] : [],
+    equipmentRequirements: event.equipmentRequirements ?? '',
+    layoutPreference: event.layoutPreference ?? '',
+  };
+}
 type SubmitState =
   | { status: 'idle' }
   | { status: 'submitting' }
@@ -180,10 +209,13 @@ export function OrganiserRequestFlow({
   const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
   const pastDate = isPastDate(draft);
-  const canSubmit = missingFields.length === 0 && !invalidDateRange && !pastDate;
+  // True when the Event changed under this form and the new details could not be
+  // read: saving the old ones would overwrite the remaining Session.
+  const [staleDetails, setStaleDetails] = useState(false);
+  const canSubmit = missingFields.length === 0 && !invalidDateRange && !pastDate && !staleDetails;
   // SCRUM-27 Option B: a draft only needs title/dates/attendance valid, not
   // every mandatory field - matches the backend's relaxed validation.
-  const canSaveDraft = draftMissingFields.length === 0 && !invalidDateRange && !pastDate;
+  const canSaveDraft = draftMissingFields.length === 0 && !invalidDateRange && !pastDate && !staleDetails;
   const submitted = submitState.status === 'submitted';
 
   const setNoneRequired = (key: OptionalField, checked: boolean) => {
@@ -197,6 +229,19 @@ export function OrganiserRequestFlow({
         ? [...current.accessibilityFeatureIds, featureId]
         : current.accessibilityFeatureIds.filter((id) => id !== featureId),
     }));
+  };
+
+  // T-108: deleting down to one Session gave the Event that Session's details. Other
+  // fields keep what the Organiser has typed.
+  const refreshFromSoleSession = async () => {
+    const response = await fetch(`/api/events?mine=1&id=${encodeURIComponent(draftId ?? '')}`, { credentials: 'same-origin' }).catch(() => null);
+    const event = response?.ok ? (await response.json().catch(() => null))?.event : null;
+    if (!event) {
+      setStaleDetails(true);
+      setDraftSaveState({ status: 'error', message: 'The event details could not be refreshed. Reload this page before saving.' });
+      return;
+    }
+    setDraft((current) => ({ ...current, ...sessionSharedFields(event) }));
   };
 
   const submitRequest = async () => {
@@ -504,7 +549,7 @@ export function OrganiserRequestFlow({
           {draftSaveState.status === 'saved' ? (
             <p role="status" className="field-control">Draft saved.</p>
           ) : null}
-          {draftId ? <SessionEditor eventId={draftId} /> : null}
+          {draftId ? <SessionEditor eventId={draftId} onSoleSession={refreshFromSoleSession} /> : null}
         </section>
 
         <aside className="review-panel" aria-label="Validation and status">
