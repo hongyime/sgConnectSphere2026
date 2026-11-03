@@ -2,9 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import type { Pool } from 'pg';
+import { inTransaction } from '../src/database/pool.js';
+import { changeSessionWith } from '../src/modules/changeManagement/sessionChanges.js';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { submitChangeRequest, decideChangeRequest, listChangeRequests } from '../src/modules/changeManagement/requests.js';
+import { reconfirmSupport } from '../src/modules/equipmentSupport/supportReconfirmation.js';
 import { reconfirmBooking } from '../src/modules/venueBooking/decisions.js';
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange.js';
 
@@ -284,7 +287,7 @@ test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: structured references/settings
   assert.deepEqual(request.requested_changes.before, { layoutId: null, accessibilityFeatureIds: [], registrationEnabled: false,
     waitlistEnabled: false, registrationDates: { opensAt: null, closesAt: null }, withdrawalDeadline: null });
   const view = await listChangeRequests(f.pool, f.organiser, f.event);
-  assert.deepEqual(view.references, { layouts: [{ id: layout, label: 'Seminar' }], accessibility: [{ id: feature, label: 'Step-free' }] });
+  assert.deepEqual(view.references, { layouts: [{ id: layout, label: 'Seminar' }], accessibility: [{ id: feature, label: 'Step-free' }], facilities: [] });
   assert.deepEqual(request.requested_changes.fields.accessibilityFeatureIds, [feature]);
   const preview = await previewToken(f, request.id);
   assert.equal((await decideChangeRequest(f.pool, f.coordinator, f.event, request.id,
@@ -493,4 +496,127 @@ test('TC_E10S01_04: safe-only apply leaves Safety Review unchanged', () => run(a
   const request = await f.submit({ title: 'Safe new title' });
   await f.decide(request.id);
   assert.equal((await listChangeRequests(f.pool, f.coordinator, f.event)).event.status, 'safety_review');
+}));
+
+
+async function sessionFixture(f: Fixture) {
+  const first = (await f.pool.query('SELECT id FROM sessions WHERE event_id=$1',[f.event])).rows[0].id as string;
+  await f.pool.query("UPDATE events SET equipment_requirements='none_required' WHERE id=$1",[f.event]);
+  await f.pool.query("UPDATE sessions SET title='Morning',session_range=tstzrange('2027-03-01 09:00Z','2027-03-01 10:00Z','[)'),expected_attendance=20 WHERE id=$1",[first]);
+  const b = await booking(f);
+  const second = (await f.pool.query("INSERT INTO sessions(event_id,title,session_range,expected_attendance) VALUES($1,'Afternoon',tstzrange('2027-03-01 11:00Z','2027-03-01 12:00Z','[)'),20) RETURNING id",[f.event])).rows[0].id as string;
+  const tech = randomUUID(), support = randomUUID();
+  await f.pool.query("INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic Tech','technical_support_staff')",[tech,`${tech}@example.test`]);
+  await f.pool.query("INSERT INTO tech_support_requests(id,event_id,support_description,support_required,support_range,status,requested_by) VALUES($1,$2,'Morning crew',true,tstzrange('2027-03-01 09:00Z','2027-03-01 10:00Z','[)'),'staffed',$3)",[support,f.event,f.coordinator.id]);
+  await f.pool.query("INSERT INTO tech_staff_assignments(request_id,event_id,staff_id,assignment_range) VALUES($1,$2,$3,tstzrange('2027-03-01 09:00Z','2027-03-01 10:00Z','[)'))",[support,f.event,tech]);
+  const submit = (changes: Record<string,unknown>, sessionId = first) => submitChangeRequest(f.pool,f.organiser,f.event,{sessionId,description:'Change morning Session',changes});
+  return {first,second,b,tech,support,submit};
+}
+
+test('TC_E10S01_01 / TC_E10S01_02 / TC_E10S01_04: Session preview and apply preserve the Event and other Sessions and flag the affected crew', () => run(async f => {
+  const s = await sessionFixture(f);
+  await f.pool.query("UPDATE events SET status='safety_review' WHERE id=$1",[f.event]);
+  const request = await s.submit({startAt:'2027-03-01T09:30:00Z',endAt:'2027-03-01T10:30:00Z',title:'New morning'});
+  assert.equal(request.requested_changes.sessionId,s.first);
+  const view = await listChangeRequests(f.pool,f.coordinator,f.event);
+  assert.equal(view.sessions.find(row=>row.id===s.first)!.current.title,'Morning');
+  const preview = await previewToken(f,request.id);
+  assert.deepEqual(preview.impact.bookings.map(row=>row.id),[s.b.id]);
+  assert.deepEqual(preview.impact.supports.map(row=>row.id),[s.support]);
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM tech_support_requests WHERE id=$1',[s.support])).rows[0].requires_reconfirmation,false);
+  assert.equal((await f.pool.query('SELECT title FROM sessions WHERE id=$1',[s.first])).rows[0].title,'Morning');
+  await decideChangeRequest(f.pool,f.coordinator,f.event,request.id,{decision:'approve',previewToken:preview.token});
+  const after = await listChangeRequests(f.pool,f.organiser,f.event);
+  assert.equal(after.event.status,'planning');
+  assert.equal(after.current.title,'Original');
+  assert.equal(after.sessions.find(row=>row.id===s.first)!.current.title,'New morning');
+  assert.equal(after.sessions.find(row=>row.id===s.second)!.current.title,'Afternoon');
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM tech_support_requests WHERE id=$1',[s.support])).rows[0].requires_reconfirmation,true);
+  assert.equal((await f.pool.query("SELECT count(*) FROM notifications WHERE user_id=$1 AND title='Change applied'",[f.organiser.id])).rows[0].count,'1');
+  assert.ok(Number((await f.pool.query('SELECT count(*) FROM notifications WHERE user_id=$1',[s.tech])).rows[0].count)>0);
+  assert.equal((await reconfirmBooking(f.pool,{id:s.b.staff,role:'venue_staff',isActive:true} as AuthenticatedUser,s.b.id)).status,200);
+  assert.equal((await listChangeRequests(f.pool,f.coordinator,f.event)).event.status,'planning','crew must also reconfirm');
+  const reconfirmed=await reconfirmSupport(f.pool,{id:s.tech,role:'technical_support_staff',isActive:true} as AuthenticatedUser,{request:s.support});
+  assert.equal(reconfirmed.status,200);
+  assert.equal((await listChangeRequests(f.pool,f.coordinator,f.event)).event.status,'safety_review');
+
+}));
+
+test('TC_E10S01_04: Session stale snapshots, deleted targets, wrong Events and invalid envelope refuse application', () => run(async f => {
+  const s = await sessionFixture(f);
+  await assert.rejects(s.submit({startAt:'2027-03-01T08:00:00Z'}),/within the Event/);
+  await assert.rejects(s.submit({title:'X'},randomUUID()),/no longer exists/);
+  const request = await s.submit({title:'Requested morning'});
+  await f.pool.query("UPDATE sessions SET title='Concurrent morning' WHERE id=$1",[s.first]);
+  await assert.rejects(f.decide(request.id),/changed since submission/);
+  const removed = await s.submit({title:'Removed target'},s.second);
+  await f.pool.query('DELETE FROM sessions WHERE id=$1',[s.second]);
+  await assert.rejects(f.decide(removed.id),/no longer exists/);
+  assert.equal((await f.decide(removed.id,'decline')).status,'declined');
+}));
+
+test('TC_E10S01_04: failed final Session application notice rolls back values, flags, lifecycle and history', () => run(async f => {
+  const s=await sessionFixture(f);
+  await f.pool.query("UPDATE events SET status='safety_review' WHERE id=$1",[f.event]);
+  const request=await s.submit({startAt:'2027-03-01T09:30:00Z'});
+  const preview=await previewToken(f,request.id);
+  const before=(await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count;
+  await f.pool.query(`CREATE FUNCTION fail_session_notice() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+    IF (SELECT title FROM notifications WHERE id=NEW.notification_id)='Change applied' THEN RAISE EXCEPTION 'synthetic Session failure'; END IF;
+    RETURN NEW; END $$; CREATE TRIGGER fail_session_notice BEFORE INSERT ON notification_deliveries FOR EACH ROW EXECUTE FUNCTION fail_session_notice()`);
+  await assert.rejects(decideChangeRequest(f.pool,f.coordinator,f.event,request.id,{decision:'approve',previewToken:preview.token}),/synthetic Session failure/);
+  const view=await listChangeRequests(f.pool,f.organiser,f.event);
+  assert.equal(view.event.status,'safety_review');
+  assert.equal(view.requests[0].status,'pending');
+  assert.equal(view.sessions.find(row=>row.id===s.first)!.current.startAt,'2027-03-01T09:00:00.000Z');
+  assert.equal((await f.pool.query('SELECT requires_reconfirmation FROM venue_bookings WHERE id=$1',[s.b.id])).rows[0].requires_reconfirmation,false);
+  assert.equal((await f.pool.query('SELECT count(*) FROM audit_logs')).rows[0].count,before);
+}));
+
+
+test('TC_E10S01_04: Session requirement-only application uses reference data and does not change Event requirements', () => run(async f => {
+  const s=await sessionFixture(f),facility=randomUUID(),feature=randomUUID(),layout=randomUUID();
+  await f.pool.query("INSERT INTO facilities(id,code,label) VALUES($1,'session_projector','Session projector')",[facility]);
+  await f.pool.query("INSERT INTO accessibility_features(id,code,label) VALUES($1,'session_lift','Session lift')",[feature]);
+  await f.pool.query("INSERT INTO room_layouts(id,code,label) VALUES($1,'session_classroom','Session classroom')",[layout]);
+  await assert.rejects(s.submit({facilityIds:[randomUUID()]}),/facility no longer exists/);
+  await assert.rejects(s.submit({endAt:'2027-03-01T08:00:00Z'}),/invalid_session_range/);
+  const request=await s.submit({facilityIds:[facility],accessibilityFeatureIds:[feature],layoutId:layout});
+  const preview=await previewToken(f,request.id);
+  assert.deepEqual(preview.impact.bookings.map(row=>row.id),[s.b.id]);
+  assert.equal((await f.pool.query('SELECT count(*) FROM session_facility_needs WHERE session_id=$1',[s.first])).rows[0].count,'0');
+  await decideChangeRequest(f.pool,f.coordinator,f.event,request.id,{decision:'approve',previewToken:preview.token});
+  assert.equal((await f.pool.query('SELECT count(*) FROM session_facility_needs WHERE session_id=$1',[s.first])).rows[0].count,'1');
+  assert.equal((await f.pool.query('SELECT count(*) FROM event_facility_needs WHERE event_id=$1',[f.event])).rows[0].count,'0');
+  assert.equal((await f.pool.query('SELECT count(*) FROM session_facility_needs WHERE session_id=$1',[s.second])).rows[0].count,'0');
+}));
+
+test('TC_E10S01_04: stale Session impact is refused, and an older Approved title request applies without replanning', () => run(async f => {
+  const s=await sessionFixture(f);
+  const request=await s.submit({expectedAttendance:50});
+  const preview=await previewToken(f,request.id);
+  await assert.rejects(inTransaction(f.pool,async client=> {
+    await client.query('SELECT id FROM events WHERE id=$1 FOR UPDATE',[f.event]);
+    return changeSessionWith(client,f.coordinator.id,f.event,s.first,{expectedAttendance:50},false,'stale');
+  }),/arrangements_changed/);
+  assert.equal((await f.pool.query('SELECT expected_attendance FROM sessions WHERE id=$1',[s.first])).rows[0].expected_attendance,20);
+  await f.pool.query('UPDATE venues SET max_capacity=44 WHERE id=$1',[s.b.venue]);
+  await assert.rejects(decideChangeRequest(f.pool,f.coordinator,f.event,request.id,{decision:'approve',previewToken:preview.token}),/Preview the current/);
+  const title=await s.submit({title:'New title'});
+  await f.pool.query("UPDATE change_requests SET status='approved' WHERE id=$1",[title.id]);
+  const titlePreview=await previewToken(f,title.id);
+  assert.equal(titlePreview.impact.affected,false);
+  await decideChangeRequest(f.pool,f.coordinator,f.event,title.id,{decision:'apply',previewToken:titlePreview.token});
+  assert.equal((await listChangeRequests(f.pool,f.coordinator,f.event)).event.status,'confirmed');
+  assert.equal((await f.pool.query('SELECT title FROM events WHERE id=$1',[f.event])).rows[0].title,'Original');
+}));
+
+
+test('TC_E10S01_01 / TC_E10S01_04: a sole Session uses Event changes and a reduced Session structure invalidates a pending Session target', () => run(async f => {
+  const first=(await f.pool.query('SELECT id FROM sessions WHERE event_id=$1',[f.event])).rows[0].id;
+  await assert.rejects(submitChangeRequest(f.pool,f.organiser,f.event,{description:'Single Session',sessionId:first,changes:{title:'X'}}),/Event-wide details/);
+  const s=await sessionFixture(f);
+  const request=await s.submit({title:'Rename morning'});
+  await f.pool.query('DELETE FROM sessions WHERE id=$1',[s.second]);
+  await assert.rejects(f.decide(request.id),/Event-wide details/);
 }));
