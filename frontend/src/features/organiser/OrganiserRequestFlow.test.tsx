@@ -342,3 +342,157 @@ test('T-108: if the new details cannot be read, saving is blocked instead of ove
   fireEvent.click(save);
   expect(savedDraft(fetchMock)).toBeNull();
 });
+
+// Everything Submit needs, so a disabled Submit below can only come from the delete.
+const readyDraft = {
+  ...draftValues, description: 'A description', accessibilityNeeds: 'Ramp', equipmentRequirements: 'None',
+  layoutPreference: 'Theatre', registrationSetup: 'Open',
+};
+const newDetails = () => new Response(JSON.stringify({ event: {
+  startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 120, venueRequirements: 'New hall', accessibilityNote: 'Ramp',
+  equipmentRequirements: 'None', layoutPreference: 'Theatre',
+} }), { status: 200 });
+const deferred = () => {
+  let resolve!: (value: Response) => void;
+  const promise = new Promise<Response>((done) => { resolve = done; });
+  return { promise, resolve };
+};
+const saveButton = () => screen.getByRole('button', { name: 'Save draft' });
+const submitButton = () => screen.getByRole('button', { name: 'Submit request' });
+const sessionReplies = (sessions: typeof draftSessions) => new Response(JSON.stringify({ sessions, eventStatus: 'draft' }), { status: 200 });
+
+test('T-108: Save draft and Submit stay blocked from the start of the delete until the new details load, on a slow connection', async () => {
+  const removal = deferred();
+  const details = deferred();
+  let current = draftSessions;
+  const fetchMock = vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') {
+      const reply = await removal.promise;
+      current = [draftSessions[1]!];
+      return reply;
+    }
+    if (url.includes('sessions=1')) return sessionReplies(current);
+    if (url.includes('mine=1')) return details.promise;
+    if (url.includes('accessibility')) return accessibilityFeaturesResponse();
+    return new Response('{}', { status: 200 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={readyDraft} />);
+
+  await screen.findByDisplayValue('Day 1');
+  expect(saveButton()).toBeEnabled();
+  expect(submitButton()).toBeEnabled();
+
+  // The delete has been sent and has no reply yet.
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  expect(saveButton()).toBeDisabled();
+  expect(submitButton()).toBeDisabled();
+  expect(screen.getByText('Updating the event details. Saving is paused until this finishes.')).toBeVisible();
+
+  // The delete has finished and the Event's new details have not arrived.
+  removal.resolve(new Response(JSON.stringify({ deleted: true, releasedBookings: 0, releasedReservations: 0 }), { status: 200 }));
+  await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.includes('mine=1'))).toBe(true));
+  await waitFor(() => expect(screen.queryByDisplayValue('Day 1')).toBeNull());
+  expect(saveButton()).toBeDisabled();
+  expect(submitButton()).toBeDisabled();
+  expect(savedDraft(fetchMock)).toBeNull();
+
+  details.resolve(newDetails());
+  await waitFor(() => expect(saveButton()).toBeEnabled());
+  expect(submitButton()).toBeEnabled();
+  expect(screen.queryByText('Updating the event details. Saving is paused until this finishes.')).toBeNull();
+
+  fireEvent.click(saveButton());
+  await screen.findByText('Draft saved.');
+  expect(savedDraft(fetchMock).expectedAttendance).toBe(120);
+  expect(savedDraft(fetchMock).venueRequirements).toBe('New hall');
+});
+
+test('T-108: a slow refresh that then fails leaves Save draft and Submit blocked', async () => {
+  const details = deferred();
+  const fetchMock = vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') {
+      return new Response(JSON.stringify({ deleted: true }), { status: 200 });
+    }
+    if (url.includes('sessions=1')) return sessionReplies(fetchMock.mock.calls.some(([, sent]) => sent?.method === 'DELETE') ? [draftSessions[1]!] : draftSessions);
+    if (url.includes('mine=1')) return details.promise;
+    return accessibilityFeaturesResponse();
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={readyDraft} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  await waitFor(() => expect(screen.queryByDisplayValue('Day 1')).toBeNull());
+  expect(saveButton()).toBeDisabled();
+
+  details.resolve(new Response('{}', { status: 500 }));
+  await screen.findByText('The event details could not be refreshed. Reload this page before saving.');
+  expect(saveButton()).toBeDisabled();
+  expect(submitButton()).toBeDisabled();
+  expect(savedDraft(fetchMock)).toBeNull();
+});
+
+test('T-108: a refused delete that left both Sessions unblocks saving and keeps what was typed', async () => {
+  const eventReply = vi.fn(() => newDetails());
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') return new Response(JSON.stringify({ error: 'Not allowed.' }), { status: 400 });
+    if (url.includes('sessions=1')) return sessionReplies(draftSessions);
+    if (url.includes('mine=1')) return eventReply();
+    return accessibilityFeaturesResponse();
+  }));
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={readyDraft} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  expect(saveButton()).toBeDisabled();
+  await waitFor(() => expect(saveButton()).toBeEnabled());
+  expect(submitButton()).toBeEnabled();
+  expect(eventReply).not.toHaveBeenCalled();
+  expect(screen.getAllByLabelText('Expected attendance')[0]).toHaveValue(40);
+});
+
+test('T-108: a delete whose reply was lost but which went through still refreshes the form', async () => {
+  let current = draftSessions;
+  const fetchMock = vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') {
+      current = [draftSessions[1]!];
+      throw new TypeError('connection lost');
+    }
+    if (url.includes('sessions=1')) return sessionReplies(current);
+    if (url.includes('mine=1')) return newDetails();
+    if (url.includes('accessibility')) return accessibilityFeaturesResponse();
+    return new Response('{}', { status: 200 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={readyDraft} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  await waitFor(() => expect(screen.getAllByLabelText('Expected attendance')[0]).toHaveValue(120));
+  await waitFor(() => expect(saveButton()).toBeEnabled());
+  fireEvent.click(saveButton());
+  await screen.findByText('Draft saved.');
+  expect(savedDraft(fetchMock).venueRequirements).toBe('New hall');
+});
+
+test('T-108: if nothing can be read after a failed delete, Save draft and Submit stay blocked', async () => {
+  let sessionReads = 0;
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: FetchInit) => {
+    if (url.includes('sessions=1') && init?.method === 'DELETE') throw new TypeError('connection lost');
+    if (url.includes('sessions=1')) {
+      sessionReads += 1;
+      if (sessionReads > 1) throw new TypeError('connection lost');
+      return sessionReplies(draftSessions);
+    }
+    if (url.includes('mine=1')) throw new TypeError('connection lost');
+    return accessibilityFeaturesResponse();
+  }));
+  render(<OrganiserRequestFlow draftId="draft-1" initialValues={readyDraft} />);
+
+  await screen.findByDisplayValue('Day 1');
+  fireEvent.click(screen.getAllByText('Remove session')[0]!);
+  await screen.findByText('The event details could not be refreshed. Reload this page before saving.');
+  expect(saveButton()).toBeDisabled();
+  expect(submitButton()).toBeDisabled();
+});

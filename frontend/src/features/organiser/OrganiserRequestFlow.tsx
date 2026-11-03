@@ -209,9 +209,11 @@ export function OrganiserRequestFlow({
   const draftMissingFields = useMemo(() => getDraftMissingFields(draft), [draft]);
   const invalidDateRange = isInvalidDateRange(draft);
   const pastDate = isPastDate(draft);
-  // True when the Event changed under this form and the new details could not be
-  // read: saving the old ones would overwrite the remaining Session.
-  const [staleDetails, setStaleDetails] = useState(false);
+  // From the start of a delete that would leave one Session until the Event's new
+  // details are in this form, saving the old ones would overwrite that Session.
+  // 'failed' stays until the page is reloaded.
+  const [detailsRefresh, setDetailsRefresh] = useState<'none' | 'refreshing' | 'failed'>('none');
+  const staleDetails = detailsRefresh !== 'none';
   const canSubmit = missingFields.length === 0 && !invalidDateRange && !pastDate && !staleDetails;
   // SCRUM-27 Option B: a draft only needs title/dates/attendance valid, not
   // every mandatory field - matches the backend's relaxed validation.
@@ -233,15 +235,20 @@ export function OrganiserRequestFlow({
 
   // T-108: deleting down to one Session gave the Event that Session's details. Other
   // fields keep what the Organiser has typed.
-  const refreshFromSoleSession = async () => {
+  const refreshFromSoleSession = async (eventChanged: boolean) => {
+    if (!eventChanged) {
+      setDetailsRefresh('none');
+      return;
+    }
     const response = await fetch(`/api/events?mine=1&id=${encodeURIComponent(draftId ?? '')}`, { credentials: 'same-origin' }).catch(() => null);
     const event = response?.ok ? (await response.json().catch(() => null))?.event : null;
     if (!event) {
-      setStaleDetails(true);
+      setDetailsRefresh('failed');
       setDraftSaveState({ status: 'error', message: 'The event details could not be refreshed. Reload this page before saving.' });
       return;
     }
     setDraft((current) => ({ ...current, ...sessionSharedFields(event) }));
+    setDetailsRefresh('none');
   };
 
   const submitRequest = async () => {
@@ -549,7 +556,15 @@ export function OrganiserRequestFlow({
           {draftSaveState.status === 'saved' ? (
             <p role="status" className="field-control">Draft saved.</p>
           ) : null}
-          {draftId ? <SessionEditor eventId={draftId} onSoleSession={refreshFromSoleSession} /> : null}
+          {detailsRefresh === 'refreshing' ? (
+            <p role="status" className="field-control">Updating the event details. Saving is paused until this finishes.</p>
+          ) : null}
+          {draftId ? (
+            <SessionEditor
+              eventId={draftId}
+              onSoleSessionDelete={{ started: () => setDetailsRefresh('refreshing'), finished: refreshFromSoleSession }}
+            />
+          ) : null}
         </section>
 
         <aside className="review-panel" aria-label="Validation and status">

@@ -219,7 +219,7 @@ validation. Other callers default to the existing enabled confirmation behaviour
 editor once the flow has a `draftId`, and on the Organiser's request page
 (`SubmittedDetail`) while the Event is in planning. Sessions are children of a
 saved Event, so they cannot be created in the same POST that creates the draft:
-save the draft first, then add, edit or remove Sessions. When a removal leaves one Session, the draft form re-reads the Event's new details (T-108), and saving is blocked if that read fails. In planning there is no
+save the draft first, then add, edit or remove Sessions. When a removal would leave one Session, Save draft and Submit are blocked from the start of the delete until the draft form has re-read the Event's new details (T-108), and stay blocked if that read fails. In planning there is no
 Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
 the Session's bookings and reservations are released before anything is sent.
 

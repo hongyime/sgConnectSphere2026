@@ -112,9 +112,13 @@ function NeedsChecklist({ legend, options, selected, disabled, onChange }: {
 // E04-S02: Sessions are children of a saved Event. A draft can add, edit and
 // remove them; in planning an edit runs the arrangement-impact check and a
 // removal releases that Session's bookings, so it is confirmed first.
-// `onSoleSession` runs after a delete leaves one Session, because the Event has
-// just taken that Session's details (T-108) and an open form still holds the old ones.
-export function SessionEditor({ eventId, onSoleSession }: { eventId: string; onSoleSession?: () => Promise<void> }) {
+// A delete that would leave one Session changes the Event too (T-108), and an open
+// form still holds the old details. `onSoleSessionDelete` tells the form when that
+// delete starts, then whether the Event changed once the outcome is known.
+export function SessionEditor({ eventId, onSoleSessionDelete }: {
+  eventId: string;
+  onSoleSessionDelete?: { started: () => void; finished: (eventChanged: boolean) => Promise<void> };
+}) {
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [options, setOptions] = useState<Options>(NO_OPTIONS);
   const [fields, setFields] = useState<Record<string, Field>>({});
@@ -158,14 +162,24 @@ export function SessionEditor({ eventId, onSoleSession }: { eventId: string; onS
   const perSession = (sessions?.length ?? 0) > 1;
 
   const mutate = async (method: 'POST' | 'PATCH' | 'DELETE', sessionId?: string, body?: unknown, reviewed?: string) => {
+    const leavesOneSession = method === 'DELETE' && sessions?.length === 2;
     setBusy(true);
     setStatus(null);
+    if (leavesOneSession) onSoleSessionDelete?.started();
     const result = await apiCall<Removal>(
       `${url(sessionId)}${reviewed ? `&reviewed=${encodeURIComponent(reviewed)}` : ''}`,
       jsonRequest(method, body),
       method === 'DELETE' ? 'That Session could not be removed.' : 'The Session could not be saved. Check the dates and expected attendance.',
     );
     if (!result.ok) {
+      if (leavesOneSession) {
+        // The delete can still have gone through if the reply was lost, so only a
+        // list that still has both Sessions shows the Event did not change.
+        const current = await apiCall<{ sessions?: Session[] }>(url(), undefined, 'The Sessions could not be loaded.');
+        const unchanged = current.ok && current.data.sessions?.length === 2;
+        if (!unchanged) await load();
+        await onSoleSessionDelete?.finished(!unchanged);
+      }
       setBusy(false);
       setStatus({ tone: 'error', message: method === 'DELETE' && result.status === 409 && /at least one Session/.test(result.message)
         ? 'That Session could not be removed. An Event keeps at least one Session.'
@@ -174,9 +188,8 @@ export function SessionEditor({ eventId, onSoleSession }: { eventId: string; onS
     }
     setPending(null);
     setRemoving(null);
-    const soleSessionLeft = method === 'DELETE' && sessions?.length === 2;
     await load();
-    if (soleSessionLeft) await onSoleSession?.();
+    if (leavesOneSession) await onSoleSessionDelete?.finished(true);
     setBusy(false);
     setStatus({ tone: 'success', message: method === 'DELETE' ? removalMessage(result.data) : method === 'POST' ? 'Session added.' : 'Session saved.' });
   };
