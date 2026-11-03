@@ -210,7 +210,7 @@ the shared E09 warning calculation and never removes registered attendees.
 | `GET /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Returns `{ sessions, eventStatus, options }`: each Session with `id`, `title`, `startAt`, `endAt`, `expectedAttendance`, `layoutId`, `venueRequirements`, `accessibilityNote`, `equipmentRequirements`, `layoutPreference`, `accessibilityFeatureIds` and `facilityIds`, ordered by start; `options` lists the `layouts`, `accessibility` features and `facilities` (`{ id, label }`) a Session can name. Another Organiser's or an unknown Event is 404. |
 | `POST /api/events?sessions=1&id=<event id or code>` | Organiser of that Event | Adds a child Session to a **draft** Event and returns 201 `{ session }`. `startAt`/`endAt` must be finite with end after start, `expectedAttendance` a positive integer, text fields at most 2000 characters and `title` at most 240. `accessibilityFeatureIds` and `facilityIds` are optional lists of at most 50 ids; left out, the new Session starts with the Event's needs. Anything else is 400, including an id that no longer exists. |
 | `PATCH /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Replaces the editable fields of one Session of that Event; 404 when the Session is not in that Event. `accessibilityFeatureIds`/`facilityIds` replace that Session's needs when sent and are left unchanged when omitted. |
-| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session while the Event is a draft or in planning, and returns `{ deleted, releasedBookings, releasedReservations, notifiedStaff }`. The last remaining Session is refused with 409, because an Event always has at least one. |
+| `DELETE /api/events?sessions=1&id=<event id or code>&sessionId=<session id>` | Organiser of that Event | Removes one Session while the Event is a draft or in planning, and returns `{ deleted, releasedBookings, releasedReservations, notifiedStaff, primaryNeeded }`. The last remaining Session is refused with 409, because an Event always has at least one. |
 
 Adding a Session is refused with 409 once the Event is no longer a draft, and
 editing once it is past planning: Sessions carry the requirements that
@@ -231,6 +231,18 @@ Event's needs onto the existing Session, so each Session is then judged on its
 own needs. Deleting back down to one Session does the reverse: the Event takes
 the survivor's needs and the survivor's own rows are cleared, so what it needs
 does not change, including a deliberately empty list.
+
+When the deleted Session's booking was the primary venue and another Confirmed
+booking remains, the primary is cleared with no automatic promotion (T-94),
+`primaryNeeded` is true, and the Coordinator, who chooses the primary (T-78), gets
+a "Primary venue needed" notice. With no Confirmed booking left, the next one
+becomes primary as usual (O-30). When one Session is left, the Event's time,
+attendance, requirements and layout update to match it; with two or more Sessions
+left, the Event's time stays the same, and equipment reservations and Technical
+Support times keep their existing times until edited. If the Event's time changed
+and it isn't a draft, the people following it get the usual date/time notice
+(E11-S01 Scenario 2). An existing publication takes the Event's new dates in the
+same transaction, so Attendees see the dates they were told about.
 
 In planning, changing a Session's layout, accessibility needs or facilities
 counts as an arrangement change even when its times, attendance and capacity

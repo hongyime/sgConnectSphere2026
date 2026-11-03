@@ -27,7 +27,7 @@ type Field = {
   accessibilityNote: string; layoutPreference: string;
 };
 
-type Removal = { releasedBookings?: number; releasedReservations?: number; notifiedStaff?: number };
+type Removal = { releasedBookings?: number; releasedReservations?: number; notifiedStaff?: number; primaryNeeded?: boolean };
 
 const NO_OPTIONS: Options = { layouts: [], accessibility: [], facilities: [] };
 
@@ -79,7 +79,9 @@ function removalMessage(result: Removal) {
     reservations ? `${reservations} equipment reservation${reservations === 1 ? '' : 's'}` : '',
   ].filter(Boolean).join(' and ');
   const told = result.notifiedStaff ? ' The venue’s staff have been notified.' : '';
-  return `Session removed. ${released} released.${told}`;
+  // T-94: no automatic promotion; choosing the primary venue stays with the Coordinator (T-78).
+  const primary = result.primaryNeeded ? ' That was the event’s primary venue, so your Coordinator needs to choose another.' : '';
+  return `Session removed. ${released} released.${told}${primary}`;
 }
 
 function NeedsChecklist({ legend, options, selected, disabled, onChange }: {
@@ -225,7 +227,7 @@ export function SessionEditor({ eventId }: { eventId: string }) {
       <p className="field-hint">
         {perSession
           ? 'Each Session keeps its own date, time, attendance and requirements. Venues are checked against each Session separately.'
-          : 'One Session beneath this Event. It uses the event’s own requirements. Add a Session to plan a second day or part separately.'}
+          : `One Session beneath this Event, with no extra setup needed.${eventStatus === 'draft' ? ' Add a Session to plan a second day or part separately.' : ''}`}
       </p>
       {sessions === null && !loadFailed ? <LoadingState label="Loading Sessions…" /> : null}
       {loadFailed ? (

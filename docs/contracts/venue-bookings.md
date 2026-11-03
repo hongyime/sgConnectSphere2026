@@ -53,7 +53,9 @@ Session links and must not add them again. Session authoring (SCRUM-39): the
 Organiser may add Sessions to their own draft, edit them in draft or planning,
 and remove them in draft or planning, and an Event always keeps at least one
 Session. Removing a Session first releases its active bookings in the same
-transaction, so no active booking ever loses its Session link. A booking request
+transaction, so no active booking ever loses its Session link. If one of those was
+the primary and another Confirmed booking remains, the primary is cleared with no
+automatic promotion and the Coordinator is told to choose another (T-94, T-78). A booking request
 for an Event with several Sessions must name its `session_id`; holds carry no
 Session, so a hold is possible only while the Event has one Session.
 
@@ -124,7 +126,7 @@ Returns 200 `{ booking, coordinatorNotified }`.
 - Returns 404 for an unknown booking.
 - Returns 409 when the booking is no longer Pending (e.g. already decided, released, or expired).
 - A booking in `conflicting` status cannot be decided: Venue Staff must wait for the buffer conflict resolution flow (E05-S05 / E05-S06) or coordinator rescheduling, returning 409 with an explanatory message.
-- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row.
+- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row. It does not when another Confirmed booking is already waiting for the Coordinator to choose (T-94).
 - If decision is `reject`, updates status from Pending to Rejected, sets `decision_reason`, optional `suggested_venue_id`, `decided_by`, and `decided_at`.
 - Audit entries: `Booking Approved` or `Booking Rejected` with `entity_type = 'venue_booking'`.
 - Notification sent to the assigned Coordinator.

@@ -885,6 +885,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02 Scenario 1: a Session carries its own accessibility and facility needs
 - E04-S02 Scenario 1: needs that are not lists of ids are rejected before any write
 - E04-S02 Scenario 1: leaving the needs out keeps whatever the Session already has
+- E04-S02: handNeedsToEvent updates Event details to match the survivor Session and hands over needs
+- E04-S02: handNeedsToEvent does nothing if no survivor session exists
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 

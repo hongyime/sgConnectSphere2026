@@ -144,7 +144,7 @@ test('TC_E04S02_01: a single Session follows the event requirements and saving k
   render(<SessionEditor eventId="event-1" />);
 
   await screen.findByDisplayValue('Day 1');
-  expect(screen.getByText(/uses the event’s own requirements/)).toBeTruthy();
+  expect(screen.getByText(/no extra setup needed/)).toBeTruthy();
   expect(screen.queryByLabelText('Room layout')).toBeNull();
   expect((screen.getByText('Remove session').closest('button') as HTMLButtonElement).disabled).toBe(true);
 
@@ -244,4 +244,20 @@ test('E04-S02: a late answer for an earlier event never replaces the current one
   await new Promise(resolve => setTimeout(resolve, 0));
   expect(screen.queryByDisplayValue('Day 1')).toBeNull();
   expect(screen.getByDisplayValue('Other event day')).toBeTruthy();
+});
+
+test('TC_E04S02_05: removing the Session with the primary venue says the Coordinator must choose another', async () => {
+  const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+    if (init?.method === 'DELETE') {
+      return new Response(JSON.stringify({ deleted: true, releasedBookings: 1, releasedReservations: 0, notifiedStaff: 1, primaryNeeded: true }), { status: 200 });
+    }
+    return new Response(JSON.stringify({ sessions: twoSessions, eventStatus: 'planning', options }), { status: 200 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  render(<SessionEditor eventId="event-1" />);
+
+  const day1 = await screen.findByRole('listitem', { name: 'Day 1' });
+  fireEvent.click(within(day1).getByText('Remove session'));
+  fireEvent.click(within(day1).getAllByRole('button', { name: 'Remove session' }).at(-1)!);
+  expect(await screen.findByText(/That was the event’s primary venue, so your Coordinator needs to choose another\./)).toBeTruthy();
 });
