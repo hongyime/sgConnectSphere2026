@@ -243,7 +243,6 @@ suitability page, whose booking form submits it. Holds have no Session, so
 booking list names each booking's Session, and warns when Confirmed bookings
 have no primary venue, since a released primary is not replaced automatically (T-94).
 
-
 ## E10-S01 Session targets
 
 The existing Change requests page offers Event-wide details or a named Session.
@@ -266,3 +265,23 @@ explains either the existing future-date rule or the inclusive Singapore-local
 maximum and asks the Organiser to edit that Session before resubmitting. It
 retains the draft and existing Event-date messages. See
 [human acceptance steps](testing/manual/E02-S07-click-through.md).
+
+## Operational Safety Check (E08-S06)
+
+The Safety Officer's queue (`/safety/queue`, `RoleQueues.tsx`) lists Events in
+Safety Review oldest entry first; each title opens `/safety/review/:eventId`
+(`SafetyReview.tsx`, from the Decision template). The page shows one card per
+Session with its venues, equipment and accessibility needs, from
+`?safetyReview=1`, plus a card for anything not tied to a Session. The seven
+factors start unanswered (a `select` with "Choose…" and a comment each); the
+page refuses a decision until every factor has both, and checks the
+approve / request-changes rules before the `ConfirmPanel`, which asks for the
+reason on request changes and reject. The checklist is locked while that
+panel is open, so the answers sent are the ones checked. The server repeats
+every check.
+
+`SafetyReturnAlert` shows "Safety arrangement rejected" (or "changes
+requested") with the reason on the Coordinator's readiness page and the
+Organiser's event page, from the `safetyReturn` both reads carry. The Activity
+log shows each decision once, as its checklist row: where the Event went ("Now
+Confirmed" or "Back in Planning"), then the unsatisfactory factors and reason.
