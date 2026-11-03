@@ -72,7 +72,7 @@ const factors = (unsatisfactory: string[] = []) => Object.fromEntries(SAFETY_FAC
 const ran = (calls: { sql: string }[], pattern: RegExp) => calls.filter(call => pattern.test(call.sql));
 
 test('TC_E08S06_01: the review detail lists Sessions, confirmed venues, equipment and support for a Safety Officer', async () => {
-  const { pool } = scriptedDatabase();
+  const { pool, calls } = scriptedDatabase();
   const detail = await getSafetyReviewEvent(pool, officer, 'EVT-1');
   assert.equal(detail.event.id, 'event-1');
   assert.deepEqual(detail.sessions.map(session => [session.layout, session.accessibility]), [['Theatre', ['Step-free access']]]);
@@ -80,6 +80,8 @@ test('TC_E08S06_01: the review detail lists Sessions, confirmed venues, equipmen
   assert.deepEqual(detail.equipment.map(item => item.placement), ['Stage left', null]);
   assert.deepEqual(detail.support, [{ id: 't-1', description: 'Sound desk', status: 'staffed' }]);
   assert.deepEqual(detail.factors, SAFETY_FACTORS);
+  // #412 review: cancelled support is left out, as readiness leaves it out.
+  assert.match(ran(calls, /COALESCE\(support_description/)[0]!.sql, /status <> 'cancelled'/);
 });
 
 test('TC_E08S06_05: the review detail refuses other roles with an audit row, and needs an id and an Event in Safety Review', async () => {
@@ -95,8 +97,10 @@ test('TC_E08S06_05: the review detail refuses other roles with an audit row, and
 
 test('TC_E08S06_02: approval confirms the Event, records the checklist and sends "Event confirmed" with the confirmed details', async () => {
   const { pool, calls, notices } = scriptedDatabase();
-  const result = await decideSafetyReview(pool, officer, 'EVT-1', { decision: 'approve', factors: factors() });
+  const result = await decideSafetyReview(pool, officer, 'EVT-1', { decision: 'approve', factors: factors(), reason: 'Left over' });
   assert.deepEqual(result, { eventId: 'event-1', eventCode: 'EVT-1', status: 'confirmed', decision: 'approve', reason: undefined });
+  // #412 review: approval keeps the Event's decision_reason (COALESCE(null, decision_reason)).
+  assert.equal(ran(calls, /UPDATE events/)[0]!.values![2], null);
   const audits = ran(calls, /INSERT INTO audit_logs/);
   assert.deepEqual(audits[0]!.values, [officer.id, 'event-1', SAFETY_ACTIONS.approve, 'safety_review', 'confirmed']);
   assert.equal(audits[1]!.values![2], SAFETY_ACTIONS.approve);
@@ -123,8 +127,13 @@ test('TC_E08S06_03: requesting changes returns the Event to Planning, flags what
     { decision: 'request_changes', factors: factors(['equipment_placement']), reason: 'Move the rig' });
   assert.equal(result.status, 'planning');
   // D111: equipment placement flags live reservations only; no venue factor failed.
-  assert.deepEqual(ran(calls, /requires_reconfirmation=true/).map(call => call.sql.trim().split(' ')[1]), ['equipment_reservations']);
-  assert.match(ran(calls, /UPDATE equipment_reservations/)[0]!.sql, /status <> 'released'/);
+  const flagged = (list: { sql: string }[]) => ran(list, /requires_reconfirmation=true/).map(call => /UPDATE (\w+)/.exec(call.sql)![1]);
+  assert.deepEqual(flagged(calls), ['equipment_reservations']);
+  const flag = ran(calls, /UPDATE equipment_reservations/)[0]!;
+  assert.match(flag.sql, /status <> 'released'/);
+  // #412 review: each flagged reservation gets its "Reconfirmation required" activity entry.
+  assert.match(flag.sql, /INSERT INTO audit_logs[\s\S]*'Reconfirmation required: safety check changes requested'/);
+  assert.deepEqual(flag.values, ['event-1', officer.id, 'equipment_reservation']);
   assert.equal(notices.length, 2);
   assert.ok(notices[0]!.includes('Safety check: changes requested'));
   assert.ok(notices[0]!.includes('The Safety Officer requested changes, so EVT-1 Charity Run is back in Planning. Reason: Move the rig. '
@@ -132,7 +141,8 @@ test('TC_E08S06_03: requesting changes returns the Event to Planning, flags what
 
   const venue = scriptedDatabase();
   await decideSafetyReview(venue.pool, officer, 'EVT-1', { decision: 'request_changes', factors: factors(['emergency_access']), reason: 'Exit' });
-  assert.deepEqual(ran(venue.calls, /requires_reconfirmation=true/).map(call => call.sql.trim().split(' ')[1]), ['venue_bookings']);
+  assert.deepEqual(flagged(venue.calls), ['venue_bookings']);
+  assert.deepEqual(ran(venue.calls, /UPDATE venue_bookings/)[0]!.values, ['event-1', officer.id, 'venue_booking']);
 
   const attendance = scriptedDatabase();
   await decideSafetyReview(attendance.pool, officer, 'EVT-1', { decision: 'request_changes', factors: factors(['attendance_capacity']), reason: 'Too many' });
@@ -154,6 +164,11 @@ test('TC_E08S06_05: a decision needs a signed-in Safety Officer, a valid body an
   const coordinator = scriptedDatabase();
   await assert.rejects(decideSafetyReview(coordinator.pool, user('event_coordinator'), 'EVT-1', { decision: 'approve', factors: factors() }), { status: 403 });
   assert.equal(ran(coordinator.calls, /Access Denied/).length, 1);
+  // #412 review: the role is checked before the id, so a bad id still gets 403 and an audit row.
+  const badId = scriptedDatabase();
+  await assert.rejects(decideSafetyReview(badId.pool, user('event_coordinator'), '', {}), { status: 403 });
+  assert.equal(ran(badId.calls, /Access Denied/).length, 1);
+  await assert.rejects(decideSafetyReview(scriptedDatabase().pool, officer, '', {}), { status: 400 });
   await assert.rejects(decideSafetyReview(scriptedDatabase().pool, officer, 'EVT-1', { decision: 'reject', factors: factors() }), { status: 400 });
   for (const status of ['draft', 'planning']) {
     const { pool, calls } = scriptedDatabase({ status });

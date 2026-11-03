@@ -12,6 +12,9 @@ function factors(satisfactory = true) {
 test('E08-S06 accepts one completed assessment for every safety factor', () => {
   const input: SafetyDecisionInput = { decision: 'approve', factors: factors() };
   assert.deepEqual(parseSafetyDecision(input), { decision: 'approve', factors: input.factors, reason: undefined });
+  // #412 review: an approval drops any reason, so the Event's decision_reason is left alone.
+  assert.equal(parseSafetyDecision({ ...input, reason: 'Left over from the reject box' }).reason, undefined);
+  assert.equal(parseSafetyDecision({ ...input, reason: '' }).reason, undefined);
 });
 
 test('E08-S06 refuses approval when a factor is missing or unsatisfactory', () => {
