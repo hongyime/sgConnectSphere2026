@@ -1,6 +1,7 @@
 import { ACTIVE_EVENT_STATUSES } from '../eventLifecycle/status.js';
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { canActAsRole } from '../accessControl/service.js';
+import { latestSafetyReturn, SAFETY_ACTIONS } from '../eventReadiness/safetyReturn.js';
 
 export type Query = <T extends Record<string, unknown> = Record<string, unknown>>(
   sql: string, values?: unknown[],
@@ -64,6 +65,8 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       ORDER BY occurred_at ASC, id ASC`, [event.id]);
     const activity = await listEventActivity(query, event.id);
     const comments = await listEventComments(query, event.id);
+    // E08-S06 (D109): "Safety arrangement rejected" and its reason until the Event re-enters Safety Review.
+    const safetyReturn = await latestSafetyReturn(query, event.id);
     // E08-S03 (D64): Safety Review counts as approved, so an Organiser can't
     // change restricted details while the safety check runs.
     const approved = ['approved', 'planning', 'safety_review', 'confirmed', 'completed'].includes(String(event.status));
@@ -74,7 +77,7 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
       ? ['title', 'description', 'purpose', 'registrationDates']
       : ['title', 'description', 'purpose', 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'];
     const editable = assignedCoordinator ? [...organiserFields.slice(0, 3), 'startAt', 'endAt', 'expectedAttendance', 'venueRequirements', 'accessibilityNote', 'equipmentRequirements', 'layoutPreference', 'registrationSetup', 'registrationDates'] : organiserFields;
-    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, canRequestCancellation: organiser && event.organiser_id === user.id && !!event.coordinator_id && (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String(event.status)), canPostComment: organiser && event.status !== 'cancelled', canEdit, editableFields: canEdit ? editable : [] };
+    return { ...event, statusHistory: history.rows, activityLog: activity.rows, comments, safetyReturn, canRequestCancellation: organiser && event.organiser_id === user.id && !!event.coordinator_id && (ACTIVE_EVENT_STATUSES as readonly string[]).includes(String(event.status)), canPostComment: organiser && event.status !== 'cancelled', canEdit, editableFields: canEdit ? editable : [] };
   }
   // Separate committed write: throwing a denial must not roll back its audit entry.
   // Unknown IDs receive the same response, without revealing whether an event exists.
@@ -95,6 +98,9 @@ export async function getEvent(query: Query, user: AuthenticatedUser, identifier
 // Staff booking decisions, which are stored against the booking, with the
 // venue named, and Technical Support reconfirmations (T-104, SCRUM-244), which
 // are stored against the support request. The Organiser view leaves them out.
+// E08-S06 Scenario 10 (#412 review): a safety decision writes a status row and
+// a checklist row with the same action; only the checklist row is shown, so
+// the decision is one entry.
 export async function listEventActivity(query: Query, eventId: string, options: { includeBookings?: boolean } = {}) {
   const targets = options.includeBookings
     ? `(a.entity_type IN ('event', 'venue_booking') OR (a.entity_type = 'tech_support_request' AND a.action = 'Support Reconfirmed'))`
@@ -110,7 +116,8 @@ export async function listEventActivity(query: Query, eventId: string, options: 
     LEFT JOIN venue_bookings vb ON a.entity_type = 'venue_booking' AND vb.id = a.entity_id
     LEFT JOIN venues bv ON bv.id = vb.venue_id
     WHERE a.event_id = $1 AND ${targets} AND a.action <> 'Access Denied'
-    ORDER BY a.occurred_at ASC, a.id ASC`, [eventId]);
+      AND NOT (a.field_changed = 'status' AND a.action = ANY($2))
+    ORDER BY a.occurred_at ASC, a.id ASC`, [eventId, Object.values(SAFETY_ACTIONS)]);
 }
 
 export async function listEventComments(query: Query, eventId: string) {

@@ -9,7 +9,7 @@ import type { PoolClient } from 'pg';
 import { AUTO_SAFETY_REVIEW_ACTION, CHANGE_REQUEST_REPLANNING_ACTION, enterSafetyReviewIfReady } from '../src/modules/eventReadiness/autoSafetyReview.js';
 
 const range = { starts_at: new Date('2027-03-19T01:00:00Z'), ends_at: new Date('2027-03-19T09:00:00Z') };
-type Script = { status?: string; confirmedBefore?: boolean; bookingFlagged?: boolean; coordinator?: string | null; officers?: string[] };
+type Script = { status?: string; confirmedBefore?: boolean; sentBackBy?: string; bookingFlagged?: boolean; coordinator?: string | null; officers?: string[] };
 
 function scriptedClient(script: Script = {}) {
   const calls: { sql: string; values?: unknown[] }[] = [];
@@ -20,6 +20,8 @@ function scriptedClient(script: Script = {}) {
       return [{ id: 'event-1', event_code: 'EVT-1', title: 'Charity Run', status, coordinator_id: script.coordinator === undefined ? 'coordinator-1' : script.coordinator,
         organiser_id: 'organiser-1', equipment_requirements: 'none_required', ...range }];
     if (sql.includes("new_value = 'confirmed'")) return script.confirmedBefore === false ? [] : [{ '?column?': 1 }];
+    // E08-S06 (D118): the latest status change, read by latestSafetyReturn().
+    if (sql.includes('JOIN LATERAL')) return script.sentBackBy ? [{ action: script.sentBackBy, occurred_at: new Date('2027-03-01T00:00:00Z'), reason: 'Exit blocked' }] : [];
     if (sql.includes('FROM venue_bookings b JOIN venues v'))
       return [{ id: 'booking-1', venue_name: 'Charity Hall', status: 'confirmed', purpose: null, ...range, buffer_conflict: false,
         requires_reconfirmation: script.bookingFlagged ?? false, live_hold: false }];
@@ -69,11 +71,13 @@ test('without an assigned Coordinator only the Organiser and the Safety Officers
   assert.equal(titled(notices, 'Safety check needed').length, 2);
 });
 
-test('nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding', async () => {
+test('nothing moves for an event that is not in Planning, was never Confirmed, was sent back by the Safety Officer, or still has something outstanding', async () => {
   for (const [name, script] of [
     ['in Safety Review', { status: 'safety_review' }],
     ['never Confirmed', { confirmedBefore: false }],
     ['a booking still flagged', { bookingFlagged: true }],
+    ['sent back by a Safety Officer rejection (D118)', { sentBackBy: 'Safety arrangement rejected' }],
+    ['sent back by a Safety Officer request for changes (D118)', { sentBackBy: 'Safety check changes requested' }],
   ] as [string, Script][]) {
     const { client, calls } = scriptedClient(script);
     assert.equal(await enterSafetyReviewIfReady(client, 'EVT-1', 'staff-1'), false, name);

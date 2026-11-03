@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **311** (81.2%)
-  - Real-database (`.integration.test` / `.db.test`): **42**
+- Automated (explicit TC_ID in an active test title): **317** (82.8%)
+  - Real-database (`.integration.test` / `.db.test`): **43**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **268**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
+  - Live-assertion (other active tests): **273**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.5%)
 - No test yet (no test file mentions the TC_ID): **18** (4.7%)
 
 ## Coverage by epic
@@ -25,13 +25,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 18 | 10 | 0 |
+| E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 33 | 29 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **311** | **54** | **18** |
+| **Total** | **383** | **317** | **48** | **18** |
 
 ## Case-by-case status
 
@@ -343,12 +343,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/co |
 | `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
-| `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first |
-| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, an |
-| `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from  |
-| `TC_E08S06_04` | E08-S06 | Verify that rejecting the safety arrangement should return the event to Planning | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_04 — Verify that rejecting the safety arrangement should return the event to Planning with a rejection flag without cancelling it |
-| `TC_E08S06_05` | E08-S06 | Verify that reject and request changes should require a reason and that no role  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_05 — Verify that reject and request changes should require a reason and that no role other than Safety Officer can decide |
-| `TC_E08S06_06` | E08-S06 | Verify that events confirmed before the safety check existed should be untouched | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_06 — Verify that events confirmed before the safety check existed should be untouched and that Safety Review should count as an active status for t |
+| `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ✅ active | backend/tests/roleQueues.test.ts: Safety Officer queue requires the Safety Officer role and lists Safety Review events, oldest entry first (TC_E08S06_01); backend/tests/safetyRevie |
+| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_02: approval confirms the Event, keeps one immutable checklist row and sends ; backend/tests/safetyReview.test.ts: TC_E08S |
+| `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_03: a request for changes needs at least one unsatisfactory factor to address; backend/tests/safetyReview.integration.test.ts: TC_E08S0 |
+| `TC_E08S06_04` | E08-S06 | Verify that rejecting the safety arrangement should return the event to Planning | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_04: rejecting keeps the Event and its arrangements and shows the rejection to the Coordinator and Organiser; backend/tests |
+| `TC_E08S06_05` | E08-S06 | Verify that reject and request changes should require a reason and that no role  | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_05: an unknown decision or a body without factors is refused; backend/tests/safetyCheck.test.ts: TC_E08S06_05: a reason longer than 200 |
+| `TC_E08S06_06` | E08-S06 | Verify that events confirmed before the safety check existed should be untouched | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_06: an Event Confirmed before the check has no safety record and is not in the queue; tests/e2e/e08.spec.ts: TC_E08S06_06  |
 
 ### E09
 
@@ -576,7 +576,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change
 - without an assigned Coordinator only the Organiser and the Safety Officers are told
-- nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding
+- nothing moves for an event that is not in Planning, was never Confirmed, was sent back by the Safety Officer, or still has something outstanding
 
 ### `backend/tests/bookingPrimary.test.ts`
 
@@ -1026,6 +1026,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - in-memory EventLifecycleRepository satisfies the shared contract
 - PostgresEventLifecycleRepository satisfies the shared contract
 
+### `backend/tests/roleQueues.test.ts`
+
+- unauthenticated users cannot read either role queue
+- Lead queue requires the Lead role and returns submitted unassigned events oldest first
+- non-Leads cannot read the unassigned queue and the attempt is audited
+- non-Safety Officers cannot read the Safety Review queue and the attempt is audited
+
+### `backend/tests/safetyCheck.test.ts`
+
+- E08-S06 accepts one completed assessment for every safety factor
+- E08-S06 refuses approval when a factor is missing or unsatisfactory
+- E08-S06 requires a reason for rejection or requested changes
+- E08-S06 rejects malformed factors and overlong comments
+- E08-S06 refuses a decision from a non-Safety Officer before opening a transaction
+
+### `backend/tests/safetyReview.test.ts`
+
+- D109 / D118: latestSafetyReturn reports a rejection or a request for changes, and nothing else
+
 ### `backend/tests/securityHardening.test.ts`
 
 - currentUser: rejects request with missing session cookie with 401
@@ -1387,6 +1406,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - story IDs use the backlog format
 - sign-in and registration pages are public; profile and notifications are not
 - an unknown or missing role goes to the landing page
+- Lead and Safety Officer land on their own work queues
 
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 
@@ -1695,6 +1715,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: cancelling the removal keeps the Session and sends nothing
 - E04-S02: a refused save shows the reason and a failed load can be retried
 - E04-S02: a late answer for an earlier event never replaces the current one
+
+### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
+
+- Lead queue loads submitted unassigned requests
+- Safety queue loads events awaiting Operational Safety Check
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 
