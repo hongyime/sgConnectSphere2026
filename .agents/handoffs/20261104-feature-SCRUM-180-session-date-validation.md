@@ -34,3 +34,11 @@ Complete E02-S07 / SCRUM-180 Session-date submission validation after merged E04
   20261104-012731-xiangyingg-frontend-e2e. Visible title is New Session.
 - Saved input dates, TC01 end-field refusal and TC02–05 remain to capture.
   Record does not claim full manual acceptance.
+
+## Manual evidence archive audit
+
+- Added available human TC05 captures in 20261104-023314-xiangyingg-frontend-e2e.
+- Only post-correction submission/persistence is claimed; agent corrected the
+  fixture via API, and 05-2 shows Event fields rather than Session dates.
+- Earlier TC01–04 chat captures are absent from supplied local locations;
+  user must restore/reattach originals before the full evidence archive closes.
