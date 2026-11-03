@@ -934,3 +934,238 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     await pool.end();
   }
 });
+
+test('TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician to reconfirm and sends everyone else the date notice, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_support_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_support_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_support_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_support_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_support_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const techA = randomUUID();
+    const techB = randomUUID();
+    const eventId = randomUUID();
+    const digest = await hashPassword('synthetic-session-support-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator'],
+      [techA, 'technical_support_staff'], [techB, 'technical_support_staff']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query(
+      `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+       VALUES ($1, $2, $3, $4, 'Synthetic support event', 'draft', tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+      [eventId, organiserId, coordinatorId, org],
+    );
+    const later = { title: 'Second', startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 40 };
+    const added = await addSession(repository, organiserId, eventId, later);
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+
+    // Sound desk overlaps the second Session's current time; Lighting does not.
+    const staffed = async (description: string, staffId: string, from: string, to: string) => {
+      const id = randomUUID();
+      await client.query(
+        `INSERT INTO tech_support_requests (id, event_id, support_required, support_description, support_range, status, requested_by)
+         VALUES ($1, $2, true, $3, tstzrange($4::timestamptz, $5::timestamptz, '[)'), 'staffed', $6)`,
+        [id, eventId, description, from, to, coordinatorId],
+      );
+      await client.query(
+        `INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
+         VALUES ($1, $2, $3, tstzrange($4::timestamptz, $5::timestamptz, '[)'))`,
+        [id, eventId, staffId, from, to],
+      );
+      return id;
+    };
+    const soundDesk = await staffed('Sound desk', techA, '2027-03-13T04:00:00Z', '2027-03-13T06:00:00Z');
+    const lighting = await staffed('Lighting', techB, '2027-03-12T02:00:00Z', '2027-03-12T04:00:00Z');
+    const flagged = async (id: string) => (await client.query<{ requires_reconfirmation: boolean }>(
+      'SELECT requires_reconfirmation FROM tech_support_requests WHERE id = $1', [id])).rows[0]!.requires_reconfirmation;
+    const notices = async (staffId: string) => (await client.query<{ message: string }>(
+      'SELECT message FROM notifications WHERE user_id = $1 AND event_id = $2', [staffId, eventId])).rows.map(row => row.message);
+
+    // The unmoved first Session keeps a confirmed booking with its Venue Staff,
+    // and the published Event has a registered Attendee (#416 review).
+    const venueStaffId = randomUUID();
+    const attendeeId = randomUUID();
+    const hall = randomUUID();
+    await client.query(`INSERT INTO users (id, full_name, email, password_hash, role) VALUES ($1, 'Venue staff', $2, $3, 'venue_staff'), ($4, 'Attendee', $5, $3, 'attendee')`,
+      [venueStaffId, `${venueStaffId}@example.test`, digest, attendeeId, `${attendeeId}@example.test`]);
+    await client.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, 'Synthetic hall', 'Level 1', 200, '00:00', '23:59')`, [hall]);
+    await client.query('INSERT INTO venue_staff_assignments (venue_id, staff_id) VALUES ($1, $2)', [hall, venueStaffId]);
+    const firstSession = (await client.query<{ id: string }>('SELECT id FROM sessions WHERE event_id = $1 AND id <> $2', [eventId, added.session.id])).rows[0]!.id;
+    await client.query(`INSERT INTO venue_bookings (venue_id, event_id, session_id, booking_range, status)
+      VALUES ($1, $2, $3, tstzrange('2027-03-12T02:00:00Z', '2027-03-12T04:00:00Z', '[)'), 'confirmed')`, [hall, eventId, firstSession]);
+    await client.query(`INSERT INTO event_publications (event_id, name, starts_at, ends_at, venue_name, venue_location)
+      VALUES ($1, 'Public support event', '2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', 'Synthetic hall', 'Level 1')`, [eventId]);
+    await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered')`, [eventId, attendeeId]);
+
+    const moved = { ...later, startAt: '2027-03-13T06:00:00.000Z', endAt: '2027-03-13T08:30:00.000Z' };
+    const preview = await editSession(repository, organiserId, eventId, added.session.id, moved, { preview: true });
+    assert.deepEqual(preview.preview!.impact.supports.map(support => support.id), [soundDesk]);
+    assert.deepEqual(preview.preview!.impact.bookings, []);
+    assert.deepEqual(preview.preview!.impact.reservations, []);
+    assert.equal(await flagged(soundDesk), false, 'a preview saves nothing');
+
+    await editSession(repository, organiserId, eventId, added.session.id, moved, { reviewed: preview.preview!.revision });
+    assert.equal(await flagged(soundDesk), true, 'the support overlapping the old time needs reconfirmation');
+    assert.equal(await flagged(lighting), false, 'support away from the moved Session is left alone');
+    const told = await notices(techA);
+    assert.equal(told.length, 1, 'the Sound desk technician is told once, not also sent the date notice');
+    assert.match(told[0]!, /An event change \(date or time\) means .*Technical Support requests need reconfirmation/);
+    // E11-S01 Scenario 2: everyone else on the Event gets the Session date notice only.
+    const dateNotice = /^Synthetic support event: Session date, time changed\. Changed at /;
+    const lightingTold = await notices(techB);
+    assert.equal(lightingTold.length, 1);
+    assert.match(lightingTold[0]!, dateNotice, 'the Lighting technician hears of the new time but is not asked to reconfirm');
+    const coordinatorTold = await notices(coordinatorId);
+    assert.equal(coordinatorTold.length, 1);
+    assert.match(coordinatorTold[0]!, dateNotice);
+    const venueTold = await notices(venueStaffId);
+    assert.equal(venueTold.length, 1);
+    assert.match(venueTold[0]!, dateNotice, "the unmoved booking's Venue Staff hear of the new time");
+    const attendeeTold = await notices(attendeeId);
+    assert.equal(attendeeTold.length, 1);
+    assert.match(attendeeTold[0]!, /^Public support event: Session date, time changed\. Changed at /, 'a registered Attendee is told under the public name');
+    assert.deepEqual(await notices(organiserId), [], 'the Organiser who made the change is not told');
+
+    // An attendance-only edit moves nothing, so no date notice goes out.
+    await editSession(repository, organiserId, eventId, added.session.id, { ...moved, expectedAttendance: 45 }, {});
+    assert.equal((await notices(techB)).length, 1);
+    assert.equal((await notices(coordinatorId)).length, 1);
+    assert.equal((await notices(attendeeId)).length, 1);
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});
+
+test('TC_E10S02_16: a Session layout change below its registrations is warned about and removes no one, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_capacity_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    for (const migration of (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql')).sort((a, b) => a.localeCompare(b))) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) { return client.query(sql, values); },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') { savepoint += 1; return client.query(`SAVEPOINT session_capacity_${savepoint}`); }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_capacity_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              await client.query(`ROLLBACK TO SAVEPOINT session_capacity_${savepoint}`);
+              return client.query(`RELEASE SAVEPOINT session_capacity_${savepoint}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+
+    const org = randomUUID();
+    const organiserId = randomUUID();
+    const coordinatorId = randomUUID();
+    const eventId = randomUUID();
+    const venue = randomUUID();
+    const boardroom = randomUUID();
+    const digest = await hashPassword('synthetic-session-capacity-password');
+    await client.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator']] as const) {
+      await client.query(
+        `INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+        [id, role, `${id}@example.test`, digest, role, org],
+      );
+    }
+    await client.query('INSERT INTO room_layouts (id, code, label) VALUES ($1, $2, $3)', [boardroom, `boardroom-${boardroom}`, 'Boardroom']);
+    await client.query(
+      `INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at) VALUES ($1, 'Synthetic hall', 'Level 1', 200, '00:00', '23:59')`, [venue]);
+    await client.query('INSERT INTO venue_supported_layouts (venue_id, layout_id, capacity) VALUES ($1, $2, 20)', [venue, boardroom]);
+    await client.query(
+      `INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+       VALUES ($1, $2, $3, $4, 'Synthetic capacity event', 'draft', tstzrange('2027-03-12T01:00:00Z', '2027-03-13T09:00:00Z', '[)'), 40)`,
+      [eventId, organiserId, coordinatorId, org],
+    );
+    const later = { title: 'Second', startAt: '2027-03-13T05:00:00.000Z', endAt: '2027-03-13T08:00:00.000Z', expectedAttendance: 40 };
+    const added = await addSession(repository, organiserId, eventId, later);
+    await client.query(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+    await client.query(
+      `INSERT INTO venue_bookings (venue_id, event_id, session_id, booking_range, status)
+       VALUES ($1, $2, $3, tstzrange('2027-03-13T05:00:00Z', '2027-03-13T08:00:00Z', '[)'), 'confirmed')`,
+      [venue, eventId, added.session.id],
+    );
+    // 30 Attendees registered for the second Session; the venue's maximum (200) holds them today.
+    for (let n = 0; n < 30; n += 1) {
+      const attendee = randomUUID();
+      await client.query(`INSERT INTO users (id, full_name, email, password_hash, role) VALUES ($1, $2, $3, $4, 'attendee')`,
+        [attendee, `Attendee ${n}`, `${attendee}@example.test`, digest]);
+      const registration = (await client.query<{ id: string }>(
+        `INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered') RETURNING id`, [eventId, attendee])).rows[0]!.id;
+      await client.query('INSERT INTO event_registration_sessions (registration_id, event_id, session_id) VALUES ($1, $2, $3)',
+        [registration, eventId, added.session.id]);
+    }
+    const registered = async () => (await client.query<{ status: string; n: number }>(
+      'SELECT status::text, count(*)::int AS n FROM event_registrations WHERE event_id = $1 GROUP BY status', [eventId])).rows;
+
+    const boardroomOnly = { ...later, layoutId: boardroom };
+    const preview = await editSession(repository, organiserId, eventId, added.session.id, boardroomOnly, { preview: true });
+    assert.deepEqual(preview.preview!.overSubscription, [
+      { scope: 'session', sessionId: added.session.id, registered: 30, capacity: 20 },
+      { scope: 'event', sessionId: null, registered: 30, capacity: 20 },
+    ]);
+
+    await editSession(repository, organiserId, eventId, added.session.id, boardroomOnly, { reviewed: preview.preview!.revision });
+    assert.deepEqual(await registered(), [{ status: 'registered', n: 30 }], 'no Attendee is removed or waitlisted');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});

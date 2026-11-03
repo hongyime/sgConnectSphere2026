@@ -222,6 +222,8 @@ saved Event, so they cannot be created in the same POST that creates the draft:
 save the draft first, then add, edit or remove Sessions. In planning there is no
 Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
 the Session's bookings and reservations are released before anything is sent.
+The preview's confirmation counts the flagged bookings, reservations and staffed
+Technical Support requests (T-104); a reply without `supports` counts none.
 
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
 keeps the Event's own dates and attendance as the overall planning envelope,

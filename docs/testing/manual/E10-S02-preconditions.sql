@@ -36,6 +36,11 @@
 --     a staffed "Lighting" request 09:00-12:00 with tech_a: TC_E10S02_13.
 --   EVT-1028 "Year-end Gala", 13 Dec 2026 10:00-14:00, a staffed "Stage
 --     lighting" request with tech_a, which makes tech_a busy for TC_E10S02_13.
+--   EVT-1029 "Design Week", 12 Mar 2027 09:00 to 13 Mar 2027 18:00, two
+--     Sessions (Day 1 12 Mar 09:00-12:00, Day 2 13 Mar 13:00-16:00), no venue or
+--     equipment; staffed "Sound desk" 13 Mar 12:00-14:00 with tech_a (overlaps
+--     Day 2) and "Lighting" 12 Mar 10:00-12:00 with tech_b (Day 1 only): the
+--     Organiser's Session screen, TC_E10S02_14 and _15.
 
 \set ON_ERROR_STOP on
 SELECT :'stage' = 'setup' AS is_setup, :'stage' = 'check' AS is_check \gset
@@ -86,7 +91,8 @@ FROM events e, (VALUES
   ('EVT-1025', 'Two-Day Forum', 'Forum over two mornings.', '[2026-11-25 09:00+08,2026-11-26 12:00+08)', 80),
   ('EVT-1026', 'Charity Run', 'Charity fun run.', '[2026-12-05 07:00+08,2026-12-05 12:00+08)', 150),
   ('EVT-1027', 'Board Briefing', 'Quarterly board briefing.', '[2026-12-06 10:00+08,2026-12-06 12:00+08)', 30),
-  ('EVT-1028', 'Year-end Gala', 'Staff year-end gala.', '[2026-12-13 10:00+08,2026-12-13 14:00+08)', 120)
+  ('EVT-1028', 'Year-end Gala', 'Staff year-end gala.', '[2026-12-13 10:00+08,2026-12-13 14:00+08)', 120),
+  ('EVT-1029', 'Design Week', 'Two days of design talks.', '[2027-03-12 09:00+08,2027-03-13 18:00+08)', 60)
 ) AS v(code, title, description, range, attendance)
 WHERE e.event_code = 'EVT-2001';
 
@@ -96,6 +102,11 @@ UPDATE sessions s SET session_range = '[2026-11-25 09:00+08,2026-11-25 12:00+08)
 FROM events e WHERE s.event_id = e.id AND e.event_code = 'EVT-1025';
 INSERT INTO sessions (event_id, title, session_range, expected_attendance)
 SELECT id, 'Day 2', '[2026-11-26 09:00+08,2026-11-26 12:00+08)', 80 FROM events WHERE event_code = 'EVT-1025';
+-- EVT-1029 likewise: Day 1 on 12 Mar, Day 2 on the afternoon of 13 Mar.
+UPDATE sessions s SET session_range = '[2027-03-12 09:00+08,2027-03-12 12:00+08)', title = 'Day 1'
+FROM events e WHERE s.event_id = e.id AND e.event_code = 'EVT-1029';
+INSERT INTO sessions (event_id, title, session_range, expected_attendance)
+SELECT id, 'Day 2', '[2027-03-13 13:00+08,2027-03-13 16:00+08)', 60 FROM events WHERE event_code = 'EVT-1029';
 
 -- One Confirmed booking per Session, at the Session's own period.
 INSERT INTO venue_bookings (event_id, session_id, venue_id, booking_range, status, headcount)
@@ -152,6 +163,22 @@ WITH support AS (
 INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
 SELECT support.id, support.event_id, t.id, support.support_range FROM support, users t
 WHERE t.email = 'tech_a@connectsphere.com';
+
+-- EVT-1029: one staffed request per Session, each with its own technician.
+WITH support AS (
+  INSERT INTO tech_support_requests (event_id, support_required, support_description, support_range, status, requested_by)
+  SELECT e.id, true, r.description, r.range::tstzrange, 'staffed', e.coordinator_id
+  FROM events e JOIN (VALUES
+    ('Sound desk', '[2027-03-13 12:00+08,2027-03-13 14:00+08)', 'tech_a@connectsphere.com'),
+    ('Lighting', '[2027-03-12 10:00+08,2027-03-12 12:00+08)', 'tech_b@connectsphere.com')
+  ) AS r(description, range, technician) ON e.event_code = 'EVT-1029'
+  RETURNING id, event_id, support_description, support_range
+)
+INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
+SELECT support.id, support.event_id, t.id, support.support_range
+FROM support JOIN (VALUES ('Sound desk', 'tech_a@connectsphere.com'), ('Lighting', 'tech_b@connectsphere.com'))
+  AS r(description, technician) ON r.description = support.support_description
+JOIN users t ON t.email = r.technician;
 
 -- EVT-1026 was Confirmed and reverted to Planning (E08-S04), so it re-enters
 -- Safety Review by itself once every arrangement is confirmed again.
@@ -221,17 +248,17 @@ SELECT e.event_code, coalesce(t.support_description, '(none)') AS support, t.sta
   to_char(lower(t.support_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS starts_sgt,
   to_char(lower(t.reconfirm_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS moves_to_sgt
 FROM tech_support_requests t JOIN events e ON e.id = t.event_id
-WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' ORDER BY e.event_code;
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1029' ORDER BY e.event_code;
 
 SELECT e.event_code, u.email AS technician,
   to_char(lower(a.assignment_range) AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS starts_sgt
 FROM tech_staff_assignments a JOIN events e ON e.id = a.event_id JOIN users u ON u.id = a.staff_id
-WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' AND a.status = 'assigned' ORDER BY e.event_code;
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1029' AND a.status = 'assigned' ORDER BY e.event_code;
 
 SELECT e.event_code, a.action, a.old_value, a.new_value
 FROM audit_logs a JOIN events e ON e.id = a.event_id
-WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1028' AND a.entity_type = 'tech_support_request'
+WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1029' AND a.entity_type = 'tech_support_request'
 ORDER BY a.occurred_at;
 
-SELECT event_code, status FROM events WHERE event_code BETWEEN 'EVT-1026' AND 'EVT-1028' ORDER BY event_code;
+SELECT event_code, status FROM events WHERE event_code BETWEEN 'EVT-1026' AND 'EVT-1029' ORDER BY event_code;
 \endif
