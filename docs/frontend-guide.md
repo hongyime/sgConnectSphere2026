@@ -241,6 +241,20 @@ suitability page, whose booking form submits it. Holds have no Session, so
 "Hold this venue" is offered only for single-Session events. The Coordinator's
 booking list names each booking's Session.
 
+## E10-S01 Session targets
+
+The existing Change requests page offers Event-wide details or a named Session.
+Switching target clears selected fields/values; registration and Event-only
+fields are hidden for Session requests. The request card shows the target and
+current Session values, including label-based facilities/accessibility options.
+All Session approvals, including title-only changes, request the server preview.
+A removed Session is labelled explicitly; the server refuses application but
+allows decline. Manual story acceptance remains separately recorded under T-65.
+
+Session targets require at least two Sessions. A sole Session follows the
+existing Event-wide editing/synchronization contract. If a pending target
+becomes the sole Session, application is refused and needs a fresh Event request.
+
 ## Operational Safety Check (E08-S06)
 
 The Safety Officer's queue (`/safety/queue`, `RoleQueues.tsx`) lists Events in
@@ -251,7 +265,9 @@ Session with its venues, equipment and accessibility needs, from
 factors start unanswered (a `select` with "Choose…" and a comment each); the
 page refuses a decision until every factor has both, and checks the
 approve / request-changes rules before the `ConfirmPanel`, which asks for the
-reason on request changes and reject. The server repeats every check.
+reason on request changes and reject. The checklist is locked while that
+panel is open, so the answers sent are the ones checked. The server repeats
+every check.
 
 `SafetyReturnAlert` shows "Safety arrangement rejected" (or "changes
 requested") with the reason on the Coordinator's readiness page and the

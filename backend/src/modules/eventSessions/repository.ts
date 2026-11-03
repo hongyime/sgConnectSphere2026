@@ -33,7 +33,7 @@ const COLUMNS = `id, event_id, title, lower(session_range) AS start_at, upper(se
 
 type Client = Pick<PoolClient, 'query'>;
 
-async function readSession(client: Client, sessionId: string): Promise<SessionRecord> {
+export async function readSession(client: Client, sessionId: string): Promise<SessionRecord> {
   return toRecord((await client.query<SessionRow>(`SELECT ${COLUMNS} FROM sessions WHERE id = $1`, [sessionId])).rows[0]!);
 }
 
@@ -108,6 +108,16 @@ const SET = `title = $3, session_range = tstzrange($4, $5, '[)'), expected_atten
   layout_id = $7, venue_requirements = $8, accessibility_note = $9,
   equipment_requirements = $10, layout_preference = $11`;
 
+export async function writeSessionWith(client: Client, sessionId: string, eventId: string, input: SessionInput) {
+  const updated = (await client.query<{ id: string }>(
+    `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2 RETURNING id`,
+    [sessionId, eventId, ...values(eventId, input).slice(1)],
+  )).rows[0];
+  if (!updated) return null;
+  await writeNeeds(client, sessionId, input);
+  return readSession(client, sessionId);
+}
+
 // The reverse step, when deleting leaves one Session. A sole Session with no
 // rows follows the Event, so an explicitly empty list would otherwise pick up
 // the Event's needs: the Event takes the survivor's needs, which stay the same.
@@ -127,6 +137,10 @@ async function handNeedsToEvent(client: Client, eventId: string) {
   }
 }
 
+export async function listSessionsWith(client: Client, eventId: string): Promise<SessionRecord[]> {
+  return (await client.query<SessionRow>(`SELECT ${COLUMNS} FROM sessions WHERE event_id = $1 ORDER BY lower(session_range), id`, [eventId])).rows.map(toRecord);
+}
+
 export function createSessionRepository(db: Pool = getDatabasePool()): SessionRepository {
   return {
   async findEditScope(eventId: string): Promise<SessionEditScope | null> {
@@ -138,10 +152,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   },
 
   async listSessions(eventId: string): Promise<SessionRecord[]> {
-    const result = await db.query<SessionRow>(
-      `SELECT ${COLUMNS} FROM sessions WHERE event_id = $1 ORDER BY lower(session_range), id`, [eventId],
-    );
-    return result.rows.map(toRecord);
+    return listSessionsWith(db, eventId);
   },
 
   async listOptions() {
@@ -168,15 +179,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   },
 
   async updateSession(sessionId: string, eventId: string, input: SessionInput): Promise<SessionRecord | null> {
-    return inTransaction(db, async client => {
-      const updated = (await client.query<{ id: string }>(
-        `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2 RETURNING id`,
-        [sessionId, eventId, ...values(eventId, input).slice(1)],
-      )).rows[0];
-      if (!updated) return null;
-      await writeNeeds(client, sessionId, input);
-      return readSession(client, sessionId);
-    });
+    return inTransaction(db, client => writeSessionWith(client, sessionId, eventId, input));
   },
 
   // E10-S02 applied to a single Session: the edit runs inside a savepoint for a
@@ -199,12 +202,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       const before = await loadArrangementSnapshot(query, eventId);
       if (options.preview) await client.query('SAVEPOINT session_preview');
 
-      await client.query(
-        `UPDATE sessions SET ${SET} WHERE id = $1 AND event_id = $2`,
-        [sessionId, eventId, ...values(eventId, input).slice(1)],
-      );
-      await writeNeeds(client, sessionId, input);
-      const updated = await readSession(client, sessionId);
+      const updated = (await writeSessionWith(client, sessionId, eventId, input))!;
 
       const after = await loadArrangementSnapshot(query, eventId);
       const impact = assessArrangementImpact(before, after);

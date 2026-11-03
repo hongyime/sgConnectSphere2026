@@ -355,3 +355,29 @@ test('TC_E10S01_06: real completed workflow closes Pending requests as Obsolete 
 
 test('TC_E10S01_07: real cancelled workflow closes Pending requests as Obsolete and disables decisions',
   ({page,browser}) => closesAsObsolete(page,browser,'cancelled'));
+
+
+test('TC_E10S01_01 TC_E10S01_02 TC_E10S01_04: real Session-targeted request applies only to the selected Session', async ({page,browser}) => {
+  const f=await fixture();
+  const first=(await database.pool.query('SELECT id FROM sessions WHERE event_id=$1',[f.event])).rows[0].id;
+  await database.pool.query("UPDATE sessions SET title='Morning',session_range='[2027-03-01T01:00Z,2027-03-01T02:00Z)' WHERE id=$1",[first]);
+  await database.pool.query("INSERT INTO sessions(event_id,title,session_range,expected_attendance) VALUES($1,'Afternoon','[2027-03-01T03:00Z,2027-03-01T04:00Z)',20)",[f.event]);
+  await signIn(page,f.organiser);
+  await page.goto(`/organiser/requests/${f.eventCode}/change`);
+  await page.getByLabel('Change target').selectOption(first);
+  await submit(page,'session name','New morning','Change one Session');
+  await expect(page.getByText('Target Session: Morning')).toBeVisible();
+  const coordinator=await browser.newPage({baseURL:appUrl});
+  try {
+    await signIn(coordinator,f.coordinator);
+    await coordinator.goto(`/coordinator/events/${f.eventCode}/changes`);
+    await expect(coordinator.getByRole('table').getByRole('cell',{name:/Morning/})).toBeVisible();
+    await coordinator.getByRole('button',{name:/^Approve/}).click();
+    await expect(coordinator.getByText('Review the affected arrangements below. Confirming applies this entire request together.')).toBeVisible();
+    await coordinator.getByRole('button',{name:'Approve change request',exact:true}).click();
+    await expect(coordinator.getByText('Change applied to the Event.',{exact:true})).toBeVisible();
+    expect((await database.pool.query('SELECT title FROM events WHERE id=$1',[f.event])).rows[0].title).toBe('Original browser Event');
+    expect((await database.pool.query('SELECT title FROM sessions WHERE event_id=$1 ORDER BY lower(session_range)',[f.event])).rows.map(row=>row.title)).toEqual(['New morning','Afternoon']);
+    expect((await database.pool.query('SELECT requested_changes,status FROM change_requests WHERE event_id=$1',[f.event])).rows[0]).toMatchObject({status:'applied',requested_changes:{sessionId:first}});
+  } finally {await coordinator.close();}
+});
