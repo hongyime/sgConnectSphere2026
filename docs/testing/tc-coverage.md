@@ -1687,6 +1687,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+- T-108: Save draft after deleting down to one Session sends the Event\
+- T-108: with two Sessions still left the form keeps what the Organiser typed
+- T-108: if the new details cannot be read, saving is blocked instead of overwriting the Session
+- T-108: Save draft and Submit stay blocked from the start of the delete until the new details load, on a slow connection
+- T-108: a slow refresh that then fails leaves Save draft and Submit blocked
+- T-108: a refused delete that left both Sessions unblocks saving and keeps what was typed
+- T-108: a delete whose reply was lost but which went through still refreshes the form
+- T-108: if nothing can be read after a failed delete, Save draft and Submit stay blocked
 
 ### `frontend/src/features/organiser/RegistrationPeriod.test.tsx`
 
