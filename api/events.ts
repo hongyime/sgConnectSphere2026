@@ -98,6 +98,8 @@ import {
 import type { VercelRequest, VercelResponse } from '../backend/src/vercel.js';
 
 const repository = new PostgresEventLifecycleRepository();
+// A save refused because its arrangement check went stale (E10-S02, #380 review).
+const ARRANGEMENTS_CHANGED = 'What this change affects has changed since you checked. Review the updated list before saving.';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (['POST', 'PATCH', 'DELETE'].includes(request.method || '')) {
@@ -230,7 +232,7 @@ async function handleSessions(request: VercelRequest, response: VercelResponse, 
         };
       } catch (error) {
         if (error instanceof ArrangementsChangedError) {
-          return { status: 409, body: { error: error.message, ...error.preview } };
+          return { status: 409, body: { error: error.message, message: ARRANGEMENTS_CHANGED, ...error.preview } };
         }
         throw error;
       }
@@ -276,7 +278,7 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
     sendJson(response, 200, { ...result });
   } catch (error) {
     if (error instanceof ArrangementsChangedError) {
-      sendJson(response, 409, { error: error.message, message: 'What this change affects has changed since you checked. Review the updated list before saving.', ...error.preview });
+      sendJson(response, 409, { error: error.message, message: ARRANGEMENTS_CHANGED, ...error.preview });
       return;
     }
     if (error instanceof AccessError) {
