@@ -76,11 +76,16 @@ re-runs section K + TC_E10S02_16 by hand before Bryan's acceptance.
   (`ARRANGEMENTS_CHANGED` in `api/events.ts`), route test added.
 - Break tests: no date notice -> TC_15 DB case fails; no message -> route
   test fails.
+- Test cases: TC_E10S02_14 now expects the named list (Amareet's screen
+  change; the Vitest case tagged TC_14 still checks the count sentence until
+  that PR replaces it), TC_E10S02_15 expects tech_b's Session date notice,
+  new TC_E10S02_16 (Scenario 4 on the Session screen: Boardroom 20 places,
+  30 registered). DB case for TC_16 in `eventSessionsRoutes.integration.test.ts`
+  (fails when the Session save returns no over-subscription); its screen test
+  comes with Amareet's PR. Workbook CAA 031126 re-exported, tc-coverage 386.
 
 ## Next step
 
-Review Task 3: TC_E10S02_14 (names, not counts) and _15 (tech_b gets the
-Session date notice, not a reconfirmation request), new TC_E10S02_16
-(over-subscription warning on the Session screen); workbook; tc-coverage. Then
-checks, run records, push and ask Amareet to approve. #416 is open (PR, CI 17/17
-at a67a7b42); the first manual run of section K is record `20261103-003200`.
+Review Task 4: full runs and records on the new head, push, reply to Amareet
+asking for approval of this part. Then Amareet's Session-screen PR, then Le
+Xin's manual re-run of section K + TC_E10S02_16, then Bryan's acceptance.
