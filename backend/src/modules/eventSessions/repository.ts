@@ -343,8 +343,19 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
          VALUES($1,'event',$2,$2,'Session Deleted','session',$3)`,
         [actorId, eventId, session.title ?? 'Untitled Session'],
       );
+      const before = remaining === 2 ? await captureEventAudience(client, eventId) : null;
       await client.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
-      if (remaining === 2) await handNeedsToEvent(client, eventId);
+      if (before) {
+        await handNeedsToEvent(client, eventId);
+        // E11-S01 Scenario 2: the Event just took the survivor's time, so anyone
+        // following it is told, as an Event edit does. The actor is excluded.
+        const after = await captureEventAudience(client, eventId);
+        if (after.status !== 'draft' && (before.startsAt !== after.startsAt || before.endsAt !== after.endsAt)) {
+          const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
+          await notifyEventChange(client, { changeId: randomUUID(), occurredAt, actorId, before, after,
+            change: { kind: 'arrangements', fields: ['date', 'time'] } });
+        }
+      }
 
       // T-94: a released primary is cleared and someone is prompted to choose
       // another, with no automatic promotion; choosing stays with the Coordinator

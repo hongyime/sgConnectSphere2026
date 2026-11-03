@@ -733,13 +733,49 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     const supportBefore = (await client.query<{ support_range: string }>(
       'SELECT support_range FROM tech_support_requests WHERE id = $1', [supportId],
     )).rows[0]!;
+    const equipmentId = randomUUID();
+    await client.query(
+      `INSERT INTO equipment (id, name, category, total_quantity) VALUES ($1, 'Synthetic projector', 'AV', 5)`, [equipmentId],
+    );
+    const equipmentRequestId = randomUUID();
+    await client.query(
+      `INSERT INTO equipment_requests (id, event_id, session_id, equipment_id, quantity_requested, requested_by)
+       VALUES ($1, $2, $3, $4, 1, $5)`,
+      [equipmentRequestId, primary.eventId, primary.secondId, equipmentId, organiserId],
+    );
+    const reservationId = (await client.query<{ id: string }>(
+      `INSERT INTO equipment_reservations (request_id, event_id, session_id, equipment_id, quantity_reserved, reservation_range, reserved_by)
+       VALUES ($1, $2, $3, $4, 1, tstzrange('2027-04-12T00:00:00Z', '2027-04-12T06:00:00Z', '[)'), $5) RETURNING id`,
+      [equipmentRequestId, primary.eventId, primary.secondId, equipmentId, organiserId],
+    )).rows[0]!.id;
+    const reservationBefore = (await client.query<{ reservation_range: string }>(
+      'SELECT reservation_range FROM equipment_reservations WHERE id = $1', [reservationId],
+    )).rows[0]!;
+    const attendeeId = randomUUID();
+    await client.query(
+      `INSERT INTO users (id, full_name, email, password_hash, role) VALUES ($1, 'Attendee', $2, $3, 'attendee')`,
+      [attendeeId, `${attendeeId}@example.test`, digest],
+    );
+    await client.query(
+      `INSERT INTO event_publications (event_id, name, starts_at, ends_at, venue_name, venue_location)
+       SELECT id, title, lower(event_range), upper(event_range), 'Booked hall', 'Level 1' FROM events WHERE id = $1`,
+      [primary.eventId],
+    );
+    await client.query(`INSERT INTO event_registrations (event_id, attendee_id, status) VALUES ($1, $2, 'registered')`, [primary.eventId, attendeeId]);
     const prompted = await removeSession(repository, organiserId, primary.eventId, primary.firstId);
     assert.equal(prompted.primaryNeeded, true);
     assert.equal((await client.query('SELECT 1 FROM venue_bookings WHERE event_id = $1 AND is_primary', [primary.eventId])).rowCount, 0,
       'no booking is promoted automatically');
     assert.equal((await client.query<{ status: string }>('SELECT status FROM venue_bookings WHERE id = $1', [remainingBooking])).rows[0]!.status, 'confirmed');
     const notices = await client.query<{ title: string }>('SELECT title FROM notifications WHERE user_id = $1 AND event_id = $2', [coordinatorId, primary.eventId]);
-    assert.deepEqual(notices.rows.map(row => row.title), ['Primary venue needed']);
+    assert.deepEqual(notices.rows.map(row => row.title).sort(), ['Event update', 'Primary venue needed']);
+    // E11-S01 Scenario 2: the Event's time changed, so those following it are told.
+    const told = async (userId: string, eventId: string) => (await client.query<{ message: string }>(
+      `SELECT message FROM notifications WHERE user_id = $1 AND event_id = $2 AND title = 'Event update'`, [userId, eventId],
+    )).rows.map(row => row.message);
+    assert.equal((await told(attendeeId, primary.eventId)).length, 1, 'a registered Attendee is told the time changed');
+    assert.match((await told(attendeeId, primary.eventId))[0]!, /Event date, time changed/);
+    assert.deepEqual(await told(organiserId, primary.eventId), [], 'the Organiser who deleted the Session is not told');
 
     const survivorSession = (await client.query<{
       session_range: string;
@@ -770,7 +806,15 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     );
 
     // Editing the event afterward must not overwrite the survivor with stale details.
-    await client.query(`UPDATE events SET title = 'Renamed forum' WHERE id = $1`, [primary.eventId]);
+    // An Event edit writes these columns, which is what fires the 0014 sync trigger;
+    // changing only the title would not.
+    await client.query(
+      `UPDATE events SET title = 'Renamed forum', event_range = event_range, expected_attendance = expected_attendance,
+         layout_id = layout_id, venue_requirements = venue_requirements, accessibility_note = accessibility_note,
+         equipment_requirements = equipment_requirements, layout_preference = layout_preference
+       WHERE id = $1`,
+      [primary.eventId],
+    );
     const survivorAfterEdit = (await client.query<{
       session_range: string;
       expected_attendance: number;
@@ -785,6 +829,11 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
     )).rows[0]!;
     assert.equal(supportAfter.support_range, supportBefore.support_range,
       'technical support requests keep their times until someone edits them');
+    const reservationAfter = (await client.query<{ reservation_range: string }>(
+      'SELECT reservation_range FROM equipment_reservations WHERE id = $1', [reservationId],
+    )).rows[0]!;
+    assert.equal(reservationAfter.reservation_range, reservationBefore.reservation_range,
+      'equipment reservations keep their times until someone edits them');
 
     // With 2 or more Sessions left, deleting a Session keeps the Event's time and attendance.
     const threeSession = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
@@ -804,6 +853,13 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       'SELECT event_range, expected_attendance FROM events WHERE id = $1', [threeSession.eventId],
     )).rows[0]!;
     assert.deepEqual(eventDetailsAfter3, eventDetailsBefore3, 'with 2 or more Sessions left, the Event time and attendance stay the same');
+    assert.deepEqual(await told(coordinatorId, threeSession.eventId), [], 'the Event time did not change, so no one is told');
+
+    // A draft has no one to tell yet, even though its time changes.
+    const draftEvent = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
+    await client.query(`UPDATE events SET status = 'draft' WHERE id = $1`, [draftEvent.eventId]);
+    await removeSession(repository, organiserId, draftEvent.eventId, draftEvent.firstId);
+    assert.deepEqual(await told(coordinatorId, draftEvent.eventId), [], 'deleting from a draft sends no time notice');
 
     // With no Confirmed booking left, the next one becomes primary by itself (O-30).
     const noneLeft = await twoSessionEvent({ accessibilityFeatureIds: [], facilityIds: [] });
@@ -813,7 +869,7 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
       [randomUUID(), bookedVenue, noneLeft.eventId, noneLeft.firstId],
     );
     assert.equal((await removeSession(repository, organiserId, noneLeft.eventId, noneLeft.firstId)).primaryNeeded, false);
-    assert.equal((await client.query('SELECT 1 FROM notifications WHERE user_id = $1 AND event_id = $2', [coordinatorId, noneLeft.eventId])).rowCount, 0);
+    assert.equal((await client.query(`SELECT 1 FROM notifications WHERE user_id = $1 AND event_id = $2 AND title = 'Primary venue needed'`, [coordinatorId, noneLeft.eventId])).rowCount, 0);
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

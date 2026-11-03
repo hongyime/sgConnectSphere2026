@@ -13,6 +13,9 @@ a primary booking was released and other Confirmed bookings remain (T-94).
   `venue_requirements`, `accessibility_note`, `equipment_requirements`,
   `layout_preference`) to match the surviving Session, and hands over accessibility
   and facility needs.
+- When that changes the Event's time and it isn't a draft, `removeSession` sends the
+  usual date/time notice (E11-S01 Scenario 2), excluding the person who deleted it.
+  An attendance-only change sends no notice; Scenario 2 covers date, time and venue.
 - `removeSession` returns `primaryNeeded` and sends the Coordinator a "Primary venue
   needed" notice when the primary was released and another Confirmed booking remains.
 - The Organiser's removal message says the Coordinator must choose another; the
