@@ -88,7 +88,7 @@ Each gate is recorded in the Run log below.
 | 4. Typecheck (`npm run typecheck`, root) | `8054e44`, `f30e9b5`, `c2de0a1`, `578fc4d`, `524f478`; CI on `be0eb43`, `e49b4c3` | clean |
 | 5. Vitest (whole frontend suite) | `f30e9b5`, `524f478`; CI on `e49b4c3` | 813/813 at `524f478`; CI green |
 | 6. Playwright (whole suite, desktop and Pixel 7) | `c2de0a1`, `681f0c7` | 462 passed, 218 skipped, 0 failed |
-| 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3`. Le Xin's review fixes (`578fc4d`, `524f478`) change what TC_02 and _03 show; Aaron's recheck of those two is still to do |
+| 7. Aaron's manual T-93 run of TC_E08S06_01 to _06 on the local real stack | `d8ba321`, rerun at `6c319a3`, recheck at `d660fff` | TC_02, _03 FAIL, then PASS after `be0eb43` and `e49b4c3`; rechecked PASS after Le Xin's review fixes (`578fc4d`, `524f478`) |
 | 8. Repository checks (`python scripts/check.py`, `doc_guard.py`, `tc-coverage.md` regenerated last) | each branch before pushing; CI on #412 (`be0eb43`) and #413 (`e49b4c3`) | pass. #413's other required checks run once it targets `main` |
 
 ## Known limits
@@ -153,3 +153,4 @@ Each gate is recorded in the Run log below.
 | 2026-11-03 16:45–16:49 | `524f478` | typecheck, Vitest, coverage | _02, _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend) | local | clean; 813/813 in 76 files; 76/76 changed lines covered | record `20261103-164506-Bl0oper-frontend-vitest.md` | Claude (for Aaron) |
 | 2026-11-03 ≈16:50 | `b186d7c+local` (committed as `681f0c7`) | Playwright | _01 to _06 | `npx playwright test tests/e2e/e08.spec.ts -g "E08S06"` | local, desktop + Pixel 7 | 12/12 passed | after updating the two expected Activity log texts | Claude (for Aaron) |
 | 2026-11-03 16:50–16:52 | `681f0c7` | Playwright | _01 to _06 | `npx playwright test` (whole suite) | local, desktop + Pixel 7, API faked | 462 passed, 218 skipped, 0 failed | record `20261103-165036-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |
+| 2026-11-03 17:37–17:48 | `d660fff` | manual (T-93) recheck | _02, _03 | Aaron's recheck after Le Xin's review fixes, setup `docs/testing/manual/E08-S06-preconditions.sql` at 17:37 | local real stack (Docker `postgres:17`) | PASS | one Activity log entry per decision ("Now Confirmed. Every factor satisfactory", "Back in Planning. Not satisfactory: Equipment placement. …") for the Organiser and the Coordinator; database checked afterwards: the projector's "Reconfirmation required: safety check changes requested" row, venue not flagged, `decision_reason` unchanged; record `20261103-173700-Bl0oper-frontend-e2e.md` (on #413), 10 screenshots | Aaron |

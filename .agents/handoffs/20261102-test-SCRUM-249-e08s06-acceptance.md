@@ -28,7 +28,9 @@ PR is the story's last and carries the story key.
   (`681f0c7`). Unit, the whole real-database batch, coverage, Vitest and
   the whole Playwright suite rerun on those commits and recorded
   (`20261103-*`). Aaron's manual recheck of TC_02 and TC_03 after these
-  fixes is still to do.
+  fixes passed (17:37–17:48, at `d660fff`); its record and 10 screenshots
+  are on #413 (`20261103-173700-Bl0oper-frontend-e2e.md`), since this
+  branch had no room under the 40-file cap.
 
 ## Not done / next step
 
