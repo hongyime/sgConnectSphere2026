@@ -225,3 +225,16 @@ test('TC_E04S02_05: a deleted Session is in the activity log by name', () => {
   expect(describeChange(deleted)).toBe('Session: Morning talks');
   expect(describeChange({ ...deleted, old_value: null })).toBe('Session');
 });
+
+test('TC_E08S06_02 / _03: a Safety Officer decision shows its checklist as words, not JSON', () => {
+  const entry = (new_value: string | null): ActivityEntry => ({ occurred_at: '2026-12-01T02:00:00Z', action: 'Safety check changes requested',
+    field_changed: 'safety_check', old_value: null, new_value, actor_name: 'Safety Officer A' });
+  const factors = (failed: string[]) => Object.fromEntries(['attendance_capacity', 'venue_layout', 'emergency_access', 'accessibility',
+    'equipment_placement', 'crowd_movement', 'venue_restrictions'].map(key => [key, { satisfactory: !failed.includes(key), comment: 'Checked' }]));
+  expect(describeChange(entry(JSON.stringify({ decision: 'request_changes', reason: 'Move the rig', factors: factors(['equipment_placement', 'crowd_movement']) }))))
+    .toBe('Back in Planning. Not satisfactory: Equipment placement, Crowd movement. Reason: Move the rig');
+  expect(describeChange(entry(JSON.stringify({ decision: 'approve', factors: factors([]) })))).toBe('Now Confirmed. Every factor satisfactory');
+  expect(describeChange(entry('not json'))).toBe('Safety checklist');
+  expect(describeChange(entry(null))).toBe('Safety checklist');
+  expect(describeAction(entry(null))).toBe('Safety check changes requested');
+});

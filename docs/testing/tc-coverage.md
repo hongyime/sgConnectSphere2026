@@ -1711,7 +1711,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
 
 - Lead queue loads submitted unassigned requests
-- Safety queue loads events awaiting Operational Safety Check
+
+### `frontend/src/features/roleQueues/SafetyReview.test.tsx`
+
+- a late answer for the previous event never replaces the one now open
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 

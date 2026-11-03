@@ -82,3 +82,6 @@ None recorded yet.
 | 2026-11-02 17:53 | `8054e44` | typecheck | - | `npm run typecheck` (root) | local | clean | - | Claude (for Aaron) |
 | 2026-11-02 17:53 | `8054e44` | unit | _01 to _05 | `npm test --workspace backend` | local | 714 tests: 713 passed, 1 skipped | new and changed safety files at 100%; record `20261102-175346-Bl0oper-backend-unit.md` | Claude (for Aaron) |
 | 2026-11-02 17:54 | `8054e44` | real database | _01 to _06 | `npx tsx --test tests/safetyReview.integration.test.ts` + 7 related integration suites (backend), Docker `postgres:17` | local | 55/55 passed | record `20261102-175404-Bl0oper-backend-db.md` | Claude (for Aaron) |
+| 2026-11-02 18:07 | `f30e9b5` | typecheck | - | `npm run typecheck` (root) | local | clean | - | Claude (for Aaron) |
+| 2026-11-02 18:07 | `f30e9b5` | Vitest | _01 to _05 | `npx vitest run --no-file-parallelism` (frontend) | local | 812/812 passed in 76 files | record `20261102-180747-Bl0oper-frontend-vitest.md`; every changed line covered | Claude (for Aaron) |
+| 2026-11-02 18:10 | `f30e9b5` | Playwright regression | - | `npx playwright test` on 9 specs (coordinator, e03, e06, e08, e10, e14, eventReadiness, venueBookingDecisions, skeleton) | local, desktop + Pixel 7 | 122 passed, 126 skipped, 0 failed | the skips are `test.fixme` scaffolds; record `20261102-181032-Bl0oper-frontend-e2e.md` | Claude (for Aaron) |

@@ -104,6 +104,22 @@ test('TC_E08S03_03 and TC_E08S03_04: a blocked submission shows the server sente
   await waitFor(() => expect(screen.getByRole('button', { name: 'Submit for safety check…' })).toHaveFocus());
 });
 
+test('TC_E08S06_04: the Safety Officer\'s rejection stays on the page after a blocked resubmit', async () => {
+  const safetyReturn = { decision: 'reject', reason: 'Unsafe overall', decidedAt: '2026-10-20T02:00:00.000Z' };
+  stubApi({
+    [READ]: { body: readiness({ safetyReturn }) },
+    // The 409 snapshot carries no safetyReturn (#413 review).
+    [SUBMIT]: { status: 409, body: { error: BLOCKED, readiness: blocked.readiness } },
+  }, { role: 'event_coordinator' });
+  renderAt('/coordinator/events/EVT-3003/readiness');
+  expect(await screen.findByText('Safety arrangement rejected')).toBeInTheDocument();
+  await openSubmit();
+  confirmSubmit();
+  expect(await screen.findByText(BLOCKED)).toBeInTheDocument();
+  expect(screen.getByText('Safety arrangement rejected')).toBeInTheDocument();
+  expect(screen.getByText(/Reason: Unsafe overall\./)).toBeInTheDocument();
+});
+
 test('TC_E08S03_08: submitting a ready event moves it to Safety Review and says who was notified', async () => {
   let status = 'planning';
   const calls = stubApi({
