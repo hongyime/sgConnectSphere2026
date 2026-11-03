@@ -10,7 +10,7 @@ export function SafetyReturnAlert({ value }: { value: SafetyReturn | undefined }
   return (
     <Alert tone="warning" title={rejected ? 'Safety arrangement rejected' : 'Safety check: changes requested'}>
       The Safety Officer {rejected ? 'rejected the safety arrangement' : 'requested changes'} on {formatDate(value.decidedAt, true)}.
-      {' '}Reason: {value.reason ?? 'Not recorded'}. The event goes back to Safety Review once it's resubmitted for its safety check.
+      {' '}Reason: {value.reason ?? 'Not recorded'}{/[.!?]$/.test(value.reason ?? '') ? '' : '.'} The event goes back to Safety Review once it's resubmitted for its safety check.
     </Alert>
   );
 }

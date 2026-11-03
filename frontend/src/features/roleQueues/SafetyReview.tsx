@@ -6,12 +6,13 @@
 // - Scenarios 3 to 6: approve needs every factor satisfactory, request changes
 //   at least one not; both of those and reject go through a ConfirmPanel, and
 //   reject and request changes need a reason. The server checks all of it again.
+//   The checklist is locked while a ConfirmPanel is open (#413 review).
 import { useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import { CheckCircle2, ClipboardList, XCircle } from 'lucide-react';
 import {
   Alert, Button, ButtonLink, Card, ConfirmPanel, ErrorState, FactList, FormField, FormSection, LoadingState, PageLayout, StatusPill,
-  formatDate, formatDateRange, useLoad,
+  formatDate, formatDateRange, statusLabel, useLoad,
 } from '../../shared';
 import {
   getSafetyReview, SAFETY_FACTOR_LABELS, SAFETY_FACTORS, submitSafetyDecision, type SafetyDecision, type SafetyFactor, type SafetyReview as Review,
@@ -80,8 +81,11 @@ function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (sta
   const [refusal, setRefusal] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
 
-  const answer = (factor: SafetyFactor, change: Partial<Answer>) =>
+  // The banner is about the last click, so any edit clears it; the field errors stay.
+  const answer = (factor: SafetyFactor, change: Partial<Answer>) => {
+    setProblem(null);
     setAnswers(current => ({ ...current, [factor]: { ...current[factor], ...change } }));
+  };
 
   function choose(decision: SafetyDecision) {
     setChecked(true);
@@ -125,7 +129,7 @@ function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (sta
           ['Event date', formatDateRange(event.starts_at, event.ends_at)],
           ['Expected attendance', String(event.expected_attendance)],
           ['In Safety Review since', formatDate(event.status_changed_at, true)],
-          ['Technical Support', list(support.map(item => `${item.description || 'Support request'} (${item.status})`))],
+          ['Technical Support', list(support.map(item => `${item.description || 'Support request'} (${statusLabel(item.status)})`))],
         ]} />
       </Card>
       {sessions.map((session, index) => (
@@ -147,7 +151,7 @@ function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (sta
             <FormField key={`${factor}-assessment`} label={SAFETY_FACTOR_LABELS[factor]}
               error={checked && !answers[factor].satisfactory ? 'Choose satisfactory or not satisfactory.' : undefined}>
               {props => (
-                <select {...props} value={answers[factor].satisfactory}
+                <select {...props} disabled={!!choice} value={answers[factor].satisfactory}
                   onChange={change => answer(factor, { satisfactory: change.target.value as Answer['satisfactory'] })}>
                   <option value="">Choose…</option>
                   <option value="yes">Satisfactory</option>
@@ -157,7 +161,7 @@ function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (sta
             </FormField>,
             <FormField key={`${factor}-comment`} label={`Comment on ${SAFETY_FACTOR_LABELS[factor].toLowerCase()}`}
               error={checked && !answers[factor].comment.trim() ? 'Comment is required.' : undefined}>
-              {props => <textarea {...props} rows={2} maxLength={2000} value={answers[factor].comment}
+              {props => <textarea {...props} rows={2} maxLength={2000} disabled={!!choice} value={answers[factor].comment}
                 onChange={change => answer(factor, { comment: change.target.value })} />}
             </FormField>,
           ])}
@@ -193,5 +197,6 @@ function ReviewDecision({ review, onDecided }: { review: Review; onDecided: (sta
 }
 
 function list(items: string[]) {
-  return items.length ? <ul>{items.map(item => <li key={item}>{item}</li>)}</ul> : null;
+  // Two rows can read the same, so the key is the position.
+  return items.length ? <ul>{items.map((item, index) => <li key={index}>{item}</li>)}</ul> : null;
 }

@@ -31,7 +31,7 @@ function review(code = 'EVT-2', title = 'Annual Gala'): { review: Review } {
       { id: 'q-1', session_id: 's-1', name: 'Stage rig', requested: 1, reserved: 1, placement: 'Stage left' },
       { id: 'q-2', session_id: null, name: 'Lectern', requested: 1, reserved: 0, placement: null },
     ],
-    support: [{ id: 't-1', description: 'Sound desk', status: 'staffed' }],
+    support: [{ id: 't-1', description: 'Sound desk', status: 'requires_review' }],
   } };
 }
 
@@ -66,7 +66,19 @@ test('TC_E08S06_01: the review shows each Session with its venues, equipment and
   expect(within(morning).getByText('Step-free access; Two wheelchair users')).toBeInTheDocument();
   expect(within(screen.getByRole('region', { name: 'Session 2' })).getAllByText('None recorded').length).toBeGreaterThan(0);
   expect(within(screen.getByRole('region', { name: 'Not tied to a Session' })).getByText('1 × Lectern, 0 reserved')).toBeInTheDocument();
-  expect(screen.getByText('Sound desk (staffed)')).toBeInTheDocument();
+  expect(screen.getByText('Sound desk (Requires review)')).toBeInTheDocument();
+});
+
+test('TC_E08S06_01: two arrangements that read the same are both listed, without a duplicate key', async () => {
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const twice = review();
+  twice.review.equipment = [twice.review.equipment[1], { ...twice.review.equipment[1], id: 'q-3' }];
+  stubApi({ [READ]: { body: twice } }, { role: 'safety_officer' });
+  renderPage();
+  await screen.findByRole('heading', { name: 'Decide: Annual Gala' });
+  expect(screen.getAllByText('1 × Lectern, 0 reserved')).toHaveLength(2);
+  expect(errors.mock.calls.flat().join(' ')).not.toContain('same key');
+  errors.mockRestore();
 });
 
 test('TC_E08S06_02: no factor starts answered, and deciding before every factor and comment is recorded sends nothing', async () => {
@@ -90,7 +102,12 @@ test('TC_E08S06_02: approving with every factor satisfactory confirms the event 
   expect(screen.getByRole('alert')).toHaveTextContent('Approval needs every factor to be satisfactory.');
 
   fireEvent.change(assessment('crowd_movement'), { target: { value: 'yes' } });
+  // #413 review: fixing a factor clears the banner.
+  expect(screen.queryByText('Approval needs every factor to be satisfactory.')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'Approve…' }));
+  // #413 review: the checklist is locked while the confirm step is open, so the answers can't change under it.
+  expect(SAFETY_FACTORS.every(factor => assessment(factor).disabled)).toBe(true);
+  expect(screen.getByLabelText('Comment on crowd movement')).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Approve safety check' }));
   expect(await screen.findByText('Approved. The event is Confirmed, and the Organiser and the Coordinator have been notified.')).toBeInTheDocument();
   // The heading's pill follows the decision.
@@ -134,6 +151,7 @@ test('TC_E08S06_04 / _05: rejecting shows a server refusal in the confirm step, 
   expect(await screen.findByText('Only an event in Safety Review can receive a safety decision.')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
   expect(screen.getByRole('button', { name: 'Reject…' })).toBeInTheDocument();
+  expect(SAFETY_FACTORS.some(factor => assessment(factor).disabled)).toBe(false);
 });
 
 test('TC_E08S06_05: another role opening a review is shown the refusal, with a way back to the queue', async () => {
@@ -167,6 +185,9 @@ test('TC_E08S06_04: the sent-back notice names a rejection or a request for chan
   const { rerender } = render(<SafetyReturnAlert value={{ decision: 'reject', reason: 'Unsafe overall', decidedAt: '2026-12-01T02:00:00Z' }} />);
   expect(screen.getByRole('alert')).toHaveTextContent('Safety arrangement rejected');
   expect(screen.getByRole('alert')).toHaveTextContent('Reason: Unsafe overall.');
+  // A reason that already ends a sentence gets no second full stop.
+  rerender(<SafetyReturnAlert value={{ decision: 'reject', reason: 'Unsafe overall.', decidedAt: '2026-12-01T02:00:00Z' }} />);
+  expect(screen.getByRole('alert')).toHaveTextContent('Reason: Unsafe overall. The event');
   rerender(<SafetyReturnAlert value={{ decision: 'request_changes', reason: null, decidedAt: '2026-12-01T02:00:00Z' }} />);
   expect(screen.getByRole('alert')).toHaveTextContent('Safety check: changes requested');
   expect(screen.getByRole('alert')).toHaveTextContent('Reason: Not recorded.');
