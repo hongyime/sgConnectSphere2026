@@ -758,7 +758,7 @@ test.describe("E08-S06", () => {
     await page.goto('/events/EVT-CHARITY');
     await expect(page.getByRole('heading', { name: 'Charity Run' })).toBeVisible();
     const logged = page.getByRole('listitem').filter({ hasText: 'Safety check approved' });
-    await expect(logged).toContainText('by Safety One (Every factor satisfactory)');
+    await expect(logged).toContainText('by Safety One (Now Confirmed. Every factor satisfactory)');
     await expect(logged).not.toContainText('{');
     await expect(page.getByText(/Safety Review → Confirmed/)).toBeVisible();
   });
@@ -808,7 +808,7 @@ test.describe("E08-S06", () => {
     await page.goto('/events/EVT-CHARITY');
     await expect(page.getByText('Safety check: changes requested')).toBeVisible();
     await expect(page.getByRole('listitem').filter({ hasText: 'Safety check changes requested' }))
-      .toContainText('Not satisfactory: Equipment placement. Reason: Move the stage rig clear of the east exit');
+      .toContainText('Back in Planning. Not satisfactory: Equipment placement. Reason: Move the stage rig clear of the east exit');
   });
 
   /**
