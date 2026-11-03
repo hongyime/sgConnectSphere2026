@@ -23,7 +23,7 @@ The three points left for E08-S06's builder in
 ## Plan
 
 1. Branch, Jira subtask SCRUM-250 (In Progress), this handoff. Done.
-2. Integration test of the real chain: Safety Officer approves through
+2. Done. Integration test of the real chain: Safety Officer approves through
    `decideSafetyReview` -> revert -> reconfirm -> automatic Safety Review ->
    in the Safety Officer queue, unanswered checklist -> a new decision needed.
 3. Wording: a flagged booking reads "needs reconfirmation" (was "its capacity
@@ -34,4 +34,4 @@ The three points left for E08-S06's builder in
 
 ## Next step
 
-Task 2.
+Task 3 (wording).
