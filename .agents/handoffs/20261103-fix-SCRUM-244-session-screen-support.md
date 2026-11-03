@@ -57,8 +57,30 @@ in Planning within the existing permissions; E10-S01's change request is the
 path when a direct edit is refused (Scenario 3), not a replacement. The fix
 stays. No PO question: no AC, scope or product rule changes.
 
+## Amareet's review (3 November)
+
+Comment, not approval, at a67a7b42: 4 small fixes, older Session-screen gaps
+A (stale save stuck, wrong message), B (no over-subscription warning,
+Scenario 4), C (counts, not names, Scenario 3/T-104), and the Session date
+notice (E11-S01 Scenario 2). Nothing waits on Bryan. Split agreed (reply on
+#416): Le Xin does the 4 fixes, the date notice, A's API message and the test
+cases in this PR; Amareet does B, C and A's screen half in a follow-up PR on
+`SessionEditor.tsx` (reusing `ArrangementReview` + `changedCheck`). Le Xin then
+re-runs section K + TC_E10S02_16 by hand before Bryan's acceptance.
+
+- Fixes 1 to 4 done (e37c3663 and the PR description).
+- Date notice: `updateSessionInPlanning` sends `arrangements` (`date`, `time`,
+  `session: true`) when the Session's start or end changed, same change ID as
+  the reconfirmation notice, so nobody gets both; the actor is skipped.
+- A's API half: the Session PATCH 409 carries the Event edit's sentence
+  (`ARRANGEMENTS_CHANGED` in `api/events.ts`), route test added.
+- Break tests: no date notice -> TC_15 DB case fails; no message -> route
+  test fails.
+
 ## Next step
 
-Task 6: push, PR (base `main`, reviewers Amareet and Ji Ning; no PO tag), CI,
-Jira comment on SCRUM-244. Le Xin's manual run of section K is done: record
-`20261103-003200`, 2/2 PASS, 5 screenshots.
+Review Task 3: TC_E10S02_14 (names, not counts) and _15 (tech_b gets the
+Session date notice, not a reconfirmation request), new TC_E10S02_16
+(over-subscription warning on the Session screen); workbook; tc-coverage. Then
+checks, run records, push and ask Amareet to approve. #416 is open (PR, CI 17/17
+at a67a7b42); the first manual run of section K is record `20261103-003200`.

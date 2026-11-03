@@ -710,7 +710,7 @@ test('TC_E04S02_03 TC_E04S02_05: requirement edits flag only that Session and a 
   }
 });
 
-test('TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support and tells its technician, rolled back', async () => {
+test('TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician to reconfirm and sends everyone else the date notice, rolled back', async () => {
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
   assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
   const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
@@ -803,10 +803,22 @@ test('TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only
     assert.equal(await flagged(soundDesk), true, 'the support overlapping the old time needs reconfirmation');
     assert.equal(await flagged(lighting), false, 'support away from the moved Session is left alone');
     const told = await notices(techA);
-    assert.equal(told.length, 1, 'the Sound desk technician is told once');
+    assert.equal(told.length, 1, 'the Sound desk technician is told once, not also sent the date notice');
     assert.match(told[0]!, /An event change \(date or time\) means .*Technical Support requests need reconfirmation/);
-    assert.deepEqual(await notices(techB), [], 'the Lighting technician is not asked to reconfirm');
-    assert.deepEqual(await notices(coordinatorId), [], 'no venue or equipment notice goes out');
+    // E11-S01 Scenario 2: everyone else on the Event gets the Session date notice only.
+    const dateNotice = /^Synthetic support event: Session date, time changed\. Changed at /;
+    const lightingTold = await notices(techB);
+    assert.equal(lightingTold.length, 1);
+    assert.match(lightingTold[0]!, dateNotice, 'the Lighting technician hears of the new time but is not asked to reconfirm');
+    const coordinatorTold = await notices(coordinatorId);
+    assert.equal(coordinatorTold.length, 1);
+    assert.match(coordinatorTold[0]!, dateNotice);
+    assert.deepEqual(await notices(organiserId), [], 'the Organiser who made the change is not told');
+
+    // An attendance-only edit moves nothing, so no date notice goes out.
+    await editSession(repository, organiserId, eventId, added.session.id, { ...moved, expectedAttendance: 45 }, {});
+    assert.equal((await notices(techB)).length, 1);
+    assert.equal((await notices(coordinatorId)).length, 1);
   } finally {
     await client.query('ROLLBACK').catch(() => undefined);
     client.release();

@@ -425,7 +425,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
 | `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
 | `TC_E10S02_14` | E10-S02 | Moving a Session on the Session screen should count the staffed Technical Suppor | ✅ active | frontend/src/features/organiser/SessionEditor.test.tsx: TC_E10S02_14: a planning Session edit that flags only Technical Support says so before saving |
-| `TC_E10S02_15` | E10-S02 | Moving a Session on the Session screen should notify only the technicians on the | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support and tells its technician,  |
+| `TC_E10S02_15` | E10-S02 | Moving a Session on the Session screen should notify only the technicians on the | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician  |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -785,6 +785,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
 
 - the save route refuses a stale preview revision with the fresh list, and saves with a current one
+- the Session save route refuses a stale preview revision with the fresh list and the same sentence, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 

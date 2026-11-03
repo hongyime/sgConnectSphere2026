@@ -52,9 +52,15 @@ The Session foundation is migration `0014_event_sessions.sql` in SCRUM-183. It c
 Session links and must not add them again. Session authoring (SCRUM-39): the
 Organiser may add Sessions to their own draft, edit them in draft or planning,
 and remove them in draft or planning, and an Event always keeps at least one
-Session. A planning edit flags arrangements and notifies staff exactly as an
-Event edit does (E10-S02, shared `notifyArrangementImpact`), including the
-technicians on a flagged Technical Support request (T-104). Removing a Session first releases its active bookings in the same
+Session. A planning edit runs the E10-S02 arrangement check: it flags the
+affected bookings, reservations and staffed Technical Support requests and sends
+the shared reconfirmation notice (`notifyArrangementImpact`), including the
+technicians on a flagged Technical Support request (T-104). When the Session's
+date or time changes, everyone else on the Event gets the "Session date, time
+changed" notice (E11-S01 Scenario 2), as an approved Session change request
+sends; the Organiser who made the edit is not told. A save whose check went stale
+is refused with 409 `arrangements_changed`, the same sentence as an Event edit
+and the fresh check. Removing a Session first releases its active bookings in the same
 transaction, so no active booking ever loses its Session link. A booking request
 for an Event with several Sessions must name its `session_id`; holds carry no
 Session, so a hold is possible only while the Event has one Session.

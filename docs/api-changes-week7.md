@@ -238,10 +238,14 @@ and support requests are not.
 Once the Event is in planning, the same `PATCH` runs E10-S02's arrangement
 check. `&preview=1` returns `{ preview: { impact, overSubscription, revision } }`
 without saving; `&reviewed=<revision>` fails a stale review with 409
-`{ error: "arrangements_changed", impact, overSubscription, revision }`; a save
-flags each affected confirmed booking and reserved equipment reservation
-(`requires_reconfirmation`), writes one audit row per arrangement and sends one
-reconfirmation notice. Venue search (`/api/venues?search=1`) and the suitability
+`{ error: "arrangements_changed", message, impact, overSubscription, revision }`,
+`message` being the Event edit's sentence (SCRUM-244); a save flags each affected
+confirmed booking, reserved equipment reservation and staffed Technical Support
+request (`requires_reconfirmation`, T-104), writes one audit row per arrangement
+and sends one reconfirmation notice, which reaches the technicians on a flagged
+support request. When the Session's date or time changes, everyone else on the
+Event gets the "Session date, time changed" notice (E11-S01 Scenario 2); the
+Organiser who saved it does not. Venue search (`/api/venues?search=1`) and the suitability
 mode accept `session_id`, which uses that Session's date, attendance, layout and
 accessibility/facility needs instead of the Event's. The search set-up call
 (`mode=suitability` with an `event_id` and no `search=1`) also returns
