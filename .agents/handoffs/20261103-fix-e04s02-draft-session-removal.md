@@ -26,6 +26,13 @@ Session B went from 13 Mar 1:00-4:00 pm, 120, Hall B to 12 Mar 9:00-10:00 am, 40
 - The manual record `20261103-143400-amareetkm2024-del-frontend-e2e` and its 18 screenshots
   moved here from #415, byte for byte. Its `pr` field still says 415, because records aren't edited.
 
+## Short manual check
+
+`20261104-004456-amareetkm2024-del-frontend-e2e` on `53aecad`: PASS by hand, 4 screenshots. The save
+block itself and the published dates weren't seen by hand; the record says which tests cover them.
+Noticed there: Save draft on the new request page left two drafts with the same name, 2 seconds
+apart. The page stays without a draft id after the first save, so each click posts. Not fixed here.
+
 ## Not done here
 
 - A Save draft already on its way when the delete starts isn't stopped; only saves started
