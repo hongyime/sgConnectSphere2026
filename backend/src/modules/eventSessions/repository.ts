@@ -142,6 +142,15 @@ export async function handNeedsToEvent(client: Client, eventId: string) {
      WHERE e.id = $1 AND s.id = $2`,
     [eventId, survivor.id],
   );
+  // Attendees read a published Event's dates from its publication, so they move
+  // with the Event. An Event that was never published stays unpublished.
+  await client.query(
+    `UPDATE event_publications p
+     SET starts_at = lower(e.event_range), ends_at = upper(e.event_range)
+     FROM events e
+     WHERE p.event_id = e.id AND e.id = $1`,
+    [eventId],
+  );
 
   const tables = [
     { event: 'event_accessibility_needs', session: 'session_accessibility_needs', column: 'feature_id' },
