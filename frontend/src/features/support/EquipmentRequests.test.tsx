@@ -633,7 +633,7 @@ test('TC_E07S08_01 - on a two-Session event the Coordinator sees one card per Se
       [`GET ${endpoint}`]: () => ({
         body: {
           event, equipment, sessions, canEdit: true,
-          requests: [{ ...row, sessionId: 'ses-a' }, ...(saved ? [{ ...row, id: 'req2', sessionId: 'ses-b' }] : [])],
+          requests: [{ ...row, quantity: 12, sessionId: 'ses-a' }, ...(saved ? [{ ...row, id: 'req2', sessionId: 'ses-b' }] : [])],
         },
       }),
       [`POST ${endpoint}`]: () => {
@@ -656,7 +656,8 @@ test('TC_E07S08_01 - on a two-Session event the Coordinator sees one card per Se
   const second = await screen.findByRole('region', { name: 'Session 2' });
   expect(second).toHaveTextContent('15 Oct 2026, 1:00 pm – 3:00 pm');
   expect(second).toHaveTextContent('No equipment requested for this Session yet.');
-  expect(screen.getByRole('table', { name: 'Equipment requested for Morning' })).toHaveTextContent('Microphone');
+  // Session A's line asks for more than the stock: the existing pill still shows.
+  expect(screen.getByRole('table', { name: 'Equipment requested for Morning' })).toHaveTextContent('Exceeds total stock');
   fireEvent.click(screen.getByRole('link', { name: 'Add equipment request' }));
   const picker = await screen.findByLabelText('Session');
   expect(picker).toBeRequired();
