@@ -26,6 +26,7 @@ const line = {
   operationalStatus: 'available',
   isActive: true,
   reserved: false,
+  sessionId: null as string | null,
   reservation: null as null | { id: string; status: 'reserved' | 'partial' | 'released'; quantityReserved: number; requiresReconfirmation: boolean },
   freeQuantity: 5 as number | null,
 };
@@ -383,7 +384,7 @@ const sessions = [
   { id: 'ses-a', title: 'Morning', number: 1, startsAt: '2026-10-15T01:00:00.000Z', endsAt: '2026-10-15T03:00:00.000Z' },
   { id: 'ses-b', title: null, number: 2, startsAt: '2026-10-15T05:00:00.000Z', endsAt: '2026-10-15T07:00:00.000Z' },
 ];
-const forB = { ...line, sessionId: 'ses-b' as string | null, freeQuantity: 1 };
+const forB = { ...line, sessionId: 'ses-b', freeQuantity: 1 };
 
 test('TC_E07S08_02 - on a two-Session event Technical Support reserves for the line Session, with its dates and free quantity', async () => {
   let reserved = false;
