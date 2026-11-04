@@ -117,9 +117,9 @@ Do the sections in order. Times are Singapore time.
    Review. It is confirmed only once the Safety Officer approves it.", and no
    **Submit for safety check** button: nobody submitted it. Screenshot
    `TC_E08S04_05-6`.
-8. Sign in as `safety_officer@connectsphere.com`. The Safety Officer has no
-   home page or menu yet (E08-S06), so sign-in lands on the welcome page: open
-   http://localhost:5173/notifications directly.
+8. Sign in as `safety_officer@connectsphere.com`. Sign-in opens the **Safety
+   review queue** (E08-S06), which now lists Charity Run; open
+   http://localhost:5173/notifications.
    **Expected:** "Safety check needed: EVT-1082 Charity Run's arrangements are
    confirmed again, so it is back in Safety Review. It needs a new Operational
    Safety Check: the earlier approval does not carry over." Screenshot
@@ -222,13 +222,14 @@ numbering.
    http://localhost:5173/coordinator/events/EVT-1085 and scroll to the Activity
    log. **Expected:** **Safety check approved**, "Now Confirmed. Every factor
    satisfactory", by Safety Officer; then Reverted to Planning, the two Details
-   edited rows, Reconfirmation required and Booking reconfirmed; last, Status
-   changed Planning → Safety Review by Venue Staff A. The status is **Safety
-   Review**, not Confirmed. Screenshot `TC_E08S04_05-19`.
+   edited rows and Reconfirmation required; then Status changed Planning →
+   Safety Review by Venue Staff A, next to Booking reconfirmed (same second, so
+   either may come first). Screenshot `TC_E08S04_05-19`. At the top the status
+   is **Safety Review**, not Confirmed. Screenshot `TC_E08S04_05-20`.
 8. Sign in as `safety_officer@connectsphere.com`, open Charity Gala, answer all
    7 factors **Satisfactory** with `Checked again for 21 Dec`, **Approve…**,
    **Approve safety check**. **Expected:** "Approved. The event is Confirmed
-   …": only a new decision confirms it. Screenshot `TC_E08S04_05-20`.
+   …": only a new decision confirms it. Screenshot `TC_E08S04_05-21`.
 
 ## Check the database afterwards
 
