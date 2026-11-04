@@ -34,7 +34,9 @@ November (f9208979); the first manual run of section K is record
 
 ## Next step
 
-PR (base `main`), PostPlan, Jira comment on SCRUM-71; after it merges, Bryan's
+PR #428 open; Jira comment on SCRUM-71 posted. PostPlan built at
+`artifacts/pr-428-e10s02-session-rerun.html` but postplan.dev timed out on 4
+November; upload and link it when the site is back; after it merges, Bryan's
 acceptance of SCRUM-71. E08-S04 (SCRUM-250, branch
 `fix/SCRUM-250-e08s04-safety-officer-flow`, local only) is on hold meanwhile.
 
