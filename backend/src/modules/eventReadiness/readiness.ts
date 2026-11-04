@@ -15,10 +15,13 @@
 //   none is flagged for reconfirmation after a date change (E10-S02, T-104).
 //
 // The check covers the whole event, whatever Session a booking belongs to
-// (D70). The rows are read by loadReadiness() and judged by the pure
+// (D70). On an Event with two or more Sessions, each equipment line names its
+// Session, and a request left with none by a Session deletion blocks as
+// "needs a Session" (E07-S08 D132, D135). The rows are read by loadReadiness() and judged by the pure
 // assessReadiness(), so the rules are unit-tested without a database and the
 // submission re-runs the same check inside its transaction.
 import { NONE_REQUIRED } from '../eventLifecycle/service.js';
+import { eventSessions, sessionLabel, type EquipmentSession } from '../equipmentSupport/sessions.js';
 import type { Query } from '../eventVisibility/service.js';
 import type {
   EventReadinessSnapshot, ReadinessBlocker, ReadinessEquipmentLine, ReadinessSupportRequest,
@@ -34,7 +37,7 @@ export type ReadinessBookingRow = {
   buffer_conflict: boolean; requires_reconfirmation: boolean; live_hold: boolean;
 };
 export type ReadinessEquipmentRow = {
-  id: string; name: string; requested: number;
+  id: string; name: string; requested: number; session_id: string | null;
   reservation_status: string | null; reserved: number | null; requires_reconfirmation: boolean | null;
 };
 export type ReadinessSupportRow = {
@@ -74,6 +77,7 @@ export function assessReadiness(
   bookings: readonly ReadinessBookingRow[],
   equipmentRows: readonly ReadinessEquipmentRow[],
   supportRows: readonly ReadinessSupportRow[],
+  sessions: readonly EquipmentSession[] = [],
 ): EventReadinessSnapshot {
   const blockers: ReadinessBlocker[] = [];
 
@@ -95,25 +99,36 @@ export function assessReadiness(
     };
   });
 
+  const multiSession = sessions.length > 1;
   const equipment: ReadinessEquipmentLine[] = equipmentRows.map(row => {
     const active = row.reservation_status === 'reserved' || row.reservation_status === 'partial';
     const reserved = active ? row.reserved ?? 0 : 0;
     const outstanding = row.requested - reserved;
-    const base = { requestId: row.id, equipmentName: row.name, requiredQuantity: row.requested, reservedQuantity: reserved };
-    if (active && row.requires_reconfirmation) {
+    const session = multiSession ? sessions.find(s => s.id === row.session_id) : undefined;
+    const sessionName = session ? sessionLabel(session) : null;
+    const name = sessionName ? `${row.name} (${sessionName})` : row.name;
+    const base = { requestId: row.id, equipmentName: row.name, sessionName, requiredQuantity: row.requested, reservedQuantity: reserved };
+    // 0014: an active reservation always has a Session, so this line has none reserved.
+    if (multiSession && !row.session_id) {
+      blockers.push({ kind: 'equipment-shortfall', ...base, issue: 'needs_session',
+        message: `${row.name} — needs a Session; choose one on the equipment requests` });
+    } else if (active && row.requires_reconfirmation) {
       blockers.push({ kind: 'equipment-shortfall', ...base, issue: 'needs_review',
         // Flagged by a stock change, a date change or the Safety Officer (E08-S06): the cause isn't stored.
-        message: `${row.name} — needs review (${reserved} of ${row.requested} reserved)` });
+        message: `${name} — needs review (${reserved} of ${row.requested} reserved)` });
     } else if (!active) {
       const released = row.reservation_status === 'released';
       blockers.push({ kind: 'equipment-shortfall', ...base, issue: released ? 'released' : 'missing',
-        message: `${row.name} — ${released ? 'reservation released' : 'not reserved'}; ${outstanding} outstanding` });
+        message: `${name} — ${released ? 'reservation released' : 'not reserved'}; ${outstanding} outstanding` });
     } else if (outstanding > 0) {
       blockers.push({ kind: 'equipment-shortfall', ...base, issue: 'partial',
-        message: `${row.name} — ${reserved} of ${row.requested} reserved; ${outstanding} outstanding` });
+        message: `${name} — ${reserved} of ${row.requested} reserved; ${outstanding} outstanding` });
     }
     const ready = active && !row.requires_reconfirmation && outstanding <= 0;
-    return { id: row.id, name: row.name, requested: row.requested, reserved, state: ready ? 'ready' : 'outstanding' };
+    return {
+      id: row.id, name: row.name, sessionId: row.session_id, sessionName, requested: row.requested, reserved,
+      state: ready ? 'ready' : 'outstanding',
+    };
   });
 
   const required = supportRows.filter(row => row.support_required);
@@ -164,7 +179,7 @@ export async function loadReadiness(query: Query, event: ReadinessEventRow): Pro
      ORDER BY lower(b.booking_range), v.name, b.id`, [event.id]);
   // The line's current reservation, or its latest released one (E07-S04).
   const equipment = await query<ReadinessEquipmentRow>(
-    `SELECT r.id, eq.name, r.quantity_requested AS requested,
+    `SELECT r.id, eq.name, r.quantity_requested AS requested, r.session_id,
        x.status::text AS reservation_status, x.quantity_reserved AS reserved, x.requires_reconfirmation
      FROM equipment_requests r JOIN equipment eq ON eq.id = r.equipment_id
      LEFT JOIN LATERAL (
@@ -180,5 +195,5 @@ export async function loadReadiness(query: Query, event: ReadinessEventRow): Pro
      FROM tech_support_requests
      WHERE event_id = $1 AND status <> 'cancelled'
      ORDER BY lower(support_range), id`, [event.id]);
-  return assessReadiness(event, bookings.rows, equipment.rows, support.rows);
+  return assessReadiness(event, bookings.rows, equipment.rows, support.rows, await eventSessions(query, event.id));
 }

@@ -13,6 +13,7 @@ import { notifyEquipmentStaff } from './notifications.js';
 import { availabilityRows, capacityFor } from './availability.js';
 import { requireEquipmentAccess, type ReservationReview } from './catalogue.js';
 import { eventLabel, formatEventDates } from './reservations.js';
+import { eventSessions, sessionWhen } from './sessions.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_QUANTITY = 2147483647;
@@ -186,6 +187,7 @@ export async function listUnavailability(query: Query, equipmentId: string) {
 type Active = {
   id: string;
   event_id: string;
+  session_id: string | null;
   quantity_reserved: number;
   starts_at: Date;
   ends_at: Date;
@@ -207,7 +209,7 @@ async function flagAffected(
 ) {
   const active = (
     await client.query<Active>(
-      `SELECT r.id,r.event_id,r.quantity_reserved,lower(r.reservation_range) AS starts_at,
+      `SELECT r.id,r.event_id,r.session_id,r.quantity_reserved,lower(r.reservation_range) AS starts_at,
         upper(r.reservation_range) AS ends_at,e.event_code,e.title,
         lower(e.event_range) AS event_starts_at,upper(e.event_range) AS event_ends_at,e.coordinator_id
       FROM equipment_reservations r JOIN events e ON e.id=r.event_id
@@ -255,9 +257,17 @@ async function notifyCoordinators(
     const event = lines[0]!;
     const reserved = lines.reduce((sum, line) => sum + line.quantity_reserved, 0);
     const units = `${period.quantity} ${period.quantity === 1 ? 'unit' : 'units'}`;
+    // E07-S08 D131: a multi-Session Event's notice names each affected Session
+    // and its dates.
+    const sessions = await eventSessions((sql, values) => client.query(sql, values), eventId);
+    const affectedSessions = sessions.filter((s) => lines.some((line) => line.session_id === s.id));
+    const when =
+      sessions.length > 1 && affectedSessions.length
+        ? affectedSessions.map(sessionWhen).join('; ')
+        : formatEventDates(event.event_starts_at, event.event_ends_at);
     const message =
       `${eventLabel({ eventCode: event.event_code, title: event.title })}, ` +
-      `${formatEventDates(event.event_starts_at, event.event_ends_at)}: ${name} is unavailable from ` +
+      `${when}: ${name} is unavailable from ` +
       `${formatDay(period.from)} to ${formatDay(period.to)} (${period.reason}), ${units} out of service. ` +
       `The reservation of ${reserved} needs review.`;
     await notifyEquipmentStaff(client, { eventId, actorId: actor.id,
