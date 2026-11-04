@@ -8,7 +8,7 @@
 //   await page.goto('/venue/inventory');
 import type { Page } from '@playwright/test';
 
-export type TestRole = 'attendee' | 'event_organiser' | 'event_coordinator' | 'venue_staff' | 'technical_support_staff' | 'admin';
+export type TestRole = 'attendee' | 'event_organiser' | 'event_coordinator' | 'event_coordinator_lead' | 'safety_officer' | 'venue_staff' | 'technical_support_staff' | 'admin';
 
 export async function signInAs(page: Page, role: TestRole, options: { email?: string; notifications?: unknown[] } = {}) {
   await page.route('**/api/auth/session', route => {
