@@ -41,6 +41,11 @@
 --     equipment; staffed "Sound desk" 13 Mar 12:00-14:00 with tech_a (overlaps
 --     Day 2) and "Lighting" 12 Mar 10:00-12:00 with tech_b (Day 1 only): the
 --     Organiser's Session screen, TC_E10S02_14 and _15.
+--   EVT-1030 "Design Summit", 20 Mar 2027 09:00 to 21 Mar 2027 12:00, two
+--     Sessions (Day 1 20 Mar, Day 2 21 Mar, 09:00-12:00 each), published, Day 2
+--     booked at E10 Seminar Room B (80 places; its Boardroom layout seats 20)
+--     with 30 Attendees Registered (e10s02.tc16.fill01..30@example.com): the
+--     Organiser's Session screen, TC_E10S02_16.
 
 \set ON_ERROR_STOP on
 SELECT :'stage' = 'setup' AS is_setup, :'stage' = 'check' AS is_check \gset
@@ -92,7 +97,8 @@ FROM events e, (VALUES
   ('EVT-1026', 'Charity Run', 'Charity fun run.', '[2026-12-05 07:00+08,2026-12-05 12:00+08)', 150),
   ('EVT-1027', 'Board Briefing', 'Quarterly board briefing.', '[2026-12-06 10:00+08,2026-12-06 12:00+08)', 30),
   ('EVT-1028', 'Year-end Gala', 'Staff year-end gala.', '[2026-12-13 10:00+08,2026-12-13 14:00+08)', 120),
-  ('EVT-1029', 'Design Week', 'Two days of design talks.', '[2027-03-12 09:00+08,2027-03-13 18:00+08)', 60)
+  ('EVT-1029', 'Design Week', 'Two days of design talks.', '[2027-03-12 09:00+08,2027-03-13 18:00+08)', 60),
+  ('EVT-1030', 'Design Summit', 'Two mornings of design workshops.', '[2027-03-20 09:00+08,2027-03-21 12:00+08)', 40)
 ) AS v(code, title, description, range, attendance)
 WHERE e.event_code = 'EVT-2001';
 
@@ -107,6 +113,11 @@ UPDATE sessions s SET session_range = '[2027-03-12 09:00+08,2027-03-12 12:00+08)
 FROM events e WHERE s.event_id = e.id AND e.event_code = 'EVT-1029';
 INSERT INTO sessions (event_id, title, session_range, expected_attendance)
 SELECT id, 'Day 2', '[2027-03-13 13:00+08,2027-03-13 16:00+08)', 60 FROM events WHERE event_code = 'EVT-1029';
+-- EVT-1030: two mornings, 20 and 21 Mar.
+UPDATE sessions s SET session_range = '[2027-03-20 09:00+08,2027-03-20 12:00+08)', title = 'Day 1'
+FROM events e WHERE s.event_id = e.id AND e.event_code = 'EVT-1030';
+INSERT INTO sessions (event_id, title, session_range, expected_attendance)
+SELECT id, 'Day 2', '[2027-03-21 09:00+08,2027-03-21 12:00+08)', 40 FROM events WHERE event_code = 'EVT-1030';
 
 -- One Confirmed booking per Session, at the Session's own period.
 INSERT INTO venue_bookings (event_id, session_id, venue_id, booking_range, status, headcount)
@@ -118,7 +129,8 @@ FROM (VALUES
   ('EVT-1024', 'E10 Auditorium', NULL, NULL),
   ('EVT-1025', 'E10 Seminar Room A', NULL, 'Day 1'),
   ('EVT-1025', 'E10 Seminar Room B', NULL, 'Day 2'),
-  ('EVT-1026', 'E10 Garden Hall', NULL, NULL)
+  ('EVT-1026', 'E10 Garden Hall', NULL, NULL),
+  ('EVT-1030', 'E10 Seminar Room B', NULL, 'Day 2')
 ) AS b(code, venue, headcount, session_title)
 JOIN events e ON e.event_code = b.code
 JOIN sessions s ON s.event_id = e.id AND (b.session_title IS NULL OR s.title = b.session_title)
@@ -206,6 +218,25 @@ WITH registrations AS (
 INSERT INTO event_registration_sessions (registration_id, event_id, session_id)
 SELECT r.id, r.event_id, s.id FROM registrations r JOIN sessions s ON s.event_id = r.event_id;
 
+-- EVT-1030 (TC_E10S02_16): published, so Attendees can register and be told
+-- of changes, with 30 Attendees Registered for Day 2.
+INSERT INTO event_publications (event_id, name, starts_at, ends_at, venue_name, venue_location)
+SELECT id, 'Design Summit', lower(event_range), upper(event_range), 'E10 Seminar Room B', 'Level 4'
+FROM events WHERE event_code = 'EVT-1030';
+INSERT INTO users (email, password_hash, full_name, role, contact_number, email_verified_at)
+SELECT format('e10s02.tc16.fill%s@example.com', lpad(n::text, 2, '0')), a.password_hash,
+  format('E10 TC16 Attendee %s', n), 'attendee', format('+65 8710 %s', lpad(n::text, 4, '0')), now()
+FROM users a, generate_series(1, 30) AS n
+WHERE a.email = 'attendee_a@example.com';
+WITH registrations AS (
+  INSERT INTO event_registrations (event_id, attendee_id, status)
+  SELECT e.id, u.id, 'registered' FROM events e, users u
+  WHERE e.event_code = 'EVT-1030' AND u.email LIKE 'e10s02.tc16.fill%@example.com'
+  RETURNING id, event_id
+)
+INSERT INTO event_registration_sessions (registration_id, event_id, session_id)
+SELECT r.id, r.event_id, s.id FROM registrations r JOIN sessions s ON s.event_id = r.event_id AND s.title = 'Day 2';
+
 COMMIT;
 
 SELECT e.event_code, e.title, count(DISTINCT s.id) AS sessions, count(DISTINCT b.id) AS confirmed_bookings,
@@ -215,7 +246,7 @@ FROM events e
 JOIN sessions s ON s.event_id = e.id
 LEFT JOIN venue_bookings b ON b.event_id = e.id AND b.status = 'confirmed'
 LEFT JOIN equipment_reservations q ON q.event_id = e.id AND q.status = 'reserved'
-WHERE e.event_code LIKE 'EVT-102_' GROUP BY e.id ORDER BY e.event_code;
+WHERE e.event_code LIKE 'EVT-102_' OR e.event_code = 'EVT-1030' GROUP BY e.id ORDER BY e.event_code;
 \endif
 
 \if :is_check
@@ -261,4 +292,13 @@ WHERE e.event_code BETWEEN 'EVT-1026' AND 'EVT-1029' AND a.entity_type = 'tech_s
 ORDER BY a.occurred_at;
 
 SELECT event_code, status FROM events WHERE event_code BETWEEN 'EVT-1026' AND 'EVT-1029' ORDER BY event_code;
+
+-- TC_E10S02_16: Day 2's layout and booking flag, and nobody removed.
+SELECT s.title, l.label AS layout, b.requires_reconfirmation AS booking_needs_reconfirmation,
+  (SELECT count(*) FROM event_registration_sessions rs JOIN event_registrations r ON r.id = rs.registration_id
+   WHERE rs.session_id = s.id AND r.status = 'registered') AS registered
+FROM sessions s JOIN events e ON e.id = s.event_id
+LEFT JOIN room_layouts l ON l.id = s.layout_id
+LEFT JOIN venue_bookings b ON b.session_id = s.id AND b.status = 'confirmed'
+WHERE e.event_code = 'EVT-1030' ORDER BY lower(s.session_range);
 \endif

@@ -19,13 +19,14 @@ DATABASE_URL="<local URL>" DATABASE_POOLER_URL= npx tsx src/database/cli.ts rese
 psql "<local URL>" -q -v stage=setup -f ../docs/testing/manual/E10-S02-preconditions.sql
 ```
 
-It prints nine events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
+It prints ten events: **EVT-1021 Tech Conference 2026**, **EVT-1022 Riverside
 Summit**, **EVT-1023 Studio Workshop**, **EVT-1024 Product Launch** (100
 registered), **EVT-1025 Two-Day Forum** (2 Sessions), and for the Technical
 Support follow-up (T-104, subtask SCRUM-244) **EVT-1026 Charity Run**,
 **EVT-1027 Board Briefing** and **EVT-1028 Year-end Gala**, and for the Session
-screen (E04-S02) **EVT-1029 Design Week** (2 Sessions). Start the API with only
-`DATABASE_URL` (leave `DATABASE_POOLER_URL` empty) and Vite on
+screen (E04-S02) **EVT-1029 Design Week** (2 Sessions) and **EVT-1030 Design
+Summit** (2 Sessions, 30 registered). Start the API with only `DATABASE_URL`
+(leave `DATABASE_POOLER_URL` empty) and `APP_URL=http://localhost:5173`, and Vite on
 http://localhost:5173. Every account uses the seed password
 (`tests/seed/SEED_DATA.md`).
 
@@ -306,13 +307,41 @@ equipment. A staffed **Sound desk** request (13 Mar, 12:00 pm – 2:00 pm,
    3:00 pm; Lighting is not listed.
 6. Sign in as `tech_b`. Open http://localhost:5173/notifications. Expected:
    one **Event update** for Design Week, "Session date, time changed." (E11-S01
-   Scenario 2), and no reconfirmation notice; at
-   http://localhost:5173/support/technicians, nothing under **Support to
-   reconfirm** for Design Week.
+   Scenario 2), and no reconfirmation notice. (**Support to reconfirm** on
+   http://localhost:5173/support/technicians is shared: any Technical Support
+   Staff member may reconfirm, so it still lists Sound desk.)
 
 Screenshots: `TC_E10S02_14-2.png` (confirm message), `TC_E10S02_14-3.png`
 (saved, new time), `TC_E10S02_15-4.png` (tech_a notice), `TC_E10S02_15-5.png`
 (Support to reconfirm), `TC_E10S02_15-6.png` (tech_b, Session date notice only).
+
+## L. TC_E10S02_16 — over-subscription warning on the Organiser's Session screen (EVT-1030)
+
+EVT-1030 **Design Summit** is in Planning and published, with **Day 1** (20 Mar
+2027, 9:00 am – 12:00 pm, no booking) and **Day 2** (21 Mar 2027, 9:00 am –
+12:00 pm) booked at **E10 Seminar Room B**, whose Boardroom layout seats 20.
+30 Attendees are registered for Day 2. The case's `organiser_1` is
+`organiser_a`.
+
+1. Sign in as `organiser_a`. Open
+   http://localhost:5173/organiser/requests/EVT-1030. Under **Event Sessions**,
+   in **Day 2**, set **Room layout** to **Boardroom**. Click **Save session**.
+2. Expected (TC_16): **Check what this change affects** lists, under *Venue
+   bookings to reconfirm*, **E10 Seminar Room B: room layout changed; 40 people
+   for 20 places** (Day 2 expects 40, Scenario 1), and warns
+   **More people are registered than there are places**: "A Session: 30
+   registered for 20 places. The whole event: 30 registered for 20 places. No one
+   will be removed or moved to the waiting list." Nothing is saved yet.
+3. Click **Save and ask staff to reconfirm**. Expected: the Session saves with
+   the Boardroom layout; the `check` stage afterwards shows Day 2's booking
+   flagged and still 30 registered.
+
+Wording in steps 2 and 3 is the Coordinator's `ArrangementReview`, which the
+Session screen reuses since #422. venue_a gets one notice that the change (room
+layout, attendance above capacity) needs reconfirmation.
+
+Screenshots: `TC_E10S02_16-2.png` (review with the warning),
+`TC_E10S02_16-3.png` (saved).
 
 ## Check the database afterwards (optional, read-only)
 
@@ -330,3 +359,5 @@ flagged at 6 Dec 09:00, moving to 13 Dec 09:00, with no "Support Reconfirmed"
 row; EVT-1027 and EVT-1028 in planning. For section K: EVT-1029 Sound desk
 flagged at 13 Mar 12:00, moving to 13 Mar 13:00, Lighting not flagged, and one
 reconfirmation notice for tech_a and only the Session date notice for tech_b.
+For section L: EVT-1030 Day 2 on the Boardroom layout, its booking flagged, and
+30 still registered.
