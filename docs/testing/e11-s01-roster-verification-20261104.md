@@ -25,7 +25,8 @@ And under *Still required before whole-story Done*, requirement 2 recorded:
 
 3. **Verification Evidence & Next Steps (T-65, T-97)**:
    - Automated test execution records: T-65 session records in `docs/testing/runs/`.
-   - Tool execution: Bounded provisioning runner is verified against canonical schema and contracts via automated tests against mocked client and disposable fixtures.
+   - Tool execution: Bounded provisioning runner is verified against canonical schema and contracts via automated tests against mocked client and disposable fixtures (`backend/tests/venueStaffRosterProvisioning.test.ts`, 8/8 passing).
+   - Evidence Reconciliation: The initial PR #425 comment and commit `3c82665` draft prematurely described the operational run as having loaded production. This has been reconciled across operational records and test session logs: the production environment is completely unmodified, and execution is an operational specification scheduled for deployment execution by the designated deploy owner per T-59 and T-89.
    - Production Environment Status: The production environment has NOT been modified; roster provisioning into `venue_staff_assignments` is scheduled for release deployment execution by the designated deploy owner per T-59 and T-89.
    - Story-Owner Verification: Per T-97 and PR #425 follow-ups, story-owner delivery verification of E11-S01 live notification delivery remains open for story owner (Ji Ning) observation once the roster is loaded into production upon release deployment.
 

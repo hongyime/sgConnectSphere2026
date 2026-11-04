@@ -59,9 +59,10 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
     - Added regression test in `backend/tests/venueStaffRosterProvisioning.test.ts` (test #8) proving that `--verify-only` mode executes zero write queries (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`) even when zero unassigned venues exist in the database.
   - Point 2 (Production evidence and PO approval reconciliation):
     - Updated `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md`, `docs/ops/venue-staff-roster-provisioning.md`, and `docs/testing/e11-s01-roster-verification-20261104.md` to explicitly cite the separate PO mapping approval under SCRUM-195 by Bryan Seah, noting that canonical decision T-97 established PO ownership and explicitly approved no mapping or assignment write at decision time.
+    - Added an explicit "Operational Reconciliation & Correction Record" section in `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md` detailing the actual environment (unmodified production), tool revisions, and deployment schedule.
     - Clarified environment status across all records: the production database has NOT been loaded; execution is an operational specification scheduled for release deployment execution by the designated deploy owner per T-59/T-89.
     - Maintained Ji Ning's delivery verification as open until the roster is loaded into production upon release deployment.
-    - Added immutable T-65 test execution record in `docs/testing/runs/` (`20261104-233500` session) documenting observed execution and verification.
+    - Added immutable T-65 test execution record in `docs/testing/runs/` (`20261104-235000` session) explicitly documenting the correction of the earlier `20261104-171500` session record.
     - Regenerated `docs/testing/tc-coverage.md` to reflect test suite addition.
 
 ## Verification
