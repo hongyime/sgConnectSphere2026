@@ -48,7 +48,7 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
   - Point 4: Imported and directly invoked canonical resolver `resolveAssignedVenueStaff` from `backend/src/modules/eventNotifications/service.ts`.
   - Point 5: Verified fallback boundary check `TC_E11S01_13` via `resolveAssignedVenueStaff` verifying that unassigned venues return `[]` with zero broad fallback staff.
   - Point 6: Targeted upsert uses `ON CONFLICT (venue_id, staff_id) DO UPDATE SET active_from = now(), active_until = NULL WHERE venue_staff_assignments.active_until IS NOT NULL OR venue_staff_assignments.active_from > now()`.
-  - Point 7: Added target safety guard: CLI runner defaults to read-only `--verify-only` mode unless `--execute` is passed; requires `--confirm-production` when connecting to Supabase database.
+  - Point 7: Added target safety guard: CLI runner defaults to read-only `--verify-only` mode unless `--execute` is passed; requires `--confirm-production` when connecting to Supabase database. Parsed database URL safely with `new URL()` and inspected `urlObj.hostname` directly to resolve CodeQL CWE-20 incomplete URL substring sanitization alert.
   - Point 8: Refactored `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md` as an operational specification / runbook awaiting release deployment execution, avoiding claiming premature production execution.
   - Point 9: Expanded `backend/tests/venueStaffRosterProvisioning.test.ts` to 7 unit tests covering venue `is_active`, user `is_active`, case-insensitivity, conflict handling, transaction rollback, rogue assignees, and resolver fallback prevention.
 

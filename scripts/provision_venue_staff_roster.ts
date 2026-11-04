@@ -235,10 +235,21 @@ async function main() {
   }
 
   // Target safety guard (Le Xin point 5)
-  const isSupabaseTarget = databaseUrl.includes('supabase.co') || databaseUrl.includes('pooler.supabase.com');
-  const urlObj = new URL(databaseUrl.replace(/^postgresql:\/\//, 'http://'));
-  const targetHost = urlObj.hostname;
+  let urlObj: URL;
+  try {
+    urlObj = new URL(databaseUrl.replace(/^postgresql:\/\//, 'http://').replace(/^postgres:\/\//, 'http://'));
+  } catch {
+    throw new Error('DATABASE_URL is not a valid PostgreSQL URL.');
+  }
+
+  const targetHost = urlObj.hostname.toLowerCase();
   const targetDb = urlObj.pathname.replace(/^\//, '');
+
+  const isSupabaseTarget =
+    targetHost === 'pooler.supabase.com' ||
+    targetHost.endsWith('.pooler.supabase.com') ||
+    targetHost.endsWith('.supabase.co') ||
+    targetHost.endsWith('.supabase.com');
 
   console.log(`Target Database: host='${targetHost}', database='${targetDb}'`);
 
