@@ -259,15 +259,6 @@ Session targets require at least two Sessions. A sole Session follows the
 existing Event-wide editing/synchronization contract. If a pending target
 becomes the sole Session, application is refused and needs a fresh Event request.
 
-### SCRUM-180 Session date refusal
-
-The Organiser request form handles structured Session-date submission errors
-by naming the editor's Session number/title and start/end field. The error
-explains either the existing future-date rule or the inclusive Singapore-local
-maximum and asks the Organiser to edit that Session before resubmitting. It
-retains the draft and existing Event-date messages. See
-[human acceptance steps](testing/manual/E02-S07-click-through.md).
-
 ## Operational Safety Check (E08-S06)
 
 The Safety Officer's queue (`/safety/queue`, `RoleQueues.tsx`) lists Events in

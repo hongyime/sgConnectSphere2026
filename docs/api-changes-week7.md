@@ -289,13 +289,3 @@ return 409, malformed/invalid values return 400. No new endpoint or migration.
 Session targets require at least two Sessions. A sole Session follows the
 existing Event-wide editing/synchronization contract. If a pending target
 becomes the sole Session, application is refused and needs a fresh Event request.
-
-### SCRUM-180 — Session dates at request submission
-
-`PATCH /api/events?id=<draft>` with `status: submitted` now rechecks all
-independent Session dates under Event/Session locks. Structured HTTP 400 errors
-`session_date_in_past` and `session_date_outside_horizon` identify Session id,
-title, number, date field and Singapore-local maximum. Draft saves stay allowed;
-refusal changes neither persisted rows nor submission history. Draft Session
-writers recheck status under the Event lock. Sole-Session Event-range sync is
-preserved. See [the contract](contracts/event-date-horizon.md).

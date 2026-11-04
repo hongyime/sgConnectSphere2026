@@ -57,3 +57,10 @@ Complete E02-S07 / SCRUM-180 Session-date submission validation after merged E04
   tests, regenerated coverage inventory. No product logic discarded.
 - Focused Organiser/Session editor tests: 42 passed; both typechecks passed.
 - Evidence: 20261104-024433-xiangyingg-frontend-vitest.md.
+
+## PR guardrail size correction
+
+- Failed run 41696798478 reported 42 changed files (limit 40). Consolidated
+  repeated API/architecture/frontend overview notes in docs/c4-diagrams.md,
+  retaining detailed contract, manual guide and immutable evidence unchanged.
+- No product/test behavior changed; no guardrail policy bypass or increase.
