@@ -111,7 +111,7 @@ them: the title, or "Session <n>".
 | Event equipment page, two or more Sessions | One card per Session, titled with its name, showing its dates ("1 Dec 2026, 1:00 pm – 3:00 pm") and its requests, or "No equipment requested for this Session yet." | TC_E07S08_01 |
 | Request form, two or more Sessions | **Session** (required): "Choose a Session", then "<name>, <dates>"; hint "The equipment is reserved for this Session's dates." The item list leaves out items already requested for the chosen Session | TC_E07S08_01 |
 | Request form, a refused Session | The API's sentence under **Session**, e.g. "Choose a Session of this event." | TC_E07S08_03 |
-| A request whose Session was deleted | Card **Requests with no Session**: "Their Session was deleted. Choose a Session for each request before it can be reserved."; pill **No Session: choose one**; **Edit**, no **Remove** | D132 |
+| A request whose Session was deleted | Card **Requests with no Session**: "Their Session was deleted. Choose a Session for each request before it can be reserved."; pill **No Session: choose one**; **Edit** and **Remove** | D132, D137 |
 | Technical Support's banner | "Reserve each request from the units free for its Session's dates. The Coordinator is notified of each reservation and change." | TC_E07S08_02 |
 | Reserve form | **Session** and **Session dates** instead of **Event dates**; "None are free for this Session's dates." / "Only <n> are free for this Session's dates."; a line with no Session: "Choose a Session for this request before reserving it." | TC_E07S08_02 |
 | Confirmations | "<item> × <n> reserved for <event>, <Session name>, <Session dates>."; a release: "… returned to the available pool for <event>, <Session name>, <dates>." | TC_E07S08_02 |

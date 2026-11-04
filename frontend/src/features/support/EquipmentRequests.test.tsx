@@ -715,7 +715,7 @@ test('E07-S08 D122 - a single-Session event shows no Session picker or Session c
   expect(screen.queryByRole('region', { name: 'Morning' })).not.toBeInTheDocument();
 });
 
-test('E07-S08 D132 - a request whose Session was deleted is flagged and can be edited to choose one, but not removed', async () => {
+test('E07-S08 D132 D137 - a request whose Session was deleted is flagged and can be edited to choose one, or removed', async () => {
   const orphan = {
     ...row, sessionId: null, reserved: true,
     reservation: { id: 'res1', status: 'released' as const, quantityReserved: 2, requiresReconfirmation: false },
@@ -728,7 +728,7 @@ test('E07-S08 D132 - a request whose Session was deleted is flagged and can be e
   const card = await screen.findByRole('region', { name: 'Requests with no Session' });
   expect(card).toHaveTextContent('Their Session was deleted. Choose a Session for each request before it can be reserved.');
   expect(card).toHaveTextContent('No Session: choose one');
-  expect(screen.queryByRole('button', { name: 'Remove Microphone…' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Remove Microphone…' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('link', { name: 'Edit Microphone' }));
   expect(await screen.findByLabelText('Session')).toHaveValue('');
   expect(screen.getByRole('button', { name: 'Save equipment request' })).toBeEnabled();

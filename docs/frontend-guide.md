@@ -290,7 +290,7 @@ no Session" card for requests whose Session was deleted (flagged "No Session:
 choose one"). The request form adds a required Session picker and offers each
 item once per Session; a single-Session Event shows neither and sends no
 `sessionId`, so the API fills it in. A request with no Session can be edited
-to choose one even after a released reservation, but not removed. The reserve
+to choose one, or removed, even after a released reservation (D137). The reserve
 form shows the line's Session and its dates, and refuses a line with no
 Session with the API's sentence; confirmations name the Session. The
 Coordinator's readiness page adds a Session column when the server names

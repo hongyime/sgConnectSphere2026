@@ -248,8 +248,8 @@ function EventRequests({ eventCode }: { eventCode: string }) {
           ? [
               {
                 header: 'Actions',
-                // D132: a request whose Session was deleted can be edited
-                // to choose one; its reservation history still bars removal.
+                // D132, D137: a request whose Session was deleted can be
+                // edited to choose one, or removed, despite its history.
                 cell: (r: EquipmentRequest) =>
                   r.reserved && r.sessionId !== null ? (
                     <span>Reserved requests are protected</span>
@@ -260,17 +260,15 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                       >
                         Edit {r.name}
                       </ButtonLink>
-                      {r.reserved ? null : (
-                        <Button
-                          onClick={() => {
-                            setRemoving(r);
-                            setError('');
-                            setRemoved(false);
-                          }}
-                        >
-                          Remove {r.name}…
-                        </Button>
-                      )}
+                      <Button
+                        onClick={() => {
+                          setRemoving(r);
+                          setError('');
+                          setRemoved(false);
+                        }}
+                      >
+                        Remove {r.name}…
+                      </Button>
                     </>
                   ),
               },
