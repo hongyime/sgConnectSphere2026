@@ -39,7 +39,9 @@ release.
 Real-database runs: 20261031-175517, 20261031-191251 and, for SCRUM-250,
 20261104-014643; automated real-stack click-throughs 20261031-142715 (A to E)
 and 20261104-014530 (F). The SCRUM-250 records name `e8d78d4`, the commit before
-this branch was rebased onto `main`; the same changes are `79231d9`.
+this branch was rebased onto `main`; the same changes are `79231d9`. Final
+SCRUM-250 runs at `c70c90c`: backend unit 20261105-004824, database
+20261105-004842, Vitest 20261105-004946, Playwright 20261105-005043.
 
 ## Decisions taken in this story (for the reviewer)
 
