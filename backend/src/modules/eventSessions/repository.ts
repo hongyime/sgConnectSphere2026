@@ -4,6 +4,7 @@ import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
 import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
+import { notifyArrangementImpact } from '../eventNotifications/informationChange.js';
 import { captureEventAudience, notifyEventChange, resolveAssignedVenueStaff, writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import type { SessionRepository } from './service.js';
@@ -121,8 +122,37 @@ export async function writeSessionWith(client: Client, sessionId: string, eventI
 // The reverse step, when deleting leaves one Session. A sole Session with no
 // rows follows the Event, so an explicitly empty list would otherwise pick up
 // the Event's needs: the Event takes the survivor's needs, which stay the same.
-async function handNeedsToEvent(client: Client, eventId: string) {
+// When one Session is left, the Event's time, attendance, requirements and
+// layout also update to match it. Equipment reservations and Technical Support
+// keep their old times until edited, and with 2 or more Sessions left, the
+// Event's time stays the same.
+export async function handNeedsToEvent(client: Client, eventId: string) {
   const [survivor] = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
+  if (!survivor) return;
+
+  await client.query(
+    `UPDATE events e
+     SET event_range = s.session_range,
+         expected_attendance = s.expected_attendance,
+         layout_id = s.layout_id,
+         venue_requirements = s.venue_requirements,
+         accessibility_note = s.accessibility_note,
+         equipment_requirements = s.equipment_requirements,
+         layout_preference = s.layout_preference
+     FROM sessions s
+     WHERE e.id = $1 AND s.id = $2`,
+    [eventId, survivor.id],
+  );
+  // Attendees read a published Event's dates from its publication, so they move
+  // with the Event. An Event that was never published stays unpublished.
+  await client.query(
+    `UPDATE event_publications p
+     SET starts_at = lower(e.event_range), ends_at = upper(e.event_range)
+     FROM events e
+     WHERE p.event_id = e.id AND e.id = $1`,
+    [eventId],
+  );
+
   const tables = [
     { event: 'event_accessibility_needs', session: 'session_accessibility_needs', column: 'feature_id' },
     { event: 'event_facility_needs', session: 'session_facility_needs', column: 'facility_id' },
@@ -131,14 +161,23 @@ async function handNeedsToEvent(client: Client, eventId: string) {
     await client.query(`DELETE FROM ${event} WHERE event_id = $1`, [eventId]);
     await client.query(
       `INSERT INTO ${event} (event_id, ${column}) SELECT $1, ${column} FROM ${session} WHERE session_id = $2`,
-      [eventId, survivor!.id],
+      [eventId, survivor.id],
     );
-    await client.query(`DELETE FROM ${session} WHERE session_id = $1`, [survivor!.id]);
+    await client.query(`DELETE FROM ${session} WHERE session_id = $1`, [survivor.id]);
   }
 }
 
 export async function listSessionsWith(client: Client, eventId: string): Promise<SessionRecord[]> {
   return (await client.query<SessionRow>(`SELECT ${COLUMNS} FROM sessions WHERE event_id = $1 ORDER BY lower(session_range), id`, [eventId])).rows.map(toRecord);
+}
+
+async function requireLockedDraft(client: Client, eventId: string) {
+  const event = (await client.query<{ status: string }>(
+    'SELECT status FROM events WHERE id=$1 FOR NO KEY UPDATE', [eventId],
+  )).rows[0];
+  if (!event || event.status !== 'draft') {
+    throw new AccessError(409, 'Sessions can only be changed while the request is a draft.');
+  }
 }
 
 export function createSessionRepository(db: Pool = getDatabasePool()): SessionRepository {
@@ -162,7 +201,7 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
 
   async insertSession(eventId: string, input: SessionInput): Promise<SessionRecord> {
     return inTransaction(db, async client => {
-      await client.query(`SELECT id FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId]);
+      await requireLockedDraft(client, eventId);
       const existing = (await client.query<{ id: string }>(`SELECT id FROM sessions WHERE event_id = $1`, [eventId])).rows;
       if (existing.length === 1) await inheritEventNeeds(client, eventId, existing[0]!.id);
       const { id } = (await client.query<{ id: string }>(
@@ -179,7 +218,10 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   },
 
   async updateSession(sessionId: string, eventId: string, input: SessionInput): Promise<SessionRecord | null> {
-    return inTransaction(db, client => writeSessionWith(client, sessionId, eventId, input));
+    return inTransaction(db, async client => {
+      await requireLockedDraft(client, eventId);
+      return writeSessionWith(client, sessionId, eventId, input);
+    });
   },
 
   // E10-S02 applied to a single Session: the edit runs inside a savepoint for a
@@ -218,25 +260,24 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
       }
 
       await applyArrangementImpact(query, actorId, eventId, impact);
-      if (impact.affected) {
+      const was = before.sessions.find(session => session.id === sessionId);
+      const now = after.sessions.find(session => session.id === sessionId);
+      const moved = !!was && !!now && (was.startsAt !== now.startsAt || was.endsAt !== now.endsAt);
+      if (impact.affected || moved) {
+        // One change ID for the save: whoever gets the reconfirmation notice is
+        // not sent the date notice as well, as with an Event edit.
         const changeId = randomUUID();
         const changedAt = (await client.query<{ now: Date }>('SELECT transaction_timestamp() AS now')).rows[0]!.now;
-        const staff = await captureEventAudience(
-          client, eventId, {}, [...new Set(impact.bookings.map(booking => booking.venueId))],
-        );
-        await notifyEventChange(client, {
-          changeId,
-          occurredAt: changedAt,
-          actorId,
-          before: staff,
-          after: staff,
-          change: {
-            kind: 'reconfirmation_required',
-            venueAffected: impact.bookings.length > 0,
-            technicalAffected: impact.reservations.length > 0,
-            reasons: [...impact.bookings, ...impact.reservations].flatMap(item => item.reasons),
-          },
-        });
+        // E10-S02 Scenario 6 (T-104): the shared notice also tells the
+        // technicians on a flagged Technical Support request.
+        if (impact.affected) await notifyArrangementImpact(client, actorId, eventId, impact, changeId, changedAt);
+        // E11-S01 Scenario 2: a Session date or time change is notified, as an
+        // approved Session change request does.
+        if (moved) {
+          const audience = await captureEventAudience(client, eventId);
+          await notifyEventChange(client, { changeId, occurredAt: changedAt, actorId, before: audience, after: audience,
+            change: { kind: 'arrangements', fields: ['date', 'time'], session: true } });
+        }
       }
       return { status: 'updated' as const, session: updated, ...check };
     });
@@ -247,8 +288,8 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
   // Event -> Venue -> booking order the other arrangement writers use.
   async removeSession(sessionId: string, eventId: string, actorId: string) {
     return inTransaction(db, async client => {
-      const event = (await client.query<{ id: string; title: string }>(
-        `SELECT id, title FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId],
+      const event = (await client.query<{ id: string; title: string; coordinator_id: string | null }>(
+        `SELECT id, title, coordinator_id FROM events WHERE id = $1 FOR NO KEY UPDATE`, [eventId],
       )).rows[0];
       if (!event) return { status: 'not_found' as const };
 
@@ -271,6 +312,9 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         );
       }
 
+      const heldPrimary = (await client.query(
+        `SELECT 1 FROM venue_bookings WHERE session_id = $1 AND is_primary`, [sessionId],
+      )).rows.length > 0;
       const bookings = (await client.query<{ id: string }>(
         `UPDATE venue_bookings SET status = 'released', is_primary = false, requires_reconfirmation = false
          WHERE session_id = $1 AND status IN ('tentative','pending','confirmed','conflicting')
@@ -320,10 +364,39 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
          VALUES($1,'event',$2,$2,'Session Deleted','session',$3)`,
         [actorId, eventId, session.title ?? 'Untitled Session'],
       );
+      const before = remaining === 2 ? await captureEventAudience(client, eventId) : null;
       await client.query(`DELETE FROM sessions WHERE id = $1`, [sessionId]);
-      if (remaining === 2) await handNeedsToEvent(client, eventId);
+      if (before) {
+        await handNeedsToEvent(client, eventId);
+        // E11-S01 Scenario 2: the Event just took the survivor's time, so anyone
+        // following it is told, as an Event edit does. The actor is excluded.
+        const after = await captureEventAudience(client, eventId);
+        if (after.status !== 'draft' && (before.startsAt !== after.startsAt || before.endsAt !== after.endsAt)) {
+          const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
+          await notifyEventChange(client, { changeId: randomUUID(), occurredAt, actorId, before, after,
+            change: { kind: 'arrangements', fields: ['date', 'time'] } });
+        }
+      }
+
+      // T-94: a released primary is cleared and someone is prompted to choose
+      // another, with no automatic promotion; choosing stays with the Coordinator
+      // (T-78). With no Confirmed booking left, the next one becomes primary (O-30).
+      const primaryNeeded = heldPrimary && (await client.query(
+        `SELECT 1 FROM venue_bookings WHERE event_id = $1 AND status = 'confirmed' LIMIT 1`, [eventId],
+      )).rows.length > 0;
+      if (primaryNeeded && event.coordinator_id) {
+        await writeEventNotification(client, {
+          eventId,
+          changeId: randomUUID(),
+          userId: event.coordinator_id,
+          occurredAt: (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now,
+          title: 'Primary venue needed',
+          message: `${event.title}: a Session was deleted and its booking was the primary venue. Choose a primary venue from the remaining Confirmed bookings.`,
+        });
+      }
       return {
         status: 'deleted' as const,
+        primaryNeeded,
         releasedBookings: bookings.length,
         releasedReservations: reservations.length,
         notifiedStaff: staff.length,

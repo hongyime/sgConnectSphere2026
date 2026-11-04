@@ -36,6 +36,9 @@ const EquipmentCatalogue = lazy(() => import('../features/support/EquipmentCatal
 const EquipmentFormPage = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentFormPage })));
 const EquipmentDetail = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentDetail })));
 const MarkUnavailablePage = lazy(() => import('../features/support/EquipmentUnavailability').then(m => ({ default: m.MarkUnavailablePage })));
+const LeadQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.LeadQueue })));
+const SafetyQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.SafetyQueue })));
+const SafetyReview = lazy(() => import('../features/roleQueues/SafetyReview').then(m => ({ default: m.SafetyReview })));
 
 const LandingPage = lazy(() => import('../features/landing/LandingPage').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('../features/accessControl/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -220,6 +223,11 @@ export const routes: AppRoute[] = [
   page('/coordinator/events/:eventCode/venue-bookings', <VenueBookingRequests />, 'live', 'E06-S03'),
   page('/coordinator/events/:eventCode/venues/:venueId/suitability', <VenueSuitability />, 'live', 'E06-S02'),
   page('/coordinator/events/:eventCode/venues/:venueId/hold', <HoldVenueForm />, 'live', 'E06-S05'),
+
+  // Event Coordinator Lead and Safety Officer
+  page('/coordinator-lead/queue', <LeadQueue />, 'live', 'E01-S13'),
+  page('/safety/queue', <SafetyQueue />, 'live', 'E01-S13'),
+  page('/safety/review/:eventId', <SafetyReview />, 'live', 'E08-S06'),
 
   // Venue Staff
   page('/venue', <VenueDashboard />, 'mock'),

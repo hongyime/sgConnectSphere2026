@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, ConfirmPanel, FormActions, FormField, LoadingState, apiCall, jsonRequest } from '../../shared';
+import { ArrangementReview } from '../events/ArrangementReview';
+import { changedCheck, needsReview, type ChangeCheck } from '../events/eventEditApi';
 
 type Option = { id: string; label: string };
 type Options = { layouts: Option[]; accessibility: Option[]; facilities: Option[] };
@@ -27,7 +29,7 @@ type Field = {
   accessibilityNote: string; layoutPreference: string;
 };
 
-type Removal = { releasedBookings?: number; releasedReservations?: number; notifiedStaff?: number };
+type Removal = { releasedBookings?: number; releasedReservations?: number; notifiedStaff?: number; primaryNeeded?: boolean };
 
 const NO_OPTIONS: Options = { layouts: [], accessibility: [], facilities: [] };
 
@@ -79,7 +81,9 @@ function removalMessage(result: Removal) {
     reservations ? `${reservations} equipment reservation${reservations === 1 ? '' : 's'}` : '',
   ].filter(Boolean).join(' and ');
   const told = result.notifiedStaff ? ' The venue’s staff have been notified.' : '';
-  return `Session removed. ${released} released.${told}`;
+  // T-94: no automatic promotion; choosing the primary venue stays with the Coordinator (T-78).
+  const primary = result.primaryNeeded ? ' That was the event’s primary venue, so your Coordinator needs to choose another.' : '';
+  return `Session removed. ${released} released.${told}${primary}`;
 }
 
 function NeedsChecklist({ legend, options, selected, disabled, onChange }: {
@@ -110,17 +114,24 @@ function NeedsChecklist({ legend, options, selected, disabled, onChange }: {
 // E04-S02: Sessions are children of a saved Event. A draft can add, edit and
 // remove them; in planning an edit runs the arrangement-impact check and a
 // removal releases that Session's bookings, so it is confirmed first.
-export function SessionEditor({ eventId }: { eventId: string }) {
+// A delete that would leave one Session changes the Event too (T-108), and an open
+// form still holds the old details. `onSoleSessionDelete` tells the form when that
+// delete starts, then whether the Event changed once the outcome is known.
+export function SessionEditor({ eventId, onSoleSessionDelete }: {
+  eventId: string;
+  onSoleSessionDelete?: { started: () => void; finished: (eventChanged: boolean) => Promise<void> };
+}) {
   const [sessions, setSessions] = useState<Session[] | null>(null);
   const [options, setOptions] = useState<Options>(NO_OPTIONS);
   const [fields, setFields] = useState<Record<string, Field>>({});
   const [status, setStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [eventStatus, setEventStatus] = useState('draft');
-  const [pending, setPending] = useState<{ sessionId: string; revision: string; field: Field; message: string } | null>(null);
+  const [pending, setPending] = useState<{ sessionId: string; field: Field; check: ChangeCheck; changed: boolean } | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const loadRequest = useRef(0);
+  const reviewRef = useRef<HTMLDivElement>(null);
 
   const url = (sessionId?: string) =>
     `/api/events?sessions=1&id=${encodeURIComponent(eventId)}${sessionId ? `&sessionId=${encodeURIComponent(sessionId)}` : ''}`;
@@ -150,18 +161,44 @@ export function SessionEditor({ eventId }: { eventId: string }) {
     return () => { loadRequest.current += 1; };
   }, [eventId]);
 
+  // The review opens above the Sessions, so a save far down the list would hide it.
+  useEffect(() => {
+    if (pending) reviewRef.current?.focus();
+  }, [pending]);
+
   const editable = eventStatus === 'draft' || eventStatus === 'planning';
   const perSession = (sessions?.length ?? 0) > 1;
 
-  const mutate = async (method: 'POST' | 'PATCH' | 'DELETE', sessionId?: string, body?: unknown, reviewed?: string) => {
+  const mutate = async (method: 'POST' | 'PATCH' | 'DELETE', sessionId?: string, body?: unknown, review?: { revision?: string; field: Field }) => {
+    const leavesOneSession = method === 'DELETE' && sessions?.length === 2;
     setBusy(true);
     setStatus(null);
+    if (leavesOneSession) onSoleSessionDelete?.started();
     const result = await apiCall<Removal>(
-      `${url(sessionId)}${reviewed ? `&reviewed=${encodeURIComponent(reviewed)}` : ''}`,
+      `${url(sessionId)}${review?.revision ? `&reviewed=${encodeURIComponent(review.revision)}` : ''}`,
       jsonRequest(method, body),
       method === 'DELETE' ? 'That Session could not be removed.' : 'The Session could not be saved. Check the dates and expected attendance.',
     );
     if (!result.ok) {
+      if (review && sessionId) {
+        // What the save affects changed since the check: the refusal carries the
+        // fresh list to review again, as an Event edit does (E10-S02).
+        const fresh = changedCheck(result);
+        if (fresh) {
+          setBusy(false);
+          setPending({ sessionId, field: review.field, check: fresh, changed: true });
+          return;
+        }
+        setPending(null);
+      }
+      if (leavesOneSession) {
+        // The delete can still have gone through if the reply was lost, so only a
+        // list that still has both Sessions shows the Event did not change.
+        const current = await apiCall<{ sessions?: Session[] }>(url(), undefined, 'The Sessions could not be loaded.');
+        const unchanged = current.ok && current.data.sessions?.length === 2;
+        if (!unchanged) await load();
+        await onSoleSessionDelete?.finished(!unchanged);
+      }
       setBusy(false);
       setStatus({ tone: 'error', message: method === 'DELETE' && result.status === 409 && /at least one Session/.test(result.message)
         ? 'That Session could not be removed. An Event keeps at least one Session.'
@@ -171,6 +208,7 @@ export function SessionEditor({ eventId }: { eventId: string }) {
     setPending(null);
     setRemoving(null);
     await load();
+    if (leavesOneSession) await onSoleSessionDelete?.finished(true);
     setBusy(false);
     setStatus({ tone: 'success', message: method === 'DELETE' ? removalMessage(result.data) : method === 'POST' ? 'Session added.' : 'Session saved.' });
   };
@@ -182,25 +220,20 @@ export function SessionEditor({ eventId }: { eventId: string }) {
     }
     setBusy(true);
     setStatus(null);
-    const result = await apiCall<{
-      preview: { impact: { affected: boolean; bookings: unknown[]; reservations: unknown[] }; revision: string };
-    }>(`${url(sessionId)}&preview=1`, jsonRequest('PATCH', toPayload(field, perSession)), 'The Session change could not be checked.');
+    const result = await apiCall<{ preview: ChangeCheck }>(`${url(sessionId)}&preview=1`, jsonRequest('PATCH', toPayload(field, perSession)), 'The Session change could not be checked.');
     setBusy(false);
     if (!result.ok) {
       setStatus({ tone: 'error', message: result.message });
       return;
     }
-    const { impact, revision } = result.data.preview;
-    if (!impact.affected) {
-      await mutate('PATCH', sessionId, toPayload(field, perSession), revision);
+    const check = result.data.preview;
+    if (!needsReview(check)) {
+      await mutate('PATCH', sessionId, toPayload(field, perSession), { revision: check.revision, field });
       return;
     }
-    setPending({
-      sessionId,
-      revision,
-      field,
-      message: `This change flags ${impact.bookings.length} booking(s) and ${impact.reservations.length} reservation(s) for reconfirmation.`,
-    });
+    // E10-S02 Scenarios 3 and 4 (T-104): what the change flags, and any
+    // over-subscription, are shown by name before anything is saved.
+    setPending({ sessionId, field, check, changed: false });
   };
 
   const addSession = () => {
@@ -225,7 +258,7 @@ export function SessionEditor({ eventId }: { eventId: string }) {
       <p className="field-hint">
         {perSession
           ? 'Each Session keeps its own date, time, attendance and requirements. Venues are checked against each Session separately.'
-          : 'One Session beneath this Event. It uses the event’s own requirements. Add a Session to plan a second day or part separately.'}
+          : `One Session beneath this Event, with no extra setup needed.${eventStatus === 'draft' ? ' Add a Session to plan a second day or part separately.' : ''}`}
       </p>
       {sessions === null && !loadFailed ? <LoadingState label="Loading Sessions…" /> : null}
       {loadFailed ? (
@@ -235,15 +268,15 @@ export function SessionEditor({ eventId }: { eventId: string }) {
       ) : null}
       {status ? <Alert tone={status.tone}>{status.message}</Alert> : null}
       {pending ? (
-        <ConfirmPanel
-          title="Save this Session change?"
-          description={pending.message}
-          confirmLabel="Save anyway"
-          busyLabel="Saving…"
-          busy={busy}
-          onCancel={() => setPending(null)}
-          onConfirm={() => { const item = pending; void mutate('PATCH', item.sessionId, toPayload(item.field, perSession), item.revision); }}
-        />
+        <div ref={reviewRef} tabIndex={-1} className="event-edit-review">
+          <ArrangementReview
+            check={pending.check}
+            changed={pending.changed}
+            busy={busy}
+            onCancel={() => setPending(null)}
+            onConfirm={() => { const item = pending; void mutate('PATCH', item.sessionId, toPayload(item.field, perSession), { revision: item.check.revision, field: item.field }); }}
+          />
+        </div>
       ) : null}
       {sessions ? (
         <ul className="session-list">
