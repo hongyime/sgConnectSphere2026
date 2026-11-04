@@ -7,12 +7,12 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **386**
-- Automated (explicit TC_ID in an active test title): **321** (83.2%)
-  - Real-database (`.integration.test` / `.db.test`): **41**
+- Automated (explicit TC_ID in an active test title): **325** (84.2%)
+  - Real-database (`.integration.test` / `.db.test`): **44**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **279**
+  - Live-assertion (other active tests): **280**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
-- No test yet (no test file mentions the TC_ID): **17** (4.4%)
+- No test yet (no test file mentions the TC_ID): **13** (3.4%)
 
 ## Coverage by epic
 
@@ -24,14 +24,14 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
-| E07 | 37 | 33 | 0 | 4 |
+| E07 | 37 | 37 | 0 | 0 |
 | E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 36 | 32 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **386** | **321** | **48** | **17** |
+| **Total** | **386** | **325** | **48** | **13** |
 
 ## Case-by-case status
 
@@ -309,10 +309,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E07S07_04` | E07-S07 | Verify that removing an existing assignment from a staff member's schedule shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 TC_E11S01_06 TC_E11S01_07 TC_E11S01_09 TC_E11S01_1 |
 | `TC_E07S07_05` | E07-S07 | Verify that assigning a replacement colleague after removing an assignment shoul | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 TC_E11S01_06 TC_E11S01_07 TC_E11S01_09 TC_E11S01_1 |
 | `TC_E07S07_06` | E07-S07 | Verify that the assigned staff member should receive a notification when they ar | ✅ active | backend/tests/staffAssignments.integration.test.ts: TC_E07S07_01 TC_E07S07_02 TC_E07S07_03 TC_E07S07_04 TC_E07S07_05 TC_E07S07_06 TC_E11S01_06 TC_E11S01_07 TC_E11S01_09 TC_E11S01_1 |
-| `TC_E07S08_01` | E07-S08 | An equipment request should be linked to a Session of its owning Event | ❌ none | — |
-| `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ❌ none | — |
-| `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ❌ none | — |
-| `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ❌ none | — |
+| `TC_E07S08_01` | E07-S08 | An equipment request should be linked to a Session of its owning Event | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S08_01 TC_E07S08_03 a request on a two-Session Event saves with its chosen Session, one is required, and another Event Se |
+| `TC_E07S08_02` | E07-S08 | A reservation should use the linked Session’s date and time for availability | ✅ active | backend/tests/equipmentReservations.integration.test.ts: TC_E07S08_02 a reservation takes its request Session and Session period, and stock reserved in one Session does not block t |
+| `TC_E07S08_03` | E07-S08 | A Session from a different Event should be rejected for the equipment request | ✅ active | backend/tests/equipmentRequests.integration.test.ts: TC_E07S08_01 TC_E07S08_03 a request on a two-Session Event saves with its chosen Session, one is required, and another Event Se |
+| `TC_E07S08_04` | E07-S08 | Adding Sessions should not change the Event-level technical staff assignment | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E07S08_04 E07-S08 D134: adding, editing and deleting Sessions keeps the Event-level technician assignment, and a deletion  |
 | `TC_E07S09_01` | E07-S09 | Stock reduction includes overlapping withdrawals | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_01 stock 10 with 4 withdrawn and 5 reserved: reducing to 8 flags the reservation and notifies once |
 | `TC_E07S09_02` | E07-S09 | Withdrawal boundaries and peak demand are respected | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_02 catalogue stock reduction:  |
 | `TC_E07S09_03` | E07-S09 | Withdrawal-aware stock edit rolls back on outbox failure | ✅ active | backend/tests/equipmentCatalogue.integration.test.ts: TC_E07S09_03 withdrawal-aware stock edit rolls back stock, review flags and notifications when outbox persistence fails |
@@ -718,12 +718,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 only Technical Support Staff reserve change or release and every refusal is audited with nothing changed
 - E07-S04 two reservations made at the same moment cannot commit more units than exist
 - E07-S04 no Coordinator notice is sent when the event has no active assigned Coordinator
+- E07-S08 D132 a request with no Session is refused until it has one, and on a single-Session Event it is filled in
 
 ### `backend/tests/equipmentReservations.test.ts`
 
 - E07-S04 reservation input needs a request or reservation id and a whole quantity of at least 1
 - E07-S04 notices write Singapore dates the way the screens do
 - E07-S04 event labels and free-quantity sentences read naturally
+- E07-S08 D131 notices and the Activity log name the Session and use its dates only on a multi-Session Event
 - E07-S04 reservation writers refuse signed-out callers and other roles before opening a transaction
 - E07-S04 invalid input is answered with field errors and no transaction once the caller is Technical Support
 - E07-S04 the equipment request route sends reserve changeReservation and releaseReservation to the reservation writers
@@ -738,6 +740,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 two withdrawals saved at the same moment cannot take out more units than exist
 - E07-S05 no notice is sent when the event has no assigned Coordinator or the Coordinator account changed role
 - E07-S05 a one-unit withdrawal says 1 unit, and a return that waited while the period was removed is refused
+- E07-S08 D131 on a multi-Session Event the withdrawal notice names each affected Session and its dates
 
 ### `backend/tests/equipmentUnavailability.test.ts`
 
@@ -859,6 +862,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/eventReadiness.test.ts`
 
+- E07-S08 D135: on a multi-Session Event each equipment line names its Session, and a request with no Session needs one
 - SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted
 - SCRUM-60 D64: Safety Review counts as an active event for workload and deactivation (T-52)
 - SCRUM-60: a wrong-role submission is refused and audited without opening a transaction; signed-out and blank calls record nothing
