@@ -13,6 +13,8 @@ import { inTransaction } from '../src/database/pool.js';
 import { insertNotificationDelivery, postgresDeliveryStore } from '../src/modules/notificationDispatcher/postgres.js';
 import { dispatchCommittedDeliveries } from '../src/modules/notificationDispatcher/dispatch.js';
 import { listInbox, markInboxRead } from '../src/modules/eventNotifications/inbox.js';
+import { decideBooking } from '../src/modules/venueBooking/decisions.js';
+import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
 async function eventFixture(pool: Pool) {
   const org=randomUUID(), organiser=randomUUID(), event=randomUUID();
@@ -23,6 +25,52 @@ async function eventFixture(pool: Pool) {
     VALUES($1,$2,$3,'Public event','confirmed','[2027-01-01 09:00Z,2027-01-01 12:00Z)',20)`,[event,organiser,org]);
   return event;
 }
+
+async function approvedBookingSurvivesEmailFailure(outcome: 'failed' | 'uncertain') {
+    const f = await loginDatabase();
+    try {
+      const event = await eventFixture(f.pool), coordinator = randomUUID(), staff = randomUUID(), venue = randomUUID();
+      for (const [id, role] of [[coordinator, 'event_coordinator'], [staff, 'venue_staff']]) {
+        await f.pool.query(`INSERT INTO users(id,email,password_hash,full_name,role)
+          VALUES($1,$2,'unused','Synthetic delivery participant',$3)`, [id, `${id}@example.test`, role]);
+      }
+      await f.pool.query('UPDATE events SET coordinator_id=$1 WHERE id=$2', [coordinator, event]);
+      await f.pool.query(`INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at)
+        VALUES($1,$2,'Synthetic campus',100,'00:00','23:59')`, [venue, `Delivery Hall ${venue}`]);
+      await f.pool.query('INSERT INTO venue_staff_assignments(venue_id,staff_id) VALUES($1,$2)', [venue, staff]);
+      const booking = (await f.pool.query(`INSERT INTO venue_bookings(event_id,session_id,venue_id,booking_range,status)
+        SELECT event_id,id,$2,session_range,'pending' FROM sessions WHERE event_id=$1 RETURNING id`, [event, venue])).rows[0].id;
+      const actor: AuthenticatedUser = { id: staff, email: `${staff}@example.test`, role: 'venue_staff', isActive: true, failedLoginCount: 0 };
+      await decideBooking(f.pool, actor, booking, { decision: 'approve' });
+      const query = f.pool.query.bind(f.pool);
+      const inbox = await listInbox(query, coordinator);
+      assert.equal(inbox.length, 1);
+      assert.match(inbox[0].title, /approved/i);
+      const delivery = (await f.pool.query('SELECT id FROM notification_deliveries WHERE notification_id=$1', [inbox[0].id])).rows[0].id;
+      let sends = 0;
+      const transport = { async publish() {}, async peek() { return [delivery]; }, async acknowledge() {}, async defer() {} };
+      const send = async () => {
+        sends++;
+        return outcome === 'failed'
+          ? { kind: 'failed' as const, code: 'provider_rejected' as const }
+          : { kind: 'uncertain' as const, code: 'provider_outcome_unknown' as const };
+      };
+      const store = postgresDeliveryStore(f.pool);
+      await dispatchCommittedDeliveries(store, transport, send);
+      await dispatchCommittedDeliveries(store, transport, send);
+      assert.equal(sends, 1);
+      const row = (await f.pool.query('SELECT delivery_status,dispatch_state,failure_reason,html FROM notification_deliveries WHERE id=$1', [delivery])).rows[0];
+      assert.equal(row.delivery_status, 'failed');
+      assert.equal(row.dispatch_state, outcome);
+      assert.equal(row.failure_reason, outcome === 'failed' ? 'provider_rejected' : 'provider_outcome_unknown');
+      assert.ok(row.html);
+      assert.equal((await f.pool.query('SELECT status FROM venue_bookings WHERE id=$1', [booking])).rows[0].status, 'confirmed');
+      assert.deepEqual((await listInbox(query, coordinator)).map(n => n.id), [inbox[0].id]);
+    } finally { await f.close(); }
+}
+
+test('TC_E11S01_08: actual booking approval and inbox survive rejected email dispatch', () => approvedBookingSurvivesEmailFailure('failed'));
+test('TC_E11S01_08: actual booking approval and inbox survive uncertain email dispatch without resend', () => approvedBookingSurvivesEmailFailure('uncertain'));
 
 test('TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state', async () => {
   const f = await loginDatabase();

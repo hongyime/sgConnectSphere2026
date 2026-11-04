@@ -1,0 +1,15 @@
+Audit E11-S01 / SCRUM-75 and SCRUM-227 acceptance evidence on current main, reconcile the provider-failure test wording with ADR-006, and prepare focused outstanding delivery/roster verification without production changes.
+
+Base 0d1609d8. Preserve root staged historical files and untracked supplemental E10 evidence. User authorized this evidence audit and preparation; no production mutation, live email send, provider configuration change, teammate messaging or Jira transition is authorized. Use existing repository exporters for any test-workbook derivative changes.
+
+Live #425 at 03cc8ac8 remains open. Its latest operational specification and correction record explicitly say production roster loading has NOT occurred and is deferred to the designated deploy owner's release window. Earlier PR-body/checklist wording is less precise; do not infer a completed load from it, mocked provisioning tests or eventual merge. SCRUM-195 was In Review at the audit.
+
+Backend/frontend notification subtasks SCRUM-225/226 are Done; testing SCRUM-227 is In Review. The prior 31 October audit found reusable evidence for recipient matrix, privacy, inbox and failure handling. Prepare an updated map distinguishing user-owned verification from deploy-owner setup; preserve all immutable old records.
+
+Completed updated readiness map with three remaining focused human checks: Organiser registered-mailbox receipt can proceed independently of roster merge once deploy/mailbox owners authorize and prepare; responsible/unrelated staff observations share one bounded action after the actual approved roster load. No further full local manual walkthrough scheduled. Existing E10 and Le Xin Session-screen records retained by exact scope.
+
+Aligned canonical TC_E11S01_08 from stale SMTP instructions to HTTP rejection/uncertainty, fixed Scenario 4 reference, and regenerated CAA 051126/alias/source pointer/inventory. No requirement to roll back business state on provider failure changed. Added two controlled-dispatch integration cases exercising actual booking approval and real persistent inbox, failed/uncertain states, reason and one provider invocation despite repeat dispatch. Backend production code unchanged.
+
+Verification: initial focused selection 48 pass, expanded selection 50 pass, final discoverable TC_08 titles two pass, backend typecheck pass, workbook/alias read-only checks pass. Immutable record 20261105-013150-jininggg-full-regression.md. Repository checks pass; doc guard zero errors/157 front-matter warnings; whitespace passes. Tooling record 20261105-013400-jininggg-tooling.md. Local-only native PostgreSQL helper used only for this verification and stopped afterward. No commit, push, PR, Jira transition or messages sent.
+
+User subsequently authorized commit, push and PR. Main advanced to 04b5b60c (#429), changing E08 cases and generated workbook/inventory/source pointer. Integrate that update and regenerate shared derivatives before publishing; preserve the earlier test-run source hashes and record any new verification separately. No production operation or story completion authorized.
