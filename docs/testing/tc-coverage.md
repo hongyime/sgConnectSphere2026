@@ -8,9 +8,9 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 
 - Total test cases: **386**
 - Automated (explicit TC_ID in an active test title): **325** (84.2%)
-  - Real-database (`.integration.test` / `.db.test`): **44**
+  - Real-database (`.integration.test` / `.db.test`): **42**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **280**
+  - Live-assertion (other active tests): **282**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
 - No test yet (no test file mentions the TC_ID): **13** (3.4%)
 
@@ -1513,6 +1513,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - SCRUM-60: leaving the page while a submission is in flight drops its answer
 - SCRUM-60: a late answer for the previous event never replaces the current one
 - SCRUM-60: the event page links to readiness in Planning and Safety Review, and never shows a raw id as its eyebrow
+- E07-S08 D135 - on a multi-Session event the equipment table names each line Session
+- E07-S08 D135 - a single-Session event has no Session column
 
 ### `frontend/src/features/coordinator/RequestClarification.test.tsx`
 
@@ -1778,6 +1780,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - canceling removal preserves the requirement without a mutation
 - form load failure retries and save failure without field errors retains input
 - a save completing after leaving the form does not navigate back
+- E07-S08 D122 - a single-Session event shows no Session picker or Session cards and sends no Session
+- E07-S08 D132 - a request whose Session was deleted is flagged and can be edited to choose one, but not removed
 
 ### `frontend/src/features/support/EquipmentReservations.test.tsx`
 
@@ -1795,6 +1799,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 - a second submit while saving sends nothing more, and leaving mid-save drops the late reply
 - E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case
 - E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve
+- E07-S08 D132 - a line with no Session on a two-Session event cannot be reserved until it has one
+- E07-S08 D131 - releasing on a two-Session event speaks of the Session dates and names the Session
 
 ### `frontend/src/features/support/EquipmentUnavailability.test.tsx`
 
