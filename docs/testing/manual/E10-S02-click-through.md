@@ -307,9 +307,9 @@ equipment. A staffed **Sound desk** request (13 Mar, 12:00 pm – 2:00 pm,
    3:00 pm; Lighting is not listed.
 6. Sign in as `tech_b`. Open http://localhost:5173/notifications. Expected:
    one **Event update** for Design Week, "Session date, time changed." (E11-S01
-   Scenario 2), and no reconfirmation notice; at
-   http://localhost:5173/support/technicians, nothing under **Support to
-   reconfirm** for Design Week.
+   Scenario 2), and no reconfirmation notice. (**Support to reconfirm** on
+   http://localhost:5173/support/technicians is shared: any Technical Support
+   Staff member may reconfirm, so it still lists Sound desk.)
 
 Screenshots: `TC_E10S02_14-2.png` (confirm message), `TC_E10S02_14-3.png`
 (saved, new time), `TC_E10S02_15-4.png` (tech_a notice), `TC_E10S02_15-5.png`
@@ -327,7 +327,8 @@ EVT-1030 **Design Summit** is in Planning and published, with **Day 1** (20 Mar
    http://localhost:5173/organiser/requests/EVT-1030. Under **Event Sessions**,
    in **Day 2**, set **Room layout** to **Boardroom**. Click **Save session**.
 2. Expected (TC_16): **Check what this change affects** lists, under *Venue
-   bookings to reconfirm*, **E10 Seminar Room B: room layout changed**, and warns
+   bookings to reconfirm*, **E10 Seminar Room B: room layout changed; 40 people
+   for 20 places** (Day 2 expects 40, Scenario 1), and warns
    **More people are registered than there are places**: "A Session: 30
    registered for 20 places. The whole event: 30 registered for 20 places. No one
    will be removed or moved to the waiting list." Nothing is saved yet.
@@ -335,8 +336,9 @@ EVT-1030 **Design Summit** is in Planning and published, with **Day 1** (20 Mar
    the Boardroom layout; the `check` stage afterwards shows Day 2's booking
    flagged and still 30 registered.
 
-Wording in steps 2 and 3 follows the Coordinator's `ArrangementReview`, which
-Amareet's Session-screen PR reuses; check it against that PR before the run.
+Wording in steps 2 and 3 is the Coordinator's `ArrangementReview`, which the
+Session screen reuses since #422. venue_a gets one notice that the change (room
+layout, attendance above capacity) needs reconfirmation.
 
 Screenshots: `TC_E10S02_16-2.png` (review with the warning),
 `TC_E10S02_16-3.png` (saved).
