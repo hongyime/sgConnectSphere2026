@@ -28,6 +28,9 @@ Decisions (Aaron, 4 Nov; full text in the story record):
   about the equipment it released.
 - D135: readiness names each equipment line's Session and blocks on a
   request with none.
+- D137 (after the #426 review): the last-Session fill-in respects one
+  request per item per Session; a request with no Session can be removed
+  despite released reservations.
 
 Story record: `docs/plans/scrum-181-implementation-status.md`.
 
@@ -52,6 +55,16 @@ and Le Xin.
   115/115 changed branches covered (c8 over the unit and database runs, as
   SCRUM-54, 55 and 60 measured it). Records in `docs/testing/runs/`.
 
+- `696c9fa`, after Xiang Ying's review: reserving a request with no Session
+  no longer fills in the last Session when that Session already has a
+  request for the same item (it could be reserved twice for one Session);
+  and, D137, a request with no Session can be removed even with released
+  reservations, so it can't block readiness for good. New database test
+  "E07-S08 D137 …", which failed with either half of the fix reverted.
+  Gates at `696c9fa`: typecheck clean; unit 726 passed, 1 skipped;
+  `test:db` 363/363; 332/332 changed lines and 117/117 changed branches.
+  PR 2 shows "Remove" on such requests.
+
 ## Not done / next step
 
 - Draft PR (no story key; `Closes SCRUM-253`), "not ready for review" until
@@ -70,5 +83,5 @@ and Le Xin.
 - An edit that leaves `sessionId` out keeps the request's Session, so the
   current screen still edits requests before PR 2.
 - `reserved` keeps its meaning (any reservation history), since removing a
-  request still refuses that history; PR 2 uses `sessionId: null` to offer
-  the edit.
+  request with a Session still refuses that history; PR 2 uses
+  `sessionId: null` to offer the edit and, since D137, the removal.
