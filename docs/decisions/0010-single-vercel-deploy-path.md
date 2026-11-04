@@ -128,6 +128,13 @@ requests.
   so nothing a reviewer needs is lost; the pushes made while iterating in
   draft stop consuming the daily allowance.
 
+Amended 4 November 2026 (PR #411): Dependabot pull requests skip the
+Vercel preview job because their runs cannot access the Actions deployment
+secrets. Application build and test checks still run; deployment on pushes
+to `main` and previews for ready human-authored PRs keep their existing
+behaviour. The same PR updates the pinned `actions/setup-python` action to
+7.1.0 in the doc-sync and PR-guardrail workflows; Python remains 3.12.
+
 ## Reversibility
 
 Remove the `git` key from `vercel.json` to restore Vercel's git-integration
