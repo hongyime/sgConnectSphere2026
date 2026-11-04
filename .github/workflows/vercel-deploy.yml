@@ -62,7 +62,8 @@ concurrency:
 jobs:
   vercel-deploy:
     name: vercel-deploy
-    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    # Dependabot PRs cannot read the Actions secrets needed for a preview.
+    if: github.event_name == 'push' || (github.event.pull_request.draft == false && github.event.pull_request.user.login != 'dependabot[bot]')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
