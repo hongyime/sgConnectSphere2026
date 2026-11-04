@@ -1717,6 +1717,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: a planning edit previews its impact before saving
 - E10-S02: a Session save refused because its check went stale shows the fresh list, and saves against it
 - E10-S02: a stale check is reviewed even when the first check needed no review
+- E10-S02: Cancel closes the review, saves nothing and keeps what was typed
 - E10-S02: any other refusal closes the review and says why
 - E04-S02: a new Session starts with the first Session requirements
 - E04-S02: cancelling the removal keeps the Session and sends nothing

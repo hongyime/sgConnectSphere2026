@@ -219,6 +219,22 @@ test('E10-S02: a stale check is reviewed even when the first check needed no rev
   expect(saved()).toHaveLength(1);
 });
 
+test('E10-S02: Cancel closes the review, saves nothing and keeps what was typed', async () => {
+  const saved = planningFetch(supportCheck, savedSession);
+  render(<SessionEditor eventId="event-1" />);
+
+  const start = await screen.findByLabelText('Starts');
+  fireEvent.change(start, { target: { value: '2027-03-12T10:30' } });
+  fireEvent.click(screen.getByText('Save session'));
+  await screen.findByText('Technical Support to reconfirm');
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+  expect(screen.queryByText('Technical Support to reconfirm')).toBeNull();
+  expect(saved()).toHaveLength(0);
+  expect(screen.getByLabelText('Starts')).toHaveValue('2027-03-12T10:30');
+});
+
 test('E10-S02: any other refusal closes the review and says why', async () => {
   planningFetch(supportCheck, () => new Response(JSON.stringify({ error: 'The end must be after the start.' }), { status: 400 }));
   render(<SessionEditor eventId="event-1" />);
