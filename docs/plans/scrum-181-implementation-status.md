@@ -95,14 +95,29 @@ Session, numbered by start time as the Session screens are.
 | Readiness names each equipment line's Session on a multi-Session Event; a request with no Session blocks (D135) | "Projector (Session 2) — 1 of 3 reserved; 2 outstanding"; "Projector — needs a Session; choose one on the equipment requests" | D135 unit test |
 | Technical Support staff assignment stays Event-level | Adding, editing or deleting Sessions leaves it unchanged | TC_E07S08_04 |
 
+**On screen (PR 2).** Sessions are named as the other Session screens name
+them: the title, or "Session <n>".
+
+| Screen | What the user sees | Test case |
+|---|---|---|
+| Event equipment page, two or more Sessions | One card per Session, titled with its name, showing its dates ("1 Dec 2026, 1:00 pm – 3:00 pm") and its requests, or "No equipment requested for this Session yet." | TC_E07S08_01 |
+| Request form, two or more Sessions | **Session** (required): "Choose a Session", then "<name>, <dates>"; hint "The equipment is reserved for this Session's dates." The item list leaves out items already requested for the chosen Session | TC_E07S08_01 |
+| Request form, a refused Session | The API's sentence under **Session**, e.g. "Choose a Session of this event." | TC_E07S08_03 |
+| A request whose Session was deleted | Card **Requests with no Session**: "Their Session was deleted. Choose a Session for each request before it can be reserved."; pill **No Session: choose one**; **Edit**, no **Remove** | D132 |
+| Technical Support's banner | "Reserve each request from the units free for its Session's dates. The Coordinator is notified of each reservation and change." | TC_E07S08_02 |
+| Reserve form | **Session** and **Session dates** instead of **Event dates**; "None are free for this Session's dates." / "Only <n> are free for this Session's dates."; a line with no Session: "Choose a Session for this request before reserving it." | TC_E07S08_02 |
+| Confirmations | "<item> × <n> reserved for <event>, <Session name>, <Session dates>."; a release: "… returned to the available pool for <event>, <Session name>, <dates>." | TC_E07S08_02 |
+| Readiness page | A **Session** column ("Session "Morning"", or "No Session") when the server names Sessions | D135 |
+| Single-Session Event | As before: no picker, no Session cards, the Event's dates | D122 |
+
 ## Test plan
 
 | TC ID | What it proves | Automated tests |
 |---|---|---|
-| TC_E07S08_01 | A request on a two-Session Event saves with the chosen Session and still belongs to the Event; the other Session's request and other Events are unchanged; a single-Session Event needs no choice | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit); PR 2: Vitest, Playwright, manual run |
-| TC_E07S08_02 | A reservation takes its request's Session and Session period; stock reserved in Session A doesn't block Session B; a change or reconfirmation uses the Session's current period | `equipmentReservations.integration.test.ts` (real database); `equipmentReservations.test.ts` (unit); PR 2: Vitest, Playwright, manual run |
-| TC_E07S08_03 | A Session of another Event, or an unknown one, is refused with a 400 and nothing is stored; the database's foreign key refuses it too | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit) |
-| TC_E07S08_04 | Adding (by SQL, D133), editing and deleting Sessions leaves the Event's Technical Support staff assignment as it was; deletions send D134's notices | `eventSessionsRoutes.integration.test.ts` (real database; it already deletes Sessions in a rolled-back schema); PR 2: manual run |
+| TC_E07S08_01 | A request on a two-Session Event saves with the chosen Session and still belongs to the Event; the other Session's request and other Events are unchanged; a single-Session Event needs no choice | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit); `EquipmentRequests.test.tsx` (Vitest, StrictMode); `tests/e2e/equipmentRequests.spec.ts` (Playwright, desktop and Pixel 7); manual run |
+| TC_E07S08_02 | A reservation takes its request's Session and Session period; stock reserved in Session A doesn't block Session B; a change or reconfirmation uses the Session's current period | `equipmentReservations.integration.test.ts` (real database); `equipmentReservations.test.ts` (unit); `EquipmentReservations.test.tsx` (Vitest, StrictMode); `tests/e2e/equipmentReservations.spec.ts` (Playwright, desktop and Pixel 7); manual run |
+| TC_E07S08_03 | A Session of another Event, or an unknown one, is refused with a 400 and nothing is stored; the database's foreign key refuses it too | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit); `EquipmentRequests.test.tsx` (the refusal on screen) |
+| TC_E07S08_04 | Adding (by SQL, D133), editing and deleting Sessions leaves the Event's Technical Support staff assignment as it was; deletions send D134's notices | `eventSessionsRoutes.integration.test.ts` (real database; it already deletes Sessions in a rolled-back schema); manual run |
 
 ## Test gates
 
@@ -122,6 +137,77 @@ marked ready.
    regenerated as the last commit; CI green.
 
 No production check is needed for the schema: the story adds no migration.
+
+## Click-through script (Aaron's manual run, D130, D133)
+
+**Setup, by SQL, never a test step.** `docs/testing/manual/E07-S08-preconditions.sql`,
+on the local Docker database `connectsphere_dev_stack` after a fresh reset
+and seed, makes item **E07-S08 Microphone** (stock 2) and Planning Event
+**EVT-9301 Two-Session Expo** (organiser_a, coord_a), 1 Dec 2026, with
+Sessions **Morning** 9:00–11:00 am and **Afternoon** 1:00–3:00 pm. The
+Morning already has 2 microphones requested and reserved by tech_a, and
+Morning technical support staffed by tech_a. No screen can make this:
+Sessions are added only on drafts, equipment and technicians only from
+Approved.
+
+**Before step 1:** API on port 3001, frontend on http://localhost:5173.
+Password for all three: `ValidPass123` (`tests/seed/SEED_DATA.md`). <!-- pragma: allowlist secret -->
+One browser profile per account: `coord_a@connectsphere.com` (Chrome),
+`tech_a@connectsphere.com` (Chrome Incognito), `organiser_a@clienta.com`
+(Edge). **Screenshots:** the whole browser window, address bar and signed-in
+role visible, bookmarks bar hidden (Ctrl + Shift + B); zoom out rather than
+crop. Name each one as below.
+
+### TC_E07S08_01: a request linked to Session B (here "Afternoon")
+
+1. coord_a: open http://localhost:5173/coordinator/events/EVT-9301/equipment.
+   Card **Morning** (1 Dec 2026, 9:00 am – 11:00 am): E07-S08 Microphone,
+   2, **Reserved**. Card **Afternoon** (1:00 pm – 3:00 pm): "No equipment
+   requested for this Session yet." → `tc01-1-before.png`
+2. **Add equipment request**. **Session**: "Afternoon, 1 Dec 2026, 1:00 pm –
+   3:00 pm"; **Equipment item**: E07-S08 Microphone; **Quantity requested**:
+   2 → `tc01-2-form.png` (before saving)
+3. **Save equipment request**. Green "Equipment request saved." The
+   **Afternoon** card now lists E07-S08 Microphone, 2, **Not reserved**; the
+   **Morning** card is unchanged → `tc01-3-saved.png`
+
+### TC_E07S08_02: the reservation uses Session B's time
+
+4. tech_a: open http://localhost:5173/support/events/EVT-9301/equipment.
+   "Reserve each request from the units free for its Session's dates. …"
+   → `tc02-1-page.png`
+5. In the **Afternoon** card, **Reserve E07-S08 Microphone**. **Session**:
+   Afternoon; **Session dates**: 1 Dec 2026, 1:00 pm – 3:00 pm; **Free for
+   these dates**: 2 (all 2 are reserved in the Morning, which doesn't
+   overlap) → `tc02-2-form.png`
+6. **Reserve equipment**. Green **Reserved**: "E07-S08 Microphone × 2
+   reserved for EVT-9301 Two-Session Expo, Afternoon, 1 Dec 2026, 1:00 pm –
+   3:00 pm." Both cards show **Reserved** → `tc02-3-reserved.png`
+7. **Equipment availability**: Start 01/12/2026 09:00, End 01/12/2026 11:00,
+   **Check availability**. E07-S08 Microphone: 0 free → `tc02-4-morning.png`
+8. Start 01/12/2026 13:00, End 01/12/2026 15:00, **Check availability**.
+   E07-S08 Microphone: 0 free (only Session B's reservation counts here;
+   11:00–13:00 would show 2) → `tc02-5-afternoon.png`
+
+### TC_E07S08_04: the technician stays assigned to the Event
+
+9. tech_a: **Technician staffing**, filter **Staffed**. EVT-9301
+   Two-Session Expo, "Sound desk for the Morning keynote", Technicians:
+   **Technical Support A**, **Staffed** → `tc04-1-before.png`
+10. organiser_a: open http://localhost:5173/organiser/requests/EVT-9301. In
+    **Event Sessions**, the **Afternoon** row: Starts 1 Dec 2026 2:00 pm,
+    Ends 4:00 pm → **Save session**. The check opens: "Equipment to
+    reconfirm: E07-S08 Microphone: date or time changed" →
+    `tc04-2-review.png`
+11. **Save and ask staff to reconfirm**. "Session saved." →
+    `tc04-3-saved.png`
+12. tech_a: **Technician staffing**, filter **Staffed** again: the same row,
+    **Technical Support A**, **Staffed**; no Session-level assignment was
+    needed → `tc04-4-after.png`
+
+(After step 11 the Afternoon reservation keeps 1:00–3:00 pm and shows
+**Needs review**: T-108; reconfirming takes the new time, D124. Not a step
+of this run.)
 
 ## Known limits
 
@@ -150,3 +236,9 @@ No production check is needed for the schema: the story adds no migration.
 | 2026-11-04 ≈16:36 | `4594848+local` | 2 | _02 | `npx tsx --test --test-name-pattern="E07S08\|E07-S08" tests/equipmentReservations.integration.test.ts` | local, same | 1 passed, **1 failed** | Test's own mistake: a change excludes its own units, so "Only 2 are free for this Session's dates." was right, not "None are free…". Expectation fixed |
 | 2026-11-04 ≈16:39 | `4594848+local` | 3 | — | unit + whole `test:db` under c8, then the changed-line and changed-branch checks | local, same | 263/263 lines; **2 branches never taken** | `requests.ts` (an Event with no code on a multi-Session notice) and `reservations.ts` (`session ?? null`, unreachable). The fallback is computed once with a new test case; the unreachable `?? null` removed |
 | 2026-11-04 16:41–16:43 | `8135c42` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npx c8 --clean=false tsx --test <test:db files>`; `npx c8 report` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 362/362; 315/315 changed lines and 115/115 changed branches covered | Records `20261104-164122-Bl0oper-backend-unit.md`, `20261104-164205-Bl0oper-backend-db.md` |
+| 2026-11-04 ≈17:20 | `0ddba25+local` | 5 | _01, _02 | `npx playwright test tests/e2e/equipmentRequests.spec.ts tests/e2e/equipmentReservations.spec.ts -g TC_E07S08` | local | 4/4 passed (desktop, mobile) | Screenshots looked at: the form's Session option was clipped in the two-column form ("…3:00 p"); the Session field made full width and rerun, 1/1 passed |
+| 2026-11-04 17:24–17:28 | `c789569` | 4, 5 | _01 to _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend) | local | **typecheck failed**; Vitest 847/847 | `EquipmentReservations.test.tsx` passed a `sessionId` the shared fixture's type didn't have. Fixed in `50ada3b` |
+| 2026-11-04 17:29–17:33 | `50ada3b` | 4, 5 | _01 to _03 | the same, then the changed-line and changed-branch checks | local | clean; 847/847; 45/45 lines; **2 branches never taken** | Xiang Ying's "Exceeds total stock" pill, unchanged but moved into the per-Session table; covered only by Playwright. A Vitest check added in `db7d723` |
+| 2026-11-04 17:34–17:39 | `db7d723` | 4, 5 | _01 to _03 | the same | local | typecheck clean; Vitest 847/847 in 76 files; 45/45 changed lines and 115/115 changed branches covered | Record `20261104-173450-Bl0oper-frontend-vitest.md` |
+| 2026-11-04 17:39–17:42 | `db7d723` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Record `20261104-173922-Bl0oper-frontend-e2e.md` |
+| 2026-11-04 ≈17:50 | `db7d723` | 5 (dry run, not evidence) | _01, _02, _04 | Claude's headless script of the click-through steps on the local real stack | local, Docker `connectsphere_dev_stack` | every step showed the scripted screen and wording | The staffing queue opens on "Needs a technician", so step 9 picks **Staffed**. Database reset and setup SQL re-applied afterwards |

@@ -23,5 +23,22 @@ Built from the shared skeleton only (`design.md`, `docs/frontend-guide.md`):
 shared blocks, `useLoad`, `stubApi`, `signInAs`, one card per Session as the
 Safety Officer's review page does.
 
-Next: code and tests, then Aaron's manual run on the local real stack. No PR
-until Aaron's manual run with screenshots is done.
+## Done so far
+
+- `c789569` screens and tests; `50ada3b` a fixture type fix; `db7d723` a
+  Vitest check for the moved over-stock pill. A per-Session card layout
+  needs the request table in a render function (`requestTable`), so its
+  unchanged lines show as moved.
+- Gates at `db7d723`: root typecheck clean; Vitest 847/847, 45/45 changed
+  lines, 115/115 changed branches; Playwright 466 passed, 218 skipped,
+  0 failed. Records in `docs/testing/runs/`.
+- Setup SQL `docs/testing/manual/E07-S08-preconditions.sql` and the
+  click-through script in the story record; a dry run of every step on the
+  local real stack matched it.
+
+## Not done / next step
+
+- Aaron's manual run (TC_E07S08_01, _02, _04), its record and screenshots.
+- `tc-coverage.md` regenerated last; then the PR (story key, `Closes
+  SCRUM-254`, `Closes SCRUM-255`), only after Aaron's run, and only once #426
+  has merged and `main` is merged in.
