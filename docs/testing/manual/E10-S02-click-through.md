@@ -291,10 +291,10 @@ equipment. A staffed **Sound desk** request (13 Mar, 12:00 pm – 2:00 pm,
    http://localhost:5173/organiser/requests/EVT-1029. Under **Event Sessions**,
    in **Day 2**, set **Starts** to 13/03/2027 02:00 pm and **Ends** to
    13/03/2027 04:30 pm. Click **Save session**.
-2. Expected (TC_14): **Save this Session change?** "This change flags 0
-   booking(s), 0 reservation(s) and 1 Technical Support request(s) for
-   reconfirmation." Nothing is saved yet.
-3. Click **Save anyway**. Expected: "Session saved."; after a page reload Day 2
+2. Expected (TC_14): **Check what this change affects**. Under **Technical
+   Support to reconfirm**, Sound desk, 13 Mar 2027, 12:00 pm – 2:00 pm → 1:00 pm –
+   3:00 pm. No venue booking or equipment is listed. Nothing is saved yet.
+3. Click **Save and ask staff to reconfirm**. Expected: "Session saved."; after a page reload Day 2
    still starts 13/03/2027 02:00 pm.
 4. Sign in as `tech_a`. Open http://localhost:5173/notifications. Expected
    (TC_15): one **Event update** for Design Week: "An event change (date or time)

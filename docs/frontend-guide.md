@@ -222,8 +222,10 @@ saved Event, so they cannot be created in the same POST that creates the draft:
 save the draft first, then add, edit or remove Sessions. When a removal would leave one Session, Save draft and Submit are blocked from the start of the delete until the draft form has re-read the Event's new details (T-108), and stay blocked if that read fails. In planning there is no
 Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
 the Session's bookings and reservations are released before anything is sent.
-The preview's confirmation counts the flagged bookings, reservations and staffed
-Technical Support requests (T-104); a reply without `supports` counts none.
+The preview opens the Coordinator's `ArrangementReview`: the flagged bookings,
+reservations and staffed Technical Support requests by name (T-104) and any
+over-subscription, which also opens it when nothing is flagged. A save refused as
+`arrangements_changed` reopens it with the fresh list (`changedCheck`).
 
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
 keeps the Event's own dates and attendance as the overall planning envelope,
