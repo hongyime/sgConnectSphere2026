@@ -33,12 +33,18 @@ The three points left for E08-S06's builder in
    section F with EVT-1085 (real Safety Officer page); automated real local run
    10/10 checks (record 20261104-014530); unit 717/718 (1 skip), DB 349/350
    (`registration.db.test.ts` local schema only), Vitest 821/821.
-5. Le Xin's manual run of section F (TC_E08S04_05-14 to -20, T-93).
+5. Done. Le Xin's manual run of section F, PASS, 8 screenshots
+   TC_E08S04_05-14 to -21 (record 20261105-003100).
+5b. Done. Docs brought up to date with E08-S06: `api-changes-week7.md`,
+   `dynamic-user-flows.md`, `modular-monolith-architecture.md`,
+   `contracts/venue-bookings.md` (D118, new wording, seven triggers),
+   `plans/screen-inventory.md` (E08-S04 row), new story record
+   `plans/scrum-61-implementation-status.md`. doc_guard 0 errors.
 6. PR, Jira.
 
 ## Next step
 
-Task 5: Le Xin's manual run of section F.
+Task 6: re-run suites on the final commit, push, PR, Jira (SCRUM-250 In Review, SCRUM-243 Done).
 
 ## Found on the way
 
@@ -46,3 +52,5 @@ Task 5: Le Xin's manual run of section F.
   after every `cli.ts reset`.
 - On 4 November the shared folder was switched to `test/SCRUM-71-e10s02-session-rerun`
   mid-run by another session; check the branch before a real run.
+- The SCRUM-250 records of 4 November name `e8d78d4`; after the rebase onto
+  `main` (#420, #421, #422, #428) the same changes are `79231d9`.

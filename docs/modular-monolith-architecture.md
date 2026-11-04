@@ -160,7 +160,9 @@ the account's grants, and each backend action remains independently authorized.
   approval, reconfirmation and lost-booking cancellation, and Equipment and
   Support's reservation, re-reservation, staff assignment and support
   reconfirmation. The earlier approval stays in the audit history and is not
-  reused.
+  reused; an Event the Safety Officer sent back waits for its Coordinator
+  (E08-S06, D118). Event Lifecycle's readiness names a flagged booking "needs
+  reconfirmation by Venue Staff", whichever module flagged it (SCRUM-250).
 - E10-S02 Technical Support delivery (T-104, SCRUM-244): Change Management's
   date-change impact also flags staffed Event-level support requests (a Session
   change: those overlapping its old time; an Event-wide change: all) and keeps
