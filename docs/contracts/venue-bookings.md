@@ -496,3 +496,10 @@ change; their rows stay Confirmed pending reconfirmation. A preview cannot flag
 or notify. The request service applies the same stale-revision and atomic
 rollback rules as Event-wide changes, including T-104 crew readiness and the
 T-103 Safety Review interruption/re-entry path.
+
+### E02-S07 draft submission lock boundary
+
+Draft submission validates every independent Session's dates while holding Event
+then Session locks. Draft Session creation/editing acquires the Event lock first
+and rechecks Draft status. This preserves the common Event-first lock order used
+by booking writers; date refusal does not create or alter a venue booking.

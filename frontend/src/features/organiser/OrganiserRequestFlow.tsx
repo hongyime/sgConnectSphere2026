@@ -309,6 +309,18 @@ export function OrganiserRequestFlow({
         setSubmitState({ status: 'error', message: 'Preferred date must be in the future' });
         return;
       }
+      if ((body?.error === 'session_date_in_past' || body?.error === 'session_date_outside_horizon')
+        && typeof body.sessionId === 'string' && typeof body.sessionTitle === 'string' && Number.isInteger(body.sessionNumber)
+        && (body.field === 'startAt' || body.field === 'endAt') && typeof body.maximumDate === 'string') {
+        const field = body.field === 'startAt' ? 'start date and time' : 'end date and time';
+        setSubmitState({
+          status: 'error',
+          message: `Session ${body.sessionNumber} (${body.sessionTitle}): ${field} ${body.error === 'session_date_in_past'
+            ? 'must be in the future'
+            : `must be on or before ${body.maximumDate} (Singapore time)`}. Edit this Session before submitting again.`,
+        });
+        return;
+      }
       if (body?.error === 'event_date_outside_horizon' && typeof body.maximumDate === 'string') {
         const fieldLabel = body.field === 'startAt'
           ? 'Preferred start date and time'
