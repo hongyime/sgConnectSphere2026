@@ -73,11 +73,27 @@ as PO):
 
 ## Rules this story applies
 
-Filled in with the code's exact wording as each part lands.
+The messages are the code's wording, word for word. PR 1 is the backend, so
+"what the user sees" is the API's answer until PR 2's screens show it.
+"Session label" is `Session "<title>"`, or `Session <n>` for an untitled
+Session, numbered by start time as the Session screens are.
 
 | Rule | What the user sees | Test case |
 |---|---|---|
-| | | |
+| On an Event with two or more Sessions a request names one; with one Session it is filled in (D122) | Without one: 400, `errors.sessionId` "Choose a Session for this equipment request." | TC_E07S08_01 |
+| The Session must be one of the Event's own; the database's composite key backs this up | 400, `errors.sessionId` "Choose a Session of this event." Nothing is stored | TC_E07S08_03 |
+| An edit that leaves the Session out keeps it; a reserved request's Session can't change (D123) | 409 "This request has been reserved and cannot be amended or removed here." | TC_E07S08_01 |
+| One request per item per Session, so each Session reserves its own | 409 "This equipment is already requested for this Session. Edit its existing request." ("…for this event." on a single-Session Event, as before) | TC_E07S08_01, _02 |
+| A reservation takes its request's Session and that Session's period; availability is for that period (D124) | The reservation response adds `session`; Technical Support's free quantity is the Session's | TC_E07S08_02 |
+| A change or reconfirmation resets the reservation to its Session's current period; a Session time change alone moves nothing (T-108) | — | TC_E07S08_02 |
+| Not enough free for a Session | 409 "None are free for this Session's dates." / "Only <n> are free for this Session's dates." | TC_E07S08_02 |
+| A request whose Session was deleted has none; it can be edited to choose one, and reserving it is refused until then, unless one Session is left, which is filled in (D132) | 409 "Choose a Session for this request before reserving it." | D132 test |
+| On a multi-Session Event, notices name the Session and its dates (D131) | e.g. "EVT-S8 Tech Conference, Session "Afternoon", 15 Nov 2026, 1:00 pm – 3:00 pm: Wireless Microphone × 3 reserved." Technical Support's request notice: "EVT-S8A, Session "B", 1 Feb 2027, 1:00 pm – 3:00 pm: Wireless Microphone × 2 requested. …" A withdrawal lists each affected Session, separated by "; " | TC_E07S08_01, _02; D131 test |
+| On a multi-Session Event, Activity log entries name the Session (D131) | "Wireless Microphone × 3 for Session "Morning"", "… returned to the available pool" | TC_E07S08_02 |
+| Deleting a Session tells the Coordinator what it released and, while two or more Sessions remain, which requests need a Session (D134) | **Equipment reservation released**: "<Event>: Session 1 was deleted, so its equipment reservations were released: Wireless Microphone × 1. These requests now need a Session: Projector × 1, Wireless Microphone × 2. Choose one for each on the event's equipment requests." With nothing reserved: **Equipment request needs a Session** | TC_E07S08_04 |
+| The Event's equipment staff (assigned Technical Support, Venue Staff of a booked venue, captured before anything is released) hear of the releases; the actor never does (D134) | **Equipment reservation released**: the first sentence above, then "Changed at <time>." | TC_E07S08_04 |
+| Readiness names each equipment line's Session on a multi-Session Event; a request with no Session blocks (D135) | "Projector (Session 2) — 1 of 3 reserved; 2 outstanding"; "Projector — needs a Session; choose one on the equipment requests" | D135 unit test |
+| Technical Support staff assignment stays Event-level | Adding, editing or deleting Sessions leaves it unchanged | TC_E07S08_04 |
 
 ## Test plan
 
@@ -86,7 +102,7 @@ Filled in with the code's exact wording as each part lands.
 | TC_E07S08_01 | A request on a two-Session Event saves with the chosen Session and still belongs to the Event; the other Session's request and other Events are unchanged; a single-Session Event needs no choice | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit); PR 2: Vitest, Playwright, manual run |
 | TC_E07S08_02 | A reservation takes its request's Session and Session period; stock reserved in Session A doesn't block Session B; a change or reconfirmation uses the Session's current period | `equipmentReservations.integration.test.ts` (real database); `equipmentReservations.test.ts` (unit); PR 2: Vitest, Playwright, manual run |
 | TC_E07S08_03 | A Session of another Event, or an unknown one, is refused with a 400 and nothing is stored; the database's foreign key refuses it too | `equipmentRequests.integration.test.ts` (real database); `equipmentRequests.test.ts` (unit) |
-| TC_E07S08_04 | Adding, editing and deleting Sessions leaves the Event's Technical Support staff assignment as it was | `supportRequests.integration.test.ts` (real database); PR 2: manual run |
+| TC_E07S08_04 | Adding (by SQL, D133), editing and deleting Sessions leaves the Event's Technical Support staff assignment as it was; deletions send D134's notices | `eventSessionsRoutes.integration.test.ts` (real database; it already deletes Sessions in a rolled-back schema); PR 2: manual run |
 
 ## Test gates
 
@@ -109,9 +125,28 @@ No production check is needed for the schema: the story adds no migration.
 
 ## Known limits
 
-Filled in as the work lands.
+- **No screen yet (PR 1).** Until PR 2, the equipment pages send no
+  `sessionId`: requests on single-Session Events work as before; on a
+  multi-Session Event a new request is refused with "Choose a Session for
+  this equipment request." (it failed with a database error before), and an
+  edit keeps its Session.
+- **Removing a request whose Session was deleted** is still refused while it
+  has released reservation history ("This request has been reserved…"), as
+  before; it can be edited to choose a Session (D132), not removed. PR 2's
+  screen offers the edit.
+- **Readiness on a single-Session Event** shows a request without a Session
+  as its released reservation, not as "needs a Session": reserving fills the
+  only Session in (D132).
+- **A withdrawal notice** still sums the affected reservations into one
+  "The reservation of <n> needs review." across Sessions (E07-S05's
+  wording); it now lists each affected Session.
 
 ## Run log
 
 | Date and time (SGT) | Commit | Gate | TCs | Command | Where | Result | Exact message or note |
 |---|---|---|---|---|---|---|---|
+| 2026-11-04 ≈16:31 | `4594848+local` | 1 | — | `npm test` (backend), before the unit tests were updated | local | 724 tests: 721 passed, **2 failed**, 1 skipped | Expected: `validateRequestInput` now returns `sessionId: null`; readiness lines now carry `sessionId` and `sessionName`. Tests updated |
+| 2026-11-04 ≈16:34 | `4594848+local` | 2 | _01 to _04, TC_E07S09 | the changed DB suites (requests, reservations, unavailability, readiness, Session routes, support, catalogue) before new tests | local, Docker `connectsphere_notification_test` | 53/53 passed | The existing behaviour holds on the changed code |
+| 2026-11-04 ≈16:36 | `4594848+local` | 2 | _02 | `npx tsx --test --test-name-pattern="E07S08\|E07-S08" tests/equipmentReservations.integration.test.ts` | local, same | 1 passed, **1 failed** | Test's own mistake: a change excludes its own units, so "Only 2 are free for this Session's dates." was right, not "None are free…". Expectation fixed |
+| 2026-11-04 ≈16:39 | `4594848+local` | 3 | — | unit + whole `test:db` under c8, then the changed-line and changed-branch checks | local, same | 263/263 lines; **2 branches never taken** | `requests.ts` (an Event with no code on a multi-Session notice) and `reservations.ts` (`session ?? null`, unreachable). The fallback is computed once with a new test case; the unreachable `?? null` removed |
+| 2026-11-04 16:41–16:43 | `8135c42` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npx c8 --clean=false tsx --test <test:db files>`; `npx c8 report` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 362/362; 315/315 changed lines and 115/115 changed branches covered | Records `20261104-164122-Bl0oper-backend-unit.md`, `20261104-164205-Bl0oper-backend-db.md` |

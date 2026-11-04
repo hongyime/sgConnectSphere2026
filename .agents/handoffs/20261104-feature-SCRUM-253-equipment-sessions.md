@@ -38,6 +38,37 @@ Teammates' files touched (listed in the PR for their owners):
 stories (E07-S04, E07-S05, E08-S03), with E11-S01 notice changes by Ji Ning
 and Le Xin.
 
-Next: code and unit tests, real-database tests on Docker, coverage of
-changed lines, then the draft PR with the "not ready for review" note until
-Aaron's manual run of the whole story.
+## Done so far
+
+- `8135c42`: the code and tests. A shared helper
+  (`equipmentSupport/sessions.ts`) lists an Event's Sessions in start order
+  and words them (`Session "<title>"` or `Session <n>`). Requests resolve and
+  save the Session under the Event lock; one request per item per Session;
+  reservations take the request's Session and its period; Session deletion
+  notices; readiness names Sessions. `docs/api-changes-week7.md` row made
+  exact.
+- Gates at `8135c42`, all passing: root typecheck; backend unit 726 passed,
+  1 skipped; whole `test:db` 362/362 on Docker; 315/315 changed lines and
+  115/115 changed branches covered (c8 over the unit and database runs, as
+  SCRUM-54, 55 and 60 measured it). Records in `docs/testing/runs/`.
+
+## Not done / next step
+
+- Draft PR (no story key; `Closes SCRUM-253`), "not ready for review" until
+  Aaron's manual run of the whole story; postplan; `tc-coverage.md`
+  regenerated last.
+- PR 2 (`feature/SCRUM-181-equipment-sessions`, stacked on this branch):
+  the Session picker and Session names on the equipment and readiness
+  screens (the API now returns `sessions` and each request's `sessionId`; a
+  request with `sessionId: null` on a multi-Session Event is editable to
+  choose one), Vitest, Playwright, Aaron's manual run.
+
+## Decisions taken in the code (within D122–D136)
+
+- One request per item **per Session** (was per Event): AC 2 needs the same
+  item reservable in two Sessions of one Event.
+- An edit that leaves `sessionId` out keeps the request's Session, so the
+  current screen still edits requests before PR 2.
+- `reserved` keeps its meaning (any reservation history), since removing a
+  request still refuses that history; PR 2 uses `sessionId: null` to offer
+  the edit.
