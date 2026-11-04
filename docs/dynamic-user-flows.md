@@ -451,8 +451,11 @@ Staff re-save a flagged reservation and, since T-104 (E10-S02, SCRUM-244),
 reconfirm a flagged Technical Support request from **Support to reconfirm** on
 the staffing page. When that is the last outstanding
 arrangement, the Event enters Safety Review in the same transaction and the
-Safety Officer, Organiser and Coordinator are notified. No `safety_checks` row is
-created yet; E08-S06 adds the decision record.
+Safety Officer, Organiser and Coordinator are notified. E08-S06's decision
+record (one `safety_check` audit row per decision) is history only: the new
+review starts with every factor unanswered and needs a new decision. An Event
+the Safety Officer sent back (request changes or reject) is not moved by this
+step; its Coordinator resubmits (D118).
 
 ## 15. Dynamic view — configured hold expiry and extensions (Week 9, C-99/C-124/C-125, T-84)
 

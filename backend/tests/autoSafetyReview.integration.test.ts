@@ -15,8 +15,10 @@ import { randomUUID } from 'node:crypto';
 import { decideBooking, reconfirmBooking } from '../src/modules/venueBooking/decisions.js';
 import { changeReservation } from '../src/modules/equipmentSupport/reservations.js';
 import { assignTechnician } from '../src/modules/equipmentSupport/staffAssignments.js';
-import { revertEventToPlanning } from '../src/modules/eventReadiness/submission.js';
+import { decideSafetyReview, getSafetyReviewEvent, listSafetyReviewEvents, revertEventToPlanning, submitForSafetyReview } from '../src/modules/eventReadiness/submission.js';
+import { SAFETY_FACTORS } from '../src/modules/eventReadiness/safetyCheck.js';
 import { AUTO_SAFETY_REVIEW_ACTION } from '../src/modules/eventReadiness/autoSafetyReview.js';
+import { listEventActivity } from '../src/modules/eventVisibility/service.js';
 import { applyEventStatusChange, ConfirmationRefusedError } from '../src/modules/eventLifecycle/repository.js';
 import { inTransaction } from '../src/database/pool.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -114,6 +116,42 @@ test('the earlier safety approval is not reused: only a Safety Officer can confi
   assert.equal(await f.status(event), 'safety_review');
   await inTransaction(f.pool, client => applyEventStatusChange(client, event, 'confirmed', f.officer.id));
   assert.equal(await f.status(event), 'confirmed', 'a new approval confirms it');
+}));
+
+// SCRUM-250: the same chain through E08-S06's real Operational Safety Check
+// (#412) instead of a direct status change: the Coordinator submits, the
+// Safety Officer approves on the checklist, the event is reverted and
+// reconfirmed, and it comes back to the Safety Officer for a new decision.
+test('TC_E08S04_05: after a real safety approval, a reverted and reconfirmed event goes back to the Safety Officer for a new check', () => withFixture(async f => {
+  const { event, booking } = await f.plannedEvent('EVT-8409');
+  const allSatisfactory = Object.fromEntries(SAFETY_FACTORS.map(key => [key, { satisfactory: true, comment: 'Checked' }]));
+  await submitForSafetyReview(f.pool, f.coordinator, 'EVT-8409');
+  await decideSafetyReview(f.pool, f.officer, 'EVT-8409', { decision: 'approve', factors: allSatisfactory });
+  assert.equal(await f.status(event), 'confirmed');
+  await revertEventToPlanning(f.pool, f.coordinator, event, { reason: 'The date has to move a week' });
+  await f.moveDate(event, booking);
+
+  const result = await reconfirmBooking(f.pool, f.staff, booking);
+
+  assert.equal((result.body as { enteredSafetyReview: boolean }).enteredSafetyReview, true);
+  assert.equal(await f.status(event), 'safety_review', 'no Coordinator submission was needed');
+  assert.deepEqual((await listSafetyReviewEvents(f.pool, f.officer)).map(row => row.event_code), ['EVT-8409'],
+    'it is back in the Safety Officer\'s queue');
+  const detail = await getSafetyReviewEvent(f.pool, f.officer, 'EVT-8409');
+  assert.deepEqual(Object.keys(detail).sort(), ['equipment', 'event', 'factors', 'sessions', 'support', 'venues'],
+    'the review carries no earlier decision, so every factor starts unanswered');
+  // The earlier approval is still in the Activity log, beside the automatic move.
+  const activity = (await listEventActivity((sql, values) => f.pool.query(sql, values) as never, event)).rows
+    .filter(entry => entry.field_changed === 'safety_check' || entry.action === AUTO_SAFETY_REVIEW_ACTION)
+    .map(entry => entry.action);
+  assert.deepEqual(activity, ['Safety check approved', AUTO_SAFETY_REVIEW_ACTION]);
+
+  // Not reused: the Coordinator can't confirm it; a new decision is needed.
+  await assert.rejects(inTransaction(f.pool, client => applyEventStatusChange(client, event, 'confirmed', f.coordinator.id)), ConfirmationRefusedError);
+  await decideSafetyReview(f.pool, f.officer, 'EVT-8409', { decision: 'approve', factors: allSatisfactory });
+  assert.equal(await f.status(event), 'confirmed');
+  const decisions = (await f.q(`SELECT action FROM audit_logs WHERE event_id = $1 AND field_changed = 'safety_check' ORDER BY occurred_at, id`, [event])).rows;
+  assert.deepEqual(decisions.map(row => row.action), ['Safety check approved', 'Safety check approved'], 'two separate decisions, one per check');
 }));
 
 test('the event waits until the last arrangement: booking, then equipment, then Technical Support staff', () => withFixture(async f => {

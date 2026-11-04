@@ -7,11 +7,11 @@
 --   psql "<local connectsphere_dev_stack URL>" -q -v stage=check -f docs/testing/manual/E08-S04-preconditions.sql
 --
 -- What `setup` makes (Singapore time, +08). Every event is owned by
--- organiser_a (Client A), assigned to coord_a, copying EVT-2001's people, and is
--- Confirmed through the gate: its Activity log holds coord_a's submission
--- (Planning to Safety Review) and safety_officer's approval (Safety Review to
--- Confirmed), as the real status change writes them. venue_a is Venue Staff
--- for every E08 venue.
+-- organiser_a (Client A), assigned to coord_a, copying EVT-2001's people.
+-- EVT-1081 to EVT-1084 are Confirmed through the gate: each Activity log holds
+-- coord_a's submission (Planning to Safety Review) and safety_officer's
+-- approval (Safety Review to Confirmed), as the real status change writes them.
+-- venue_a is Venue Staff for every E08 venue.
 --   EVT-1081 "Leadership Summit", 2 Dec 2026 09:00-17:00, attendance 120, at
 --     E08 Summit Hall (200), published, attendee_a Registered: TC_E08S04_01, _02, _04.
 --   EVT-1082 "Charity Run", 5 Dec 2026 07:00-12:00, attendance 150, at
@@ -22,6 +22,10 @@
 --   EVT-1084 "Leadership Seminar", 10 Dec 2026 09:00-17:00, attendance 100, at
 --     E08 Seminar Hall (150); E08 Garden Hall (150) is free that day for the
 --     replacement: TC_E08S04_06 and the venue-loss chain.
+--   EVT-1085 "Charity Gala", 14 Dec 2026 18:00-22:00, attendance 120, at
+--     E08 Gala Hall (200), submitted by coord_a and still in Safety Review, so
+--     the Safety Officer approves it on the real review page (E08-S06):
+--     TC_E08S04_05 with the real Operational Safety Check (SCRUM-250).
 
 \set ON_ERROR_STOP on
 SELECT :'stage' = 'setup' AS is_setup, :'stage' = 'check' AS is_check \gset
@@ -40,7 +44,8 @@ VALUES ('E08 Summit Hall', 'Level 1', 200, '00:00', '23:59'),
        ('E08 Charity Hall', 'Level 1', 300, '00:00', '23:59'),
        ('E08 Briefing Room', 'Level 2', 80, '00:00', '23:59'),
        ('E08 Seminar Hall', 'Level 3', 150, '00:00', '23:59'),
-       ('E08 Garden Hall', 'Level 3', 150, '00:00', '23:59');
+       ('E08 Garden Hall', 'Level 3', 150, '00:00', '23:59'),
+       ('E08 Gala Hall', 'Level 4', 200, '00:00', '23:59');
 INSERT INTO venue_staff_assignments (venue_id, staff_id)
 SELECT v.id, u.id FROM venues v, users u WHERE v.name LIKE 'E08 %' AND u.email = 'venue_a@connectsphere.com';
 
@@ -56,7 +61,8 @@ FROM events e, (VALUES
   ('EVT-1081', 'Leadership Summit', 'Annual leadership summit.', '[2026-12-02 09:00+08,2026-12-02 17:00+08)', 120),
   ('EVT-1082', 'Charity Run', 'Fundraising run and family day.', '[2026-12-05 07:00+08,2026-12-05 12:00+08)', 150),
   ('EVT-1083', 'Leadership Briefing', 'Morning briefing for team leads.', '[2026-12-08 09:00+08,2026-12-08 12:00+08)', 60),
-  ('EVT-1084', 'Leadership Seminar', 'Full-day seminar.', '[2026-12-10 09:00+08,2026-12-10 17:00+08)', 100)
+  ('EVT-1084', 'Leadership Seminar', 'Full-day seminar.', '[2026-12-10 09:00+08,2026-12-10 17:00+08)', 100),
+  ('EVT-1085', 'Charity Gala', 'Evening fundraising dinner.', '[2026-12-14 18:00+08,2026-12-14 22:00+08)', 120)
 ) AS v(code, title, description, range, attendance)
 WHERE e.event_code = 'EVT-2001';
 
@@ -64,7 +70,8 @@ WHERE e.event_code = 'EVT-2001';
 INSERT INTO venue_bookings (event_id, session_id, venue_id, booking_range, status, is_primary)
 SELECT e.id, s.id, v.id, s.session_range, 'confirmed', true
 FROM (VALUES ('EVT-1081', 'E08 Summit Hall'), ('EVT-1082', 'E08 Charity Hall'),
-             ('EVT-1083', 'E08 Briefing Room'), ('EVT-1084', 'E08 Seminar Hall')) AS b(code, venue)
+             ('EVT-1083', 'E08 Briefing Room'), ('EVT-1084', 'E08 Seminar Hall'),
+             ('EVT-1085', 'E08 Gala Hall')) AS b(code, venue)
 JOIN events e ON e.event_code = b.code
 JOIN sessions s ON s.event_id = e.id
 JOIN venues v ON v.name = b.venue;
@@ -111,12 +118,15 @@ SELECT r.id, r.event_id, s.id FROM registration r JOIN sessions s ON s.event_id 
 -- "Confirmed before" for E08-S04 Scenario 4.
 INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value, occurred_at)
 SELECT e.coordinator_id, 'event', e.id, e.id, 'Status changed to safety_review', 'status', 'planning', 'safety_review', now() - interval '2 days'
-FROM events e WHERE e.event_code IN ('EVT-1081', 'EVT-1082', 'EVT-1083', 'EVT-1084');
+FROM events e WHERE e.event_code IN ('EVT-1081', 'EVT-1082', 'EVT-1083', 'EVT-1084', 'EVT-1085');
 INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value, occurred_at)
 SELECT o.id, 'event', e.id, e.id, 'Status changed to confirmed', 'status', 'safety_review', 'confirmed', now() - interval '1 day'
 FROM events e, users o WHERE e.event_code IN ('EVT-1081', 'EVT-1082', 'EVT-1083', 'EVT-1084') AND o.email = 'safety_officer@connectsphere.com';
 UPDATE events SET status = 'confirmed', status_changed_at = now() - interval '1 day'
 WHERE event_code IN ('EVT-1081', 'EVT-1082', 'EVT-1083', 'EVT-1084');
+-- EVT-1085 stops at the submission: the Safety Officer decides it on the page.
+UPDATE events SET status = 'safety_review', status_changed_at = now() - interval '2 days'
+WHERE event_code = 'EVT-1085';
 
 COMMIT;
 
@@ -147,6 +157,12 @@ SELECT e.event_code, a.action, a.old_value, a.new_value, u.email AS actor
 FROM audit_logs a JOIN events e ON e.id = a.event_id LEFT JOIN users u ON u.id = a.actor_id
 WHERE e.event_code LIKE 'EVT-108_' AND a.entity_type = 'event' AND a.field_changed = 'status'
 ORDER BY e.event_code, a.occurred_at;
+
+-- EVT-1085: each Operational Safety Check is its own checklist row (E08-S06),
+-- so the earlier approval stays and the new one is a second row.
+SELECT e.event_code, a.action, u.email AS actor, to_char(a.occurred_at AT TIME ZONE 'Asia/Singapore', 'DD Mon HH24:MI') AS at_sgt
+FROM audit_logs a JOIN events e ON e.id = a.event_id LEFT JOIN users u ON u.id = a.actor_id
+WHERE e.event_code = 'EVT-1085' AND a.field_changed = 'safety_check' ORDER BY a.occurred_at, a.id;
 
 SELECT e.event_code, u.email AS recipient, n.title, left(n.message, 120) AS message
 FROM notifications n JOIN users u ON u.id = n.user_id JOIN events e ON e.id = n.event_id
