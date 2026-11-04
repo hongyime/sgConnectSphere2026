@@ -10,6 +10,7 @@ import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { availabilityRows, capacityFor } from './availability.js';
 import { equipmentStaffRecipients, notifyEquipmentStaff } from './notifications.js';
+import { eventSessions, forSession, whenText, type EquipmentSession } from './sessions.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_QUANTITY = 2147483647;
@@ -32,6 +33,7 @@ type Reservation = {
   quantity_reserved: number;
   status: 'reserved' | 'partial' | 'released';
   requires_reconfirmation: boolean;
+  session_id: string | null;
 };
 type Result = { status: number; body: Record<string, unknown> };
 
@@ -110,9 +112,10 @@ export function eventLabel(event: { eventCode: string | null; title: string }) {
     : event.title;
 }
 
-export function freeSentence(free: number) {
-  if (free <= 0) return "None are free for this event's dates.";
-  return `Only ${free} ${free === 1 ? 'is' : 'are'} free for this event's dates.`;
+// E07-S08: on a multi-Session Event the free quantity is for the Session's dates.
+export function freeSentence(free: number, dates = "this event's dates") {
+  if (free <= 0) return `None are free for ${dates}.`;
+  return `Only ${free} ${free === 1 ? 'is' : 'are'} free for ${dates}.`;
 }
 
 async function requireTechnicalSupport(
@@ -163,8 +166,13 @@ async function lockEvent(client: PoolClient, identifier: string, action: Action)
 // equipment, then the reservation row.
 async function lockLine(client: PoolClient, eventId: string, requestId: string) {
   const request = (
-    await client.query<{ id: string; equipment_id: string; quantity_requested: number }>(
-      `SELECT id,equipment_id,quantity_requested FROM equipment_requests
+    await client.query<{
+      id: string;
+      equipment_id: string;
+      quantity_requested: number;
+      session_id: string | null;
+    }>(
+      `SELECT id,equipment_id,quantity_requested,session_id FROM equipment_requests
       WHERE id=$1 AND event_id=$2 FOR NO KEY UPDATE`,
       [requestId, eventId],
     )
@@ -182,7 +190,10 @@ async function lockLine(client: PoolClient, eventId: string, requestId: string) 
       [request.equipment_id],
     )
   ).rows[0]!;
-  return { request, equipment };
+  // The Event row is locked first, as Session writers do, so this list holds.
+  const sessions = await eventSessions((sql, values) => client.query(sql, values), eventId);
+  const session = sessions.find((s) => s.id === request.session_id);
+  return { request, equipment, sessions, session };
 }
 
 async function lockReservation(
@@ -208,19 +219,20 @@ async function lockReservation(
   return { ...line, reservation };
 }
 
-// Free units for the event's own dates (D39), excluding the reservation being
-// changed. Same calculation as E07-S03's availability check. The equipment row
-// is already locked and checked as active, so its availability row exists.
+// Free units for the line's Session's dates (D39, E07-S08 D124), excluding the
+// reservation being changed. Same calculation as E07-S03's availability check.
+// The equipment row is already locked and checked as active, so its
+// availability row exists.
 async function freeQuantity(
   client: PoolClient,
-  event: LockedEvent,
+  session: EquipmentSession,
   equipmentId: string,
   excludeReservationId: string | null,
 ) {
   const [row] = await availabilityRows(
     (sql, values) => client.query(sql, values),
-    event.startsAt.toISOString(),
-    event.endsAt.toISOString(),
+    session.startsAt.toISOString(),
+    session.endsAt.toISOString(),
     equipmentId,
     excludeReservationId,
   );
@@ -233,6 +245,7 @@ function quantityRefusal(
   requested: number,
   capacity: ReturnType<typeof capacityFor>,
   name: string,
+  dates?: string,
 ): Result | null {
   if (quantity > requested) {
     const message = `You can reserve at most the ${requested} requested.`;
@@ -258,7 +271,7 @@ function quantityRefusal(
     };
   }
   if (quantity > capacity.freeQuantity) {
-    const message = freeSentence(capacity.freeQuantity);
+    const message = freeSentence(capacity.freeQuantity, dates);
     return {
       status: 409,
       body: {
@@ -291,10 +304,24 @@ async function recordActivity(
   ).rows[0]!;
 }
 
-function describe(name: string, reserved: number, requested: number) {
+function describe(name: string, reserved: number, requested: number, suffix = '') {
   return reserved === requested
-    ? `${name} × ${reserved}`
-    : `${name} × ${reserved} of ${requested}`;
+    ? `${name} × ${reserved}${suffix}`
+    : `${name} × ${reserved} of ${requested}${suffix}`;
+}
+
+// The wording for a line's Session (D131): its name in the Activity log, its
+// dates in notices and refusals. Single-Session Events keep the old wording.
+function sessionWords(
+  event: LockedEvent,
+  session: EquipmentSession | undefined,
+  sessions: readonly EquipmentSession[],
+) {
+  return {
+    suffix: forSession(session, sessions),
+    when: whenText(event, session, sessions),
+    dates: sessions.length > 1 ? "this Session's dates" : undefined,
+  };
 }
 
 async function notifyCoordinator(
@@ -306,13 +333,14 @@ async function notifyCoordinator(
   name: string,
   reserved: number,
   requested: number,
+  when: string,
 ) {
   const outstanding = requested - reserved;
   const what =
     outstanding > 0
       ? `${name} × ${reserved} of ${requested} reserved; ${outstanding} outstanding.`
       : `${name} × ${reserved} reserved.`;
-  const message = `${eventLabel(event)}, ${formatEventDates(event.startsAt, event.endsAt)}: ${what}`;
+  const message = `${eventLabel(event)}, ${when}: ${what}`;
   await notifyEquipmentStaff(client, {
     eventId: event.id, actorId: actor.id, changeId: change.id, occurredAt: change.occurred_at,
     title, message,
@@ -336,6 +364,7 @@ function outcome(
   requested: number,
   changed: boolean,
   notified: number,
+  session: EquipmentSession | undefined,
 ) {
   return {
     changed,
@@ -346,6 +375,7 @@ function outcome(
       startsAt: event.startsAt,
       endsAt: event.endsAt,
     },
+    session,
     reservation: {
       id: reservation.id,
       requestId: reservation.request_id,
@@ -401,12 +431,22 @@ export function reserveEquipment(
 ) {
   return run(database, user, identifier, 'reserve', body, async (client, actor, input) => {
     const event = await lockEvent(client, identifier, 'reserve');
-    const { request, equipment } = await lockLine(client, event.id, input.id);
+    const { request, equipment, sessions, ...line } = await lockLine(client, event.id, input.id);
     if (!equipment.is_active)
       throw new AccessError(
         409,
         "This equipment has been retired, so it can't be reserved.",
       );
+    // D132: a request whose Session was deleted needs one first; with only one
+    // Session left, it is filled in (D122).
+    let session = line.session;
+    if (!session && sessions.length === 1) {
+      session = sessions[0]!;
+      await client.query('UPDATE equipment_requests SET session_id=$1 WHERE id=$2', [session.id, request.id]);
+    }
+    if (!session)
+      throw new AccessError(409, 'Choose a Session for this request before reserving it.');
+    const words = sessionWords(event, session, sessions);
     const existing = (
       await client.query(
         `SELECT id FROM equipment_reservations WHERE request_id=$1 AND status IN ('reserved','partial') FOR UPDATE`,
@@ -421,16 +461,18 @@ export function reserveEquipment(
     const refusal = quantityRefusal(
       input.quantity,
       request.quantity_requested,
-      await freeQuantity(client, event, equipment.id, null),
+      await freeQuantity(client, session, equipment.id, null),
       equipment.name,
+      words.dates,
     );
     if (refusal) return refusal;
     const status = input.quantity === request.quantity_requested ? 'reserved' : 'partial';
+    // D124: the reservation takes its request's Session and that Session's period.
     const reservation = (
       await client.query<Reservation>(
-        `INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range,status,reserved_by)
-        SELECT $1,e.id,$3,$4,e.event_range,$5,$6 FROM events e WHERE e.id=$2 RETURNING *`,
-        [request.id, event.id, equipment.id, input.quantity, status, actor.id],
+        `INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range,status,reserved_by,session_id)
+        SELECT $1,s.event_id,$3,$4,s.session_range,$5,$6,s.id FROM sessions s WHERE s.id=$7 AND s.event_id=$2 RETURNING *`,
+        [request.id, event.id, equipment.id, input.quantity, status, actor.id, session.id],
       )
     ).rows[0]!;
     const change = await recordActivity(
@@ -439,7 +481,7 @@ export function reserveEquipment(
       event,
       'Equipment reserved',
       null,
-      describe(equipment.name, input.quantity, request.quantity_requested),
+      describe(equipment.name, input.quantity, request.quantity_requested, words.suffix),
     );
     const notified = await notifyCoordinator(
       client,
@@ -450,10 +492,11 @@ export function reserveEquipment(
       equipment.name,
       input.quantity,
       request.quantity_requested,
+      words.when,
     );
     return {
       status: 201,
-      body: outcome(event, equipment.name, reservation, request.quantity_requested, true, notified),
+      body: outcome(event, equipment.name, reservation, request.quantity_requested, true, notified, session),
     };
   });
 }
@@ -466,7 +509,7 @@ export function changeReservation(
 ) {
   return run(database, user, identifier, 'change', body, async (client, actor, input) => {
     const event = await lockEvent(client, identifier, 'change');
-    const { request, equipment, reservation } = await lockReservation(
+    const { request, equipment, reservation, sessions, session } = await lockReservation(
       client,
       event.id,
       input.id,
@@ -476,6 +519,8 @@ export function changeReservation(
         409,
         'This reservation has been released. Reserve the request again instead.',
       );
+    // 0014: an active reservation always has its request's Session.
+    const words = sessionWords(event, session, sessions);
     if (!equipment.is_active)
       throw new AccessError(
         409,
@@ -490,21 +535,23 @@ export function changeReservation(
     )
       return {
         status: 200,
-        body: outcome(event, equipment.name, reservation, requested, false, 0),
+        body: outcome(event, equipment.name, reservation, requested, false, 0, session),
       };
     const refusal = quantityRefusal(
       input.quantity,
       requested,
-      await freeQuantity(client, event, equipment.id, reservation.id),
+      await freeQuantity(client, session!, equipment.id, reservation.id),
       equipment.name,
+      words.dates,
     );
     if (refusal) return refusal;
     const status = input.quantity === requested ? 'reserved' : 'partial';
-    // The range follows the event's current dates, in case they moved since.
+    // D124: the range follows its Session's current dates, in case they moved
+    // since (T-108: reservations don't move until someone edits them).
     const updated = (
       await client.query<Reservation>(
         `UPDATE equipment_reservations r SET quantity_reserved=$2,status=$3,requires_reconfirmation=false,
-          reservation_range=e.event_range FROM events e WHERE r.id=$1 AND e.id=r.event_id RETURNING r.*`,
+          reservation_range=s.session_range FROM sessions s WHERE r.id=$1 AND s.id=r.session_id RETURNING r.*`,
         [reservation.id, input.quantity, status],
       )
     ).rows[0]!;
@@ -513,8 +560,8 @@ export function changeReservation(
       actor,
       event,
       'Equipment reservation changed',
-      describe(equipment.name, reservation.quantity_reserved, requested),
-      describe(equipment.name, input.quantity, requested),
+      describe(equipment.name, reservation.quantity_reserved, requested, words.suffix),
+      describe(equipment.name, input.quantity, requested, words.suffix),
     );
     const notified = await notifyCoordinator(
       client,
@@ -525,10 +572,11 @@ export function changeReservation(
       equipment.name,
       input.quantity,
       requested,
+      words.when,
     );
     return {
       status: 200,
-      body: outcome(event, equipment.name, updated, requested, true, notified),
+      body: outcome(event, equipment.name, updated, requested, true, notified, session),
     };
   });
 }
@@ -541,13 +589,14 @@ export function releaseReservation(
 ) {
   return run(database, user, identifier, 'release', body, async (client, actor, input) => {
     const event = await lockEvent(client, identifier, 'release');
-    const { request, equipment, reservation } = await lockReservation(
+    const { request, equipment, reservation, sessions, session } = await lockReservation(
       client,
       event.id,
       input.id,
     );
     if (reservation.status === 'released')
       throw new AccessError(409, 'This reservation has already been released.');
+    const words = sessionWords(event, session, sessions);
     // Released rows stay as history; the units count as free again (E07-S03
     // ignores released rows). D42: no notice to the Coordinator.
     const recipients = await equipmentStaffRecipients(client, event.id, actor.id);
@@ -562,17 +611,17 @@ export function releaseReservation(
       actor,
       event,
       'Equipment reservation released',
-      describe(equipment.name, reservation.quantity_reserved, request.quantity_requested),
-      `${equipment.name} × ${reservation.quantity_reserved} returned to the available pool`,
+      describe(equipment.name, reservation.quantity_reserved, request.quantity_requested, words.suffix),
+      `${equipment.name} × ${reservation.quantity_reserved}${words.suffix} returned to the available pool`,
     );
     await notifyEquipmentStaff(client, {
       eventId: event.id, actorId: actor.id, changeId: change.id, occurredAt: change.occurred_at,
       title: 'Equipment reservation released', recipients,
-      message: `${eventLabel(event)}, ${formatEventDates(event.startsAt, event.endsAt)}: ${equipment.name} × ${reservation.quantity_reserved} released.`,
+      message: `${eventLabel(event)}, ${words.when}: ${equipment.name} × ${reservation.quantity_reserved} released.`,
     });
     return {
       status: 200,
-      body: outcome(event, equipment.name, updated, request.quantity_requested, true, 0),
+      body: outcome(event, equipment.name, updated, request.quantity_requested, true, 0, session),
     };
   });
 }

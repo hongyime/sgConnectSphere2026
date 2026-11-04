@@ -1169,3 +1169,147 @@ test('TC_E10S02_16: a Session layout change below its registrations is warned ab
     await pool.end();
   }
 });
+
+test('TC_E07S08_04 E07-S08 D134: adding, editing and deleting Sessions keeps the Event-level technician assignment, and a deletion says which equipment it released and which requests need a Session, rolled back', async () => {
+  const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
+  assert.ok(url, 'Configure a database connection; every fixture change is rolled back');
+  const pool = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('SET LOCAL statement_timeout = 30000');
+    const schema = `session_equipment_${randomUUID().replaceAll('-', '')}`;
+    await client.query(`CREATE SCHEMA ${schema}`);
+    await client.query(`SET LOCAL search_path = ${schema}, public`);
+    const migrations = (await readdir(new URL('../database/migrations/', import.meta.url)))
+      .filter(name => name.endsWith('.sql'))
+      .sort((a, b) => a.localeCompare(b));
+    for (const migration of migrations) {
+      await client.query(await readFile(new URL(`../database/migrations/${migration}`, import.meta.url), 'utf8'));
+    }
+    let savepoint = 0;
+    const savepointPool = {
+      async query(sql: string, values?: unknown[]) {
+        return client.query(sql, values);
+      },
+      async connect() {
+        return {
+          async query(sql: string, values?: unknown[]) {
+            if (sql === 'BEGIN') {
+              savepoint += 1;
+              return client.query(`SAVEPOINT session_operation_${savepoint}`);
+            }
+            if (sql === 'COMMIT') return client.query(`RELEASE SAVEPOINT session_operation_${savepoint}`);
+            if (sql === 'ROLLBACK') {
+              const name = `session_operation_${savepoint}`;
+              await client.query(`ROLLBACK TO SAVEPOINT ${name}`);
+              return client.query(`RELEASE SAVEPOINT ${name}`);
+            }
+            return client.query(sql, values);
+          },
+          release() {},
+        };
+      },
+    } as unknown as Pool;
+    const repository = createSessionRepository(savepointPool);
+    const q = (sql: string, values?: unknown[]) => client.query(sql, values);
+
+    const org = randomUUID(), organiserId = randomUUID(), coordinatorId = randomUUID(), techId = randomUUID();
+    const eventId = randomUUID(), mic = randomUUID(), projector = randomUUID();
+    await q('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, `Synthetic ${org}`]);
+    for (const [id, role] of [[organiserId, 'event_organiser'], [coordinatorId, 'event_coordinator'], [techId, 'technical_support_staff']] as const)
+      await q(`INSERT INTO users (id, full_name, email, password_hash, role, client_org_id) VALUES ($1, $2, $3, 'unused', $4, $5)`,
+        [id, role, `${id}@example.test`, role, org]);
+    for (const [id, name] of [[mic, 'Wireless Microphone'], [projector, 'Projector']])
+      await q(`INSERT INTO equipment (id, name, category, description, total_quantity, home_location, operational_status)
+        VALUES ($1, $2, 'Audio', 'Synthetic', 10, 'Store', 'available')`, [id, name]);
+    await q(`INSERT INTO events (id, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+      VALUES ($1, $2, $3, $4, 'Synthetic equipment Sessions', 'draft',
+        tstzrange(now() + interval '10 days', now() + interval '10 days 2 hours', '[)'), 50)`,
+    [eventId, organiserId, coordinatorId, org]);
+    const first = (await getSessions(repository, organiserId, eventId)).sessions[0]!;
+    const second = await addSession(repository, organiserId, eventId, {
+      title: 'Second', startAt: new Date(Date.now() + 11 * 864e5).toISOString(),
+      endAt: new Date(Date.now() + 11 * 864e5 + 36e5).toISOString(), expectedAttendance: 20,
+    });
+    await q(`UPDATE events SET status = 'planning' WHERE id = $1`, [eventId]);
+
+    // Scenario 4: Technician T is assigned to the Event, not to a Session.
+    const support = (await q(`INSERT INTO tech_support_requests (event_id, support_required, support_range, requested_by)
+      SELECT id, true, event_range, $2 FROM events WHERE id = $1 RETURNING id`, [eventId, coordinatorId])).rows[0].id as string;
+    await q(`INSERT INTO tech_staff_assignments (request_id, event_id, staff_id, assignment_range)
+      SELECT $1, id, $3, event_range FROM events WHERE id = $2`, [support, eventId, techId]);
+    const assignment = async () => (await q(
+      `SELECT request_id, event_id, staff_id, status, lower(assignment_range) AS s, upper(assignment_range) AS e
+       FROM tech_staff_assignments WHERE event_id = $1`, [eventId])).rows;
+    const assigned = await assignment();
+    assert.equal(assigned.length, 1);
+
+    // D133: Sessions can be added only on drafts, so the third and fourth go in by SQL.
+    const addBySql = async (title: string, days: number) => (await q(
+      `INSERT INTO sessions (event_id, title, session_range, expected_attendance)
+       VALUES ($1, $2, tstzrange(now() + $3 * interval '1 day', now() + $3 * interval '1 day' + interval '1 hour', '[)'), 10)
+       RETURNING id`, [eventId, title, days])).rows[0].id as string;
+    const third = await addBySql('Third', 12), fourth = await addBySql('Fourth', 13);
+    assert.deepEqual(await assignment(), assigned, 'adding Sessions leaves the assignment as it was');
+    await editSession(repository, organiserId, eventId, second.session.id, {
+      title: 'Second', startAt: new Date(Date.now() + 11 * 864e5 + 72e5).toISOString(),
+      endAt: new Date(Date.now() + 11 * 864e5 + 108e5).toISOString(), expectedAttendance: 20,
+    });
+    assert.deepEqual(await assignment(), assigned, 'editing a Session leaves the assignment as it was');
+
+    const request = async (equipmentId: string, quantity: number, sessionId: string, reserved?: number) => {
+      const id = (await q(`INSERT INTO equipment_requests (event_id, equipment_id, quantity_requested, requested_by, session_id)
+        VALUES ($1, $2, $3, $4, $5) RETURNING id`, [eventId, equipmentId, quantity, coordinatorId, sessionId])).rows[0].id as string;
+      if (reserved)
+        await q(`INSERT INTO equipment_reservations (request_id, event_id, equipment_id, quantity_reserved, reservation_range, status, session_id)
+          SELECT $1, $2, $3, $4, session_range, 'partial', id FROM sessions WHERE id = $5`, [id, eventId, equipmentId, reserved, sessionId]);
+      return id;
+    };
+    const micFirst = await request(mic, 2, first.id, 1);
+    const projectorFirst = await request(projector, 1, first.id);
+    await request(projector, 3, third);
+    await request(mic, 4, fourth, 4);
+    await request(mic, 5, second.session.id);
+    const notices = async (userId: string) => (await q(
+      `SELECT title, message FROM notifications WHERE user_id = $1 AND event_id = $2 AND title LIKE 'Equipment%' ORDER BY created_at, id`,
+      [userId, eventId])).rows as { title: string; message: string }[];
+
+    // Deleting the first (untitled, earliest) Session with three left: both sentences.
+    await removeSession(repository, organiserId, eventId, first.id);
+    assert.deepEqual((await q(`SELECT r.session_id, x.status, x.session_id AS reservation_session
+      FROM equipment_requests r LEFT JOIN equipment_reservations x ON x.request_id = r.id WHERE r.id = $1`, [micFirst])).rows,
+    [{ session_id: null, status: 'released', reservation_session: null }]);
+    assert.equal((await q('SELECT session_id FROM equipment_requests WHERE id = $1', [projectorFirst])).rows[0].session_id, null);
+    assert.deepEqual(await notices(coordinatorId), [{
+      title: 'Equipment reservation released',
+      message: 'Synthetic equipment Sessions: Session 1 was deleted, so its equipment reservations were released: Wireless Microphone × 1. '
+        + "These requests now need a Session: Projector × 1, Wireless Microphone × 2. Choose one for each on the event's equipment requests.",
+    }]);
+    const techNotices = await notices(techId);
+    assert.equal(techNotices.length, 1);
+    assert.match(techNotices[0]!.message,
+      /^Synthetic equipment Sessions: Session 1 was deleted, so its equipment reservations were released: Wireless Microphone × 1\. Changed at /);
+    assert.deepEqual(await notices(organiserId), [], 'the actor is never told');
+
+    // A Session with only an unreserved request: the Coordinator alone hears.
+    await removeSession(repository, organiserId, eventId, third);
+    assert.deepEqual((await notices(coordinatorId)).at(-1), {
+      title: 'Equipment request needs a Session',
+      message: 'Synthetic equipment Sessions: Session "Third" was deleted. '
+        + "These requests now need a Session: Projector × 3. Choose one for each on the event's equipment requests.",
+    });
+    assert.equal((await notices(techId)).length, 1);
+
+    // Down to one Session: no "needs a Session" (reserving fills it in, D132).
+    await removeSession(repository, organiserId, eventId, fourth);
+    assert.equal((await notices(coordinatorId)).at(-1)!.message,
+      'Synthetic equipment Sessions: Session "Fourth" was deleted, so its equipment reservations were released: Wireless Microphone × 4.');
+    assert.equal((await notices(techId)).length, 2);
+    assert.deepEqual(await assignment(), assigned, 'deleting Sessions leaves the assignment as it was');
+  } finally {
+    await client.query('ROLLBACK').catch(() => undefined);
+    client.release();
+    await pool.end();
+  }
+});

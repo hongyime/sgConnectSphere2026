@@ -4,6 +4,8 @@ import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { assessArrangementImpact, loadArrangementSnapshot } from '../changeManagement/arrangementImpact.js';
 import { applyArrangementImpact, ArrangementsChangedError, loadOverSubscription, withRevision } from '../changeManagement/eventChange.js';
+import { equipmentStaffRecipients, notifyEquipmentStaff } from '../equipmentSupport/notifications.js';
+import { eventSessions, sessionLabel } from '../equipmentSupport/sessions.js';
 import { notifyArrangementImpact } from '../eventNotifications/informationChange.js';
 import { captureEventAudience, notifyEventChange, resolveAssignedVenueStaff, writeEventNotification } from '../eventNotifications/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
@@ -302,6 +304,14 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         `SELECT count(*)::text AS count FROM sessions WHERE event_id = $1`, [eventId],
       )).rows[0]!.count);
       if (remaining <= 1) return { status: 'last_session' as const };
+      // E07-S08 D134: equipment staff are captured before anything is released,
+      // as E07-S04's release does, so Venue Staff of a released venue still hear.
+      const equipmentStaff = await equipmentStaffRecipients(client, eventId, actorId);
+      const label = sessionLabel((await eventSessions((sql, values) => client.query(sql, values), eventId)).find(s => s.id === sessionId)!);
+      const needingSession = (await client.query<{ line: string }>(
+        `SELECT eq.name || ' × ' || r.quantity_requested AS line FROM equipment_requests r
+         JOIN equipment eq ON eq.id = r.equipment_id WHERE r.session_id = $1 ORDER BY eq.name, r.id`, [sessionId],
+      )).rows.map(row => row.line);
 
       const venueIds = (await client.query<{ venue_id: string }>(
         `SELECT DISTINCT venue_id FROM venue_bookings WHERE session_id = $1 ORDER BY venue_id`, [sessionId],
@@ -328,11 +338,11 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
         );
       }
 
-      const reservations = (await client.query<{ id: string }>(
-        `UPDATE equipment_reservations SET status = 'released', requires_reconfirmation = false
-         WHERE session_id = $1 AND status IN ('reserved','partial')
-         RETURNING id`, [sessionId],
-      )).rows;
+      const reservations = (await client.query<{ id: string; line: string }>(
+        `UPDATE equipment_reservations x SET status = 'released', requires_reconfirmation = false
+         FROM equipment eq WHERE eq.id = x.equipment_id AND x.session_id = $1 AND x.status IN ('reserved','partial')
+         RETURNING x.id, eq.name || ' × ' || x.quantity_reserved AS line`, [sessionId],
+      )).rows.sort((a, b) => a.line.localeCompare(b.line));
       for (const reservation of reservations) {
         await client.query(
           `INSERT INTO audit_logs(actor_id,entity_type,entity_id,event_id,action,field_changed,new_value)
@@ -375,6 +385,33 @@ export function createSessionRepository(db: Pool = getDatabasePool()): SessionRe
           const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
           await notifyEventChange(client, { changeId: randomUUID(), occurredAt, actorId, before, after,
             change: { kind: 'arrangements', fields: ['date', 'time'] } });
+        }
+      }
+
+      // D134 (with D132): the Coordinator hears which reservations were released
+      // and, while two or more Sessions remain, which requests need a Session
+      // (with one left, reserving fills it in); equipment staff hear of the
+      // releases, as for any reservation release.
+      const released = reservations.map(row => row.line).join(', ');
+      const orphaned = remaining > 2 ? needingSession : [];
+      if (reservations.length || orphaned.length) {
+        const changeId = randomUUID();
+        const occurredAt = (await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')).rows[0]!.now;
+        const releasedSentence = `${event.title}: ${label} was deleted, so its equipment reservations were released: ${released}.`;
+        if (reservations.length)
+          await notifyEquipmentStaff(client, { eventId, actorId, changeId, occurredAt, recipients: equipmentStaff,
+            title: 'Equipment reservation released', message: releasedSentence });
+        if (event.coordinator_id && event.coordinator_id !== actorId) {
+          const needs = orphaned.length
+            ? `These requests now need a Session: ${orphaned.join(', ')}. Choose one for each on the event's equipment requests.`
+            : '';
+          await writeEventNotification(client, {
+            eventId, changeId, userId: event.coordinator_id, occurredAt,
+            title: reservations.length ? 'Equipment reservation released' : 'Equipment request needs a Session',
+            message: reservations.length
+              ? `${releasedSentence}${needs ? ` ${needs}` : ''}`
+              : `${event.title}: ${label} was deleted. ${needs}`,
+          });
         }
       }
 

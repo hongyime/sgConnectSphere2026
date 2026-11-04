@@ -625,3 +625,116 @@ test('E07-S04 no Coordinator notice is sent when the event has no active assigne
     await t.db.close();
   }
 });
+
+// E07-S08 (SCRUM-181): 15 Nov 2026, Session "Morning" 9 to 11 am and
+// "Afternoon" 1 to 3 pm Singapore time, inside the Event's 9 am to 5 pm.
+const MORNING = ['2026-11-15T01:00:00.000Z', '2026-11-15T03:00:00.000Z'] as const;
+const AFTERNOON = ['2026-11-15T05:00:00.000Z', '2026-11-15T07:00:00.000Z'] as const;
+
+test('TC_E07S08_02 a reservation takes its request Session and Session period, and stock reserved in one Session does not block the other', async () => {
+  const t = await setup();
+  try {
+    const eventId = await t.event('EVT-S8', 'planning');
+    const morning = (await t.q(`UPDATE sessions SET title='Morning',session_range=tstzrange($2,$3,'[)')
+      WHERE event_id=$1 RETURNING id`, [eventId, ...MORNING])).rows[0].id as string;
+    const afternoon = (await t.q(`INSERT INTO sessions(event_id,title,session_range,expected_attendance)
+      VALUES($1,'Afternoon',tstzrange($2,$3,'[)'),10) RETURNING id`, [eventId, ...AFTERNOON])).rows[0].id as string;
+    const mic = await t.equipment('Wireless Microphone', 3);
+    const save = async (sessionId: string, equipmentId = mic, quantity = 3) =>
+      (await saveEquipmentRequest(t.db.pool, t.coord, 'EVT-S8', { equipmentId, quantity, sessionId })).body.requestId as string;
+    const morningLine = await save(morning), afternoonLine = await save(afternoon);
+    const stored = async (requestId: string) => (await t.q(
+      `SELECT session_id,lower(reservation_range) AS s,upper(reservation_range) AS e,status FROM equipment_reservations
+       WHERE request_id=$1 ORDER BY created_at DESC LIMIT 1`, [requestId])).rows[0];
+
+    // Session A's reservation uses Session A's period only.
+    const first = await reserveEquipment(t.db.pool, t.tech, 'EVT-S8', { requestId: morningLine, quantity: 3 });
+    assert.equal(first.status, 201);
+    assert.equal((first.body.session as { id: string }).id, morning);
+    assert.deepEqual(await stored(morningLine), {
+      session_id: morning, s: new Date(MORNING[0]), e: new Date(MORNING[1]), status: 'reserved',
+    });
+    assert.equal(await t.free(mic, MORNING), 0);
+    assert.equal(await t.free(mic, AFTERNOON), 3, 'Session B is not blocked by Session A');
+    // TC_02: reserving for Session B links to B and consumes stock only then.
+    const second = await reserveEquipment(t.db.pool, t.tech, 'EVT-S8', { requestId: afternoonLine, quantity: 3 });
+    assert.equal(second.status, 201);
+    assert.deepEqual(await stored(afternoonLine), {
+      session_id: afternoon, s: new Date(AFTERNOON[0]), e: new Date(AFTERNOON[1]), status: 'reserved',
+    });
+    assert.equal(await t.free(mic, AFTERNOON), 0);
+    assert.equal(await t.free(mic, ['2026-11-15T03:00:00.000Z', '2026-11-15T05:00:00.000Z']), 3, 'free between the Sessions');
+
+    // D131: the notice and the Activity log name the Session and use its dates.
+    assert.equal((await t.notices(t.ids.coord)).at(-1)!.message,
+      'EVT-S8 Tech Conference, Session "Afternoon", 15 Nov 2026, 1:00 pm – 3:00 pm: Wireless Microphone × 3 reserved.');
+    assert.deepEqual((await t.activity(eventId)).filter((row) => row.action === 'Equipment reserved').map((row) => row.new_value), [
+      'Wireless Microphone × 3 for Session "Morning"', 'Wireless Microphone × 3 for Session "Afternoon"',
+    ]);
+    // A refusal speaks of the Session's dates.
+    const projector = await t.equipment('Projector', 1);
+    await t.held(await t.event('EVT-S8-OTHER', 'planning'), projector, 1, MORNING);
+    const refused = await reserveEquipment(t.db.pool, t.tech, 'EVT-S8', { requestId: await save(morning, projector, 1), quantity: 1 });
+    assert.equal((refused.body as { message: string }).message, "None are free for this Session's dates.");
+
+    // D124, T-108: a Session time change doesn't move the reservation; the
+    // reconfirmation (the same quantity, clearing the flag) takes its new period.
+    await t.q(`UPDATE sessions SET session_range='[2026-11-15T07:00Z,2026-11-15T09:00Z)' WHERE id=$1`, [afternoon]);
+    assert.deepEqual((await stored(afternoonLine)).s, new Date(AFTERNOON[0]));
+    const reservationId = (second.body.reservation as { id: string }).id;
+    await t.q('UPDATE equipment_reservations SET requires_reconfirmation=true WHERE id=$1', [reservationId]);
+    const reconfirmed = await changeReservation(t.db.pool, t.tech, 'EVT-S8', { reservationId, quantity: 3 });
+    assert.equal(reconfirmed.status, 200);
+    assert.deepEqual(await stored(afternoonLine), {
+      session_id: afternoon, s: new Date('2026-11-15T07:00:00.000Z'), e: new Date('2026-11-15T09:00:00.000Z'), status: 'reserved',
+    });
+    assert.equal((await t.notices(t.ids.coord)).at(-1)!.message,
+      'EVT-S8 Tech Conference, Session "Afternoon", 15 Nov 2026, 3:00 pm – 5:00 pm: Wireless Microphone × 3 reserved.');
+    // A change refused for lack of stock, then a release, keep the Session wording.
+    const morningId = (first.body.reservation as { id: string }).id;
+    await t.q(`UPDATE equipment_reservations SET quantity_reserved=2,status='partial' WHERE id=$1`, [morningId]);
+    await t.held(await t.event('EVT-S8-THIRD', 'planning'), mic, 1, MORNING);
+    assert.equal(((await changeReservation(t.db.pool, t.tech, 'EVT-S8', { reservationId: morningId, quantity: 3 })).body as { message: string }).message,
+      "Only 2 are free for this Session's dates.");
+    assert.equal((await releaseReservation(t.db.pool, t.tech, 'EVT-S8', { reservationId: morningId })).status, 200);
+    assert.deepEqual((await t.activity(eventId)).at(-1), {
+      actor_id: t.ids.tech, action: 'Equipment reservation released',
+      old_value: 'Wireless Microphone × 2 of 3 for Session "Morning"',
+      new_value: 'Wireless Microphone × 2 for Session "Morning" returned to the available pool',
+    });
+  } finally {
+    await t.db.close();
+  }
+});
+
+test('E07-S08 D132 a request with no Session is refused until it has one, and on a single-Session Event it is filled in', async () => {
+  const t = await setup();
+  try {
+    const multi = await t.event('EVT-S8N', 'planning');
+    await t.q(`UPDATE sessions SET session_range=tstzrange($2,$3,'[)') WHERE event_id=$1`, [multi, ...MORNING]);
+    await t.q(`INSERT INTO sessions(event_id,session_range,expected_attendance) VALUES($1,tstzrange($2,$3,'[)'),10)`, [multi, ...AFTERNOON]);
+    const mic = await t.equipment('Wireless Microphone', 3);
+    // As 0014's ON DELETE SET NULL leaves it after a Session deletion.
+    const orphan = (await t.q(`INSERT INTO equipment_requests(event_id,equipment_id,quantity_requested,requested_by,session_id)
+      SELECT $1,$2,2,$3,id FROM sessions WHERE event_id=$1 ORDER BY lower(session_range) LIMIT 1 RETURNING id`,
+    [multi, mic, t.ids.coord])).rows[0].id as string;
+    await t.q('UPDATE equipment_requests SET session_id=NULL WHERE id=$1', [orphan]);
+    await assert.rejects(reserveEquipment(t.db.pool, t.tech, 'EVT-S8N', { requestId: orphan, quantity: 2 }),
+      { status: 409, message: 'Choose a Session for this request before reserving it.' });
+    assert.equal((await t.q('SELECT count(*)::int AS n FROM equipment_reservations WHERE request_id=$1', [orphan])).rows[0].n, 0);
+
+    const single = await t.event('EVT-S8ONE', 'planning');
+    const only = (await t.q('SELECT id FROM sessions WHERE event_id=$1', [single])).rows[0].id as string;
+    const line = await t.request(single, mic, 1);
+    await t.q('UPDATE equipment_requests SET session_id=NULL WHERE id=$1', [line]);
+    const reserved = await reserveEquipment(t.db.pool, t.tech, 'EVT-S8ONE', { requestId: line, quantity: 1 });
+    assert.equal(reserved.status, 201);
+    assert.equal((await t.q('SELECT session_id FROM equipment_requests WHERE id=$1', [line])).rows[0].session_id, only);
+    assert.equal((await t.q('SELECT session_id FROM equipment_reservations WHERE request_id=$1', [line])).rows[0].session_id, only);
+    // A single-Session Event keeps the Event's wording.
+    assert.equal((await t.notices(t.ids.coord)).at(-1)!.message,
+      'EVT-S8ONE Tech Conference, 15 Nov 2026, 9:00 am – 5:00 pm: Wireless Microphone × 1 reserved.');
+  } finally {
+    await t.db.close();
+  }
+});

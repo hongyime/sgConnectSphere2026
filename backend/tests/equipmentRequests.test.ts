@@ -25,6 +25,7 @@ test('equipment request input rejects zero, fractions, duplicate shapes and forg
     equipmentId,
     quantity: 2,
     notes: '',
+    sessionId: null,
   });
   for (const quantity of [0, -1, 1.2, '2', Infinity, 2147483648])
     assert.ok(validateRequestInput({ equipmentId, quantity }).errors?.quantity);
@@ -36,6 +37,16 @@ test('equipment request input rejects zero, fractions, duplicate shapes and forg
     validateRequestInput({ equipmentId, quantity: 1, notes: ['x'] }).errors
       ?.notes,
   );
+});
+test('TC_E07S08_03 E07-S08 a request takes an optional Session id and refuses a malformed one before any read', () => {
+  const equipmentId = randomUUID(),
+    sessionId = randomUUID();
+  assert.equal(validateRequestInput({ equipmentId, quantity: 1, sessionId }).input?.sessionId, sessionId);
+  assert.equal(validateRequestInput({ equipmentId, quantity: 1, sessionId: null }).input?.sessionId, null);
+  for (const bad of ['session-b', 42, ['x'], {}])
+    assert.deepEqual(validateRequestInput({ equipmentId, quantity: 1, sessionId: bad }).errors, {
+      sessionId: ['Choose a Session of this event.'],
+    });
 });
 test('request readers and writers deny wrong roles and inactive accounts before reading event data', async () => {
   const calls: string[] = [];

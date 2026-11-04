@@ -6,9 +6,17 @@ import { canActAsRole } from '../accessControl/service.js';
 import { AccessError, type Query } from '../eventVisibility/service.js';
 import { writeEventNotification } from '../eventNotifications/service.js';
 import { availabilityRows, capacityFor } from './availability.js';
+import { eventSessions, sessionWhen, type EquipmentSession } from './sessions.js';
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-type RequestInput = { equipmentId: string; quantity: number; notes: string };
+export const SESSION_NOT_OF_EVENT = 'Choose a Session of this event.';
+export const SESSION_REQUIRED = 'Choose a Session for this equipment request.';
+type RequestInput = {
+  equipmentId: string;
+  quantity: number;
+  notes: string;
+  sessionId: string | null;
+};
 type Event = {
   id: string;
   eventCode: string | null;
@@ -28,6 +36,7 @@ export type LineReservation = {
 export type EquipmentRequest = {
   id: string;
   equipmentId: string;
+  sessionId: string | null;
   name: string;
   quantity: number;
   notes: string;
@@ -60,6 +69,13 @@ export function validateRequestInput(body: unknown) {
     (typeof data.notes !== 'string' || data.notes.length > 2000)
   )
     errors.notes = ['Notes must be at most 2000 characters.'];
+  // E07-S08: optional; the Event's own Sessions are checked once it is locked.
+  if (
+    data.sessionId !== undefined &&
+    data.sessionId !== null &&
+    (typeof data.sessionId !== 'string' || !uuid.test(data.sessionId))
+  )
+    errors.sessionId = [SESSION_NOT_OF_EVENT];
   return Object.keys(errors).length
     ? { errors }
     : {
@@ -67,6 +83,7 @@ export function validateRequestInput(body: unknown) {
           equipmentId: data.equipmentId as string,
           quantity: data.quantity as number,
           notes: typeof data.notes === 'string' ? data.notes.trim() : '',
+          sessionId: (data.sessionId as string | null | undefined) ?? null,
         } satisfies RequestInput,
       };
 }
@@ -138,7 +155,7 @@ async function eventFor(
 async function rows(query: Query, eventId: string) {
   return (
     await query<EquipmentRequest>(
-      `SELECT r.id,r.equipment_id AS "equipmentId",eq.name,r.quantity_requested AS quantity,
+      `SELECT r.id,r.equipment_id AS "equipmentId",r.session_id AS "sessionId",eq.name,r.quantity_requested AS quantity,
     coalesce(r.technical_notes,'') AS notes,eq.total_quantity AS "totalStock",eq.operational_status AS "operationalStatus",eq.is_active AS "isActive",
     EXISTS(SELECT 1 FROM equipment_reservations x WHERE x.request_id=r.id) AS reserved,
     (SELECT jsonb_build_object('id',x.id,'status',x.status,'quantityReserved',x.quantity_reserved,
@@ -183,28 +200,33 @@ export async function getEquipmentRequests(
     throw error;
   }
   const requests = await rows(query, event.id);
+  const sessions = await eventSessions(query, event.id);
   const staff = actor.role === 'technical_support_staff';
-  // Technical Support sees what each line could still reserve for the event's
-  // dates (its own active reservation counts as free to it).
-  if (staff && event.startsAt && event.endsAt)
+  // Technical Support sees what each line could still reserve for its
+  // Session's dates (D124; its own active reservation counts as free to it).
+  // A line with no Session (D132) has no period yet.
+  if (staff)
     for (const line of requests) {
+      const session = sessions.find((s) => s.id === line.sessionId);
       const active =
         line.reservation && line.reservation.status !== 'released'
           ? line.reservation.id
           : null;
-      const [row] = line.isActive
-        ? await availabilityRows(
-            query,
-            new Date(event.startsAt).toISOString(),
-            new Date(event.endsAt).toISOString(),
-            line.equipmentId,
-            active,
-          )
-        : [];
+      const [row] =
+        line.isActive && session
+          ? await availabilityRows(
+              query,
+              session.startsAt.toISOString(),
+              session.endsAt.toISOString(),
+              line.equipmentId,
+              active,
+            )
+          : [];
       line.freeQuantity = row ? capacityFor(row).freeQuantity : null;
     }
   return {
     event,
+    sessions,
     requests,
     equipment: (
       await query(
@@ -226,7 +248,9 @@ async function notify(
   event: Event,
   action: string,
   name: string,
-  quantity?: number,
+  quantity: number | undefined,
+  session: EquipmentSession | undefined,
+  sessions: readonly EquipmentSession[],
 ) {
   // A new equipment requirement enters the shared department workload before a
   // technician is assigned. This targeted E07-S02 notice is not the E11 general
@@ -238,6 +262,9 @@ async function notify(
   ).rows;
   const changeId = randomUUID(),
     occurredAt = new Date();
+  // D131: a multi-Session Event's notice names the Session and its dates.
+  const label = event.eventCode ?? event.title;
+  const where = sessions.length > 1 && session ? `${label}, ${sessionWhen(session)}` : label;
   for (const user of staff)
     await writeEventNotification(client, {
       eventId: event.id,
@@ -245,7 +272,7 @@ async function notify(
       userId: user.id,
       occurredAt,
       title: 'Equipment request updated',
-      message: `${event.eventCode ?? event.title}: ${name}${quantity === undefined ? '' : ` × ${quantity}`} ${action}. Review the event's equipment requests.`,
+      message: `${where}: ${name}${quantity === undefined ? '' : ` × ${quantity}`} ${action}. Review the event's equipment requests.`,
     });
   return staff.length;
 }
@@ -306,6 +333,7 @@ export async function saveEquipmentRequest(
           equipment_id: string;
           quantity_requested: number;
           technical_notes: string | null;
+          session_id: string | null;
         }
       | undefined;
     if (id) {
@@ -320,7 +348,11 @@ export async function saveEquipmentRequest(
           404,
           'Equipment request not found for this event.',
         );
+      // D123: the Session is one more field under the reserved-request rule.
+      // D132: a request whose Session was deleted has only released
+      // reservations (0014's check), so it can be given a Session again.
       if (
+        previous.session_id !== null &&
         (
           await client.query(
             'SELECT id FROM equipment_reservations WHERE request_id=$1 LIMIT 1',
@@ -333,6 +365,27 @@ export async function saveEquipmentRequest(
           'This request has been reserved and cannot be amended or removed here.',
         );
     }
+    // D122: the only Session is filled in; with two or more, one is chosen.
+    // The Event row is locked, which Session writers also take first.
+    const sessions = await eventSessions(
+      (sql, values) => client.query(sql, values),
+      event.id,
+    );
+    const sessionId =
+      input.sessionId ??
+      previous?.session_id ??
+      (sessions.length === 1 ? sessions[0]!.id : null);
+    const session = sessions.find((s) => s.id === sessionId);
+    if (!session)
+      return {
+        status: 400,
+        body: {
+          error: 'validation_failed',
+          errors: {
+            sessionId: [input.sessionId ? SESSION_NOT_OF_EVENT : SESSION_REQUIRED],
+          },
+        },
+      };
     // Same equipment lock used by catalogue updates/retirement. Future reservation
     // writers must additionally lock the request before checking/inserting rows.
     const equipment = (
@@ -351,10 +404,11 @@ export async function saveEquipmentRequest(
         409,
         'This equipment is no longer active. Choose another item.',
       );
+    // One request per item per Session, so each Session reserves its own (AC 2).
     const duplicate = (
       await client.query(
-        'SELECT id FROM equipment_requests WHERE event_id=$1 AND equipment_id=$2 AND ($3::uuid IS NULL OR id<>$3)',
-        [event.id, equipment.id, id ?? null],
+        'SELECT id FROM equipment_requests WHERE event_id=$1 AND equipment_id=$2 AND ($3::uuid IS NULL OR id<>$3) AND session_id=$4',
+        [event.id, equipment.id, id ?? null, session.id],
       )
     ).rows[0];
     if (duplicate)
@@ -362,8 +416,7 @@ export async function saveEquipmentRequest(
         status: 409,
         body: {
           error: 'equipment_already_requested',
-          message:
-            'This equipment is already requested for this event. Edit its existing request.',
+          message: `This equipment is already requested for this ${sessions.length > 1 ? 'Session' : 'event'}. Edit its existing request.`,
           errors: { equipmentId: ['Edit the existing request for this item.'] },
         },
       };
@@ -371,7 +424,8 @@ export async function saveEquipmentRequest(
       previous &&
       previous.equipment_id === input.equipmentId &&
       previous.quantity_requested === input.quantity &&
-      (previous.technical_notes ?? '') === input.notes
+      (previous.technical_notes ?? '') === input.notes &&
+      previous.session_id === session.id
     )
       return {
         status: 200,
@@ -392,11 +446,11 @@ export async function saveEquipmentRequest(
     const saved = (
       await client.query<{ id: string }>(
         id
-          ? `UPDATE equipment_requests SET equipment_id=$1,quantity_requested=$2,technical_notes=$3 WHERE id=$4 AND event_id=$5 RETURNING id`
-          : `INSERT INTO equipment_requests(equipment_id,quantity_requested,technical_notes,event_id,requested_by) VALUES($1,$2,$3,$4,$5) RETURNING id`,
+          ? `UPDATE equipment_requests SET equipment_id=$1,quantity_requested=$2,technical_notes=$3,session_id=$6 WHERE id=$4 AND event_id=$5 RETURNING id`
+          : `INSERT INTO equipment_requests(equipment_id,quantity_requested,technical_notes,event_id,requested_by,session_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,
         id
-          ? [equipment.id, input.quantity, input.notes, id, event.id]
-          : [equipment.id, input.quantity, input.notes, event.id, actor.id],
+          ? [equipment.id, input.quantity, input.notes, id, event.id, session.id]
+          : [equipment.id, input.quantity, input.notes, event.id, actor.id, session.id],
       )
     ).rows[0]!;
     const notified = await notify(
@@ -405,6 +459,8 @@ export async function saveEquipmentRequest(
       id ? 'amended' : 'requested',
       equipment.name,
       input.quantity,
+      session,
+      sessions,
     );
     return {
       status: id ? 200 : 201,
@@ -439,8 +495,8 @@ export async function removeEquipmentRequest(
     throw new AccessError(400, 'A valid request id is required.');
   return mutate(database, actor, identifier, async (client, event) => {
     const request = (
-      await client.query<{ id: string; name: string }>(
-        `SELECT r.id,eq.name FROM equipment_requests r JOIN equipment eq ON eq.id=r.equipment_id WHERE r.id=$1 AND r.event_id=$2 FOR UPDATE OF r`,
+      await client.query<{ id: string; name: string; session_id: string | null }>(
+        `SELECT r.id,eq.name,r.session_id FROM equipment_requests r JOIN equipment eq ON eq.id=r.equipment_id WHERE r.id=$1 AND r.event_id=$2 FOR UPDATE OF r`,
         [id, event.id],
       )
     ).rows[0];
@@ -462,7 +518,19 @@ export async function removeEquipmentRequest(
       'DELETE FROM equipment_requests WHERE id=$1 AND event_id=$2',
       [id, event.id],
     );
-    const notified = await notify(client, event, 'removed', request.name);
+    const sessions = await eventSessions(
+      (sql, values) => client.query(sql, values),
+      event.id,
+    );
+    const notified = await notify(
+      client,
+      event,
+      'removed',
+      request.name,
+      undefined,
+      sessions.find((s) => s.id === request.session_id),
+      sessions,
+    );
     return { status: 200, body: { removed: true, notified } };
   });
 }
