@@ -5,9 +5,9 @@ This procedure provisions the Product Owner-approved production Venue Staff rost
 ## Scope and Governance
 
 - **Jira Traceability**: Story `E11-S01` (SCRUM-75), Subtask `SCRUM-195` ("Backend: provision the PO-approved production venue-staff roster").
-- **PO Accountability**: Bryan as accountable Product Owner approved the roster mapping under T-97.
-- **Deploy Owner Execution**: The deploy owner runs the bounded, idempotent provisioning script.
-- **Verification**: Delivery behaviour is verified by Ji Ning without claiming UI acceptance.
+- **PO Accountability & Mapping Approval**: Bryan as accountable Product Owner approved the canonical roster mapping under SCRUM-195 (separate PO mapping approval; canonical decision T-97 assigned PO ownership and explicitly approved no mapping or assignment write at decision time).
+- **Deploy Owner Execution**: The deploy owner runs the bounded, idempotent provisioning script upon release deployment.
+- **Verification**: Delivery behaviour is verified by Ji Ning without claiming UI acceptance; story-owner notification-delivery verification remains open until the roster is loaded upon release deployment.
 - **Safety Boundary**: This procedure is a targeted data-setup operation, not a migration, schema reset, or general seed command. It never modifies existing credentials, user passwords, client organisations, or other database tables.
 
 ## PO-Approved Canonical Roster Mapping

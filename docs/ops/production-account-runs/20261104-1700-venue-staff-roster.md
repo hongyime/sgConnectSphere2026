@@ -1,21 +1,23 @@
 # Production venue-staff roster provisioning run specification - SCRUM-195
 
-- Status: Specification and verification runbook awaiting release deployment execution by designated deploy owner per T-59 / T-89
-- Scheduled Execution: Upon release deployment approval
+- Status: Specification and verification runbook awaiting release deployment execution by designated deploy owner per T-59 / T-89 (production database load has NOT been executed yet)
+- Scheduled Execution: Upon release deployment approval by designated deploy owner
+- Execution Environment: Production Supabase (unmodified; load deferred to deployment window)
 - Operator role: Designated deploy owner
-- Product Owner approval: T-97 (recorded in canonical team decisions BDR); Bryan confirmed approval of canonical roster mapping
+- Product Owner approval: Approved by Product Owner Bryan under SCRUM-195 (separate PO mapping approval; canonical decision T-97 established PO accountability and explicitly approved no mapping or assignment write at decision time)
 - Jira issue: SCRUM-195 under SCRUM-75 (E11-S01)
-- Source `main`: `5311fd6b`
+- Source commit: `61df7e8c`
 - Tool: `scripts/provision_venue_staff_roster.ts`
 - Procedure: `docs/ops/venue-staff-roster-provisioning.md`
 - Project/schema precheck: Schema `public`, table `venue_staff_assignments` verified via migration `0018_venue_staff_assignments.sql`
 - Venue precheck: All 5 target venues (Orchid Hall, Lotus Room, Maple Room, Jasmine Hall, Cedar Auditorium) exist and are active (`is_active = true`)
 - Venue staff precheck: Both `venue_staff@connectsphere.com` (Alex Tan) and `venue_staff_b@connectsphere.com` (Jordan Lee) exist, role is `venue_staff`, status is active (`is_active = true`), verified with case-insensitive `lower(email)`
 - Operation: Single transaction parameterized insert for the 5 PO-approved venue assignments; conflict-safe targeted upsert targeting `(venue_id, staff_id)`
-- Target safety guard: Default read-only (`--verify-only`); requires `--execute` and `--confirm-production` when connecting to Supabase
+- Target safety guard: Default strictly read-only (`--verify-only` via `BEGIN READ ONLY`); requires `--execute` and `--confirm-production` when connecting to Supabase
 - Expected Outcome: Exactly 5 assignments active
   - Alex Tan: Orchid Hall, Lotus Room, Maple Room
   - Jordan Lee: Jasmine Hall, Cedar Auditorium
 - Postchecks: Validated inside transaction before COMMIT; exactly 5 active venue staff assignments found; all 5 venues successfully resolve via `resolveAssignedVenueStaff`; unassigned venues yield zero fallback staff (TC_E11S01_13)
+- Verification Status: Bounded runner contract verified via automated unit tests in `backend/tests/venueStaffRosterProvisioning.test.ts`. Per T-97, story-owner (Ji Ning) live notification-delivery verification remains open until production load execution occurs upon release deployment.
 - Scope boundary: No account changes, credential modification, password hash alteration, schema reset, or unrelated query/write
 - Sanitization: No private database URLs, connection strings, UUIDs, or passwords recorded

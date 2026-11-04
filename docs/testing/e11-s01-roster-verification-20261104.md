@@ -12,20 +12,21 @@ And under *Still required before whole-story Done*, requirement 2 recorded:
 
 ## Reconciliation
 
-1. **PO Approval (T-97)**:
-   Bryan Seah as accountable Product Owner approved the canonical 5-venue roster mapping:
+1. **Separate PO Mapping Approval (SCRUM-195, T-97)**:
+   Canonical team decision T-97 established Product Owner accountability for SCRUM-195 and explicitly recorded that T-97 itself approved no mapping or assignment write. Under SCRUM-195, Product Owner Bryan Seah subsequently reviewed and granted the separate PO approval for the canonical 5-venue roster mapping:
    - **Alex Tan** (`venue_staff@connectsphere.com`): Orchid Hall, Lotus Room, Maple Room
    - **Jordan Lee** (`venue_staff_b@connectsphere.com`): Jasmine Hall, Cedar Auditorium
 
 2. **Provisioning Tool & Unit Verification (SCRUM-195)**:
    - Tool: `scripts/provision_venue_staff_roster.ts`
    - Runbook: `docs/ops/venue-staff-roster-provisioning.md`
-   - Unit & Idempotency Tests: `backend/tests/venueStaffRosterProvisioning.test.ts` (7 passing automated unit tests covering `is_active` prechecks on venues and users, case-insensitive email matching, targeted `ON CONFLICT (venue_id, staff_id)` idempotency and reactivation, transactional rollback on error, rejection of rogue multiple assignees, and real `resolveAssignedVenueStaff` boundary verification with zero broad fallback).
+   - Unit & Idempotency Tests: `backend/tests/venueStaffRosterProvisioning.test.ts` (8 passing automated unit tests covering `is_active` prechecks on venues and users, case-insensitive email matching, targeted `ON CONFLICT (venue_id, staff_id)` idempotency and reactivation, transactional rollback on error, rejection of rogue multiple assignees, real `resolveAssignedVenueStaff` boundary verification with zero broad fallback, and strict read-only execution in `--verify-only` mode with zero write queries even when all venues are assigned).
    - Integration & Resolver Tests: `backend/tests/eventNotifications.integration.test.ts` exercises `resolveAssignedVenueStaff` and verifies `TC_E11S01_10` / `TC_E11S01_13` (missing/ended assignments remain unresolved with zero broad fallback).
 
 3. **Verification Evidence & Next Steps (T-65, T-97)**:
    - Automated test execution records: T-65 session records in `docs/testing/runs/`.
-   - Tool execution: Bounded provisioning runner is verified against canonical schema and contracts.
-   - Per T-97, story-owner delivery verification of E11-S01 live notification delivery remains open for story owner (Ji Ning) observation once the roster is loaded into the target environment upon release deployment.
+   - Tool execution: Bounded provisioning runner is verified against canonical schema and contracts via automated tests against mocked client and disposable fixtures.
+   - Production Environment Status: The production environment has NOT been modified; roster provisioning into `venue_staff_assignments` is scheduled for release deployment execution by the designated deploy owner per T-59 and T-89.
+   - Story-Owner Verification: Per T-97 and PR #425 follow-ups, story-owner delivery verification of E11-S01 live notification delivery remains open for story owner (Ji Ning) observation once the roster is loaded into production upon release deployment.
 
 With this tool, test suite, and operational runbook committed in PR #425, the SCRUM-195 subtask implementation prerequisites are complete and ready for deployment execution.

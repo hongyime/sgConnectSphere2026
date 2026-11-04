@@ -79,7 +79,7 @@ export async function provisionVenueStaffRoster(client: Client | PoolClient, isV
 
   // 4. Verification & Transactional Execution
   // All checks (pre-write, insert, post-write assertion, and resolver checks) execute inside the transaction before COMMIT.
-  await client.query('BEGIN');
+  await client.query(isVerifyOnly ? 'BEGIN READ ONLY' : 'BEGIN');
   try {
     let insertedOrUpdatedCount = 0;
 
@@ -191,24 +191,15 @@ export async function provisionVenueStaffRoster(client: Client | PoolClient, isV
       unassignedVenueId = unassignedVenueResult.rows[0].id;
       console.log(`Testing unassigned venue fallback with existing venue '${unassignedVenueResult.rows[0].name}' (${unassignedVenueId})`);
     } else {
-      // If all venues in database have assignments, create a temporary unassigned venue in transaction to test resolver
-      const tempVenue = await client.query<{ id: string }>(`
-        INSERT INTO venues (name, location, max_capacity, opens_at, closes_at, is_active)
-        VALUES ('__TEMP_TEST_UNASSIGNED_VENUE__', 'Temporary Wing', 10, '08:00', '18:00', true)
-        RETURNING id;
-      `);
-      unassignedVenueId = tempVenue.rows[0].id;
-      console.log(`Testing unassigned venue fallback with temporary test venue (${unassignedVenueId})`);
+      // If every registered venue has an active assignment, test fallback against a known synthetic unassigned venue UUID.
+      // resolveAssignedVenueStaff queries venue_staff_assignments directly, so no write to venues is needed or permitted.
+      unassignedVenueId = '00000000-0000-0000-0000-000000000000';
+      console.log(`Testing unassigned venue fallback with synthetic unassigned venue ID (${unassignedVenueId})`);
     }
 
     const unassignedResolved = await resolveAssignedVenueStaff(client as any, [unassignedVenueId]);
     if (unassignedResolved.length !== 0) {
       throw new Error(`TC_E11S01_13 FAILED: Unassigned venue resolved to staff (${unassignedResolved.join(', ')}), expected 0 fallback staff.`);
-    }
-
-    // Clean up temporary venue if created
-    if (unassignedVenueResult.rows.length === 0) {
-      await client.query(`DELETE FROM venues WHERE id = $1`, [unassignedVenueId]);
     }
 
     console.log('TC_E11S01_13 check PASS: resolveAssignedVenueStaff returns [] for unassigned venue with zero broad fallback.');

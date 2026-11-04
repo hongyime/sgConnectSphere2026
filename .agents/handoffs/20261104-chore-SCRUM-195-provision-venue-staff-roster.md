@@ -52,16 +52,30 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
   - Point 8: Refactored `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md` as an operational specification / runbook awaiting release deployment execution, avoiding claiming premature production execution.
   - Point 9: Expanded `backend/tests/venueStaffRosterProvisioning.test.ts` to 7 unit tests covering venue `is_active`, user `is_active`, case-insensitivity, conflict handling, transaction rollback, rogue assignees, and resolver fallback prevention.
 
+- **Reconcile Ji Ning's Review Comments on PR #425**:
+  - Point 1 (Strictly read-only verify mode):
+    - Changed `scripts/provision_venue_staff_roster.ts` so `isVerifyOnly = true` initiates transaction with `BEGIN READ ONLY`.
+    - Removed `INSERT INTO venues` and `DELETE FROM venues` temporary fixture creation when no unassigned venue exists in the database. When all database venues are assigned, resolver fallback check tests against a known synthetic unassigned UUID (`00000000-0000-0000-0000-000000000000`), as `resolveAssignedVenueStaff` queries `venue_staff_assignments` directly.
+    - Added regression test in `backend/tests/venueStaffRosterProvisioning.test.ts` (test #8) proving that `--verify-only` mode executes zero write queries (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`) even when zero unassigned venues exist in the database.
+  - Point 2 (Production evidence and PO approval reconciliation):
+    - Updated `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md`, `docs/ops/venue-staff-roster-provisioning.md`, and `docs/testing/e11-s01-roster-verification-20261104.md` to explicitly cite the separate PO mapping approval under SCRUM-195 by Bryan Seah, noting that canonical decision T-97 established PO ownership and explicitly approved no mapping or assignment write at decision time.
+    - Clarified environment status across all records: the production database has NOT been loaded; execution is an operational specification scheduled for release deployment execution by the designated deploy owner per T-59/T-89.
+    - Maintained Ji Ning's delivery verification as open until the roster is loaded into production upon release deployment.
+    - Added immutable T-65 test execution record in `docs/testing/runs/` (`20261104-233500` session) documenting observed execution and verification.
+    - Regenerated `docs/testing/tc-coverage.md` to reflect test suite addition.
+
 ## Verification
 
 - Worktree check: `python scripts/check_worktrees.py` reports only the primary worktree.
 - Frontend role tests: 34 tests passed.
-- Backend tests: `npx tsx --test backend/tests/venueStaffRosterProvisioning.test.ts` passed 7/7 tests.
+- Backend tests: `npx tsx --test backend/tests/venueStaffRosterProvisioning.test.ts` passed 8/8 tests.
+- Backend suite: `npm test --workspace backend` passed cleanly (100% pass across all unit suites).
 - Repository hygiene: `python scripts/check.py` and `python scripts/doc_guard.py` passed.
+- Derived docs: `python scripts/tc_coverage_audit.py` synchronized.
 
 ## Next steps
 
 - Run pre-commit checks and commit updates.
 - Push to `origin chore/SCRUM-195-provision-venue-staff-roster`.
-- Post response comment to Le Xin on PR #425.
+- Post response comment to Ji Ning on PR #425.
 - Await approval and merge of PR #425.

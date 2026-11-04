@@ -1343,6 +1343,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - provisionVenueStaffRoster rolls back transaction on failure
 - provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue
 - provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns broad fallback on unassigned venue
+- provisionVenueStaffRoster in verify-only mode is strictly read-only and never writes, even when no unassigned venue exists
 
 ### `backend/tests/venueSuitability.test.ts`
 

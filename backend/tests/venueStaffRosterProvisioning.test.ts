@@ -231,7 +231,7 @@ test('provisionVenueStaffRoster rejects when unexpected assignees exist on a tar
         { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
       ],
     })],
-    [/^BEGIN$/, () => ({ rows: [] })],
+    [/^BEGIN(\s+READ\s+ONLY)?$/, () => ({ rows: [] })],
     [/SELECT\s+v\.name AS venue_name/, () => ({
       rows: [
         { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
@@ -269,7 +269,7 @@ test('provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns b
         { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
       ],
     })],
-    [/^BEGIN$/, () => ({ rows: [] })],
+    [/^BEGIN(\s+READ\s+ONLY)?$/, () => ({ rows: [] })],
     [/SELECT\s+v\.name AS venue_name/, () => ({
       rows: [
         { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
@@ -295,4 +295,60 @@ test('provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns b
     async () => provisionVenueStaffRoster(fake.client, true),
     /TC_E11S01_13 FAILED: Unassigned venue resolved to staff/,
   );
+});
+
+test('provisionVenueStaffRoster in verify-only mode is strictly read-only and never writes, even when no unassigned venue exists', async () => {
+  const fake = createFakeClient([
+    [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
+    [/SELECT id, name, is_active FROM venues/, () => ({
+      rows: [
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
+      ],
+    })],
+    [/SELECT id, email, role, is_active FROM users/, () => ({
+      rows: [
+        { id: 'u1', email: 'venue_staff@connectsphere.com', role: 'venue_staff', is_active: true },
+        { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
+      ],
+    })],
+    [/^BEGIN\s+READ\s+ONLY$/, () => ({ rows: [] })],
+    [/SELECT\s+v\.name AS venue_name/, () => ({
+      rows: [
+        { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Lotus Room', venue_id: 'v2', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Maple Room', venue_id: 'v3', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Jasmine Hall', venue_id: 'v4', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+        { venue_name: 'Cedar Auditorium', venue_id: 'v5', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+      ],
+    })],
+    [/SELECT DISTINCT staff_id FROM venue_staff_assignments\s+WHERE venue_id = ANY/, (vals) => {
+      const vIds = (vals?.[0] as string[]) || [];
+      const rows: Array<{ staff_id: string }> = [];
+      if (vIds.some(id => ['v1', 'v2', 'v3'].includes(id))) rows.push({ staff_id: 'u1' });
+      if (vIds.some(id => ['v4', 'v5'].includes(id))) rows.push({ staff_id: 'u2' });
+      return { rows };
+    }],
+    // Simulate zero unassigned venues in the database
+    [/SELECT v\.id, v\.name FROM venues v/, () => ({ rows: [] })],
+    [/^COMMIT$/, () => ({ rows: [] })],
+    // If any write query is attempted, fail immediately:
+    [/^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\b/i, () => {
+      throw new Error('Regression: Write query executed in verify-only mode!');
+    }],
+  ]);
+
+  // Execute in verify-only mode
+  await provisionVenueStaffRoster(fake.client, true);
+
+  // Assert BEGIN READ ONLY was sent
+  const beginReadOnlyQuery = fake.executedQueries.find(q => /^BEGIN\s+READ\s+ONLY$/i.test(q.sql.trim()));
+  assert.ok(beginReadOnlyQuery, 'Expected BEGIN READ ONLY in verify-only mode');
+
+  // Assert zero write queries executed
+  const writeQueries = fake.executedQueries.filter(q => /^\s*(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE)\b/i.test(q.sql));
+  assert.equal(writeQueries.length, 0, `Expected 0 write queries in verify-only mode, found: ${writeQueries.map(q => q.sql).join(', ')}`);
 });
