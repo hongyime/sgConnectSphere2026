@@ -35,18 +35,23 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
   - Authored T-65 test execution record in `docs/testing/runs/` proving verification of the 5 canonical assignments and confirming `TC_E11S01_13` (unassigned venues have zero broad fallback).
   - Authored `docs/testing/e11-s01-roster-verification-20261104.md` reconciling E11-S01 evidence audit requirements against the provisioned and verified roster.
 
+- **Reconcile Xiang Ying's Review Comments on PR #425**:
+  - Point 1: Fixed `users` schema precheck in `scripts/provision_venue_staff_roster.ts` and `docs/ops/venue-staff-roster-provisioning.md` to read boolean `is_active` instead of non-existent column `status`.
+  - Point 2: Fixed ON CONFLICT target in `scripts/provision_venue_staff_roster.ts` and runbook SQL to match migration 0018's real primary key `PRIMARY KEY (venue_id, staff_id)` instead of `(venue_id, staff_id, active_from)`, and implemented clean reactivation logic for expired pairs. Added comprehensive unit tests in `backend/tests/venueStaffRosterProvisioning.test.ts`.
+  - Point 3: Fixed verification logic in `scripts/provision_venue_staff_roster.ts` so multiple active assignees on a single venue cannot be hidden by a `Map<string, string>`. Validates all active pairs and rejects extra unexpected assignees.
+  - Point 4: Added explicit resolver check for assigned and unassigned venues. Clarified delivery verification distinction per T-97 in `docs/testing/e11-s01-roster-verification-20261104.md` and added follow-up T-65 record in `docs/testing/runs/`.
+
 ## Verification
 
 - Worktree check: `python scripts/check_worktrees.py` reports only the primary worktree.
 - Frontend role tests: 34 tests passed.
-- Backend tests: full suite passed.
+- Backend tests: full suite passed (`backend/tests/venueStaffRosterProvisioning.test.ts` passed 3/3 tests).
 - Frontend & backend typechecks: passed.
 - Repository hygiene: `python scripts/check.py` passed with 0 errors.
-- Roster verification: `npx tsx scripts/provision_venue_staff_roster.ts --verify-only` verified all 5 PO-approved venue assignments and `TC_E11S01_13` fallback boundary.
 
 ## Next steps
 
 - Run `python scripts/check.py` and `python scripts/doc_guard.py` before committing.
 - Commit and push updates to PR #425 (`chore/SCRUM-195-provision-venue-staff-roster`).
-- Update PR #425 comment so Ji Ning can cite the recorded load and verification evidence.
+- Reply to Xiang Ying's review on GitHub with detailed breakdown of fixes.
 - Transition SCRUM-195 to Done in Jira upon PR review and merge.

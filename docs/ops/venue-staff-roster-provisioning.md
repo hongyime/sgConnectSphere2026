@@ -23,9 +23,9 @@ The canonical mapping assigns the five production venues between the two active 
 
 1. **Database & Schema**: Connect to the production database with schema fixed to `public`.
 2. **Migration Ledger**: Confirm migration `0018_venue_staff_assignments.sql` is recorded and applied in the migration ledger.
-3. **Target Accounts**: Verify both `venue_staff@connectsphere.com` and `venue_staff_b@connectsphere.com` exist, are active (`status = 'active'`), and hold role `'venue_staff'`.
+3. **Target Accounts**: Verify both `venue_staff@connectsphere.com` and `venue_staff_b@connectsphere.com` exist, are active (`is_active = true`), and hold role `'venue_staff'`.
 4. **Target Venues**: Verify all five venues (Orchid Hall, Lotus Room, Maple Room, Jasmine Hall, Cedar Auditorium) exist in `venues`.
-5. **Conflict Safe**: The insert is idempotent (`ON CONFLICT (venue_id, staff_id, active_from) DO NOTHING`).
+5. **Conflict Safe**: The insert is idempotent and targets the primary key `PRIMARY KEY (venue_id, staff_id)` declared in migration 0018 (`ON CONFLICT (venue_id, staff_id) DO UPDATE SET active_from = now(), active_until = NULL WHERE venue_staff_assignments.active_until IS NOT NULL`).
 
 ## Execution
 
@@ -41,20 +41,26 @@ Or execute within a single transaction:
 BEGIN;
 
 -- Insert Alex Tan assignments
-INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from)
-SELECT v.id, u.id, now()
+INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from, active_until)
+SELECT v.id, u.id, now(), NULL
 FROM venues v, users u
 WHERE u.email = 'venue_staff@connectsphere.com'
+  AND u.is_active = true
   AND v.name IN ('Orchid Hall', 'Lotus Room', 'Maple Room')
-ON CONFLICT (venue_id, staff_id, active_from) DO NOTHING;
+ON CONFLICT (venue_id, staff_id)
+DO UPDATE SET active_from = now(), active_until = NULL
+WHERE venue_staff_assignments.active_until IS NOT NULL;
 
 -- Insert Jordan Lee assignments
-INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from)
-SELECT v.id, u.id, now()
+INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from, active_until)
+SELECT v.id, u.id, now(), NULL
 FROM venues v, users u
 WHERE u.email = 'venue_staff_b@connectsphere.com'
+  AND u.is_active = true
   AND v.name IN ('Jasmine Hall', 'Cedar Auditorium')
-ON CONFLICT (venue_id, staff_id, active_from) DO NOTHING;
+ON CONFLICT (venue_id, staff_id)
+DO UPDATE SET active_from = now(), active_until = NULL
+WHERE venue_staff_assignments.active_until IS NOT NULL;
 
 COMMIT;
 ```
@@ -65,9 +71,9 @@ COMMIT;
    ```bash
    npx tsx scripts/provision_venue_staff_roster.ts --verify-only
    ```
-2. Verify that `venue_staff_assignments` contains exactly 5 current active rows (`active_from <= now() AND (active_until IS NULL OR active_until > now())`).
-3. Run `resolveAssignedVenueStaff` across all five venues and verify that:
-   - Orchid Hall, Lotus Room, and Maple Room resolve to Alex Tan.
-   - Jasmine Hall and Cedar Auditorium resolve to Jordan Lee.
-4. Confirm TC_E11S01_13: Any unassigned venues return unresolved with no fallback staff.
+2. Verify that `venue_staff_assignments` contains exactly 5 current active rows (`active_from <= now() AND (active_until IS NULL OR active_until > now())`), with no extra or duplicate assignees.
+3. Verify `resolveAssignedVenueStaff` query logic across all five venues:
+   - Orchid Hall, Lotus Room, and Maple Room resolve strictly to Alex Tan.
+   - Jasmine Hall and Cedar Auditorium resolve strictly to Jordan Lee.
+4. Confirm TC_E11S01_13: Any unassigned venues return unresolved with zero fallback staff.
 5. Record the sanitized outcome in `docs/ops/production-account-runs/` and cite in T-65 test run records under `docs/testing/runs/`.

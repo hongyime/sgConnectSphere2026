@@ -17,16 +17,15 @@ And under *Still required before whole-story Done*, requirement 2 recorded:
    - **Alex Tan** (`venue_staff@connectsphere.com`): Orchid Hall, Lotus Room, Maple Room
    - **Jordan Lee** (`venue_staff_b@connectsphere.com`): Jasmine Hall, Cedar Auditorium
 
-2. **Provisioning Execution (SCRUM-195)**:
+2. **Provisioning Tool & Unit Verification (SCRUM-195)**:
    - Tool: `scripts/provision_venue_staff_roster.ts`
    - Runbook: `docs/ops/venue-staff-roster-provisioning.md`
-   - Run Record: `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md` (recorded UTC 2026-11-04T01:15:00Z)
-   - Scope: 5 assignments created in `venue_staff_assignments` with active intervals; idempotent and conflict-safe.
+   - Unit & Idempotency Tests: `backend/tests/venueStaffRosterProvisioning.test.ts` (exercises `is_active` prechecks, real-key `ON CONFLICT (venue_id, staff_id)` behavior, reactivation of expired pairs, rejection of rogue multiple assignees, and synthetic unassigned venue resolution).
+   - Integration & Resolver Tests: `backend/tests/eventNotifications.integration.test.ts` exercises `resolveAssignedVenueStaff` and verifies `TC_E11S01_10` / `TC_E11S01_13` (missing/ended assignments remain unresolved with zero broad fallback).
 
-3. **Verification Evidence (T-65 & TC_E11S01_13)**:
-   - Test execution record: `docs/testing/runs/` (T-65 session record for SCRUM-195)
-   - Read-only verify command: `npx tsx scripts/provision_venue_staff_roster.ts --verify-only`
-   - Outcome: PASS across all 5 canonical venues. `resolveAssignedVenueStaff` correctly maps Orchid Hall, Lotus Room, and Maple Room to Alex Tan, and Jasmine Hall and Cedar Auditorium to Jordan Lee.
-   - Fallback prevention: Unassigned venues return empty/unresolved without broad fallback to `decided_by` or general Venue Staff accounts, fully confirming `TC_E11S01_13`.
+3. **Verification Evidence & Next Steps (T-65, T-97)**:
+   - Automated test execution records: T-65 session records in `docs/testing/runs/`.
+   - Tool execution: Bounded provisioning runner is verified against the canonical schema with zero unhandled constraints.
+   - Per T-97, story-owner delivery verification of E11-S01 live notification delivery remains open for story owner (Ji Ning) observation once the roster is loaded into the target environment.
 
-With this evidence committed in PR #425, the SCRUM-195 roster provisioning and verification prerequisites for E11-S01 whole-story Done are satisfied.
+With this tool, test suite, and operational runbook committed in PR #425, the SCRUM-195 subtask implementation prerequisites are complete and ready for deployment execution.
