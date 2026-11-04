@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { afterEach, expect, test, vi } from 'vitest';
 import {
   cleanup,
@@ -618,4 +619,116 @@ test('a save completing after leaving the form does not navigate back', async ()
       screen.getByRole('heading', { name: 'Other page' }),
     ).toBeInTheDocument(),
   );
+});
+
+// E07-S08 (SCRUM-181): Sessions on the Coordinator's equipment requests.
+const sessions = [
+  { id: 'ses-a', title: 'Morning', number: 1, startsAt: '2026-10-15T01:00:00.000Z', endsAt: '2026-10-15T03:00:00.000Z' },
+  { id: 'ses-b', title: null, number: 2, startsAt: '2026-10-15T05:00:00.000Z', endsAt: '2026-10-15T07:00:00.000Z' },
+];
+test('TC_E07S08_01 - on a two-Session event the Coordinator sees one card per Session and saves a request for the chosen one', async () => {
+  let saved = false;
+  const calls = stubApi(
+    {
+      [`GET ${endpoint}`]: () => ({
+        body: {
+          event, equipment, sessions, canEdit: true,
+          requests: [{ ...row, sessionId: 'ses-a' }, ...(saved ? [{ ...row, id: 'req2', sessionId: 'ses-b' }] : [])],
+        },
+      }),
+      [`POST ${endpoint}`]: () => {
+        saved = true;
+        return { status: 201, body: { requestId: 'req2', changed: true, notified: 1, warning: null } };
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  render(
+    <StrictMode>
+      <MemoryRouter initialEntries={['/coordinator/events/EVT-A/equipment']}>
+        <Routes>
+          <Route path="/coordinator/events/:eventCode/equipment" element={<EquipmentRequests />} />
+          <Route path="/coordinator/events/:eventCode/equipment/new" element={<EquipmentRequestFormPage />} />
+        </Routes>
+      </MemoryRouter>
+    </StrictMode>,
+  );
+  const second = await screen.findByRole('region', { name: 'Session 2' });
+  expect(second).toHaveTextContent('15 Oct 2026, 1:00 pm – 3:00 pm');
+  expect(second).toHaveTextContent('No equipment requested for this Session yet.');
+  expect(screen.getByRole('table', { name: 'Equipment requested for Morning' })).toHaveTextContent('Microphone');
+  fireEvent.click(screen.getByRole('link', { name: 'Add equipment request' }));
+  const picker = await screen.findByLabelText('Session');
+  expect(picker).toBeRequired();
+  const items = () => [...(screen.getByLabelText('Equipment item') as HTMLSelectElement).options].map((o) => o.text);
+  fireEvent.change(picker, { target: { value: 'ses-a' } });
+  expect(items()).toEqual(['Choose equipment']);
+  fireEvent.change(picker, { target: { value: 'ses-b' } });
+  expect(items()).toEqual(['Choose equipment', 'Microphone']);
+  expect(screen.getByRole('option', { name: 'Session 2, 15 Oct 2026, 1:00 pm – 3:00 pm' })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Equipment item'), { target: { value: 'eq1' } });
+  fireEvent.change(screen.getByLabelText('Quantity requested'), { target: { value: '2' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save equipment request' }));
+  expect(await screen.findByText('Equipment request saved.')).toBeInTheDocument();
+  expect(calls.find((c) => c.method === 'POST')?.body).toEqual({
+    action: 'saveRequest', equipmentId: 'eq1', quantity: 2, notes: '', sessionId: 'ses-b',
+  });
+  expect(await screen.findByRole('table', { name: 'Equipment requested for Session 2' })).toHaveTextContent('Microphone');
+});
+
+test('TC_E07S08_03 - the API refusal of a Session shows under the Session picker and keeps the entries', async () => {
+  stubApi(
+    {
+      [`GET ${endpoint}`]: { body: { event, equipment, sessions, canEdit: true, requests: [] } },
+      [`POST ${endpoint}`]: {
+        status: 400,
+        body: { error: 'validation_failed', errors: { sessionId: ['Choose a Session of this event.'] } },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/new');
+  fireEvent.change(await screen.findByLabelText('Session'), { target: { value: 'ses-a' } });
+  fireEvent.change(screen.getByLabelText('Equipment item'), { target: { value: 'eq1' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save equipment request' }));
+  expect(await screen.findByText('Choose a Session of this event.')).toBeInTheDocument();
+  expect(screen.getByLabelText('Session')).toHaveValue('ses-a');
+  expect(screen.getByLabelText('Session')).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('E07-S08 D122 - a single-Session event shows no Session picker or Session cards and sends no Session', async () => {
+  const calls = stubApi(
+    {
+      [`GET ${endpoint}`]: { body: { event, equipment, sessions: [sessions[0]], canEdit: true, requests: [] } },
+      [`POST ${endpoint}`]: { status: 201, body: { requestId: 'req1', changed: true, notified: 1, warning: null } },
+    },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/new');
+  fireEvent.change(await screen.findByLabelText('Equipment item'), { target: { value: 'eq1' } });
+  expect(screen.queryByLabelText('Session')).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Save equipment request' }));
+  await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
+  expect(calls.find((c) => c.method === 'POST')?.body).not.toHaveProperty('sessionId');
+  expect(await screen.findByText('No equipment requested yet')).toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Morning' })).not.toBeInTheDocument();
+});
+
+test('E07-S08 D132 - a request whose Session was deleted is flagged and can be edited to choose one, but not removed', async () => {
+  const orphan = {
+    ...row, sessionId: null, reserved: true,
+    reservation: { id: 'res1', status: 'released' as const, quantityReserved: 2, requiresReconfirmation: false },
+  };
+  stubApi(
+    { [`GET ${endpoint}`]: { body: { event, equipment, sessions, canEdit: true, requests: [orphan] } } },
+    { role: 'event_coordinator' },
+  );
+  show();
+  const card = await screen.findByRole('region', { name: 'Requests with no Session' });
+  expect(card).toHaveTextContent('Their Session was deleted. Choose a Session for each request before it can be reserved.');
+  expect(card).toHaveTextContent('No Session: choose one');
+  expect(screen.queryByRole('button', { name: 'Remove Microphone…' })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('link', { name: 'Edit Microphone' }));
+  expect(await screen.findByLabelText('Session')).toHaveValue('');
+  expect(screen.getByRole('button', { name: 'Save equipment request' })).toBeEnabled();
 });

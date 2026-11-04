@@ -35,6 +35,7 @@ import {
   ReservationPills,
   ReservationSaved,
   isActive,
+  sessionName,
 } from './EquipmentReservations';
 function eventRef(event: RequestEvent) {
   return event.eventCode ?? event.id;
@@ -123,6 +124,7 @@ function EventRequests({ eventCode }: { eventCode: string }) {
     reservationSaved?: {
       outcome: ReservationOutcome;
       action: 'reserve' | 'change';
+      multiSession?: boolean;
     };
   } | null;
   const saved = state?.equipmentSaved;
@@ -171,6 +173,114 @@ function EventRequests({ eventCode }: { eventCode: string }) {
       setBusy(false);
     }
   }
+  // E07-S08: one table per Session on a multi-Session Event (D122), as the
+  // Safety Officer's review groups arrangements; one table otherwise.
+  const requestTable = (
+    detail: RequestDetail,
+    rows: EquipmentRequest[],
+    caption: string,
+  ) => (
+    <DataTable
+      caption={caption}
+      rows={rows}
+      rowKey={(r) => r.id}
+      columns={[
+        { header: 'Equipment', primary: true, cell: (r) => r.name },
+        { header: 'Quantity requested', cell: (r) => r.quantity },
+        { header: 'Total stock', cell: (r) => r.totalStock },
+        {
+          header: 'Status',
+          cell: (r) => (
+            <>
+              {r.sessionId === null && (detail.sessions ?? []).length > 1 ? (
+                <>
+                  <StatusPill status="warning" label="No Session: choose one" />{' '}
+                </>
+              ) : null}
+              {r.reservation ? (
+                <ReservationPills
+                  reservation={r.reservation}
+                  requested={r.quantity}
+                />
+              ) : r.reserved ? (
+                <StatusPill status="neutral" label="Reserved" />
+              ) : (
+                <StatusPill
+                  status={
+                    r.quantity > r.totalStock ? 'warning' : 'neutral'
+                  }
+                  label={
+                    r.quantity > r.totalStock
+                      ? 'Exceeds total stock'
+                      : 'Not reserved'
+                  }
+                />
+              )}{' '}
+              {!r.isActive
+                ? 'Retired'
+                : r.operationalStatus === 'maintenance'
+                  ? 'Under maintenance'
+                  : ''}
+            </>
+          ),
+        },
+        { header: 'Notes', cell: (r) => r.notes || 'None recorded' },
+        ...(staff &&
+        (detail.canReserve || detail.canRelease)
+          ? [
+              {
+                header: 'Actions',
+                cell: (r: EquipmentRequest) => (
+                  <StaffActions
+                    line={r}
+                    detail={detail}
+                    onRelease={() => {
+                      setReleasing(r);
+                      setReleaseError('');
+                      setReleased(null);
+                    }}
+                  />
+                ),
+              },
+            ]
+          : []),
+        ...(detail.canEdit
+          ? [
+              {
+                header: 'Actions',
+                // D132: a request whose Session was deleted can be edited
+                // to choose one; its reservation history still bars removal.
+                cell: (r: EquipmentRequest) =>
+                  r.reserved && r.sessionId !== null ? (
+                    <span>Reserved requests are protected</span>
+                  ) : (
+                    <>
+                      <ButtonLink
+                        to={`${requestLink(detail.event, false)}/${r.id}/edit`}
+                      >
+                        Edit {r.name}
+                      </ButtonLink>
+                      {r.reserved ? null : (
+                        <Button
+                          onClick={() => {
+                            setRemoving(r);
+                            setError('');
+                            setRemoved(false);
+                          }}
+                        >
+                          Remove {r.name}…
+                        </Button>
+                      )}
+                    </>
+                  ),
+              },
+            ]
+          : []),
+      ]}
+    />
+  );
+  const sessions = result.state === 'ready' ? (result.data.sessions ?? []) : [];
+  const multiSession = sessions.length > 1;
   return (
     <PageLayout
       eyebrow={eventCode}
@@ -210,17 +320,22 @@ function EventRequests({ eventCode }: { eventCode: string }) {
         <Alert tone="success">Equipment request removed.</Alert>
       ) : null}
       {released ? (
-        <ReservationSaved outcome={released} action="release" />
+        <ReservationSaved
+          outcome={released}
+          action="release"
+          multiSession={multiSession}
+        />
       ) : state?.reservationSaved ? (
         <ReservationSaved
           outcome={state.reservationSaved.outcome}
           action={state.reservationSaved.action}
+          multiSession={state.reservationSaved.multiSession}
         />
       ) : null}
       {releasing?.reservation ? (
         <ConfirmPanel
           title={`Release ${releasing.name}?`}
-          description={`The ${releasing.reservation.quantityReserved} reserved ${releasing.reservation.quantityReserved === 1 ? 'unit goes' : 'units go'} back to the available pool for this event's dates. The request stays on the event and can be reserved again.`}
+          description={`The ${releasing.reservation.quantityReserved} reserved ${releasing.reservation.quantityReserved === 1 ? 'unit goes' : 'units go'} back to the available pool for ${multiSession ? "its Session's" : "this event's"} dates. The request stays on the event and can be reserved again.`}
           confirmLabel="Release reservation"
           busyLabel="Releasing…"
           danger
@@ -264,7 +379,9 @@ function EventRequests({ eventCode }: { eventCode: string }) {
             {staff ? (
               <p>
                 {result.data.canReserve
-                  ? `Reserve each request from the units free for this event's dates${result.data.event.startsAt && result.data.event.endsAt ? `, ${formatDateRange(result.data.event.startsAt, result.data.event.endsAt)}` : ''}. The Coordinator is notified of each reservation and change.`
+                  ? multiSession
+                    ? "Reserve each request from the units free for its Session's dates. The Coordinator is notified of each reservation and change."
+                    : `Reserve each request from the units free for this event's dates${result.data.event.startsAt && result.data.event.endsAt ? `, ${formatDateRange(result.data.event.startsAt, result.data.event.endsAt)}` : ''}. The Coordinator is notified of each reservation and change.`
                   : result.data.canRelease
                     ? 'This event is cancelled. Release its reservations to return the units to the available pool.'
                     : result.data.event.status === 'confirmed'
@@ -283,99 +400,50 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                 amended or removed.
               </p>
             )}
-            {result.data.requests.length ? (
-              <DataTable
-                caption="Equipment requested for this event"
-                rows={result.data.requests}
-                rowKey={(r) => r.id}
-                columns={[
-                  { header: 'Equipment', primary: true, cell: (r) => r.name },
-                  { header: 'Quantity requested', cell: (r) => r.quantity },
-                  { header: 'Total stock', cell: (r) => r.totalStock },
-                  {
-                    header: 'Status',
-                    cell: (r) => (
-                      <>
-                        {r.reservation ? (
-                          <ReservationPills
-                            reservation={r.reservation}
-                            requested={r.quantity}
-                          />
-                        ) : r.reserved ? (
-                          <StatusPill status="neutral" label="Reserved" />
-                        ) : (
-                          <StatusPill
-                            status={
-                              r.quantity > r.totalStock ? 'warning' : 'neutral'
-                            }
-                            label={
-                              r.quantity > r.totalStock
-                                ? 'Exceeds total stock'
-                                : 'Not reserved'
-                            }
-                          />
-                        )}{' '}
-                        {!r.isActive
-                          ? 'Retired'
-                          : r.operationalStatus === 'maintenance'
-                            ? 'Under maintenance'
-                            : ''}
-                      </>
-                    ),
-                  },
-                  { header: 'Notes', cell: (r) => r.notes || 'None recorded' },
-                  ...(staff &&
-                  (result.data.canReserve || result.data.canRelease)
-                    ? [
-                        {
-                          header: 'Actions',
-                          cell: (r: EquipmentRequest) => (
-                            <StaffActions
-                              line={r}
-                              detail={result.data}
-                              onRelease={() => {
-                                setReleasing(r);
-                                setReleaseError('');
-                                setReleased(null);
-                              }}
-                            />
-                          ),
-                        },
-                      ]
-                    : []),
-                  ...(result.data.canEdit
-                    ? [
-                        {
-                          header: 'Actions',
-                          cell: (r: EquipmentRequest) =>
-                            r.reserved ? (
-                              <span>Reserved requests are protected</span>
-                            ) : (
-                              <>
-                                <ButtonLink
-                                  to={`${requestLink(result.data.event, false)}/${r.id}/edit`}
-                                >
-                                  Edit {r.name}
-                                </ButtonLink>
-                                <Button
-                                  onClick={() => {
-                                    setRemoving(r);
-                                    setError('');
-                                    setRemoved(false);
-                                  }}
-                                >
-                                  Remove {r.name}…
-                                </Button>
-                              </>
-                            ),
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            ) : null}
+            {!multiSession && result.data.requests.length
+              ? requestTable(
+                  result.data,
+                  result.data.requests,
+                  'Equipment requested for this event',
+                )
+              : null}
           </Card>
-          {!result.data.requests.length ? (
+          {multiSession
+            ? sessions.map((session) => {
+                const rows = result.data.requests.filter(
+                  (r) => r.sessionId === session.id,
+                );
+                return (
+                  <Card key={session.id} title={sessionName(session)}>
+                    <p>{formatDateRange(session.startsAt, session.endsAt)}</p>
+                    {rows.length ? (
+                      requestTable(
+                        result.data,
+                        rows,
+                        `Equipment requested for ${sessionName(session)}`,
+                      )
+                    ) : (
+                      <p>No equipment requested for this Session yet.</p>
+                    )}
+                  </Card>
+                );
+              })
+            : null}
+          {multiSession &&
+          result.data.requests.some((r) => r.sessionId === null) ? (
+            <Card title="Requests with no Session">
+              <Alert tone="warning">
+                Their Session was deleted. Choose a Session for each request
+                before it can be reserved.
+              </Alert>
+              {requestTable(
+                result.data,
+                result.data.requests.filter((r) => r.sessionId === null),
+                'Equipment requests with no Session',
+              )}
+            </Card>
+          ) : null}
+          {!multiSession && !result.data.requests.length ? (
             <EmptyState title="No equipment requested yet">
               Add the equipment this event needs when planning its arrangements.
             </EmptyState>
@@ -461,6 +529,10 @@ function RequestForm({
   const [equipmentId, setEquipmentId] = useState(original?.equipmentId ?? '');
   const [quantity, setQuantity] = useState(String(original?.quantity ?? 1));
   const [notes, setNotes] = useState(original?.notes ?? '');
+  // E07-S08 (D122): chosen only when the event has two or more Sessions.
+  const sessions = data.sessions ?? [];
+  const multiSession = sessions.length > 1;
+  const [sessionId, setSessionId] = useState(original?.sessionId ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -471,11 +543,13 @@ function RequestForm({
       mounted.current = false;
     };
   }, []);
-  if (!data.canEdit || original?.reserved)
+  // D123: a reserved request is locked, unless its Session was deleted (D132).
+  const locked = !!original?.reserved && original.sessionId !== null;
+  if (!data.canEdit || locked)
     return (
       <>
         <Alert tone="warning">
-          {original?.reserved
+          {locked
             ? 'This request has been reserved and cannot be amended or removed here.'
             : 'Only the assigned Coordinator can change requests while this event is approved or planning.'}
         </Alert>
@@ -501,6 +575,7 @@ function RequestForm({
       equipmentId,
       quantity: Number(quantity),
       notes,
+      ...(multiSession ? { sessionId } : {}),
     });
     if (!mounted.current) return;
     setBusy(false);
@@ -516,6 +591,32 @@ function RequestForm({
       <form onSubmit={submit} className="ui-form">
         {error ? <Alert tone="error">{error}</Alert> : null}
         <FormSection title="Equipment requirement">
+          {multiSession ? (
+            <FormField
+              label="Session"
+              wide
+              hint="The equipment is reserved for this Session's dates."
+              error={errors.sessionId?.[0]}
+            >
+              {(props) => (
+                <select
+                  {...props}
+                  required
+                  value={sessionId}
+                  disabled={busy}
+                  onChange={(e) => setSessionId(e.target.value)}
+                >
+                  <option value="">Choose a Session</option>
+                  {sessions.map((session) => (
+                    <option key={session.id} value={session.id}>
+                      {sessionName(session)},{' '}
+                      {formatDateRange(session.startsAt, session.endsAt)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </FormField>
+          ) : null}
           <FormField label="Equipment item" error={errors.equipmentId?.[0]}>
             {(props) => (
               <select
@@ -535,8 +636,12 @@ function RequestForm({
                 {data.equipment
                   .filter(
                     (eq) =>
+                      // One request per item per Session (E07-S08).
                       !data.requests.some(
-                        (r) => r.equipmentId === eq.id && r.id !== requestId,
+                        (r) =>
+                          r.equipmentId === eq.id &&
+                          r.id !== requestId &&
+                          (!multiSession || r.sessionId === sessionId),
                       ),
                   )
                   .map((eq) => (

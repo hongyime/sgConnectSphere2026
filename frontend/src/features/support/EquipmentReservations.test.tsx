@@ -377,3 +377,52 @@ test('E07-S04 - a Coordinator who opens the reserve form is told only Technical 
   expect(await screen.findByText('Access denied. Only Technical Support Staff can reserve equipment.')).toBeInTheDocument();
   expect(screen.queryByLabelText('Quantity to reserve')).not.toBeInTheDocument();
 });
+
+// E07-S08 (SCRUM-181): "Morning" 9 to 11 am and an untitled Session 1 to 3 pm.
+const sessions = [
+  { id: 'ses-a', title: 'Morning', number: 1, startsAt: '2026-10-15T01:00:00.000Z', endsAt: '2026-10-15T03:00:00.000Z' },
+  { id: 'ses-b', title: null, number: 2, startsAt: '2026-10-15T05:00:00.000Z', endsAt: '2026-10-15T07:00:00.000Z' },
+];
+const forB = { ...line, sessionId: 'ses-b' as string | null, freeQuantity: 1 };
+
+test('TC_E07S08_02 - on a two-Session event Technical Support reserves for the line Session, with its dates and free quantity', async () => {
+  let reserved = false;
+  const calls = stubApi({
+    [`GET ${endpoint}`]: () => detail([reserved ? { ...forB, reserved: true, reservation: { id: 'res1', status: 'partial', quantityReserved: 1, requiresReconfirmation: false } } : forB], { sessions }),
+    [`POST ${endpoint}`]: () => { reserved = true; return { status: 201, body: outcome('partial', 1, 2, { session: sessions[1] }) }; },
+  }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment', true);
+  expect(await screen.findByText("Reserve each request from the units free for its Session's dates. The Coordinator is notified of each reservation and change.")).toBeInTheDocument();
+  fireEvent.click(within(screen.getByRole('region', { name: 'Session 2' })).getByRole('link', { name: 'Reserve Wireless Microphone' }));
+  expect((await screen.findByText('Session')).nextSibling).toHaveTextContent('Session 2');
+  expect(screen.getByText('Session dates').nextSibling).toHaveTextContent('15 Oct 2026, 1:00 pm – 3:00 pm');
+  expect(screen.queryByText('Event dates')).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Quantity to reserve'), { target: { value: '2' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Reserve equipment' }));
+  expect(await screen.findByText("Only 1 is free for this Session's dates.")).toBeInTheDocument();
+  expect(calls.some((c) => c.method === 'POST')).toBe(false);
+  fireEvent.change(screen.getByLabelText('Quantity to reserve'), { target: { value: '1' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Reserve equipment' }));
+  expect(await screen.findByText('Wireless Microphone × 1 of 2 reserved for EVT-A Conference, Session 2, 15 Oct 2026, 1:00 pm – 3:00 pm. 1 still outstanding.')).toBeInTheDocument();
+});
+
+test('E07-S08 D132 - a line with no Session on a two-Session event cannot be reserved until it has one', async () => {
+  stubApi({ [`GET ${endpoint}`]: detail([{ ...line, sessionId: null }], { sessions }) }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment/req1/reserve');
+  expect(await screen.findByText('Choose a Session for this request before reserving it.')).toBeInTheDocument();
+  expect(screen.queryByLabelText('Quantity to reserve')).not.toBeInTheDocument();
+});
+
+test('E07-S08 D131 - releasing on a two-Session event speaks of the Session dates and names the Session', async () => {
+  const held = { ...forB, reserved: true, reservation: { id: 'res1', status: 'reserved' as const, quantityReserved: 2, requiresReconfirmation: false }, freeQuantity: 0 };
+  stubApi({
+    [`GET ${endpoint}`]: detail([held], { sessions }),
+    [`POST ${endpoint}`]: { body: outcome('released', 2, 2, { session: sessions[1] }) },
+  }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment');
+  fireEvent.click(await screen.findByRole('button', { name: 'Release Wireless Microphone…' }));
+  expect(screen.getByText("The 2 reserved units go back to the available pool for its Session's dates. The request stays on the event and can be reserved again.")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Release reservation' }));
+  expect(await screen.findByText(/Wireless Microphone × 2 returned to the available pool for\s+EVT-A Conference, Session 2, 15 Oct 2026, 1:00 pm – 3:00 pm\./)).toBeInTheDocument();
+  expect(freeSentence(0, "this Session's dates")).toBe("None are free for this Session's dates.");
+});
