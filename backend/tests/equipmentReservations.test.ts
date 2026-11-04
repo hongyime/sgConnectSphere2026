@@ -14,6 +14,7 @@ import {
   validateReservationInput,
 } from '../src/modules/equipmentSupport/reservations.js';
 import { createEquipmentRequestHandler } from '../src/modules/equipmentSupport/requestHandler.js';
+import { forSession, sessionLabel, sessionWhen, whenText } from '../src/modules/equipmentSupport/sessions.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { VercelResponse } from '../src/vercel.js';
 
@@ -63,6 +64,24 @@ test('E07-S04 event labels and free-quantity sentences read naturally', () => {
   assert.equal(freeSentence(-2), "None are free for this event's dates.");
   assert.equal(freeSentence(1), "Only 1 is free for this event's dates.");
   assert.equal(freeSentence(4), "Only 4 are free for this event's dates.");
+  assert.equal(freeSentence(0, "this Session's dates"), "None are free for this Session's dates.");
+  assert.equal(freeSentence(2, "this Session's dates"), "Only 2 are free for this Session's dates.");
+});
+
+test('E07-S08 D131 notices and the Activity log name the Session and use its dates only on a multi-Session Event', () => {
+  // 15 Oct 2026, the Event 9:00 am to 5:00 pm and its afternoon Session 1:00 pm to 3:00 pm, Singapore time.
+  const event = { startsAt: new Date('2026-10-15T01:00:00Z'), endsAt: new Date('2026-10-15T09:00:00Z') };
+  const titled = { id: 'a', title: 'Afternoon', number: 2, startsAt: new Date('2026-10-15T05:00:00Z'), endsAt: new Date('2026-10-15T07:00:00Z') };
+  const untitled = { ...titled, id: 'b', title: null, number: 1 };
+  assert.equal(sessionLabel(titled), 'Session "Afternoon"');
+  assert.equal(sessionLabel(untitled), 'Session 1');
+  assert.equal(sessionWhen(titled), 'Session "Afternoon", 15 Oct 2026, 1:00 pm – 3:00 pm');
+  assert.equal(whenText(event, titled, [titled, untitled]), 'Session "Afternoon", 15 Oct 2026, 1:00 pm – 3:00 pm');
+  assert.equal(whenText(event, titled, [titled]), '15 Oct 2026, 9:00 am – 5:00 pm');
+  assert.equal(whenText(event, undefined, [titled, untitled]), '15 Oct 2026, 9:00 am – 5:00 pm');
+  assert.equal(forSession(untitled, [titled, untitled]), ' for Session 1');
+  assert.equal(forSession(untitled, [untitled]), '');
+  assert.equal(forSession(null, [titled, untitled]), '');
 });
 
 test('E07-S04 reservation writers refuse signed-out callers and other roles before opening a transaction', async () => {

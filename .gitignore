@@ -102,3 +102,6 @@ artifacts/sbom/*
 
 # Durable E02-S07 estimate review
 !artifacts/e02-s07-date-horizon-estimate.html
+
+# Durable sprint burndown and velocity dashboard
+!artifacts/sprint-burndown-velocity.html

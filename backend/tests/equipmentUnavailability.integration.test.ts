@@ -440,3 +440,29 @@ test('E07-S05 a one-unit withdrawal says 1 unit, and a return that waited while 
     await t.db.close();
   }
 });
+
+test('E07-S08 D131 on a multi-Session Event the withdrawal notice names each affected Session and its dates', async () => {
+  const t = await setup();
+  try {
+    const camera = await t.equipment('HD Camera', 4);
+    const eventId = await t.event('EVT-U8');
+    // 3 Dec 2030: "Morning" 9 to 11 am, an untitled Session 1 to 3 pm, Singapore time.
+    const morning = (await t.q(`UPDATE sessions SET title='Morning',session_range='[2030-12-03T01:00Z,2030-12-03T03:00Z)'
+      WHERE event_id=$1 RETURNING id`, [eventId])).rows[0].id as string;
+    const second = (await t.q(`INSERT INTO sessions(event_id,session_range,expected_attendance)
+      VALUES($1,'[2030-12-03T05:00Z,2030-12-03T07:00Z)',10) RETURNING id`, [eventId])).rows[0].id as string;
+    for (const [session, range] of [[morning, '[2030-12-03T01:00Z,2030-12-03T03:00Z)'], [second, '[2030-12-03T05:00Z,2030-12-03T07:00Z)']]) {
+      const request = (await t.q(`INSERT INTO equipment_requests(event_id,equipment_id,quantity_requested,requested_by,session_id)
+        VALUES($1,$2,2,$3,$4) RETURNING id`, [eventId, camera, t.ids.coord, session])).rows[0].id as string;
+      await t.q(`INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range,status,session_id)
+        VALUES($1,$2,$3,2,$4::tstzrange,'reserved',$5)`, [request, eventId, camera, range, session]);
+    }
+    assert.equal((await t.mark(camera, 3)).status, 201);
+    assert.deepEqual((await t.notices(t.ids.coord)).map((n) => n.message), [
+      'EVT-U8 Tech Conference 2026, Session "Morning", 3 Dec 2030, 9:00 am – 11:00 am; Session 2, 3 Dec 2030, 1:00 pm – 3:00 pm: '
+        + 'HD Camera is unavailable from 1 Dec 2030 to 5 Dec 2030 (Sensor repair), 3 units out of service. The reservation of 4 needs review.',
+    ]);
+  } finally {
+    await t.db.close();
+  }
+});

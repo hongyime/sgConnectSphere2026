@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ConnectSphere · Sprint Burndown and Velocity</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101820;--panel:#17242d;--line:#344651;--text:#e6edf3;--muted:#b4c6ce;--accent:#63dbc0;--warn:#ffcf70}
+    body{background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;max-width:1120px;margin:0 auto;padding:32px 24px}
+    h1,h2{color:var(--accent);line-height:1.2}h1{font-size:clamp(28px,4vw,44px);margin-bottom:8px}h2{margin-top:0}section{margin:36px 0}.lede,small{color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.card,table{background:var(--panel);border:1px solid var(--line);border-radius:10px}.card{padding:16px}.card strong{display:block;font-size:28px;color:var(--accent)}
+    table{border-collapse:separate;border-spacing:0;width:100%;overflow:hidden}th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}th{color:var(--accent);font-weight:650}
+    .chart{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin:16px 0;overflow:auto}.chart svg{display:block;width:100%;min-width:680px;height:auto}.grid{stroke:var(--line);stroke-width:1}.series{fill:none;stroke:var(--accent);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}.velocity{fill:var(--accent)}.label{fill:var(--muted);font-size:13px}.value{fill:var(--text);font-size:14px;font-weight:650}.caption{color:var(--muted);margin:8px 4px 0}.warn{color:var(--warn)}
+    a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:3px}a:hover{color:#b5ffed}.jira-links{background:var(--panel);border-left:3px solid var(--accent);padding:14px 18px;border-radius:0 8px 8px 0}.jira-links li{margin:6px 0}
+    li{margin:8px 0}code{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <h1>ConnectSphere sprint burndown and velocity</h1>
+  <p class="lede">Jira board 1 reconciliation · SCRUM · refreshed 3 November 2026 (Singapore time) · <a href="https://theprawnworkspace.atlassian.net/secure/RapidBoard.jspa?rapidView=1">verify in Jira board 1</a></p>
+
+  <section id="overview">
+    <h2>Sprint 4 is closed at 53 of 85 points</h2>
+    <p>At the Jira boundary, Sprint 4 delivered 62.4%, with 32 points carried forward. Its 53 points are the final velocity; status changes after the boundary are excluded.</p>
+    <div class="cards">
+      <div class="card"><small>Sprint 4 delivery</small><strong>62.4%</strong><span>53 / 85 points · <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Jira issues</a></span></div>
+      <div class="card"><small>Sprint 4 velocity</small><strong>53</strong><span>product-story points</span></div>
+      <div class="card"><small>Carryover</small><strong>32</strong><span>seven Jira issues</span></div>
+      <div class="card"><small>Closed average</small><strong>76.5%</strong><span>Sprints 1–4 only</span></div>
+    </div>
+    <div class="chart">
+      <svg viewBox="0 0 900 230" role="img" aria-labelledby="velocity-title velocity-desc">
+        <title id="velocity-title">Velocity by closed sprint</title>
+        <desc id="velocity-desc">Sprint 1 velocity 66, Sprint 2 66, Sprint 3 34, and Sprint 4 53 story points.</desc>
+        <line class="grid" x1="70" y1="180" x2="850" y2="180"/><line class="grid" x1="70" y1="120" x2="850" y2="120"/><line class="grid" x1="70" y1="60" x2="850" y2="60"/>
+        <text class="label" x="26" y="184">0</text><text class="label" x="18" y="124">35</text><text class="label" x="18" y="64">70</text>
+        <rect class="velocity" x="130" y="67" width="110" height="113" rx="6"/><rect class="velocity" x="315" y="67" width="110" height="113" rx="6"/><rect class="velocity" x="500" y="122" width="110" height="58" rx="6"/><rect class="velocity" x="685" y="89" width="110" height="91" rx="6"/>
+        <g class="value" text-anchor="middle"><text x="185" y="56">66</text><text x="370" y="56">66</text><text x="555" y="111">34</text><text x="740" y="78">53</text></g>
+        <g class="label" text-anchor="middle"><text x="185" y="207">Sprint 1</text><text x="370" y="207">Sprint 2</text><text x="555" y="207">Sprint 3</text><text x="740" y="207">Sprint 4</text></g>
+      </svg>
+      <p class="caption">Closed-sprint velocity is product-story Done at the Jira sprint boundary. Active Sprint 5 is intentionally excluded.</p>
+    </div>
+  </section>
+
+  <section id="details">
+    <h2>Reconciled metrics</h2>
+    <table>
+      <thead><tr><th>Sprint</th><th>Boundary (SGT)</th><th>Committed</th><th>Scope</th><th>Done / velocity</th><th>Carryover</th><th>Delivery</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2034%20ORDER%20BY%20key">Sprint 1</a></td><td>20 Sep 2026</td><td>36</td><td>69</td><td>66</td><td>3</td><td>95.7%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2035%20ORDER%20BY%20key">Sprint 2</a></td><td><strong>4 Oct 2026</strong></td><td>74</td><td>74</td><td>66</td><td>8</td><td>89.2%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2036%20ORDER%20BY%20key">Sprint 3</a></td><td>18 Oct 2026</td><td>43</td><td>58</td><td>34</td><td>24</td><td>58.6%</td></tr>
+        <tr><td><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Sprint 4</a></td><td><strong>1 Nov 2026</strong></td><td>64</td><td>85</td><td><strong>53</strong></td><td>32</td><td><strong>62.4%</strong></td></tr>
+      </tbody>
+    </table>
+    <p><strong>Definition:</strong> delivery is product-story Done at the boundary divided by product-story scope at the boundary. The closed-sprint mean is 76.5% (weighted: 76.6%, or 219/286).</p>
+
+    <h2>Verify the claims in Jira</h2>
+    <div class="jira-links">
+      <ul>
+        <li><a href="https://theprawnworkspace.atlassian.net/secure/RapidBoard.jspa?rapidView=1">Board 1</a> — open the SCRUM board directly.</li>
+        <li><a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2034%20ORDER%20BY%20key">Sprint 1 issue view</a>, <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2035%20ORDER%20BY%20key">Sprint 2 issue view</a>, <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2036%20ORDER%20BY%20key">Sprint 3 issue view</a>, and <a href="https://theprawnworkspace.atlassian.net/issues/?jql=project%20%3D%20SCRUM%20AND%20sprint%20%3D%2067%20ORDER%20BY%20key">Sprint 4 issue view</a> — inspect the sprint membership, status, and story points.</li>
+        <li>Sprint 4 carryover: <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-50">SCRUM-50</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-61">SCRUM-61</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-66">SCRUM-66</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-70">SCRUM-70</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-71">SCRUM-71</a>, <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-75">SCRUM-75</a>, and <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-158">SCRUM-158</a>.</li>
+        <li>Post-boundary transitions referenced in the audit: <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-50">SCRUM-50</a> and <a href="https://theprawnworkspace.atlassian.net/browse/SCRUM-66">SCRUM-66</a>. Open each issue's History panel to verify its transition timestamp.</li>
+      </ul>
+      <p class="caption">Jira links may require your Atlassian login. The URLs expose no credentials or API tokens.</p>
+    </div>
+
+    <h2>Burndown by sprint</h2>
+    <div class="chart"><svg viewBox="0 0 900 230" role="img" aria-labelledby="s1-title s1-desc"><title id="s1-title">Sprint 1 burndown</title><desc id="s1-desc">Remaining points fall from 36 to 3 during Sprint 1.</desc><line class="grid" x1="55" y1="180" x2="850" y2="180"/><line class="grid" x1="55" y1="110" x2="850" y2="110"/><line class="grid" x1="55" y1="40" x2="850" y2="40"/><polyline class="series" points="70,130 180,130 290,130 400,132 510,157 620,170 730,176 840,176"/><g class="label"><text x="8" y="184">0</text><text x="3" y="114">50</text><text x="3" y="44">100</text><text x="62" y="207">14 Sep</text><text x="785" y="207">20 Sep</text></g><text class="value" x="75" y="120">36</text><text class="value" x="812" y="169">3</text></svg><p class="caption">Sprint 1 scope at close is 69 product-story points; the former 88-point spike is removed as unsupported.</p></div>
+    <div class="chart"><svg viewBox="0 0 900 230" role="img" aria-labelledby="s2-title s2-desc"><title id="s2-title">Sprint 2 burndown</title><desc id="s2-desc">Remaining points fall from 82 to 8 during Sprint 2, with scope changes.</desc><line class="grid" x1="55" y1="180" x2="850" y2="180"/><line class="grid" x1="55" y1="110" x2="850" y2="110"/><line class="grid" x1="55" y1="40" x2="850" y2="40"/><polyline class="series" points="70,65 125,65 180,66 235,121 290,121 345,132 400,139 455,139 510,139 565,136 620,160 675,160 730,164 840,169"/><g class="label"><text x="8" y="184">0</text><text x="3" y="114">50</text><text x="3" y="44">100</text><text x="62" y="207">21 Sep</text><text x="800" y="207">3 Oct</text></g><text class="value" x="75" y="55">82</text><text class="value" x="812" y="162">8</text></svg><p class="caption">The corrected Singapore sprint boundary is 4 October; Jira's end timestamp falls on 4 October SGT.</p></div>
+    <div class="chart"><svg viewBox="0 0 900 230" role="img" aria-labelledby="s3-title s3-desc"><title id="s3-title">Sprint 3 burndown</title><desc id="s3-desc">Remaining points vary with scope additions, ending at 24.</desc><line class="grid" x1="55" y1="180" x2="850" y2="180"/><line class="grid" x1="55" y1="110" x2="850" y2="110"/><line class="grid" x1="55" y1="40" x2="850" y2="40"/><polyline class="series" points="70,120 125,106 180,110 235,114 290,123 345,123 400,127 455,131 510,131 565,131 620,131 675,139 730,139 785,146 840,146"/><g class="label"><text x="8" y="184">0</text><text x="3" y="114">50</text><text x="3" y="44">100</text><text x="62" y="207">5 Oct</text><text x="800" y="207">18 Oct</text></g><text class="value" x="75" y="110">43</text><text class="value" x="812" y="139">24</text></svg><p class="caption">The upward opening movement reflects scope change captured by Jira history; it is not smoothed away.</p></div>
+    <div class="chart"><svg viewBox="0 0 900 230" role="img" aria-labelledby="s4-title s4-desc"><title id="s4-title">Sprint 4 burndown</title><desc id="s4-desc">Remaining points move from 64 to 32 by the 1 November sprint boundary.</desc><line class="grid" x1="55" y1="180" x2="850" y2="180"/><line class="grid" x1="55" y1="110" x2="850" y2="110"/><line class="grid" x1="55" y1="40" x2="850" y2="40"/><polyline class="series" points="70,90 125,90 180,90 235,90 290,97 345,97 400,97 455,97 510,106 565,99 620,107 675,139 730,139 785,135 840,135"/><g class="label"><text x="8" y="184">0</text><text x="3" y="114">50</text><text x="3" y="44">100</text><text x="62" y="207">19 Oct</text><text x="790" y="207">1 Nov</text></g><text class="value" x="75" y="80">64</text><text class="value" x="812" y="128">32</text></svg><p class="caption">Sprint 4 closes at 32 remaining points and 85 points of observed scope, giving 53 Done at the boundary.</p></div>
+
+    <h2>Audit corrections</h2>
+    <ul>
+      <li>Sprint 1 scope at close is <strong>69</strong> product-story points, not the former 88-point chart spike.</li>
+      <li>Every closed sprint now uses the same delivery denominator: <code>Done at boundary / scope at close</code>.</li>
+      <li>The reconciled closed-sprint average is <strong>76.5%</strong>; the previous 69.0% baseline is not supported by these rows.</li>
+      <li>Sprint 2's boundary is <strong>4 October 2026 SGT</strong>, not 5 October.</li>
+      <li>Sprint 4 post-boundary Done transitions are excluded from velocity, even though Jira completed the sprint later that morning.</li>
+    </ul>
+  </section>
+
+  <section id="next-steps">
+    <h2>Next steps</h2>
+    <ol>
+      <li>Review the dashboard PR and confirm the common delivery denominator.</li>
+      <li>Merge the docs branch after teammate review; then use this dashboard as the postplan view.</li>
+      <li>Refresh the active Sprint 5 row only after Jira closes it.</li>
+    </ol>
+    <p class="warn">This is a derivative dashboard: it does not rewrite Jira history, backlog Markdown, sprint meeting documents, or the DOCX audit copies.</p>
+  </section>
+</body>
+</html>

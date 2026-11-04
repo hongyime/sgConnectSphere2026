@@ -26,7 +26,8 @@ export type VenueBookingIssue =
   // as D61's flagged reservations.
   | 'needs_review';
 
-export type EquipmentIssue = 'partial' | 'missing' | 'released' | 'needs_review';
+// needs_session: E07-S08 D132, D135, a request whose Session was deleted.
+export type EquipmentIssue = 'partial' | 'missing' | 'released' | 'needs_review' | 'needs_session';
 
 export type ReadinessBlocker =
   | { kind: 'no-confirmed-venue'; message: string }
@@ -41,6 +42,8 @@ export type ReadinessBlocker =
       kind: 'equipment-shortfall';
       requestId: string;
       equipmentName: string;
+      // E07-S08 D135: named only on an Event with two or more Sessions.
+      sessionName: string | null;
       requiredQuantity: number;
       reservedQuantity: number;
       issue: EquipmentIssue;
@@ -68,6 +71,8 @@ export type ReadinessVenueBooking = {
 export type ReadinessEquipmentLine = {
   id: string;
   name: string;
+  sessionId: string | null;
+  sessionName: string | null;
   requested: number;
   reserved: number;
   state: 'ready' | 'outstanding';
