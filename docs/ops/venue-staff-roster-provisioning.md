@@ -61,8 +61,13 @@ COMMIT;
 
 ## Post-Execution Verification
 
-1. Verify that `venue_staff_assignments` contains exactly 5 current active rows (`active_from <= now() AND (active_until IS NULL OR active_until > now())`).
-2. Run `resolveAssignedVenueStaff` across all five venues and verify that:
+1. Run the read-only verification mode:
+   ```bash
+   npx tsx scripts/provision_venue_staff_roster.ts --verify-only
+   ```
+2. Verify that `venue_staff_assignments` contains exactly 5 current active rows (`active_from <= now() AND (active_until IS NULL OR active_until > now())`).
+3. Run `resolveAssignedVenueStaff` across all five venues and verify that:
    - Orchid Hall, Lotus Room, and Maple Room resolve to Alex Tan.
    - Jasmine Hall and Cedar Auditorium resolve to Jordan Lee.
-3. Record the sanitized outcome in `docs/ops/production-account-runs/`.
+4. Confirm TC_E11S01_13: Any unassigned venues return unresolved with no fallback staff.
+5. Record the sanitized outcome in `docs/ops/production-account-runs/` and cite in T-65 test run records under `docs/testing/runs/`.

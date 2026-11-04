@@ -30,8 +30,10 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
     - Alex Tan (`venue_staff@connectsphere.com`): Orchid Hall, Lotus Room, Maple Room.
     - Jordan Lee (`venue_staff_b@connectsphere.com`): Jasmine Hall, Cedar Auditorium.
   - Authored operational procedure in `docs/ops/venue-staff-roster-provisioning.md`.
-  - Implemented bounded, idempotent provisioning script `backend/src/database/provisionVenueStaffRoster.ts` with schema, venue, and staff prechecks, single-transaction insert, and post-execution resolution check.
+  - Implemented bounded, idempotent provisioning script `scripts/provision_venue_staff_roster.ts` with schema, venue, and staff prechecks, single-transaction insert, post-execution resolution check, and `--verify-only` mode.
   - Authored operational run record in `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md`.
+  - Authored T-65 test execution record in `docs/testing/runs/` proving verification of the 5 canonical assignments and confirming `TC_E11S01_13` (unassigned venues have zero broad fallback).
+  - Authored `docs/testing/e11-s01-roster-verification-20261104.md` reconciling E11-S01 evidence audit requirements against the provisioned and verified roster.
 
 ## Verification
 
@@ -39,10 +41,12 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
 - Frontend role tests: 34 tests passed.
 - Backend tests: full suite passed.
 - Frontend & backend typechecks: passed.
+- Repository hygiene: `python scripts/check.py` passed with 0 errors.
+- Roster verification: `npx tsx scripts/provision_venue_staff_roster.ts --verify-only` verified all 5 PO-approved venue assignments and `TC_E11S01_13` fallback boundary.
 
 ## Next steps
 
 - Run `python scripts/check.py` and `python scripts/doc_guard.py` before committing.
-- Commit and open pull request for `chore/SCRUM-195-provision-venue-staff-roster`.
-- Notify Ji Ning that pulling `origin/main` unblocks the Safety Officer UI manual acceptance testing for E10-S01.
-- Transition SCRUM-195 to In Review / Done in Jira upon PR review and merge.
+- Commit and push updates to PR #425 (`chore/SCRUM-195-provision-venue-staff-roster`).
+- Update PR #425 comment so Ji Ning can cite the recorded load and verification evidence.
+- Transition SCRUM-195 to Done in Jira upon PR review and merge.

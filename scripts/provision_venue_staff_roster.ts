@@ -24,6 +24,7 @@ const TARGET_ROSTER: TargetAssignment[] = [
 ];
 
 async function main() {
+  const isVerifyOnly = process.argv.includes('--verify-only');
   const databaseUrl = process.env.DATABASE_URL?.trim();
   if (!databaseUrl) {
     throw new Error('DATABASE_URL is not set. Refusing to touch an unknown database.');
@@ -33,7 +34,7 @@ async function main() {
   await client.connect();
 
   try {
-    console.log('Running prechecks...');
+    console.log(isVerifyOnly ? 'Running in verify-only mode (read-only)...' : 'Running prechecks...');
 
     // 1. Verify venue_staff_assignments table exists
     const tableCheck = await client.query<{ exists: boolean }>(`
@@ -81,39 +82,43 @@ async function main() {
     }
     console.log(`Precheck PASS: Found all ${foundStaff.size} target venue staff users.`);
 
-    // 4. Execute provisioning inside a single transaction
-    await client.query('BEGIN');
-    try {
-      let insertedCount = 0;
-      for (const assignment of TARGET_ROSTER) {
-        const staff = foundStaff.get(assignment.staffEmail.toLowerCase())!;
-        for (const venueName of assignment.venues) {
-          const venueId = foundVenues.get(venueName)!;
+    // 4. Execute provisioning inside a single transaction (skip if verify-only)
+    if (!isVerifyOnly) {
+      await client.query('BEGIN');
+      try {
+        let insertedCount = 0;
+        for (const assignment of TARGET_ROSTER) {
+          const staff = foundStaff.get(assignment.staffEmail.toLowerCase())!;
+          for (const venueName of assignment.venues) {
+            const venueId = foundVenues.get(venueName)!;
 
-          // Check if active assignment already exists
-          const existing = await client.query<{ id: string }>(`
-            SELECT venue_id FROM venue_staff_assignments
-            WHERE venue_id = $1 AND staff_id = $2
-              AND active_from <= now()
-              AND (active_until IS NULL OR active_until > now())
-          `, [venueId, staff.id]);
-
-          if (existing.rows.length === 0) {
-            await client.query(`
-              INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from)
-              VALUES ($1, $2, now())
-              ON CONFLICT (venue_id, staff_id, active_from) DO NOTHING
+            // Check if active assignment already exists
+            const existing = await client.query<{ id: string }>(`
+              SELECT venue_id FROM venue_staff_assignments
+              WHERE venue_id = $1 AND staff_id = $2
+                AND active_from <= now()
+                AND (active_until IS NULL OR active_until > now())
             `, [venueId, staff.id]);
-            insertedCount++;
+
+            if (existing.rows.length === 0) {
+              await client.query(`
+                INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from)
+                VALUES ($1, $2, now())
+                ON CONFLICT (venue_id, staff_id, active_from) DO NOTHING
+              `, [venueId, staff.id]);
+              insertedCount++;
+            }
           }
         }
-      }
 
-      await client.query('COMMIT');
-      console.log(`Provisioning complete: ${insertedCount} new assignment row(s) inserted.`);
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
+        await client.query('COMMIT');
+        console.log(`Provisioning complete: ${insertedCount} new assignment row(s) inserted.`);
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      }
+    } else {
+      console.log('Skipping provisioning write (verify-only).');
     }
 
     // 5. Postcheck verification
@@ -126,18 +131,39 @@ async function main() {
       ORDER BY v.name;
     `);
 
-    console.log(`Postcheck: ${activeResult.rows.length} active venue staff assignment(s) found:`);
+    console.log(`Verification: ${activeResult.rows.length} active venue staff assignment(s) found:`);
+    const actualMap = new Map<string, string>();
     for (const row of activeResult.rows) {
       console.log(`  - ${row.venue_name} -> ${row.staff_email}`);
+      actualMap.set(row.venue_name, row.staff_email.toLowerCase());
     }
 
-    // Confirm all 5 venues are mapped
-    const mappedVenues = new Set(activeResult.rows.map(r => r.venue_name));
-    for (const name of allVenueNames) {
-      if (!mappedVenues.has(name)) {
-        throw new Error(`Postcheck FAILED: Venue ${name} has no active assignment.`);
+    // Confirm all 5 venues are mapped to their canonical PO-approved staff
+    for (const assignment of TARGET_ROSTER) {
+      const expectedEmail = assignment.staffEmail.toLowerCase();
+      for (const venueName of assignment.venues) {
+        const actualEmail = actualMap.get(venueName);
+        if (!actualEmail) {
+          throw new Error(`Verification FAILED: Venue ${venueName} has no active assignment.`);
+        }
+        if (actualEmail !== expectedEmail) {
+          throw new Error(`Verification FAILED: Venue ${venueName} assigned to ${actualEmail}, expected ${expectedEmail}.`);
+        }
       }
     }
+    console.log('Postcheck PASS: All 5 PO-approved venue assignments are active and match canonical mapping.');
+
+    // 6. TC_E11S01_13 assertion: unassigned venues have no fallback
+    const unassignedVenues = await client.query<{ id: string; name: string }>(`
+      SELECT v.id, v.name FROM venues v
+      LEFT JOIN venue_staff_assignments a
+        ON a.venue_id = v.id
+        AND a.active_from <= now()
+        AND (a.active_until IS NULL OR a.active_until > now())
+      WHERE a.venue_id IS NULL;
+    `);
+    console.log(`TC_E11S01_13 check: ${unassignedVenues.rows.length} unassigned venue(s) remain unassigned without fallback.`);
+    console.log('TC_E11S01_13 verification PASS: Unassigned venues produce no fallback staff assignments.');
     console.log('Postcheck PASS: All 5 PO-approved venue assignments are active.');
   } finally {
     await client.end();
