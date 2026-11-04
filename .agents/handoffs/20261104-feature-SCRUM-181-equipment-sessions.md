@@ -36,9 +36,13 @@ Safety Officer's review page does.
   click-through script in the story record; a dry run of every step on the
   local real stack matched it.
 
+- Aaron's manual run 17:49–18:09 at `d05f38b`: TC_E07S08_01, _02, _04 PASS,
+  12 screenshots (profile pictures blacked out in the Chrome and Edge copies
+  at his request), database checked afterwards. Record
+  `docs/testing/runs/20261104-174900-Bl0oper-frontend-e2e.md`.
+
 ## Not done / next step
 
-- Aaron's manual run (TC_E07S08_01, _02, _04), its record and screenshots.
 - `tc-coverage.md` regenerated last; then the PR (story key, `Closes
   SCRUM-254`, `Closes SCRUM-255`), only after Aaron's run, and only once #426
   has merged and `main` is merged in.
