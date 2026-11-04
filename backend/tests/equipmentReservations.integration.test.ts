@@ -11,6 +11,7 @@ import {
 } from '../src/modules/equipmentSupport/reservations.js';
 import {
   getEquipmentRequests,
+  removeEquipmentRequest,
   saveEquipmentRequest,
 } from '../src/modules/equipmentSupport/requests.js';
 import { checkEquipmentAvailability } from '../src/modules/equipmentSupport/availability.js';
@@ -734,6 +735,40 @@ test('E07-S08 D132 a request with no Session is refused until it has one, and on
     // A single-Session Event keeps the Event's wording.
     assert.equal((await t.notices(t.ids.coord)).at(-1)!.message,
       'EVT-S8ONE Tech Conference, 15 Nov 2026, 9:00 am – 5:00 pm: Wireless Microphone × 1 reserved.');
+  } finally {
+    await t.db.close();
+  }
+});
+
+test('E07-S08 D137 an orphan is not filled in with the last Session when that Session already requests the item, and can be removed', async () => {
+  const t = await setup();
+  try {
+    const eventId = await t.event('EVT-S8DUP', 'planning');
+    await t.q(`UPDATE sessions SET session_range=tstzrange($2,$3,'[)') WHERE event_id=$1`, [eventId, ...MORNING]);
+    const sessionB = (await t.q(`INSERT INTO sessions(event_id,session_range,expected_attendance) VALUES($1,tstzrange($2,$3,'[)'),10) RETURNING id`,
+      [eventId, ...AFTERNOON])).rows[0].id as string;
+    const sessionA = (await t.q('SELECT id FROM sessions WHERE event_id=$1 AND id<>$2', [eventId, sessionB])).rows[0].id as string;
+    const mic = await t.equipment('Wireless Microphone', 10);
+    const line = (sessionId: string) => t.q(`INSERT INTO equipment_requests(event_id,equipment_id,quantity_requested,requested_by,session_id)
+      VALUES($1,$2,2,$3,$4) RETURNING id`, [eventId, mic, t.ids.coord, sessionId]).then((r) => r.rows[0].id as string);
+    const [inA, inB] = [await line(sessionA), await line(sessionB)];
+    // A's reservation is released before A is deleted, as 0014 requires.
+    await t.q(`INSERT INTO equipment_reservations(request_id,event_id,equipment_id,quantity_reserved,reservation_range,status,session_id)
+      VALUES($1,$2,$3,2,tstzrange($4,$5,'[)'),'released',$6)`, [inA, eventId, mic, ...MORNING, sessionA]);
+    await t.q('DELETE FROM sessions WHERE id=$1', [sessionA]);
+    await assert.rejects(reserveEquipment(t.db.pool, t.tech, 'EVT-S8DUP', { requestId: inA, quantity: 2 }), {
+      status: 409,
+      message: 'This equipment is already requested for this event. Reserve its other request; the Coordinator can remove this one.',
+    });
+    assert.equal((await t.q('SELECT session_id FROM equipment_requests WHERE id=$1', [inA])).rows[0].session_id, null);
+    assert.equal((await t.q(`SELECT count(*)::int AS n FROM equipment_reservations WHERE event_id=$1 AND status<>'released'`, [eventId])).rows[0].n, 0);
+    // Its released history no longer bars removal; B's request is untouched and reservable.
+    assert.equal((await removeEquipmentRequest(t.db.pool, t.coord, 'EVT-S8DUP', inA)).status, 200);
+    assert.equal((await t.q('SELECT count(*)::int AS n FROM equipment_requests WHERE id=$1', [inA])).rows[0].n, 0);
+    assert.equal((await reserveEquipment(t.db.pool, t.tech, 'EVT-S8DUP', { requestId: inB, quantity: 2 })).status, 201);
+    // A request with a Session and reservation history is still protected.
+    await assert.rejects(removeEquipmentRequest(t.db.pool, t.coord, 'EVT-S8DUP', inB),
+      { status: 409, message: 'This request has been reserved and cannot be amended or removed here.' });
   } finally {
     await t.db.close();
   }
