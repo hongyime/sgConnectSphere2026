@@ -7,19 +7,19 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **386**
-- Automated (explicit TC_ID in an active test title): **320** (82.9%)
-  - Real-database (`.integration.test` / `.db.test`): **45**
+- Automated (explicit TC_ID in an active test title): **321** (83.2%)
+  - Real-database (`.integration.test` / `.db.test`): **41**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **274**
+  - Live-assertion (other active tests): **279**
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
-- No test yet (no test file mentions the TC_ID): **18** (4.7%)
+- No test yet (no test file mentions the TC_ID): **17** (4.4%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
-| E02 | 21 | 16 | 1 | 4 |
+| E02 | 21 | 17 | 1 | 3 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
@@ -31,7 +31,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **386** | **320** | **48** | **18** |
+| **Total** | **386** | **321** | **48** | **17** |
 
 ## Case-by-case status
 
@@ -100,11 +100,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S05_01` | E02-S05 | Copying my completed event should create a draft with its Sessions and requireme | ❌ none | — |
 | `TC_E02S05_02` | E02-S05 | Missing venue or equipment references should be flagged against the copied Sessi | ❌ none | — |
 | `TC_E02S05_03` | E02-S05 | Submitting a copied draft should apply the current date-horizon rules | ❌ none | — |
-| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ❌ none | — |
+| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly |
+| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_04 TC_E02S07_05: a past Session blocks a future Event, then passes after correction; backend/tests/eventLifecycle.test |
 
 ### E03
 
@@ -424,9 +424,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104); backend/tests/supportReconfirmation |
 | `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
 | `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
-| `TC_E10S02_14` | E10-S02 | Moving a Session on the Session screen should list the staffed Technical Support | ✅ active | frontend/src/features/organiser/SessionEditor.test.tsx: TC_E10S02_14: a planning Session edit that flags only Technical Support says so before saving |
+| `TC_E10S02_14` | E10-S02 | Moving a Session on the Session screen should list the staffed Technical Support | ✅ active | frontend/src/features/organiser/SessionEditor.test.tsx: TC_E10S02_14: a planning Session edit lists the Technical Support it flags, with its new time, before saving |
 | `TC_E10S02_15` | E10-S02 | Moving a Session on the Session screen should ask only the technicians on the fl | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician  |
-| `TC_E10S02_16` | E10-S02 | A Session change on the Session screen that leaves fewer places than registered  | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_16: a Session layout change below its registrations is warned about and removes no one, rolled back |
+| `TC_E10S02_16` | E10-S02 | A Session change on the Session screen that leaves fewer places than registered  | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_16: a Session layout change below its registrations is warned about and removes no one, rolled back; frontend/src/f |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -807,6 +807,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - near-term Event has no minimum lead-time refusal
 - the past Event rule still blocks submission
 - far-future draft saves, refused submission keeps it intact, correction permits submission
+- draft Session writers refuse a missing Event
 - unsigned requests still require authentication
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
@@ -1715,6 +1716,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: adding a Session posts to the sessions endpoint
 - E04-S02: removing a Session deletes that Session only
 - E04-S02: a planning edit previews its impact before saving
+- E10-S02: a Session save refused because its check went stale shows the fresh list, and saves against it
+- E10-S02: a stale check is reviewed even when the first check needed no review
+- E10-S02: Cancel closes the review, saves nothing and keeps what was typed
+- E10-S02: any other refusal closes the review and says why
 - E04-S02: a new Session starts with the first Session requirements
 - E04-S02: cancelling the removal keeps the Session and sends nothing
 - E04-S02: a refused save shows the reason and a failed load can be retried

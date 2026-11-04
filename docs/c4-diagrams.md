@@ -226,3 +226,21 @@ writes, audit and any eligible in-app/email-outbox rows share the transaction;
 no live provider call runs in that transaction. The E11 cross-flow database
 suite is part of `backend`'s `test:db` command. See the 31 October E11 evidence
 audit for exact local/production/human delivery boundaries.
+
+## SCRUM-180 — Event submission and Session dates
+
+The Organiser request form names the offending Session and start/end field when
+submission refuses past or beyond-horizon dates. It preserves the Draft and
+uses the existing Singapore-local two-calendar-year helpers.
+
+The lifecycle repository checks child Session dates within the submission
+transaction, locking the Event before its Sessions. Draft Session creation and
+editing recheck Draft status under the Event lock, so queued writes cannot
+bypass a completed submission. A sole Session retains Event-range sync.
+`PATCH /api/events?id=<draft>` returns structured HTTP 400 errors
+`session_date_in_past` or `session_date_outside_horizon`, including Session id,
+title, number, field and maximum date. Refusal leaves persisted rows and
+submission history unchanged. No migration or new service is introduced.
+
+See the [date-horizon contract](contracts/event-date-horizon.md) and
+[manual acceptance guide](testing/manual/E02-S07-click-through.md).
