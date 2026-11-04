@@ -502,7 +502,10 @@ export async function removeEquipmentRequest(
     ).rows[0];
     if (!request)
       throw new AccessError(404, 'Equipment request not found for this event.');
+    // D137: a request whose Session was deleted has only released
+    // reservations (D132), so it can be removed, or it could block readiness.
     if (
+      request.session_id !== null &&
       (
         await client.query(
           'SELECT id FROM equipment_reservations WHERE request_id=$1 LIMIT 1',

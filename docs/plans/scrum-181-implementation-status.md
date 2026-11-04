@@ -70,6 +70,13 @@ as PO):
   multi-Session Event, and a request with no Session blocks as "needs a
   Session".
 - **D136:** two PRs (above).
+- **D137** (Aaron, 4 Nov, after Xiang Ying's review on #426): filling in the
+  last Session when reserving a request with none is refused if that Session
+  already has a request for the same item, so one item is never reserved
+  twice for one Session. So that such a request can't block readiness for
+  good, a Coordinator can remove a request with no Session even if it has
+  reservation history; it can only have released reservations (0014). A
+  request with a Session keeps E07-S02's rule.
 
 ## Rules this story applies
 
@@ -88,6 +95,7 @@ Session, numbered by start time as the Session screens are.
 | A change or reconfirmation resets the reservation to its Session's current period; a Session time change alone moves nothing (T-108) | — | TC_E07S08_02 |
 | Not enough free for a Session | 409 "None are free for this Session's dates." / "Only <n> are free for this Session's dates." | TC_E07S08_02 |
 | A request whose Session was deleted has none; it can be edited to choose one, and reserving it is refused until then, unless one Session is left, which is filled in (D132) | 409 "Choose a Session for this request before reserving it." | D132 test |
+| Filling in the last Session is refused when that Session already requests the item; a request with no Session can be removed despite released reservations (D137) | 409 "This equipment is already requested for this event. Reserve its other request; the Coordinator can remove this one." Nothing changes | D137 test |
 | On a multi-Session Event, notices name the Session and its dates (D131) | e.g. "EVT-S8 Tech Conference, Session "Afternoon", 15 Nov 2026, 1:00 pm – 3:00 pm: Wireless Microphone × 3 reserved." Technical Support's request notice: "EVT-S8A, Session "B", 1 Feb 2027, 1:00 pm – 3:00 pm: Wireless Microphone × 2 requested. …" A withdrawal lists each affected Session, separated by "; " | TC_E07S08_01, _02; D131 test |
 | On a multi-Session Event, Activity log entries name the Session (D131) | "Wireless Microphone × 3 for Session "Morning"", "… returned to the available pool" | TC_E07S08_02 |
 | Deleting a Session tells the Coordinator what it released and, while two or more Sessions remain, which requests need a Session (D134) | **Equipment reservation released**: "<Event>: Session 1 was deleted, so its equipment reservations were released: Wireless Microphone × 1. These requests now need a Session: Projector × 1, Wireless Microphone × 2. Choose one for each on the event's equipment requests." With nothing reserved: **Equipment request needs a Session** | TC_E07S08_04 |
@@ -216,10 +224,10 @@ of this run.)
   multi-Session Event a new request is refused with "Choose a Session for
   this equipment request." (it failed with a database error before), and an
   edit keeps its Session.
-- **Removing a request whose Session was deleted** is still refused while it
-  has released reservation history ("This request has been reserved…"), as
-  before; it can be edited to choose a Session (D132), not removed. PR 2's
-  screen offers the edit.
+- **Removing a request whose Session was deleted** was at first still
+  refused while it had released reservation history; since D137 (#426
+  review) it can be removed as well as edited to choose a Session (D132).
+  PR 2's screen offers both.
 - **Readiness on a single-Session Event** shows a request without a Session
   as its released reservation, not as "needs a Session": reserving fills the
   only Session in (D132).
@@ -243,3 +251,6 @@ of this run.)
 | 2026-11-04 17:39–17:42 | `db7d723` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Record `20261104-173922-Bl0oper-frontend-e2e.md` |
 | 2026-11-04 ≈17:45 | `db7d723+local` (setup SQL not yet committed) | 5 (dry run, not evidence) | _01, _02, _04 | Claude's headless script of the click-through steps on the local real stack | local, Docker `connectsphere_dev_stack` | every step showed the scripted screen and wording | The staffing queue opens on "Needs a technician", so step 9 picks **Staffed**. Database reset and setup SQL re-applied afterwards |
 | 2026-11-04 17:49–18:09 | `d05f38b` (code of `db7d723`) | 5 (manual, T-93) | _01, _02, _04 | Aaron's click-through of the script above, by hand, 12 screenshots | local real stack, Docker `connectsphere_dev_stack` | **PASS** all three | Run by: Aaron. Database checked afterwards: both reservations on their own Sessions; after the edit the Afternoon reservation keeps 1:00–3:00 pm and is flagged (T-108); the one assignment unchanged; five notices, one delivery each. Record `20261104-174900-Bl0oper-frontend-e2e.md` |
+| 2026-11-04 ≈23:32 | `c6bcf02+local` | 2 | — | the new D137 test (`--test-name-pattern=D137`, `equipmentReservations.integration.test.ts`) with the old `reservations.ts` | local, Docker `connectsphere_notification_test` | **1 failed**, as intended | "Missing expected rejection.": the orphan was reserved for the Session that already had the item (the bug in Xiang Ying's #426 review) |
+| 2026-11-04 ≈23:32 | `c6bcf02+local` | 2 | — | the same test with the old `requests.ts` | local, same | **1 failed**, as intended | The orphan's removal was refused: "This request has been reserved and cannot be amended or removed here." (D137) |
+| 2026-11-04 23:34–23:35 | `696c9fa` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npx c8 --clean=false tsx --test <test:db files>`; `npx c8 report` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 363/363; 332/332 changed lines and 117/117 changed branches covered | After the #426 review fix. Records `20261104-233410-Bl0oper-backend-unit.md`, `20261104-233424-Bl0oper-backend-db.md` |

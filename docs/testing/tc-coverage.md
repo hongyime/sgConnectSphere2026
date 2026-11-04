@@ -719,6 +719,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 two reservations made at the same moment cannot commit more units than exist
 - E07-S04 no Coordinator notice is sent when the event has no active assigned Coordinator
 - E07-S08 D132 a request with no Session is refused until it has one, and on a single-Session Event it is filled in
+- E07-S08 D137 an orphan is not filled in with the last Session when that Session already requests the item, and can be removed
 
 ### `backend/tests/equipmentReservations.test.ts`
 

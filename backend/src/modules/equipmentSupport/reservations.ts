@@ -442,6 +442,20 @@ export function reserveEquipment(
     let session = line.session;
     if (!session && sessions.length === 1) {
       session = sessions[0]!;
+      // One request per item per Session, as saving a request requires; the
+      // Event lock keeps this check and the update together (#426 review).
+      if (
+        (
+          await client.query(
+            'SELECT id FROM equipment_requests WHERE event_id=$1 AND equipment_id=$2 AND session_id=$3 AND id<>$4',
+            [event.id, equipment.id, session.id, request.id],
+          )
+        ).rowCount
+      )
+        throw new AccessError(
+          409,
+          'This equipment is already requested for this event. Reserve its other request; the Coordinator can remove this one.',
+        );
       await client.query('UPDATE equipment_requests SET session_id=$1 WHERE id=$2', [session.id, request.id]);
     }
     if (!session)
