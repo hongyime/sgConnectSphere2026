@@ -1782,7 +1782,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - form load failure retries and save failure without field errors retains input
 - a save completing after leaving the form does not navigate back
 - E07-S08 D122 - a single-Session event shows no Session picker or Session cards and sends no Session
-- E07-S08 D132 - a request whose Session was deleted is flagged and can be edited to choose one, but not removed
+- E07-S08 D132 D137 - a request whose Session was deleted is flagged and can be edited to choose one, or removed
 
 ### `frontend/src/features/support/EquipmentReservations.test.tsx`
 
