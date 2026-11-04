@@ -3,6 +3,8 @@ import { getDatabasePool } from '../../database/client.js';
 import { inTransaction } from '../../database/pool.js';
 import { assignCoordinatorOnSubmit } from './coordinatorAssignment.js';
 import { validateEventStatusTransition } from './status.js';
+import { assertSessionSubmissionDates } from './service.js';
+import { listSessionsWith } from '../eventSessions/repository.js';
 import { captureEventAudience, notifyEventChange, type NotificationOptions } from '../eventNotifications/service.js';
 import type { CreateEventRequest, EventRecord, EventUpdate } from './types.js';
 
@@ -414,6 +416,14 @@ export class PostgresEventLifecycleRepository implements EventLifecycleRepositor
       const current = await client.query<{ status: string; organiser_id: string }>(
         'SELECT status,organiser_id FROM events WHERE id=$1 FOR UPDATE', [eventId]);
       if (!current.rows[0] || current.rows[0].status !== 'draft') throw new Error('Only a draft can be updated.');
+      if (update.status === 'submitted') {
+        await client.query('SELECT id FROM sessions WHERE event_id=$1 ORDER BY id FOR UPDATE', [eventId]);
+        const sessions = await listSessionsWith(client, eventId);
+        // Migration 0014 syncs a sole Session to the submitted Event range.
+        assertSessionSubmissionDates(sessions.length === 1
+          ? [{ ...sessions[0]!, startAt: update.startAt, endAt: update.endAt }]
+          : sessions);
+      }
       const result = await client.query<EventRow>(
       `
         UPDATE events
