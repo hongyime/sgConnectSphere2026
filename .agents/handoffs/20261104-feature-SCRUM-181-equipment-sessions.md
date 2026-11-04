@@ -40,6 +40,12 @@ Safety Officer's review page does.
   12 screenshots (profile pictures blacked out in the Chrome and Edge copies
   at his request), database checked afterwards. Record
   `docs/testing/runs/20261104-174900-Bl0oper-frontend-e2e.md`.
+- After Xiang Ying's review on #426: its fix merged in (`53461e07`), and
+  `c6ef27f` shows Remove next to Edit on a request with no Session (D137:
+  the API now allows that removal despite released reservations). Gates at
+  `c6ef27f`: typecheck clean; Vitest 847/847, 45/45 lines, 113/113
+  branches; Playwright 466 passed, 218 skipped, 0 failed. Aaron's manual
+  run is unaffected: none of its steps removes a request with no Session.
 
 ## Not done / next step
 
