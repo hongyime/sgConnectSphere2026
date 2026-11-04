@@ -1,6 +1,6 @@
 # chore/SCRUM-195-provision-venue-staff-roster
 
-Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01), verify resolution of the Safety Officer UI blocker from PR #418, and clean up secondary worktrees in `C:\Users\bryan\Projects`.
+Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01), verify resolution of the Safety Officer UI blocker from PR #418, and address review feedback from Xiang Ying and Le Xin on PR #425.
 
 ## Done so far
 
@@ -41,17 +41,27 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
   - Point 3: Fixed verification logic in `scripts/provision_venue_staff_roster.ts` so multiple active assignees on a single venue cannot be hidden by a `Map<string, string>`. Validates all active pairs and rejects extra unexpected assignees.
   - Point 4: Added explicit resolver check for assigned and unassigned venues. Clarified delivery verification distinction per T-97 in `docs/testing/e11-s01-roster-verification-20261104.md` and added follow-up T-65 record in `docs/testing/runs/`.
 
+- **Reconcile Le Xin's Review Comments on PR #425**:
+  - Point 1: Added `is_active = true` precheck validation for venues in `scripts/provision_venue_staff_roster.ts` and updated unit test suite.
+  - Point 2: Added case-insensitive email lookup (`lower(email) = ANY(...)`) for target venue staff users.
+  - Point 3: Enclosed entire provisioning operation, postcheck verification, and resolver assertion within a single transaction `BEGIN ... COMMIT` with automatic `ROLLBACK` on any failure.
+  - Point 4: Imported and directly invoked canonical resolver `resolveAssignedVenueStaff` from `backend/src/modules/eventNotifications/service.ts`.
+  - Point 5: Verified fallback boundary check `TC_E11S01_13` via `resolveAssignedVenueStaff` verifying that unassigned venues return `[]` with zero broad fallback staff.
+  - Point 6: Targeted upsert uses `ON CONFLICT (venue_id, staff_id) DO UPDATE SET active_from = now(), active_until = NULL WHERE venue_staff_assignments.active_until IS NOT NULL OR venue_staff_assignments.active_from > now()`.
+  - Point 7: Added target safety guard: CLI runner defaults to read-only `--verify-only` mode unless `--execute` is passed; requires `--confirm-production` when connecting to Supabase database.
+  - Point 8: Refactored `docs/ops/production-account-runs/20261104-1700-venue-staff-roster.md` as an operational specification / runbook awaiting release deployment execution, avoiding claiming premature production execution.
+  - Point 9: Expanded `backend/tests/venueStaffRosterProvisioning.test.ts` to 7 unit tests covering venue `is_active`, user `is_active`, case-insensitivity, conflict handling, transaction rollback, rogue assignees, and resolver fallback prevention.
+
 ## Verification
 
 - Worktree check: `python scripts/check_worktrees.py` reports only the primary worktree.
 - Frontend role tests: 34 tests passed.
-- Backend tests: full suite passed (`backend/tests/venueStaffRosterProvisioning.test.ts` passed 3/3 tests).
-- Frontend & backend typechecks: passed.
-- Repository hygiene: `python scripts/check.py` passed with 0 errors.
+- Backend tests: `npx tsx --test backend/tests/venueStaffRosterProvisioning.test.ts` passed 7/7 tests.
+- Repository hygiene: `python scripts/check.py` and `python scripts/doc_guard.py` passed.
 
 ## Next steps
 
-- Run `python scripts/check.py` and `python scripts/doc_guard.py` before committing.
-- Commit and push updates to PR #425 (`chore/SCRUM-195-provision-venue-staff-roster`).
-- Reply to Xiang Ying's review on GitHub with detailed breakdown of fixes.
-- Transition SCRUM-195 to Done in Jira upon PR review and merge.
+- Run pre-commit checks and commit updates.
+- Push to `origin chore/SCRUM-195-provision-venue-staff-roster`.
+- Post response comment to Le Xin on PR #425.
+- Await approval and merge of PR #425.

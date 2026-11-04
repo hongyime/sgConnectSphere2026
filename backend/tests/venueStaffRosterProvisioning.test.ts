@@ -25,17 +25,36 @@ function createFakeClient(rules: MockQueryRule[]) {
   return { client: { query } as unknown as Client, executedQueries };
 }
 
-test('provisionVenueStaffRoster precheck validates is_active boolean on users', async () => {
-  // Test case where user has is_active = false
+test('provisionVenueStaffRoster precheck validates is_active boolean on venues', async () => {
   const fake = createFakeClient([
     [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
-    [/SELECT id, name FROM venues/, () => ({
+    [/SELECT id, name, is_active FROM venues/, () => ({
       rows: [
-        { id: 'v1', name: 'Orchid Hall' },
-        { id: 'v2', name: 'Lotus Room' },
-        { id: 'v3', name: 'Maple Room' },
-        { id: 'v4', name: 'Jasmine Hall' },
-        { id: 'v5', name: 'Cedar Auditorium' },
+        { id: 'v1', name: 'Orchid Hall', is_active: false },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
+      ],
+    })],
+  ]);
+
+  await assert.rejects(
+    async () => provisionVenueStaffRoster(fake.client, false),
+    /Required venue is inactive: Orchid Hall \(is_active = false\)/,
+  );
+});
+
+test('provisionVenueStaffRoster precheck validates is_active boolean on users', async () => {
+  const fake = createFakeClient([
+    [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
+    [/SELECT id, name, is_active FROM venues/, () => ({
+      rows: [
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
       ],
     })],
     [/SELECT id, email, role, is_active FROM users/, () => ({
@@ -52,18 +71,62 @@ test('provisionVenueStaffRoster precheck validates is_active boolean on users', 
   );
 });
 
-test('provisionVenueStaffRoster runs insert with ON CONFLICT (venue_id, staff_id) and handles idempotency', async () => {
+test('provisionVenueStaffRoster precheck handles case-insensitive emails', async () => {
+  const fake = createFakeClient([
+    [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
+    [/SELECT id, name, is_active FROM venues/, () => ({
+      rows: [
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
+      ],
+    })],
+    [/SELECT id, email, role, is_active FROM users/, () => ({
+      rows: [
+        { id: 'u1', email: 'VENUE_STAFF@CONNECTSPHERE.COM', role: 'venue_staff', is_active: true },
+        { id: 'u2', email: 'Venue_Staff_B@connectsphere.com', role: 'venue_staff', is_active: true },
+      ],
+    })],
+    [/^BEGIN$/, () => ({ rows: [] })],
+    [/INSERT INTO venue_staff_assignments/, () => ({ rows: [], rowCount: 1 })],
+    [/SELECT\s+v\.name AS venue_name/, () => ({
+      rows: [
+        { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Lotus Room', venue_id: 'v2', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Maple Room', venue_id: 'v3', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Jasmine Hall', venue_id: 'v4', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+        { venue_name: 'Cedar Auditorium', venue_id: 'v5', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+      ],
+    })],
+    [/SELECT DISTINCT staff_id FROM venue_staff_assignments\s+WHERE venue_id = ANY/, (vals) => {
+      const vIds = (vals?.[0] as string[]) || [];
+      const rows: Array<{ staff_id: string }> = [];
+      if (vIds.some(id => ['v1', 'v2', 'v3'].includes(id))) rows.push({ staff_id: 'u1' });
+      if (vIds.some(id => ['v4', 'v5'].includes(id))) rows.push({ staff_id: 'u2' });
+      return { rows };
+    }],
+    [/SELECT v\.id, v\.name FROM venues v/, () => ({ rows: [{ id: 'v_unassigned', name: 'Unassigned Venue' }] })],
+    [/^COMMIT$/, () => ({ rows: [] })],
+  ]);
+
+  // Should succeed without throwing
+  await provisionVenueStaffRoster(fake.client, false);
+});
+
+test('provisionVenueStaffRoster runs insert with ON CONFLICT and handles idempotency', async () => {
   const assignmentsTable: Array<{ venue_id: string; staff_id: string; active_until: string | null }> = [];
 
   const fake = createFakeClient([
     [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
-    [/SELECT id, name FROM venues/, () => ({
+    [/SELECT id, name, is_active FROM venues/, () => ({
       rows: [
-        { id: 'v1', name: 'Orchid Hall' },
-        { id: 'v2', name: 'Lotus Room' },
-        { id: 'v3', name: 'Maple Room' },
-        { id: 'v4', name: 'Jasmine Hall' },
-        { id: 'v5', name: 'Cedar Auditorium' },
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
       ],
     })],
     [/SELECT id, email, role, is_active FROM users/, () => ({
@@ -88,7 +151,7 @@ test('provisionVenueStaffRoster runs insert with ON CONFLICT (venue_id, staff_id
       return { rows: [], rowCount: 1 };
     }],
     [/^COMMIT$/, () => ({ rows: [] })],
-    [/SELECT v\.name AS venue_name/, () => ({
+    [/SELECT\s+v\.name AS venue_name/, () => ({
       rows: [
         { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
         { venue_name: 'Lotus Room', venue_id: 'v2', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
@@ -97,18 +160,14 @@ test('provisionVenueStaffRoster runs insert with ON CONFLICT (venue_id, staff_id
         { venue_name: 'Cedar Auditorium', venue_id: 'v5', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
       ],
     })],
-    [/SELECT DISTINCT venue_id, staff_id FROM venue_staff_assignments/, () => ({
-      rows: [
-        { venue_id: 'v1', staff_id: 'u1' },
-        { venue_id: 'v2', staff_id: 'u1' },
-        { venue_id: 'v3', staff_id: 'u1' },
-        { venue_id: 'v4', staff_id: 'u2' },
-        { venue_id: 'v5', staff_id: 'u2' },
-      ],
-    })],
-    [/SELECT DISTINCT staff_id FROM venue_staff_assignments\s+WHERE venue_id = \$1::uuid/, (vals) => {
-      return { rows: [] };
+    [/SELECT DISTINCT staff_id FROM venue_staff_assignments\s+WHERE venue_id = ANY/, (vals) => {
+      const vIds = (vals?.[0] as string[]) || [];
+      const rows: Array<{ staff_id: string }> = [];
+      if (vIds.some(id => ['v1', 'v2', 'v3'].includes(id))) rows.push({ staff_id: 'u1' });
+      if (vIds.some(id => ['v4', 'v5'].includes(id))) rows.push({ staff_id: 'u2' });
+      return { rows };
     }],
+    [/SELECT v\.id, v\.name FROM venues v/, () => ({ rows: [{ id: 'v_unassigned', name: 'Unassigned Venue' }] })],
   ]);
 
   // First execution: should insert all 5
@@ -120,16 +179,16 @@ test('provisionVenueStaffRoster runs insert with ON CONFLICT (venue_id, staff_id
   assert.equal(assignmentsTable.length, 5);
 });
 
-test('provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue', async () => {
+test('provisionVenueStaffRoster rolls back transaction on failure', async () => {
   const fake = createFakeClient([
     [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
-    [/SELECT id, name FROM venues/, () => ({
+    [/SELECT id, name, is_active FROM venues/, () => ({
       rows: [
-        { id: 'v1', name: 'Orchid Hall' },
-        { id: 'v2', name: 'Lotus Room' },
-        { id: 'v3', name: 'Maple Room' },
-        { id: 'v4', name: 'Jasmine Hall' },
-        { id: 'v5', name: 'Cedar Auditorium' },
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
       ],
     })],
     [/SELECT id, email, role, is_active FROM users/, () => ({
@@ -138,7 +197,42 @@ test('provisionVenueStaffRoster rejects when unexpected assignees exist on a tar
         { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
       ],
     })],
-    [/SELECT v\.name AS venue_name/, () => ({
+    [/^BEGIN$/, () => ({ rows: [] })],
+    [/INSERT INTO venue_staff_assignments/, () => {
+      throw new Error('Database write error');
+    }],
+    [/^ROLLBACK$/, () => ({ rows: [] })],
+  ]);
+
+  await assert.rejects(
+    async () => provisionVenueStaffRoster(fake.client, false),
+    /Database write error/,
+  );
+
+  const rollbackExecuted = fake.executedQueries.some(q => q.sql === 'ROLLBACK');
+  assert.equal(rollbackExecuted, true, 'ROLLBACK should have been executed');
+});
+
+test('provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue', async () => {
+  const fake = createFakeClient([
+    [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
+    [/SELECT id, name, is_active FROM venues/, () => ({
+      rows: [
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
+      ],
+    })],
+    [/SELECT id, email, role, is_active FROM users/, () => ({
+      rows: [
+        { id: 'u1', email: 'venue_staff@connectsphere.com', role: 'venue_staff', is_active: true },
+        { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
+      ],
+    })],
+    [/^BEGIN$/, () => ({ rows: [] })],
+    [/SELECT\s+v\.name AS venue_name/, () => ({
       rows: [
         { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
         { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'rogue@connectsphere.com', staff_id: 'u9' },
@@ -148,10 +242,57 @@ test('provisionVenueStaffRoster rejects when unexpected assignees exist on a tar
         { venue_name: 'Cedar Auditorium', venue_id: 'v5', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
       ],
     })],
+    [/^ROLLBACK$/, () => ({ rows: [] })],
   ]);
 
   await assert.rejects(
     async () => provisionVenueStaffRoster(fake.client, true),
     /Target venue 'Orchid Hall' has multiple active assignees/,
+  );
+});
+
+test('provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns broad fallback on unassigned venue', async () => {
+  const fake = createFakeClient([
+    [/information_schema\.tables/, () => ({ rows: [{ exists: true }] })],
+    [/SELECT id, name, is_active FROM venues/, () => ({
+      rows: [
+        { id: 'v1', name: 'Orchid Hall', is_active: true },
+        { id: 'v2', name: 'Lotus Room', is_active: true },
+        { id: 'v3', name: 'Maple Room', is_active: true },
+        { id: 'v4', name: 'Jasmine Hall', is_active: true },
+        { id: 'v5', name: 'Cedar Auditorium', is_active: true },
+      ],
+    })],
+    [/SELECT id, email, role, is_active FROM users/, () => ({
+      rows: [
+        { id: 'u1', email: 'venue_staff@connectsphere.com', role: 'venue_staff', is_active: true },
+        { id: 'u2', email: 'venue_staff_b@connectsphere.com', role: 'venue_staff', is_active: true },
+      ],
+    })],
+    [/^BEGIN$/, () => ({ rows: [] })],
+    [/SELECT\s+v\.name AS venue_name/, () => ({
+      rows: [
+        { venue_name: 'Orchid Hall', venue_id: 'v1', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Lotus Room', venue_id: 'v2', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Maple Room', venue_id: 'v3', staff_email: 'venue_staff@connectsphere.com', staff_id: 'u1' },
+        { venue_name: 'Jasmine Hall', venue_id: 'v4', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+        { venue_name: 'Cedar Auditorium', venue_id: 'v5', staff_email: 'venue_staff_b@connectsphere.com', staff_id: 'u2' },
+      ],
+    })],
+    [/SELECT DISTINCT staff_id FROM venue_staff_assignments\s+WHERE venue_id = ANY/, (vals) => {
+      const vIds = (vals?.[0] as string[]) || [];
+      const rows: Array<{ staff_id: string }> = [];
+      if (vIds.some(id => ['v1', 'v2', 'v3'].includes(id))) rows.push({ staff_id: 'u1' });
+      if (vIds.some(id => ['v4', 'v5'].includes(id))) rows.push({ staff_id: 'u2' });
+      if (vIds.includes('v_unassigned')) rows.push({ staff_id: 'u1' }); // Simulate buggy resolver returning staff for unassigned venue
+      return { rows };
+    }],
+    [/SELECT v\.id, v\.name FROM venues v/, () => ({ rows: [{ id: 'v_unassigned', name: 'Unassigned Venue' }] })],
+    [/^ROLLBACK$/, () => ({ rows: [] })],
+  ]);
+
+  await assert.rejects(
+    async () => provisionVenueStaffRoster(fake.client, true),
+    /TC_E11S01_13 FAILED: Unassigned venue resolved to staff/,
   );
 });

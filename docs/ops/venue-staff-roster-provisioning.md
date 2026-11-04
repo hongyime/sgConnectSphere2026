@@ -23,19 +23,39 @@ The canonical mapping assigns the five production venues between the two active 
 
 1. **Database & Schema**: Connect to the production database with schema fixed to `public`.
 2. **Migration Ledger**: Confirm migration `0018_venue_staff_assignments.sql` is recorded and applied in the migration ledger.
-3. **Target Accounts**: Verify both `venue_staff@connectsphere.com` and `venue_staff_b@connectsphere.com` exist, are active (`is_active = true`), and hold role `'venue_staff'`.
-4. **Target Venues**: Verify all five venues (Orchid Hall, Lotus Room, Maple Room, Jasmine Hall, Cedar Auditorium) exist in `venues`.
-5. **Conflict Safe**: The insert is idempotent and targets the primary key `PRIMARY KEY (venue_id, staff_id)` declared in migration 0018 (`ON CONFLICT (venue_id, staff_id) DO UPDATE SET active_from = now(), active_until = NULL WHERE venue_staff_assignments.active_until IS NOT NULL`).
+3. **Target Accounts**: Verify both `venue_staff@connectsphere.com` and `venue_staff_b@connectsphere.com` exist, are active (`is_active = true`), and hold role `'venue_staff'`. The runner uses case-insensitive matching (`lower(email)`).
+4. **Target Venues**: Verify all five venues (Orchid Hall, Lotus Room, Maple Room, Jasmine Hall, Cedar Auditorium) exist in `venues` and are active (`is_active = true`).
+5. **Conflict Safe**: The insert is idempotent and targets the primary key `PRIMARY KEY (venue_id, staff_id)` declared in migration 0018:
+   ```sql
+   ON CONFLICT (venue_id, staff_id)
+   DO UPDATE SET active_from = now(), active_until = NULL
+   WHERE venue_staff_assignments.active_until IS NOT NULL
+      OR venue_staff_assignments.active_from > now()
+   ```
 
 ## Execution
 
-Run the bounded provisioning tool:
+### CLI Runner
+
+The script defaults to read-only `--verify-only` mode for safety.
+To execute writes against a target database:
 
 ```bash
-npx tsx scripts/provision_venue_staff_roster.ts
+# Dry-run / verification only:
+npx tsx scripts/provision_venue_staff_roster.ts --verify-only
+
+# Local / development execution:
+npx tsx scripts/provision_venue_staff_roster.ts --execute
+
+# Production (Supabase) execution:
+npx tsx scripts/provision_venue_staff_roster.ts --execute --confirm-production
 ```
 
-Or execute within a single transaction:
+When `DATABASE_URL` targets Supabase, `--confirm-production` is mandatory to avoid accidental writes.
+
+### Direct Transactional SQL
+
+If executed manually via `psql` by the designated deploy owner, run inside a single transaction:
 
 ```sql
 BEGIN;
@@ -43,24 +63,30 @@ BEGIN;
 -- Insert Alex Tan assignments
 INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from, active_until)
 SELECT v.id, u.id, now(), NULL
-FROM venues v, users u
-WHERE u.email = 'venue_staff@connectsphere.com'
+FROM venues v
+CROSS JOIN users u
+WHERE lower(u.email) = 'venue_staff@connectsphere.com'
   AND u.is_active = true
+  AND v.is_active = true
   AND v.name IN ('Orchid Hall', 'Lotus Room', 'Maple Room')
 ON CONFLICT (venue_id, staff_id)
 DO UPDATE SET active_from = now(), active_until = NULL
-WHERE venue_staff_assignments.active_until IS NOT NULL;
+WHERE venue_staff_assignments.active_until IS NOT NULL
+   OR venue_staff_assignments.active_from > now();
 
 -- Insert Jordan Lee assignments
 INSERT INTO venue_staff_assignments (venue_id, staff_id, active_from, active_until)
 SELECT v.id, u.id, now(), NULL
-FROM venues v, users u
-WHERE u.email = 'venue_staff_b@connectsphere.com'
+FROM venues v
+CROSS JOIN users u
+WHERE lower(u.email) = 'venue_staff_b@connectsphere.com'
   AND u.is_active = true
+  AND v.is_active = true
   AND v.name IN ('Jasmine Hall', 'Cedar Auditorium')
 ON CONFLICT (venue_id, staff_id)
 DO UPDATE SET active_from = now(), active_until = NULL
-WHERE venue_staff_assignments.active_until IS NOT NULL;
+WHERE venue_staff_assignments.active_until IS NOT NULL
+   OR venue_staff_assignments.active_from > now();
 
 COMMIT;
 ```
@@ -71,9 +97,21 @@ COMMIT;
    ```bash
    npx tsx scripts/provision_venue_staff_roster.ts --verify-only
    ```
-2. Verify that `venue_staff_assignments` contains exactly 5 current active rows (`active_from <= now() AND (active_until IS NULL OR active_until > now())`), with no extra or duplicate assignees.
+2. Verify that `venue_staff_assignments` contains exactly 5 current active rows using explicit `JOIN`s:
+   ```sql
+   SELECT
+     v.name AS venue_name,
+     v.id AS venue_id,
+     u.email AS staff_email,
+     u.id AS staff_id
+   FROM venue_staff_assignments a
+   JOIN venues v ON v.id = a.venue_id
+   JOIN users u ON u.id = a.staff_id
+   WHERE a.active_from <= now()
+     AND (a.active_until IS NULL OR a.active_until > now());
+   ```
 3. Verify `resolveAssignedVenueStaff` query logic across all five venues:
    - Orchid Hall, Lotus Room, and Maple Room resolve strictly to Alex Tan.
    - Jasmine Hall and Cedar Auditorium resolve strictly to Jordan Lee.
-4. Confirm TC_E11S01_13: Any unassigned venues return unresolved with zero fallback staff.
+4. Confirm `TC_E11S01_13`: Any unassigned venues return unresolved (`[]`) with zero fallback staff.
 5. Record the sanitized outcome in `docs/ops/production-account-runs/` and cite in T-65 test run records under `docs/testing/runs/`.

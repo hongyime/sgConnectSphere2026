@@ -1336,9 +1336,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/venueStaffRosterProvisioning.test.ts`
 
+- provisionVenueStaffRoster precheck validates is_active boolean on venues
 - provisionVenueStaffRoster precheck validates is_active boolean on users
-- provisionVenueStaffRoster runs insert with ON CONFLICT (venue_id, staff_id) and handles idempotency
+- provisionVenueStaffRoster precheck handles case-insensitive emails
+- provisionVenueStaffRoster runs insert with ON CONFLICT and handles idempotency
+- provisionVenueStaffRoster rolls back transaction on failure
 - provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue
+- provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns broad fallback on unassigned venue
 
 ### `backend/tests/venueSuitability.test.ts`
 
