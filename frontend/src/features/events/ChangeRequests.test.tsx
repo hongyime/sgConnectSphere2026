@@ -354,3 +354,49 @@ test('TC_E10S02_05 (T-104): an approved date change lists the staffed Technical 
   expect(screen.getByText('Technical support: date or time changed')).toBeInTheDocument();
   expect(screen.getByText(/Affected Technical Support requests: 2\./)).toBeInTheDocument();
 });
+
+
+test('TC_E10S01_01 / TC_E10S01_02: Session target submits only Session fields and displays its current values', async () => {
+  const session={id:'session-a',title:'Morning',current:{title:'Morning',expectedAttendance:20,startAt:'2027-03-01T01:00:00.000Z',endAt:'2027-03-01T02:00:00.000Z'}};
+  const calls=stubApi({[read]:{body:data({sessions:[session,{id:'session-b',title:'Afternoon',current:{title:'Afternoon'}}]})},[write]:{status:201,body:{request:pending()}}});
+  mount();
+  fireEvent.change(await screen.findByLabelText('Change target'),{target:{value:'session-a'}});
+  expect(screen.queryByRole('checkbox',{name:'Change registration'})).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Describe the change'),{target:{value:'Rename morning'}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Change session name'}));
+  expect(screen.getByLabelText('New session name')).toHaveValue('Morning');
+  fireEvent.change(screen.getByLabelText('New session name'),{target:{value:'New morning'}});
+  fireEvent.click(screen.getByRole('button',{name:'Send change request'}));
+  await screen.findByText('Change request sent for Coordinator review. Current Event details stay unchanged.');
+  expect(calls.find(call=>call.method==='POST')?.body).toEqual({description:'Rename morning',sessionId:'session-a',changes:{title:'New morning'}});
+});
+
+test('TC_E10S01_04: even a Session title request previews before approval and shows Session comparison', async () => {
+  const request={...pending(),requested_changes:{sessionId:'session-a',fields:{title:'New morning'},before:{title:'Morning'}}};
+  const calls=stubApi({[read]:{body:data({sessions:[{id:'session-a',title:'Morning',current:{title:'Morning'}}],requests:[request]})},
+    [decide]:{body:{request:{...request,preview:{canApply:true,token:'session-preview',lateClose:false,impact:{affected:false,bookings:[],reservations:[],supports:[]},overSubscription:[]}}}}});
+  mount(true,'/coordinator/events/EVT-A/changes');
+  await screen.findByText('Target Session: Morning');
+  expect(screen.getByRole('columnheader',{name:'Current Session details'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:/^Approve/}));
+  await screen.findByText('Review the affected arrangements below. Confirming applies this entire request together.');
+  expect(calls.find(call=>call.method==='POST')?.body).toEqual({decision:'preview'});
+});
+
+
+test('TC_E10S01_01: Session facilities and cleared text are typed, and switching target resets selected fields', async () => {
+  const calls=stubApi({[read]:{body:data({references:{layouts:[],accessibility:[],facilities:[{id:'facility-a',label:'Projector'}]},sessions:[{id:'session-a',title:'Morning',current:{title:'Morning',facilityIds:[],venueRequirements:'Old requirements'}},{id:'session-b',title:'Afternoon',current:{title:'Afternoon'}}]})},[write]:{status:201,body:{request:pending()}}});
+  mount();
+  const target=await screen.findByLabelText('Change target');
+  fireEvent.click(screen.getByRole('checkbox',{name:'Change purpose'}));
+  fireEvent.change(target,{target:{value:'session-a'}});
+  expect(screen.queryByLabelText('New purpose')).not.toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Describe the change'),{target:{value:'Session requirements'}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Change facilities'}));
+  fireEvent.change(screen.getByLabelText('New facilities'),{target:{value:'facility-a'}});
+  fireEvent.click(screen.getByRole('checkbox',{name:'Change venue requirements'}));
+  fireEvent.change(screen.getByLabelText('New venue requirements'),{target:{value:''}});
+  fireEvent.click(screen.getByRole('button',{name:'Send change request'}));
+  await screen.findByText('Change request sent for Coordinator review. Current Event details stay unchanged.');
+  expect(calls.find(call=>call.method==='POST')?.body).toEqual({sessionId:'session-a',description:'Session requirements',changes:{facilityIds:['facility-a'],venueRequirements:null}});
+});

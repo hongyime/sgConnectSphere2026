@@ -166,7 +166,7 @@ test('TC_E06S03_07 selects another Confirmed primary and retains booking statuse
 
 test('TC_E06S03_07 primary conflict refreshes and busy submission runs only once',async()=>{
   let finish!:(response:unknown)=>void;
-  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'}]})})
+  const fetcher=vi.fn().mockResolvedValueOnce({ok:true,json:async()=>({...data,bookings:[{...data.bookings[0],status:'confirmed'},{...data.bookings[1],is_primary:true}]})})
     .mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}))
     .mockResolvedValue({ok:true,json:async()=>data});
   vi.stubGlobal('fetch',fetcher);mount();

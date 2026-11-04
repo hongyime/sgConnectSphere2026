@@ -14,6 +14,7 @@ test('TC_E10S05_04: venue change descriptions name the confirmed replacement wit
   assert.equal(describeEventChange({kind:'arrangements',fields:['venue'],venueName:' Replacement Hall '}),
     'Event venue changed. New venue: Replacement Hall.');
   assert.equal(describeEventChange({kind:'arrangements',fields:['venue']}), 'Event venue changed.');
+  assert.equal(describeEventChange({kind:'arrangements',fields:['date','time'],session:true}), 'Session date, time changed.');
   assert.equal(describeEventChange({kind:'arrangements',fields:['venue'],venueName:'  '}), 'Event venue changed.');
   assert.equal(describeEventChange({kind:'arrangements',fields:['time'],venueName:'Ignored'}), 'Event time changed.');
 });

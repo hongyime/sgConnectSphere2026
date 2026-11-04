@@ -49,11 +49,23 @@ At PR #231 head on 9 October ([PR #231](https://github.com/hongyime/sgConnectSph
 **Migration ownership:** Migration 0013, `0013_tentative_venue_holds.sql` (merged in PR #245), is holds-only: it adds `tentative` and `expired` to `booking_status`, adds `expires_at`, and creates an expiry lookup index that does not refer to either new enum value. It does not add any constraint or index predicate that uses those new values.
 
 The Session foundation is migration `0014_event_sessions.sql` in SCRUM-183. It creates one Session per existing Event and owns the `session_id` columns, backfills, indexes, and `(session_id, event_id)` ownership foreign keys on venue bookings and equipment requests/reservations. A venue booking must retain its Session link while active; the migration only permits the link to become null for Rejected, Released, or Expired rows when a Session is deleted. The E06 booking contract consumes these
-Session links and must not add them again. Session authoring (SCRUM-39) is
-draft-only in its first increment: the Organiser may add, edit and remove child
-Sessions of their own draft, and an Event always keeps at least one Session. A
-Session that still holds an active booking cannot be deleted until that booking
-is Released, Rejected or Expired, because the link must remain while active.
+Session links and must not add them again. Session authoring (SCRUM-39): the
+Organiser may add Sessions to their own draft, edit them in draft or planning,
+and remove them in draft or planning, and an Event always keeps at least one
+Session. A planning edit runs the E10-S02 arrangement check: it flags the
+affected bookings, reservations and staffed Technical Support requests and sends
+the shared reconfirmation notice (`notifyArrangementImpact`), including the
+technicians on a flagged Technical Support request (T-104). When the Session's
+date or time changes, everyone else on the Event gets the "Session date, time
+changed" notice (E11-S01 Scenario 2), as an approved Session change request
+sends; the Organiser who made the edit is not told. A save whose check went stale
+is refused with 409 `arrangements_changed`, the same sentence as an Event edit
+and the fresh check. Removing a Session first releases its active bookings in the same
+transaction, so no active booking ever loses its Session link. If one of those was
+the primary and another Confirmed booking remains, the primary is cleared with no
+automatic promotion and the Coordinator is told to choose another (T-94, T-78). A booking request
+for an Event with several Sessions must name its `session_id`; holds carry no
+Session, so a hold is possible only while the Event has one Session.
 
 The remaining shared venue booking columns and constraints belong in the next migration, proposed as `0019_venue_bookings_contract.sql`. Migration 0019 depends on migrations 0011 (`occupied_window()`), 0012, committed 0013, and the Session table and links from 0014. It is owned by whichever story requires the shared booking columns first (E06-S03 or E06-S04). E06-S03 owns the request service/API contract; E06-S04/S06 use its booking and conflict invariants. No parallel migration should add overlapping columns or constraints.
 
@@ -122,7 +134,7 @@ Returns 200 `{ booking, coordinatorNotified }`.
 - Returns 404 for an unknown booking.
 - Returns 409 when the booking is no longer Pending (e.g. already decided, released, or expired).
 - A booking in `conflicting` status cannot be decided: Venue Staff must wait for the buffer conflict resolution flow (E05-S05 / E05-S06) or coordinator rescheduling, returning 409 with an explanatory message.
-- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row.
+- If decision is `approve`, updates status from Pending to Confirmed, sets `decided_by` and `decided_at`. If the event currently has no primary Confirmed booking, this booking becomes primary (`is_primary = true`); concurrent confirmations serialize on the event row. It does not when another Confirmed booking is already waiting for the Coordinator to choose (T-94).
 - If decision is `reject`, updates status from Pending to Rejected, sets `decision_reason`, optional `suggested_venue_id`, `decided_by`, and `decided_at`.
 - Audit entries: `Booking Approved` or `Booking Rejected` with `entity_type = 'venue_booking'`.
 - Notification sent to the assigned Coordinator.
@@ -474,3 +486,20 @@ approved request flags arrangements for reconfirmation.
 ### E10-S01 Safety Review interruption
 
 E10-S01 approved changes that interrupt Safety Review leave Confirmed bookings in place with reconfirmation flags. Reconfirming the last required arrangement uses the shared readiness transition and sends a fresh SO notice, including the first safety cycle; previous safety history remains unchanged.
+
+
+### E10-S01 Session request application
+
+Approved Session-targeted requests reuse E04-S02 Session storage and E10-S02
+impact assessment. Only bookings for the changed Session are flagged by that
+change; their rows stay Confirmed pending reconfirmation. A preview cannot flag
+or notify. The request service applies the same stale-revision and atomic
+rollback rules as Event-wide changes, including T-104 crew readiness and the
+T-103 Safety Review interruption/re-entry path.
+
+### E02-S07 draft submission lock boundary
+
+Draft submission validates every independent Session's dates while holding Event
+then Session locks. Draft Session creation/editing acquires the Event lock first
+and rechecks Draft status. This preserves the common Event-first lock order used
+by booking writers; date refusal does not create or alter a venue booking.

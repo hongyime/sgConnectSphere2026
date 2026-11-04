@@ -1,37 +1,37 @@
 # Test case coverage audit
 
-Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 383 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
+Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TEST CASES.xlsx`, 386 cases) against the automated test suite. Rebuild with `python scripts/tc_coverage_audit.py`.
 
 **Automation status is by strict TC_ID naming.** A case is counted as automated only when a live `test(...)` block anywhere in the repository has the TC_ID literally in its title (e.g. `test('TC_E01S08_01 rejects duplicate email', ...)`). Behavioural coverage that happens to test the same acceptance criterion under a different test title is called out separately in the "Active tests that cover behaviour without an explicit TC reference" section below.
 
 ## Summary
 
-- Total test cases: **383**
-- Automated (explicit TC_ID in an active test title): **311** (81.2%)
-  - Real-database (`.integration.test` / `.db.test`): **47**
+- Total test cases: **386**
+- Automated (explicit TC_ID in an active test title): **321** (83.2%)
+  - Real-database (`.integration.test` / `.db.test`): **41**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **263**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **54** (14.1%)
-- No test yet (no test file mentions the TC_ID): **18** (4.7%)
+  - Live-assertion (other active tests): **279**
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
+- No test yet (no test file mentions the TC_ID): **17** (4.4%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: |
 | E01 | 38 | 21 | 17 | 0 |
-| E02 | 21 | 16 | 1 | 4 |
+| E02 | 21 | 17 | 1 | 3 |
 | E03 | 62 | 49 | 13 | 0 |
 | E04 | 5 | 5 | 0 | 0 |
 | E05 | 39 | 38 | 1 | 0 |
 | E06 | 43 | 40 | 3 | 0 |
 | E07 | 37 | 33 | 0 | 4 |
-| E08 | 28 | 18 | 10 | 0 |
+| E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
-| E10 | 33 | 29 | 0 | 4 |
+| E10 | 36 | 32 | 0 | 4 |
 | E11 | 15 | 13 | 2 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **383** | **311** | **54** | **18** |
+| **Total** | **386** | **321** | **48** | **17** |
 
 ## Case-by-case status
 
@@ -100,11 +100,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S05_01` | E02-S05 | Copying my completed event should create a draft with its Sessions and requireme | ❌ none | — |
 | `TC_E02S05_02` | E02-S05 | Missing venue or equipment references should be flagged against the copied Sessi | ❌ none | — |
 | `TC_E02S05_03` | E02-S05 | Submitting a copied draft should apply the current date-horizon rules | ❌ none | — |
-| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event-only API horizon and draft resubmission persist correctly |
-| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ❌ none | — |
+| `TC_E02S07_01` | E02-S07 | A date beyond two calendar years should block request submission | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly |
+| `TC_E02S07_02` | E02-S07 | A date exactly two calendar years ahead should pass the horizon check | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_03` | E02-S07 | A feasible near-term date should not be rejected for a minimum lead time | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_04` | E02-S07 | Past dates remain blocked by the completed E02-S01 rule | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_01 TC_E02S07_02 TC_E02S07_03 TC_E02S07_04 Event and Session API horizon and draft resubmission persist correctly; back |
+| `TC_E02S07_05` | E02-S07 | A past Session date should be rejected even when the Event date is in the future | ✅ active | backend/tests/eventDateHorizon.integration.test.ts: TC_E02S07_04 TC_E02S07_05: a past Session blocks a future Event, then passes after correction; backend/tests/eventLifecycle.test |
 
 ### E03
 
@@ -177,11 +177,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned |
-| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back |
-| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back |
-| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back |
+| `TC_E04S02_01` | E04-S02 | Creating one Session should support a single-session Event without extra lifecyc | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; tests/e2e/e04.spec.ts: TC_E04S |
+| `TC_E04S02_02` | E04-S02 | Multiple Sessions should retain their own dates, times, attendance, and requirem | ✅ active | backend/tests/eventSessionsMigration.integration.test.ts: TC_E04S02_01 TC_E04S02_02: migration backfills and keeps single-session Event data aligned; tests/e2e/e04.spec.ts: TC_E04S |
+| `TC_E04S02_03` | E04-S02 | Venue suitability should use each Session’s own attendance and requirements | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_03: venue suitability uses each Session own attendance, rolled back; backend/tests/eventSessionsRoutes.integration. |
+| `TC_E04S02_04` | E04-S02 | The same venue may have separate bookings for different Sessions of one Event | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_04: one Event books the same venue for two Sessions, rolled back; tests/e2e/e04.spec.ts: TC_E04S02_03 TC_E04S02_04: |
+| `TC_E04S02_05` | E04-S02 | Deleting a Session should release its confirmed booking and retain history | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E04S02_05: deleting a Session releases its booking, audits it and notifies Venue Staff, rolled back; backend/tests/eventSe |
 
 ### E05
 
@@ -343,12 +343,12 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S05_04` | E08-S05 | Verify that a Cancelled event should never auto-complete, even after its origina | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/co |
 | `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
-| `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_01 — Verify that the safety review queue should show each waiting event with the information the listed factors need, oldest first |
-| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_02 — Verify that approving an event after recording every factor as satisfactory should make it Confirmed, notify the Organiser and Coordinator, an |
-| `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_03 — Verify that requesting changes should return the event to Planning with the items to address, flag the affected arrangements and keep it from  |
-| `TC_E08S06_04` | E08-S06 | Verify that rejecting the safety arrangement should return the event to Planning | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_04 — Verify that rejecting the safety arrangement should return the event to Planning with a rejection flag without cancelling it |
-| `TC_E08S06_05` | E08-S06 | Verify that reject and request changes should require a reason and that no role  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_05 — Verify that reject and request changes should require a reason and that no role other than Safety Officer can decide |
-| `TC_E08S06_06` | E08-S06 | Verify that events confirmed before the safety check existed should be untouched | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S06_06 — Verify that events confirmed before the safety check existed should be untouched and that Safety Review should count as an active status for t |
+| `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ✅ active | backend/tests/roleQueues.test.ts: Safety Officer queue requires the Safety Officer role and lists Safety Review events, oldest entry first (TC_E08S06_01); backend/tests/safetyRevie |
+| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_02: approval confirms the Event, keeps one immutable checklist row and sends ; backend/tests/safetyReview.test.ts: TC_E08S |
+| `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_03: a request for changes needs at least one unsatisfactory factor to address; backend/tests/safetyReview.integration.test.ts: TC_E08S0 |
+| `TC_E08S06_04` | E08-S06 | Verify that rejecting the safety arrangement should return the event to Planning | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_04: rejecting keeps the Event and its arrangements and shows the rejection to the Coordinator and Organiser; backend/tests |
+| `TC_E08S06_05` | E08-S06 | Verify that reject and request changes should require a reason and that no role  | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_05: an unknown decision or a body without factors is refused; backend/tests/safetyCheck.test.ts: TC_E08S06_05: a reason longer than 200 |
+| `TC_E08S06_06` | E08-S06 | Verify that events confirmed before the safety check existed should be untouched | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_06: an Event Confirmed before the check has no safety record and is not in the queue; tests/e2e/e08.spec.ts: TC_E08S06_06  |
 
 ### E09
 
@@ -420,10 +420,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E10S02_07` | E10-S02 | A Session attendance change should flag only bookings over capacity after bookin | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_07: a booking headcount governs over Session attendance; only the Session-governed booking is flagged (SQL Session ch |
 | `TC_E10S02_08` | E10-S02 | An Event-wide date change should flag arrangements for every Session | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08: an Event-wide date change flags every Session\; backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_08 |
 | `TC_E10S02_09` | E10-S02 | An Event description-only edit should not flag any Session arrangements | ✅ active | backend/tests/arrangementImpact.integration.test.ts: TC_E10S02_09: a description-only save on a two-Session Event flags no Session arrangement |
-| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/supportReconfirmation.integration.test.ts: TC_ |
+| `TC_E10S02_10` | E10-S02 | A Session change should not flag a Technical Support request that does not overl | ✅ active | backend/tests/arrangementImpact.test.ts: TC_E10S02_10: a Session change does not flag support that does not overlap it; backend/tests/eventSessionsRoutes.integration.test.ts: TC_E1 |
 | `TC_E10S02_11` | E10-S02 | A flagged Technical Support request should keep a reverted Event out of Safety R | ✅ active | backend/tests/eventReadiness.test.ts: TC_E10S02_11: a staffed support request flagged by a date change is outstanding until reconfirmed (T-104); backend/tests/supportReconfirmation |
 | `TC_E10S02_12` | E10-S02 | Reconfirming a flagged Technical Support request should move it and its technici | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_11 and TC_E10S02_12: a date change flags the staffed request; reconfirming it moves it and re-enters Safety Revie |
 | `TC_E10S02_13` | E10-S02 | Reconfirming a Technical Support request should be refused when an assigned tech | ✅ active | backend/tests/supportReconfirmation.integration.test.ts: TC_E10S02_13: a technician busy at the new time refuses the reconfirmation; nothing moves and the flag stays; backend/tests |
+| `TC_E10S02_14` | E10-S02 | Moving a Session on the Session screen should list the staffed Technical Support | ✅ active | frontend/src/features/organiser/SessionEditor.test.tsx: TC_E10S02_14: a planning Session edit lists the Technical Support it flags, with its new time, before saving |
+| `TC_E10S02_15` | E10-S02 | Moving a Session on the Session screen should ask only the technicians on the fl | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_15 TC_E10S02_10: a Session move on the Session screen flags only the overlapping support, asks only its technician  |
+| `TC_E10S02_16` | E10-S02 | A Session change on the Session screen that leaves fewer places than registered  | ✅ active | backend/tests/eventSessionsRoutes.integration.test.ts: TC_E10S02_16: a Session layout change below its registrations is warned about and removes no one, rolled back; frontend/src/f |
 | `TC_E10S03_01` | E10-S03 | Changing one Session date should flag only that Session’s arrangements | ❌ none | — |
 | `TC_E10S03_02` | E10-S03 | An Event-wide reschedule should flag arrangements for every Session | ❌ none | — |
 | `TC_E10S03_03` | E10-S03 | Registered Attendees should be notified of the new Event and Session dates | ❌ none | — |
@@ -514,6 +517,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - governingHeadcount: override, then Session attendance, then unknown
 - loadArrangementSnapshot reads live arrangements and converts dates to ISO strings
 - loadArrangementSnapshot refuses an unknown Event
+- E04-S02 #408 review: a Session requirement change flags only that Session bookings
+- E04-S02 #408 review: a sole Session following an Event layout edit is one layout reason, not two
 
 ### `backend/tests/attendeeCapacity.integration.test.ts`
 
@@ -574,7 +579,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - a reverted Planning event with nothing outstanding enters Safety Review, with every notice under the status change
 - without an assigned Coordinator only the Organiser and the Safety Officers are told
-- nothing moves for an event that is not in Planning, was never Confirmed, or still has something outstanding
+- nothing moves for an event that is not in Planning, was never Confirmed, was sent back by the Safety Officer, or still has something outstanding
 
 ### `backend/tests/bookingPrimary.test.ts`
 
@@ -781,6 +786,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/eventChangeRevisionRoute.integration.test.ts`
 
 - the save route refuses a stale preview revision with the fresh list, and saves with a current one
+- the Session save route refuses a stale preview revision with the fresh list and the same sentence, and saves with a current one
 
 ### `backend/tests/eventCompletion.integration.test.ts`
 
@@ -801,6 +807,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - near-term Event has no minimum lead-time refusal
 - the past Event rule still blocks submission
 - far-future draft saves, refused submission keeps it intact, correction permits submission
+- draft Session writers refuse a missing Event
 - unsigned requests still require authentication
 
 ### `backend/tests/eventLifecycle.integration.test.ts`
@@ -880,6 +887,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: a Session can be removed while the event is in planning
 - E04-S02: removal is refused once the event is past planning
 - E04-S02: a malformed Session id is rejected before any query
+- E04-S02 Scenario 1: a Session carries its own accessibility and facility needs
+- E04-S02 Scenario 1: needs that are not lists of ids are rejected before any write
+- E04-S02 Scenario 1: leaving the needs out keeps whatever the Session already has
+- E04-S02: handNeedsToEvent updates Event details to match the survivor Session and hands over needs
+- E04-S02: handNeedsToEvent does nothing if no survivor session exists
 
 ### `backend/tests/eventVisibility.integration.test.ts`
 
@@ -1018,6 +1030,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - in-memory EventLifecycleRepository satisfies the shared contract
 - PostgresEventLifecycleRepository satisfies the shared contract
+
+### `backend/tests/roleQueues.test.ts`
+
+- unauthenticated users cannot read either role queue
+- Lead queue requires the Lead role and returns submitted unassigned events oldest first
+- non-Leads cannot read the unassigned queue and the attempt is audited
+- non-Safety Officers cannot read the Safety Review queue and the attempt is audited
+
+### `backend/tests/safetyCheck.test.ts`
+
+- E08-S06 accepts one completed assessment for every safety factor
+- E08-S06 refuses approval when a factor is missing or unsatisfactory
+- E08-S06 requires a reason for rejection or requested changes
+- E08-S06 rejects malformed factors and overlong comments
+- E08-S06 refuses a decision from a non-Safety Officer before opening a transaction
+
+### `backend/tests/safetyReview.test.ts`
+
+- D109 / D118: latestSafetyReturn reports a rejection or a request for changes, and nothing else
 
 ### `backend/tests/securityHardening.test.ts`
 
@@ -1380,6 +1411,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - story IDs use the backlog format
 - sign-in and registration pages are public; profile and notifications are not
 - an unknown or missing role goes to the landing page
+- Lead and Safety Officer land on their own work queues
 
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 
@@ -1656,6 +1688,14 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - prototype mode simulates submission without hitting the API
 - the predefined accessibility checklist renders options fetched from the API, not a hardcoded list
 - selecting a predefined accessibility feature alone satisfies the mandatory field, and submits ids separately from the free-text note
+- T-108: Save draft after deleting down to one Session sends the Event\
+- T-108: with two Sessions still left the form keeps what the Organiser typed
+- T-108: if the new details cannot be read, saving is blocked instead of overwriting the Session
+- T-108: Save draft and Submit stay blocked from the start of the delete until the new details load, on a slow connection
+- T-108: a slow refresh that then fails leaves Save draft and Submit blocked
+- T-108: a refused delete that left both Sessions unblocks saving and keeps what was typed
+- T-108: a delete whose reply was lost but which went through still refreshes the form
+- T-108: if nothing can be read after a failed delete, Save draft and Submit stay blocked
 
 ### `frontend/src/features/organiser/RegistrationPeriod.test.tsx`
 
@@ -1676,6 +1716,22 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02: adding a Session posts to the sessions endpoint
 - E04-S02: removing a Session deletes that Session only
 - E04-S02: a planning edit previews its impact before saving
+- E10-S02: a Session save refused because its check went stale shows the fresh list, and saves against it
+- E10-S02: a stale check is reviewed even when the first check needed no review
+- E10-S02: Cancel closes the review, saves nothing and keeps what was typed
+- E10-S02: any other refusal closes the review and says why
+- E04-S02: a new Session starts with the first Session requirements
+- E04-S02: cancelling the removal keeps the Session and sends nothing
+- E04-S02: a refused save shows the reason and a failed load can be retried
+- E04-S02: a late answer for an earlier event never replaces the current one
+
+### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
+
+- Lead queue loads submitted unassigned requests
+
+### `frontend/src/features/roleQueues/SafetyReview.test.tsx`
+
+- a late answer for the previous event never replaces the one now open
 
 ### `frontend/src/features/shell/AppHeader.test.tsx`
 
@@ -1883,6 +1939,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/venue/VenueSearch.navigation.test.tsx`
 
 - event-scoped results offer Hold this venue only for an available venue
+
+### `frontend/src/features/venue/VenueSearch.sessions.test.tsx`
+
+- E04-S02: the whole-event view asks for a Session before a venue can be checked
+- E04-S02: a single-Session event keeps the original search, with no picker
 
 ### `frontend/src/features/venue/VenueSuitability.test.tsx`
 

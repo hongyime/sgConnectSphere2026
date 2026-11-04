@@ -108,7 +108,7 @@ test('TC_E07S04_07: a missing, released or flagged reservation blocks; a flag ou
   assert.deepEqual(messages(snapshot), [
     'Lectern — not reserved; 1 outstanding',
     'Screen — reservation released; 2 outstanding',
-    'Speaker — needs review: stock changed (3 of 5 reserved)',
+    'Speaker — needs review (3 of 5 reserved)',
   ]);
   assert.deepEqual(snapshot.equipment.map(row => [row.reserved, row.state]), [[0, 'outstanding'], [0, 'outstanding'], [3, 'outstanding']]);
 });

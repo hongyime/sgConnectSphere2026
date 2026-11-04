@@ -215,13 +215,68 @@ validation. Other callers default to the existing enabled confirmation behaviour
 
 ## Event Sessions (E04-S02)
 
-`SessionEditor` (`src/features/organiser/SessionEditor.tsx`) renders only when the
-flow receives a `draftId`. Sessions are children of a saved Event, so they cannot
-be created in the same POST that creates the draft: save the draft first, then
-add, edit or remove Sessions.
+`SessionEditor` (`src/features/organiser/SessionEditor.tsx`) renders on the draft
+editor once the flow has a `draftId`, and on the Organiser's request page
+(`SubmittedDetail`) while the Event is in planning. Sessions are children of a
+saved Event, so they cannot be created in the same POST that creates the draft:
+save the draft first, then add, edit or remove Sessions. When a removal would leave one Session, Save draft and Submit are blocked from the start of the delete until the draft form has re-read the Event's new details (T-108), and stay blocked if that read fails. In planning there is no
+Add; an edit runs the E10-S02 preview, and Remove opens a confirmation that says
+the Session's bookings and reservations are released before anything is sent.
+The preview opens the Coordinator's `ArrangementReview`: the flagged bookings,
+reservations and staffed Technical Support requests by name (T-104) and any
+over-subscription, which also opens it when nothing is flagged. A save refused as
+`arrangements_changed` reopens it with the fresh list (`changedCheck`).
 
 It reads and writes `/api/events?sessions=1&id=<event>&sessionId=<session>` and
-keeps the Event's own dates and attendance as the overall planning envelope. The
-API owns ownership, draft-only editing and the last-Session rule; the editor does
-not re-implement those checks client-side, so a refusal surfaces as a message and
-the list reloads the server state.
+keeps the Event's own dates and attendance as the overall planning envelope,
+updating them to match when deleting down to a sole Session.
+With one Session the editor shows only its date, time and attendance, because
+the request form holds the Event-level requirements. With two or more, each
+Session also shows its venue and equipment requirements, room layout,
+accessibility needs and required facilities, from the `options` the GET returns.
+Every save sends the Session's stored text requirements and layout back, so
+saving a date never clears them. The API owns ownership, draft/planning rules
+and the last-Session rule; the editor only disables Remove on the last Session,
+so a refusal surfaces as a message and the list reloads the server state.
+
+`VenueSearch` shows a Session picker when the event has more than one Session
+(`?session_id=` in the URL). Choosing one refills the criteria from that
+Session, sends `session_id` with the search, and carries it into the
+suitability page, whose booking form submits it. Holds have no Session, so
+"Hold this venue" is offered only for single-Session events. The Coordinator's
+booking list names each booking's Session, and warns when Confirmed bookings
+have no primary venue, since a released primary is not replaced automatically (T-94).
+
+## E10-S01 Session targets
+
+The existing Change requests page offers Event-wide details or a named Session.
+Switching target clears selected fields/values; registration and Event-only
+fields are hidden for Session requests. The request card shows the target and
+current Session values, including label-based facilities/accessibility options.
+All Session approvals, including title-only changes, request the server preview.
+A removed Session is labelled explicitly; the server refuses application but
+allows decline. Manual story acceptance remains separately recorded under T-65.
+
+Session targets require at least two Sessions. A sole Session follows the
+existing Event-wide editing/synchronization contract. If a pending target
+becomes the sole Session, application is refused and needs a fresh Event request.
+
+## Operational Safety Check (E08-S06)
+
+The Safety Officer's queue (`/safety/queue`, `RoleQueues.tsx`) lists Events in
+Safety Review oldest entry first; each title opens `/safety/review/:eventId`
+(`SafetyReview.tsx`, from the Decision template). The page shows one card per
+Session with its venues, equipment and accessibility needs, from
+`?safetyReview=1`, plus a card for anything not tied to a Session. The seven
+factors start unanswered (a `select` with "Choose…" and a comment each); the
+page refuses a decision until every factor has both, and checks the
+approve / request-changes rules before the `ConfirmPanel`, which asks for the
+reason on request changes and reject. The checklist is locked while that
+panel is open, so the answers sent are the ones checked. The server repeats
+every check.
+
+`SafetyReturnAlert` shows "Safety arrangement rejected" (or "changes
+requested") with the reason on the Coordinator's readiness page and the
+Organiser's event page, from the `safetyReturn` both reads carry. The Activity
+log shows each decision once, as its checklist row: where the Event went ("Now
+Confirmed" or "Back in Planning"), then the unsatisfactory factors and reason.

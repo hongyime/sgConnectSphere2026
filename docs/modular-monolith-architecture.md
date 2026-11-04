@@ -114,7 +114,7 @@ flowchart TB
 | Application entry | API Controllers | Receives REST/JSON requests and routes them into the application. |
 | Security | Identity and Access Control | Authenticates users and retrieves all granted role memberships and organisation context. |
 | Security | Role and Action Router | Allows an account to use actions permitted by any granted role; the API checks each request independently. Seed accounts start with one role (ADR-019). |
-| Business module | Event Lifecycle | Manages event drafts, child Sessions, submission, review, clarification, approval, planning, automatic Safety Review, confirmation, cancellation, completion and Obsolete change-request closure. Session authoring is owned by the Organiser of the draft (`eventSessions`). |
+| Business module | Event Lifecycle | Manages event drafts, child Sessions, submission, review, clarification, approval, planning, automatic Safety Review, confirmation, cancellation, completion and Obsolete change-request closure. Session authoring is owned by the Organiser of the Event (`eventSessions`): add in draft, edit and remove in draft or planning. Each Session keeps its own date, attendance, layout and accessibility/facility needs, which Venue Booking's search, suitability and booking request read by `session_id`; removing a Session releases its bookings and reservations and records the deletion on the Event; a released primary venue is cleared and the Coordinator is prompted to choose another (T-94). In planning, a Session's date, attendance, layout or needs edit runs through Change Management's arrangement-impact check and Event Notifications' shared `notifyArrangementImpact`; a Session date or time change also sends the Session date notice, as an approved Session change request does. |
 | Business module | Venue and Booking | Maintains venue information, Session-linked booking requests, open-ended editable venue blocks and history, suitability checks, per-hold expiry/warnings/extensions and booking conflicts. |
 | Business module | Equipment and Support | Maintains equipment, checks Session-level availability, creates Session-linked reservations, identifies shortfalls and assigns Event-level technical support. |
 | Business module | Attendee Registration | Publishes confirmed Events and Sessions; manages one Event-level registration with selected Sessions, Session/combined capacity, Pending Organiser review, Event-level waitlists, withdrawal and attendance. |
@@ -135,7 +135,7 @@ flowchart TB
 | Technical Support Staff | Identity and Access Control, Equipment and Support, Event Lifecycle, Notification Dispatcher |
 | Attendee | Identity and Access Control, Attendee Registration, Event Lifecycle, Notification Dispatcher |
 | Event Coordinator Lead | Identity and Access Control, Event Lifecycle (unassigned queue, assignment, reassignment, oversight), Notification Dispatcher |
-| Safety Officer | Identity and Access Control, Event Lifecycle (Operational Safety Check), Venue and Booking and Equipment and Support (read-only, for the factors), Notification Dispatcher |
+| Safety Officer | Identity and Access Control, Event Lifecycle (Operational Safety Check and Safety Review queue), Venue and Booking and Equipment and Support (read-only, for the factors), Notification Dispatcher |
 
 An account can appear in multiple role rows because role membership is many-to-many.
 The matrix defines the role's allowed modules; it does not require a dedicated
@@ -207,3 +207,14 @@ audit for exact local/production/human delivery boundaries.
 ### E10-S01 Safety Review interruption
 
 E10-S01 applies affected approved changes during Safety Review through the shared arrangement transaction, then uses the central lifecycle writer to return to Planning. The explicit change-request replan audit also qualifies a first Safety Review for automatic re-entry after readiness clears; ordinary never-reviewed Planning Events keep their existing submission path.
+
+
+## E10-S01 Session change requests
+
+changeManagement/sessionChanges.ts composes eventSessions parsing/transactional
+storage with shared arrangement impact, capacity and notification services.
+changeManagement/requests.ts owns Organiser/Coordinator authorization, target
+scope, changed-field snapshots, request transitions and the surrounding
+transaction. It does not call the Organiser's Planning-only Session route to
+apply a Coordinator decision or open direct edits in additional lifecycle states.
+The existing Event-wide request path remains unchanged.

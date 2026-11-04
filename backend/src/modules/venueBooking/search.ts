@@ -32,19 +32,35 @@ export async function venueSearch(query: Query, user: AuthenticatedUser | undefi
     if (!result.rows[0]) throw new AccessError(404, 'Event not found.');
     defaults = result.rows[0];
     // E04-S02 Scenario 3: a named Session's own criteria override the Event's.
+    // A sole Session with no needs of its own still follows the Event's needs,
+    // which is where the request form records them.
     const sessionId = params.get('session_id');
     if (sessionId) {
-      const session = await query(`SELECT lower(s.session_range) AS start, upper(s.session_range) AS end,
+      const session = await query(`SELECT s.id AS session_id, s.title AS session_title,
+        lower(s.session_range) AS start, upper(s.session_range) AS end,
         s.expected_attendance AS attendance, s.layout_id AS layout,
-        ARRAY(SELECT feature_id FROM session_accessibility_needs WHERE session_id=s.id) AS accessibility,
-        ARRAY(SELECT facility_id FROM session_facility_needs WHERE session_id=s.id) AS facilities
+        CASE WHEN EXISTS(SELECT 1 FROM session_accessibility_needs WHERE session_id=s.id)
+            OR (SELECT count(*) FROM sessions o WHERE o.event_id=s.event_id) > 1
+          THEN ARRAY(SELECT feature_id FROM session_accessibility_needs WHERE session_id=s.id)
+          ELSE ARRAY(SELECT feature_id FROM event_accessibility_needs WHERE event_id=s.event_id) END AS accessibility,
+        CASE WHEN EXISTS(SELECT 1 FROM session_facility_needs WHERE session_id=s.id)
+            OR (SELECT count(*) FROM sessions o WHERE o.event_id=s.event_id) > 1
+          THEN ARRAY(SELECT facility_id FROM session_facility_needs WHERE session_id=s.id)
+          ELSE ARRAY(SELECT facility_id FROM event_facility_needs WHERE event_id=s.event_id) END AS facilities
         FROM sessions s WHERE s.id::text=$1 AND s.event_id=$2`, [sessionId, (defaults as { id: string }).id]);
       if (!session.rows[0]) throw new AccessError(404, 'Session not found.');
       defaults = { ...defaults, ...session.rows[0] };
     }
   }
   const options = { layouts, accessibility, facilities };
-  if (params.get('search') !== '1') return { defaults, options };
+  if (params.get('search') !== '1') {
+    if (!eventId) return { defaults, options };
+    // The Session picker: an Event with several Sessions is searched one Session at a time.
+    const sessions = (await query(`SELECT id, title, lower(session_range) AS start, upper(session_range) AS end,
+      expected_attendance AS attendance FROM sessions WHERE event_id=$1 ORDER BY lower(session_range), id`,
+    [(defaults as { id: string }).id])).rows;
+    return { defaults, options, sessions };
+  }
   const errors: Record<string, string[]> = {};
   const date = (key: string) => {
     const value = params.get(key) ?? defaults[key];

@@ -32,13 +32,13 @@ export type EventAudience = {
 };
 export type EventChange =
   | { kind: 'status'; from: EventStatus; to: EventStatus }
-  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[]; venueName?: string }
+  | { kind: 'arrangements'; fields: readonly ('date' | 'time' | 'venue')[]; venueName?: string; session?: boolean }
   | { kind: 'booking_requested' }
   | { kind: 'booking_withdrawn' }
   | { kind: 'lost_venue_cancelled' }
   | { kind: 'booking_decided'; decision: 'confirmed' | 'rejected' | 'released' }
   | { kind: 'equipment_changed'; venueAffected: boolean; technicalAffected: boolean }
-  | { kind: 'reconfirmation_required'; venueAffected: boolean; technicalAffected: boolean; reasons: readonly ('time' | 'capacity' | 'layout' | 'accessibility')[] }
+  | { kind: 'reconfirmation_required'; venueAffected: boolean; technicalAffected: boolean; reasons: readonly ('time' | 'capacity' | 'layout' | 'accessibility' | 'facilities')[] }
   | { kind: 'place_released' }
   | { kind: 'description_only' };
 
@@ -145,7 +145,7 @@ export function describeEventChange(change: EventChange): string {
   switch (change.kind) {
     case 'status': return change.from==='confirmed' && change.to==='planning' ? 'Previously confirmed arrangements are being revised.' : `Event status changed to ${change.to.replaceAll('_',' ')}.`;
     case 'arrangements': {
-      const summary = `Event ${[...new Set(change.fields)].join(', ')} changed.`;
+      const summary = `${change.session ? 'Session' : 'Event'} ${[...new Set(change.fields)].join(', ')} changed.`;
       return change.fields.includes('venue') && change.venueName?.trim()
         ? `${summary} New venue: ${change.venueName.trim()}.` : summary;
     }
@@ -154,7 +154,7 @@ export function describeEventChange(change: EventChange): string {
     case 'booking_withdrawn': return 'The Coordinator withdrew a Pending venue booking request. There is no longer a request to decide.';
     case 'booking_decided': return `The venue booking was ${change.decision}.`;
     case 'equipment_changed': return 'Equipment arrangements or availability changed; review the affected work.';
-    case 'reconfirmation_required': return `An event change (${[...new Set(change.reasons)].map(reason => ({ time: 'date or time', capacity: 'attendance above capacity', layout: 'room layout', accessibility: 'accessibility requirements' }[reason])).join(', ')}) means venue bookings, equipment reservations or Technical Support requests need reconfirmation. Review the flagged arrangements.`;
+    case 'reconfirmation_required': return `An event change (${[...new Set(change.reasons)].map(reason => ({ time: 'date or time', capacity: 'attendance above capacity', layout: 'room layout', accessibility: 'accessibility requirements', facilities: 'required facilities' }[reason])).join(', ')}) means venue bookings, equipment reservations or Technical Support requests need reconfirmation. Review the flagged arrangements.`;
     case 'place_released': return 'A place is available. Apply on a first-come basis; no place has been reserved for you.';
     case 'description_only': return '';
   }

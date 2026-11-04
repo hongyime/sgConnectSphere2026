@@ -63,6 +63,8 @@ export async function venueSuitability(query: Query, user: AuthenticatedUser | u
   if (!hours) throw new AccessError(404, 'Active venue not found.');
   return {
     event: { id: search.defaults.id, title: search.defaults.title, status: search.defaults.status, start: search.criteria!.start, end: search.criteria!.end, accessibility_note: search.defaults.accessibility_note },
+    // E04-S02: the Session this assessment and any booking request are for.
+    session: search.defaults.session_id ? { id: search.defaults.session_id, title: search.defaults.session_title ?? null } : null,
     assessment: assessEventVenue({ ...venue, ...hours }, search.criteria!, search.options),
   };
 }

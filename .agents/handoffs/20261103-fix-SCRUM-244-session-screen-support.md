@@ -1,0 +1,105 @@
+# SCRUM-244 E10-S02 follow-up — count and notify Technical Support on the Session screen
+
+Close the T-104 gap on the Organiser's Session screen (E04-S02, #408): a
+Planning Session edit runs E10-S02's arrangement check and flags staffed
+Technical Support requests, but the confirm message counted only bookings and
+reservations (Scenario 3), and `updateSessionInPlanning` notified technicians
+only when equipment was flagged (Scenario 6). Story SCRUM-71, subtask
+SCRUM-244, owner Le Xin. Found reviewing E04-S02's PRs against E10-S02 on
+2 November; #414 (merged) added the shared `notifyArrangementImpact` but left
+the Session save as it was.
+
+## Plan
+
+1. Branch from `main` a954231b, this handoff. Done.
+2. Frontend: the Session screen's confirm message counts Technical Support
+   requests. Done: `SessionEditor.tsx`, Vitest case (support only, now
+   `TC_E10S02_14`), break-tested.
+3. Backend: `updateSessionInPlanning` uses `notifyArrangementImpact`; DB test
+   (Session move flags only support, its technician is told). Done: Ji Ning
+   was busy, so Le Xin took it (3 November). DB case
+   `TC_E10S02_15 TC_E10S02_10` in `eventSessionsRoutes.integration.test.ts`;
+   with `main`'s notice code the technician got 0 notices (bug confirmed);
+   frontend guide, venue-bookings contract and architecture doc updated.
+4. Test cases: new TC_E10S02_14 (Scenario 3, Session screen counts support)
+   and TC_E10S02_15 (Scenario 6, only the flagged request's technician is
+   told), not extra blocks in _03/_06: the export reads one block per case
+   (the leftover-block trouble in _01/_05). The Vitest and DB tests carry the
+   new IDs; workbook CAA 031126 + undated copy; tc-coverage 385. Done.
+5. Checks, break tests, real local run, run records. Real run done: guide
+   section K + EVT-1029 Design Week in the preconditions SQL (75980fe8);
+   automated real-stack run 11/11 checks, record `20261103-002400`
+   (4bb6cf3d). Le Xin's manual run of section K next (T-93; T-106 never
+   merged). Local API needs `APP_URL=http://localhost:5173` or sign-in is
+   refused (csrf).
+6. PR (reviewers Amareet, Ji Ning) and Jira comment on SCRUM-244.
+
+## Decisions
+
+- Message keeps the screen's "booking(s)" style: "flags N booking(s),
+  N reservation(s) and N Technical Support request(s)". A reply without
+  `supports` counts 0.
+
+## Commands
+
+- Task 2: Session screen Vitest 12/12; full frontend 798/798; typecheck OK;
+  with the change removed the new case fails. tc-coverage unchanged
+  (`TC_E10S02_03` already active).
+- Task 3: backend typecheck OK; unit 692/1 skip; DB on native 5432
+  `connectsphere_notification_test`: Session routes 6/6, with the related
+  E10-S02, E10-S01, E11 and Safety Review suites 81/81; tc-coverage
+  regenerated; doc_guard 0 errors.
+
+## Answered
+
+Ji Ning (E10-S01 owner, 3 November): Organisers still edit Sessions directly
+in Planning within the existing permissions; E10-S01's change request is the
+path when a direct edit is refused (Scenario 3), not a replacement. The fix
+stays. No PO question: no AC, scope or product rule changes.
+
+## Amareet's review (3 November)
+
+Comment, not approval, at a67a7b42: 4 small fixes, older Session-screen gaps
+A (stale save stuck, wrong message), B (no over-subscription warning,
+Scenario 4), C (counts, not names, Scenario 3/T-104), and the Session date
+notice (E11-S01 Scenario 2). Nothing waits on Bryan. Split agreed (reply on
+#416): Le Xin does the 4 fixes, the date notice, A's API message and the test
+cases in this PR; Amareet does B, C and A's screen half in a follow-up PR on
+`SessionEditor.tsx` (reusing `ArrangementReview` + `changedCheck`). Le Xin then
+re-runs section K + TC_E10S02_16 by hand before Bryan's acceptance.
+
+- Fixes 1 to 4 done (e37c3663 and the PR description).
+- Date notice: `updateSessionInPlanning` sends `arrangements` (`date`, `time`,
+  `session: true`) when the Session's start or end changed, same change ID as
+  the reconfirmation notice, so nobody gets both; the actor is skipped.
+- A's API half: the Session PATCH 409 carries the Event edit's sentence
+  (`ARRANGEMENTS_CHANGED` in `api/events.ts`), route test added.
+- Break tests: no date notice -> TC_15 DB case fails; no message -> route
+  test fails.
+- Test cases: TC_E10S02_14 now expects the named list (Amareet's screen
+  change; the Vitest case tagged TC_14 still checks the count sentence until
+  that PR replaces it), TC_E10S02_15 expects tech_b's Session date notice,
+  new TC_E10S02_16 (Scenario 4 on the Session screen: Boardroom 20 places,
+  30 registered). DB case for TC_16 in `eventSessionsRoutes.integration.test.ts`
+  (fails when the Session save returns no over-subscription); its screen test
+  comes with Amareet's PR. Workbook CAA 031126 re-exported, tc-coverage 386.
+
+## Amareet's second review (3 November, at 8d1bcc1a)
+
+Code right, 4 fixes in; approval held only for the merge conflict. Done:
+`main` merged (#415, #412) in 19e6a297, `venue-bookings.md` and the
+architecture row keep both sides, tc-coverage regenerated; Follow-ups no longer
+say SCRUM-244 goes to Done (it already is) and the manual re-run is tracked on
+SCRUM-71 (In Progress, all four subtasks Done). Optional item 3 done:
+TC_E10S02_15 also checks the unmoved booking's Venue Staff and a registered
+Attendee. Optional item 4 (no check keeps a Session inside the Event's dates,
+so attendees could be told of a Session outside the published dates) predates
+this PR; Ji Ning's change-request path checks it, the direct Session save does
+not: left for a follow-up on the E04-S02 Session save. Amareet starts the
+Session-screen PR after #419.
+
+## Next step
+
+Push, ask Amareet to approve (the push cancels earlier approvals). Then
+Amareet's Session-screen PR, Le Xin's manual re-run of section K +
+TC_E10S02_16 (tracked on SCRUM-71), then Bryan's acceptance.

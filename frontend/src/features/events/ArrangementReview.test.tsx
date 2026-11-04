@@ -59,6 +59,7 @@ test('TC_E10S02_03: the preview lists flagged support with the time it moves to,
 
 test.each([
   [{ reasons: ['time', 'layout', 'accessibility'] }, 'date or time changed; room layout changed; accessibility requirements changed'],
+  [{ reasons: ['facilities'] }, 'required facilities changed'],
   [{ reasons: ['capacity'], governingHeadcount: 0, capacity: 0 }, '0 people for 0 places'],
   [{ reasons: ['capacity'], governingHeadcount: null, capacity: 50 }, 'attendance above capacity'],
   [{ reasons: ['capacity'], governingHeadcount: 40 }, 'attendance above capacity'],
