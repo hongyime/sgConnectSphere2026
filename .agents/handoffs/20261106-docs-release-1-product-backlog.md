@@ -13,19 +13,28 @@ Audit and reconcile the Release 1 Product Backlog against the original customer 
   existing stories lacked the Release 1 fix version. The audit adds E06-S07 as
   a new source-required follow-up without reopening historical E06-S05.
 
-## Current work
+## Completed work
 
 - Added a source-located requirements register, course backlog checklist and
   requirement-to-story-to-test traceability matrix.
 - Corrected the current E03 Lead criteria and E11 routing wording to the later
   customer clarifications; the implementation remains an issue for its owners.
-- Jira writes are pending a dry-run plan and live transition inspection. Never
-  invent an unsupported estimate, sprint commitment, assignee or acceptance.
+- Ran and applied a 21-operation Jira plan: fixed the 17 missing Release 1
+  versions; made E02-S05 and E03-S08/S09/S10 Stories; added their required
+  parents/descriptions; set E02-S05 to its source-recorded 3 points; created
+  E06-S07 as `SCRUM-260`; and moved E04-S02, E08-S04 and E10-S02 to In Review.
+  A subsequent one-field Jira update synchronized the corrected E06-S07 user
+  story wording.
+- The final Jira export has 259 issues and 53 fields. It has 65 Release 1
+  Stories, no missing canonical mapping or Release 1 marker, and no Release 1
+  Bugs. Seven point estimates and six Sprint assignments remain `[CONFIRM]`.
+- Generated and visually checked the 48-page external PDF plus the full final
+  Jira CSV, retained the pre-change CSV backup, and exported the current
+  backlog workbook to the external submission folder. The unresolved-items
+  checklist is `_CONFIRM-product-backlog.md` there.
 
-## Next steps
+## Remaining steps
 
-- Open the early PR after the initial documentation commit.
-- Apply the justified Jira fix-version, parent, type, title/description and
-  status corrections; retain unsupported planning gaps as `[CONFIRM]`.
-- Export final Jira CSV, generate/validate the PDF, update this handoff and push
-  the same PR.
+- Commit the final audit/format correction, run repository checks, push the
+  same early PR #442, update its body and inspect its live checks. Do not alter
+  the unrelated open audit PR #436 or the user checkout's uncommitted files.

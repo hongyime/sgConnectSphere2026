@@ -365,7 +365,7 @@ Given one event has claims on two different venues over the same period When bot
 
 ### User story
 
-As Venue Staff, I want to set and update each tentative hold's expiry and its
+As a Venue Staff member, I want to set and update each tentative hold's expiry and its
 Coordinator warning so that a venue is reserved only for a staff-configured
 period and the Coordinator can act before or when it expires.
 
