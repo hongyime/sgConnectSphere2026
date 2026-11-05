@@ -23,13 +23,13 @@ Audit Release 1 against the original customer sources, course methods, live Jira
 - Prepared the external submission folder with the seven required folders,
   regenerated workbook exports, a corrected 17-slide deck copy, confirmation
   checklist, manifest and ZIP archive.
+- Committed the audit as `72e84b27 chore(release): audit Release 1 evidence`,
+  pushed `docs/release-1-audit-submission`, and opened PR #436.
 
 ## Next steps
 
-- Re-run `python scripts/check.py` after staging its own evidence record, then
-  commit and open one PR.
-- Wait for PR CI and the required human review before describing the branch as
-  merged or deployed.
+- Wait for PR #436 CI and the required human review before describing the
+  branch as merged or deployed.
 
 ## Decisions for review
 
