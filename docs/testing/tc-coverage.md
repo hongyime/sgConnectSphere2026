@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **386**
-- Automated (explicit TC_ID in an active test title): **325** (84.2%)
-  - Real-database (`.integration.test` / `.db.test`): **42**
+- Automated (explicit TC_ID in an active test title): **326** (84.5%)
+  - Real-database (`.integration.test` / `.db.test`): **43**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **282**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **47** (12.2%)
 - No test yet (no test file mentions the TC_ID): **13** (3.4%)
 
 ## Coverage by epic
@@ -28,10 +28,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 36 | 32 | 0 | 4 |
-| E11 | 15 | 13 | 2 | 0 |
+| E11 | 15 | 14 | 1 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **386** | **325** | **48** | **13** |
+| **Total** | **386** | **326** | **47** | **13** |
 
 ## Case-by-case status
 
@@ -335,7 +335,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S04_02` | E08-S04 | Verify that reverting a Confirmed event with registered Attendees should notify  | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
 | `TC_E08S04_03` | E08-S04 | A non-venue arrangement failure should be flagged without automatically revertin | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_03: a Technical Support equipment failure on a Confirmed event is flagged and the event stays Confirmed; tests/e2e/e |
 | `TC_E08S04_04` | E08-S04 | Verify that a reversion from Confirmed to Planning should be recorded in the act | ✅ active | backend/tests/eventReadinessRoutes.integration.test.ts: TC_E08S03_08, TC_E08S03_09, TC_E08S04_01, TC_E08S04_02 and TC_E08S04_04: the readiness, submission, confirm and revert route |
-| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; tests/e2e |
+| `TC_E08S04_05` | E08-S04 | A reverted Event should enter Safety Review automatically after all arrangements | ✅ active | backend/tests/autoSafetyReview.integration.test.ts: TC_E08S04_05: reconfirming the last booking of a reverted event puts it in Safety Review and tells the Safety Officer; backend/t |
 | `TC_E08S04_06` | E08-S04 | A venue block affecting a Confirmed Event should return it to Planning and notif | ✅ active | backend/tests/e08s04Arrangements.integration.test.ts: TC_E08S04_06: a venue block over a Confirmed booking returns the event to Planning, tells its Coordinator and does not cancel  |
 | `TC_E08S05_01` | E08-S05 | Verify that a Confirmed event should automatically become Completed once its las | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S05_02` | E08-S05 | Verify that an Event Coordinator should be able to manually mark a Confirmed eve | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; backend/ |
@@ -451,7 +451,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
-| `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
+| `TC_E11S01_08` | E11-S01 | Verify that email provider failure does not affect the business change or the in | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_08: actual booking approval and inbox survive HTTP 400 rejection; backend/tests/notificationInbox.integration.test.ts |
 | `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E11S01_09: email-outbox failure rolls back creation, draft submission, reassignment request and each response; backen |
 | `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\; backend/tests/e11CurrentFlows.integration.test.ts: TC_ |
 | `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
@@ -1339,6 +1339,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - inactive coordinator is rejected
 - coordinator can load search options
 - invalid input identifies fields before venue query
+
+### `backend/tests/venueStaffRosterProvisioning.test.ts`
+
+- provisionVenueStaffRoster precheck validates is_active boolean on venues
+- provisionVenueStaffRoster precheck validates is_active boolean on users
+- provisionVenueStaffRoster precheck handles case-insensitive emails
+- provisionVenueStaffRoster runs insert with ON CONFLICT and handles idempotency
+- provisionVenueStaffRoster rolls back transaction on failure
+- provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue
+- provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns broad fallback on unassigned venue
+- provisionVenueStaffRoster in verify-only mode is strictly read-only and never writes, even when no unassigned venue exists
 
 ### `backend/tests/venueSuitability.test.ts`
 

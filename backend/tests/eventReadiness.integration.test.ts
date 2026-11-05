@@ -247,7 +247,7 @@ test('TC_E08S03_09: a Confirmed booking with a buffer conflict or flagged after 
     const snapshot = await blocked(f, id);
     assert.deepEqual(snapshot.blockers.map(row => row.message).sort(), [
       `${buffered.venueName} — Conflicting (setup or turnaround overlap)`,
-      `${flagged.venueName} — needs review: its capacity is now below the expected attendance`,
+      `${flagged.venueName} — needs reconfirmation by Venue Staff`,
     ].sort(), 'both are Confirmed, so there is no separate "no Confirmed venue" item');
   });
 });

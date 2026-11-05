@@ -103,17 +103,18 @@ does:
 
 **Delivered for E08-S04 Scenario 4 (SCRUM-242 backend, SCRUM-243 frontend, 31 October).**
 The rows above are the Week 7 plan; this is what exists. There is no
-`safety_checks` table yet (E08-S06), so a safety approval is the status change to
-`confirmed` in the Activity log, and the revert clears nothing: the earlier
-approval stays in history and only a Safety Officer can confirm again
-(`applyEventStatusChange`). A first-time Planning event keeps E08-S03's manual
-`POST /api/events?safetyReview=1`.
+`safety_checks` table: since E08-S06 (#412) each decision is one `safety_check`
+audit row beside its status change, so the revert clears nothing. The earlier
+decision stays in history, a new review starts with every factor unanswered,
+and only a Safety Officer can confirm again (`applyEventStatusChange`); proved
+with the real `?safetyDecision=1` approval by TC_E08S04_05 (SCRUM-250). A
+first-time Planning event keeps E08-S03's manual `POST /api/events?safetyReview=1`.
 
 | Method and path | Role | Change | Story | Cases |
 | --- | --- | --- | --- | --- |
 | `GET /api/venues?bookings=reconfirm` | Venue Staff | Confirmed bookings flagged `requires_reconfirmation` on events not Completed or Cancelled, soonest first, up to 200. Each row is the booking shape of `?bookings=pending` plus `requiresReconfirmation` and `reconfirmFor { startsAt, endsAt }`, the Session's current time (the Event's without a Session). Other roles: 403 with an Access Denied audit row. | E08-S04 | TC_E08S04_05 |
 | `POST /api/venues` `{ action: 'reconfirm', booking_id }` | Venue Staff | Moves the booking to `reconfirmFor`, which must be clear of other bookings and blocks with setup and turnaround time (409 naming the clash, or the 0016 guard's 409 on a race), clears the flag, writes one `Booking Reconfirmed` audit row and notifies the Coordinator, in one transaction under the event, venue and booking locks. Returns `{ booking, coordinatorNotified, enteredSafetyReview }`. 400 without a booking id, 404 unknown, 409 when not Confirmed, not flagged, or the event is Completed or Cancelled. | E08-S04 | TC_E08S04_05 |
-| Automatic Safety Review (`enterSafetyReviewIfReady`) | System | Runs in the transaction of a booking approval or reconfirmation, an equipment reservation or re-reservation, a Technical Support staff assignment, and `cancel_lost_booking`. An event in Planning whose status history shows it was Confirmed and whose readiness has no blockers moves to `safety_review` (`Entered Safety Review after reconfirmation`); the Organiser, the Coordinator and every active Safety Officer are notified under that change. Those six responses gain `enteredSafetyReview: boolean`. A rejection or a release never moves an event. | E08-S04 | TC_E08S04_05, TC_E08S04_06 |
+| Automatic Safety Review (`enterSafetyReviewIfReady`) | System | Runs in the transaction of a booking approval or reconfirmation, an equipment reservation or re-reservation, a Technical Support staff assignment or reconfirmation (T-104), and `cancel_lost_booking`. An event in Planning whose status history shows it was Confirmed and whose readiness has no blockers moves to `safety_review` (`Entered Safety Review after reconfirmation`); the Organiser, the Coordinator and every active Safety Officer are notified under that change. Those seven responses gain `enteredSafetyReview: boolean`. A rejection or a release never moves an event, and neither does an Event whose latest status change was a Safety Officer's request for changes or rejection: its Coordinator resubmits (E08-S06, D118). While a Confirmed booking is flagged, readiness lists it as "<venue> — needs reconfirmation by Venue Staff", whatever flagged it (SCRUM-250). | E08-S04 | TC_E08S04_05, TC_E08S04_06 |
 
 ### Status vocabulary exposed to clients
 

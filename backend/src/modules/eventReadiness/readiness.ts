@@ -4,8 +4,9 @@
 // - Venue (Scenario 2, O-28): every booking is Confirmed or withdrawn, and at
 //   least one is Confirmed. Pending and Conflicting block, and so do a live
 //   tentative hold (D61), a buffer conflict (D69) and a Confirmed booking
-//   flagged for reconfirmation after a capacity cut. Rejected, released and
-//   expired bookings, and holds past their expiry, count as withdrawn.
+//   flagged for reconfirmation (a capacity cut, an E10-S02 change or an E08-S06
+//   request for changes; SCRUM-250). Rejected, released and expired bookings,
+//   and holds past their expiry, count as withdrawn.
 // - Equipment (Scenarios 3 and 4): every E07-S02 request line has a full,
 //   unflagged reservation. A partial, missing or released reservation blocks
 //   with the outstanding quantity; a flagged one blocks as "needs review"
@@ -52,7 +53,7 @@ const VENUE_ISSUE_TEXT: Record<VenueBookingIssue, string> = {
   conflicting: 'Conflicting',
   buffer_conflict: 'Conflicting (setup or turnaround overlap)',
   tentative_hold: 'tentative hold; request it or let it go',
-  needs_review: 'needs review: its capacity is now below the expected attendance',
+  needs_review: 'needs reconfirmation by Venue Staff',
 };
 
 function venueIssue(row: ReadinessBookingRow): VenueBookingIssue | 'ready' | 'withdrawn' {
