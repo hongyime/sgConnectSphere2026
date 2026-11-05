@@ -77,6 +77,14 @@ as PO):
   good, a Coordinator can remove a request with no Session even if it has
   reservation history; it can only have released reservations (0014). A
   request with a Session keeps E07-S02's rule.
+- **D138** (Aaron, 5 Nov, after Le Xin's review on #427): the equipment
+  screens name a Session as readiness and the notices do, `Session "Morning"`
+  (or "Session 2" untitled), not the bare title the other Session screens
+  use, so one Session reads the same on every equipment screen and notice.
+  Steps 1 to 6 of the manual run show the new names, so Aaron reran
+  TC_E07S08_01 and _02 (5 Nov, PASS). A shared Session-name helper for all
+  screens is a follow-up (Le Xin's point; it would change other stories'
+  screens).
 
 ## Rules this story applies
 
@@ -103,19 +111,20 @@ Session, numbered by start time as the Session screens are.
 | Readiness names each equipment line's Session on a multi-Session Event; a request with no Session blocks (D135) | "Projector (Session 2) — 1 of 3 reserved; 2 outstanding"; "Projector — needs a Session; choose one on the equipment requests" | D135 unit test |
 | Technical Support staff assignment stays Event-level | Adding, editing or deleting Sessions leaves it unchanged | TC_E07S08_04 |
 
-**On screen (PR 2).** Sessions are named as the other Session screens name
-them: the title, or "Session <n>".
+**On screen (PR 2).** Sessions are named as readiness and the notices name
+them (D138): `Session "<title>"`, or "Session <n>" untitled.
 
 | Screen | What the user sees | Test case |
 |---|---|---|
 | Event equipment page, two or more Sessions | One card per Session, titled with its name, showing its dates ("1 Dec 2026, 1:00 pm – 3:00 pm") and its requests, or "No equipment requested for this Session yet." | TC_E07S08_01 |
-| Request form, two or more Sessions | **Session** (required): "Choose a Session", then "<name>, <dates>"; hint "The equipment is reserved for this Session's dates." The item list leaves out items already requested for the chosen Session | TC_E07S08_01 |
+| Request form, two or more Sessions | **Session** (required): "Choose a Session", then each Session's name; hint "<chosen Session's dates>. The equipment is reserved for this Session's dates." (the dates left the option, which clipped on a phone, D138) The item list leaves out items already requested for the chosen Session, and choosing such a Session clears that item | TC_E07S08_01 |
+| Request form, one Session | No **Session** field; a `sessionId` refusal from the API shows in the form's error alert | D122 |
 | Request form, a refused Session | The API's sentence under **Session**, e.g. "Choose a Session of this event." | TC_E07S08_03 |
-| A request whose Session was deleted | Card **Requests with no Session**: "Their Session was deleted. Choose a Session for each request before it can be reserved."; pill **No Session: choose one**; **Edit** and **Remove** | D132, D137 |
+| A request whose Session was deleted (or isn't one of the Event's) | Card **Requests with no Session**: "Their Session was deleted. Choose a Session for each request before it can be reserved."; pill **No Session: choose one**; the Coordinator gets **Edit** and **Remove**; Technical Support sees "Waiting for a Session" instead of **Reserve** | D132, D137 |
 | Technical Support's banner | "Reserve each request from the units free for its Session's dates. The Coordinator is notified of each reservation and change." | TC_E07S08_02 |
 | Reserve form | **Session** and **Session dates** instead of **Event dates**; "None are free for this Session's dates." / "Only <n> are free for this Session's dates."; a line with no Session: "Choose a Session for this request before reserving it." | TC_E07S08_02 |
 | Confirmations | "<item> × <n> reserved for <event>, <Session name>, <Session dates>."; a release: "… returned to the available pool for <event>, <Session name>, <dates>." | TC_E07S08_02 |
-| Readiness page | A **Session** column ("Session "Morning"", or "No Session") when the server names Sessions | D135 |
+| Readiness page | A **Session** column (`Session "Morning"`, or "No Session") when the server's `multiSession` is true | D135 |
 | Single-Session Event | As before: no picker, no Session cards, the Event's dates | D122 |
 
 ## Test plan
@@ -169,28 +178,31 @@ crop. Name each one as below.
 ### TC_E07S08_01: a request linked to Session B (here "Afternoon")
 
 1. coord_a: open http://localhost:5173/coordinator/events/EVT-9301/equipment.
-   Card **Morning** (1 Dec 2026, 9:00 am – 11:00 am): E07-S08 Microphone,
-   2, **Reserved**. Card **Afternoon** (1:00 pm – 3:00 pm): "No equipment
-   requested for this Session yet." → `tc01-1-before.png`
-2. **Add equipment request**. **Session**: "Afternoon, 1 Dec 2026, 1:00 pm –
-   3:00 pm"; **Equipment item**: E07-S08 Microphone; **Quantity requested**:
-   2 → `tc01-2-form.png` (before saving)
+   Card **Session "Morning"** (1 Dec 2026, 9:00 am – 11:00 am): E07-S08
+   Microphone, 2, **Reserved**. Card **Session "Afternoon"** (1:00 pm –
+   3:00 pm): "No equipment requested for this Session yet." →
+   `tc01-1-before.png`
+2. **Add equipment request**. **Session**: Session "Afternoon" (the hint
+   under it reads "1 Dec 2026, 1:00 pm – 3:00 pm. The equipment is reserved
+   for this Session's dates."); **Equipment item**: E07-S08 Microphone;
+   **Quantity requested**: 2 → `tc01-2-form.png` (before saving)
 3. **Save equipment request**. Green "Equipment request saved." The
-   **Afternoon** card now lists E07-S08 Microphone, 2, **Not reserved**; the
-   **Morning** card is unchanged → `tc01-3-saved.png`
+   **Session "Afternoon"** card now lists E07-S08 Microphone, 2, **Not
+   reserved**; the **Session "Morning"** card is unchanged →
+   `tc01-3-saved.png`
 
 ### TC_E07S08_02: the reservation uses Session B's time
 
 4. tech_a: open http://localhost:5173/support/events/EVT-9301/equipment.
    "Reserve each request from the units free for its Session's dates. …"
    → `tc02-1-page.png`
-5. In the **Afternoon** card, **Reserve E07-S08 Microphone**. **Session**:
-   Afternoon; **Session dates**: 1 Dec 2026, 1:00 pm – 3:00 pm; **Free for
+5. In the **Session "Afternoon"** card, **Reserve E07-S08 Microphone**.
+   **Session**: Session "Afternoon"; **Session dates**: 1 Dec 2026, 1:00 pm – 3:00 pm; **Free for
    these dates**: 2 (all 2 are reserved in the Morning, which doesn't
    overlap) → `tc02-2-form.png`
 6. **Reserve equipment**. Green **Reserved**: "E07-S08 Microphone × 2
-   reserved for EVT-9301 Two-Session Expo, Afternoon, 1 Dec 2026, 1:00 pm –
-   3:00 pm." Both cards show **Reserved** → `tc02-3-reserved.png`
+   reserved for EVT-9301 Two-Session Expo, Session "Afternoon", 1 Dec 2026,
+   1:00 pm – 3:00 pm." Both cards show **Reserved** → `tc02-3-reserved.png`
 7. **Equipment availability**: Start 01/12/2026 09:00, End 01/12/2026 11:00,
    **Check availability**. E07-S08 Microphone: 0 free → `tc02-4-morning.png`
 8. Start 01/12/2026 13:00, End 01/12/2026 15:00, **Check availability**.
@@ -256,3 +268,12 @@ of this run.)
 | 2026-11-04 23:34–23:35 | `696c9fa` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npx c8 --clean=false tsx --test <test:db files>`; `npx c8 report` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 363/363; 332/332 changed lines and 117/117 changed branches covered | After the #426 review fix. Records `20261104-233410-Bl0oper-backend-unit.md`, `20261104-233424-Bl0oper-backend-db.md` |
 | 2026-11-04 23:39–23:43 | `c6ef27f` | 4, 5 | _01 to _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend), then the changed-line and changed-branch checks against the backend branch | local | typecheck clean; Vitest 847/847 in 76 files; 45/45 changed lines and 113/113 changed branches covered | After the merge of the #426 fix; Remove now offered on a request with no Session (D137). Record `20261104-233907-Bl0oper-frontend-vitest.md` |
 | 2026-11-04 23:43–23:46 | `c6ef27f` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Record `20261104-234311-Bl0oper-frontend-e2e.md`. Aaron's manual run (17:49–18:09) still stands: none of its steps removes a request with no Session |
+| 2026-11-05 ≈15:05 | `2c95f0d8+local` | 5 | _01 to _03 | `npx vitest run --no-file-parallelism src/features/support src/features/coordinator/EventReadiness.test.tsx` (frontend), after Le Xin's #427 fixes, before the tests were updated | local | 107/108, **1 failed** | Expected: TC_E07S08_01 looked for the table "Equipment requested for Morning", now "… for Session "Morning"" (D138). Test updated; 111/111 |
+| 2026-11-05 ≈15:10 | `2c95f0d8+local` | 5 | — | the same support files with each new fix reverted in turn | local | **2 failed**, then **1 failed**, as intended | Without the fixes, "Waiting for a Session" and the single-Session `sessionId` alert tests failed. The item-clearing test still passed (jsdom shows an empty select once the option is filtered out), so it was strengthened to switch back to the first Session; it then failed without the fix ("expected 'eq1' to be ''") and passed with it |
+| 2026-11-05 15:13–15:14 | `1d1c70c` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npm run test:db` (backend); `npm run test:coverage --workspace backend` and the changed-line check against `2c95f0d8` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 363/363; 1/1 changed runtime line covered (`types.ts` is types only) | The readiness snapshot's `multiSession`. Records `20261105-151321-Bl0oper-backend-unit.md`, `20261105-151403-Bl0oper-backend-db.md` |
+| 2026-11-05 15:13–15:17 | `1d1c70c` | 5 | _01 to _03 | `npx vitest run --no-file-parallelism --coverage` (frontend) | local | 850/851, **1 failed** | Not this PR's code: `SessionEditor.test.tsx` "TC_E10S02_14 …" (a focus check, "expected <body> to be <div tabindex="-1">"). Passed 3/3 on its own; intermittent |
+| 2026-11-05 15:18–15:22 | `1d1c70c` | 5 | _01 to _03 | the same, then the changed-line and changed-branch checks against the merge base `0d1609d8` | local | 851/851 in 76 files; 48/48 changed lines, 126/126 changed branches | — |
+| 2026-11-05 15:38–15:40 | `1d1c70c` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Screenshots looked at: on Pixel 7 the closed Session picker cut off the option ("Session "B", 20 Nov 2026, 1:00 pm – :"). `8054ee2` shows the name only and the chosen Session's dates in the hint |
+| 2026-11-05 15:41–15:47 | `8054ee2` | 4, 5 | _01 to _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend) and the changed-line and changed-branch checks; `npx playwright test --reporter=list` | local | typecheck clean; Vitest 851/851 in 76 files; 49/49 changed lines, 128/128 changed branches; Playwright 466 passed, 218 skipped, 0 failed | Pixel 7 screenshot now shows Session "B" and its dates in full. Records `20261105-154146-Bl0oper-frontend-vitest.md`, `20261105-154538-Bl0oper-frontend-e2e.md` |
+| 2026-11-05 ≈15:49 | `8054ee2+local` (story record only) | 5 (dry run, not evidence) | _01, _02 | Claude's headless script of steps 1 to 8 on the local real stack | local, Docker `connectsphere_dev_stack` | every step showed the scripted screen and wording | Database reset and setup SQL re-applied afterwards |
+| 2026-11-05 15:52–16:00 | `8054ee2` | 5 (manual, T-93) | _01, _02 | Aaron's rerun of steps 1 to 8 by hand, 8 screenshots (D138 changed their screens; TC_04's run of 4 Nov stands) | local real stack, Docker `connectsphere_dev_stack` | **PASS** both | Run by: Aaron. Database checked afterwards: each reservation on its own Session's period; three notices, one delivery each, naming Session "Afternoon" and its dates. Record `20261105-155200-Bl0oper-frontend-e2e.md` |

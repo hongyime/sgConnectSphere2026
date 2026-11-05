@@ -47,8 +47,20 @@ Safety Officer's review page does.
   branches; Playwright 466 passed, 218 skipped, 0 failed. Aaron's manual
   run is unaffected: none of its steps removes a request with no Session.
 
+- Le Xin's comment on #427 (5 Nov): `1d1c70c` clears an item already
+  requested for a newly chosen Session, shows "Waiting for a Session" to
+  Technical Support, puts requests with an unknown Session under "Requests
+  with no Session", shows a hidden `sessionId` error in the form alert, and
+  names Sessions `Session "Morning"` as readiness and the notices do (D138);
+  the readiness API returns `multiSession` for its Session column.
+  `8054ee2` moves the picker's dates into the hint (they clipped on a
+  phone). Gates at `8054ee2`: typecheck clean; Vitest 851/851, 49/49 lines,
+  128/128 branches; Playwright 466/218/0; backend at `1d1c70c` unit 726/1,
+  `test:db` 363/363. Aaron reran TC_E07S08_01 and _02 by hand (PASS,
+  `20261105-155200-Bl0oper-frontend-e2e.md`).
+
 ## Not done / next step
 
-- `tc-coverage.md` regenerated last; then the PR (story key, `Closes
-  SCRUM-254`, `Closes SCRUM-255`), only after Aaron's run, and only once #426
-  has merged and `main` is merged in.
+- Le Xin's re-review, a teammate's approval of the head, and Bryan's PO
+  acceptance (D129); then the merge queue. A shared Session-name helper
+  for all screens is a follow-up.
