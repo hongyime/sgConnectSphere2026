@@ -2202,8 +2202,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ## Interpretation for the IS212 rubric
 
-1. Every TC_ID in the workbook is at least scaffolded, so requirement traceability is intact. A reviewer can click into any story and find either an active test or a `test.fixme` placeholder waiting for implementation.
+1. **13** workbook TC_IDs have no matching test title, so strict TC_ID traceability is incomplete. Use the case-by-case table to find them; a scaffold is a placeholder, not execution evidence.
 
-2. Scaffold coverage is high because Release 1 is mid-sprint. As features ship, the corresponding `test.fixme` blocks convert to `test(...)` and this audit's Automated column climbs. No new test case is being invented at implementation time; the traceability was written up front from the workbook.
+2. Automated, scaffold, and no-test counts are a literal TC_ID mapping, not a claim of behavioural completeness or code coverage. A live test without the ID appears separately above and still needs reviewer judgement against the acceptance criterion.
 
-3. The three cases with No test yet are the workbook's cross-cutting rows (performance targets, Definition-of-Done checklists). They do not have a dedicated feature and will not become individual `test()` blocks; their coverage lives inline in the relevant story tests.
+3. Test execution records, human review, and manual end-to-end evidence remain separate Definition of Done evidence; this inventory does not establish any of them.

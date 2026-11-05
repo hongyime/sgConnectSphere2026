@@ -138,7 +138,7 @@ test('TC_E10S02_14: a planning Session edit lists the Technical Support it flags
   fireEvent.click(screen.getByText('Save session'));
 
   expect(await screen.findByText('Technical Support to reconfirm')).toBeTruthy();
-  expect(document.activeElement).toBe(document.querySelector('.event-edit-review'));
+  await waitFor(() => expect(document.activeElement).toBe(document.querySelector('.event-edit-review')));
   expect(screen.getByText('Sound desk')).toBeTruthy();
   expect(screen.getByText(/→/)).toBeTruthy();
   expect(screen.queryByText('Venue bookings to reconfirm')).toBeNull();

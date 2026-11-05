@@ -3,3 +3,8 @@
 // toBeInTheDocument, toHaveAttribute, and toBeDisabled. Runs before each test
 // file per vite.config.ts setupFiles.
 import '@testing-library/jest-dom/vitest';
+import { configure } from '@testing-library/dom';
+
+// Coverage runs keep per-file jsdom isolation, so asynchronous UI assertions need
+// enough time for a queued render on a loaded CI worker.
+configure({ asyncUtilTimeout: 3_000 });
