@@ -9,6 +9,8 @@ import { getRegistrationForm, registerForEvent } from '../src/modules/attendeeRe
 import { updateEventInformationWithNotifications } from '../src/modules/eventNotifications/informationChange';
 import type { Query } from '../src/modules/eventVisibility/service';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
+import { loginDatabase } from './helpers/loginDatabase.js';
+import { eventCapacity } from '../src/modules/attendeeRegistration/capacity';
 
 // E09-S03 on real PostgreSQL: the Organiser sets the Event-level registration
 // period through the real edit service (PATCH /api/events?edit=1), and an
@@ -99,5 +101,65 @@ test('E09-S03: the Organiser sets one Event-level registration period that Atten
   } finally {
     if (pool) await pool.end();
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`); await db.end();
+  }
+});
+
+// TC_E09S03_07 / TC_E09S03_08: both window ends are inclusive. The service reads
+// PostgreSQL's clock_timestamp(), so this test sets "the system clock" in the
+// database: its schema defines its own clock_timestamp() reading a one-row
+// table, and the pool puts that schema ahead of pg_catalog on the search_path.
+test('TC_E09S03_07 TC_E09S03_08: registration succeeds at the exact opening and closing instants and is refused one second outside them', async () => {
+  const f = await loginDatabase();
+  const schema = (await f.pool.query('SELECT current_schema() AS s')).rows[0].s as string;
+  const url = new URL(f.connectionString); url.searchParams.set('options', `-c search_path=${schema},pg_catalog,public`);
+  const clocked = new Pool({ connectionString: url.href, max: 2 });
+  try {
+    await f.pool.query('CREATE TABLE test_clock (at timestamptz NOT NULL)');
+    await f.pool.query(`CREATE FUNCTION ${schema}.clock_timestamp() RETURNS timestamptz LANGUAGE sql STABLE AS 'SELECT at FROM ${schema}.test_clock'`);
+    const [org, organiser, venue, event] = Array.from({ length: 4 }, () => randomUUID());
+    const attendees = Array.from({ length: 4 }, () => randomUUID());
+    await f.pool.query('INSERT INTO client_organisations(id,name) VALUES ($1,$2)', [org, 'Synthetic client']);
+    await f.pool.query(`INSERT INTO users(id,client_org_id,email,password_hash,full_name,role) VALUES ($1,$2,'organiser@example.test','x','Synthetic organiser','event_organiser')`, [organiser, org]);
+    for (const [index, id] of attendees.entries()) {
+      await f.pool.query(`INSERT INTO users(id,email,password_hash,full_name,role,contact_number,email_verified_at)
+        VALUES ($1,$2,'x','Synthetic attendee','attendee','+65 8000 0000',now())`, [id, `attendee${index}@example.test`]);
+    }
+    await f.pool.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,'Grand Auditorium','Level 1',200,'07:00','23:00')", [venue]);
+    await f.pool.query(`INSERT INTO events(id,event_code,organiser_id,client_org_id,title,status,event_range,expected_attendance,registration_enabled,
+        registration_opens_at,registration_closes_at)
+      VALUES ($1,'EVT-2001',$2,$3,'Tech Conference 2026','confirmed','[2030-11-20 09:00+08,2030-11-20 17:00+08)',50,true,
+        '2026-10-01 09:00:00+08','2026-10-20 17:00:00+08')`, [event, organiser, org]);
+    const session = (await f.pool.query('SELECT id FROM sessions WHERE event_id=$1', [event])).rows[0].id as string;
+    await f.pool.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary)
+      SELECT $1,$2,id,session_range,'confirmed',true FROM sessions WHERE id=$3`, [venue, event, session]);
+    await f.pool.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
+      SELECT id,title,lower(event_range),upper(event_range),'Grand Auditorium','Level 1' FROM events WHERE id=$1`, [event]);
+    await f.pool.query('INSERT INTO test_clock(at) VALUES (now())');
+
+    const attendee = (index: number): AuthenticatedUser => ({ id: attendees[index]!, email: `attendee${index}@example.test`, role: 'attendee', isActive: true, failedLoginCount: 0 });
+    const attemptAt = async (instant: string, index: number) => {
+      await f.pool.query('UPDATE test_clock SET at=$1', [instant]);
+      return registerForEvent(clocked, attendee(index), 'EVT-2001', { sessionIds: [session] });
+    };
+    const registered = async () => (await eventCapacity((sql, values) => f.pool.query(sql, values), event)).registered;
+
+    // TC_E09S03_07: one second before opening is refused; exactly at opening a place is reserved.
+    const early = await attemptAt('2026-10-01T08:59:59+08:00', 0);
+    assert.equal(early.status, 409); assert.equal(early.body.registrationState, 'not_yet_open');
+    const atOpening = await attemptAt('2026-10-01T09:00:00+08:00', 0);
+    assert.equal(atOpening.status, 201);
+    assert.equal((atOpening.body.registration as { status: string }).status, 'registered');
+    assert.equal(await registered(), 1);
+
+    // TC_E09S03_08: exactly at closing still succeeds; one second later is refused.
+    const atClosing = await attemptAt('2026-10-20T17:00:00+08:00', 1);
+    assert.equal(atClosing.status, 201);
+    assert.equal((atClosing.body.registration as { status: string }).status, 'registered');
+    const late = await attemptAt('2026-10-20T17:00:01+08:00', 2);
+    assert.deepEqual(late, { status: 409, body: { error: 'Registration for this event has closed.', registrationState: 'closed' } });
+    assert.equal(await registered(), 2);
+  } finally {
+    await clocked.end();
+    await f.close();
   }
 });

@@ -15,6 +15,7 @@ import {
 import { getVenueCalendar } from "../src/modules/venueBooking/calendar.js";
 import { attendeeEvents } from "../src/modules/attendeeVisibility/service.js";
 import type { AuthenticatedUser } from "../src/modules/accessControl/types.js";
+import { getAssignedEvent } from "../src/modules/eventLifecycle/coordinatorAssignment.js";
 async function fixture() {
   const db = await loginDatabase(),
     q = db.pool.query.bind(db.pool),
@@ -326,6 +327,38 @@ test("TC_E10S04_01 TC_E10S04_03 TC_E10S04_04 TC_E10S04_05 TC_E10S04_06 all Sessi
         )
       ).rows[0].n,
       0,
+    );
+  } finally {
+    await f.close();
+  }
+});
+// TC_E06S04_07 (E06-S04 Scenario 5, T-76): a booking released by an E10-S04
+// cancellation is in the assigned Coordinator's Activity log with the actor,
+// the action, the booking, its venue and the time, matching the stored rows.
+test("TC_E06S04_07 a released venue booking is recorded with the actor, action, affected booking and event, and time", async () => {
+  const f = await fixture();
+  try {
+    const coord = f.users[1];
+    const bookings = (await f.q("SELECT id FROM venue_bookings WHERE event_id=$1 ORDER BY id", [f.event])).rows.map((r) => r.id as string);
+    const dbNow = async () => (await f.q("SELECT clock_timestamp() AS t")).rows[0].t as Date;
+    const before = await dbNow();
+    await cancelEvent(f.pool, coord, f.event, { reason: "Venue no longer needed" });
+    const after = await dbNow();
+    const stored = (
+      await f.q(
+        "SELECT entity_id,event_id,actor_id,occurred_at FROM audit_logs WHERE action='Booking Released' AND entity_type='venue_booking' ORDER BY entity_id",
+      )
+    ).rows;
+    assert.deepEqual(stored.map((r) => [r.entity_id, r.event_id, r.actor_id]), bookings.map((id) => [id, f.event, coord.id]));
+    for (const row of stored) assert.ok(row.occurred_at >= before && row.occurred_at <= after, String(row.occurred_at));
+
+    const log = (await getAssignedEvent(f.pool, coord, "EVT-CANCEL")).activityLog as {
+      action: string; booking_id: string | null; actor_name: string; venue_name: string | null; occurred_at: Date; new_value: string;
+    }[];
+    const released = log.filter((entry) => entry.action === "Booking Released").sort((a, b) => String(a.booking_id).localeCompare(String(b.booking_id)));
+    assert.deepEqual(
+      released.map((entry) => [entry.booking_id, entry.actor_name, entry.venue_name, entry.new_value, entry.occurred_at.toISOString()]),
+      stored.map((row) => [row.entity_id, "Cancellation user", "Cancellation hall", "released", row.occurred_at.toISOString()]),
     );
   } finally {
     await f.close();

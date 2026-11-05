@@ -11,6 +11,7 @@ import { loginDatabase } from './helpers/loginDatabase.js';
 import { submitBooking } from '../src/modules/venueBooking/bookingSubmission.js';
 import { withdrawBooking } from '../src/modules/venueBooking/bookingWithdrawal.js';
 import { setPrimaryBooking } from '../src/modules/venueBooking/bookingPrimary.js';
+import { publishEvent } from '../src/modules/attendeeVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
 const decisionUrl = new URL('../src/modules/venueBooking/decisions.ts', import.meta.url);
@@ -155,3 +156,27 @@ for(const winner of ['selection','approval']) {
     } finally {hold.open();await Promise.allSettled([first,second]);await c.close();await f.close();}
   });
 }
+
+// TC_E06S03_14 (E06-S03 Scenario 3c, O-30/T-78): the first Confirmed booking is
+// primary; Pending cannot be; the Coordinator may move primary to another
+// Confirmed booking, and that venue is the one published to Attendees.
+test('TC_E06S03_14 first Confirmed booking is primary, Pending cannot be, another Confirmed one may be chosen and is shown to Attendees',dependency,async()=>{
+  const f=await fixture();
+  try {
+    const primaries=async()=>(await f.pool.query('SELECT id FROM venue_bookings WHERE event_id=$1 AND is_primary',[f.event])).rows.map(row=>row.id);
+    const second=(await submitBooking(f.pool,f.actor,{...f.input,venue_id:f.venues[1]},randomUUID())).body.booking.id as string;
+    await assert.rejects(setPrimaryBooking(f.pool,f.actor,{booking_id:second}),
+      {status:409,message:'Only Confirmed bookings can be the primary venue. Refresh the booking list.'});
+    assert.deepEqual(await primaries(),[]);
+    assert.equal((await decideBooking(f.pool,f.decider,f.id,{decision:'approve'})).status,200);
+    assert.deepEqual(await primaries(),[f.id]);
+    assert.equal((await decideBooking(f.pool,f.decider,second,{decision:'approve'})).status,200);
+    assert.deepEqual(await primaries(),[f.id]);
+    assert.equal((await setPrimaryBooking(f.pool,f.actor,{booking_id:second})).status,200);
+    assert.deepEqual(await primaries(),[second]);
+    await f.pool.query("UPDATE events SET status='confirmed' WHERE id=$1",[f.event]);
+    await publishEvent((sql,values)=>f.pool.query(sql,values),f.actor,f.event);
+    assert.deepEqual((await f.pool.query('SELECT venue_name FROM event_publications WHERE event_id=$1',[f.event])).rows,
+      [{venue_name:`Synthetic ${f.venues[1]}`}]);
+  } finally {await f.close();}
+});

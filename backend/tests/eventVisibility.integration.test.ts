@@ -9,7 +9,7 @@ import type { VercelRequest, VercelResponse } from '../src/vercel';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
-test('E01-S02: organisation isolation, colleagues, search, audit and notification delivery', async () => {
+test('TC_E01S02_01 TC_E01S12_04 E01-S02: organisation isolation, colleagues, search, audit and notification delivery', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await db.connect();

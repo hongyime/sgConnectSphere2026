@@ -87,6 +87,19 @@ for (const role of ['ATTENDEE', 'EVENT_COORDINATOR', 'EVENT_ORGANISER', 'VENUE_S
   });
 }
 
+test('TC_E01S08_06: a password that fails the stated policy blocks the account and names each requirement it fails', async () => {
+  const { rows, repository } = fixture();
+  const result = await registerAccount({ ...valid, full_name: 'Jordan Tan', email: 'newattendee4@example.com', password: '1234' }, repository); // pragma: allowlist secret - synthetic weak password
+  assert.equal(result.status, 400);
+  assert.equal(rows.length, 0);
+  assert.deepEqual(Object.keys(result.body.errors ?? {}), ['password']);
+  assert.deepEqual(result.body.errors?.password, [
+    'Password must be at least 12 characters.',
+    'Password must include at least one uppercase letter.',
+    'Password must include at least one special character.',
+  ]);
+});
+
 test('rejects invalid email and reports all password corrections', async () => {
   const { rows, repository } = fixture();
   const result = await registerAccount({ ...valid, email: 'invalid', password: 'abc' }, repository);

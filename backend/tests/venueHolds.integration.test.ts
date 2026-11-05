@@ -327,3 +327,26 @@ test('a request that waits on a lock past the expiry is refused; a passed hold c
     await f.close();
   }
 });
+
+// TC_E06S05_08 (E06-S05 Scenario 4): releasing a hold returns its period to Free.
+test('TC_E06S05_08 releasing a tentative hold returns its period to Free on the calendar', async () => {
+  const f = await fixture();
+  try {
+    await f.event('EVT-RL', 'Alumni Dinner', f.ids.coordA, '[2027-03-12 10:00+08,2027-03-12 12:00+08)');
+    const placed = await placeHold(f.pool, f.coordA, { event_id: 'EVT-RL', venue_id: f.ids.hall });
+    assert.equal(placed.status, 201);
+    const day = async () => (await getVenueCalendar(f.q, f.coordA, f.ids.hall, '2027-03-12', '2027-03-12')).entries
+      .map(entry => [entry.state, entry.start, entry.end]);
+    assert.deepEqual((await day()).filter(([state]) => state !== 'free'),
+      [['tentative', '2027-03-12T02:00:00.000Z', '2027-03-12T04:00:00.000Z']]);
+    assert.equal(await f.available('2027-03-12'), false);
+
+    assert.deepEqual(await releaseHold(f.pool, f.coordA, { booking_id: holdId(placed) }), { status: 200, body: { released: true } });
+    assert.deepEqual(await f.row(holdId(placed)), { status: 'released', expires_at: null });
+    // Opening hours 08:00-22:00 Singapore time are one Free period again.
+    assert.deepEqual(await day(), [['free', '2027-03-12T00:00:00.000Z', '2027-03-12T14:00:00.000Z']]);
+    assert.equal(await f.available('2027-03-12'), true);
+  } finally {
+    await f.close();
+  }
+});

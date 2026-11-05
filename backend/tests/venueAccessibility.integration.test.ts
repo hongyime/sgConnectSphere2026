@@ -12,6 +12,7 @@ import { readFile } from 'node:fs/promises';
 import { Client, Pool } from 'pg';
 import { createVenue, searchVenues } from '../src/modules/venueBooking/catalogue';
 import { listAccessibilityFeatures, matchVenuesByAccessibility } from '../src/modules/venueBooking/matchAccessibility';
+import { venueSearch } from '../src/modules/venueBooking/search';
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
@@ -24,7 +25,7 @@ function expectVenue(result: { status: number; body: unknown }): VenueBody {
   return body.venue as VenueBody;
 }
 
-test('E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement', async () => {
+test('TC_E02S03_03 E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
   await db.connect();
@@ -91,6 +92,21 @@ test('E02-S03 Scenario 3: venue search excludes venues missing a recorded predef
     // A search with no accessibility ids requested is unaffected - both venues match.
     const unfiltered = await searchVenues(query, coordinatorUser, '');
     assert.deepEqual(unfiltered.map(venue => venue.id).sort(), [venueX.id, venueY.id].sort());
+
+    // TC_E02S03_03 steps 1-2: the requirement is recorded on the event, and the
+    // Coordinator's search for that event reads it from there. Venue X is
+    // marked unsuitable for the missing feature; Venue Y is a normal match.
+    const eventId = randomUUID();
+    await db.query(`INSERT INTO events (id, event_code, organiser_id, client_org_id, title, status, event_range, expected_attendance)
+      VALUES ($1, 'EVT-ACCESS', $2, $3, 'Accessible Summit', 'approved', '[2027-03-01 10:00+08,2027-03-01 12:00+08)', 50)`, [eventId, organiserId, org]);
+    await db.query('INSERT INTO event_accessibility_needs (event_id, feature_id) VALUES ($1, $2)', [eventId, wheelchairAccessId]);
+    const forEvent = await venueSearch(query, coordinatorUser, new URLSearchParams({ event_id: 'EVT-ACCESS', search: '1' }));
+    assert.deepEqual(forEvent.criteria?.accessibility, [wheelchairAccessId]);
+    const byId = new Map(forEvent.venues!.map(venue => [venue.id, venue]));
+    assert.equal(byId.get(venueX.id)?.suitable, false);
+    assert.deepEqual(byId.get(venueX.id)?.mismatches, ['Missing accessibility feature: Wheelchair Access']);
+    assert.equal(byId.get(venueY.id)?.suitable, true);
+    assert.deepEqual(byId.get(venueY.id)?.mismatches, []);
   } finally {
     if (pool) await pool.end();
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);

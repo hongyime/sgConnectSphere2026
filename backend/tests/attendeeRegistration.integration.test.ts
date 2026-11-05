@@ -10,6 +10,7 @@ import { getRegistrationForm, joinWaitingList, listOpenEvents, registerForEvent,
 import type { Query } from '../src/modules/eventVisibility/service';
 import type { VercelRequest, VercelResponse } from '../src/vercel';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
+import { loginDatabase } from './helpers/loginDatabase.js';
 
 // E09-S01 on real PostgreSQL: every migration up to 0024, an isolated schema in
 // the disposable TEST_DATABASE_URL, and the real API handler with a session cookie.
@@ -265,5 +266,51 @@ test('E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessio
     if (pool) await pool.end();
     for (const key of ['DATABASE_URL', 'DATABASE_POOLER_URL', 'APP_URL', 'ADDITIONAL_ALLOWED_ORIGINS']) { if (savedEnv[key] === undefined) delete process.env[key]; else process.env[key] = savedEnv[key]; }
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`); await db.end();
+  }
+});
+
+// TC_E09S05_02: withdrawing from one Event cancels only that registration and
+// frees its place; the same Attendee's registration for another Event stays.
+test('TC_E09S05_02: withdrawing from one event before its deadline cancels that registration and releases the place, leaving the other event unaffected', async () => {
+  const f = await loginDatabase();
+  try {
+    const [org, organiser, dana, meetupVenue, summitVenue] = Array.from({ length: 5 }, () => randomUUID());
+    await f.pool.query('INSERT INTO client_organisations(id,name) VALUES ($1,$2)', [org, 'Synthetic client']);
+    await f.pool.query(`INSERT INTO users(id,client_org_id,email,password_hash,full_name,role) VALUES ($1,$2,'organiser@example.test','x','Synthetic organiser','event_organiser')`, [organiser, org]);
+    await f.pool.query(`INSERT INTO users(id,email,password_hash,full_name,role,contact_number,email_verified_at)
+      VALUES ($1,'attendee_d@example.test','x','Dana','attendee','+65 8000 0004',now())`, [dana]);
+    const events: Record<string, string> = {};
+    for (const [code, title, venue, day] of [['EVT-MEETUP', 'Community Meetup', meetupVenue, '2030-05-01'], ['EVT-TECH', 'Tech Conference 2026', summitVenue, '2030-05-02']] as const) {
+      await f.pool.query("INSERT INTO venues(id,name,location,max_capacity,opens_at,closes_at) VALUES ($1,$2,'Level 1',10,'07:00','23:00')", [venue, `${title} hall`]);
+      const id = (await f.pool.query(`INSERT INTO events(event_code,organiser_id,client_org_id,title,status,event_range,expected_attendance,
+          registration_enabled,registration_opens_at,registration_closes_at,withdrawal_deadline)
+        VALUES ($1,$2,$3,$4,'confirmed',tstzrange(($5::date + time '09:00') AT TIME ZONE 'Asia/Singapore', ($5::date + time '17:00') AT TIME ZONE 'Asia/Singapore','[)'),10,
+          true,now() - interval '1 day',now() + interval '10 days',now() + interval '20 days') RETURNING id`, [code, organiser, org, title, day])).rows[0].id as string;
+      await f.pool.query(`INSERT INTO venue_bookings(venue_id,event_id,session_id,booking_range,status,is_primary)
+        SELECT $1,event_id,id,session_range,'confirmed',true FROM sessions WHERE event_id=$2`, [venue, id]);
+      await f.pool.query(`INSERT INTO event_publications(event_id,name,starts_at,ends_at,venue_name,venue_location)
+        SELECT id,title,lower(event_range),upper(event_range),$2,'Level 1' FROM events WHERE id=$1`, [id, `${title} hall`]);
+      events[code] = id;
+    }
+    const attendee: AuthenticatedUser = { id: dana, email: 'attendee_d@example.test', role: 'attendee', isActive: true, failedLoginCount: 0 };
+    const query: Query = (sql, values) => f.pool.query(sql, values);
+    const sessionOf = async (id: string) => (await f.pool.query('SELECT id FROM sessions WHERE event_id=$1', [id])).rows[0].id as string;
+    for (const code of ['EVT-MEETUP', 'EVT-TECH']) {
+      assert.equal((await registerForEvent(f.pool, attendee, code, { sessionIds: [await sessionOf(events[code]!)] })).status, 201);
+    }
+    const remaining = async (code: string) => (await eventCapacity(query, events[code]!)).capacity - (await eventCapacity(query, events[code]!)).registered;
+    const statuses = async () => (await f.pool.query(`SELECT e.event_code, r.status FROM event_registrations r JOIN events e ON e.id=r.event_id
+      WHERE r.attendee_id=$1 ORDER BY e.event_code`, [dana])).rows.map(row => [row.event_code, row.status]);
+    assert.deepEqual([await remaining('EVT-MEETUP'), await remaining('EVT-TECH')], [9, 9]);
+
+    const withdrawn = await withdrawRegistration(f.pool, attendee, 'EVT-MEETUP');
+    assert.equal(withdrawn.status, 200);
+    assert.equal((withdrawn.body.registration as { status: string }).status, 'withdrawn');
+    assert.deepEqual(await statuses(), [['EVT-MEETUP', 'withdrawn'], ['EVT-TECH', 'registered']]);
+    assert.deepEqual([await remaining('EVT-MEETUP'), await remaining('EVT-TECH')], [10, 9]);
+    const tech = await getRegistrationForm(query, attendee, 'EVT-TECH');
+    assert.equal(tech.registration?.status, 'registered');
+  } finally {
+    await f.close();
   }
 });

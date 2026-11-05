@@ -18,7 +18,7 @@ import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 //   Session A: Grand Auditorium, Theatre layout listed at 2 places.
 //   Session B: Seminar Room B, no Theatre row, so the venue maximum of 4.
 //   Event: 2 + 4 = 6 places (TC_E09S02_12).
-test('E09-S02: Session and Event capacity, Pending requests and manual additions on real PostgreSQL', async () => {
+test('TC_E09S02_03 E09-S02: Session and Event capacity, Pending requests and manual additions on real PostgreSQL', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Use a disposable TEST_DATABASE_URL');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL }); await db.connect();
   const schema = `capacity_${randomUUID().replaceAll('-', '')}`;

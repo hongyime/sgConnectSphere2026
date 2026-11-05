@@ -553,3 +553,27 @@ test('TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff an
     assert.equal((await notices()).rows.length,6);
   } finally {await f.close();}
 });
+
+// TC_E06S03_15 (E06-S03 Scenario 3d, T-78): only the assigned Coordinator, and
+// only while the event is Approved or Planning, may submit a booking request.
+test('TC_E06S03_15 only the assigned Coordinator may request a venue, and only for an Approved or Planning event', async () => {
+  const f = await fixture();
+  try {
+    const otherCoordinator: AuthenticatedUser = { ...f.actor, id: f.other, email: `${f.other}@example.test` };
+    const venueStaff: AuthenticatedUser = { ...f.actor, id: f.staff, role: 'venue_staff', email: `${f.staff}@example.test` };
+    await assert.rejects(submitBooking(f.pool,otherCoordinator,f.input,randomUUID(),f.options),{ status:404,message:'Assigned event not found.' });
+    await assert.rejects(submitBooking(f.pool,venueStaff,f.input,randomUUID(),f.options),{ status:403,message:'Only the assigned Event Coordinator can request a venue.' });
+    for (const status of ['draft','submitted','under_review','awaiting_clarification','rejected','safety_review','confirmed','cancelled','completed']) {
+      await f.q('UPDATE events SET status=$2 WHERE id=$1',[f.event,status]);
+      await assert.rejects(submitBooking(f.pool,f.actor,f.input,randomUUID(),f.options),
+        { status:409,message:'Booking requests require an Approved or Planning event.' }, status);
+    }
+    assert.equal((await f.q('SELECT id FROM venue_bookings')).rows.length,0);
+    await f.q("UPDATE events SET status='approved' WHERE id=$1",[f.event]);
+    const fromApproved = await submitBooking(f.pool,f.actor,f.input,randomUUID(),f.options);
+    assert.equal(fromApproved.status,201); assert.equal(fromApproved.body.event_status,'planning');
+    const fromPlanning = await submitBooking(f.pool,f.actor,{ ...f.input,venue_id:f.venues[1] },randomUUID(),f.options);
+    assert.equal(fromPlanning.status,201);
+    assert.equal((await f.q("SELECT id FROM venue_bookings WHERE status='pending'")).rows.length,2);
+  } finally { await f.close(); }
+});
