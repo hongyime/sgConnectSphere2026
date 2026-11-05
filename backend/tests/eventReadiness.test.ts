@@ -45,6 +45,7 @@ test('TC_E08S03_08: an event with a Confirmed booking, full reservations and sta
   assert.equal(snapshot.canSubmit, true);
   assert.equal(snapshot.equipmentNoneRequired, false);
   assert.equal(snapshot.supportNoneRequired, false);
+  assert.equal(snapshot.multiSession, false);
   assert.deepEqual(snapshot.venueBookings, [{
     id: 'b-1', venueName: 'Orchid Hall', status: 'confirmed', purpose: 'Main programme',
     startsAt: START.toISOString(), endsAt: END.toISOString(), state: 'ready',
@@ -66,6 +67,7 @@ test('E07-S08 D135: on a multi-Session Event each equipment line names its Sessi
     line({ id: 'r-4', session_id: 'ses-2', reservation_status: null, reserved: null, requires_reconfirmation: null }),
     line({ id: 'r-5', requires_reconfirmation: true }),
   ], [support()], sessions);
+  assert.equal(snapshot.multiSession, true);
   assert.deepEqual(messages(snapshot), [
     'Projector (Session 2) — 1 of 3 reserved; 2 outstanding',
     'Projector — needs a Session; choose one on the equipment requests',
@@ -82,6 +84,7 @@ test('E07-S08 D135: on a multi-Session Event each equipment line names its Sessi
   // One Session: no names, and a request without one blocks as before (D132 fills it in on reserving).
   const single = assessReadiness(event(), [booking()], [line({ session_id: null, reservation_status: 'released' })], [], [sessions[0]!]);
   assert.deepEqual(messages(single), ['Projector — reservation released; 3 outstanding']);
+  assert.equal(single.multiSession, false);
 });
 
 test('SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted', () => {

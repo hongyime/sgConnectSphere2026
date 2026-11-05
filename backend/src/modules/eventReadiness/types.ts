@@ -98,6 +98,8 @@ export type EventReadinessSnapshot = {
   equipmentNoneRequired: boolean;
   // E07-S06 Scenario 3: the Coordinator recorded that no support is needed.
   supportNoneRequired: boolean;
+  // E07-S08 (D135): two or more Sessions, so equipment lines name theirs.
+  multiSession: boolean;
   venueBookings: ReadinessVenueBooking[];
   equipment: ReadinessEquipmentLine[];
   support: ReadinessSupportRequest[];

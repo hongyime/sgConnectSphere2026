@@ -2,6 +2,8 @@ import { apiCall, jsonRequest } from '../../shared';
 export type EquipmentRequest = {
   id: string;
   equipmentId: string;
+  // E07-S08: null once its Session was deleted (D132).
+  sessionId: string | null;
   name: string;
   quantity: number;
   notes: string;
@@ -11,7 +13,7 @@ export type EquipmentRequest = {
   reserved: boolean;
   // E07-S04: the current reservation, or the latest released one.
   reservation: LineReservation | null;
-  // Technical Support only: units this line could use for the event's dates.
+  // Technical Support only: units this line could use for its Session's dates.
   freeQuantity?: number | null;
 };
 export type LineReservation = {
@@ -36,8 +38,17 @@ export type RequestEvent = {
   startsAt?: string;
   endsAt?: string;
 };
+// E07-S08: the Event's Sessions in start order; `number` names an untitled one.
+export type EquipmentSession = {
+  id: string;
+  title: string | null;
+  number: number;
+  startsAt: string;
+  endsAt: string;
+};
 export type RequestDetail = {
   event: RequestEvent;
+  sessions?: EquipmentSession[];
   requests: EquipmentRequest[];
   equipment: EquipmentOption[];
   canEdit: boolean;
@@ -66,7 +77,13 @@ export const getRequests = (event: string, signal?: AbortSignal) =>
   );
 export const saveRequest = (
   event: string,
-  input: { id?: string; equipmentId: string; quantity: number; notes: string },
+  input: {
+    id?: string;
+    equipmentId: string;
+    quantity: number;
+    notes: string;
+    sessionId?: string;
+  },
 ) =>
   apiCall<SaveResult>(
     endpoint(event),
@@ -85,6 +102,7 @@ export type ReservationOutcome = {
   changed: boolean;
   notified: number;
   event: { eventCode: string | null; title: string; startsAt: string; endsAt: string };
+  session?: EquipmentSession;
   reservation: {
     id: string;
     requestId: string;

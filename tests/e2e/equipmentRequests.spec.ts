@@ -29,3 +29,21 @@ test('TC_E07S02_03 requests remain independent across separate events',async({pa
 test('TC_E07S02_04 amend and remove an unreserved equipment line',async({page})=>{
   const rows=await setup(page);await page.goto('/coordinator/events/EVT-A/equipment');await add(page,'eq1','2');await page.getByRole('link',{name:'Edit Wireless Microphone'}).click();await page.getByLabel('Quantity requested').fill('3');await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page.getByText('Equipment request saved.',{exact:false})).toBeVisible();expect(rows['EVT-A'][0].quantity).toBe(3);await page.getByRole('button',{name:'Remove Wireless Microphone…'}).click();await page.getByRole('button',{name:'Confirm removal'}).click();await expect(page.getByText('No equipment requested yet')).toBeVisible();expect(rows['EVT-A']).toEqual([]);
 });
+// E07-S08 (SCRUM-181): a two-Session event; the fake keeps each request's Session.
+test('TC_E07S08_01 the Coordinator records two microphones for Session B and they belong to Session B only',async({page},info)=>{
+  const sessions=[{id:'ses-a',title:'A',number:1,startsAt:'2026-11-20T01:00:00.000Z',endsAt:'2026-11-20T03:00:00.000Z'},{id:'ses-b',title:'B',number:2,startsAt:'2026-11-20T05:00:00.000Z',endsAt:'2026-11-20T07:00:00.000Z'}];
+  const rows:(Row&{sessionId:string})[]=[{id:'req-a',equipmentId:'eq1',name:'Wireless Microphone',quantity:1,notes:'',totalStock:10,operationalStatus:'available',isActive:true,reserved:false,sessionId:'ses-a'}];
+  const posts:Record<string,unknown>[]=[];await signInAs(page,'event_coordinator');
+  await page.route('**/api/equipment**',async route=>{
+    if(route.request().method()==='POST'){const body=route.request().postDataJSON();posts.push(body);rows.push({...rows[0]!,id:'req-b',quantity:body.quantity,sessionId:body.sessionId});return route.fulfill({status:201,json:{requestId:'req-b',changed:true,notified:1,warning:null}});}
+    return route.fulfill({json:{event:{id:'e1',eventCode:'E-1',title:'Two-Session Summit',status:'planning'},equipment,sessions,requests:rows,canEdit:true}});
+  });
+  await page.goto('/coordinator/events/E-1/equipment');await page.getByRole('link',{name:'Add equipment request'}).click();
+  await page.getByLabel('Session',{exact:true}).selectOption('ses-b');await page.getByLabel('Equipment item',{exact:true}).selectOption('eq1');await page.getByLabel('Quantity requested',{exact:true}).fill('2');
+  await page.screenshot({path:`artifacts/equipment-request-session-form-${info.project.name}.png`,fullPage:true});
+  await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page.getByText('Equipment request saved.')).toBeVisible();
+  expect(posts[0]).toMatchObject({action:'saveRequest',equipmentId:'eq1',quantity:2,sessionId:'ses-b'});
+  const b=page.getByRole('region',{name:'Session "B"',exact:true});await expect(b.locator('tbody tr')).toHaveCount(1);await expect(b.locator('tbody tr')).toContainText('2');
+  await expect(page.getByRole('region',{name:'Session "A"',exact:true}).locator('tbody tr')).toHaveCount(1);
+  await page.screenshot({path:`artifacts/equipment-requests-sessions-${info.project.name}.png`,fullPage:true});await page.setViewportSize({width:320,height:800});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});

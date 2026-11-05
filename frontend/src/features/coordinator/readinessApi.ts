@@ -17,12 +17,18 @@ export type Readiness = {
   startsAt: string;
   endsAt: string;
   equipmentNoneRequired: boolean;
+  // E07-S08 (D135): the Event has two or more Sessions.
+  multiSession: boolean;
   supportNoneRequired: boolean;
   venueBookings: {
     id: string; venueName: string; status: string; purpose: string | null; startsAt: string; endsAt: string;
     state: 'ready' | 'outstanding' | 'withdrawn';
   }[];
-  equipment: { id: string; name: string; requested: number; reserved: number; state: 'ready' | 'outstanding' }[];
+  // E07-S08 (D135): sessionName is set only when multiSession is true.
+  equipment: {
+    id: string; name: string; sessionId: string | null; sessionName: string | null;
+    requested: number; reserved: number; state: 'ready' | 'outstanding';
+  }[];
   support: { id: string; description: string; startsAt: string; endsAt: string; status: string; state: 'ready' | 'outstanding' }[];
   blockers: ReadinessBlocker[];
   canSubmit: boolean;
