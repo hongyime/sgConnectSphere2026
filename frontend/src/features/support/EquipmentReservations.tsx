@@ -24,6 +24,7 @@ import {
   getRequests,
   reserveEquipment,
   type EquipmentRequest,
+  type EquipmentSession,
   type LineReservation,
   type RequestDetail,
   type RequestEvent,
@@ -35,10 +36,16 @@ export function eventPageFor(event: RequestEvent) {
 }
 
 // The same sentences as the API, so a refusal reads the same before and after
-// the round trip (design.md 8.5).
-export function freeSentence(free: number) {
-  if (free <= 0) return "None are free for this event's dates.";
-  return `Only ${free} ${free === 1 ? 'is' : 'are'} free for this event's dates.`;
+// the round trip (design.md 8.5). E07-S08: a Session's dates on a
+// multi-Session Event.
+export function freeSentence(free: number, dates = "this event's dates") {
+  if (free <= 0) return `None are free for ${dates}.`;
+  return `Only ${free} ${free === 1 ? 'is' : 'are'} free for ${dates}.`;
+}
+
+// E07-S08: named as readiness and the notices name them (the API's sessionLabel).
+export function sessionName(session: EquipmentSession) {
+  return session.title ? `Session "${session.title}"` : `Session ${session.number}`;
 }
 
 export function eventLabel(event: { eventCode: string | null; title: string }) {
@@ -89,16 +96,22 @@ export function ReservationPills({
 }
 
 // The confirmation the checklist asks for: event, date, time, item, quantity.
+// E07-S08 (D131): on a multi-Session Event it names the Session and its dates.
 export function ReservationSaved({
   outcome,
   action,
+  multiSession = false,
 }: {
   outcome: ReservationOutcome;
   action: 'reserve' | 'change' | 'release';
+  multiSession?: boolean;
 }) {
   if (!outcome.changed) return <Alert tone="info">No changes to save.</Alert>;
   const { reservation: r, event } = outcome;
-  const when = `${eventLabel(event)}, ${formatDateRange(event.startsAt, event.endsAt)}`;
+  const session = multiSession ? outcome.session : undefined;
+  const when = session
+    ? `${eventLabel(event)}, ${sessionName(session)}, ${formatDateRange(session.startsAt, session.endsAt)}`
+    : `${eventLabel(event)}, ${formatDateRange(event.startsAt, event.endsAt)}`;
   if (action === 'release')
     return (
       <Alert tone="success" title="Released">
@@ -186,6 +199,12 @@ function ReservationForm({
     session.status === 'signed-in' &&
     session.user.role === 'technical_support_staff';
   const back = eventPageFor(data.event);
+  // E07-S08: the line's Session sets the dates on a multi-Session Event (D124).
+  const multiSession = (data.sessions ?? []).length > 1;
+  const ownSession = multiSession
+    ? data.sessions!.find((s) => s.id === line?.sessionId)
+    : undefined;
+  const dates = multiSession ? "this Session's dates" : undefined;
   const current = line && isActive(line.reservation) ? line.reservation : null;
   const free = line?.freeQuantity ?? null;
   const limit = line ? Math.min(line.quantity, free ?? line.quantity) : 0;
@@ -218,7 +237,9 @@ function ReservationForm({
         : 'Equipment can only be reserved while the event is approved or planning.'
       : !line.isActive
         ? "This equipment has been retired, so it can't be reserved."
-        : null;
+        : multiSession && !ownSession
+          ? 'Choose a Session for this request before reserving it.'
+          : null;
   if (refusal || !line)
     return (
       <>
@@ -233,7 +254,7 @@ function ReservationForm({
       return 'Enter a whole number greater than 0.';
     if (number > line!.quantity)
       return `You can reserve at most the ${line!.quantity} requested.`;
-    if (free !== null && number > free) return freeSentence(free);
+    if (free !== null && number > free) return freeSentence(free, dates);
     return undefined;
   }
 
@@ -264,6 +285,7 @@ function ReservationForm({
         reservationSaved: {
           outcome: response.data,
           action: current ? 'change' : 'reserve',
+          multiSession,
         },
       },
     });
@@ -283,7 +305,12 @@ function ReservationForm({
           columns={2}
           items={[
             ['Event', eventLabel(data.event)],
-            ['Event dates', datesOf(data.event)],
+            ...((ownSession
+              ? [
+                  ['Session', sessionName(ownSession)],
+                  ['Session dates', formatDateRange(ownSession.startsAt, ownSession.endsAt)],
+                ]
+              : [['Event dates', datesOf(data.event)]]) as [string, string][]),
             ['Quantity requested', line.quantity],
             ['Free for these dates', free === null ? 'Not recorded' : free],
             ...(current
@@ -299,7 +326,7 @@ function ReservationForm({
           ]}
         />
         {free === 0 ? (
-          <Alert tone="warning">{freeSentence(0)}</Alert>
+          <Alert tone="warning">{freeSentence(0, dates)}</Alert>
         ) : null}
         <FormField
           label="Quantity to reserve"
