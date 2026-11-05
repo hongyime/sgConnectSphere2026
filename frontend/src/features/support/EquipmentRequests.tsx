@@ -571,6 +571,7 @@ function RequestForm({
       </>
     );
   const option = data.equipment.find((eq) => eq.id === equipmentId);
+  const chosen = sessions.find((session) => session.id === sessionId);
   // One request per item per Session (E07-S08).
   const taken = (id: string, session: string) =>
     data.requests.some(
@@ -618,7 +619,8 @@ function RequestForm({
             <FormField
               label="Session"
               wide
-              hint="The equipment is reserved for this Session's dates."
+              // The dates sit in the hint: in the option they clipped on a phone.
+              hint={`${chosen ? `${formatDateRange(chosen.startsAt, chosen.endsAt)}. ` : ''}The equipment is reserved for this Session's dates.`}
               error={errors.sessionId?.[0]}
             >
               {(props) => (
@@ -635,8 +637,7 @@ function RequestForm({
                   <option value="">Choose a Session</option>
                   {sessions.map((session) => (
                     <option key={session.id} value={session.id}>
-                      {sessionName(session)},{' '}
-                      {formatDateRange(session.startsAt, session.endsAt)}
+                      {sessionName(session)}
                     </option>
                   ))}
                 </select>

@@ -666,7 +666,8 @@ test('TC_E07S08_01 - on a two-Session event the Coordinator sees one card per Se
   expect(items()).toEqual(['Choose equipment']);
   fireEvent.change(picker, { target: { value: 'ses-b' } });
   expect(items()).toEqual(['Choose equipment', 'Microphone']);
-  expect(screen.getByRole('option', { name: 'Session 2, 15 Oct 2026, 1:00 pm – 3:00 pm' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Session 2' })).toBeInTheDocument();
+  expect(screen.getByText("15 Oct 2026, 1:00 pm – 3:00 pm. The equipment is reserved for this Session's dates.")).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Equipment item'), { target: { value: 'eq1' } });
   fireEvent.change(screen.getByLabelText('Quantity requested'), { target: { value: '2' } });
   fireEvent.click(screen.getByRole('button', { name: 'Save equipment request' }));
@@ -741,7 +742,8 @@ test('E07-S08 - choosing a Session clears an item already requested for it', asy
   );
   show('/coordinator/events/EVT-A/equipment/new');
   const picker = await screen.findByLabelText('Session');
-  expect(screen.getByRole('option', { name: 'Session "Morning", 15 Oct 2026, 9:00 am – 11:00 am' })).toBeInTheDocument();
+  expect(screen.getByRole('option', { name: 'Session "Morning"' })).toBeInTheDocument();
+  expect(screen.getByText("The equipment is reserved for this Session's dates.")).toBeInTheDocument();
   fireEvent.change(picker, { target: { value: 'ses-b' } });
   fireEvent.change(screen.getByLabelText('Equipment item'), { target: { value: 'eq1' } });
   expect(screen.getByLabelText('Equipment item')).toHaveValue('eq1');
