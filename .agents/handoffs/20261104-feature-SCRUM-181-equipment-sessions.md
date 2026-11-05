@@ -59,8 +59,14 @@ Safety Officer's review page does.
   `test:db` 363/363. Aaron reran TC_E07S08_01 and _02 by hand (PASS,
   `20261105-155200-Bl0oper-frontend-e2e.md`).
 
+- Ji Ning's review of `50a7670` (5 Nov): no code findings, approval held
+  for Bryan's PO acceptance and the 49-file `pr-guardrails` failure. The
+  manual-run evidence (both records, 20 screenshots, the setup SQL) moved
+  unchanged to #432 (`test/SCRUM-255-e07s08-manual-evidence`, from
+  `main`), so this PR drops to 26 files. No code change, so no new run.
+
 ## Not done / next step
 
-- Le Xin's re-review, a teammate's approval of the head, and Bryan's PO
-  acceptance (D129); then the merge queue. A shared Session-name helper
-  for all screens is a follow-up.
+- #432 approved and merged first; then a teammate's approval of this head
+  and Bryan's PO acceptance (D129); then the merge queue. A shared
+  Session-name helper for all screens is a follow-up.

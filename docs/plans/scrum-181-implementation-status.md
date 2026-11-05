@@ -32,6 +32,11 @@ reservations used the Event's dates rather than their Session's.
   picker and Session names on the equipment screens and readiness page,
   Vitest and Playwright, Aaron's manual run. It carries the story key;
   Bryan records PO acceptance on it before it is queued (D129).
+- **#432, SCRUM-255, manual-run evidence**
+  (`test/SCRUM-255-e07s08-manual-evidence`, from `main`): both manual-run
+  records, their 20 screenshots and the setup SQL, split out of #427 on
+  5 Nov so that #427 fits the 40-file `pr-guardrails` cap (Ji Ning's
+  review). Unchanged copies; it merges before #427, which stays last.
 
 **Decisions** (Aaron's task list, 4 Nov 2026; listed in the PRs for Bryan
 as PO):
@@ -157,7 +162,7 @@ No production check is needed for the schema: the story adds no migration.
 
 ## Click-through script (Aaron's manual run, D130, D133)
 
-**Setup, by SQL, never a test step.** `docs/testing/manual/E07-S08-preconditions.sql`,
+**Setup, by SQL, never a test step.** `docs/testing/manual/E07-S08-preconditions.sql` (in #432),
 on the local Docker database `connectsphere_dev_stack` after a fresh reset
 and seed, makes item **E07-S08 Microphone** (stock 2) and Planning Event
 **EVT-9301 Two-Session Expo** (organiser_a, coord_a), 1 Dec 2026, with
@@ -262,7 +267,7 @@ of this run.)
 | 2026-11-04 17:34–17:39 | `db7d723` | 4, 5 | _01 to _03 | the same | local | typecheck clean; Vitest 847/847 in 76 files; 45/45 changed lines and 115/115 changed branches covered | Record `20261104-173450-Bl0oper-frontend-vitest.md` |
 | 2026-11-04 17:39–17:42 | `db7d723` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Record `20261104-173922-Bl0oper-frontend-e2e.md` |
 | 2026-11-04 ≈17:45 | `db7d723+local` (setup SQL not yet committed) | 5 (dry run, not evidence) | _01, _02, _04 | Claude's headless script of the click-through steps on the local real stack | local, Docker `connectsphere_dev_stack` | every step showed the scripted screen and wording | The staffing queue opens on "Needs a technician", so step 9 picks **Staffed**. Database reset and setup SQL re-applied afterwards |
-| 2026-11-04 17:49–18:09 | `d05f38b` (code of `db7d723`) | 5 (manual, T-93) | _01, _02, _04 | Aaron's click-through of the script above, by hand, 12 screenshots | local real stack, Docker `connectsphere_dev_stack` | **PASS** all three | Run by: Aaron. Database checked afterwards: both reservations on their own Sessions; after the edit the Afternoon reservation keeps 1:00–3:00 pm and is flagged (T-108); the one assignment unchanged; five notices, one delivery each. Record `20261104-174900-Bl0oper-frontend-e2e.md` |
+| 2026-11-04 17:49–18:09 | `d05f38b` (code of `db7d723`) | 5 (manual, T-93) | _01, _02, _04 | Aaron's click-through of the script above, by hand, 12 screenshots | local real stack, Docker `connectsphere_dev_stack` | **PASS** all three | Run by: Aaron. Database checked afterwards: both reservations on their own Sessions; after the edit the Afternoon reservation keeps 1:00–3:00 pm and is flagged (T-108); the one assignment unchanged; five notices, one delivery each. Record `20261104-174900-Bl0oper-frontend-e2e.md` (in #432) |
 | 2026-11-04 ≈23:32 | `c6bcf02+local` | 2 | — | the new D137 test (`--test-name-pattern=D137`, `equipmentReservations.integration.test.ts`) with the old `reservations.ts` | local, Docker `connectsphere_notification_test` | **1 failed**, as intended | "Missing expected rejection.": the orphan was reserved for the Session that already had the item (the bug in Xiang Ying's #426 review) |
 | 2026-11-04 ≈23:32 | `c6bcf02+local` | 2 | — | the same test with the old `requests.ts` | local, same | **1 failed**, as intended | The orphan's removal was refused: "This request has been reserved and cannot be amended or removed here." (D137) |
 | 2026-11-04 23:34–23:35 | `696c9fa` | 1, 2, 3, 4 | _01 to _04, TC_E07S09 | `npm run typecheck` (root); `npm test` (backend); `npx c8 --clean=false tsx --test <test:db files>`; `npx c8 report` | local, Docker `connectsphere_notification_test` | typecheck clean; unit 727: 726 passed, 1 skipped; `test:db` 363/363; 332/332 changed lines and 117/117 changed branches covered | After the #426 review fix. Records `20261104-233410-Bl0oper-backend-unit.md`, `20261104-233424-Bl0oper-backend-db.md` |
@@ -276,4 +281,4 @@ of this run.)
 | 2026-11-05 15:38–15:40 | `1d1c70c` | 5 | _01, _02 | `npx playwright test --reporter=list` (whole suite) | local | 466 passed, 218 skipped, 0 failed | Screenshots looked at: on Pixel 7 the closed Session picker cut off the option ("Session "B", 20 Nov 2026, 1:00 pm – :"). `8054ee2` shows the name only and the chosen Session's dates in the hint |
 | 2026-11-05 15:41–15:47 | `8054ee2` | 4, 5 | _01 to _03 | `npm run typecheck` (root); `npx vitest run --no-file-parallelism --coverage` (frontend) and the changed-line and changed-branch checks; `npx playwright test --reporter=list` | local | typecheck clean; Vitest 851/851 in 76 files; 49/49 changed lines, 128/128 changed branches; Playwright 466 passed, 218 skipped, 0 failed | Pixel 7 screenshot now shows Session "B" and its dates in full. Records `20261105-154146-Bl0oper-frontend-vitest.md`, `20261105-154538-Bl0oper-frontend-e2e.md` |
 | 2026-11-05 ≈15:49 | `8054ee2+local` (story record only) | 5 (dry run, not evidence) | _01, _02 | Claude's headless script of steps 1 to 8 on the local real stack | local, Docker `connectsphere_dev_stack` | every step showed the scripted screen and wording | Database reset and setup SQL re-applied afterwards |
-| 2026-11-05 15:52–16:00 | `8054ee2` | 5 (manual, T-93) | _01, _02 | Aaron's rerun of steps 1 to 8 by hand, 8 screenshots (D138 changed their screens; TC_04's run of 4 Nov stands) | local real stack, Docker `connectsphere_dev_stack` | **PASS** both | Run by: Aaron. Database checked afterwards: each reservation on its own Session's period; three notices, one delivery each, naming Session "Afternoon" and its dates. Record `20261105-155200-Bl0oper-frontend-e2e.md` |
+| 2026-11-05 15:52–16:00 | `8054ee2` | 5 (manual, T-93) | _01, _02 | Aaron's rerun of steps 1 to 8 by hand, 8 screenshots (D138 changed their screens; TC_04's run of 4 Nov stands) | local real stack, Docker `connectsphere_dev_stack` | **PASS** both | Run by: Aaron. Database checked afterwards: each reservation on its own Session's period; three notices, one delivery each, naming Session "Afternoon" and its dates. Record `20261105-155200-Bl0oper-frontend-e2e.md` (in #432) |
