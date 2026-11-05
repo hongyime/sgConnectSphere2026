@@ -7,11 +7,11 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **386**
-- Automated (explicit TC_ID in an active test title): **325** (84.2%)
-  - Real-database (`.integration.test` / `.db.test`): **44**
+- Automated (explicit TC_ID in an active test title): **326** (84.5%)
+  - Real-database (`.integration.test` / `.db.test`): **45**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **280**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **48** (12.4%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **47** (12.2%)
 - No test yet (no test file mentions the TC_ID): **13** (3.4%)
 
 ## Coverage by epic
@@ -28,10 +28,10 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E08 | 28 | 24 | 4 | 0 |
 | E09 | 45 | 38 | 4 | 3 |
 | E10 | 36 | 32 | 0 | 4 |
-| E11 | 15 | 13 | 2 | 0 |
+| E11 | 15 | 14 | 1 | 0 |
 | E14 | 14 | 11 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 3 |
-| **Total** | **386** | **325** | **48** | **13** |
+| **Total** | **386** | **326** | **47** | **13** |
 
 ## Case-by-case status
 
@@ -451,7 +451,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
-| `TC_E11S01_08` | E11-S01 | Verify that an unreachable email provider does not affect the business change or | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_08 - Verify that an unreachable email provider does not affect the business change or the in-app notification |
+| `TC_E11S01_08` | E11-S01 | Verify that email provider failure does not affect the business change or the in | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_08: actual booking approval and inbox survive HTTP 400 rejection; backend/tests/notificationInbox.integration.test.ts |
 | `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E11S01_09: email-outbox failure rolls back creation, draft submission, reassignment request and each response; backen |
 | `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\; backend/tests/e11CurrentFlows.integration.test.ts: TC_ |
 | `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
