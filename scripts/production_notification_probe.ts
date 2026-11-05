@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { productionDatabaseClientConfig } from '../backend/src/database/productionMigrationGuard.js';
 import { insertNotificationDelivery } from '../backend/src/modules/notificationDispatcher/postgres.js';
 import { createDeliveryTransport } from '../backend/src/providers/durableRedis.js';
 
@@ -26,12 +27,6 @@ function recipients(): string[] {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('recipient address validation failed');
   }
   return values;
-}
-
-function productionDatabase(url: string): boolean {
-  const parsed = new URL(url.replace(/^postgres(?:ql)?:\/\//, 'http://'));
-  const host = parsed.hostname.toLowerCase();
-  return host === 'pooler.supabase.com' || host.endsWith('.pooler.supabase.com') || host.endsWith('.supabase.co');
 }
 
 async function preflight(client: pg.Client, emails: string[]) {
@@ -113,16 +108,17 @@ async function main() {
   const secret = process.env.CRON_SECRET?.trim();
   const emails = recipients();
   if (!databaseUrl) throw new Error('DATABASE_URL is not configured');
-  if (execute && (!confirmProduction || !productionDatabase(databaseUrl))) {
-    throw new Error('execution requires a Supabase production DATABASE_URL and --confirm-production');
-  }
+  if (execute && !confirmProduction) throw new Error('execution requires --confirm-production');
+  const clientConfig = execute
+    ? { ...productionDatabaseClientConfig(databaseUrl), statement_timeout: 10000, query_timeout: 12000 }
+    : { connectionString: databaseUrl, statement_timeout: 10000, query_timeout: 12000 };
   if (!execute) {
     console.log('DRY RUN: no database writes, relay calls, worker calls, or emails will occur.');
   } else if (!secret) {
     throw new Error('CRON_SECRET is not configured');
   }
 
-  const client = new Client({ connectionString: databaseUrl, statement_timeout: 10000, query_timeout: 12000 });
+  const client = new Client(clientConfig);
   await client.connect();
   try {
     await preflight(client, emails);
