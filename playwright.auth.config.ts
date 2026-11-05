@@ -5,8 +5,11 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   timeout: 60_000,
-  reporter: [['list'], ['html', { outputFolder: 'playwright-report/auth', open: 'never' }]],
-  use: { baseURL: 'http://127.0.0.1:5176', trace: 'off', screenshot: 'only-on-failure' },
+  reporter: [['list'], ['html', { outputFolder: process.env.PW_HTML_REPORT ?? 'playwright-report/auth', open: 'never' }],
+    ['json', { outputFile: process.env.PW_JSON ?? 'test-results/auth-results.json' }]],
+  outputDir: process.env.PW_OUTPUT_DIR ?? 'test-results',
+  // PW_SCREENSHOT=on captures every test for the submission evidence; CI keeps failures only.
+  use: { baseURL: 'http://127.0.0.1:5176', trace: 'off', screenshot: process.env.PW_SCREENSHOT === 'on' ? 'on' : 'only-on-failure' },
   // Recovery links and passwords must not enter retained browser traces.
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },

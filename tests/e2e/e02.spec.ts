@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { signInAs } from './helpers/fakeSession';
 
 // E02 - 13 cases. Generated from docs/testing/PROJECT TEST CASES.xlsx.
 // Each test.fixme() is a specification. Remove .fixme once implemented.
@@ -503,41 +504,54 @@ test.describe("E02-S03", () => {
     expect(submittedPayload?.accessibilityFeatureIds).toEqual([]);
   });
 
-  /**
-   * TC_E02S03_03
-   * AC:      E02-S03 - Scenario 3 (Search filters on predefined requirements)
-   * Sprint:  1.0
-   *
-   * Pre-conditions:
-   *   Event requires predefined requirement "Wheelchair Access"; Venue X lacks wheelchair access, Venue Y has it
-   *
-   * Test data:
-   *   Predefined requirement: Wheelchair Access | Venue X: no wheelchair access | Venue Y: wheelchair accessible
-   *
-   * Expected result:
-   *   Venue X is excluded from the results or clearly marked unsuitable; Venue Y appears as a normal match
-   *
-   * Scope note, deliberate (decided with Aaron before implementing SCRUM-28):
-   * there is no "search venues for this event" screen anywhere in the app to
-   * exercise. This mirrors the team's own precedent for the near-identical
-   * E05-S02 layout/attendance suitability filter, which also shipped with
-   * zero frontend UI and zero e2e coverage - confirmed by checking
-   * Venue.tsx/venueApi.ts/tests/e2e/venue.spec.ts directly, none of which
-   * wire layout/attendance into the UI either. AC3 ships backend-only:
-   * searchVenues()'s accessibility join (backend/src/modules/venueBooking/
-   * catalogue.ts), unit-tested in backend/tests/venueCatalogue.test.ts and
-   * backend/tests/venueAccessibility.test.ts, integration-tested against a
-   * real database in backend/tests/venueAccessibility.integration.test.ts
-   * (which reproduces this exact Venue X / Venue Y scenario). Left as
-   * test.fixme rather than deleted, so this AC's browser-level case stays
-   * visible in test-case coverage as a known, documented gap - not silently
-   * dropped.
-   */
-  test.fixme("TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Record "Wheelchair Access" as a predefined requirement for the event
-    // 2. Run a venue search for that event
-    void page;
+  // TC_E02S03_03 (AC3) has no browser case: it is automated against real
+  // PostgreSQL in backend/tests/venueAccessibility.integration.test.ts, which
+  // records "Wheelchair Access" on the event and runs the Coordinator's venue
+  // search for it (Venue X marked unsuitable, Venue Y a normal match).
+
+});
+
+// E02-S05 (SCRUM-30, "Reuse a previous event's details"): the Organiser's
+// completed event page has no "Copy to new draft" action, and no copy endpoint
+// exists, so each case is kept as an expected failure at the step that
+// reaches the missing action. Remove test.fail once the feature is built.
+test.describe("E02-S05", () => {
+  const START = '2026-10-25T01:00:00.000Z';
+  const END = '2026-10-25T09:00:00.000Z';
+
+  async function openCompletedEvent(page: import('@playwright/test').Page) {
+    await signInAs(page, 'event_organiser', { email: 'organiser_a@clienta.com' });
+    await page.route('**/api/events?**', route => {
+      if (new URL(route.request().url()).searchParams.get('mine') === '1') {
+        return route.fulfill({ json: { event: { id: 'evt-2501', title: 'Charity Run', purpose: 'Fundraising', status: 'completed',
+          startAt: START, endAt: END, expectedAttendance: 200, equipmentRequirements: 'none_required' } } });
+      }
+      return route.fulfill({ json: { event: {
+        id: 'evt-2501', event_code: 'EVT-2501', title: 'Charity Run', status: 'completed', status_changed_at: END,
+        statusHistory: [], comments: [], outstandingQuestions: [], decision: null, arrangements: null,
+      } } });
+    });
+    await page.goto('/organiser/requests/EVT-2501');
+    await expect(page.getByRole('heading', { name: 'Charity Run' })).toBeVisible();
+  }
+
+  const copyAction = (page: import('@playwright/test').Page) => page.getByRole('button', { name: 'Copy to new draft' });
+
+  test("TC_E02S05_01 - Copying my completed event should create a draft with its Sessions and requirements but no dates or transactions", async ({ page }) => {
+    test.fail(true, 'Known defect: E02-S05 is not built; a completed event offers no "Copy to new draft" action.');
+    await openCompletedEvent(page);
+    await expect(copyAction(page)).toBeVisible({ timeout: 2000 });
   });
 
+  test("TC_E02S05_02 - Missing venue or equipment references should be flagged against the copied Session", async ({ page }) => {
+    test.fail(true, 'Known defect: E02-S05 is not built; there is no copy, so retired venue or equipment references cannot be flagged.');
+    await openCompletedEvent(page);
+    await expect(copyAction(page)).toBeVisible({ timeout: 2000 });
+  });
+
+  test("TC_E02S05_03 - Submitting a copied draft should apply the current date-horizon rules", async ({ page }) => {
+    test.fail(true, 'Known defect: E02-S05 is not built; no copied draft can be created to submit.');
+    await openCompletedEvent(page);
+    await expect(copyAction(page)).toBeVisible({ timeout: 2000 });
+  });
 });

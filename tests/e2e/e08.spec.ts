@@ -6,54 +6,9 @@ import { signInAs, type TestRole } from './helpers/fakeSession';
 // TC_E08S03_03, _04 and _05 (with _08 to _10) are implemented in
 // eventReadiness.spec.ts (SCRUM-60).
 
-test.describe("E08-S03", () => {
-
-  /**
-   * TC_E08S03_01
-   * AC:      E08-S03 - Scenario 1 (All arrangements complete, event confirmed)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Event "Charity Run" has one event with a confirmed venue booking (Riverside Hall) and its full requested equipment reserved, and requires no technical support
-   *
-   * Test data:
-   *   Event: Charity Run (venue confirmed, equipment fully reserved, no tech support needed)
-   *
-   * Expected result:
-   *   The status becomes "Confirmed", and organiser_a@clienta.com is notified with the confirmed details
-   */
-  test.fixme("TC_E08S03_01 - Verify that confirming an event where every event has a confirmed venue and full equipment reservation should set its status to Confirmed and notify the Organiser", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Charity Run"
-    // 3. Click "Confirm Event"
-    // 4. Check the status and organiser_a@clienta.com's notifications
-    void page;
-  });
-
-  /**
-   * TC_E08S03_02
-   * AC:      E08-S03 - Scenario 2 (Missing venue blocks confirmation)
-   * Sprint:  3.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has the event with a confirmed venue, but the event has no confirmed venue yet
-   *
-   * Test data:
-   *   the event: venue confirmed | the event: no venue
-   *
-   * Expected result:
-   *   Confirmation is blocked; the message lists "the event" as missing a confirmed venue
-   */
-  test.fixme("TC_E08S03_02 - Verify that attempting to confirm an event while a event is missing a confirmed venue should be blocked with the outstanding event named", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Click "Confirm Event"
-    void page;
-  });
-
-});
+// TC_E08S03_01, _02, _06 and _07 (submit for safety check, as amended for
+// C-70/T-107) are automated against PostgreSQL in
+// backend/tests/eventReadiness.integration.test.ts.
 
 test.describe("E08-S04", () => {
 
@@ -492,19 +447,6 @@ test.describe("E08-S05", () => {
 });
 
 // Week 7 additions from docs/testing/cases/E08.md.
-
-test.describe("E08-S03 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E08S03_06 — Verify that confirming an event with several venue bookings should be blocked while any booking is still Pending or Conflicting, listing each outstanding booking by venue", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S03_06).
-    void page;
-  });
-
-  test.fixme("TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed venue", async ({ page }) => {
-    // Implement from docs/testing/cases/E08.md (TC_E08S03_07).
-    void page;
-  });
-
-});
 
 test.describe("E08-S04 — Scenario 4", () => {
   const START = '2027-03-19T01:00:00.000Z';

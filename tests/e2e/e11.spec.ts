@@ -68,27 +68,9 @@ test.describe("E11-S01", () => {
     void page;
   });
 
-  /**
-   * TC_E11S01_05
-   * AC:      E11-S01 - Scenario 4 (Delivered in-app and by email)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com's registered email is organiser_a@clienta.com; a notification-triggering status change is about to occur on their event
-   *
-   * Test data:
-   *   Registered email: organiser_a@clienta.com
-   *
-   * Expected result:
-   *   The notification appears in the in-app notification list, and an equivalent email is also delivered to organiser_a@clienta.com's inbox
-   */
-  test.fixme("TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user's registered email address", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Trigger a status change on organiser_a@clienta.com's event
-    // 2. Log in as organiser_a@clienta.com and check the in-app notification list
-    // 3. Check the inbox for organiser_a@clienta.com
-    void page;
-  });
+  // TC_E11S01_05: automated in backend/tests/notificationInbox.integration.test.ts
+  // (in-app notice plus the email sent to the registered address through the
+  // intercepted provider). Arrival in the real mailbox stays a manual check.
 
   /**
    * TC_E11S01_06

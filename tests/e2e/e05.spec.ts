@@ -772,10 +772,8 @@ test.describe("E05-S05 — Week 7 case scaffolds", () => {
     void page;
   });
 
-  test.fixme("TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them", async ({ page }) => {
-    // Implement from docs/testing/cases/E05.md (TC_E05S05_06).
-    void page;
-  });
+  // TC_E05S05_06 (a venue from before buffers existed) needs migrations applied
+  // around its rows, so it is automated in backend/tests/venueCalendar.integration.test.ts.
 
   test.fixme("TC_E05S05_07 — Verify that a venue whose existing booking overlaps the event only once its setup and turnaround time are applied should not appear as available in search", async ({ page }) => {
     // Implement from docs/testing/cases/E05.md (TC_E05S05_07).

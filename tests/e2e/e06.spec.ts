@@ -92,29 +92,9 @@ test.describe("E06-S04", () => {
   // E06-S04 (SCRUM-48): TC_E06S04_01 to _06 are covered live in
   // tests/e2e/venueBookingDecisions.spec.ts, and the rules against PostgreSQL
   // in backend/tests/venueBookingDecisions.integration.test.ts. Their
-  // placeholders that stood here were replaced by those. TC_E06S04_07 below
-  // waits for the E10-S04 cancellation workflow.
-
-  /**
-   * AC: E06-S04 - Scenario 5 (Booking decision recorded; T-75, T-76)
-   * Sprint: 3
-   * Pre-conditions:
-   * Venue Z has a confirmed booking for event "Annual Tech Summit"; the Coordinator is authorised to cancel that event and the E10-S04 cancellation/release workflow is available
-   * Test data:
-   * Venue: Venue Z | Action: Release Booking | Event: Annual Tech Summit
-   * Expected result:
-   * An entry is recorded with the actor, action ("Booking Released"), the affected booking/event, and a timestamp
-   * Transferred from TC_E14S02_07 by T-76 on 2 October 2026.
-   *
-   * ## E06-S05
-   */
-  test.fixme("TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
-    // 1. As the authorised Coordinator, cancel the event through E10-S04 so its confirmed Venue Z booking is released
-    // 2. Sign in as the Event Coordinator permitted to view the affected event
-    // 3. Open the event Activity log
-    // 4. Locate the completed booking action and compare its actor, action, booking/event identifiers and timestamp with the test database
-    void page;
-  });
+  // placeholders that stood here were replaced by those. TC_E06S04_07 (the
+  // release recorded in the Activity log, through the E10-S04 cancellation)
+  // is in backend/tests/eventCancellation.integration.test.ts.
 
 });
 
@@ -160,10 +140,8 @@ test.describe("E06-S04 — Week 7 case scaffolds", () => {
 });
 
 test.describe("E06-S05 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E06S05_02 — Verify that a tentative hold should occupy the venue's buffered window so that an overlapping hold or request is refused", async ({ page }) => {
-    // Implement from docs/testing/cases/E06.md (TC_E06S05_02).
-    void page;
-  });
+  // TC_E06S05_02 is automated against PostgreSQL in
+  // backend/tests/venueClaimPolicy.integration.test.ts.
 
   test.fixme("TC_E06S05_05 — Verify that an unconverted hold should become Expired when its expiry passes, freeing the venue and never counting as a booking", async ({ page }) => {
     // Implement from docs/testing/cases/E06.md (TC_E06S05_05).

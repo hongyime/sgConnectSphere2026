@@ -800,20 +800,8 @@ test.describe("E03-S07", () => {
    * Expected result:
    *   The change is saved, and an activity log entry records the edit with actor = coordinator_1@connectsphere.com
    */
-  // TC_E03S07_02 stays a fixme until an activity-log read exists: step 5
-  // ("check the activity log") has no endpoint to read from yet (#132 writes
-  // the audit rows but nothing returns them). Steps 1-4 are covered by the
-  // Scenario 2 test straight after it.
-  test.fixme("TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Annual Tech Summit"
-    // 3. Edit the Venue Requirements field
-    // 4. Save
-    // 5. Check the activity log
-    void page;
-  });
-
+  // TC_E03S07_02's activity-log step is proven against PostgreSQL in
+  // backend/tests/activityLog.integration.test.ts; this covers steps 1-4 on screen.
   test("E03-S07 Scenario 2 - the assigned Coordinator edits an approved event's venue requirements (steps 1-4)", async ({ page }) => {
     const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-ANNUAL', title: 'Annual Tech Summit', assignedTo: coordA, status: 'approved' });
     await page.goto('/coordinator/events/EVT-ANNUAL');
@@ -954,40 +942,11 @@ test.describe("E03-S07", () => {
 
 // Week 7 additions from docs/testing/cases/E03.md.
 
-test.describe("E03-S08 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E03S08_01 — Verify that a newly submitted request should enter the unassigned queue with no Coordinator and status Submitted, and the Lead should be notified", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S08_01).
-    void page;
-  });
-
-  test.fixme("TC_E03S08_02 — Verify that the unassigned queue should show each request's basic information oldest first and be visible to Leads only", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S08_02).
-    void page;
-  });
-
-  test.fixme("TC_E03S08_03 — Verify that the Lead assigning a Coordinator should move the request to Under Review, notify the Coordinator and Organiser, remove it from the queue and log the action", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S08_03).
-    void page;
-  });
-
-  test.fixme("TC_E03S08_04 — Verify that a Coordinator attempting to assign a queued request should be refused and the attempt logged", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S08_04).
-    void page;
-  });
-
-  test.fixme("TC_E03S08_05 — Verify that the Organiser's status history should show Submitted then Under Review after a queue assignment, as it did under automatic assignment", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S08_05).
-    void page;
-  });
-
-});
-
 test.describe("E03-S09 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E03S09_01 — Verify that a Lead reassignment should take effect immediately with both Coordinators and the Organiser notified and the change logged", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S09_01).
-    void page;
-  });
-
+  // TC_E03S08_01 to _05, TC_E03S09_01 and TC_E03S10_01/_02 are route tests
+  // against PostgreSQL in backend/tests/coordinatorNotifications.integration.test.ts.
+  // TC_E03S09_02 and _03 describe Coordinator-initiated reassignment, which
+  // T-83 (C-129) removed; they stay unimplemented until the case text is revised.
   test.fixme("TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague's acceptance", async ({ page }) => {
     // Implement from docs/testing/cases/E03.md (TC_E03S09_02).
     void page;
@@ -995,19 +954,6 @@ test.describe("E03-S09 — Week 7 case scaffolds", () => {
 
   test.fixme("TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot reassign at all", async ({ page }) => {
     // Implement from docs/testing/cases/E03.md (TC_E03S09_03).
-    void page;
-  });
-
-});
-
-test.describe("E03-S10 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with workload counts", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S10_01).
-    void page;
-  });
-
-  test.fixme("TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged", async ({ page }) => {
-    // Implement from docs/testing/cases/E03.md (TC_E03S10_02).
     void page;
   });
 
