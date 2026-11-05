@@ -120,3 +120,4 @@ either record.
 | 0016 | [Story-level design ownership and cross-story coordination](0016-story-level-design-ownership.md) |
 | 0017 | [Guard pull-request scope and reference artifacts](0017-pr-guardrails-for-reference-artifacts-and-scope.md) |
 | 0018 | [Guard code changes against doc drift](0018-doc-sync-guard.md) |
+| — | [Release 1 as-built reconciliation](release-1-as-built-reconciliation.md) |

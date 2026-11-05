@@ -105,3 +105,8 @@ artifacts/sbom/*
 
 # Durable sprint burndown and velocity dashboard
 !artifacts/sprint-burndown-velocity.html
+
+# Local Release 1 submission package (binaries assembled for upload, not committed).
+# Text sources live under docs/ (docs/design/, README.md); only the rendered
+# exports and the code zip are placed here. See docs/design/README.md.
+/submission/
