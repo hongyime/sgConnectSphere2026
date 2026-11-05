@@ -1340,6 +1340,17 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - coordinator can load search options
 - invalid input identifies fields before venue query
 
+### `backend/tests/venueStaffRosterProvisioning.test.ts`
+
+- provisionVenueStaffRoster precheck validates is_active boolean on venues
+- provisionVenueStaffRoster precheck validates is_active boolean on users
+- provisionVenueStaffRoster precheck handles case-insensitive emails
+- provisionVenueStaffRoster runs insert with ON CONFLICT and handles idempotency
+- provisionVenueStaffRoster rolls back transaction on failure
+- provisionVenueStaffRoster rejects when unexpected assignees exist on a target venue
+- provisionVenueStaffRoster rejects when resolveAssignedVenueStaff returns broad fallback on unassigned venue
+- provisionVenueStaffRoster in verify-only mode is strictly read-only and never writes, even when no unassigned venue exists
+
 ### `backend/tests/venueSuitability.test.ts`
 
 - missing layout is explained; no selected layout uses maximum; absent requirements stay optional
