@@ -1515,6 +1515,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - SCRUM-60: a late answer for the previous event never replaces the current one
 - SCRUM-60: the event page links to readiness in Planning and Safety Review, and never shows a raw id as its eyebrow
 - E07-S08 D135 - on a multi-Session event the equipment table names each line Session
+- E07-S08 D135 - the Session column stays when every line has lost its Session
 - E07-S08 D135 - a single-Session event has no Session column
 
 ### `frontend/src/features/coordinator/RequestClarification.test.tsx`
@@ -1783,6 +1784,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a save completing after leaving the form does not navigate back
 - E07-S08 D122 - a single-Session event shows no Session picker or Session cards and sends no Session
 - E07-S08 D132 D137 - a request whose Session was deleted is flagged and can be edited to choose one, or removed
+- E07-S08 - choosing a Session clears an item already requested for it
+- E07-S08 - a Session refusal on a single-Session event shows in the form alert
 
 ### `frontend/src/features/support/EquipmentReservations.test.tsx`
 
@@ -1801,6 +1804,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S04 - retired lines, single units and the read-only Coordinator view are worded for each case
 - E07-S04 - a Coordinator who opens the reserve form is told only Technical Support can reserve
 - E07-S08 D132 - a line with no Session on a two-Session event cannot be reserved until it has one
+- E07-S08 D132 - Technical Support sees a line with no Session, or an unknown one, as waiting for a Session
 - E07-S08 D131 - releasing on a two-Session event speaks of the Session dates and names the Session
 
 ### `frontend/src/features/support/EquipmentUnavailability.test.tsx`
