@@ -14,7 +14,7 @@ can see the current status and who changed it. Requirements originate in the
 
 ## Live demo
 
-**[Open ConnectSphere](https://sgconnectsphere.hong-yi.me)**.
+**[Open ConnectSphere](https://sgconnectsphere.vercel.app)**.
 Use the team's provisioned demo accounts. Local seed credentials are documented
 in [the seed specification](tests/seed/SEED_DATA.md); local seed data is not a
 production account inventory.
