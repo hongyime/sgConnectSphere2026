@@ -30,8 +30,8 @@ const booking = (overrides: Partial<ReadinessBookingRow> = {}): ReadinessBooking
   buffer_conflict: false, requires_reconfirmation: false, live_hold: false, ...overrides,
 });
 const line = (overrides: Partial<ReadinessEquipmentRow> = {}): ReadinessEquipmentRow => ({
-  id: 'r-1', name: 'Projector', requested: 3, reservation_status: 'reserved', reserved: 3, requires_reconfirmation: false,
-  ...overrides,
+  id: 'r-1', name: 'Projector', requested: 3, session_id: 'ses-1', reservation_status: 'reserved', reserved: 3,
+  requires_reconfirmation: false, ...overrides,
 });
 const support = (overrides: Partial<ReadinessSupportRow> = {}): ReadinessSupportRow => ({
   id: 's-1', support_required: true, description: 'Sound desk', starts_at: START, ends_at: END, status: 'staffed',
@@ -49,7 +49,39 @@ test('TC_E08S03_08: an event with a Confirmed booking, full reservations and sta
     id: 'b-1', venueName: 'Orchid Hall', status: 'confirmed', purpose: 'Main programme',
     startsAt: START.toISOString(), endsAt: END.toISOString(), state: 'ready',
   }]);
-  assert.deepEqual(snapshot.equipment, [{ id: 'r-1', name: 'Projector', requested: 3, reserved: 3, state: 'ready' }]);
+  assert.deepEqual(snapshot.equipment, [{
+    id: 'r-1', name: 'Projector', sessionId: 'ses-1', sessionName: null, requested: 3, reserved: 3, state: 'ready',
+  }]);
+});
+
+test('E07-S08 D135: on a multi-Session Event each equipment line names its Session, and a request with no Session needs one', () => {
+  const sessions = [
+    { id: 'ses-1', title: 'Morning', number: 1, startsAt: START, endsAt: END },
+    { id: 'ses-2', title: null, number: 2, startsAt: START, endsAt: END },
+  ];
+  const snapshot = assessReadiness(event({ equipment_requirements: 'Projector' }), [booking()], [
+    line(),
+    line({ id: 'r-2', session_id: 'ses-2', reservation_status: 'partial', reserved: 1 }),
+    line({ id: 'r-3', session_id: null, reservation_status: 'released', reserved: 3 }),
+    line({ id: 'r-4', session_id: 'ses-2', reservation_status: null, reserved: null, requires_reconfirmation: null }),
+    line({ id: 'r-5', requires_reconfirmation: true }),
+  ], [support()], sessions);
+  assert.deepEqual(messages(snapshot), [
+    'Projector (Session 2) — 1 of 3 reserved; 2 outstanding',
+    'Projector — needs a Session; choose one on the equipment requests',
+    'Projector (Session 2) — not reserved; 3 outstanding',
+    'Projector (Session "Morning") — needs review (3 of 3 reserved)',
+  ]);
+  assert.deepEqual(snapshot.blockers.map(row => row.kind === 'equipment-shortfall' && [row.issue, row.sessionName]), [
+    ['partial', 'Session 2'], ['needs_session', null], ['missing', 'Session 2'], ['needs_review', 'Session "Morning"'],
+  ]);
+  assert.deepEqual(snapshot.equipment.map(row => [row.sessionId, row.sessionName, row.state]), [
+    ['ses-1', 'Session "Morning"', 'ready'], ['ses-2', 'Session 2', 'outstanding'], [null, null, 'outstanding'],
+    ['ses-2', 'Session 2', 'outstanding'], ['ses-1', 'Session "Morning"', 'outstanding'],
+  ]);
+  // One Session: no names, and a request without one blocks as before (D132 fills it in on reserving).
+  const single = assessReadiness(event(), [booking()], [line({ session_id: null, reservation_status: 'released' })], [], [sessions[0]!]);
+  assert.deepEqual(messages(single), ['Projector — reservation released; 3 outstanding']);
 });
 
 test('SCRUM-60 D58: a ready event that is not in Planning can be read but not submitted', () => {

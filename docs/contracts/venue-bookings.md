@@ -444,7 +444,9 @@ The Coordinator's Venue bookings page links to `/coordinator/events/:eventCode/v
 ## Reconfirming a flagged booking (E08-S04 Scenario 4)
 
 A Confirmed booking flagged `requires_reconfirmation` (an E10-S02 date or
-attendance change, an E05-S01 capacity drop) stays on its original time until
+attendance change, an E05-S01 capacity drop, an E08-S06 request for changes on a
+venue factor) stays on its original time, and the Coordinator's readiness lists
+it as "<venue> — needs reconfirmation by Venue Staff" (SCRUM-250), until
 Venue Staff reconfirm it: `POST /api/venues` with `action: reconfirm`. Any
 active Venue Staff member may, as for decisions. The booking then takes its
 Session's current time (the Event's without a Session), which must be clear of
@@ -454,7 +456,9 @@ one `Booking Reconfirmed` audit row is written and the Coordinator is notified.
 booking would take. When that was a reverted event's last outstanding
 arrangement, the event enters Safety Review (`eventReadiness/autoSafetyReview.ts`);
 `cancel_lost_booking` runs the same check, since a lost booking is released only
-after its replacement is confirmed.
+after its replacement is confirmed. A booking flagged by a Safety Officer's
+request for changes does not do this: that Event waits for its Coordinator to
+resubmit (D118).
 
 ## Approved Event change requests and reconfirmation
 
@@ -496,3 +500,10 @@ change; their rows stay Confirmed pending reconfirmation. A preview cannot flag
 or notify. The request service applies the same stale-revision and atomic
 rollback rules as Event-wide changes, including T-104 crew readiness and the
 T-103 Safety Review interruption/re-entry path.
+
+### E02-S07 draft submission lock boundary
+
+Draft submission validates every independent Session's dates while holding Event
+then Session locks. Draft Session creation/editing acquires the Event lock first
+and rechecks Draft status. This preserves the common Event-first lock order used
+by booking writers; date refusal does not create or alter a venue booking.
