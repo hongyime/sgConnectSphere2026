@@ -78,54 +78,6 @@ test.describe("E03-S01", () => {
   });
 
   /**
-   * TC_E03S01_02
-   * AC:      E03-S01 - Scenario 2 (Fewest active events wins)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   Coordinator coordinator_1@connectsphere.com currently has 1 active event assigned. Coordinator coordinator_2@connectsphere.com currently has 4 active events assigned. Both are eligible for new assignments
-   *
-   * Test data:
-   *   coordinator_1@connectsphere.com: 1 active event | coordinator_2@connectsphere.com: 4 active events
-   *
-   * Expected result:
-   *   The request "Charity Run" is assigned to coordinator_1@connectsphere.com, the Coordinator with the fewest active events
-   */
-  test.fixme("TC_E03S01_02 - Verify that when several Coordinators are available, the system should assign the one with the fewest active events", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Submit a new request "Charity Run"
-    // 2. Check which Coordinator the system assigns
-    void page;
-  });
-
-  /**
-   * TC_E03S01_03
-   * RETIRED (SCRUM-32): contradicts Scenarios 3 and 4, where ownership moves
-   * only once the colleague accepts. Superseded by TC_E03S01_07. Kept as a
-   * fixme so the retired case stays visible; do not implement it.
-   * AC:      E03-S01 - Scenario 3 (Reassignment requested)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   Request "Annual Tech Summit" is currently assigned to coordinator_1@connectsphere.com
-   *
-   * Test data:
-   *   Request: Annual Tech Summit | Previous Coordinator: coordinator_1@connectsphere.com | New Coordinator: coordinator_2@connectsphere.com
-   *
-   * Expected result:
-   *   coordinator_1@connectsphere.com's assignment ends, coordinator_2@connectsphere.com becomes the new assignee, both Coordinators are notified, and the reassignment is recorded in the activity log
-   */
-  test.fixme("TC_E03S01_03 - Verify that the currently assigned Coordinator should be able to reassign the event to a colleague", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open request "Annual Tech Summit"
-    // 3. Select "Reassign" and choose coordinator_2@connectsphere.com
-    // 4. Confirm the reassignment
-    // 5. Check both Coordinators' notifications and the activity log
-    void page;
-  });
-
-  /**
    * TC_E03S01_04
    * AC:      E03-S01 - Scenario 6 (Unassigned Coordinator refused)
    * Sprint:  2.0

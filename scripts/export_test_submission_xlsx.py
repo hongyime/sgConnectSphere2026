@@ -54,7 +54,8 @@ TEAM = {"b": "Bryan", "bryanseah234": "Bryan", "amareetkm2024-del": "Amareet",
 STATUS = {"PASS": "Pass", "PASSED": "Pass", "FAIL": "Fail", "FAILED": "Fail",
           "TIMEDOUT": "Fail", "INTERRUPTED": "Fail", "SKIP": "Not Executed",
           "SKIPPED": "Not Executed", "N/A": "Not Executed", "BLOCKED": "Blocked"}
-RANK = {"Fail": 0, "Blocked": 1, "Not Executed": 2, "Pass": 3}
+# Tie-break for one TC in one run: a failure wins, and an unexecuted placeholder never hides an executed result.
+RANK = {"Fail": 0, "Blocked": 1, "Pass": 2, "Not Executed": 3}
 
 
 def course_status(raw: str) -> str:

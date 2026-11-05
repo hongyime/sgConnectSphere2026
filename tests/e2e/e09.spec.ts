@@ -11,29 +11,6 @@ import { signInAs } from './helpers/fakeSession';
 test.describe("E09-S01", () => {
 
   /**
-   * TC_E09S01_02
-   * AC:      E09-S01 (checklist: choose events to attend in a multi-event event)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has the event and the event, both open for registration
-   *
-   * Test data:
-   *   Selected: the event only
-   *
-   * Expected result:
-   *   A place is reserved for attendee_d@example.com in the event only; they are not registered for the event
-   */
-  test.fixme("TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_d@example.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Select the event only (not the event)
-    // 4. Submit registration
-    void page;
-  });
-
-  /**
    * TC_E09S01_03
    * AC:      E09-S01 - Scenario 2 (Duplicate registration prevented)
    * Sprint:  4.0
