@@ -105,3 +105,6 @@ artifacts/sbom/*
 
 # Durable sprint burndown and velocity dashboard
 !artifacts/sprint-burndown-velocity.html
+
+# Durable SCRUM-180 supplemental manual review
+!artifacts/scrum-180-tc05-retake.html
