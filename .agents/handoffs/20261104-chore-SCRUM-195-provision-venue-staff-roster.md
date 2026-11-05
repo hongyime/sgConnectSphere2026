@@ -74,9 +74,57 @@ Provision the PO-approved production Venue Staff roster for SCRUM-195 (E11-S01),
 - Repository hygiene: `python scripts/check.py` and `python scripts/doc_guard.py` passed.
 - Derived docs: `python scripts/tc_coverage_audit.py` synchronized.
 
+## 2026-11-05 production-notification plan audit
+
+- Read-only production preflight passed: all 26 migration files are applied;
+  the required account, organisation, venue, roster and notification tables
+  exist; Client A and Client B are active; all five canonical venues are
+  active; no users matching the six requested real names were found; and the
+  current five venue assignments are still the two dummy venue accounts.
+- The six real production email addresses and the operator-supplied bootstrap
+  password variable were not present in repository files, Jira, or the current
+  process environment. No account or roster write was attempted.
+- The previously configured Vercel CLI token was revoked after read-only
+  identity/project verification. A replacement operator token was created but
+  retained only in the short-lived operator process; a fresh `vercel login` or
+  newly supplied token is required before Vercel changes or deployment.
+- SCRUM-227 was already assigned to Ji Ning and remains In Review. Jira comment
+  `10489` records the required TC_E11S01_05, _06, _07 and _11 evidence and the
+  hold on Done pending human screenshots, T-65, review and PO acceptance.
+
+## 2026-11-05 execution continuation
+
+- Production account and roster transaction committed successfully: six active
+  accounts were created with the approved mixed roles, Client A was used for
+  the new organiser account, five prior active venue assignments were retired,
+  and the five canonical venues now resolve only to Aaron's venue-staff
+  account. No password or account secret is recorded here.
+- Vercel Production now contains both notification activation flags and was
+  redeployed from the latest `main` deployment.
+- Relay verification returned HTTP 200 but published zero rows and retained
+  five; the worker returned HTTP 503. A final database check observed all 41
+  delivery rows still queued. Delivery is not complete.
+- Refreshed Upstash credentials pass a local connectivity probe, but Vercel
+  denied replacement of its existing encrypted Upstash variables through the
+  current CLI account. The local Brevo credential still returns HTTP 401 and
+  must be rotated/replaced in Brevo before it is uploaded. No delivery claim
+  was made.
+
 ## Next steps
 
 - Run pre-commit checks and commit updates.
 - Push to `origin chore/SCRUM-195-provision-venue-staff-roster`.
 - Post response comment to Ji Ning on PR #425.
 - Await approval and merge of PR #425.
+
+## 2026-11-05 final production notification reconciliation
+
+- Confirmed the authenticated Vercel identity has access to the correct team and project. A no-op update of an existing non-secret variable succeeded; the earlier failure was the CLI invocation path, not insufficient project permissions.
+- Updated the Production `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` values through Vercel using stdin-only secret handling. The local pair passed a write/delete probe. Updated `BREVO_API_KEY` in Production, Preview, and Development using the operator-provided local value; refreshed Production `EMAIL_FROM`.
+- Redeployed the Production deployment after the environment changes. Protected relay and worker checks now return HTTP 200 with zero published, retained, sent, busy, or invalid items when the queue is empty.
+- Reconciled the notification backlog after the configuration correction. Final production database state is exactly 41 `sent` / `done` deliveries and zero queued, failed, or uncertain rows. No secret values are recorded here.
+
+## 2026-11-05 favicon deployment
+
+- Added cache-busted SVG favicon and shortcut-icon links to `frontend/index.html`.
+- Frontend production build passed and the clean production deployment `dpl_Gv4JYhiidQDyNZjtVJCk9176Rr1P` reached READY and was aliased to the production domain. The temporary deployment copy was removed afterward.
