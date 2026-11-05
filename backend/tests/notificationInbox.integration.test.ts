@@ -32,7 +32,7 @@ async function approvedBookingSurvivesEmailFailure(status: 400 | 401 | 503 | 429
   const f = await loginDatabase();
   const oldFetch = globalThis.fetch;
   const oldConfig = { brevoApiKey: runtimeConfig.brevoApiKey, emailFrom: runtimeConfig.emailFrom };
-  Object.assign(runtimeConfig, { brevoApiKey: 'synthetic-intercepted-key', emailFrom: 'sender@example.invalid' });
+  Object.assign(runtimeConfig, { brevoApiKey: 'synthetic-intercepted-key', emailFrom: 'sender@example.invalid' }); // pragma: allowlist secret - dummy key; fetch intercepted
   try {
     const event = await eventFixture(f.pool), coordinator = randomUUID(), staff = randomUUID(), venue = randomUUID();
     for (const [id, role] of [[coordinator, 'event_coordinator'], [staff, 'venue_staff']]) {
