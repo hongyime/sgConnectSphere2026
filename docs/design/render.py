@@ -11,7 +11,7 @@ import json
 import subprocess
 import tempfile
 from pathlib import Path
-from xml.sax.saxutils import escape
+from html import escape
 
 from pypdf import PdfReader, PdfWriter, Transformation
 from reportlab.lib.colors import HexColor

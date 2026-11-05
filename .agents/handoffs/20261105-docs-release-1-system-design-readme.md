@@ -9,3 +9,7 @@ Thirteen lecture-backed/supplementary Mermaid sources and explanation pages, sco
 Fresh independent clone: 734 backend unit passes/1 optional skip, 851 frontend passes, 26 runtime passes, 58 real PostgreSQL desktop/mobile browser passes, typechecks/build pass; mutation score 72.73%. Tooling setup/check passed 197 tests. Initial sandbox IPC and guarded database-name refusal are disclosed in the immutable run record. Native loopback PostgreSQL only.
 
 Ponytail review against origin/main and affected setup/runtime callers found no blocker after correcting physical ERD optionality, method signatures, initial-safety-entry wording and label clipping. Large renders/code zip are GitHub assets, not committed binaries. Next: stage/check/commit, open PR, then archive origin/main and scan it; upload draft submission assets. Final archive must be regenerated after all team PRs merge.
+
+## Submitted source and archive
+
+PR #437 opened from 8e76d98f. All initial required checks passed; code-scanning Semgrep separately flagged the renderer's XML escape import. Use html.escape instead; full render rerun passes, then push and confirm the updated scan. The archive was generated after PR open from origin/main 0773a721: 3,234 entries, 113,354,304 bytes; no private env/.git/node_modules, detect-secrets zero findings. GitHub draft release assets remain to upload; normal human review/merge is still required.

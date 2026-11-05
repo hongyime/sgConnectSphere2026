@@ -50,3 +50,18 @@ The README is a documentation diff on this unchanged application snapshot.
 Generated diagrams, SVG/PNG/PDF inspection and final documentation checks are
 recorded in the PR's verification section after authoring. No new manual test
 record, human acceptance, deployment result or live-provider verification is claimed.
+
+## Packaging and scanner follow-up (same unmerged session record)
+
+The origin/main archive was created after PR #437 opened: main
+`0773a721ff192086fcee66894fa06bffde11083c`, 3,234 entries, 113,354,304 bytes.
+Archive inspection found no private .env files, .git directory or node_modules.
+The repository's detect-secrets hook (same --no-verify setting and SBOM exclusions)
+scanned the extracted archive in batches with zero findings. No secret values
+were printed. This is the requested current-main snapshot and must be regenerated
+after all teammate PRs merge.
+
+Hosted Semgrep flagged the renderer's XML-library import although it only escaped
+plain text. Replaced it with standard html.escape without a suppression; the
+complete Mermaid/render builder rerun passed 13 format sets and 14 combined pages.
+No application behavior changed.
