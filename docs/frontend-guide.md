@@ -284,14 +284,18 @@ Confirmed" or "Back in Planning"), then the unsatisfactory factors and reason.
 ## Equipment Sessions (E07-S08)
 
 On an Event with two or more Sessions, the equipment page
-(`EquipmentRequests.tsx`) shows one card per Session, named as the Session
-screens name it (title, else "Session N") with its dates, and a "Requests with
-no Session" card for requests whose Session was deleted (flagged "No Session:
-choose one"). The request form adds a required Session picker and offers each
-item once per Session; a single-Session Event shows neither and sends no
-`sessionId`, so the API fills it in. A request with no Session can be edited
-to choose one, or removed, even after a released reservation (D137). The reserve
-form shows the line's Session and its dates, and refuses a line with no
-Session with the API's sentence; confirmations name the Session. The
-Coordinator's readiness page adds a Session column when the server names
-Sessions. The API is described in `api-changes-week7.md` (E07-S08 row).
+(`EquipmentRequests.tsx`) shows one card per Session, named as readiness and
+the notices name it (`Session "Morning"`, or "Session N" untitled) with its
+dates, and a "Requests with no Session" card for requests whose Session was
+deleted or isn't one of the Event's (flagged "No Session: choose one";
+Technical Support sees "Waiting for a Session" instead of Reserve). The
+request form adds a required Session picker and offers each item once per
+Session; choosing a Session clears an item already requested for it. A
+single-Session Event shows neither and sends no `sessionId`, so the API fills
+it in; a `sessionId` error then shows in the form's alert. A request with no
+Session can be edited to choose one, or removed, even after a released
+reservation (D137). The reserve form shows the line's Session and its dates,
+and refuses a line with no Session with the API's sentence; confirmations
+name the Session. The Coordinator's readiness page adds a Session column when
+the server's `multiSession` is true. The API is described in
+`api-changes-week7.md` (E07-S08 row).

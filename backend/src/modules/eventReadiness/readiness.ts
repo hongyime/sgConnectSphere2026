@@ -158,6 +158,7 @@ export function assessReadiness(
     endsAt: event.ends_at.toISOString(),
     equipmentNoneRequired: event.equipment_requirements === NONE_REQUIRED,
     supportNoneRequired: required.length === 0 && supportRows.length > 0,
+    multiSession,
     venueBookings,
     equipment,
     support,

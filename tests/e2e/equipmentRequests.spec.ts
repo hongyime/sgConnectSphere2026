@@ -43,7 +43,7 @@ test('TC_E07S08_01 the Coordinator records two microphones for Session B and the
   await page.screenshot({path:`artifacts/equipment-request-session-form-${info.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:'Save equipment request'}).click();await expect(page.getByText('Equipment request saved.')).toBeVisible();
   expect(posts[0]).toMatchObject({action:'saveRequest',equipmentId:'eq1',quantity:2,sessionId:'ses-b'});
-  const b=page.getByRole('region',{name:'B',exact:true});await expect(b.locator('tbody tr')).toHaveCount(1);await expect(b.locator('tbody tr')).toContainText('2');
-  await expect(page.getByRole('region',{name:'A',exact:true}).locator('tbody tr')).toHaveCount(1);
+  const b=page.getByRole('region',{name:'Session "B"',exact:true});await expect(b.locator('tbody tr')).toHaveCount(1);await expect(b.locator('tbody tr')).toContainText('2');
+  await expect(page.getByRole('region',{name:'Session "A"',exact:true}).locator('tbody tr')).toHaveCount(1);
   await page.screenshot({path:`artifacts/equipment-requests-sessions-${info.project.name}.png`,fullPage:true});await page.setViewportSize({width:320,height:800});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

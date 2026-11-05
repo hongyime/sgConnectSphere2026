@@ -45,7 +45,7 @@ const equipmentColumns: Column<Line>[] = [
   { header: 'Reserved', cell: row => row.reserved },
   { header: 'Readiness', cell: row => <ReadyPill state={row.state} /> },
 ];
-// E07-S08 (D135): shown when the server names Sessions (two or more).
+// E07-S08 (D135): shown when the server says the Event has two or more Sessions.
 const sessionColumn: Column<Line> = { header: 'Session', cell: row => row.sessionName ?? 'No Session' };
 const supportColumns: Column<Support>[] = [
   { header: 'Support', primary: true, cell: row => row.description },
@@ -104,7 +104,7 @@ export function EventReadiness() {
           <Card title="Equipment">
             {readiness.equipment.length > 0
               ? <DataTable caption="Equipment requested for this event" rows={readiness.equipment} rowKey={row => row.id}
-                  columns={readiness.equipment.some(row => row.sessionName)
+                  columns={readiness.multiSession
                     ? [equipmentColumns[0]!, sessionColumn, ...equipmentColumns.slice(1)] : equipmentColumns} />
               : <p>{readiness.equipmentNoneRequired ? 'None required. Nothing to reserve.' : 'No equipment requests. Nothing to reserve.'}</p>}
           </Card>

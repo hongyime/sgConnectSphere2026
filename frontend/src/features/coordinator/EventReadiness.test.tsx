@@ -282,6 +282,7 @@ test('SCRUM-60: the event page links to readiness in Planning and Safety Review,
 
 test('E07-S08 D135 - on a multi-Session event the equipment table names each line Session', async () => {
   stubApi({ [READ]: { body: readiness({
+    multiSession: true,
     equipment: [
       { id: 'r-1', name: 'Projector-HD', sessionId: 'ses-a', sessionName: 'Session "Morning"', requested: 3, reserved: 3, state: 'ready' },
       { id: 'r-2', name: 'Microphone', sessionId: null, sessionName: null, requested: 2, reserved: 0, state: 'outstanding' },
@@ -291,6 +292,17 @@ test('E07-S08 D135 - on a multi-Session event the equipment table names each lin
   const table = await screen.findByRole('table', { name: 'Equipment requested for this event' });
   expect(within(table).getByRole('columnheader', { name: 'Session' })).toBeInTheDocument();
   expect(table).toHaveTextContent('Session "Morning"');
+  expect(table).toHaveTextContent('No Session');
+});
+
+test('E07-S08 D135 - the Session column stays when every line has lost its Session', async () => {
+  stubApi({ [READ]: { body: readiness({
+    multiSession: true,
+    equipment: [{ id: 'r-2', name: 'Microphone', sessionId: null, sessionName: null, requested: 2, reserved: 0, state: 'outstanding' }],
+  }) } }, { role: 'event_coordinator' });
+  renderAt('/coordinator/events/EVT-3003/readiness');
+  const table = await screen.findByRole('table', { name: 'Equipment requested for this event' });
+  expect(within(table).getByRole('columnheader', { name: 'Session' })).toBeInTheDocument();
   expect(table).toHaveTextContent('No Session');
 });
 

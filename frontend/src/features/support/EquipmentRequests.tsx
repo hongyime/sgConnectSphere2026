@@ -173,6 +173,12 @@ function EventRequests({ eventCode }: { eventCode: string }) {
       setBusy(false);
     }
   }
+  const sessions = result.state === 'ready' ? (result.data.sessions ?? []) : [];
+  const multiSession = sessions.length > 1;
+  // E07-S08 (D132): a request whose Session isn't one of the Event's (deleted,
+  // or gone since) waits for a Session, on a multi-Session Event.
+  const noSession = (r: EquipmentRequest) =>
+    multiSession && !sessions.some((s) => s.id === r.sessionId);
   // E07-S08: one table per Session on a multi-Session Event (D122), as the
   // Safety Officer's review groups arrangements; one table otherwise.
   const requestTable = (
@@ -192,7 +198,7 @@ function EventRequests({ eventCode }: { eventCode: string }) {
           header: 'Status',
           cell: (r) => (
             <>
-              {r.sessionId === null && (detail.sessions ?? []).length > 1 ? (
+              {noSession(r) ? (
                 <>
                   <StatusPill status="warning" label="No Session: choose one" />{' '}
                 </>
@@ -234,6 +240,7 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                   <StaffActions
                     line={r}
                     detail={detail}
+                    noSession={noSession(r)}
                     onRelease={() => {
                       setReleasing(r);
                       setReleaseError('');
@@ -277,8 +284,6 @@ function EventRequests({ eventCode }: { eventCode: string }) {
       ]}
     />
   );
-  const sessions = result.state === 'ready' ? (result.data.sessions ?? []) : [];
-  const multiSession = sessions.length > 1;
   return (
     <PageLayout
       eyebrow={eventCode}
@@ -427,8 +432,7 @@ function EventRequests({ eventCode }: { eventCode: string }) {
                 );
               })
             : null}
-          {multiSession &&
-          result.data.requests.some((r) => r.sessionId === null) ? (
+          {result.data.requests.some(noSession) ? (
             <Card title="Requests with no Session">
               <Alert tone="warning">
                 Their Session was deleted. Choose a Session for each request
@@ -436,7 +440,7 @@ function EventRequests({ eventCode }: { eventCode: string }) {
               </Alert>
               {requestTable(
                 result.data,
-                result.data.requests.filter((r) => r.sessionId === null),
+                result.data.requests.filter(noSession),
                 'Equipment requests with no Session',
               )}
             </Card>
@@ -458,17 +462,22 @@ function EventRequests({ eventCode }: { eventCode: string }) {
 function StaffActions({
   line,
   detail,
+  noSession,
   onRelease,
 }: {
   line: EquipmentRequest;
   detail: RequestDetail;
+  noSession: boolean;
   onRelease: () => void;
 }) {
   const active = isActive(line.reservation);
   const form = `/support/events/${encodeURIComponent(eventRef(detail.event))}/equipment/${line.id}/reserve`;
   return (
     <>
-      {detail.canReserve && line.isActive ? (
+      {detail.canReserve && line.isActive && noSession ? (
+        // 0014: a request with no Session holds no active reservation.
+        <span>Waiting for a Session</span>
+      ) : detail.canReserve && line.isActive ? (
         <ButtonLink to={form}>
           {active ? `Change ${line.name} reservation` : `Reserve ${line.name}`}
         </ButtonLink>
@@ -562,6 +571,14 @@ function RequestForm({
       </>
     );
   const option = data.equipment.find((eq) => eq.id === equipmentId);
+  // One request per item per Session (E07-S08).
+  const taken = (id: string, session: string) =>
+    data.requests.some(
+      (r) =>
+        r.equipmentId === id &&
+        r.id !== requestId &&
+        (!multiSession || r.sessionId === session),
+    );
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (busy) return;
@@ -587,7 +604,15 @@ function RequestForm({
   return (
     <Card title={data.event.title}>
       <form onSubmit={submit} className="ui-form">
-        {error ? <Alert tone="error">{error}</Alert> : null}
+        {error ? (
+          <Alert tone="error">
+            {error}
+            {/* E07-S08: the Session field shows only with two or more Sessions. */}
+            {!multiSession && errors.sessionId ? (
+              <p>{errors.sessionId[0]}</p>
+            ) : null}
+          </Alert>
+        ) : null}
         <FormSection title="Equipment requirement">
           {multiSession ? (
             <FormField
@@ -602,7 +627,10 @@ function RequestForm({
                   required
                   value={sessionId}
                   disabled={busy}
-                  onChange={(e) => setSessionId(e.target.value)}
+                  onChange={(e) => {
+                    setSessionId(e.target.value);
+                    if (taken(equipmentId, e.target.value)) setEquipmentId('');
+                  }}
                 >
                   <option value="">Choose a Session</option>
                   {sessions.map((session) => (
@@ -632,16 +660,7 @@ function RequestForm({
                   </option>
                 ) : null}
                 {data.equipment
-                  .filter(
-                    (eq) =>
-                      // One request per item per Session (E07-S08).
-                      !data.requests.some(
-                        (r) =>
-                          r.equipmentId === eq.id &&
-                          r.id !== requestId &&
-                          (!multiSession || r.sessionId === sessionId),
-                      ),
-                  )
+                  .filter((eq) => !taken(eq.id, sessionId))
                   .map((eq) => (
                     <option key={eq.id} value={eq.id}>
                       {eq.name}

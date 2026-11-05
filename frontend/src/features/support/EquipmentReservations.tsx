@@ -43,9 +43,9 @@ export function freeSentence(free: number, dates = "this event's dates") {
   return `Only ${free} ${free === 1 ? 'is' : 'are'} free for ${dates}.`;
 }
 
-// E07-S08: named as the other Session screens name them (VenueSearch).
+// E07-S08: named as readiness and the notices name them (the API's sessionLabel).
 export function sessionName(session: EquipmentSession) {
-  return session.title || `Session ${session.number}`;
+  return session.title ? `Session "${session.title}"` : `Session ${session.number}`;
 }
 
 export function eventLabel(event: { eventCode: string | null; title: string }) {

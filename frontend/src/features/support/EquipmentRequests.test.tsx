@@ -657,7 +657,7 @@ test('TC_E07S08_01 - on a two-Session event the Coordinator sees one card per Se
   expect(second).toHaveTextContent('15 Oct 2026, 1:00 pm – 3:00 pm');
   expect(second).toHaveTextContent('No equipment requested for this Session yet.');
   // Session A's line asks for more than the stock: the existing pill still shows.
-  expect(screen.getByRole('table', { name: 'Equipment requested for Morning' })).toHaveTextContent('Exceeds total stock');
+  expect(screen.getByRole('table', { name: 'Equipment requested for Session "Morning"' })).toHaveTextContent('Exceeds total stock');
   fireEvent.click(screen.getByRole('link', { name: 'Add equipment request' }));
   const picker = await screen.findByLabelText('Session');
   expect(picker).toBeRequired();
@@ -712,7 +712,7 @@ test('E07-S08 D122 - a single-Session event shows no Session picker or Session c
   await waitFor(() => expect(calls.some((c) => c.method === 'POST')).toBe(true));
   expect(calls.find((c) => c.method === 'POST')?.body).not.toHaveProperty('sessionId');
   expect(await screen.findByText('No equipment requested yet')).toBeInTheDocument();
-  expect(screen.queryByRole('region', { name: 'Morning' })).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Session "Morning"' })).not.toBeInTheDocument();
 });
 
 test('E07-S08 D132 D137 - a request whose Session was deleted is flagged and can be edited to choose one, or removed', async () => {
@@ -732,4 +732,41 @@ test('E07-S08 D132 D137 - a request whose Session was deleted is flagged and can
   fireEvent.click(screen.getByRole('link', { name: 'Edit Microphone' }));
   expect(await screen.findByLabelText('Session')).toHaveValue('');
   expect(screen.getByRole('button', { name: 'Save equipment request' })).toBeEnabled();
+});
+
+test('E07-S08 - choosing a Session clears an item already requested for it', async () => {
+  stubApi(
+    { [`GET ${endpoint}`]: { body: { event, equipment, sessions, canEdit: true, requests: [{ ...row, sessionId: 'ses-a' }] } } },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/new');
+  const picker = await screen.findByLabelText('Session');
+  expect(screen.getByRole('option', { name: 'Session "Morning", 15 Oct 2026, 9:00 am – 11:00 am' })).toBeInTheDocument();
+  fireEvent.change(picker, { target: { value: 'ses-b' } });
+  fireEvent.change(screen.getByLabelText('Equipment item'), { target: { value: 'eq1' } });
+  expect(screen.getByLabelText('Equipment item')).toHaveValue('eq1');
+  // The Morning already has a Microphone request.
+  fireEvent.change(picker, { target: { value: 'ses-a' } });
+  expect(screen.getByLabelText('Equipment item')).toHaveValue('');
+  // Cleared, not just hidden: back on Session 2 the item is not chosen.
+  fireEvent.change(picker, { target: { value: 'ses-b' } });
+  expect(screen.getByLabelText('Equipment item')).toHaveValue('');
+});
+
+test('E07-S08 - a Session refusal on a single-Session event shows in the form alert', async () => {
+  stubApi(
+    {
+      [`GET ${endpoint}`]: { body: { event, equipment, sessions: [sessions[0]], canEdit: true, requests: [] } },
+      [`POST ${endpoint}`]: {
+        status: 400,
+        body: { error: 'validation_failed', errors: { sessionId: ['Choose a Session for this equipment request.'] } },
+      },
+    },
+    { role: 'event_coordinator' },
+  );
+  show('/coordinator/events/EVT-A/equipment/new');
+  fireEvent.change(await screen.findByLabelText('Equipment item'), { target: { value: 'eq1' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save equipment request' }));
+  expect(await screen.findByText('Choose a Session for this equipment request.')).toBeInTheDocument();
+  expect(screen.queryByLabelText('Session')).not.toBeInTheDocument();
 });

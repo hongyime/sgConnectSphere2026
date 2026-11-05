@@ -414,6 +414,15 @@ test('E07-S08 D132 - a line with no Session on a two-Session event cannot be res
   expect(screen.queryByLabelText('Quantity to reserve')).not.toBeInTheDocument();
 });
 
+test('E07-S08 D132 - Technical Support sees a line with no Session, or an unknown one, as waiting for a Session', async () => {
+  stubApi({ [`GET ${endpoint}`]: detail([{ ...line, sessionId: null }, { ...line, id: 'req2', name: 'Lectern', sessionId: 'ses-gone' }], { sessions }) }, { role: 'technical_support_staff' });
+  show('/support/events/EVT-A/equipment', true);
+  const card = await screen.findByRole('region', { name: 'Requests with no Session' });
+  expect(within(card).getAllByText('Waiting for a Session')).toHaveLength(2);
+  expect(card).toHaveTextContent('Lectern');
+  expect(screen.queryByRole('link', { name: /^Reserve / })).not.toBeInTheDocument();
+});
+
 test('E07-S08 D131 - releasing on a two-Session event speaks of the Session dates and names the Session', async () => {
   const held = { ...forB, reserved: true, reservation: { id: 'res1', status: 'reserved' as const, quantityReserved: 2, requiresReconfirmation: false }, freeQuantity: 0 };
   stubApi({
