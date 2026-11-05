@@ -355,3 +355,63 @@ Given one event has claims on two different venues over the same period When bot
 - Resolve a conflict explicitly by rejection, withdrawal or replan before a later approval succeeds
 - Allow exact adjacency of half-open buffered windows and refuse a one-minute overlap
 - Confirm conflicts are per venue, so one event may confirm overlapping bookings on different venues
+
+## E06-S07 — Configure tentative-hold expiry and warning
+
+- **Sprint**:
+- **Points**:
+- **BDR references**: C-68, C-79, C-96, C-99, C-110, C-114, C-124, C-125, C-126, T-74
+- **Owner**:
+
+### User story
+
+As Venue Staff, I want to set and update each tentative hold's expiry and its
+Coordinator warning so that a venue is reserved only for a staff-configured
+period and the Coordinator can act before or when it expires.
+
+This is a follow-up for the later Week 9 customer clarifications. It does not
+reopen completed E06-S05: its fixed 48-hour default and no-pre-expiry-warning
+behaviour are superseded for future work (T-74). The customer did not estimate
+this follow-up or assign it to a Sprint; those planning fields remain blank until
+team refinement rather than being backdated.
+
+### Acceptance criteria
+
+#### Scenario 1 — Venue Staff set the hold expiry
+
+Given a Coordinator requests a tentative hold for a free venue and period When
+the responsible Venue Staff set an expiry date and time for that hold Then the
+resulting Tentative hold records that staff-configured expiry and reserves its
+venue window; no fixed default duration is applied
+
+#### Scenario 2 — No active hold without a configured expiry
+
+Given no Venue Staff expiry has been set for a requested hold When the request
+is viewed or another booking is checked Then it is not represented as an active
+Tentative hold or an indefinite reservation
+
+#### Scenario 3 — Coordinator chooses the warning time
+
+Given a Tentative hold has a staff-configured expiry When the Coordinator sets a
+warning time for that hold Then the system records that warning for the hold and
+notifies the Coordinator before or at expiry according to the configured time
+
+#### Scenario 4 — Expiry frees the venue
+
+Given a configured hold reaches its expiry without becoming a booking request
+When the expiry processing runs Then the hold becomes Expired, the venue window
+is freed, and a Coordinator who still needs it must submit a new request
+
+#### Scenario 5 — Venue Staff update an unexpired hold
+
+Given a Tentative hold has not expired When Venue Staff update its expiry Then
+the new expiry applies and the Coordinator is notified of the change; the update
+does not create a second hold for the same reservation
+
+### Checklist
+
+- Set an explicit per-hold expiry as Venue Staff; do not apply a fixed default
+- Refuse to treat an unconfigured request as an indefinite active hold
+- Set a per-hold Coordinator warning and notify before or at expiry
+- Expire an unused hold, free the venue, and require a new request if needed
+- Update an unexpired hold as Venue Staff and notify the Coordinator
