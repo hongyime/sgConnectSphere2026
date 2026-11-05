@@ -1,5 +1,10 @@
 # Figma wireframe refinement plan
 
+> Historical UI proposal, not an as-built system diagram. Use the
+> [Release 1 design catalogue](README.md) for the submission. Multi-role proposal
+> screens below do not establish implemented multi-role support.
+
+
 ## Current source
 
 - Figma file: `ConnectSphere-Wireframes`

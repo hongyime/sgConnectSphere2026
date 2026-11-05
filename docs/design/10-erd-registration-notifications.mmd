@@ -1,0 +1,17 @@
+erDiagram
+ events ||--o{ event_registrations : accepts
+ users ||--o{ event_registrations : registers
+ event_registrations ||--o{ event_registration_sessions : selects
+ sessions ||--o{ event_registration_sessions : selected
+ event_registrations ||--o{ event_attendance : records
+ users ||--o{ notifications : receives
+ events |o--o{ notifications : concerns
+ notifications ||--o{ notification_deliveries : dispatches
+ events |o--o{ audit_logs : concerns
+ users |o--o{ audit_logs : acts
+ event_registrations { uuid id PK uuid event_id FK uuid attendee_id FK string status }
+ event_registration_sessions { uuid registration_id PK,FK uuid session_id PK,FK }
+ event_attendance { uuid id PK uuid registration_id FK boolean attended }
+ notifications { uuid id PK uuid user_id FK uuid event_id FK boolean is_read }
+ notification_deliveries { uuid id PK uuid notification_id FK string channel string delivery_status }
+ audit_logs { uuid id PK uuid actor_id FK uuid event_id FK string action }
