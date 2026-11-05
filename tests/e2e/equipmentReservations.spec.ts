@@ -169,3 +169,52 @@ test('TC_E07S04_07 - one more requested than is free gives a partial reservation
   await expect(page.getByText('Projector-HD × 4 of 5 reserved for EVT-1003 Tech Conference 2026, 20 Nov 2026, 9:00 am – 5:00 pm. 1 still outstanding.')).toBeVisible();
   await expect(page.getByRole('row', { name: /Projector-HD/ })).toContainText('Partial: 4 of 5 reserved');
 });
+
+// E07-S08 (SCRUM-181): Session A 9 to 11 am and Session B 1 to 3 pm, 20 Nov
+// 2026. Three microphones are reserved for Session A; the fake counts stock
+// per Session, as the API does, so Session B can still take all three.
+test('TC_E07S08_02 a reservation for Session B uses Session B dates and is not blocked by Session A', async ({ page }, info) => {
+  const sessions = [
+    { id: 'ses-a', title: 'A', number: 1, startsAt: '2026-11-20T01:00:00.000Z', endsAt: '2026-11-20T03:00:00.000Z' },
+    { id: 'ses-b', title: 'B', number: 2, startsAt: '2026-11-20T05:00:00.000Z', endsAt: '2026-11-20T07:00:00.000Z' },
+  ];
+  const lines = [
+    { id: 'req-a', sessionId: 'ses-a', reservation: { id: 'res-a', status: 'reserved', quantityReserved: 3, requiresReconfirmation: false } as Reservation | null },
+    { id: 'req-b', sessionId: 'ses-b', reservation: null as Reservation | null },
+  ];
+  const posts: Record<string, unknown>[] = [];
+  await signInAs(page, 'technical_support_staff');
+  await page.route('**/api/equipment?**', async (route) => {
+    if (route.request().method() === 'POST') {
+      const body = route.request().postDataJSON() as Record<string, unknown>;
+      posts.push(body);
+      const l = lines.find((x) => x.id === body.requestId)!;
+      l.reservation = { id: 'res-b', status: 'reserved', quantityReserved: body.quantity as number, requiresReconfirmation: false };
+      return route.fulfill({ status: 201, json: {
+        changed: true, notified: 1, event, session: sessions[1],
+        reservation: { id: 'res-b', requestId: l.id, name: 'Wireless Microphone', status: 'reserved', quantityReserved: 3, quantityRequested: 3, outstanding: 0 },
+      } });
+    }
+    return route.fulfill({ json: {
+      event, sessions, equipment: [], canEdit: false, canReserve: true, canRelease: true,
+      requests: lines.map((l) => ({
+        id: l.id, equipmentId: 'mic', sessionId: l.sessionId, name: 'Wireless Microphone', quantity: 3, notes: '',
+        totalStock: 3, operationalStatus: 'available', isActive: true, reserved: !!l.reservation, reservation: l.reservation,
+        freeQuantity: l.reservation ? 3 : 3 - lines.filter((x) => x !== l && x.sessionId === l.sessionId && x.reservation).length * 3,
+      })),
+    } });
+  });
+  await page.goto('/support/events/EVT-1003/equipment');
+  await page.getByRole('region', { name: 'Session "B"', exact: true }).getByRole('link', { name: 'Reserve Wireless Microphone' }).click();
+  await expect(page.getByText('Session dates')).toBeVisible();
+  await expect(page.getByText('20 Nov 2026, 1:00 pm – 3:00 pm')).toBeVisible();
+  await expect(page.getByLabel('Quantity to reserve')).toHaveValue('3');
+  await page.screenshot({ path: `artifacts/equipment-reserve-session-${info.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: 'Reserve equipment' }).click();
+  await expect(page.getByText('Wireless Microphone × 3 reserved for EVT-1003 Tech Conference 2026, Session "B", 20 Nov 2026, 1:00 pm – 3:00 pm.')).toBeVisible();
+  expect(posts).toEqual([{ action: 'reserve', requestId: 'req-b', quantity: 3 }]);
+  await expect(page.getByRole('region', { name: 'Session "A"', exact: true }).getByText('Reserved', { exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Session "B"', exact: true }).getByText('Reserved', { exact: true })).toBeVisible();
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
