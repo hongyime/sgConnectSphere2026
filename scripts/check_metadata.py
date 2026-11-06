@@ -180,6 +180,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["commit-msg", "branch", "pr", "staged-files"])
     parser.add_argument("value", nargs="?")
+    parser.add_argument(
+        "--changed-files-file",
+        type=Path,
+        help="Newline-separated changed paths supplied by the pr-conventions workflow.",
+    )
     args = parser.parse_args()
 
     if args.mode == "commit-msg":
@@ -232,10 +237,12 @@ def main() -> int:
             print(f"  {header}")
         print("See .github/pull_request_template.md for the required layout.")
         valid = False
-    # Newline-separated list supplied by the workflow (git diff --name-only).
-    changed = os.environ.get("PR_CHANGED_FILES")
-    if changed is not None:
-        ok, offending = check_changed_files(changed.split(), pr["title"])
+    if args.changed_files_file is not None:
+        try:
+            changed = args.changed_files_file.read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            parser.error(f"could not read --changed-files-file: {error}")
+        ok, offending = check_changed_files(changed, pr["title"])
         if not ok:
             print("PR edits continuity files that only the owner's consolidation PR may touch (decision 0014):")
             for path in offending:
