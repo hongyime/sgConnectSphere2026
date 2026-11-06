@@ -100,12 +100,6 @@ fix the links. A calendar screen can reuse `VenueCalendar.tsx`.
 
 **Vitest:** render your page and fake the API with `stubApi`.
 
-The shared Vitest setup uses the isolated `vmThreads` pool, a 10-second test
-budget and a three-second Testing Library async-query budget. This keeps the
-full component suite reliable under coverage without sharing DOM state between
-test files; write web-first `findBy*`/`waitFor` assertions instead of adding
-per-test sleeps.
-
 ```tsx
 import { stubApi } from '../../testing/fakeApi';
 

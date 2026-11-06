@@ -22,6 +22,11 @@ Audit Release 1 against the original customer sources, course methods, live Jira
   content remains with its designated owner.
 - Committed the audit as `72e84b27 chore(release): audit Release 1 evidence`,
   pushed `docs/release-1-audit-submission`, and opened PR #436.
+- Addressed review feedback from @lexinphun2024-debug: reverted Vitest settings in
+  `docs/frontend-guide.md` and updated `docs/plans/release-1-audit-20261105.md`;
+  corrected `TC_E03S09_02` and `TC_E03S09_03` AC scenario citations in `docs/testing/cases/E03.md`
+  to match canonical backlog #442; referenced PR #439 for deck edits; restored step 3
+  indentation in `TC_E03S08_01`.
 
 ## Next steps
 

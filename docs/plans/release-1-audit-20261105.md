@@ -16,7 +16,7 @@ as team choices rather than customer requirements.
 
 ### Assumptions
 
-- The external staging directory is `C:\Users\bryan\IS212-submission`; the
+- The external staging directory is documented in the submission checklist; the
   repository remains the source for committed Markdown, scripts, code and tests.
 - The staged package contains only copies or generated exports of evidence that
   exists at packaging time. It does not reconstruct meetings, manual runs,
@@ -103,10 +103,10 @@ name them:
   submission.
 - Branch verification recorded on 5 November: frontend coverage passed 851/851
   tests across 76 files (84.13% statements); the backend unit coverage suite
-  and `scripts/check.py` also passed. The branch makes asynchronous component
-  test execution reliable under coverage with the isolated `vmThreads` pool,
-  a 10-second test budget and a three-second DOM-query budget. Database and
-  browser end-to-end suites were deliberately not rerun locally.
+  and `scripts/check.py` also passed. The branch resolves the two flaky
+  assertions with targeted `waitFor` synchronization without altering global
+  test runners or timeouts. Database and browser end-to-end suites were deliberately
+  not rerun locally.
 
 ## Material gaps and required follow-up
 
@@ -115,7 +115,7 @@ name them:
 Week 9 C-100/C-127 require multiple Leads with system-wide visibility;
 C-104/C-128 require immediate Lead reassignment; C-129/C-130 and T-83 make
 assignment and reassignment Lead-only. The canonical E03-S08/S09/S10 backlog
-and cases are corrected in this audit to reflect those rules.
+is established in #442, and the cases are aligned to reflect those rules.
 
 The implementation is not aligned: submission still auto-assigns the
 least-busy Coordinator, the Lead UI has no assignment/reassignment/oversight
@@ -154,12 +154,8 @@ retired Coordinator-to-Lead reassignment request.
   delivery ledger and burndown analysis, but no local Sprint 2–4 Planning,
   Review, Retrospective or stand-up minutes with dates, attendees, venues and
   actions. Do not manufacture them.
-- The tracked Week 11 deck still has obsolete workbook paths, counts, a
-  placeholder ceremony link and point-in-time claims. It must be refreshed from
-  the staged manifest and this audit before submission.
-- The lecture archive does not include the official final-deck template said to
-  be on eLearn. Do not claim that the local deck is the latest official template
-  without confirmation.
+- Week 11 slide deck edits, template alignment and ceremony links are tracked and
+  owned in PR #439 (`5. SLIDE DECK`).
 
 ## Submission staging rules
 
