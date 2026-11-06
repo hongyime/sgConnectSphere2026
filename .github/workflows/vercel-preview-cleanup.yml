@@ -3,12 +3,11 @@ name: Vercel Preview Cleanup
 # Deletes Vercel preview deployments older than 30 days.
 #
 # The Hobby plan allows a limited number of preview deployments; stale PR
-# previews from merged or closed branches accumulate indefinitely because
-# vercel-deploy.yml never cleans up after itself. Each merged PR leaves one
-# preview per push behind; by Sprint 3 that was dozens of orphaned
+# previews from merged or closed branches accumulate indefinitely. Each merged
+# PR can leave previews behind; by Sprint 3 that was dozens of orphaned
 # deployments. SCRUM-112.
 #
-# Uses the same three secrets as vercel-deploy.yml, all set on the repo:
+# Uses these three repository secrets:
 #   VERCEL_TOKEN       Vercel personal access token
 #   VERCEL_ORG_ID      Vercel team id (theprawnvercel)
 #   VERCEL_PROJECT_ID  Vercel project id (sgconnectsphere)

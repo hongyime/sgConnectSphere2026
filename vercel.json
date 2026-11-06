@@ -1,11 +1,9 @@
 {
   "buildCommand": "npm run build --workspace frontend",
   "installCommand": "npm install",
+  "ignoreCommand": "git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- api backend frontend package.json package-lock.json vercel.json",
   "outputDirectory": "frontend/dist",
   "framework": "vite",
-  "git": {
-    "deploymentEnabled": false
-  },
   "crons": [
     {
       "path": "/api/cron/outbox-relay",

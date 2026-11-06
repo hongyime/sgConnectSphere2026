@@ -231,17 +231,17 @@ record what was actually run for this README, including failed setup attempts.
 
 ## Deployment
 
-The existing `.github/workflows/vercel-deploy.yml` is the single deployment path.
-It pulls the configured Vercel environment, builds, and deploys the prebuilt
-artifact. Production follows `main`; eligible ready human PRs receive previews.
-The Vercel Git deployment integration is disabled in `vercel.json`.
+Vercel Git integration is the sole automatic deployment path (see [deployment decision 0010](docs/decisions/0010-single-vercel-deploy-path.md)).
+The Vercel dashboard governs branch deployment rules and build skipping. Production follows
+`main`, and eligible preview deployments are managed directly by Vercel's GitHub integration.
+`.github/workflows/vercel-deploy.yml` is removed.
 
-A maintainer provisions Vercel project settings and secrets outside Git. The
-workflow uses `VERCEL_TOKEN`, `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID`; application
+A maintainer provisions Vercel project settings and secrets outside Git. Application
 configuration belongs in the appropriate Vercel environment. No real values are
 stored here. Supabase migrations and provider activation are separate controlled
 operations; a code deploy is not permission to reset data or enable email.
 See [deployment decision 0010](docs/decisions/0010-single-vercel-deploy-path.md),
+[Deploying and debugging](docs/deploying-and-debugging.md),
 [production migrations](docs/ops/production-migrations.md), and the
 [notification readiness evidence](docs/testing/e11-s01-readiness-20261105.md).
 This README verification did not deploy or send live email.

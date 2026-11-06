@@ -1,42 +1,45 @@
-# Deploying and debugging without Vercel dashboard access
+# Deploying and debugging with Vercel Git integration
 
-GitHub Actions is the only deployment path. The `.github/workflows/vercel-deploy.yml`
-workflow uses the Vercel CLI to build and deploy from Actions; `vercel.json`
-disables Vercel's own Git deployment integration (decision 0010). Anyone with
-repository access can inspect the build and deploy logs in the Actions run.
-Vercel dashboard access is needed only for account-level settings or credentials.
+Vercel Git integration is the only automatic deployment path. The Vercel
+dashboard controls which Git branches deploy; the repository has no GitHub
+Actions deployment workflow. Repository access is sufficient for application
+checks, while Vercel dashboard access is needed to inspect deployment logs or
+change deployment settings. See decision 0010.
 
 ## When deployments run
 
-The **Vercel Deploy** workflow runs:
+Vercel evaluates Git pushes using the repository's version-controlled
+`ignoreCommand` defined in `vercel.json`:
 
-- On pushes to `main` that include deployable files. These create production
-  deployments.
-- On opened, reopened, synchronized, or review-ready pull requests that include
-  deployable files. These create preview deployments. Draft PRs do not deploy;
-  the first preview runs when the PR is marked ready for review.
+```json
+"ignoreCommand": "git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- api backend frontend package.json package-lock.json vercel.json"
+```
 
-Changes limited to `docs/**`, `.agents/**`, `scripts/**`, `tooling/**`, or
-Markdown files are filtered out. A PR that also changes deployable files still
-runs the workflow.
+This command replaces the former workflow `paths-ignore` filter:
 
-A successful PR deployment posts or updates a **Vercel preview** comment with
-the URL. The Actions run summary also contains the URL. For a failed or missing
-deployment, check the run for the PR's current commit under **Checks**, or open
-**Actions / Vercel Deploy** and select the matching run for that commit. The job
-is named `vercel-deploy`. This check is not required for merging, so a failure
-does not itself block the PR.
+- Non-deployable changes (commits touching only `docs/**`, `.agents/**`, `scripts/**`,
+  `tooling/**`, `.github/**`, or Markdown documentation) exit with code 0 and are
+  canceled by Vercel ("Canceled by Ignored Build Step") to conserve Vercel Hobby
+  quota (100 deployments per rolling 24 hours).
+- Deployable changes (commits modifying `api/`, `backend/`, `frontend/`, `package.json`,
+  `package-lock.json`, or `vercel.json`) exit with code 1 and proceed to build.
+- Pushes to `main` produce production deployments.
+- Pull request branches with deployable changes produce preview deployments.
+  Previews are no longer posted as pull request comments by GitHub Actions; preview
+  URLs and deployment statuses appear directly on the pull request's Vercel status check.
+
+A deployment or preview status shown on the pull request is the source for that
+commit's deployment result. The status is advisory and does not block merging.
 
 ## Debug a failed deployment
 
-1. Open the matching **Vercel Deploy** run and inspect the first failed step.
-   The `Pull Vercel environment`, `Build with Vercel`, and `Deploy prebuilt
-   artifact to Vercel` logs include the error output. Use the commit SHA shown
-   in the run to confirm it matches the PR head.
+1. Open the matching Vercel deployment from the pull-request status or Vercel
+   dashboard and inspect its build log. Use the commit SHA shown there to
+   confirm it matches the PR head.
 2. Check **application-checks** separately. It runs the application typecheck,
    database and unit suites, build, runtime checks, and browser checks when
    application files change. If that check fails, follow its failing step. If
-   it passes while `vercel-deploy` fails, use the Vercel CLI log to diagnose a
+   it passes while Vercel fails, use the Vercel build log to diagnose a
    deployment configuration, environment, function, or upload problem.
 3. For an application failure, reproduce the command from the failed
    `application-checks` step locally. Start with:
@@ -48,8 +51,8 @@ does not itself block the PR.
    ```
 
    These commands reproduce the typecheck and build locally, but not the full
-   application suite, Vercel's environment, or deployment. The `vercel-deploy` run is
-   the evidence for Vercel-specific build and upload failures.
+   application suite, Vercel's environment, or deployment. The Vercel build
+   log is the evidence for Vercel-specific build and upload failures.
 
 If the log points to missing credentials or a Vercel project setting, ask a
 maintainer with the required access to inspect it. Do not paste credential
@@ -60,12 +63,9 @@ values into an issue, pull request, or log.
 - `scripts/check_api_routes.py` enforces the one-file-per-URL rule and the
   11-file headroom limit (ADR-014 and BDR T-56). It catches duplicate Vercel
   routes that may otherwise build but serve the wrong handler.
-- The required `application-checks` result and the non-required
-  `vercel-deploy` result have different purposes. A successful repository
-  check is not an application build or deployment result.
-- If every changed path is filtered above, no deployment is created.
-  Preview URLs from an earlier commit may therefore be stale for that PR.
+- The required `application-checks` result and Vercel's advisory deployment
+  status have different purposes. A successful repository check is not an
+  application deployment result.
 
 See [decision 0010](decisions/0010-single-vercel-deploy-path.md) and the
-[deployment workflow](../.github/workflows/vercel-deploy.yml) for the
-source-of-truth configuration.
+Vercel dashboard for the deployment configuration.
