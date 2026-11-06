@@ -17,8 +17,9 @@ Audit and reconcile the Release 1 Product Backlog against the original customer 
 
 - Added a source-located requirements register, course backlog checklist and
   requirement-to-story-to-test traceability matrix.
-- Corrected the current E03 Lead criteria and E11 routing wording to the later
-  customer clarifications; the implementation remains an issue for its owners.
+- Corrected the current E03 Lead criteria. E06-S07 carries the later
+  configurable pre-expiry warning; E11-S01 retains its completed T-92
+  expiry-only routing acceptance criterion.
 - Ran and applied a 21-operation Jira plan: fixed the 17 missing Release 1
   versions; made E02-S05 and E03-S08/S09/S10 Stories; added their required
   parents/descriptions; set E02-S05 to its source-recorded 3 points; created
