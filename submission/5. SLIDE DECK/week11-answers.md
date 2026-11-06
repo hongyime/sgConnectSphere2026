@@ -138,9 +138,9 @@ and where we fell short we've said that too."
 
 - **Change 6, Operational Safety Check (Safety Officer)**
 - New role (7 roles now, T-72) and a new event status, Safety Review, between Planning and Confirmed (T-71, migration `0017`)
-- Changed the Confirm step we had already built (E08-S03), added the Safety Officer review (E08-S06, 8 points) and a "send back to planning" path (E08-S04)
+- Rewrote the Confirm story (E08-S03) before it was built: complete arrangements now send the event to Safety Review, and only the Safety Officer's approval sets Confirmed (T-71, T-107). Added the Safety Officer review (E08-S06, 8 points) and a "send back to planning" path (E08-S04)
 - The only change that added a status to the event lifecycle, so every status rule, screen and notification around Confirm had to be rechecked
-- Week 9 answers changed it again: rejection returns the event to planning (C-132 onwards), and the review should start automatically (T-82)
+- Week 9 answers changed it again: rejection returns the event to planning (C-133), and the review should start automatically (C-132, T-82)
 - Revert to planning (E08-S04) Done on 6 Nov in Sprint 5 [REFRESH: Jira SCRUM-61]. Not finished: a first-time event is still submitted by the Coordinator rather than entering review on its own (known gap: T-82 on 13 Oct says the Coordinator does not submit, but E08-S03 was built on 17 Oct, #283, to its written criteria, which still say "When I submit"; only re-entry is automatic, #392, #395)
 
 **Question 2:** Describe how you handled these changes, and which components of your project were affected and how.
@@ -157,9 +157,9 @@ and where we fell short we've said that too."
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
 "Week 7 gave us six changes, and the Safety Officer check hit us hardest. It
 wasn't only a new screen. It added a seventh role and a new status in the
-middle of our event lifecycle, between Planning and Confirmed. We had already
-built the Confirm step, so we had to change what Confirm means: an event now
-goes through a safety check before it can be confirmed. And the Safety Officer
+middle of our event lifecycle, between Planning and Confirmed. The Confirm
+story wasn't built yet, so we rewrote it first: an event now goes through a
+safety check before it can be confirmed. And the Safety Officer
 can send an event back to planning, which means venue and equipment
 arrangements may need another look. Then the Week 9 answers moved it again,
 for example the review should start automatically. We haven't finished all of
@@ -240,7 +240,7 @@ Week 7); `docs/plans/venue-claim-rule-b-20261022.md`; PRs #339, #378, #385.
 | 3 Multiple venues | E06-S03, E06-S06 | Done |
 | 4 Tentative holds expire | E06-S05 | Done with a fixed 48-hour expiry; Week 9 asks for staff-set expiry and warnings (T-84), not built yet. Follow-up story E06-S07 (SCRUM-260) added on 6 Nov (To Do) |
 | 5 Event Coordinator Lead | E01-S13 roles and sign-in, Lead queue (read only) | Gap: new requests are still auto-assigned to a Coordinator, and the Lead's assign, reassign and oversight work is on unmerged branches (`feature/SCRUM-153`, `-154`, `-155`), although Jira shows these stories Done. Follow-up stories SCRUM-256 to 258 added to Release 1 on 6 Nov (To Do) |
-| 6 Safety Officer | E08-S03, E08-S06, E08-S04 | Review, decisions and revert to planning Done; first entry into review not yet automatic (C-132, T-82) |
+| 6 Safety Officer | E08-S03, E08-S06, E08-S04 | Review, decisions and revert to planning Done; first entry into review not yet automatic (C-132, T-82), disclosed as a known gap with no follow-up story |
 
 Note for the team (not on the slide): keep change 5 as a gap. On 6 Nov the
 Lead commits were only on remote feature branches and there was no open Lead
@@ -448,14 +448,14 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 | Metric | Result |
 | --- | --- |
 | Number of manual e2e test cases using Wk4 template | 383 test case IDs in `docs/testing/cases/` (13 epic files); 249 of them run by hand at least once [REFRESH: tc-coverage, docs/testing/runs] |
-| Number of unit tests | 1,586: 735 backend + 851 frontend (Vitest). CI run 42032706992, 5 Nov 2026 [REFRESH: latest green main run] |
+| Number of unit tests | 1,586: 735 backend + 851 frontend (Vitest). CI run 42032706992, 5 Nov 2026 [REFRESH: after PR #441 merges, take slide 10's counts from the first green `main` run, or from the "4. TEST CASES" run at `1ca12c5`, so both folders agree] |
 | Number of integration tests (if any) | 408 backend tests on real PostgreSQL, in 30 CI steps (same run) |
 | Number of automated e2e tests (if any) | 524 Playwright tests passing (58 auth + 466 scaffold), 218 still `test.fixme` (same run) |
 | Coverage (explain why if not 100%) | Definition of Done: 100% of changed code, checked per PR in review. Whole frontend: 84.13% statements on 5 Nov [REFRESH: PR #436]. CI does not enforce a threshold, so older code has gaps |
 | Current passing tests | All of the above on `main` `62e82081` (5 Nov); all checks green on `main` head `0773a721` [REFRESH: CI] |
 | Current failing tests | 0 on `main` head. But one flaky frontend test failed on `main` on 5 Nov (`SessionEditor.test.tsx`, TC_E10S02_14) |
 | CI status | Pass: all checks green on `main` `0773a721` (6 Nov) [REFRESH: CI] |
-| Number of known unresolved defects | 0 open GitHub issues. Known gaps, each with a To Do story in Jira: Lead assign, reassign and oversight not on `main` (SCRUM-256 to 258), reuse a previous event not on `main` (SCRUM-259), configurable hold expiry (SCRUM-260, T-84). Also flaky focus tests [REFRESH: Jira, PR #436] |
+| Number of known unresolved defects | 4 known defects (D-01 to D-04, `docs/testing/defects.md`), each tracked by a To Do follow-up story (SCRUM-256 to 259); plus staff-set hold expiry (SCRUM-260, T-84) and flaky focus tests. 0 open GitHub issues [REFRESH: `docs/testing/defects.md` arrives with PR #443] |
 
 **Question 2:** Which type of testing provided the least value to your team, and why?
 
@@ -684,10 +684,10 @@ Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 
 | Team Member | Main Areas Worked On | Approx. Contribution | Code/PR Examples | Other Contributions |
 | --- | --- | --- | --- | --- |
-| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (175 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259 (slide 5) |
+| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (175 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259, assigned to Aaron (slide 5) |
 | Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (58 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
 | Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04), including automatic re-entry into Safety Review (#392); minor vs major edits (E10-S02); Venue Staff notification routing for E11-S01 (#271, #272) | 11% (43 commits) | #88, #134, #151, #190, #272, #298, #348, #349, #385, #392 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
-| Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #174, #236, #283, #328, #361 | 24 manual run sessions; 75 approvals. 15 stories Done (60 pts), the most in the team |
+| Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #24, #174, #236, #282, #283, #328, #412, #413, #426, #427 | Migration 0017, the Safety Review status (#282); C4 diagrams (#24); "4. TEST CASES" deliverable (#441, #443): 45 cases newly automated, 8 new cases, runs locally and on Vercel plus Stryker, which found the gaps behind SCRUM-256 to 259 [REFRESH: until #441 and #443 merge]; assigned the Release 1 follow-ups SCRUM-256 to 259 (To Do); 24 manual run sessions; 79 approvals. 15 stories Done (60 pts), the most in the team |
 | Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); primary-venue publication (#347); change requests for Events and Sessions (E10-S01, #383, #414); notifications (E11-S01); initial database schema documentation (#7) | 9% (35 commits) | #7, #143, #242, #299, #347, #355, #367, #383, #414 | 18 manual run sessions; 51 approvals. 9 stories Done (44 pts) |
 | Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (30 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
@@ -696,9 +696,8 @@ PRs. A story owner is not always the only author: for example the waiting list
 (E09-S04, Aaron's story) was built in Bryan's #379. All counts
 [REFRESH: Jira assignees, GitHub PR reviews, docs/testing/runs].
 
-[CONFIRM: Aaron checks his own row. Bryan, Amareet, Xiang Ying, Lexin and
-Jining confirmed theirs on 6 Nov. Areas and PR numbers come from git and
-Jira, not from self-reports.]
+All six members confirmed their rows on 6 Nov. Areas and PR numbers come from
+git and Jira, not from self-reports.
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
 "This is who did what, from git and Jira. The commit share is lopsided. Bryan
