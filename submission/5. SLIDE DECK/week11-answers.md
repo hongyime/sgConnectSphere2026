@@ -18,8 +18,9 @@ How to read this file:
   person has to confirm it or it comes off the slide.
 
 Numbers were collected on 6 November 2026 from: Jira board 1 (read-only REST),
-`git` on `origin/main` at `0773a721` (commit counts, run records and CI status
-re-read at `c54f30ad`, 6 Nov), GitHub pull requests and Actions runs, and
+`git` on `origin/main` at `0773a721` (commit counts, run records, test counts,
+Release 1 status and CI status re-read at `8d5dc697`, 6 Nov, after PRs #436,
+#440, #441 and #442 merged), GitHub pull requests and Actions runs, and
 `docs/testing/`. Sprint 4 is treated as the final sprint for the ceremony
 recordings, as the teaching assistant told us; Sprint 5 (1 to 5 November) was a
 short close-out sprint.
@@ -89,13 +90,13 @@ are ours to fill. Keep it to 8 rows.
 
 | Item | URL, location or file/folder name in zip file |
 | --- | --- |
-| Product backlog | Zip: `1. PRODUCT BACKLOG/` [CONFIRM: exact file names from the backlog owner]. Repo: `docs/backlog/release-1/` (one file per epic) |
+| Product backlog | Zip: `1. PRODUCT BACKLOG/`: `ConnectSphere Release 1 Product Backlog.xlsx` (PR #442) [CONFIRM: names of the other files in this folder, from the backlog owner]. Repo: `docs/backlog/release-1/` (one file per epic) |
 | Git URL (e.g. GitHub)(remember to add your two instructors to the repository; see instructions) | https://github.com/hongyime/sgConnectSphere2026 (branch `main`). Zip: `6. CODE REPOSITORY/`. Both instructors added (confirmed 6 Nov). |
-| Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
+| Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export (CSV, 259 issues, 6 Nov) in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
 | Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/`: 12 Word files, planning, stand-ups and review + retrospective for Sprints 1 to 4. Repo: the same records as Markdown in `docs/sprints/` (PR #440) |
 | System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/` (SVG, PNG and PDF renders, plus the combined "System Design - ConnectSphere Release 1.pdf"). Repo: `docs/design/` (13 diagrams: C4 context, containers and components; user journey; event state machine; two data flow diagrams; three ERDs; UML class view; two sequence diagrams; index in `docs/design/README.md`, PR #437), plus `docs/class-diagram.md`, `docs/db_schema.md`, `docs/architecture.md` |
-| Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (955 run records) [REFRESH: docs/testing] |
+| Test cases and test run records | Zip: `4. TEST CASES/`: `ConnectSphere Release 1 Test Cases.xlsx`, Playwright HTML reports, screenshots and the Stryker mutation report (PR #447). Repo: `docs/testing/cases/` (391 test case IDs), `docs/testing/runs/` (961 run records) [REFRESH: docs/testing, after PR #443 merges] |
 | Slide deck, README, decisions | Zip: `5. SLIDE DECK/`, `7. README/`. Repo: `docs/bdr/` (customer clarifications and team decisions) |
 
 **SPEAKER NOTES** (Presenter: ________, about 25 seconds):
@@ -333,8 +334,8 @@ that looked right but sometimes answered a question nobody asked."
 **AI tools we used (disclosure):** Coding agents for code, tests and docs:
 Bryan, Jining and Xiang Ying used OpenAI Codex; Lexin, Amareet and Aaron used
 Claude Code. We also used GitHub's
-Copilot pull request reviewer, which left automatic review comments on 201 of
-our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
+Copilot pull request reviewer, which left automatic review comments on 205 of
+our 447 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
 opinion only and Copilot was never an approving reviewer. Every merge into
 `main` still needed an approving review from a teammate on the latest push.
 
@@ -403,7 +404,7 @@ required checks green, e.g. PR #355 after the fix.
 
 **SLIDE CONTENT:**
 
-- **Trunk-based with short-lived branches** (Week 5): one branch per story, named `feature/SCRUM-xx-...`, merged into `main` by PR. 385 PRs merged [REFRESH: GitHub]
+- **Trunk-based with short-lived branches** (Week 5): one branch per story, named `feature/SCRUM-xx-...`, merged into `main` by PR. 395 PRs merged [REFRESH: GitHub]
 - **How it evolved:**
   - Sprint 1: rules were advice only; 36 PRs merged without an approval (14 Sep to 1 Oct)
   - 3 Oct (after the Sprint 2 retro): ruleset on `main` with required checks, approval of the latest push, squash merges through a merge queue (#195, decision 0012). No bypass actors
@@ -449,14 +450,14 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 
 | Metric | Result |
 | --- | --- |
-| Number of manual e2e test cases using Wk4 template | 383 test case IDs in `docs/testing/cases/` (13 epic files); 249 of them run by hand at least once [REFRESH: tc-coverage, docs/testing/runs] |
-| Number of unit tests | 1,586: 735 backend + 851 frontend (Vitest). CI run 42032706992, 5 Nov 2026 [REFRESH: after PR #441 merges, take slide 10's counts from the first green `main` run, or from the "4. TEST CASES" run at `1ca12c5`, so both folders agree] |
-| Number of integration tests (if any) | 408 backend tests on real PostgreSQL, in 30 CI steps (same run) |
-| Number of automated e2e tests (if any) | 524 Playwright tests passing (58 auth + 466 scaffold), 218 still `test.fixme` (same run) |
-| Coverage (explain why if not 100%) | Definition of Done: 100% of changed code, checked per PR in review. Whole frontend: 84.13% statements on 5 Nov [REFRESH: PR #436]. CI does not enforce a threshold, so older code has gaps |
-| Current passing tests | All of the above on `main` `62e82081` (5 Nov); all checks green on `main` head `0773a721` [REFRESH: CI] |
-| Current failing tests | 0 on `main` head. But one flaky frontend test failed on `main` on 5 Nov (`SessionEditor.test.tsx`, TC_E10S02_14) |
-| CI status | Pass: all checks green on `main` `c54f30ad` (6 Nov) [REFRESH: CI] |
+| Number of manual e2e test cases using Wk4 template | 391 test case IDs in `docs/testing/cases/` (13 epic files); 249 of them run by hand at least once [REFRESH: tc-coverage, docs/testing/runs] |
+| Number of unit tests | 1,590: 738 backend + 852 frontend (Vitest). CI run 42195339111 on `main` `8c22b745`, 6 Nov 2026, the first green run after PR #441; the same counts as the "4. TEST CASES" run at `1ca12c5` [REFRESH: CI] |
+| Number of integration tests (if any) | 426 backend tests on real PostgreSQL, in 30 CI steps (same run). 6 more are marked `todo` as known defects (the Coordinator Lead gap) |
+| Number of automated e2e tests (if any) | 524 Playwright tests passing (58 auth + 466 scaffold), 106 still skipped as `test.fixme` (same run; 218 on 5 Nov) |
+| Coverage (explain why if not 100%) | Definition of Done: 100% of changed code, checked per PR in review. Whole frontend: 84.13% statements on 5 Nov (recorded in PR #436). CI does not enforce a threshold, so older code has gaps |
+| Current passing tests | All of the above on `main` `8c22b745` (6 Nov); all checks green on `main` head `8d5dc697` [REFRESH: CI] |
+| Current failing tests | 0 on `main` head. But one flaky frontend test failed on `main` on 5 Nov (`SessionEditor.test.tsx`, TC_E10S02_14); PR #436 fixed it on 6 Nov |
+| CI status | Pass: all checks green on `main` `8d5dc697` (6 Nov) [REFRESH: CI] |
 | Number of known unresolved defects | 4 known defects (D-01 to D-04, `docs/testing/defects.md`), each tracked by a To Do follow-up story (SCRUM-256 to 259); plus staff-set hold expiry (SCRUM-260, T-84) and flaky focus tests. 0 open GitHub issues [REFRESH: `docs/testing/defects.md` arrives with PR #443] |
 
 **Question 2:** Which type of testing provided the least value to your team, and why?
@@ -469,11 +470,11 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 - So we added rollback-based database tests and Playwright runs for anything touching persistence (Definition of Done)
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
-"Here are our numbers as of 5 and 6 November. We have 383 test cases written
+"Here are our numbers as of 6 November. We have 391 test cases written
 in the Week 4 template, and we've run 249 of them by hand at least once. The
-automated side has about 1,600 unit tests, around 400 tests against a real
+automated side has about 1,600 unit tests, over 400 tests against a real
 PostgreSQL database, and just over 500 Playwright browser tests passing. Over
-200 Playwright tests are still placeholders, and we're not counting those.
+100 Playwright tests are still placeholders, and we're not counting those.
 
 On coverage, our Definition of Done asks for 100% of changed code in each PR,
 and reviewers check it. CI doesn't enforce it, and the whole frontend is at 84%.
@@ -489,8 +490,9 @@ end-to-end evidence."
 **SUGGESTED VISUAL:** Bar chart of the test counts by type (unit, real-DB,
 Playwright, manual). Data source: this table.
 
-**Evidence:** GitHub Actions run 42032706992 (log: backend `# tests 735`,
-frontend `Tests 851 passed`, Playwright `58 passed`, `466 passed`, `218 skipped`);
+**Evidence:** GitHub Actions run 42195339111 (log: backend `# pass 738`,
+frontend `Tests 852 passed`, Playwright `58 passed`, `466 passed`, `106 skipped`);
+`submission/4. TEST CASES/README.md` (run at `1ca12c5`);
 `docs/testing/tc-coverage.md`; `CONTRIBUTING.md` Definition of Done.
 
 ---
@@ -521,7 +523,7 @@ frontend `Tests 851 passed`, Playwright `58 passed`, `466 passed`, `218 skipped`
 
 **SLIDE CONTENT:**
 
-- **No.** 249 of 383 test cases have a recorded hand-run; the rest are covered only by automation or not yet [REFRESH: docs/testing/runs]
+- **No.** 249 of 391 test cases have a recorded hand-run; the rest are covered only by automation or not yet [REFRESH: docs/testing/runs]
 - Process: tester sets up data with the SQL preconditions, follows the steps, takes their own screenshots, logs a run record (T-65, T-93)
 - 121 manual sessions: 407 PASS, 9 FAIL, 30 SKIP rows [REFRESH: docs/testing/runs]
 - Challenge: keeping test accounts for seven roles in the right state without breaking each other's runs
@@ -538,7 +540,7 @@ arrived, 'overlap' meant something new, so the old conflict tests changed. We
 have a CI check that fails if a test case points at a scenario that no longer
 exists, so tests can't quietly drift from the backlog.
 
-Has every case been checked by a person? No. 249 of 383 have a hand-run on
+Has every case been checked by a person? No. 249 of 391 have a hand-run on
 record. Those runs logged nine failures, and each one stays in the record as a
 FAIL. The hardest part was test data: seven roles, shared accounts, and runs
 that change state."
@@ -566,7 +568,7 @@ p. 1 step 6; `CONTRIBUTING.md` (retire test cases in the same PR).
 | Is CI required to pass before code can be merged into main? | Yes. Since 3 Oct 2026 four checks are required (repository-checks, pr-conventions, lfs-guard, application-checks), and the merge queue re-runs them before anything lands |
 | How many CI failures (CI going red) did your team encounter during the project? | 346 failed runs of selected CI workflows (CI 175, Application Checks 106, LFS Guard 38, PR guardrails 27). 334 were on PR branches, 9 in the merge queue, 3 on `main` (counted 6 Nov, 16:06 SGT; reruns can change these totals) [REFRESH: GitHub Actions] |
 | What was the most meaningful CI failure you encountered? | A flaky focus check in our frontend tests (issue #372, `RefusedEdit.navigation.test.tsx`, TC_E10S01_03) |
-| What caused it, and how was it resolved? | The test checked focus right away, before React had moved focus. PR #373 waits for it instead (`waitFor`). The same pattern failed again on `main` on 5 Nov in another file, so we're now fixing it for all tests, not one file at a time [REFRESH: PR #436] |
+| What caused it, and how was it resolved? | The test checked focus right away, before React had moved focus. PR #373 waits for it instead (`waitFor`). The same pattern failed again on `main` on 5 Nov in another file (`SessionEditor.test.tsx`); PR #436 fixed it the same way on 6 Nov. Lesson: fix the pattern, not the file |
 | Did CI ever prevent faulty code from being merged? Give one example. | Yes. PR #320 (event cancellation): Typecheck failed on commit `cc7322f` (run 39831097976) because a test used an option `ByRoleOptions` doesn't have. A cached local check had missed it. Fixed before merge |
 | Did you ever need to bypass CI (e.g. git force push / move code from local main to local branch)? Why? What did you do? | No. The ruleset blocks force pushes and has no bypass actors. Before it existed, four PRs (#148, #165, #166, #167) merged on 1 Oct without approval |
 
@@ -591,7 +593,7 @@ option that doesn't exist. Someone's cached local check had missed it."
 failed Typecheck step.
 
 **Evidence:** `.github/workflows/ci.yml` (`on:` block); ruleset
-`main-protection` required checks; issue #372; PR #373; PR #320; Actions
+`main-protection` required checks; issue #372; PR #373; PR #436; PR #320; Actions
 runs 39831097976 and 42039785462.
 
 ---
@@ -680,16 +682,16 @@ Keep the template's column header "Approx. Contribution" (the current deck
 renamed it). Put the "share of commits" explanation in the cell text.
 
 Approx. Contribution = share of commits on `main` per mapped Git author, out of
-384 human commits (Dependabot excluded). Squash merges make this close to a
+390 human commits (Dependabot excluded). Squash merges make this close to a
 count of merged PRs. It is not a measure of effort, so the last column adds
 Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 
 | Team Member | Main Areas Worked On | Approx. Contribution | Code/PR Examples | Other Contributions |
 | --- | --- | --- | --- | --- |
-| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (176 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259, assigned to Aaron (slide 5) |
-| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (59 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
+| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (179 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259, assigned to Aaron (slide 5) |
+| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (60 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
 | Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04), including automatic re-entry into Safety Review (#392); minor vs major edits (E10-S02); Venue Staff notification routing for E11-S01 (#271, #272) | 11% (43 commits) | #88, #134, #151, #190, #272, #298, #348, #349, #385, #392 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
-| Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #24, #174, #236, #282, #283, #328, #412, #413, #426, #427 | Migration 0017, the Safety Review status (#282); C4 diagrams (#24); "4. TEST CASES" deliverable (#441, #443): 45 cases newly automated, 8 new cases, runs locally and on Vercel plus Stryker, which found the gaps behind SCRUM-256 to 259 [REFRESH: until #441 and #443 merge]; assigned the Release 1 follow-ups SCRUM-256 to 259 (To Do); 24 manual run sessions; 79 approvals. 15 stories Done (60 pts), the most in the team |
+| Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 11% (41 commits) | #24, #174, #236, #282, #283, #328, #412, #413, #426, #427 | Migration 0017, the Safety Review status (#282); C4 diagrams (#24); "4. TEST CASES" deliverable (#441 and #447 merged 6 Nov, #443 open): 45 cases newly automated, 8 new cases, runs locally and on Vercel plus Stryker, which found the gaps behind SCRUM-256 to 259 [REFRESH: until #443 merges]; assigned the Release 1 follow-ups SCRUM-256 to 259 (To Do); 24 manual run sessions; 79 approvals. 15 stories Done (60 pts), the most in the team |
 | Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); primary-venue publication (#347); change requests for Events and Sessions (E10-S01, #383, #414); notifications (E11-S01); initial database schema documentation (#7) | 9% (35 commits) | #7, #143, #242, #299, #347, #355, #367, #383, #414 | 18 manual run sessions; 51 approvals. 9 stories Done (44 pts) |
 | Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (32 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
@@ -726,8 +728,8 @@ approvals); Jira board 1 (assignee and points of Done product stories).
 
 - **Velocity (Jira, product story points Done at each sprint's end date):** S1 66 (one-week sprint), S2 66, S3 34, S4 53, S5 38 (1 to 5 Nov, short close-out; points Done by 5 Nov 23:59 SGT). Jira closed Sprint 5 on 6 Nov with all 14 stories Done; its 78-point close-date total includes 40 points moved to Done on 6 Nov, so 78 is not velocity (Product Owner confirmed 6 Nov)
 - **Sprint Goal check:** Sprint 4's goal was to complete all remaining Release 1 stories. We didn't meet it: 53 of 85 points Done at the sprint end (62%), 32 points carried over to Sprint 5. Sprint 5's goal (finish E08-S04, E10-S01, E10-S02, E11-S01 and unblock E08-S06) was met when Jira closed it on 6 Nov, one day after its end date. E11-S01 had been carried since Sprint 2
-- Release 1: all 64 original stories Done in Jira (244 points). 4 of them (E02-S05, E03-S08 to S10) are not on `main`, so on 6 Nov we added 5 follow-up stories to Release 1, all To Do: SCRUM-256 to 259 for those 4, and E06-S07 (SCRUM-260) for staff-set hold expiry (T-84) [REFRESH: final refresh item after PRs #442, #443 and #444 merge; the backlog review found the 64-story baseline out of date]
-- All 20 Week 4 core features map to stories (`docs/bdr/F-core-feature-coverage.md`), but feature 5 "Coordinator Assignment" now means Lead assignment (Week 7 change 5), which is the gap above
+- Release 1 in Jira: 65 stories, 60 Done (227 points) and 5 To Do. 4 stories marked Done in Jira are not on `main` (E02-S05, E03-S08 to S10; 17 points). On 6 Nov the backlog audit (#442) took them out of Release 1 and replaced them with To Do follow-ups SCRUM-256 to 259. The fifth To Do story is E06-S07 (SCRUM-260), staff-set hold expiry (T-84) [REFRESH: Jira Release 1]
+- All 20 Week 4 core features map to stories (`docs/bdr/F-core-feature-coverage.md`), and feature 5 "Coordinator Assignment" now also maps to the Lead queue E03-S08 (Week 7 change 5, #442), which is the gap above
 - Design kept in step with code (Weeks 5 and 11): #371 maps every class-diagram method to the real function and adds a test for the error-class hierarchy the diagram shows
 - **Done stays Done:** a missed requirement becomes a new linked story, following the instructors' guidance (`docs/plans/instructor-guidance-2026-10-06.md`) and T-74
 - **What we'd do differently:**
@@ -743,8 +745,8 @@ only points Done by each sprint's end date. Sprint 1 was only one week, so
 it isn't directly comparable. Sprints 3 and 4 were lower. In Sprint 4 we
 finished 53 of 85 points, so we didn't meet its Sprint Goal of finishing
 every Release 1 story. The rest moved to Sprint 5, a short close-out. Jira
-shows every story Done, but four of them aren't on main, so they now have
-follow-up stories.
+marked four stories Done that aren't on main, so we took them out of
+Release 1 and added follow-up stories.
 
 What would we do differently? Merge smaller pieces every day. The Coordinator
 Lead work sat on branches and isn't on main, even though Jira says Done, and
@@ -758,6 +760,7 @@ comparable. Thanks, we're happy to take questions."
 **Evidence:** `docs/plans/sprint-burndown-velocity-analysis.md` (reconciled 3 Nov:
 Done at each sprint's end date; Sprint 4 53 Done of 85, 32 carried over);
 Jira Sprint 5 report and issue history (closed 6 Nov 15:05 SGT; SCRUM-256 to 260);
+`docs/plans/release-1-product-backlog-audit-20261106.md` (#442);
 Jira board 1; `CONTRIBUTING.md`.
 
 ---
