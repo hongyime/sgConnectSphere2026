@@ -45,7 +45,14 @@ Binary files cannot be three-way merged meaningfully. Protecting existing
 reference inputs prevents an agent from accidentally regenerating or editing a
 professor artifact while still allowing the team to add a later source snapshot.
 Scope and concurrency limits make review ownership visible and stop a single
-agent workflow from accumulating an unreviewable queue of branches.
+agent workflow from accumulating an unreviewable queue of branches. The
+2026-11-06 revision above deliberately trades some of this protection for
+throughput during the Release 1 submission push: the per-author cap is lifted
+and the team-wide cap raised to 15. The per-author guard is retained in code as
+an optional, config-driven switch so it can be reinstated after the push without
+a code change (see "After Release 1" below), and the team-wide cap of 15 still
+bounds the total queue so the "unreviewable queue" risk is reduced rather than
+removed.
 
 The merge queue remains responsible for testing approved PRs against the latest
 `main`; it does not replace these authoring limits or resolve binary conflicts.
@@ -81,3 +88,21 @@ enforce T-65/T-93 for new manual records: every PASS/FAIL row needs a linked,
 existing PNG/JPG under its record folder, and the record plus those images must
 be added together. Automated runs, SKIP/N/A rows, and old merged records are
 not forced to acquire screenshots retroactively.
+
+## After Release 1 (follow-ups)
+
+The 2026-11-06 loosening was made for the submission push and is not meant to be
+permanent. Two follow-ups are recorded here so they are not lost:
+
+1. **Reinstate a per-author cap.** After Release 1 is submitted, re-add
+   `max_open_prs_per_author` to `.github/settings/pr-guardrails.json` (the
+   enforcement code still honours the key when present) and consider lowering
+   `max_open_prs` back toward its previous value. No code change is required.
+
+2. **Evaluate the policy against the base SHA.** On `pull_request`,
+   `pr-guardrails.yml` checks out the merge commit, so the guard is read from the
+   PR's own `pr-guardrails.json`. A PR can therefore loosen the very limits that
+   gate it. This is a pre-existing gap, not introduced by the 2026-11-06 change,
+   but it should be closed by reading the policy from the base SHA (or from
+   `origin/main`) rather than from the PR head. Tracked as a separate change
+   because it alters enforcement semantics for every PR.
