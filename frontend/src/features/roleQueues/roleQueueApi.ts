@@ -92,3 +92,11 @@ export function submitSafetyDecision(eventId: string, body: {
     jsonRequest('POST', body), 'Unable to save the safety decision.',
   );
 }
+
+export function reassignAsLead(eventId: string, coordinatorId: string) {
+  return apiCall<{ reassignment: { eventId: string; coordinatorId: string } }>(
+    `/api/events?reassign=1&by_lead=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', { coordinator_id: coordinatorId }),
+    'Unable to reassign this event.',
+  );
+}
