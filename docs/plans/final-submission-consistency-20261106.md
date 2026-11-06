@@ -13,11 +13,13 @@ Display names are Bryan, Amareet, Aaron, Le Xin, Xiang Ying and Ji Ning.
 Bryan is Product Owner and also develops; Amareet is Scrum Master and also
 develops; the other four members are Developers.
 
-Five previously blank canonical estimates now match the existing Jira export:
-E01-S12=5, E01-S13=5, E07-S08=5, E07-S09=5 and E08-S06=8. There are 65 stories,
-230 known points and seven unestimated stories. The existing backlog PDF
-already includes those five estimates; it remains a labelled historical Jira
-snapshot rather than a live status report.
+The seven previously unestimated stories were estimated and the estimates
+pushed to live Jira on 6 November (E03-S08=5, E03-S09=3, E03-S10=3, E03-S11=3,
+E03-S12=1, E06-S07=5, E14-S03=2; +22 points). Live Jira now reports **65
+stories, 252 points and 0 unestimated stories** (fixVersion = Release 1,
+issuetype = Story), verified against the board on 6 November. The re-exported
+backlog workbook and Markdown (PR #456) match this total; the backlog PDF
+remains a labelled historical Jira snapshot rather than a live status report.
 
 Sprint records preserve E11-S01's original five-point commitment. T-105's
 thirteen-point estimate was approved on 1 November and does not retroactively
@@ -47,10 +49,12 @@ report behavior. No generated binary belongs in this correction PR.
 
 ## Assumptions and outstanding confirmations
 
-- [CONFIRM] `docs/sprints/sprint-2-planning.md`, Capacity & Estimation: reconcile
-  13 claimed stories against 14 listed IDs and the original commitment total.
-- [CONFIRM] `docs/sprints/sprint-2-review-retrospective.md`, delivery summary:
-  reconcile 11 Done/37 points against 12 listed Done stories/40 points.
+- RESOLVED `docs/sprints/sprint-2-planning.md`, Capacity & Estimation: Sprint 2
+  committed 14 product stories / 48 points, confirmed against the live Jira
+  sprint-35 record (the earlier "13 stories / 53 points" was a miscount).
+- RESOLVED `docs/sprints/sprint-2-review-retrospective.md`, delivery summary:
+  12 product stories Done at close / 40 points (velocity 40), confirmed against
+  the live Jira sprint-35 status at the 3 October close (corrected from 11/37).
 - [CONFIRM] Remaining historical ledger questions are inline in Sprint 3/4
   planning and review sources. Owner approval to correct prose is not a new
   meeting, Product Owner acceptance receipt or confirmation of those facts.
