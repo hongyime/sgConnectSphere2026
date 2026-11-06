@@ -259,13 +259,6 @@ As an Event Coordinator, I want to place a tentative hold on a venue so that it 
 
 The expiry scenarios come from the Week 7 Customer Changes (C-68, T-69) and reverse the earlier position that no expiry was required (C-01, C-16, C-60, T-49). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
-**Post-delivery follow-up, not a delivery claim:** T-84 supersedes T-92 for a
-future increment: no default expiry, Venue Staff-configured expiry, a
-Coordinator-configured warning before or at expiry, and at most two reasoned
-extensions. This Sprint 3 story remains historical Done evidence under T-74;
-the follow-up needs a separately classified user story and a decision on whether
-an unconfigured requested hold reserves the venue.
-
 ### Acceptance criteria
 
 #### Scenario 1 — Tentative hold placed

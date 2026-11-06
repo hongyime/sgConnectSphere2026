@@ -31,25 +31,6 @@ class CoverageAuditTests(unittest.TestCase):
             self.assertIn("a.spec.ts: TC_E01S01_01 scaffold", reports[0])
             self.assertIn("z.spec.ts: TC_E01S01_01 active", reports[0])
 
-    def test_interpretation_uses_the_actual_no_test_count(self):
-        cases = [
-            {"case_id": f"TC_E01S01_0{number}", "story_id": "E01-S01", "scenario": "Login"}
-            for number in range(1, 5)
-        ]
-        scan = {
-            "tc_index": {
-                "TC_E01S01_01": {"status": "active", "category": "live-assertion", "files": []},
-                "TC_E01S01_02": {"status": "scaffold", "files": []},
-            },
-            "active_no_tc": {},
-            "test_only_warnings": [],
-        }
-
-        report = audit.build_report(cases, scan)
-
-        self.assertIn("**2** workbook TC_IDs have no matching test title", report)
-        self.assertNotIn("Every TC_ID in the workbook is at least scaffolded", report)
-
 
 if __name__ == "__main__":
     unittest.main()

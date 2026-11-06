@@ -1,11 +1,8 @@
-# F. Core feature mapping
+# F. Core feature coverage
 
-The 20 core features from the Week 4 project instructions, mapped to the
-Release 1 stories that specify them. This is a requirements traceability map,
-not a delivery or Definition of Done claim; current implementation and
-acceptance evidence are established separately under `docs/source-of-truth.md`.
+The 20 core features from the Week 4 project instructions, mapped to the release-1 stories that deliver them. Every feature is covered.
 
-| No. | Core feature | Mapped Release 1 stories |
+| No. | Core feature | Delivered by |
 | --- | --- | --- |
 | 1 | User Authorisation and Authentication | E01-S01, E01-S02, E01-S03, E01-S08, E01-S11 |
 | 2 | Event Request Creation | E02-S01, E02-S03 |

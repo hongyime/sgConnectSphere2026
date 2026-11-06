@@ -234,14 +234,14 @@ Given I am not the assigned Coordinator When I attempt to edit an approved event
 
 - **Sprint**: Sprint 3
 - **Points**:
-- **BDR references**: C-69, C-100, C-127, C-130, T-73, T-74, T-83
+- **BDR references**: C-69, T-70, T-72, T-73, T-74, O-35, O-38
 - **Owner**:
 
 ### User story
 
 As an Event Coordinator Lead, I want newly submitted event requests to enter an unassigned queue that I work through, assigning each to a suitable Event Coordinator, so that incoming work is distributed deliberately rather than automatically.
 
-New story from the Week 7 Customer Changes (C-69). It replaces the automatic assignment delivered by E03-S01 Scenarios 1 and 2, which stay recorded as superseded (T-74). T-83 makes the queue Lead-only; C-100/C-127 require multiple Leads to have the same system-wide view. Estimate at Sprint 3 planning (T-73).
+New story from the Week 7 Customer Changes (C-69). It replaces the automatic assignment delivered by E03-S01 Scenarios 1 and 2, which stay recorded there as superseded (T-74). Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
 ### Acceptance criteria
 
@@ -251,7 +251,7 @@ Given an Event Organiser submits a request When submission completes Then no Eve
 
 #### Scenario 2 — Queue shows basic event information, oldest first
 
-Given requests are in the unassigned queue When I open it Then each shows the event name, the Organiser's client organisation, preferred dates, expected attendance and the time submitted, oldest first, and the queue is visible to Event Coordinator Leads only
+Given requests are in the unassigned queue When I open it Then each shows the event name, the Organiser's client organisation, preferred dates, expected attendance and the time submitted, oldest first, and the queue is visible to Event Coordinator Leads only (assumes O-38)
 
 #### Scenario 3 — Lead assigns a Coordinator
 
@@ -283,47 +283,52 @@ Given a request has been assigned from the queue When the Organiser tracks the e
 
 - **Sprint**: Sprint 3
 - **Points**:
-- **BDR references**: C-69, C-100, C-104, C-127, C-128, C-129, T-73, T-74, T-83
+- **BDR references**: C-69, C-56, T-15, T-70, T-73, T-74, O-36, O-37
 - **Owner**:
 
 ### User story
 
 As an Event Coordinator Lead, I want to reassign an event to a different Event Coordinator where necessary so that workload, absences and conflicts can be managed without waiting on the current Coordinator.
 
-New story from the Week 7 Customer Changes (C-69). T-83 supersedes the earlier Coordinator-initiated request and acceptance workflow: only a Lead may assign or reassign, and the change is immediate. The historic E03-S01 record remains unchanged under T-74. Estimate at Sprint 3 planning (T-73).
+New story from the Week 7 Customer Changes (C-69). The Coordinator-initiated reassignment with acceptance delivered by E03-S01 Scenarios 3 to 6 stays in force (T-15 amended, not replaced). Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
 ### Acceptance criteria
 
 #### Scenario 1 — Lead reassignment takes effect immediately
 
-Given an event is assigned to a Coordinator When I, as the Lead, reassign it to another Coordinator Then the change takes effect at once without an acceptance step, the outgoing and incoming Coordinators and the Organiser are notified, and the activity log records who reassigned it and when
+Given an event is assigned to a Coordinator When I, as the Lead, reassign it to another Coordinator Then the change takes effect at once without an acceptance step, the outgoing and incoming Coordinators and the Organiser are notified, and the activity log records who reassigned it and when (assumes O-36)
 
-#### Scenario 2 — Coordinator-initiated reassignment is refused
+#### Scenario 2 — Coordinator-initiated reassignment unchanged
 
-Given I am an assigned Coordinator When I attempt to request or initiate reassignment through the system Then the action is refused, my assignment is unchanged, and the refusal is recorded; any discussion is outside the product workflow
+Given I am the assigned Coordinator and a reassignment has been agreed offline When I request reassignment to a named colleague Then E03-S01 Scenarios 3, 4 and 5 apply unchanged: I remain assigned until the colleague accepts, and a decline leaves me assigned
 
-#### Scenario 3 — Only a Lead may reassign
+#### Scenario 3 — Coordinator may ask the Lead to reassign
 
-Given I am a Coordinator not assigned to the event or hold any other non-Lead role When I attempt to reassign it Then the action is refused and the current assignment is unchanged
+Given I am the assigned Coordinator When I request reassignment without naming a colleague Then the request appears to the Lead with my reason, I remain assigned until the Lead acts, and the Lead may reassign (Scenario 1) or decline, which notifies me (assumes O-37)
+
+#### Scenario 4 — Only the assigned Coordinator or a Lead may reassign
+
+Given I am a Coordinator not assigned to the event When I attempt to reassign it Then the action is refused, exactly as in E03-S01 Scenario 6
 
 ### Checklist
 
 - Reassign an event directly as the Lead, with both Coordinators and the Organiser notified and the change logged
-- Confirm a Coordinator cannot request or initiate reassignment in the system
-- Be refused when attempting to reassign as any non-Lead role
+- Confirm Coordinator-to-Coordinator reassignment still requires the colleague's acceptance
+- Ask the Lead to reassign my event without naming a colleague, and be told the outcome
+- Be refused when attempting to reassign an event I am not assigned to and am not the Lead for
 
 ## E03-S10 — Oversee coordinator assignments and active events as the Lead
 
 - **Sprint**: Sprint 3
 - **Points**:
-- **BDR references**: C-69, C-100, C-127, T-73, T-83
+- **BDR references**: C-69, T-70, T-73, O-35
 - **Owner**:
 
 ### User story
 
 As an Event Coordinator Lead, I want to view every coordinator assignment and every active event under my supervision so that I can see workload across the team and step in where needed.
 
-New story from the Week 7 Customer Changes (C-69). C-100/C-127 require multiple Leads to see the same system-wide assignments and queue context. Estimate at Sprint 3 planning (T-73).
+New story from the Week 7 Customer Changes (C-69). Estimate at Sprint 3 planning (T-73). Scenarios tagged "(assumes O-xx)" are written to the default recorded in `docs/bdr/C-open-questions.md`.
 
 ### Acceptance criteria
 
@@ -335,9 +340,9 @@ Given events exist in every status When I open the oversight view Then every eve
 
 Given Coordinators have events assigned When I open the workload summary Then each Coordinator is shown with their count of active events and the list of those events
 
-#### Scenario 3 — Every Lead sees everything
+#### Scenario 3 — One Lead sees everything
 
-Given multiple Event Coordinator Leads exist When each opens the oversight view Then every assignment and active event is included regardless of which Lead or Coordinator holds it
+Given there is one Event Coordinator Lead in Release 1 When I open the oversight view Then every assignment and active event is included regardless of which Coordinator holds it (assumes O-35)
 
 #### Scenario 4 — Coordinators cannot open the oversight view
 
@@ -347,7 +352,7 @@ Given I am an Event Coordinator When I navigate to the oversight view Then acces
 
 - See every active event with its assigned Coordinator or Unassigned, filterable by Coordinator and status
 - See each Coordinator's active-event count and events
-- Confirm every Lead sees the same system-wide assignments, not a subset
+- Confirm the view covers every assignment, not a subset
 - Be refused as a Coordinator
 
 ## E03-S11 — Let the Organiser edit registration setup and fix the date layout

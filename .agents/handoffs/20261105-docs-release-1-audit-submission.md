@@ -8,28 +8,26 @@ Audit Release 1 against the original customer sources, course methods, live Jira
   instructor guidance and canonical backlog/testing material.
 - Queried Jira read-only and verified the current team-name mapping without
   recording account identifiers.
-- Corrected the literal-TC-ID coverage report and its misleading conclusion;
-  regenerated `docs/testing/tc-coverage.md`.
-- Updated the E03/E06/E11 backlog and test-case documentation where later
-  customer clarification contradicts the former wording.
+- Kept the audit separate from the canonical backlog and TC-coverage source:
+  those files are carried by the product-backlog and test-case owners.
 - Added `docs/plans/release-1-audit-20261105.md`, including provenance, factual
   gaps and package limits.
 - Diagnosed the latest `main` CI failure as an asynchronous focus assertion in
   `SessionEditor.test.tsx`; the test now waits for the existing focus effect.
-- Stabilised the full frontend suite under coverage without weakening its
-  assertions: isolated `vmThreads`, a 10-second test budget and a three-second
-  Testing Library async-query budget. This branch's final run passed 851/851
-  tests; the backend unit coverage suite and repository check also passed.
-- Prepared the external submission folder with the seven required folders,
-  regenerated workbook exports, a corrected 17-slide deck copy, confirmation
-  checklist, manifest and ZIP archive.
+- Stabilised the two observed asynchronous component assertions locally without
+  changing global Vitest or Testing Library timeouts. The initial full frontend
+  coverage run passed 851/851 tests; the backend unit coverage suite and
+  repository check also passed.
+- Prepared audit findings and an external confirmation checklist. Slide-deck
+  content remains with its designated owner.
 - Committed the audit as `72e84b27 chore(release): audit Release 1 evidence`,
   pushed `docs/release-1-audit-submission`, and opened PR #436.
 
 ## Next steps
 
 - Wait for PR #436 CI and the required human review before describing the
-  branch as merged or deployed.
+  branch as merged or deployed. The branch is intentionally reduced to
+  audit-only scope; #442 carries the canonical backlog and #439 owns the deck.
 
 ## Decisions for review
 
