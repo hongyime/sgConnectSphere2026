@@ -121,10 +121,9 @@ fixes it and re-queues; nobody else's PR is affected.
   makes dropping the rule safe.
 - **`HEADGREEN` grouping.** Rejected for now; see the table. Revisit if a
   flaky required check appears.
-- **Promote `vercel-deploy` to a required check so the queue also gates on a
-  preview build.** Rejected: decision 0010 keeps it advisory, and a required
-  deploy in the queue would spend Hobby-plan deployments on every queue
-  rebuild.
+- **Make Vercel deployment status a required queue check.** Rejected: decision
+  0010 keeps dashboard-managed deployments advisory, and a required deployment
+  in the queue would spend Hobby-plan deployments on every queue rebuild.
 - **Let the companion skip workflow run on `merge_group` so docs PRs skip the
   suite in the queue.** Rejected: see the ambiguity note above; GitHub offers
   no path filter on `merge_group` to make the two workflows exclusive.

@@ -1,9 +1,29 @@
-# 0010 - Actions is the single Vercel deploy path
+# 0010 - Vercel Git integration is the single automatic deploy path
 
 ## Status
 
-Accepted - landed with the PR that adds `git.deploymentEnabled: false` to
-`vercel.json`. Closes SCRUM-111.
+Superseded on 6 November 2026. The Actions deployment workflow is removed and
+Vercel Git integration is again the single automatic deployment path.
+
+## Superseding decision
+
+The prior decision prevented duplicate deployments by disabling Vercel Git
+integration and deploying from GitHub Actions. That is no longer the selected
+operating model. Removing `git.deploymentEnabled: false` from `vercel.json`
+returns branch-deployment control to the Vercel dashboard; the dashboard is
+therefore authoritative for which Git branches deploy.
+
+`.github/workflows/vercel-deploy.yml` is deleted in the same change. Keeping
+it alongside Vercel Git integration would create duplicate deployments for the
+same commit. Application checks remain the repository's build and test gate;
+they do not deploy.
+
+The historical record below explains why the Actions-only path was selected at
+the time. It is retained for provenance and is not current operating guidance.
+
+---
+
+## Historical decision (superseded)
 
 ## Context
 
