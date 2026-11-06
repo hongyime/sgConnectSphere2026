@@ -80,15 +80,10 @@ jobs:
         # tip, so this is exactly what the PR would add to main. Needs
         # fetch-depth 2 (set on the checkout step above).
         if: github.event_name == 'pull_request'
-        run: |
-          {
-            echo 'PR_CHANGED_FILES<<EOF'
-            git diff --name-only HEAD^1 HEAD
-            echo 'EOF'
-          } >> "$GITHUB_ENV"
+        run: git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/pr-changed-files.txt"
       - name: Validate PR title, source branch, body and protected files
         if: github.event_name == 'pull_request'
-        run: python scripts/check_metadata.py pr
+        run: python scripts/check_metadata.py pr --changed-files-file "$RUNNER_TEMP/pr-changed-files.txt"
       - name: Explain non-PR run
         if: github.event_name != 'pull_request'
         run: |
