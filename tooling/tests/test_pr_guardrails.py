@@ -69,12 +69,49 @@ class ReferenceArtifactTests(unittest.TestCase):
 class PullRequestPolicyTests(unittest.TestCase):
     POLICY = {
         "effective_after": "2026-10-27T00:00:00Z",
-        "max_open_prs": 10,
-        "max_open_prs_per_author": 2,
+        "max_open_prs": 15,
         "max_changed_files": 40,
         "max_additions": 1800,
         "max_deletions": 1500,
     }
+
+    def test_no_per_author_cap_when_key_absent(self):
+        # With no max_open_prs_per_author configured, a single author may hold
+        # many open PRs without a per-author error. Only the team-wide cap of
+        # 15 bounds the queue; fourteen PRs by one author stays within it.
+        current = {
+            "number": 14,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+        }
+        open_prs = [current] * 14
+        errors = MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY)
+        self.assertEqual(errors, [])
+
+    def test_team_wide_cap_still_applies_without_per_author_key(self):
+        # The team-wide cap of 15 still fires even with no per-author limit set.
+        current = {
+            "number": 15,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+        }
+        open_prs = [current] * 16
+        errors = MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY)
+        self.assertTrue(any("open PRs" in error for error in errors))
+        self.assertFalse(any("per-author" in error for error in errors))
+
+    def test_per_author_cap_enforced_when_key_present(self):
+        # When the key is present it is still honoured, so the limit can be
+        # reinstated by config alone without a code change.
+        policy = dict(self.POLICY, max_open_prs_per_author=2)
+        current = {
+            "number": 16,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+        }
+        open_prs = [current] * 3
+        errors = MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=policy)
+        self.assertTrue(any("per-author limit" in error for error in errors))
 
     def test_old_pr_is_grandfathered(self):
         current = {
@@ -91,7 +128,7 @@ class PullRequestPolicyTests(unittest.TestCase):
             "createdAt": "2026-10-27T12:00:00Z",
             "author": {"login": "agent-user"},
         }
-        open_prs = [current] * 11
+        open_prs = [current] * 16
         errors = MODULE.pr_limit_errors(current=current, open_prs=open_prs, policy=self.POLICY)
         self.assertTrue(any("open PRs" in error for error in errors))
 

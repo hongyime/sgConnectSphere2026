@@ -109,14 +109,16 @@ def pr_limit_errors(
             "close or split an existing PR before opening another"
         )
 
-    author = current["author"]["login"]
-    author_count = sum(1 for pr in counted_prs if pr.get("author", {}).get("login") == author)
-    max_per_author = int(policy["max_open_prs_per_author"])
-    if author_count > max_per_author:
-        errors.append(
-            f"{author} has {author_count} open PRs, exceeding the per-author limit "
-            f"of {max_per_author}"
-        )
+    max_per_author = policy.get("max_open_prs_per_author")
+    if max_per_author is not None:
+        author = current["author"]["login"]
+        author_count = sum(1 for pr in counted_prs if pr.get("author", {}).get("login") == author)
+        max_per_author = int(max_per_author)
+        if author_count > max_per_author:
+            errors.append(
+                f"{author} has {author_count} open PRs, exceeding the per-author limit "
+                f"of {max_per_author}"
+            )
     return errors
 
 
