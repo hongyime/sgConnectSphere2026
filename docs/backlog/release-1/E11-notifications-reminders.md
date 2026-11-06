@@ -4,7 +4,7 @@
 
 - **Sprint**: Sprint 2
 - **Points**: 13
-- **BDR references**: C-04, C-29, C-53, T-35, T-36, T-44, T-48, T-64, C-68, T-69, O-33, C-69, T-70, C-70, T-71
+- **BDR references**: C-04, C-29, C-53, C-68, C-69, C-79, C-99, C-124, C-125, C-128, C-129, T-35, T-36, T-44, T-48, T-64, T-69, T-70, C-70, T-71
 - **Owner**:
 
 ### User story
@@ -70,7 +70,7 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 | --- | --- | --- | --- | --- | --- | --- |
 | Internal review, clarification, approval or rejection | Yes | Yes | No | No | No | No |
 | New request enters the unassigned queue | No | No | No | No | No | No |
-| Coordinator assigned or reassigned, by the Lead or by acceptance | Yes | Incoming and outgoing | No | No | No | No |
+| Coordinator assigned or reassigned by the Lead | Yes | Incoming and outgoing | No | No | No | No |
 | New venue booking request | No | No | Responsible staff | No | No | No |
 | Venue booking confirmed, rejected or released | No | Yes | No | No | No | No |
 | Tentative hold expired (T-92: no reminder before expiry) | No | Yes | No | No | No | No |
@@ -86,9 +86,11 @@ arrangement notifications to the assigned Coordinator and waitlisted Attendees.
 
 - The Safety Officer is notified when an event enters Safety Review (E08-S03, E08-S06);
   like the Lead, the role is not a column because nothing else routes to it (C-70).
-- The Event Coordinator Lead is notified when a request enters the unassigned queue
-  and when a Coordinator asks the Lead to reassign an event (E03-S08, E03-S09); the
-  Lead is not a column above because no other change routes to that role (C-69).
+- Every active Event Coordinator Lead is notified when a request enters the
+  unassigned queue. The Lead directs assignment and reassignment, so no
+  Coordinator-initiated reassignment-request notification exists (E03-S08,
+  E03-S09; C-128, C-129). The Lead is not a column above because no other
+  change routes to that role.
 - Suppress the acting user's routine self-notification; preserve the audit and UI
   acknowledgement. System-generated changes have no actor to exclude.
 - Deduplicate each logical change per user. Exclude inactive, withdrawn and
