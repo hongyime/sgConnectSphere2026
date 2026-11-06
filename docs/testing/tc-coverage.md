@@ -7,21 +7,21 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **394**
-- Automated (explicit TC_ID in an active test title): **364** (92.4%)
+- Automated (explicit TC_ID in an active test title): **363** (92.1%)
   - Real-database (`.integration.test` / `.db.test`): **76**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **287**
-- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **4** (1.0%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **5** (1.3%)
+  - Live-assertion (other active tests): **286**
+- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **3** (0.8%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **7** (1.8%)
 - No test yet (no test file mentions the TC_ID): **21** (5.3%)
 
 ## Coverage by epic
 
 | Epic | Cases | Automated | Known defect | Scaffold | No test |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| E01 | 38 | 37 | 1 | 0 | 0 |
+| E01 | 38 | 38 | 0 | 0 | 0 |
 | E02 | 21 | 18 | 3 | 0 | 0 |
-| E03 | 62 | 50 | 0 | 2 | 10 |
+| E03 | 62 | 48 | 0 | 4 | 10 |
 | E04 | 5 | 5 | 0 | 0 | 0 |
 | E05 | 40 | 40 | 0 | 0 | 0 |
 | E06 | 48 | 47 | 0 | 0 | 1 |
@@ -32,7 +32,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 15 | 0 | 0 | 0 |
 | E14 | 14 | 11 | 0 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 0 | 3 |
-| **Total** | **394** | **364** | **4** | **5** | **21** |
+| **Total** | **394** | **363** | **3** | **7** | **21** |
 
 ## Case-by-case status
 
@@ -78,7 +78,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 | `TC_E01S12_02` | E01-S12 | Verify that a Coordinator opening or acting on a colleague's event directly shou | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E01S12_02: a Coordinator opening or approving a colleague event is refused, reveals nothing and both attempts are logged |
 | `TC_E01S12_03` | E01-S12 | Verify that a Coordinator should still see every venue's availability states wit | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
 | `TC_E01S12_04` | E01-S12 | Verify that Organiser client isolation should be unchanged by Coordinator scopin | ✅ active | backend/tests/eventVisibility.integration.test.ts: TC_E01S02_01 TC_E01S12_04 E01-S02: organisation isolation, colleagues, search, audit and notification delivery |
-| `TC_E01S13_01` | E01-S13 | Verify that a Lead and a Safety Officer should each land on their own workspace  | 🐞 known-defect | tests/e2e/e01.spec.ts: TC_E01S13_01 — a Lead lands on the unassigned queue with the oversight view in the navigation and no Coordinator pages; tests/e2e/e01.spec.ts: TC_E01S13_01 — |
+| `TC_E01S13_01` | E01-S13 | Verify that a Lead and a Safety Officer should each land on their own workspace  | ✅ active | tests/e2e/e01.spec.ts: TC_E01S13_01 — a Lead lands on the unassigned queue with the oversight view in the navigation and no Coordinator pages; tests/e2e/e01.spec.ts: TC_E01S13_01 — |
 | `TC_E01S13_02` | E01-S13 | Verify that new-role accounts should hold exactly one role and that the five exi | ✅ active | backend/tests/roleQueues.test.ts: TC_E01S13_02: Lead and Safety Officer accounts hold only their own role, with no Coordinator permission; tests/e2e/e01.spec.ts: TC_E01S13_02 — the |
 
 ### E02
@@ -115,8 +115,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 | `TC_E03S01_02` | E03-S01 | [RETIRED — C-69: automatic assignment by fewest active events is superseded by E | ❌ none | — |
 | `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ❌ none | — |
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
-| `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal |
-| `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment |
+| `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal |
+| `TC_E03S01_07` | E03-S01 | Verify that ownership moves only once the incoming Coordinator accepts a reassig | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment |
 | `TC_E03S02_01` | E03-S02 | Verify that recording and sending clarification questions on an Under-Review req | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_01: questions move an Under Review request to Awaiting Clarification and notify the Organiser once, with the question tex |
 | `TC_E03S02_02` | E03-S02 | Verify that when the Organiser responds and resubmits, the request should return | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_02: a complete answer resolves the question, returns the request to Under Review and notifies the Coordinator once; tests |
 | `TC_E03S02_03` | E03-S02 | Verify that a request Awaiting Clarification should show its outstanding questio | ✅ active | backend/tests/clarification.integration.test.ts: TC_E03S02_03: both event detail reads list the outstanding questions with the date each was raised; tests/e2e/e03.spec.ts: TC_E03S0 |
