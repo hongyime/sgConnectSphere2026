@@ -18,4 +18,5 @@ Add the nullable `events.assigned_by` foreign key needed by the E03-S08 applicat
 
 - `python scripts/check.py` passed on `e46dcff`; repository checks passed and 207 tooling tests passed. The output warns that secondary worktrees are present.
 - `python scripts/doc_guard.py` passed with 0 errors and 188 existing missing-front-matter warnings.
-- No database suite or production database operation was run locally; CI will validate the migration on a disposable PostgreSQL database.
+- CI Application Checks passed on `f678f04`; disposable PostgreSQL applied migration 0027 and verified its migration ledger. The run is recorded in `docs/testing/runs/20261106-215307-bryanseah234-backend-db.md`.
+- No database suite or production database operation was run locally. The deploy owner must apply and verify the migration after merge through the protected workflow.
