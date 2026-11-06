@@ -140,7 +140,7 @@ and where we fell short we've said that too."
 - Changed the Confirm step we had already built (E08-S03), added the Safety Officer review (E08-S06, 8 points) and a "send back to planning" path (E08-S04)
 - The only change that added a status to the event lifecycle, so every status rule, screen and notification around Confirm had to be rechecked
 - Week 9 answers changed it again: rejection returns the event to planning (C-132 onwards), and the review should start automatically (T-82)
-- Not finished: E08-S04 is not Done yet (In Review on 6 Nov) [REFRESH: Jira SCRUM-61], and a first-time event is still submitted by the Coordinator rather than entering review on its own [CONFIRM: Bryan (Product Owner). T-82 (13 Oct) says the Coordinator does not submit, but E08-S03 was built on 17 Oct to its written criteria, which still say "When I submit"; E08-S03 is Done, so a follow-up story is needed (T-74). None exists yet. Aaron, as E08-S03 owner, for information]
+- Not finished: E08-S04 is not Done yet (In Review on 6 Nov) [REFRESH: Jira SCRUM-61], and a first-time event is still submitted by the Coordinator rather than entering review on its own (known gap: T-82 on 13 Oct says the Coordinator does not submit, but E08-S03 was built on 17 Oct, #283, to its written criteria, which still say "When I submit"; only re-entry is automatic, #392, #395)
 
 **Question 2:** Describe how you handled these changes, and which components of your project were affected and how.
 
