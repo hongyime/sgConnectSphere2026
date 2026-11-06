@@ -140,7 +140,7 @@ and where we fell short we've said that too."
 - Changed the Confirm step we had already built (E08-S03), added the Safety Officer review (E08-S06, 8 points) and a "send back to planning" path (E08-S04)
 - The only change that added a status to the event lifecycle, so every status rule, screen and notification around Confirm had to be rechecked
 - Week 9 answers changed it again: rejection returns the event to planning (C-132 onwards), and the review should start automatically (T-82)
-- Not finished: E08-S04 is not Done yet (In Review on 6 Nov) [REFRESH: Jira SCRUM-61], and a first-time event is still submitted by the Coordinator rather than entering review on its own [CONFIRM: Aaron, owner of E08-S03/S06]
+- Not finished: E08-S04 is not Done yet (In Review on 6 Nov) [REFRESH: Jira SCRUM-61], and a first-time event is still submitted by the Coordinator rather than entering review on its own [CONFIRM: Bryan (Product Owner). T-82 (13 Oct) says the Coordinator does not submit, but E08-S03 was built on 17 Oct to its written criteria, which still say "When I submit"; E08-S03 is Done, so a follow-up story is needed (T-74). None exists yet. Aaron, as E08-S03 owner, for information]
 
 **Question 2:** Describe how you handled these changes, and which components of your project were affected and how.
 
@@ -252,8 +252,14 @@ slides 9 (long branches), 15 (Bryan's row) and 16 (Release 1 line and lessons).]
 
 **Question:** Provide THREE concrete examples from your project where you added value on top of what AI did:
 
-[CONFIRM: The CFO's request itself was posted on eLearn (Week 10 lecture,
-p. 3). It is not in the repo. Check the answer against the eLearn wording.]
+Source: "IS212 (AY 2026/27 T1) Week 10 CFO Update: Demonstrating Value Beyond
+AI-Generated Code" (eLearn). The CFO asks: "If AI can generate so much of the
+code, what value are our software development teams adding beyond simply
+asking AI to build the system?", and wants each team to "explain and
+demonstrate how the team has added value on top of what could reasonably be
+produced by AI-assisted coding tools alone". The three examples below answer
+that: judgement on what the customer meant (1), checking the evidence (2), and
+design that holds under real timing (3).
 
 **SLIDE CONTENT (table: Example | What AI Could / Did Do | What Your Team Added | Why Did This Add Value? | Evidence):**
 
@@ -264,7 +270,8 @@ p. 3). It is not in the repo. Check the answer against the eLearn wording.]
 | 3. Two organisers booking the same slot | AI could write a booking route that saves whatever arrives, so two overlapping claims both succeed | Rule B (T-100): first accepted claim wins, enforced with PostgreSQL row locks (`FOR UPDATE`) | A double booking can't happen even when two people press submit together | PRs #339, #340, #378, #385; `backend/src/modules/venueBooking/`; T-100 |
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
-"The CFO asked what we add if AI can write code. Here are three places where
+"The CFO asked: if AI can generate so much of the code, what value are we
+adding beyond asking AI to build the system? Here are three places where
 the answer is in the repo. First, when the Week 7 changes came in, the quick
 fix would have been to edit stories we had already finished. We decided
 against it. Done stays Done, and new behaviour gets a new story and a new
