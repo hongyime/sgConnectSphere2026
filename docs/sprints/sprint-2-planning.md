@@ -25,15 +25,18 @@ Week 3 lecture (slides 18–28). Sprint 1 established a baseline velocity of 24
 evidence-backed product-story points; the team used this to size Sprint 2 rather
 than planning against raw output (lecture slides 30–32, 62).
 
-Sprint 2 committed to **13 product stories**. Eleven were new Sprint 2 stories;
-two were Sprint 1 carryover items reopened for closure (E01-S04 / SCRUM-19 and
-the already-merged E02-S01 / SCRUM-26 and E02-S02 / SCRUM-27 verification gaps).
-The notification story E11-S01 / SCRUM-75 was re-estimated upward during the
-sprint from 5 to 13 points once its cross-cutting dependency scope became clear
-(lecture slide 60 permits re-estimation if applied consistently).
+Sprint 2 committed **14 product stories** (the table below), confirmed against
+the live Jira sprint-35 record. These are eleven new Sprint 2 stories plus three
+Sprint 1 verification-gap closures — E01-S04 / SCRUM-19, E02-S01 / SCRUM-26 and
+E02-S02 / SCRUM-27. E11-S01 / SCRUM-75 retained its five-point estimate during
+this sprint; T-105 approved thirteen points on 1 November 2026 and explicitly
+preserves the original commitment and sprint ledger, so it does not revise
+Sprint 2.
 
-Committed product-story points at planning: **53** (40 points of work completed
-within the sprint, plus the 13-point E11-S01). Technical-enabler and
+Committed product-story points at planning: **48** (the 12 stories completed by
+close at 40 points, plus the two carryovers E11-S01 at its committed 5 and
+E14-S02 at 3). The earlier 53-point figure incorrectly used E11-S01's later
+thirteen-point estimate. Technical-enabler and
 documentation stories (SCRUM-90–118, owned by Bryan) are tracked separately and
 are not counted as product velocity, consistent with the Sprint 1 record.
 
@@ -46,7 +49,7 @@ Jira; summarised here.
 | --- | --- | ---: | --- | --- |
 | E01-S04 | Update my account details (Sprint 1 carryover) | 1 | Ji Ning | SCRUM-19 |
 | E06-S01 | Search for suitable venues | 5 | Ji Ning | SCRUM-45 |
-| E11-S01 | Notify users about events they are involved in | 5 → 13 | Ji Ning | SCRUM-75 |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | SCRUM-75 |
 | E02-S01 | Submit an event request (Sprint 1 closure) | 5 | Aaron | SCRUM-26 |
 | E02-S02 | Save a draft event request (Sprint 1 closure) | 3 | Aaron | SCRUM-27 |
 | E03-S01 | Assign an Event Coordinator to a request | 3 | Aaron | SCRUM-32 |
@@ -79,9 +82,9 @@ it is shown once here, attributed to Ji Ning, matching the Jira assignee.
 > consistent with the Sprint 1 chart. The velocity *table* below reports strict
 > product-story velocity under the Definition of Done (fully-Done product stories
 > only). This is why a sprint's chart bar can be higher than its table figure
-> (for example, Sprint 2: Jira board 66 vs strict velocity 37).
+> (for example, Sprint 2: Jira board 66 vs strict velocity 40).
 
 | Sprint | Planned Points | Completed Points | Notes |
 | --- | ---: | ---: | --- |
 | 1 | 36 | 24 (evidence-backed) | First-sprint baseline; no prior velocity data. |
-| 2 | 53 (product stories) | 37 (recorded at Sprint 2 review) | Planned figure counts the 12 in-sprint stories (40 pts) plus E11-S01 re-estimated to 13 pts. Completed = 11 stories Done at close; E11-S01 (13) and E14-S02 (3) carried over. Jira's board chart shows 82 including technical-enabler stories; product velocity is measured on product stories only. |
+| 2 | 48 (product stories) | 40 (12 stories Done at close, per Jira sprint 35) | E11-S01 (5) and E14-S02 (3) carried over. The later thirteen-point E11-S01 estimate does not revise this sprint. Jira's board chart shows 82 including technical-enabler stories; product velocity is measured on product stories only. |

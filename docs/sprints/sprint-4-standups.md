@@ -56,7 +56,7 @@ participated as Product Owner and contributing developer.
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | In Review |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | In Progress |
 | E10-S01 | Request a change after submission | 8 | Ji Ning / Xiang Ying | In Progress |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | In Progress (impl. #298; awaiting TC07 rerun and DoD) |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do |
 | E08-S04 | Revert a confirmed event to planning | 1 | Le Xin | To Do |
@@ -118,7 +118,7 @@ backlog.
 | E06-S03 | Request a venue booking | 3 | Ji Ning | In Review |
 | E10-S01 | Request a change after submission | 8 | Ji Ning / Xiang Ying | In Progress |
 | E10-S05 | Handle a venue lost from a confirmed event | 5 | Ji Ning | In Review |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | In Progress (TC07 rerun being recorded; awaiting DoD) |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do (backend rule/tests merged #340; frontend + evidence remaining) |
 | E08-S04 | Revert a confirmed event to planning | 1 | Le Xin | To Do |
@@ -170,7 +170,7 @@ backlog.
 | E06-S03 | Request a venue booking | 3 | Ji Ning | Done (29 Oct) |
 | E10-S05 | Handle a venue lost from a confirmed event | 5 | Ji Ning | Done (29 Oct) |
 | E10-S01 | Request a change after submission | 8 | Ji Ning / Xiang Ying | In Progress (carried to Sprint 5) |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress (carried to Sprint 5) |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress (carried to Sprint 5) |
 | E05-S05 | Apply setup and turnaround time | 5 | Aaron | Done (22 Oct) |
 | E09-S05 | Withdraw my registration | 3 | Aaron | Done (28 Oct) |
 | E09-S04 | Join the waiting list | 5 | Aaron | In Progress (#379 merged, #394 open) — reached Done 1 Nov 01:00, after close |
@@ -186,5 +186,5 @@ backlog.
 E10-S05 and E05-S06 joined Sprint 4 on 27 October, and E08-S06 joined on
 30 October. E10-S05 was re-estimated 3→5, E05-S06 set at 8, and E10-S02 went
 5→8 after T-104. E11-S01's change from 5 to 13 points was pending a PO decision
-at the final standup (approved at close via T-105). A short Sprint 5 (1–5 Nov)
+at the final standup (approved on 1 November via T-105, preserving the historical ledger). A short Sprint 5 (1–5 Nov)
 was opened to finish the remaining Release 1 stories before submission.

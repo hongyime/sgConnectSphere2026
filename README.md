@@ -51,7 +51,7 @@ Multi-role switching, reporting/exports, SMS and payments are not claimed as bui
 | Hosted database | Supabase PostgreSQL; custom cookie sessions, **not Supabase Auth** |
 | Notifications | PostgreSQL outbox, Upstash Redis REST transport, Brevo HTTPS email API |
 | Testing | Node test runner/c8, Vitest/Testing Library, Playwright, Stryker mutation testing |
-| Tooling and delivery | Python repository checks, GitHub Actions, Vercel CLI deployment |
+| Tooling and delivery | Python repository checks, GitHub Actions, Vercel Git integration |
 
 This is **React/Vite, not Next.js**. Repository topics and old proposals do not
 change what the manifests and executable code implement. Dependency versions are

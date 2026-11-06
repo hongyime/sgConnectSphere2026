@@ -42,7 +42,7 @@ as Product Owner and contributing developer.
 | --- | --- | ---: | --- | --- |
 | E01-S04 | Update my account details | 1 | Ji Ning | Done |
 | E06-S01 | Search for suitable venues | 5 | Ji Ning | To Do |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | To Do |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | To Do |
 | E02-S01 | Submit an event request | 5 | Aaron | Done |
 | E02-S02 | Save a draft event request | 3 | Aaron | Done |
 | E03-S01 | Assign an Event Coordinator to a request | 3 | Aaron | To Do |
@@ -88,7 +88,7 @@ as Product Owner and contributing developer.
 | --- | --- | ---: | --- | --- |
 | E01-S04 | Update my account details | 1 | Ji Ning | Done |
 | E06-S01 | Search for suitable venues | 5 | Ji Ning | Done |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E02-S01 | Submit an event request | 5 | Aaron | Done |
 | E02-S02 | Save a draft event request | 3 | Aaron | Done |
 | E03-S01 | Assign an Event Coordinator to a request | 3 | Aaron | Done |
@@ -134,7 +134,7 @@ as Product Owner and contributing developer.
 | --- | --- | ---: | --- | --- |
 | E01-S04 | Update my account details | 1 | Ji Ning | Done |
 | E06-S01 | Search for suitable venues | 5 | Ji Ning | Done |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E02-S01 | Submit an event request | 5 | Aaron | Done |
 | E02-S02 | Save a draft event request | 3 | Aaron | Done |
 | E03-S01 | Assign an Event Coordinator to a request | 3 | Aaron | Backend done, frontend unconfirmed |
@@ -181,7 +181,7 @@ as Product Owner and contributing developer.
 | --- | --- | ---: | --- | --- |
 | E01-S04 | Update my account details | 1 | Ji Ning | Done |
 | E06-S01 | Search for suitable venues | 5 | Ji Ning | Done |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress (carried to Sprint 3) |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress (carried to Sprint 3) |
 | E02-S01 | Submit an event request | 5 | Aaron | Done |
 | E02-S02 | Save a draft event request | 3 | Aaron | Done |
 | E03-S01 | Assign an Event Coordinator to a request | 3 | Aaron | Done |

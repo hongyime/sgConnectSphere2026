@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import io
 import json
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -70,7 +71,7 @@ def main() -> None:
         }))
         for source in sources:
             for extension in ("svg", "png", "pdf"):
-                command = ["npx", "--yes", "--package", "@mermaid-js/mermaid-cli@12.2.0", "mmdc",
+                command = [shutil.which("npx") or "npx", "--yes", "--package", "@mermaid-js/mermaid-cli@12.2.0", "mmdc",
                            "-i", str(source), "-o", str(args.output / f"{source.stem}.{extension}"),
                            "-c", str(config), "-b", "white", "--size", "2600"]
                 if args.puppeteer_config:
@@ -100,9 +101,9 @@ def main() -> None:
         scale = min((size[0] - 84) / dw, (top - 55) / dh)
         if scale <= 0:
             raise ValueError(f"Explanation leaves no diagram space: {source.name}")
+        page = writer.add_page(page)
         page.merge_transformed_page(diagram, Transformation().scale(scale).translate(
             42 + (size[0] - 84 - dw * scale) / 2, 55 + (top - 55 - dh * scale) / 2))
-        writer.add_page(page)
     target = args.output / "System Design - ConnectSphere Release 1.pdf"
     with target.open("wb") as output:
         writer.write(output)
