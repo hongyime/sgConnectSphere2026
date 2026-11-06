@@ -12,15 +12,17 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 - CI exposed three issues: the `assigned_by` migration was absent, one test expected an Organiser self-notification contrary to E11, and the route-test origin allowlist was not initialized. The notification assertion and allowlist fixture are corrected in this branch.
 - Opened migration-only prerequisite [PR #454](https://github.com/hongyime/sgConnectSphere2026/pull/454) for `events.assigned_by`.
 - The follow-up application CI run at `932fc54` is recorded in `docs/testing/runs/20261106-220410-bryanseah234-backend-db.md`: 4 passed, 6 failed, and 2 out-of-scope TODO failures. The route-origin fixture now passes; remaining in-scope failures are blocked by the missing `assigned_by` column from #454.
+- The same database acceptance checks reran on `729e135` and again failed on the absent `assigned_by` column; this run is recorded in `docs/testing/runs/20261106-221021-bryanseah234-backend-db.md`.
 - The current app diff is within the 40-file/1800-addition/1500-deletion PR guardrail.
 
 ## Next
 
 - Merge migration-only PR #454 and apply/verify its migration through the protected production workflow before releasing dependent code. Then update #453 against `main` and rerun CI.
-- After #453 merges, update #450 against the new `main` and confirm its deletion count is within the guardrail. At its current head `e404119`, #450 still fails the deletion guardrail at 1,723 deletions.
+- Amareet's suggested activity-log check passed in #450's CI run 42227594248: `activityLog.integration.test.ts` ran against disposable PostgreSQL.
+- #450 is still at `a154d60`; against current `main`, GitHub reports 726 additions/1,468 deletions and `pr-guardrails` passes. It still contains the E03-S08 slice; after #453 merges, update #450 to remove that overlap and keep E03-S09/S10.
 
 ## Verification
 
 - `python scripts/check.py` — passed; repository hygiene and 207 tooling tests passed. It warns that secondary worktrees are present.
 - `python scripts/doc_guard.py` — passed with 0 errors and 188 existing missing-front-matter warnings.
-- Application tests/build were not run locally. CI run `42230133758` failed because the schema migration is absent; the migration is isolated in #454 and must be merged/applied before #453 can pass database acceptance checks.
+- Application tests/build were not run locally. CI run `42231522648` failed because the schema migration is absent; the migration is isolated in #454 and must be merged before updating #453 and rerunning database acceptance checks.
