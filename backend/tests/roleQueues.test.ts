@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type { Pool } from 'pg';
-import { listUnassignedEvents } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
+import { listAssignedEvents, listUnassignedEvents } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
 import { listSafetyReviewEvents } from '../src/modules/eventReadiness/submission.js';
 import { AccessError } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -64,4 +64,17 @@ test('non-Safety Officers cannot read the Safety Review queue and the attempt is
   await assert.rejects(listSafetyReviewEvents(pool, coordinator), (error: unknown) =>
     error instanceof AccessError && error.status === 403);
   assert.match(calls[0]!.sql, /Access Denied/);
+});
+
+// E01-S13 Scenario 3 (O-44): one role per account. A Lead or Safety Officer
+// gets no Coordinator permission, and neither gets the other's queue.
+test('TC_E01S13_02: Lead and Safety Officer accounts hold only their own role, with no Coordinator permission', async () => {
+  for (const user of [lead, officer]) {
+    const { pool, calls } = database([{ id: 'event-1' }]);
+    await assert.rejects(listAssignedEvents(pool, user), (error: unknown) => error instanceof AccessError && error.status === 403);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0]!.sql, /Access Denied/);
+  }
+  await assert.rejects(listUnassignedEvents(database().pool, officer), (error: unknown) => error instanceof AccessError && error.status === 403);
+  await assert.rejects(listSafetyReviewEvents(database().pool, lead), (error: unknown) => error instanceof AccessError && error.status === 403);
 });

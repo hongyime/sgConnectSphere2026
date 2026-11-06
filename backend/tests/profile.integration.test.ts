@@ -12,7 +12,7 @@ import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import type { VercelResponse } from '../src/vercel.js';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 
-test('real sessions, profile persistence, case-insensitive uniqueness and future notification address', async () => {
+test('TC_E01S04_04 real sessions, profile persistence, case-insensitive uniqueness and future notification address', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const address = new URL(process.env.TEST_DATABASE_URL);
   assert.ok(['127.0.0.1', 'localhost', '[::1]'].includes(address.hostname), 'Use a loopback test database');

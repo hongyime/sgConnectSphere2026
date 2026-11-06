@@ -17,6 +17,7 @@ import { dispatchCommittedDeliveries } from '../src/modules/notificationDispatch
 import { listInbox, markInboxRead } from '../src/modules/eventNotifications/inbox.js';
 import { decideBooking } from '../src/modules/venueBooking/decisions.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
+import { PostgresEventLifecycleRepository } from '../src/modules/eventLifecycle/repository.js';
 
 async function eventFixture(pool: Pool) {
   const org=randomUUID(), organiser=randomUUID(), event=randomUUID();
@@ -100,6 +101,54 @@ async function approvedBookingSurvivesEmailFailure(status: 400 | 401 | 503 | 429
     await f.close();
   }
 }
+
+// TC_E11S01_05 (E11-S01 Scenario 4): a status change's notice is in the
+// Organiser's in-app list and the same notice is sent by email to the address
+// registered on the account. Only the provider's HTTP endpoint is intercepted;
+// arrival in the real mailbox is the manual part of this case.
+test('TC_E11S01_05: a status-change notice appears in the in-app list and is emailed to the registered address', async () => {
+  const f = await loginDatabase();
+  const oldFetch = globalThis.fetch;
+  const oldConfig = { brevoApiKey: runtimeConfig.brevoApiKey, emailFrom: runtimeConfig.emailFrom };
+  Object.assign(runtimeConfig, { brevoApiKey: 'synthetic-intercepted-key', emailFrom: 'sender@example.invalid' }); // pragma: allowlist secret - dummy key; fetch intercepted
+  try {
+    const event = await eventFixture(f.pool), coordinator = randomUUID();
+    const organiser = (await f.pool.query('SELECT organiser_id FROM events WHERE id=$1', [event])).rows[0].organiser_id as string;
+    await f.pool.query("UPDATE users SET email='organiser_a@clienta.example.test' WHERE id=$1", [organiser]);
+    await f.pool.query(`INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,'unused','Synthetic coordinator','event_coordinator')`,
+      [coordinator, `${coordinator}@example.test`]);
+    await f.pool.query("UPDATE events SET coordinator_id=$1, status='under_review' WHERE id=$2", [coordinator, event]);
+    await new PostgresEventLifecycleRepository({}, f.pool).updateEventStatus(event, 'approved', coordinator, 'Feasible');
+
+    const inbox = await listInbox(f.pool.query.bind(f.pool), organiser);
+    assert.equal(inbox.length, 1);
+    assert.match(inbox[0].message, /approved/);
+    const delivery = (await f.pool.query('SELECT id,recipient_email FROM notification_deliveries WHERE notification_id=$1', [inbox[0].id])).rows[0];
+    assert.equal(delivery.recipient_email, 'organiser_a@clienta.example.test');
+
+    const requests: { url: string; body: string }[] = [];
+    globalThis.fetch = async (url, options) => {
+      requests.push({ url: String(url), body: String(options?.body) });
+      return new Response(JSON.stringify({ messageId: '<synthetic@example.invalid>' }), { status: 201 });
+    };
+    const transport = { async publish() {}, async peek() { return [delivery.id]; }, async acknowledge() {}, async defer() {} };
+    await dispatchCommittedDeliveries(postgresDeliveryStore(f.pool), transport, sendDurableBrevoEmail);
+
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].url, 'https://api.brevo.com/v3/smtp/email');
+    const email = JSON.parse(requests[0].body);
+    assert.deepEqual(email.to, [{ email: 'organiser_a@clienta.example.test' }]);
+    assert.equal(email.headers['X-ConnectSphere-Notification-ID'], inbox[0].id);
+    assert.ok(email.subject.includes(inbox[0].title), email.subject);
+    assert.ok(email.htmlContent.includes('approved'));
+    const sent = (await f.pool.query('SELECT delivery_status,dispatch_state,sent_at FROM notification_deliveries WHERE id=$1', [delivery.id])).rows[0];
+    assert.deepEqual([sent.delivery_status, sent.dispatch_state, sent.sent_at instanceof Date], ['sent', 'done', true]);
+  } finally {
+    globalThis.fetch = oldFetch;
+    Object.assign(runtimeConfig, oldConfig);
+    await f.close();
+  }
+});
 
 test('TC_E11S01_08: actual booking approval and inbox survive HTTP 400 rejection', () => approvedBookingSurvivesEmailFailure(400));
 test('TC_E11S01_08: actual booking approval and inbox survive HTTP 401 rejection', () => approvedBookingSurvivesEmailFailure(401));

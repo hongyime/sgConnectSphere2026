@@ -7,35 +7,36 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **386**
-- Automated (explicit TC_ID in an active test title): **326** (84.5%)
-  - Real-database (`.integration.test` / `.db.test`): **43**
+- Automated (explicit TC_ID in an active test title): **357** (92.5%)
+  - Real-database (`.integration.test` / `.db.test`): **72**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **282**
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **47** (12.2%)
+  - Live-assertion (other active tests): **284**
+- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **6** (1.6%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **10** (2.6%)
 - No test yet (no test file mentions the TC_ID): **13** (3.4%)
 
 ## Coverage by epic
 
-| Epic | Cases | Automated | Scaffold | No test |
-| --- | ---: | ---: | ---: | ---: |
-| E01 | 38 | 21 | 17 | 0 |
-| E02 | 21 | 17 | 1 | 3 |
-| E03 | 62 | 49 | 13 | 0 |
-| E04 | 5 | 5 | 0 | 0 |
-| E05 | 39 | 38 | 1 | 0 |
-| E06 | 43 | 40 | 3 | 0 |
-| E07 | 37 | 37 | 0 | 0 |
-| E08 | 28 | 24 | 4 | 0 |
-| E09 | 45 | 38 | 4 | 3 |
-| E10 | 36 | 32 | 0 | 4 |
-| E11 | 15 | 14 | 1 | 0 |
-| E14 | 14 | 11 | 3 | 0 |
-| EXX | 3 | 0 | 0 | 3 |
-| **Total** | **386** | **326** | **47** | **13** |
+| Epic | Cases | Automated | Known defect | Scaffold | No test |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| E01 | 38 | 36 | 0 | 2 | 0 |
+| E02 | 21 | 18 | 0 | 0 | 3 |
+| E03 | 62 | 52 | 6 | 4 | 0 |
+| E04 | 5 | 5 | 0 | 0 | 0 |
+| E05 | 39 | 39 | 0 | 0 | 0 |
+| E06 | 43 | 42 | 0 | 0 | 1 |
+| E07 | 37 | 37 | 0 | 0 | 0 |
+| E08 | 28 | 28 | 0 | 0 | 0 |
+| E09 | 45 | 42 | 0 | 1 | 2 |
+| E10 | 36 | 32 | 0 | 0 | 4 |
+| E11 | 15 | 15 | 0 | 0 | 0 |
+| E14 | 14 | 11 | 0 | 3 | 0 |
+| EXX | 3 | 0 | 0 | 0 | 3 |
+| **Total** | **386** | **357** | **6** | **10** | **13** |
 
 ## Case-by-case status
 
-Each row records the TC_ID, story, scenario, current status, and (for automated or scaffold rows) the test file and test title that touches it. Sort order is by epic then Story ID then TC_ID.
+Each row records the TC_ID, story, scenario, current status, and (for automated, known-defect or scaffold rows) the test file and test title that touches it. Sort order is by epic then Story ID then TC_ID.
 
 ### E01
 
@@ -48,37 +49,37 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E01S01_05` | E01-S01 | Verify that setting a new password via a valid reset link should lift the lock a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
 | `TC_E01S01_06` | E01-S01 | Verify that an account lockout should be recorded in the activity log with the a | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
 | `TC_E01S01_07` | E01-S01 | Verify that a sixth sign-in attempt is refused even with the correct password on | ✅ active | tests/auth-e2e/loginRecovery.spec.ts: TC_E01S01_03 TC_E01S01_04 TC_E01S01_05 TC_E01S01_06 TC_E01S01_07 — lock, audit, emailed reset, unlock and single-use recovery |
-| `TC_E01S02_01` | E01-S02 | Verify that an Event Organiser's event list should only show events from their o | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_01 - Verify that an Event Organiser |
+| `TC_E01S02_01` | E01-S02 | Verify that an Event Organiser's event list should only show events from their o | ✅ active | backend/tests/eventVisibility.integration.test.ts: TC_E01S02_01 TC_E01S12_04 E01-S02: organisation isolation, colleagues, search, audit and notification delivery; tests/e2e/e01.spe |
 | `TC_E01S02_02` | E01-S02 | Verify that direct access to another client's event via URL/ID should be denied  | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_02 — direct access denial shows no event details and offers a return path |
 | `TC_E01S02_03` | E01-S02 | Verify that events created by colleagues within the same client organisation sho | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_03 TC_E01S02_04 — organisation events show colleague attribution and an accessible empty search state |
 | `TC_E01S02_04` | E01-S02 | Verify that search results should exclude events belonging to unrelated client o | ✅ active | tests/e2e/client-events.spec.ts: TC_E01S02_03 TC_E01S02_04 — organisation events show colleague attribution and an accessible empty search state |
-| `TC_E01S02_05` | E01-S02 | Verify that notifications should never reference events from unrelated client or | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_05 - Verify that notifications should never reference events from unrelated client organisations |
-| `TC_E01S02_06` | E01-S02 | Verify that a denied access attempt should be logged with the user, event, and t | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S02_06 - Verify that a denied access attempt should be logged with the user, event, and time |
+| `TC_E01S02_05` | E01-S02 | Verify that notifications should never reference events from unrelated client or | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E01S02_05: a notice about a Client B event never reaches the Client A Organiser notification list; tests/e2e/e01.spec.ts: TC_E01S0 |
+| `TC_E01S02_06` | E01-S02 | Verify that a denied access attempt should be logged with the user, event, and t | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_02 TC_E01S02_06: a refused event read is recorded with the user, the target and the time; tests/e2e/e01.spec.ts: TC_E01S02_ |
 | `TC_E01S03_01` | E01-S03 | Verify that an Attendee viewing a registered event should see only published det | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_01 — attendee sees only published fields for registered events |
 | `TC_E01S03_02` | E01-S03 | Verify that an Attendee attempting to open an internal planning screen directly  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_02 — direct internal planning request is sent for auditing and denied |
 | `TC_E01S03_03` | E01-S03 | Verify that an Attendee should not see events or events they are not registered  | ✅ active | tests/e2e/attendee-events.spec.ts: TC_E01S03_03 — unregistered direct event is refused with no event fields |
 | `TC_E01S04_01` | E01-S04 | Verify that name, email and contact changes persist while organisation remains r | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only |
 | `TC_E01S04_02` | E01-S04 | Verify that saving a malformed email address should be rejected with the field i | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected |
 | `TC_E01S04_03` | E01-S04 | Verify that saving an email already registered to another account should be reje | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_02 TC_E01S04_03 — field errors remain visible and form can be corrected |
-| `TC_E01S04_04` | E01-S04 | Verify that changing the registered email should route future notifications to t | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S04_04 - Verify that changing the registered email should route future notifications to the new address |
+| `TC_E01S04_04` | E01-S04 | Verify that changing the registered email should route future notifications to t | ✅ active | backend/tests/profile.integration.test.ts: TC_E01S04_04 real sessions, profile persistence, case-insensitive uniqueness and future notification address; tests/e2e/e01.spec.ts: TC_E |
 | `TC_E01S04_05` | E01-S04 | Verify that a user should not be able to change their own role from the account  | ✅ active | tests/e2e/profile.spec.ts: TC_E01S04_01 TC_E01S04_05 — edit profile, save normalized values and reload; organisation stays read-only |
 | `TC_E01S08_01` | E01-S08 | Verify that submitting valid sign-up details should create an Attendee account t | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_01 TC_E01S08_04 — registration submits required fields without role and displays success |
 | `TC_E01S08_02` | E01-S08 | Verify that signing up with an already-registered email should be rejected witho | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_02 TC_E01S08_03 — registration displays server field errors and allows correction |
 | `TC_E01S08_03` | E01-S08 | Verify that leaving a required sign-up field empty should block account creation | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_02 TC_E01S08_03 — registration displays server field errors and allows correction |
 | `TC_E01S08_04` | E01-S08 | Verify that an account created through the public sign-up form should hold the A | ✅ active | tests/e2e/registration.spec.ts: TC_E01S08_01 TC_E01S08_04 — registration submits required fields without role and displays success |
 | `TC_E01S08_05` | E01-S08 | Verify that the public sign-up form should not offer any internal role as a choi | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S08_05 - Verify that the public sign-up form should not offer any internal role as a choice |
-| `TC_E01S08_06` | E01-S08 | Verify that entering a password that fails the stated policy should block accoun | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S08_06 - Verify that entering a password that fails the stated policy should block account creation and identify the requirement it fails |
-| `TC_E01S11_01` | E01-S11 | Verify that confirming deactivation should sign the user out and block further s | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_01 - Verify that confirming deactivation should sign the user out and block further sign-in with those credentials |
-| `TC_E01S11_02` | E01-S11 | Verify that past registrations and event records should remain intact and attrib | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_02 - Verify that past registrations and event records should remain intact and attributed after deactivation |
-| `TC_E01S11_03` | E01-S11 | Verify that an Attendee's upcoming registration should be withdrawn and its plac | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_03 - Verify that an Attendee |
-| `TC_E01S11_04` | E01-S11 | Verify that an Event Coordinator with assigned events should be blocked from dea | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_04 - Verify that an Event Coordinator with assigned events should be blocked from deactivating until those events are reassigned |
-| `TC_E01S11_05` | E01-S11 | Verify that a deactivation should be recorded in the activity log with the actor | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S11_05 - Verify that a deactivation should be recorded in the activity log with the actor and time |
-| `TC_E01S12_01` | E01-S12 | Verify that a Coordinator's event list should contain only events assigned to th | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S12_01 — Verify that a Coordinator |
-| `TC_E01S12_02` | E01-S12 | Verify that a Coordinator opening or acting on a colleague's event directly shou | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S12_02 — Verify that a Coordinator opening or acting on a colleague |
-| `TC_E01S12_03` | E01-S12 | Verify that a Coordinator should still see every venue's availability states wit | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S12_03 — Verify that a Coordinator should still see every venue |
-| `TC_E01S12_04` | E01-S12 | Verify that Organiser client isolation should be unchanged by Coordinator scopin | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S12_04 — Verify that Organiser client isolation should be unchanged by Coordinator scoping |
-| `TC_E01S13_01` | E01-S13 | Verify that a Lead and a Safety Officer should each land on their own workspace  | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S13_01 — Verify that a Lead and a Safety Officer should each land on their own workspace with only their role |
-| `TC_E01S13_02` | E01-S13 | Verify that new-role accounts should hold exactly one role and that the five exi | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S13_02 — Verify that new-role accounts should hold exactly one role and that the five existing roles should still land where they did |
+| `TC_E01S08_06` | E01-S08 | Verify that entering a password that fails the stated policy should block accoun | ✅ active | backend/tests/registration.test.ts: TC_E01S08_06: a password that fails the stated policy blocks the account and names each requirement it fails; tests/e2e/e01.spec.ts: TC_E01S08_0 |
+| `TC_E01S11_01` | E01-S11 | Verify that confirming deactivation should sign the user out and block further s | ✅ active | backend/tests/deactivation.integration.test.ts: TC_E01S11_01 TC_E01S11_02 TC_E01S11_03 PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statu |
+| `TC_E01S11_02` | E01-S11 | Verify that past registrations and event records should remain intact and attrib | ✅ active | backend/tests/deactivation.integration.test.ts: TC_E01S11_01 TC_E01S11_02 TC_E01S11_03 PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statu |
+| `TC_E01S11_03` | E01-S11 | Verify that an Attendee's upcoming registration should be withdrawn and its plac | ✅ active | backend/tests/deactivation.integration.test.ts: TC_E01S11_01 TC_E01S11_02 TC_E01S11_03 PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statu |
+| `TC_E01S11_04` | E01-S11 | Verify that an Event Coordinator with assigned events should be blocked from dea | ✅ active | backend/tests/deactivation.integration.test.ts: TC_E01S11_04: a Coordinator with Confirmed and Planning events is blocked and told which events to reassign, not the Completed one;  |
+| `TC_E01S11_05` | E01-S11 | Verify that a deactivation should be recorded in the activity log with the actor | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_04 TC_E01S11_05: an account deactivation is recorded with the actor and the time; tests/e2e/e01.spec.ts: TC_E01S11_05 - Ver |
+| `TC_E01S12_01` | E01-S12 | Verify that a Coordinator's event list should contain only events assigned to th | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E01S12_01: a Coordinator event list holds only their own assigned events, not a colleague events or the unassigned queue; tests/e2 |
+| `TC_E01S12_02` | E01-S12 | Verify that a Coordinator opening or acting on a colleague's event directly shou | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E01S12_02: a Coordinator opening or approving a colleague event is refused, reveals nothing and both attempts are logged; tests/e2 |
+| `TC_E01S12_03` | E01-S12 | Verify that a Coordinator should still see every venue's availability states wit | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
+| `TC_E01S12_04` | E01-S12 | Verify that Organiser client isolation should be unchanged by Coordinator scopin | ✅ active | backend/tests/eventVisibility.integration.test.ts: TC_E01S02_01 TC_E01S12_04 E01-S02: organisation isolation, colleagues, search, audit and notification delivery; tests/e2e/e01.spe |
+| `TC_E01S13_01` | E01-S13 | Verify that a Lead and a Safety Officer should each land on their own workspace  | ⚠️ scaffold | tests/e2e/e01.spec.ts: TC_E01S13_01 — Verify that a Lead and a Safety Officer should each land on their own workspace with only their role's navigation |
+| `TC_E01S13_02` | E01-S13 | Verify that new-role accounts should hold exactly one role and that the five exi | ✅ active | backend/tests/roleQueues.test.ts: TC_E01S13_02: Lead and Safety Officer accounts hold only their own role, with no Coordinator permission; tests/e2e/e01.spec.ts: TC_E01S13_02 — Ver |
 
 ### E02
 
@@ -87,16 +88,16 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E02S01_01` | E02-S01 | Verify that submitting a request with every mandatory field complete should set  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_01 - Verify that submitting a request with every mandatory field complete should set its status to Submitted and confirm to the Organiser |
 | `TC_E02S01_02` | E02-S01 | Verify that submitting with any mandatory field empty should be blocked with eve | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_02 - Verify that submitting with any mandatory field empty should be blocked with every missing field identified |
 | `TC_E02S01_03` | E02-S01 | Verify that entering a preferred date in the past should block submission with a | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_03 - Verify that entering a preferred date in the past should block submission with an explanation |
-| `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting  |
+| `TC_E02S01_04` | E02-S01 | Verify that selecting 'none required' for equipment, layout, or registration set | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_04 - Verify that selecting 'none required' for equipment, layout, or registration setup should count each as complete where the event does not need |
 | `TC_E02S01_05` | E02-S01 | Verify that the event request form should require all ten mandatory fields befor | ✅ active | tests/e2e/e02.spec.ts: TC_E02S01_05 - Verify that the event request form should require all ten mandatory fields before it can be considered complete |
 | `TC_E02S02_01` | E02-S02 | Verify that saving a partially completed request as a draft should hide it from  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_01 - Verify that saving a partially completed request as a draft should hide it from Event Coordinators |
 | `TC_E02S02_02` | E02-S02 | Verify that reopening a saved draft should restore all previously entered values | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_02 - Verify that reopening a saved draft should restore all previously entered values |
 | `TC_E02S02_03` | E02-S02 | Verify that deleting a draft should remove it from the list and stop it counting | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_03 - Verify that deleting a draft should remove it from the list and stop it counting as an active request |
 | `TC_E02S02_04` | E02-S02 | Verify that submitting a draft with every mandatory field complete should follow | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_04 - Verify that submitting a draft with every mandatory field complete should follow the normal submission flow |
-| `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser |
+| `TC_E02S02_05` | E02-S02 | Verify that all of an Organiser's saved drafts should be listed and clearly dist | ✅ active | tests/e2e/e02.spec.ts: TC_E02S02_05 - Verify that all of an Organiser's saved drafts should be listed and clearly distinguishable from submitted requests |
 | `TC_E02S03_01` | E02-S03 | Verify that selecting predefined accessibility requirements should store them wi | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_01 - Verify that selecting predefined accessibility requirements should store them with the request and show them to the Coordinator |
 | `TC_E02S03_02` | E02-S03 | Verify that a free-text accessibility requirement should be stored and shown to  | ✅ active | tests/e2e/e02.spec.ts: TC_E02S03_02 - Verify that a free-text accessibility requirement should be stored and shown to the Coordinator but excluded from automated venue matching |
-| `TC_E02S03_03` | E02-S03 | Verify that recorded predefined accessibility requirements should exclude or fla | ⚠️ scaffold | tests/e2e/e02.spec.ts: TC_E02S03_03 - Verify that recorded predefined accessibility requirements should exclude or flag venues that cannot meet them |
+| `TC_E02S03_03` | E02-S03 | Verify that recorded predefined accessibility requirements should exclude or fla | ✅ active | backend/tests/venueAccessibility.integration.test.ts: TC_E02S03_03 E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement; tests/e |
 | `TC_E02S05_01` | E02-S05 | Copying my completed event should create a draft with its Sessions and requireme | ❌ none | — |
 | `TC_E02S05_02` | E02-S05 | Missing venue or equipment references should be flagged against the copied Sessi | ❌ none | — |
 | `TC_E02S05_03` | E02-S05 | Submitting a copied draft should apply the current date-horizon rules | ❌ none | — |
@@ -141,27 +142,27 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E03S03_11` | E03-S03 | Verify that an Event Organiser cannot edit their rejected request | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_11: the Organiser of a rejected request is refused an edit with no change-request offer; others keep their usual refusal; back |
 | `TC_E03S03_12` | E03-S03 | Verify that a request whose accessibility needs are given only as predefined fea | ✅ active | backend/tests/decision.integration.test.ts: TC_E03S03_12: a request whose accessibility needs are given only as predefined features can be approved; frontend/src/features/coordinat |
 | `TC_E03S05_01` | E03-S05 | Verify that opening an event should show its current status and the date it was  | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_01 - Verify that opening an event should show its current status and the date it was reached in plain language |
-| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event |
+| `TC_E03S05_02` | E03-S05 | Verify that when an event's status changes, the new status should be shown and t | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_02 - Verify that when an event's status changes, the new status should be shown and the change should appear in the event history |
 | `TC_E03S05_03` | E03-S05 | Verify that an Organiser should be able to see the full status history for their | ✅ active | tests/e2e/e03.spec.ts: TC_E03S05_03 - Verify that an Organiser should be able to see the full status history for their event |
 | `TC_E03S06_01` | E03-S06 | Verify that posting a comment on an accessible event should show the author, tim | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_01 - Verify that posting a comment on an accessible event should show the author, timestamp, and notify the assigned Coordinator |
 | `TC_E03S06_02` | E03-S06 | Verify that all comments on an event should be shown in chronological order | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_02 - Verify that all comments on an event should be shown in chronological order |
 | `TC_E03S06_03` | E03-S06 | Verify that attempting to post a comment on an event without access should be re | ✅ active | tests/e2e/e03.spec.ts: TC_E03S06_03 - Verify that attempting to post a comment on an event without access should be refused |
 | `TC_E03S07_01` | E03-S07 | Verify that an Organiser should be able to directly edit any field while the eve | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_01 - Verify that an Organiser should be able to directly edit any field while the event has not yet been approved |
-| `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S07_02 - Verify that the assigned Coordinator should be able to edit any field after approval, with the change recorded in the activity log |
+| `TC_E03S07_02` | E03-S07 | Verify that the assigned Coordinator should be able to edit any field after appr | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E03S07_02: the assigned Coordinator edits an approved event's venue requirements and the Activity log names them as the actor; tes |
 | `TC_E03S07_03` | E03-S07 | Verify that an Organiser should be able to directly edit name, description, purp | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_03 - Verify that an Organiser should be able to directly edit name, description, purpose, or registration dates even after approval |
 | `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
 | `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
-| `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser |
-| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S08_01 — Verify that a newly submitted request should enter the unassigned queue with no Coordinator and status Submitted, and the Lead should be notif |
-| `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S08_02 — Verify that the unassigned queue should show each request |
-| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S08_03 — Verify that the Lead assigning a Coordinator should move the request to Under Review, notify the Coordinator and Organiser, remove it from the |
-| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S08_04 — Verify that a Coordinator attempting to assign a queued request should be refused and the attempt logged |
-| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S08_05 — Verify that the Organiser |
-| `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_01 — Verify that a Lead reassignment should take effect immediately with both Coordinators and the Organiser notified and the change logged |
-| `TC_E03S09_02` | E03-S09 | Verify that Coordinator-to-Coordinator reassignment should still require the col | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague |
+| `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser's unrestricted post-approval edit should also be recorded in the activity log |
+| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01: a submitted request stays Submitted with no Coordinator, enters the unassigned queue and notifies the Lead |
+| `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_02: the unassigned queue lists each request's basic information oldest first and refuses a Coordinator; tests/ |
+| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_03: the Lead sees workloads, assigns a queued request, which moves to Under Review, leaves the queue, notifies |
+| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_04: a Coordinator's assign call on a queued request is refused, leaves it queued and is logged; tests/e2e/e03. |
+| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_05: after a queue assignment the Organiser's status history shows Submitted then Under Review; tests/e2e/e03.s |
+| `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S09_01: a Lead reassignment takes effect at once, notifies both Coordinators and the Organiser and is logged; test |
+| `TC_E03S09_02` | E03-S09 | Verify that Coordinator-to-Coordinator reassignment should still require the col | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague's acceptance |
 | `TC_E03S09_03` | E03-S09 | Verify that a Coordinator should be able to ask the Lead to reassign an event an | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
-| `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_01 — Verify that the oversight view should list every active event with its Coordinator or Unassigned, filterable by Coordinator and status, with w |
-| `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S10_02 — Verify that a Coordinator navigating to the oversight view should be refused and the attempt logged |
+| `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S10_01: the oversight view lists every active event with its Coordinator or Unassigned, filters, and shows workloa |
+| `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S10_02: a Coordinator opening the oversight view is refused with no event data and the attempt is logged; tests/e2 |
 | `TC_E03S11_01` | E03-S11 | Verify that the Organiser should be able to add the registration setup before ap | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_01: organiser can fill in registration setup before approval and the edit is audited; frontend/src/features/events/EventEditForm.te |
 | `TC_E03S11_02` | E03-S11 | Verify that clearing the registration setup should be blocked and leave the reco | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_02: clearing registration setup is refused and nothing is written; frontend/src/features/events/EventEditForm.test.tsx: TC_E03S11_0 |
 | `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_03: organiser cannot change registration setup after approval and nothing is written; frontend/src/features/events/EventEditForm.te |
@@ -202,28 +203,28 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E05S02_06` | E05-S02 | Verify that removing a layout no longer offered at the venue should delete it fr | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_07` | E05-S02 | Verify that a layout whose capacity exactly equals event attendance is treated a | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
 | `TC_E05S02_08` | E05-S02 | Verify that a layout one place short of event attendance is excluded or marked u | ✅ active | backend/tests/venueCatalogue.integration.test.ts: E05-S01 TC_E05S01_01 TC_E05S01_02 TC_E05S01_03 TC_E05S01_04 TC_E05S01_05 TC_E05S01_06 TC_E05S01_07 / E05-S02 TC_E05S02_01 TC_E05S0 |
-| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
-| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
-| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
-| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; test |
-| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL; back |
+| `TC_E05S03_01` | E05-S03 | Verify that opening a venue's calendar for a period with bookings and blocks sho | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
+| `TC_E05S03_02` | E05-S03 | Verify that a period the Coordinator is not permitted to view should show as una | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
+| `TC_E05S03_03` | E05-S03 | Verify that a venue blocked for maintenance should be visually distinct from a b | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
+| `TC_E05S03_04` | E05-S03 | Verify that an Event Coordinator should be able to select a date or date range a | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
+| `TC_E05S03_05` | E05-S03 | Verify that for periods the Coordinator is permitted to view, the calendar shoul | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real Pos |
 | `TC_E05S04_01` | E05-S04 | Verify that blocking a venue for a period with no bookings should make it unavai | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_01: blocking a free period makes the venue unavailable for those dates; tests/e2e/e05.spec.ts: TC_E05S04_01 - Verif |
 | `TC_E05S04_02` | E05-S04 | Verify that attempting to block a venue over a period with a confirmed booking s | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; tests/e2e/e05.spec.ts: TC_E05S0 |
 | `TC_E05S04_03` | E05-S04 | Verify that creating a block over an upcoming event's dates should notify the af | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_03: a block over an upcoming tentative event notifies its Coordinator once; tests/e2e/e05.spec.ts: TC_E05S04_03 - V |
 | `TC_E05S04_04` | E05-S04 | Verify that removing or shortening an existing block should restore the venue's  | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_04: shortening or removing a block restores the released days; tests/e2e/e05.spec.ts: TC_E05S04_04 - Verify that re |
-| `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail; tests/e2e/e05.spec.ts: TC_E05S05_01 — Verify th |
-| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertised search windows; tests/e2e/e05.spec.ts: TC_E05S0 |
-| `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_03: a buffer edit flags the later of two newly-overlapping bookings, notifies once, keeps both; tests/e2e/e05.spec |
-| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers; tests/e2e/e05.spe |
-| `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently; tests/e2e/e05.spec. |
-| `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ⚠️ scaffold | tests/e2e/e05.spec.ts: TC_E05S05_06 — Verify that venues created before buffers existed should default to 0 and 0 and that the E05-S03 calendar states remain unchanged for them |
+| `TC_E05S05_01` | E05-S05 | Verify that saving a setup time and a turnaround time on a venue should store bo | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_01: buffers saved on a venue are persisted and returned on detail; frontend/src/features/venue/VenueForm.test.tsx: |
+| `TC_E05S05_02` | E05-S05 | Verify that the availability calendar should show a booking's buffered occupancy | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_02 calendar clips buffer-only bookings and Free matches advertised search windows |
+| `TC_E05S05_03` | E05-S05 | Verify that changing a venue's turnaround time so that two confirmed bookings no | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_03: a buffer edit flags the later of two newly-overlapping bookings, notifies once, keeps both; frontend/src/featu |
+| `TC_E05S05_04` | E05-S05 | Verify that a booking whose buffered window starts exactly when another's buffer | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_04 buffered writes reject a one-minute overlap, accept adjacency and ignore maintenance buffers |
+| `TC_E05S05_05` | E05-S05 | Verify that a booking adjacent to a maintenance block should not be treated as c | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_05: a block ending before the advertised start but overlapping setup time is allowed silently |
+| `TC_E05S05_06` | E05-S05 | Verify that venues created before buffers existed should default to 0 and 0 and  | ✅ active | backend/tests/venueCalendar.integration.test.ts: TC_E05S05_06: a venue created before buffers existed defaults to 0 and 0 and its calendar periods match the advertised times |
 | `TC_E05S05_07` | E05-S05 | Verify that a venue whose existing booking overlaps the event only once its setu | ✅ active | backend/tests/venueBufferConflicts.integration.test.ts: TC_E05S05_07 search names the buffered overlap, falls back to buffer-to-buffer clashes and keeps events private; backend/tes |
 | `TC_E05S06_01` | E05-S06 | Verify that marking a venue unavailable with a reason category over a period wit | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_01: marking a free period unavailable with a reason category saves it and shows the period as Blocked; tests/e2e/e0 |
 | `TC_E05S06_02` | E05-S06 | Verify that marking a venue unavailable over a Pending request and a Confirmed b | ✅ active | backend/tests/venueBlocks.integration.test.ts: E05-S04 TC_E05S04_02 superseded by TC_E05S06_02: a block over a confirmed booking saves and flags it; backend/tests/venueUnavailabili |
 | `TC_E05S06_03` | E05-S06 | Verify that each Coordinator whose booking became Conflicting should receive an  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_03: each Coordinator whose booking became Conflicting gets one in-app notice and one email naming the venue, period |
 | `TC_E05S06_04` | E05-S06 | Verify that an unavailability with no end date and time should be saved as open- | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_04: an unavailability with no end is saved as open-ended and stays in force until lifted; tests/e2e/e05.spec.ts: TC |
 | `TC_E05S06_05` | E05-S06 | Verify that extending an unavailability should flag bookings newly inside the lo | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_05: extending by one minute over a booking flags it, and ending at its start again restores it; tests/e2e/e05.spec. |
-| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_06: E05-S04; tests/e2e/e05.spec.ts: TC_E05S06_06 — Verify that E05-S04 |
+| `TC_E05S06_06` | E05-S06 | Verify that E05-S04's block, shorten and remove behaviour still works for period | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_06: E05-S04's block, shorten and remove still work for periods with no bookings; tests/e2e/e05.spec.ts: TC_E05S06_0 |
 | `TC_E05S06_07` | E05-S06 | Verify that editing and lifting an unavailability should keep a history of each  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_07: editing and lifting keep a history, the lifted block is kept, and its Coordinator is told on lift; tests/e2e/e0 |
 | `TC_E05S06_08` | E05-S06 | Verify that marking a venue unavailable over an unexpired tentative hold should  | ✅ active | backend/tests/venueUnavailability.integration.test.ts: TC_E05S06_08: an unexpired tentative hold is flagged without being released, its Coordinator told, and restored on lift; test |
 
@@ -242,10 +243,10 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S02_05` | E06-S02 | Verify operating hours are an advisory suitability criterion only in E06-S02 | ✅ active | backend/tests/venueSearch.integration.test.ts: TC_E06S01_01 TC_E06S01_02 TC_E06S01_03 TC_E06S01_04: TC_E06S02_01 TC_E06S02_02 TC_E06S02_03 TC_E06S02_05: PostgreSQL event requiremen |
 | `TC_E06S03_01` | E06-S03 | Verify that submitting a booking request for a event with no existing pending re | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
 | `TC_E06S03_02` | E06-S03 | Verify that submitting the first booking request for an Approved event should mo | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E06S03_02 TC_E06S03_07 request persists advisory assessment, Planning, calendar and atomic inbox/outbox; backen |
-| `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S03_03 - Verify that submitting another venue booking request for an event with a pending request creates an independent second booking |
-| `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
+| `TC_E06S03_03` | E06-S03 | Verify that submitting a second booking request for a event that already has a p | ❌ none | — |
+| `TC_E06S03_04` | E06-S03 | Verify that submitting a request for a venue already Pending or Confirmed for an | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates |
 | `TC_E06S03_05` | E06-S03 | Verify that an Event Coordinator should be able to view the status of each of th | ✅ active | backend/tests/venueBookingRequests.integration.test.ts: TC_E06S03_05: PostgreSQL request list isolates assigned events and preserves every booking status; backend/tests/venueBookin |
-| `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates; tes |
+| `TC_E06S03_06` | E06-S03 | Verify that a booking request whose period overlaps another event's buffered win | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_04 TC_E06S03_06 TC_E06S02_04 buffered request conflicts, blocks, periods and unsuitable hours are distinct gates |
 | `TC_E06S03_07` | E06-S03 | Verify that a Coordinator should be able to hold several venue bookings for one  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E06S03_07 primary selection validates actor, identifier and current assignment/account; backend/tests/bookingPrimary.test.ts: TC_E06S03_07  |
 | `TC_E06S03_08` | E06-S03 | Verify that withdrawing one of several venue bookings should leave the others un | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
 | `TC_E06S03_09` | E06-S03 | Refuse withdrawal of Confirmed bookings and requests assigned to another Coordin | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_08 TC_E06S03_09 TC_E06S03_11 Pending withdrawal preserves other bookings, expiry history and targeted staff delivery; |
@@ -259,9 +260,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E06S04_04` | E06-S04 | Verify that approving a request whose buffered window overlaps another confirmed | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_04: approval is blocked when the buffered windows overlap a confirmed booking, which is named; backend/tests/venu |
 | `TC_E06S04_05` | E06-S04 | Verify that an approved venue booking should be recorded with the actor, action, | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_05: an approval is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
 | `TC_E06S04_06` | E06-S04 | Verify that a rejected venue booking should be recorded with the actor, action,  | ✅ active | backend/tests/venueBookingDecisions.integration.test.ts: TC_E06S04_06: a rejection is recorded with the actor, action, booking, event and time; tests/e2e/venueBookingDecisions.spec |
-| `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S04_07 - Verify that a released venue booking should be recorded with the actor, action, affected records, and time |
+| `TC_E06S04_07` | E06-S04 | Verify that a released venue booking should be recorded with the actor, action,  | ✅ active | backend/tests/eventCancellation.integration.test.ts: TC_E06S04_07 a released venue booking is recorded with the actor, action, affected booking and event, and time |
 | `TC_E06S05_01` | E06-S05 | Verify that a second tentative hold on the same venue and period is refused | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
-| `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ⚠️ scaffold | tests/e2e/e06.spec.ts: TC_E06S05_02 — Verify that a tentative hold should occupy the venue |
+| `TC_E06S05_02` | E06-S05 | Verify that a tentative hold should occupy the venue's buffered window so that a | ✅ active | backend/tests/venueClaimPolicy.integration.test.ts: TC_E06S05_02: a tentative hold occupies the buffered window, refusing an overlapping hold and accepting an adjacent request |
 | `TC_E06S05_03` | E06-S05 | Verify that a new tentative hold should carry an expiry 48 hours after creation  | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_01 TC_E06S05_03 TC_E06S05_04 TC_E06S05_07 holds, clashes, convert, release and extend against PostgreSQL; backend/tests/venu |
 | `TC_E06S05_04` | E06-S05 | Verify that submitting a booking request for a held venue should complete the ho | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S05_04 conversion preserves row and stops expiry; concurrent retry and expiry cannot undo Pending; backend/tests/bookingS |
 | `TC_E06S05_05` | E06-S05 | Verify that an unconverted hold should become Expired when its expiry passes, fr | ✅ active | backend/tests/venueHolds.integration.test.ts: TC_E06S05_05 TC_E06S05_06 an expired hold frees the venue at once; the job marks it expired and notifies the Coordinator once; backend |
@@ -321,13 +322,13 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E08S03_01` | E08-S03 | Verify that confirming an event where every event has a confirmed venue and full | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_01 - Verify that confirming an event where every event has a confirmed venue and full equipment reservation should set its status to Confirmed and  |
-| `TC_E08S03_02` | E08-S03 | Verify that attempting to confirm an event while a event is missing a confirmed  | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_02 - Verify that attempting to confirm an event while a event is missing a confirmed venue should be blocked with the outstanding event named |
+| `TC_E08S03_01` | E08-S03 | Verify that confirming an event where every event has a confirmed venue and full | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_01: submitting an event with a Confirmed venue and fully reserved equipment moves it to Safety Review, notifies the Safe |
+| `TC_E08S03_02` | E08-S03 | Verify that attempting to confirm an event while a event is missing a confirmed  | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_02: submission is blocked while the second Session\; tests/e2e/e08.spec.ts: TC_E08S03_02 - Verify that attempting to con |
 | `TC_E08S03_03` | E08-S03 | Verify that attempting to submit an event for its safety check while it has only | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_03: a partial equipment reservation blocks submission and shows the outstanding quantity; backend/tests/eventReadiness.t |
 | `TC_E08S03_04` | E08-S03 | Verify that attempting to submit an event for its safety check while its request | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_04: requested technical support with no staff assigned blocks submission; backend/tests/eventReadiness.test.ts: TC_E08S0 |
 | `TC_E08S03_05` | E08-S03 | Verify that once an event is confirmed, the Organiser should see every confirmed | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_05: the Organiser sees every confirmed venue with its purpose and period, and the arrangements, once the event is confir |
-| `TC_E08S03_06` | E08-S03 | Verify that confirming an event with several venue bookings should be blocked wh | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_06 — Verify that confirming an event with several venue bookings should be blocked while any booking is still Pending or Conflicting, listing each  |
-| `TC_E08S03_07` | E08-S03 | Verify that an event should be confirmable once every venue booking is Confirmed | ⚠️ scaffold | tests/e2e/e08.spec.ts: TC_E08S03_07 — Verify that an event should be confirmable once every venue booking is Confirmed or withdrawn and the Organiser should see every confirmed ven |
+| `TC_E08S03_06` | E08-S03 | Verify that confirming an event with several venue bookings should be blocked wh | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_06: with two Confirmed bookings and one Pending, submission is blocked naming only the Pending venue, and the event stay |
+| `TC_E08S03_07` | E08-S03 | Verify that an event should be confirmable once every venue booking is Confirmed | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_07: once the last booking is approved the event can be submitted for its safety check, and the confirmed event shows the |
 | `TC_E08S03_08` | E08-S03 | Verify that submitting a fully arranged event for its Operational Safety Check s | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_08: submitting a fully arranged Planning event moves it to Safety Review and notifies the Organiser and every active Saf |
 | `TC_E08S03_09` | E08-S03 | Verify that submission for safety review should be blocked while a readiness ite | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_09: submission is blocked while a venue booking is outstanding, each one listed by venue, and nothing changes; backend/t |
 | `TC_E08S03_10` | E08-S03 | Verify that an event whose equipment was recorded as none required should not be | ✅ active | backend/tests/eventReadiness.integration.test.ts: TC_E08S03_10: equipment recorded as none required, with no request lines, does not block submission; backend/tests/eventReadiness. |
@@ -344,7 +345,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E08S05_05` | E08-S05 | Verify that an event's transition to Completed should be recorded in the activit | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_02 TC_E08S05_03 TC_E08S05_05 manual time gate, durable actor/audit, T-88, and idempotent retries; tests/co |
 | `TC_E08S05_06` | E08-S05 | Verify that an event auto-completes at the exact end time and not before | ✅ active | backend/tests/eventCompletion.integration.test.ts: TC_E10S01_06 TC_E08S05_01 TC_E08S05_04 TC_E08S05_06 exact-end auto evaluation excludes Cancelled and other statuses, with System  |
 | `TC_E08S06_01` | E08-S06 | Verify that the safety review queue should show each waiting event with the info | ✅ active | backend/tests/roleQueues.test.ts: Safety Officer queue requires the Safety Officer role and lists Safety Review events, oldest entry first (TC_E08S06_01); backend/tests/safetyRevie |
-| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_02: approval confirms the Event, keeps one immutable checklist row and sends ; backend/tests/safetyReview.test.ts: TC_E08S |
+| `TC_E08S06_02` | E08-S06 | Verify that approving an event after recording every factor as satisfactory shou | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_02: approval confirms the Event, keeps one immutable checklist row and sends "Event confirmed" with the details; backend/t |
 | `TC_E08S06_03` | E08-S06 | Verify that requesting changes should return the event to Planning with the item | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_03: a request for changes needs at least one unsatisfactory factor to address; backend/tests/safetyReview.integration.test.ts: TC_E08S0 |
 | `TC_E08S06_04` | E08-S06 | Verify that rejecting the safety arrangement should return the event to Planning | ✅ active | backend/tests/safetyReview.integration.test.ts: TC_E08S06_04: rejecting keeps the Event and its arrangements and shows the rejection to the Coordinator and Organiser; backend/tests |
 | `TC_E08S06_05` | E08-S06 | Verify that reject and request changes should require a reason and that no role  | ✅ active | backend/tests/safetyCheck.test.ts: TC_E08S06_05: an unknown decision or a body without factors is refused; backend/tests/safetyCheck.test.ts: TC_E08S06_05: a reason longer than 200 |
@@ -363,7 +364,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S01_07` | E09-S01 | An Attendee should be able to select multiple Sessions in one Event registration | ✅ active | tests/e2e/attendee-registration.spec.ts: TC_E09S01_07 — one submission creates one Event registration with both Sessions; frontend/src/features/attendee/EventRegistration.test.tsx: |
 | `TC_E09S02_01` | E09-S02 | [RETIRED — T-85 uses approved Session layout and combined Event capacities; Orga | ❌ none | — |
 | `TC_E09S02_02` | E09-S02 | [RETIRED — T-85 replaces the single lower-of-limit rule with separate Session an | ❌ none | — |
-| `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S02_03 - Concurrent registration attempts should not exceed a Session or combined Event capacity |
+| `TC_E09S02_03` | E09-S02 | Concurrent registration attempts should not exceed a Session or combined Event c | ✅ active | backend/tests/attendeeCapacity.integration.test.ts: TC_E09S02_03 E09-S02: Session and Event capacity, Pending requests and manual additions on real PostgreSQL; tests/e2e/e09.spec.t |
 | `TC_E09S02_04` | E09-S02 | A full combined Event should offer its enabled Event-level waiting list | ✅ active | tests/e2e/e09.spec.ts: TC_E09S02_04 - A full combined Event should offer its enabled Event-level waiting list; frontend/src/features/attendee/EventRegistration.test.tsx: TC_E09S02_ |
 | `TC_E09S02_06` | E09-S02 | An Organiser may manually add an attendee only when both capacities have room | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations adds an attendee manually within both limits (TC_E09S02_06); tests/e2e/e09.spec.ts: TC_E09S02_06 - An Organiser may manu |
 | `TC_E09S02_07` | E09-S02 | A manual addition should be blocked when either capacity is full | ✅ active | backend/tests/attendeeCapacity.test.ts: manageRegistrations blocks a manual addition at either limit and other refusals (TC_E09S02_07); tests/e2e/e09.spec.ts: TC_E09S02_07 - A manu |
@@ -378,8 +379,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S03_04` | E09-S03 | Verify that an Attendee trying to register after the registration closing date h | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_04 - Verify that an Attendee trying to register after the registration closing date has passed should be refused |
 | `TC_E09S03_05` | E09-S03 | Verify that setting a registration closing date that falls after the event has s | ✅ active | backend/tests/eventVisibility.test.ts: TC_E09S03_05 - a closing date after the event starts needs confirming before it is saved; tests/e2e/e09.spec.ts: TC_E09S03_05 - Verify that s |
 | `TC_E09S03_06` | E09-S03 | Verify that enabling the waiting list for an event should offer it to Attendees  | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_06 - Verify that enabling the waiting list for an event should offer it to Attendees once a event becomes full |
-| `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp |
-| `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ⚠️ scaffold | tests/e2e/e09.spec.ts: TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp |
+| `TC_E09S03_07` | E09-S03 | Verify that registration succeeds at the exact opening timestamp | ✅ active | backend/tests/registrationPeriod.integration.test.ts: TC_E09S03_07 TC_E09S03_08: registration succeeds at the exact opening and closing instants and is refused one second outside t |
+| `TC_E09S03_08` | E09-S03 | Verify that registration still succeeds at the exact closing timestamp | ✅ active | backend/tests/registrationPeriod.integration.test.ts: TC_E09S03_07 TC_E09S03_08: registration succeeds at the exact opening and closing instants and is refused one second outside t |
 | `TC_E09S03_09` | E09-S03 | One Event-level registration window should apply to all of its selected Sessions | ✅ active | tests/e2e/e09.spec.ts: TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions |
 | `TC_E09S04_01` | E09-S04 | Joining a full Event-level waiting list should confirm the Attendee’s place in t | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList accepts only a full enabled Event and creates one empty Event-level entry (TC_E09S04_01); frontend/src/features/attendee |
 | `TC_E09S04_02` | E09-S04 | Verify that when a place is released in a event with a waiting list, all waitlis | ✅ active | backend/tests/attendeeRegistration.test.ts: registerForEvent claims a released place by converting the same waitlisted row (TC_E09S04_02, TC_E09S04_03); frontend/src/features/atten |
@@ -387,7 +388,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S04_04` | E09-S04 | Verify that a full event should not offer a waiting list when the Organiser has  | ✅ active | backend/tests/attendeeRegistration.test.ts: joinWaitingList refuses a disabled list (TC_E09S04_04), an Event with room, and an Event without places; frontend/src/features/attendee/ |
 | `TC_E09S04_05` | E09-S04 | Verify that an Attendee should be able to voluntarily leave the waiting list bef | ✅ active | frontend/src/features/attendee/WaitingList.test.tsx: TC_E09S04_05 - cancel leaving, then confirm leaving and offer rejoin |
 | `TC_E09S05_01` | E09-S05 | Withdrawing one Event registration should release its places in every selected S | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
-| `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ❌ none | — |
+| `TC_E09S05_02` | E09-S05 | Verify that withdrawing from one event before the withdrawal deadline should can | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: TC_E09S05_02: withdrawing from one event before its deadline cancels that registration and releases the place, leaving the o |
 | `TC_E09S05_03` | E09-S05 | Verify that attempting to withdraw after the withdrawal deadline has passed shou | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_04` | E09-S05 | Verify that withdrawal succeeds at the exact withdrawal deadline | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
 | `TC_E09S05_05` | E09-S05 | Withdrawing a multi-Session registration should release all selected Session sea | ✅ active | backend/tests/attendeeRegistration.integration.test.ts: E09-S01 and E09-S05: register once for a Confirmed Event, selecting Sessions, then withdraw, on real PostgreSQL (TC_E09S05_0 |
@@ -397,7 +398,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E09S06_04` | E09-S06 | Verify that registration and attendance counts should be viewable side by side f | ✅ active | backend/tests/eventAttendance.integration.test.ts: TC_E09S06_01 TC_E09S06_02 TC_E09S06_04 — real attendance persists independently of five registered places, latest correction and  |
 | `TC_E09S07_01` | E09-S07 | Verify that opening the registration list for an event with registered Attendees | ✅ active | backend/tests/attendeeCapacity.test.ts: TC_E09S07_01, _02, _04 - registered and waitlisted Attendees are listed apart, with name, email and contact number only; tests/e2e/e09.spec. |
 | `TC_E09S07_02` | E09-S07 | Verify that the registration list should show the registered count and remaining | ✅ active | tests/e2e/e09.spec.ts: TC_E09S07_02 - Verify that the registration list should show the registered count and remaining capacity per event |
-| `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ✅ active | backend/tests/attendeeCapacity.test.ts: TC_E09S07_03 - another organisation; tests/e2e/e09.spec.ts: TC_E09S07_03 - Verify that attempting to open the registration list for an event |
+| `TC_E09S07_03` | E09-S07 | Verify that attempting to open the registration list for an event that does not  | ✅ active | backend/tests/attendeeCapacity.test.ts: TC_E09S07_03 - another organisation's event is refused and the attempt recorded; a colleague may view but not manage; tests/e2e/e09.spec.ts: |
 | `TC_E09S07_04` | E09-S07 | Verify that waitlisted Attendees should be shown separately from registered Atte | ✅ active | tests/e2e/e09.spec.ts: TC_E09S07_04 - Verify that waitlisted Attendees should be shown separately from registered Attendees on the registration list; frontend/src/features/organise |
 
 ### E10
@@ -448,7 +449,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | `TC_E11S01_01` | E11-S01 | Verify that a user linked to an event should be notified when its status changes | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_01: real status change commits its audit and correct recipients; same status is silent; tests/auth-e2e/notificationI |
 | `TC_E11S01_02` | E11-S01 | Verify that effective date, time or venue changes follow the approved recipient  | ✅ active | backend/tests/bookingPrimary.test.ts: TC_E11S01_02 published primary change captures both scoped audiences; self-only audiences emit nothing; backend/tests/bookingSubmission.integr |
 | `TC_E11S01_03` | E11-S01 | Verify that a user whose responsibilities are unaffected by a change should not  | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E11S01_02 TC_E11S01_03 published primary switch routes old/new staff and public attendees atomically; backend/tests/e11Curre |
-| `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ⚠️ scaffold | tests/e2e/e11.spec.ts: TC_E11S01_05 - Verify that a generated notification should appear in the system and also be sent to the user |
+| `TC_E11S01_05` | E11-S01 | Verify that a generated notification should appear in the system and also be sen | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_05: a status-change notice appears in the in-app list and is emailed to the registered address |
 | `TC_E11S01_06` | E11-S01 | Verify that opening the notification list with several unread notifications shou | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/staffAssign |
 | `TC_E11S01_07` | E11-S01 | Verify that opening an unread notification should mark it as read | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_06 TC_E11S01_07: PostgreSQL inbox ownership, ordering and persistent idempotent read state; backend/tests/notificatio |
 | `TC_E11S01_08` | E11-S01 | Verify that email provider failure does not affect the business change or the in | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_08: actual booking approval and inbox survive HTTP 400 rejection; backend/tests/notificationInbox.integration.test.ts |
@@ -466,9 +467,9 @@ Each row records the TC_ID, story, scenario, current status, and (for automated 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
 | `TC_E14S02_01` | E14-S02 | Verify that an event status change should be recorded with the actor, action, af | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_01: a status change is recorded and the assigned Coordinator reads it in the event Activity log; backend/tests/activityLog. |
-| `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_02: a refused event read is recorded with the user, the target and the time; tests/e2e/e14.spec.ts: TC_E14S02_02 - Verify t |
+| `TC_E14S02_02` | E14-S02 | Verify that a denied access attempt should be recorded with the user, target, an | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_02 TC_E01S02_06: a refused event read is recorded with the user, the target and the time; tests/e2e/e14.spec.ts: TC_E14S02_ |
 | `TC_E14S02_03` | E14-S02 | [RETIRED — moved to TC_E06S04_05 by T-76] Verify that an approved venue booking  | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that an approved venue booking should be recorded with the actor, action, affected reco |
-| `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_04: an account deactivation is recorded with the actor and the time; tests/e2e/e14.spec.ts: TC_E14S02_04 - Verify that an a |
+| `TC_E14S02_04` | E14-S02 | Verify that an account deactivation should be recorded in the activity log | ✅ active | backend/tests/activityLog.integration.test.ts: TC_E14S02_04 TC_E01S11_05: an account deactivation is recorded with the actor and the time; tests/e2e/e14.spec.ts: TC_E14S02_04 - Ver |
 | `TC_E14S02_05` | E14-S02 | Verify that any attempt to edit or delete an activity log entry should be refuse | ✅ active | backend/tests/auditLogImmutability.integration.test.ts: TC_E14S02_05: an activity log entry cannot be edited or deleted, even by the server connection; tests/e2e/e14.spec.ts: TC_E1 |
 | `TC_E14S02_06` | E14-S02 | [RETIRED — moved to TC_E06S04_06 by T-76] Verify that a rejected venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_06 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a rejected venue booking should be recorded with the actor, action, affected recor |
 | `TC_E14S02_07` | E14-S02 | [RETIRED — moved to TC_E06S04_07 by T-76] Verify that a released venue booking s | ⚠️ scaffold | tests/e2e/e14.spec.ts: TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected recor |
@@ -520,10 +521,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02 #408 review: a Session requirement change flags only that Session bookings
 - E04-S02 #408 review: a sole Session following an Event layout edit is one layout reason, not two
 
-### `backend/tests/attendeeCapacity.integration.test.ts`
-
-- E09-S02: Session and Event capacity, Pending requests and manual additions on real PostgreSQL
-
 ### `backend/tests/attendeeCapacity.test.ts`
 
 - overCapacity names each full chosen Session, then a full Event, else null
@@ -533,7 +530,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - manageRegistrations refuses unknown, decided and unconfirmed cases
 - manageRegistrations maps a busy account and a lost unique race, and rethrows other failures
 - getEventRegistrations returns the registration period the Organiser set (E09-S03)
-- manageRegistrations is for the Event
+- manageRegistrations is for the Event's own Organiser: another organisation is refused and recorded, a colleague is refused
 
 ### `backend/tests/attendeeRegistration.test.ts`
 
@@ -589,7 +586,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - each of the 7 booking statuses gets its own BookingState
 - every BookingState reports decidability through the shared interface
-- an unknown status keeps the old
+- an unknown status keeps the old "already decided" fallback
 
 ### `backend/tests/bookingSubmission.integration.test.ts`
 
@@ -647,10 +644,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unknown request, an invalid id or a missing decision is rejected
 - the assigned-event list is limited to the caller and never includes drafts
 - an event not assigned to the caller is refused like an unknown one, and audited
-
-### `backend/tests/deactivation.integration.test.ts`
-
-- PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback
 
 ### `backend/tests/deactivation.test.ts`
 
@@ -828,7 +821,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - a feasible next-day Event date has no fixed minimum lead time
 - a submitted Event date on the exact two-year boundary is accepted
 - a draft may keep a farther date, but submitting that draft applies the horizon
-- an empty equipment/layout/registration field without
+- "none required" satisfies equipment, layout and registration setup
+- an empty equipment/layout/registration field without "none required" is still missing
 - an end time at or before the start time is rejected
 - a non-positive or non-integer expected attendance is reported as missing
 - an empty HTTP request being submitted reports all ten mandatory fields without writing
@@ -897,10 +891,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E04-S02 Scenario 1: leaving the needs out keeps whatever the Session already has
 - E04-S02: handNeedsToEvent updates Event details to match the survivor Session and hands over needs
 - E04-S02: handNeedsToEvent does nothing if no survivor session exists
-
-### `backend/tests/eventVisibility.integration.test.ts`
-
-- E01-S02: organisation isolation, colleagues, search, audit and notification delivery
 
 ### `backend/tests/eventVisibility.test.ts`
 
@@ -1003,10 +993,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - guarded database config ignores URL parameters and forces verified TLS
 - precheck accepts only the next pending migration in repository order
 - postcheck requires only the selected migration to be newly recorded
-
-### `backend/tests/profile.integration.test.ts`
-
-- real sessions, profile persistence, case-insensitive uniqueness and future notification address
 
 ### `backend/tests/profile.test.ts`
 
@@ -1129,7 +1115,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reads refuse signed-out users and roles other than Coordinator and Technical Support, and audit the refusal
 - reads refuse an empty or oversized event identifier before querying events
 - a Coordinator cannot read another Coordinator\
-- reads separate requests from the
+- reads separate requests from the "no support needed" declaration and say who can edit
 - requests are refused outside approved or planning and are not written
 - an invalid request returns field errors without opening a transaction; wrong roles are refused first
 - a refused request on someone else\
@@ -1137,10 +1123,6 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an event with a live support request cannot be marked as needing none
 - handler: unsupported methods, cross-origin writes and unknown actions are refused
 - handler: GET reads by event, POST dispatches request and none
-
-### `backend/tests/venueAccessibility.integration.test.ts`
-
-- E02-S03 Scenario 3: venue search excludes venues missing a recorded predefined accessibility requirement
 
 ### `backend/tests/venueAccessibility.test.ts`
 
@@ -1215,7 +1197,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an approval over a maintenance block is blocked and names the block
 - an approval over an open-ended unavailability says it lasts until lifted (E05-S06, T-80)
 - a rejection is not checked for clashes
-- a clash committed by someone else first is refused as
+- a clash committed by someone else first is refused as "just taken"; other errors are not hidden
 - a booking that disappears before its venue is locked is not found
 - reconfirming moves a flagged booking to its Session time, clears the flag, logs it and tells the Coordinator
 - reconfirming with no assigned Coordinator still clears the flag and tells nobody
@@ -1226,7 +1208,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - reconfirming that loses a race to the 0016 guard is a 409, not a server error
 - reconfirming rechecks the staff account like a decision
 - the reconfirm list is Venue Staff only and holds flagged Confirmed bookings on open events
-- a reconfirmation notice falls back to
+- a reconfirmation notice falls back to "Venue Staff" when the staff name is missing
 
 ### `backend/tests/venueBookingRequests.test.ts`
 
@@ -1372,7 +1354,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `backend/tests/venueUnavailability.test.ts`
 
 - Scenarios 2 to 4: creating flags every overlapping booking and hold, returns only the Confirmed event to Planning and tells each Coordinator once
-- Scenarios 1 and 5: an open-ended unavailability without a note says
+- Scenarios 1 and 5: an open-ended unavailability without a note says "until lifted" and leaves the note out
 - creating refuses invalid input before a transaction, an overlapping unavailability, and an unknown venue
 - a booking that appears after the first read is locked without waiting, and a busy event asks staff to try again
 - Scenarios 5 to 7: editing restores bookings it no longer covers, skips replaced ones, flags new ones and keeps history
@@ -1432,6 +1414,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/accessControl/LoginPage.test.tsx`
 
 - an Event Coordinator who is already signed in is sent to /coordinator
+
+### `frontend/src/features/accessControl/ProfileForm.test.tsx`
+
+- "Try again" reloads the profile and clears the message
 
 ### `frontend/src/features/accessControl/RegisterForm.test.tsx`
 
@@ -1499,9 +1485,9 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/coordinator/DecisionPanel.test.tsx`
 
-- the event page offers
+- the event page offers "Decide on request" only while the request is Under Review
 - the decide page shows what is being decided, with Request clarification, Reject and Approve in that order
-- a request with no event code shows
+- a request with no event code shows "Request" as the eyebrow, not its id
 - Request clarification on the decide page opens the question page
 - approving shows the outcome, keeps the page, and leaves nothing more to decide
 - the confirm button reads Approving… while the decision is being sent
@@ -1542,7 +1528,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - validation boundaries: exactly 2000 characters is accepted, missing times are named
 - server field errors land on their fields, and a refusal is shown as sent
 - after confirmation the card is read-only, and the form page explains why instead of showing a form
-- a failed load can be retried, and a refused
+- a failed load can be retried, and a refused "none" shows the server\
 - an unexpected reply is shown as a failed load instead of breaking the event page
 - the card is not shown before approval, so no support request is loaded
 - moving the start after the end is caught, and an event the Coordinator cannot open shows the refusal
@@ -1597,10 +1583,10 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/events/EventDetails.test.tsx`
 
-- renders
-- does not render
-- does not render
-- clicking
+- renders "Revert to Planning" button for Coordinator on Confirmed event
+- does not render "Revert to Planning" button on non-confirmed events
+- does not render "Revert to Planning" button for non-coordinator roles
+- clicking "Revert to Planning" opens modal and Cancel closes it
 - validation requires non-empty reason and blocks submission
 - submitting with valid reason calls POST /api/events?revert=1&id=... and hands the success message to the caller
 - displays error message when API call fails
@@ -1657,7 +1643,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/organiser/ConfirmedArrangements.test.tsx`
 
-- SCRUM-60 fix (a) - equipment recorded as none required reads
+- SCRUM-60 fix (a) - equipment recorded as none required reads "None required", not the stored value
 
 ### `frontend/src/features/organiser/EventRegistrations.test.tsx`
 
@@ -1667,7 +1653,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - an unconfirmed event, an empty list and a load failure are each explained
 - leaving the page while an approval is saving drops the late reply
 - empty lists say so, and a closed waiting list says it is off
-- a colleague
+- a colleague's event shows the lists but no decisions or manual additions
 
 ### `frontend/src/features/organiser/Organiser.test.tsx`
 
@@ -1827,7 +1813,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E07-S05 a refused return is shown in the panel, and Cancel closes it
 - E07-S05 the saved message says which Coordinators were told when some events have none
 - E07-S05 the helpers count the peak of overlapping periods and write dates the way the screens do
-- E07-S05 one unit reads
+- E07-S05 one unit reads "1 unit", two notified events read "Their Coordinators", and a missing period list reads as none
 - E07-S05 a second submit while saving sends nothing more, and a reply after leaving the page is ignored
 - E07-S05 a second confirm while returning sends nothing more, and a reply after leaving the page is ignored
 - E07-S05 the form page offers a retry when the item cannot be loaded, and failed saves keep the form
@@ -2001,13 +1987,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/shared/shared.test.tsx`
 
 - shows Singapore time
-- decides
+- decides "same day" in Singapore time
 - says when a date is missing
 - writes stored statuses in sentence case, and Safety Review as design.md section 7 names it
 - returns the data on success and sends the session cookie
-- uses the server
+- uses the server's message, or the fallback when there is none
 - keeps field errors and conflict details, and swaps a machine code for the fallback
-- shows the body
+- shows the body's message sentence when error is a machine code
 - a network failure becomes status 0; an abort is re-thrown
 - a late response for an earlier id never replaces the current one
 - reload keeps the current data on screen while refreshing
@@ -2015,7 +2001,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - links the label, hint and error to the control
 - no error means no aria-invalid
 - 401 asks the user to sign in
-- 403 shows the server
+- 403 shows the server's refusal and a way back
 - anything else offers a retry
 - requires the reason before confirming, then passes it on
 - shows a server refusal inside the panel
@@ -2024,7 +2010,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - DataTable has a caption and labels every cell for the phone layout
 - DataTable can hide a header visually and tell apart columns that share one
 - FilterChips marks the chosen option and reports changes
-- FactList shows
+- FactList shows "None recorded" for empty values
 - errors and warnings are announced immediately; success politely
 - a busy button is disabled and shows its busy label
 - the /ui-kit reference page renders every block without calling the API
@@ -2083,7 +2069,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `tests/e2e/e03.spec.ts`
 
-- E03-S07 Scenario 2 - the assigned Coordinator edits an approved event
+- E03-S07 Scenario 2 - the assigned Coordinator edits an approved event's venue requirements (steps 1-4)
 
 ### `tests/e2e/e10.spec.ts`
 

@@ -31,6 +31,37 @@ class CoverageAuditTests(unittest.TestCase):
             self.assertIn("a.spec.ts: TC_E01S01_01 scaffold", reports[0])
             self.assertIn("z.spec.ts: TC_E01S01_01 active", reports[0])
 
+    def test_any_expected_failure_makes_the_case_a_known_defect(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "a.test.ts").write_text(
+                "test('TC_E01S01_01 todo', {todo:'Known defect'}, async () => {});\n"
+                "test('TC_E01S01_02 fails', async () => { test.fail(true, 'Known defect'); });\n"
+                "test('TC_E01S01_03 passes', async () => {});\n"
+                "test('TC_E01S01_04 todo', { todo: 'Known defect' }, async () => {});\n"
+                "test('TC_E01S01_04 passes too', async () => {});\n"
+                "test.fixme('TC_E01S01_05 placeholder', async () => {});\n"
+                "test('TC_E01S01_05 todo', {todo:'Known defect'}, async () => {});\n"
+                "test(\"TC_E01S01_06: a Coordinator's call\", {todo:'Known defect'}, async () => {});\n",
+                encoding="utf-8",
+            )
+            with patch.object(audit, "REPO_ROOT", root), patch.object(audit, "TEST_ROOTS", [root]):
+                scan = audit.scan_test_files()
+            status = {tc: entry["status"] for tc, entry in scan["tc_index"].items()}
+            self.assertEqual(status, {
+                "TC_E01S01_01": "known-defect",
+                "TC_E01S01_02": "known-defect",
+                "TC_E01S01_03": "active",
+                "TC_E01S01_04": "known-defect",
+                "TC_E01S01_05": "known-defect",
+                "TC_E01S01_06": "known-defect",
+            })
+            cases = [{"case_id": tc, "story_id": "E01-S01", "scenario": "Login"} for tc in sorted(status)]
+            report = audit.build_report(cases, scan)
+            self.assertIn("- Automated (explicit TC_ID in an active test title): **1**", report)
+            self.assertIn("**5** (83.3%)", report)
+            self.assertIn("| E01 | 6 | 1 | 5 | 0 | 0 |", report)
+
 
 if __name__ == "__main__":
     unittest.main()

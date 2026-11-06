@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { Pool } from 'pg';
-import { deactivateAccount, DEACTIVATION_BLOCKING_STATUSES } from '../src/modules/accessControl/deactivation.js';
+import { deactivateAccount, DeactivationBlockedError, DEACTIVATION_BLOCKING_STATUSES } from '../src/modules/accessControl/deactivation.js';
 import { login, tokenDigest } from '../src/modules/accessControl/sessions.js';
 import { hashPassword } from '../src/modules/accessControl/passwords.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
+import { loginDatabase } from './helpers/loginDatabase.js';
 
-test('PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback', async () => {
+test('TC_E01S11_01 TC_E01S11_02 TC_E01S11_03 PostgreSQL: retention, time boundaries, capacity count, session revocation, coordinator statuses and rollback', async () => {
   const url = process.env.TEST_DATABASE_URL || process.env.DATABASE_POOLER_URL || process.env.DATABASE_URL;
   assert.ok(url, 'Configure a database connection; all fixture changes are confined to test schema and rolled back');
   const database = new Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 5000 });
@@ -143,4 +144,30 @@ test('PostgreSQL: retention, time boundaries, capacity count, session revocation
   } finally {
     await client.query('ROLLBACK'); client.release(); await database.end();
   }
+});
+
+// E01-S11 Scenario 4 and T-52: the refusal names the Confirmed and Planning
+// events to reassign; a Completed event neither blocks nor appears.
+test('TC_E01S11_04: a Coordinator with Confirmed and Planning events is blocked and told which events to reassign, not the Completed one', async () => {
+  const f = await loginDatabase();
+  try {
+    const org = randomUUID(), organiser = randomUUID(), coordinator = randomUUID();
+    await f.pool.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Client A']);
+    await f.pool.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role) VALUES
+      ($1, $2, 'organiser_a@example.test', 'unused', 'Organiser A', 'event_organiser'),
+      ($3, NULL, 'coordinator_1@example.test', 'unused', 'Coordinator 1', 'event_coordinator')`, [organiser, org, coordinator]);
+    for (const [code, status] of [['EVT-C01', 'confirmed'], ['EVT-P01', 'planning'], ['EVT-D01', 'completed']]) {
+      await f.pool.query(`INSERT INTO events (event_code, organiser_id, coordinator_id, client_org_id, title, status, event_range, expected_attendance)
+        VALUES ($1, $2, $3, $4, $5, $6, tstzrange(now() + interval '10 days', now() + interval '10 days 3 hours', '[)'), 10)`,
+      [code, organiser, coordinator, org, `${status} event`, status]);
+    }
+    const user: AuthenticatedUser = { id: coordinator, email: 'coordinator_1@example.test', role: 'event_coordinator', isActive: true, failedLoginCount: 0 };
+    const refused = await deactivateAccount(f.pool, user, { confirm: true }).then(() => assert.fail('expected a refusal'), error => error);
+    assert.ok(refused instanceof DeactivationBlockedError);
+    assert.equal(refused.status, 409);
+    assert.equal(refused.message, 'Reassign your active events before deactivating your account.');
+    assert.deepEqual(refused.events.map(event => [event.event_code, event.title]).sort(),
+      [['EVT-C01', 'confirmed event'], ['EVT-P01', 'planning event']]);
+    assert.equal((await f.pool.query('SELECT is_active FROM users WHERE id = $1', [coordinator])).rows[0].is_active, true);
+  } finally { await f.close(); }
 });

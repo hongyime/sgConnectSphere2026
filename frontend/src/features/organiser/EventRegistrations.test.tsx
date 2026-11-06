@@ -244,3 +244,9 @@ test("TC_E09S07_03 - another organisation's event is refused", async () => {
   expect(await screen.findByText('Access denied. This event is not available to your organisation.')).toBeInTheDocument();
   expect(screen.queryByRole('table', { name: 'Registered attendees' })).not.toBeInTheDocument();
 });
+
+test('TC_E09S07_05 - a full event shows its registered count and 0 remaining', async () => {
+  renderPage({ [URL_]: { body: view({ registered: [ann, ben], capacity: { capacity: 150, registered: 150, remaining: 0 } }) } });
+  expect(await screen.findByText('150 registered')).toBeInTheDocument();
+  expect(screen.getByText('0 remaining')).toBeInTheDocument();
+});

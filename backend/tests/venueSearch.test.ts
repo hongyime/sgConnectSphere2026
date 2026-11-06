@@ -37,3 +37,19 @@ test('invalid input identifies fields before venue query',async()=> {
  const result=await venueSearch(query,user,new URLSearchParams('search=1&start=bad&end=bad&attendance=-1&layout=unknown&facilities=unknown'));
  for(const key of ['start','end','attendance','layout','facilities']) assert.ok(result.errors?.[key]);
 });
+
+// TC_E06S01_05 (E06-S01 Scenario 3, boundary): capacity equal to the expected
+// attendance is suitable; one place fewer is marked unsuitable.
+test('TC_E06S01_05: a venue holding exactly the expected attendance is suitable; one place fewer is unsuitable', async () => {
+ const candidates: Candidate[] = [
+  { ...venue, id: 'lotus', name: 'Lotus Room', max_capacity: 100 },
+  { ...venue, id: 'orchid', name: 'Orchid Room', max_capacity: 99 },
+ ];
+ const stub: Query = async <T extends Record<string, unknown>>(sql: string) => ({ rows: (sql.includes('FROM venues v WHERE v.is_active') ? candidates : []) as unknown as T[] });
+ const result = await venueSearch(stub, user, new URLSearchParams({ search: '1', start: '2026-11-15T09:00:00+08:00', end: '2026-11-15T12:00:00+08:00', attendance: '100' }));
+ assert.equal(result.errors, undefined);
+ assert.deepEqual(result.venues?.map(v => [v.name, v.effective_capacity, v.suitable, v.mismatches]), [
+  ['Lotus Room', 100, true, []],
+  ['Orchid Room', 99, false, ['Capacity 99 is below the required 100 places.']],
+ ]);
+});

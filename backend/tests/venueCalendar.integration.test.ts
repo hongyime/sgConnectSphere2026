@@ -14,6 +14,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { Client, Pool } from 'pg';
 import { getVenueCalendar, type CalendarEntry } from '../src/modules/venueBooking/calendar';
+import { getVenue } from '../src/modules/venueBooking/catalogue';
 import { AccessError, type Query } from '../src/modules/eventVisibility/service';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
@@ -23,7 +24,7 @@ const summary = (entries: CalendarEntry[]) =>
   entries.map(entry => [entry.state, local(entry.start), local(entry.end), entry.event?.title ?? entry.reason ?? null]);
 
 test(
-  'E05-S03 TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05: venue availability calendar against real PostgreSQL',
+  'TC_E05S03_01 TC_E05S03_02 TC_E05S03_03 TC_E05S03_04 TC_E05S03_05 TC_E01S12_03 E05-S03: venue availability calendar against real PostgreSQL',
   async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
@@ -156,6 +157,70 @@ test(
     assert.equal(retired.entries.length, 4);
   } finally {
     if (pool) await pool.end();
+    await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
+    await db.end();
+  }
+});
+
+// TC_E05S05_06 (E05-S05 Scenarios 1 and 3, T-74): a venue and its bookings
+// created before 0011 added buffers read 0 and 0 afterwards, and its calendar
+// shows each Confirmed, Tentative and Blocked period at exactly its advertised
+// times, with no setup or turnaround portion.
+test('TC_E05S05_06: a venue created before buffers existed defaults to 0 and 0 and its calendar periods match the advertised times', async () => {
+  assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
+  const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
+  await db.connect();
+  const schema = `calendar_legacy_${randomUUID().replaceAll('-', '')}`;
+  const org = randomUUID(), organiser = randomUUID(), coordinatorId = randomUUID(), venueId = randomUUID();
+  const migration = async (name: string) => db.query(await readFile(new URL(`../database/migrations/${name}`, import.meta.url), 'utf8'));
+  try {
+    await ensureTestExtensions(db);
+    await db.query(`CREATE SCHEMA ${schema}`);
+    await db.query(`SET search_path TO ${schema}, public`);
+    await migration('0001_connectsphere_schema.sql');
+    await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
+    await db.query(`INSERT INTO users (id, client_org_id, email, password_hash, full_name, role) VALUES
+      ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser'),
+      ($3, $2, 'coordinator_1@example.test', 'unused', 'Coordinator One', 'event_coordinator')`, [organiser, org, coordinatorId]);
+    const insertEvent = async (title: string, range: string) => {
+      const id = randomUUID();
+      await db.query(`INSERT INTO events (id, event_code, organiser_id, coordinator_id, client_org_id, title, event_range, expected_attendance)
+        VALUES ($1, $2, $3, $4, $5, $6, $7::tstzrange, 100)`, [id, `EVT-${title.replace(/\W+/g, '-')}`, organiser, coordinatorId, org, title, range]);
+      return id;
+    };
+    // Before buffers existed: the venue, a Confirmed booking and a maintenance block.
+    await db.query(`INSERT INTO venues (id, name, location, max_capacity, opens_at, closes_at)
+      VALUES ($1, 'Grand Ballroom', '123 Marina Blvd', 300, '08:00', '22:00')`, [venueId]);
+    const confirmedRange = '[2030-02-02 10:00+08,2030-02-02 12:00+08)';
+    await db.query(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status) VALUES ($1, $2, $3::tstzrange, 'confirmed')`,
+      [venueId, await insertEvent('Annual Tech Summit', confirmedRange), confirmedRange]);
+    await db.query(`INSERT INTO venue_blocks (venue_id, block_range, reason) VALUES ($1, '[2030-02-04 00:00+08,2030-02-05 00:00+08)', 'Scheduled maintenance')`, [venueId]);
+    for (const name of ['0011_venue_setup_turnaround_buffers.sql', '0013_tentative_venue_holds.sql', '0016_venue_buffer_write_guard.sql',
+      '0019_venue_bookings_contract.sql', '0025_venue_unavailability.sql']) await migration(name);
+    // A Tentative hold placed afterwards on the untouched venue.
+    const holdRange = '[2030-02-03 14:00+08,2030-02-03 16:00+08)';
+    await db.query(`INSERT INTO venue_bookings (venue_id, event_id, booking_range, status, expires_at) VALUES ($1, $2, $3::tstzrange, 'tentative', '2030-02-01 00:00+08')`,
+      [venueId, await insertEvent('Spring Workshop', holdRange), holdRange]);
+
+    const query: Query = (sql, values) => db.query(sql, values);
+    const coordinator: AuthenticatedUser = { id: coordinatorId, email: 'coordinator_1@example.test', role: 'event_coordinator', isActive: true, failedLoginCount: 0 };
+    const venue = await getVenue(query, coordinator, venueId) as unknown as Record<string, unknown>;
+    assert.deepEqual([venue.setup_time_minutes, venue.turnaround_time_minutes], [0, 0]);
+
+    const week = await getVenueCalendar(query, coordinator, venueId, '2030-02-01', '2030-02-07');
+    assert.deepEqual(summary(week.entries.filter(entry => entry.state !== 'free')), [
+      ['confirmed', '2030-02-02T10:00', '2030-02-02T12:00', 'Annual Tech Summit'],
+      ['tentative', '2030-02-03T14:00', '2030-02-03T16:00', 'Spring Workshop'],
+      ['blocked', '2030-02-04T00:00', '2030-02-05T00:00', 'Scheduled maintenance'],
+    ]);
+    assert.ok(week.entries.every(entry => entry.reason !== 'Setup time' && entry.reason !== 'Turnaround time'));
+    // Free time meets each booking exactly at its advertised start and end.
+    assert.deepEqual(summary(week.entries.filter(entry => local(entry.start).startsWith('2030-02-02'))), [
+      ['free', '2030-02-02T08:00', '2030-02-02T10:00', null],
+      ['confirmed', '2030-02-02T10:00', '2030-02-02T12:00', 'Annual Tech Summit'],
+      ['free', '2030-02-02T12:00', '2030-02-02T22:00', null],
+    ]);
+  } finally {
     await db.query(`DROP SCHEMA IF EXISTS ${schema} CASCADE`);
     await db.end();
   }

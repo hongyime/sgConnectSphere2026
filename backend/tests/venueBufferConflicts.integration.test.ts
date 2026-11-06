@@ -360,3 +360,29 @@ test('buffer notifications skip missing Coordinators, and clearing flags preserv
     assert.deepEqual(row,{buffer_conflict:false,requires_reconfirmation:true,status:'confirmed'});
   } finally { await f.close(); }
 });
+
+// TC_E05S05_08 (E05-S05 Scenario 1, negative): buffers must be whole minutes of
+// 0 or more; a refused save leaves the stored values unchanged.
+test('TC_E05S05_08: negative or non-whole-minute buffers are refused and the stored values are kept', async () => {
+  const f = await fixture();
+  try {
+    assert.equal((await updateVenue(f.pool, f.staff, f.ids.venue, { setup_time_minutes: 30, turnaround_time_minutes: 45 })).status, 200);
+    const setupError = 'Setup time must be whole minutes between 0 and 2147483647.';
+    const turnaroundError = 'Turnaround time must be whole minutes between 0 and 2147483647.';
+    for (const [body, errors] of [
+      [{ setup_time_minutes: -15 }, { setup_time_minutes: [setupError] }],
+      [{ turnaround_time_minutes: 45.5 }, { turnaround_time_minutes: [turnaroundError] }],
+      [{ setup_time_minutes: 0.5, turnaround_time_minutes: -1 }, { setup_time_minutes: [setupError], turnaround_time_minutes: [turnaroundError] }],
+    ] as const) {
+      assert.deepEqual(await updateVenue(f.pool, f.staff, f.ids.venue, body), { status: 400, body: { error: 'validation_failed', errors } }, JSON.stringify(body));
+    }
+    const stored = await f.pool.query('SELECT setup_time_minutes, turnaround_time_minutes FROM venues WHERE id = $1', [f.ids.venue]);
+    assert.deepEqual(stored.rows, [{ setup_time_minutes: 30, turnaround_time_minutes: 45 }]);
+    // Creating a venue is refused the same way and stores nothing.
+    const refused = await createVenue(f.pool, f.staff, { ...f.venueBody, name: 'Negative Hall', setup_time_minutes: -1 });
+    assert.deepEqual(refused, { status: 400, body: { error: 'validation_failed', errors: { setup_time_minutes: [setupError] } } });
+    assert.equal((await f.pool.query("SELECT id FROM venues WHERE name = 'Negative Hall'")).rows.length, 0);
+  } finally {
+    await f.close();
+  }
+});

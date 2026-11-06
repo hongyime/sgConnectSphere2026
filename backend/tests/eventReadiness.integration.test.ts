@@ -24,6 +24,9 @@ import {
 import { AccessError, getEvent, listEventActivity, updateEventInformation, type Query } from '../src/modules/eventVisibility/service.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 import { inTransaction } from '../src/database/pool.js';
+import { decideSafetyReview } from '../src/modules/eventReadiness/submission.js';
+import { SAFETY_FACTORS } from '../src/modules/eventReadiness/safetyCheck.js';
+import { decideBooking } from '../src/modules/venueBooking/decisions.js';
 
 const RANGE = "tstzrange('2027-01-15 09:00+08', '2027-01-15 17:00+08', '[)')";
 
@@ -452,5 +455,96 @@ test('SCRUM-60: an event in Safety Review stays in every read, counts as active,
     await refused(updateEventInformation(f.query, f.user(f.ids.organiserA), 'EVT-930', { venueRequirements: 'A bigger hall' }), 409,
       'Direct editing of venueRequirements is not allowed after approval. Raise a change request.');
     assert.equal(await f.status(id), 'safety_review');
+  });
+});
+
+// TC_E08S03_01, _02, _06 and _07 as amended for C-70/T-107: "Submit for safety
+// check" moves a ready event to Safety Review, and only the Safety Officer's
+// approval (E08-S06) makes it Confirmed.
+const allSatisfactory = () => Object.fromEntries(SAFETY_FACTORS.map(key => [key, { satisfactory: true, comment: 'Checked' }]));
+
+test('TC_E08S03_01: submitting an event with a Confirmed venue and fully reserved equipment moves it to Safety Review, notifies the Safety Officer and the Organiser, and only the approval confirms it', async () => {
+  await withFixture(async f => {
+    const id = await f.event('EVT-101', 'planning', 'Projector');
+    await f.q(`UPDATE events SET title = 'Charity Run' WHERE id = $1`, [id]);
+    await f.booking(id, 'Riverside Hall', 'confirmed', { purpose: 'Main programme' });
+    await f.line(id, await f.equipment('Projector'), 2, { quantity: 2, status: 'reserved' });
+
+    await submitForSafetyReview(f.pool, f.user(f.ids.coordA), 'EVT-101');
+    assert.equal(await f.status(id), 'safety_review');
+    const submitted = await f.notices(id);
+    assert.deepEqual(submitted.map(row => [row.user_id, row.title]).sort(), [
+      [f.ids.organiserA, 'Awaiting safety check'], [f.ids.safety, 'Safety check needed'],
+    ].sort());
+    assert.equal(submitted.find(row => row.user_id === f.ids.organiserA)!.message,
+      'Coordinator A submitted EVT-101 Charity Run for its safety check. The event is now in Safety Review, and is confirmed only once the Safety Officer approves it.');
+
+    // The Coordinator cannot confirm it; the Safety Officer's approval does.
+    await refused(confirmEvent(f.pool, f.user(f.ids.coordA), 'EVT-101'), 403, READINESS_MESSAGES.onlySafetyOfficer);
+    await decideSafetyReview(f.pool, f.user(f.ids.safety), 'EVT-101', { decision: 'approve', factors: allSatisfactory() });
+    assert.equal(await f.status(id), 'confirmed');
+    const confirmed = (await f.notices(id)).filter(row => row.user_id === f.ids.organiserA && row.title === 'Event confirmed');
+    assert.equal(confirmed.length, 1);
+    assert.match(confirmed[0]!.message, /^EVT-101 Charity Run passed the Operational Safety Check and is now Confirmed\. .*Venues: Riverside Hall [0-9a-f]{4}\. Equipment: 2 × Projector\.$/);
+  });
+});
+
+test('TC_E08S03_02: submission is blocked while the second Session\'s venue booking is Pending, listing it by venue, and the event stays in Planning', async () => {
+  await withFixture(async f => {
+    const id = await f.event('EVT-102');
+    const first = (await f.q('SELECT id FROM sessions WHERE event_id = $1', [id])).rows[0].id as string;
+    // Booked while the event has one Session, then the second Session takes the Pending booking.
+    const confirmed = await f.booking(id, 'Grand Auditorium', 'confirmed');
+    const pending = await f.booking(id, 'Seminar Room B', 'pending', { range: "tstzrange('2027-01-15 14:00+08', '2027-01-15 16:00+08', '[)')" });
+    const second = (await f.q(`INSERT INTO sessions (event_id, title, session_range, expected_attendance)
+      VALUES ($1, 'Session 2', tstzrange('2027-01-15 14:00+08', '2027-01-15 16:00+08', '[)'), 60) RETURNING id`, [id])).rows[0].id as string;
+    await f.q('UPDATE venue_bookings SET session_id = $1 WHERE id = $2', [second, pending.id]);
+    assert.deepEqual((await f.q('SELECT session_id FROM venue_bookings WHERE id = ANY($1::uuid[]) ORDER BY id = $2 DESC', [[confirmed.id, pending.id], confirmed.id])).rows
+      .map(row => row.session_id), [first, second]);
+
+    const snapshot = await blocked(f, id);
+    assert.deepEqual(snapshot.blockers.map(row => row.message), [`${pending.venueName} — Pending`]);
+  });
+});
+
+// TC_E08S03_06 and _07 share "Tech Summit": three venues, equipment reserved, support staffed.
+async function techSummit(f: Fixture, code: string) {
+  const id = await f.event(code, 'planning', 'Projector');
+  const breakout = "tstzrange('2027-01-15 14:00+08', '2027-01-15 16:00+08', '[)')";
+  await f.booking(id, 'Grand Auditorium', 'confirmed', { purpose: 'Main programme' });
+  await f.booking(id, 'Seminar Room A', 'confirmed', { purpose: 'Breakout A', range: breakout });
+  const roomB = await f.booking(id, 'Seminar Room B', 'pending', { purpose: 'Breakout B', range: breakout });
+  await f.line(id, await f.equipment('Projector'), 2, { quantity: 2, status: 'reserved' });
+  await f.support(id, 'staffed');
+  return { id, roomB };
+}
+
+test('TC_E08S03_06: with two Confirmed bookings and one Pending, submission is blocked naming only the Pending venue, and the event stays in Planning', async () => {
+  await withFixture(async f => {
+    const { id, roomB } = await techSummit(f, 'EVT-106');
+    const snapshot = await blocked(f, id);
+    assert.deepEqual(snapshot.blockers.map(row => row.message), [`${roomB.venueName} — Pending`]);
+  });
+});
+
+test('TC_E08S03_07: once the last booking is approved the event can be submitted for its safety check, and the confirmed event shows the Organiser all three venues', async () => {
+  await withFixture(async f => {
+    const { id, roomB } = await techSummit(f, 'EVT-107');
+    await f.q(`INSERT INTO venue_staff_assignments (venue_id, staff_id) SELECT venue_id, $2 FROM venue_bookings WHERE id = $1`, [roomB.id, f.ids.venueStaff]);
+    assert.equal((await decideBooking(f.pool, f.user(f.ids.venueStaff), roomB.id, { decision: 'approve' })).status, 200);
+
+    const submission = await submitForSafetyReview(f.pool, f.user(f.ids.coordA), 'EVT-107');
+    assert.equal(submission.status, 'safety_review');
+    assert.ok((await f.notices(id)).some(row => row.user_id === f.ids.organiserA && row.title === 'Awaiting safety check'));
+    // E08-S03 Scenario 6 shows the arrangements once the event is confirmed, so not yet.
+    assert.equal((await withArrangements(f.query, await getEvent(f.query, f.user(f.ids.organiserA), 'EVT-107'))).arrangements, null);
+
+    await decideSafetyReview(f.pool, f.user(f.ids.safety), 'EVT-107', { decision: 'approve', factors: allSatisfactory() });
+    const event = await withArrangements(f.query, await getEvent(f.query, f.user(f.ids.organiserA), 'EVT-107'));
+    assert.deepEqual(event.arrangements!.venues.map(row => [row.venueName.split(' ').slice(0, -1).join(' '), row.purpose, row.startsAt, row.endsAt]), [
+      ['Grand Auditorium', 'Main programme', '2027-01-15T01:00:00.000Z', '2027-01-15T09:00:00.000Z'],
+      ['Seminar Room A', 'Breakout A', '2027-01-15T06:00:00.000Z', '2027-01-15T08:00:00.000Z'],
+      ['Seminar Room B', 'Breakout B', '2027-01-15T06:00:00.000Z', '2027-01-15T08:00:00.000Z'],
+    ]);
   });
 });

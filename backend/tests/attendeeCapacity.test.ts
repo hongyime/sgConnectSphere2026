@@ -258,3 +258,10 @@ for (const action of ['approve', 'reject', 'add'] as const) test(`TC_E11S01_14: 
   assert.equal(unpublished.calls.some(call => call.sql.includes('INSERT INTO notifications')), false);
   assert.ok(unpublished.calls.some(call => call.sql === 'COMMIT'));
 });
+
+// TC_E09S07_05 (E09-S07 Scenario 2, boundary): exactly full shows 0 remaining.
+test('TC_E09S07_05 - a full event shows its registered count with 0 places remaining', async () => {
+  const full = [{ session_id: sessionA, session_capacity: 10, registered: 10 }, { session_id: sessionB, session_capacity: 10, registered: 10 }];
+  const view = await getEventRegistrations(script({ capacity: full, eventRegistered: 20 }).query, organiser, eventId);
+  assert.deepEqual(view.capacity, { capacity: 20, registered: 20, remaining: 0 });
+});

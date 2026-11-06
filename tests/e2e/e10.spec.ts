@@ -8,51 +8,6 @@ import { coordA, fakeCoordinatorBackend } from './helpers/coordinatorBackend';
 test.describe("E10-S01", () => {
 
   /**
-   * TC_E10S01_01
-   * AC:      E10-S01 - Scenario 1 (Change request recorded)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Community Meetup" has status "Confirmed"
-   *
-   * Test data:
-   *   Change description: "Increase expected attendance to 10"
-   *
-   * Expected result:
-   *   coordinator_1@connectsphere.com is notified, and the change request is recorded against "Community Meetup"
-   */
-  test.fixme("TC_E10S01_01 - Verify that submitting a change request on an approved or confirmed event should notify the assigned Coordinator and record the request against the event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Community Meetup"
-    // 3. Click "Request a Change"
-    // 4. Describe the change: "Increase expected attendance to 10"
-    // 5. Submit
-    void page;
-  });
-
-  /**
-   * TC_E10S01_02
-   * AC:      E10-S01 - Scenario 2 (Confirmed details shown alongside)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Community Meetup" has a pending change request; its confirmed details (venue, date, time) remain unchanged
-   *
-   * Test data:
-   *   Pending request: Increase expected attendance to 10
-   *
-   * Expected result:
-   *   The page shows both the currently confirmed details and the pending change request together
-   */
-  test.fixme("TC_E10S01_02 - Verify that viewing an event with a pending change request should still show the currently confirmed details alongside the pending request", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Community Meetup"
-    void page;
-  });
-
-  /**
    * TC_E10S01_03
    * AC:      E10-S01 - Scenario 3 (Refused edit offers the form)
    * Sprint:  4.0
@@ -104,53 +59,6 @@ test.describe("E10-S01", () => {
     expect(calls.requests).toHaveLength(0);
   });
 
-  /**
-   * TC_E10S01_04
-   * AC:      E10-S01 - Scenario 4 (Approved change applied)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   A change request on "Community Meetup" (increase expected attendance to 10) is pending Coordinator approval
-   *
-   * Test data:
-   *   Change: Expected Attendance -> 10
-   *
-   * Expected result:
-   *   "Community Meetup"'s Expected Attendance is updated to 10, and organiser_a@clienta.com is notified that the change was applied
-   */
-  test.fixme("TC_E10S01_04 - Verify that when the Coordinator approves a change request, the event should be updated and the Organiser notified", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the pending change request
-    // 3. Click "Approve"
-    // 4. Log in as organiser_a@clienta.com and check the event and notifications
-    void page;
-  });
-
-  /**
-   * TC_E10S01_05
-   * AC:      E10-S01 (checklist: notified when Coordinator approves or declines)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   A change request on "Community Meetup" is pending Coordinator approval
-   *
-   * Test data:
-   *   Decision: Declined
-   *
-   * Expected result:
-   *   organiser_a@clienta.com is notified that the change request was declined, and the event remains unchanged
-   */
-  test.fixme("TC_E10S01_05 - Verify that when the Coordinator declines a change request, the Organiser should be notified", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open the pending change request
-    // 3. Click "Decline"
-    // 4. Enter a reason and confirm
-    // 5. Log in as organiser_a@clienta.com and check notifications
-    void page;
-  });
-
 });
 
 test.describe("E10-S02", () => {
@@ -177,31 +85,6 @@ test.describe("E10-S02", () => {
     await form.getByRole('button', { name: 'Save changes' }).click();
     return backend;
   }
-
-  /**
-   * TC_E10S02_01
-   * AC:      E10-S02 - Scenario 1 (Session attendance beyond capacity flagged); T-78/T-79
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event E-1 has two Session venue bookings; each booking has its own approved capacity
-   *
-   * Test data:
-   *   Session A booking capacity: 80, attendance: 81 | Session B capacity: 120, attendance: 100
-   *
-   * Expected result:
-   *   Only Session A’s booking is flagged and Venue Staff are notified; Session B remains unchanged
-   */
-  test.fixme("TC_E10S02_01 - An attendance change should flag only bookings whose governing Session headcount exceeds capacity", async ({ page }) => {
-    // Proved against PostgreSQL (arrangementImpact.integration.test.ts): no
-    // screen edits one Session of a multi-Session Event yet (E04-S02). The
-    // single-Session version is the manual run's section D; the screen text is
-    // covered by TC_E10S02_03/_06 here.
-    // Steps from the specification:
-    // 1. Increase Session A attendance above its venue capacity
-    // 2. Review both booking statuses
-    void page;
-  });
 
   /**
    * TC_E10S02_02
@@ -299,31 +182,6 @@ test.describe("E10-S02", () => {
     await review.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Saved your changes' })).toContainText('no one was removed or moved to the waiting list');
     expect(backend.audit.map(row => row.field)).toEqual(['description']);
-  });
-
-  /**
-   * TC_E10S02_05
-   * AC:      E10-S02 - Scenario 5 (Session date/time change flags its arrangements); T-79
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event E-1 has two Sessions; each has a confirmed venue booking and equipment reservation; a staffed Technical Support request covers Session A's time
-   *
-   * Test data:
-   *   Only Session A changes from 2027-03-12 09:00–11:00 to 2027-03-13 09:00–11:00 | Support request: 2027-03-12 08:00–11:00, one technician assigned
-   *
-   * Expected result:
-   *   Session A booking and equipment reservation, and the staffed Technical Support request overlapping Session A's previous time, are flagged; Session B arrangements remain confirmed and unchanged
-   */
-  test.fixme("TC_E10S02_05 - Changing a Session date should flag its booking and equipment reservation for reconfirmation", async ({ page }) => {
-    // Proved against PostgreSQL (arrangementImpact.integration.test.ts and, for the
-    // Technical Support request, supportReconfirmation.integration.test.ts) and in
-    // the manual run: flags live in the database, which faked replies cannot show,
-    // and no screen edits one Session of a multi-Session Event yet (E04-S02).
-    // Steps from the specification:
-    // 1. Change Session A date/time
-    // 2. Review Session A and B arrangements
-    void page;
   });
 
   /**
@@ -537,129 +395,15 @@ test.describe("E10-S02", () => {
 
 test.describe("E10-S04", () => {
 
-  /**
-   * TC_E10S04_01
-   * AC:      E10-S04 - Scenario 1 (Event cancelled, arrangements released)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Product Launch Night" has status "Confirmed" with a confirmed venue "Small Room" and reserved equipment
-   *
-   * Test data:
-   *   Cancellation reason: "Insufficient sponsor funding"
-   *
-   * Expected result:
-   *   The status becomes "Cancelled"; "Small Room"'s booking and the reserved equipment are released, the venue calendar is updated, and affected staff are notified
-   */
-  test.fixme("TC_E10S04_01 - Verify that cancelling an event and recording a reason should release its venue bookings and equipment reservations, update the venue calendars, and notify affected staff", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Open event "Product Launch Night"
-    // 3. Click "Cancel Event"
-    // 4. Enter reason "Insufficient sponsor funding"
-    // 5. Confirm
-    void page;
-  });
-
-  /**
-   * TC_E10S04_03
-   * AC:      E10-S04 - Scenario 2 (Attendees and waitlist notified)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   The event of "Tech Conference 2026" being cancelled has attendee_a@example.com registered and attendee_l@example.com waitlisted
-   *
-   * Test data:
-   *   Registered: attendee_a@example.com | Waitlisted: attendee_l@example.com
-   *
-   * Expected result:
-   *   Both attendee_a@example.com and attendee_l@example.com receive a notification of the cancellation
-   */
-  test.fixme("TC_E10S04_03 - Verify that cancelling a event should notify all of its registered and waitlisted Attendees", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as coordinator_1@connectsphere.com
-    // 2. Cancel the event
-    // 3. Check notifications for attendee_a@example.com and attendee_l@example.com
-    void page;
-  });
-
-  /**
-   * TC_E10S04_04
-   * AC:      E10-S04 - Scenario 3 (Cancelled event read-only)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Product Launch Night" was cancelled on 12/09/2026 with reason "Insufficient sponsor funding" (per TC_E10S04_01)
-   *
-   * Test data:
-   *   Cancellation reason: "Insufficient sponsor funding" | Date: 12/09/2026
-   *
-   * Expected result:
-   *   The event shows "Cancelled on 12 September 2026 - Insufficient sponsor funding"; all fields are read-only
-   */
-  test.fixme("TC_E10S04_04 - Verify that a cancelled event should be read-only and show its cancellation reason and date to any viewer", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as any user with access (e.g. organiser_a@clienta.com)
-    // 2. Open the cancelled event "Product Launch Night"
-    // 3. Attempt to edit any field
-    void page;
-  });
-
-  /**
-   * TC_E10S04_05
-   * AC:      E10-S04 - Scenario 4 (Organiser cancellation becomes a request)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Community Meetup" has status "Confirmed", assigned to coordinator_1@connectsphere.com
-   *
-   * Test data:
-   *   Reason: "No longer needed"
-   *
-   * Expected result:
-   *   The event is NOT immediately cancelled; instead, a cancellation request is recorded and coordinator_1@connectsphere.com is notified to action it
-   */
-  test.fixme("TC_E10S04_05 - Verify that an Event Organiser attempting to cancel directly should have the action recorded as a cancellation request for the Coordinator to action", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as organiser_a@clienta.com
-    // 2. Open event "Community Meetup"
-    // 3. Click "Cancel Event"
-    // 4. Enter a reason and submit
-    void page;
-  });
-
 });
 
 // Week 7 additions from docs/testing/cases/E10.md.
 
 test.describe("E10-S02 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E10S02_07 — Verify that increasing expected attendance on a multi-venue event should flag only the venue bookings whose governing headcount now exceeds capacity", async ({ page }) => {
-    // Implement from docs/testing/cases/E10.md (TC_E10S02_07).
-    void page;
-  });
 
 });
 
 test.describe("E10-S05 — Week 7 case scaffolds", () => {
-  test.fixme("TC_E10S05_01 — Verify that when a booked venue is marked unavailable the Coordinator's event should be flagged with the booking shown as Conflicting, return to Planning without being cancelled, and keep its other arrangements", async ({ page }) => {
-    // Implement from docs/testing/cases/E10.md (TC_E10S05_01).
-    void page;
-  });
-
-  test.fixme("TC_E10S05_02 — Verify that a flagged event should show the reason, period and affected booking, preserve the original event information, and offer a venue search for the same event", async ({ page }) => {
-    // Implement from docs/testing/cases/E10.md (TC_E10S05_02).
-    void page;
-  });
-
-  test.fixme("TC_E10S05_03 — Verify that requesting a replacement venue should create a second booking request on the same event without cancelling the Conflicting booking, which the Coordinator cancels explicitly afterwards", async ({ page }) => {
-    // Implement from docs/testing/cases/E10.md (TC_E10S05_03).
-    void page;
-  });
-
-  test.fixme("TC_E10S05_04 — Verify that the Organiser and registered Attendees should be notified of the venue change only when the replacement is confirmed, not when the original venue is lost", async ({ page }) => {
-    // Implement from docs/testing/cases/E10.md (TC_E10S05_04).
-    void page;
-  });
 
 });
 

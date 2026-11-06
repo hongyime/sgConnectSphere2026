@@ -3,6 +3,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { decideBooking } from '../src/modules/venueBooking/decisions.js';
+import { getVenueCalendar } from '../src/modules/venueBooking/calendar.js';
+import { placeHold } from '../src/modules/venueBooking/holds.js';
 import { venueClaimPolicyFixture } from './helpers/venueClaimPolicyFixture.js';
 
 function hasStatus(error: unknown, status: number) {
@@ -320,6 +322,73 @@ test('an expired hold no longer claims the venue, so a later overlapping request
     assert.equal(accepted.status, 201);
     assert.ok('booking' in accepted.body);
     assert.equal(accepted.body.booking.status, 'pending');
+  } finally {
+    await f.close();
+  }
+});
+
+// TC_E06S05_02 (E06-S05 Scenario 5, T-102): a hold claims its buffered window,
+// 30 minutes before and 45 after. Another Coordinator's overlapping hold is
+// refused with the window only; a request whose own buffered window starts
+// exactly when the hold's ends is accepted.
+test('TC_E06S05_02: a tentative hold occupies the buffered window, refusing an overlapping hold and accepting an adjacent request', async () => {
+  const f = await venueClaimPolicyFixture();
+  try {
+    await f.setBuffers(f.ids.venueA, 30, 45);
+    const firstEvent = await f.createEvent(f.coordinator, 'Charity Run');
+    const secondEvent = await f.createEvent(f.otherCoordinator, 'Product Expo');
+    assert.equal((await f.hold(firstEvent, f.ids.venueA, f.period('2027-01-15', '10:00', '12:00'))).status, 201);
+
+    const calendar = await getVenueCalendar((sql, values) => f.pool.query(sql, values), f.coordinator, f.ids.venueA, '2027-01-15', '2027-01-15');
+    assert.deepEqual(calendar.entries.filter(entry => entry.kind === 'booking').map(entry => [entry.state, entry.start, entry.end, entry.reason ?? 'Event']), [
+      ['tentative', '2027-01-15T01:30:00.000Z', '2027-01-15T02:00:00.000Z', 'Setup time'],
+      ['tentative', '2027-01-15T02:00:00.000Z', '2027-01-15T04:00:00.000Z', 'Event'],
+      ['tentative', '2027-01-15T04:00:00.000Z', '2027-01-15T04:45:00.000Z', 'Turnaround time'],
+    ]);
+
+    const beforeRefusal = await f.effectSnapshot();
+    const attemptA = await placeHold(f.pool, f.otherCoordinator, { event_id: secondEvent, venue_id: f.ids.venueA, ...f.period('2027-01-15', '12:30', '13:30') });
+    assert.equal(attemptA.status, 409);
+    assert.ok(refusedWithoutDisclosure('Charity Run', '15 Jan 2027, 9:30 am', '15 Jan 2027, 12:45 pm')(
+      Object.assign(new Error((attemptA.body as { error: string }).error), { status: 409 })));
+    assert.deepEqual(await f.effectSnapshot(), beforeRefusal);
+
+    const attemptB = await f.requestAsOtherCoordinator(secondEvent, f.ids.venueA, f.period('2027-01-15', '13:15', '14:00'));
+    assert.equal(attemptB.status, 201);
+    assert.deepEqual(await f.bookingRows([firstEvent, secondEvent]), [
+      { status: 'tentative', buffer_conflict: false }, { status: 'pending', buffer_conflict: false },
+    ]);
+  } finally {
+    await f.close();
+  }
+});
+
+// TC_E06S06_08 (Scenario 1, T-100): on a venue with no active claim, an accepted
+// request or hold claims its current buffered window, not only its advertised time.
+test('TC_E06S06_08: the first accepted request or hold claims its current buffered window', async () => {
+  const f = await venueClaimPolicyFixture();
+  try {
+    await f.setBuffers(f.ids.venueA, 30, 45);
+    await f.setBuffers(f.ids.venueB, 30, 45);
+    const requested = await f.createEvent(f.coordinator, 'Charity Run');
+    const held = await f.createEvent(f.coordinator, 'Product Expo');
+    const competitor = await f.createEvent(f.otherCoordinator, 'Alumni Dinner');
+    assert.equal((await f.request(requested, f.ids.venueA, f.period('2027-02-09', '10:00', '12:00'))).status, 201);
+    assert.equal((await f.hold(held, f.ids.venueB, f.period('2027-02-09', '10:00', '12:00'))).status, 201);
+    for (const venue of [f.ids.venueA, f.ids.venueB]) {
+      const calendar = await getVenueCalendar((sql, values) => f.pool.query(sql, values), f.coordinator, venue, '2027-02-09', '2027-02-09');
+      assert.deepEqual(calendar.entries.filter(entry => entry.kind === 'booking').map(entry => [entry.state, entry.start, entry.end]), [
+        ['tentative', '2027-02-09T01:30:00.000Z', '2027-02-09T02:00:00.000Z'],
+        ['tentative', '2027-02-09T02:00:00.000Z', '2027-02-09T04:00:00.000Z'],
+        ['tentative', '2027-02-09T04:00:00.000Z', '2027-02-09T04:45:00.000Z'],
+      ]);
+    }
+    assert.deepEqual(await f.bookingRows([requested, held]), [
+      { status: 'pending', buffer_conflict: false }, { status: 'tentative', buffer_conflict: false },
+    ]);
+    // 12:30-13:30 misses the advertised 10:00-12:00 but meets the claimed turnaround to 12:45.
+    await assert.rejects(f.requestAsOtherCoordinator(competitor, f.ids.venueA, f.period('2027-02-09', '12:30', '13:30')),
+      refusedWithoutDisclosure('Charity Run', '9 Feb 2027, 9:30 am', '9 Feb 2027, 12:45 pm'));
   } finally {
     await f.close();
   }
