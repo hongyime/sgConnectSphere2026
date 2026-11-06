@@ -14,5 +14,5 @@ excluded from `git archive` so a source-code archive remains code-only.
 | `7. README` | Xiangying |
 
 Files in this directory may exceed the repository's normal 1 MB pre-commit
-limit but must remain at or below 50 MB. Use Git LFS for a larger file before
-adding it.
+limit but must remain at or below 50 MB. Pre-commit and CI enforce that cap;
+use Git LFS for a larger file before adding it.

@@ -9,6 +9,8 @@ guards.
 - The existing 1 MB large-file guard remains in force outside `submission/`.
 - A second submission-only hook rejects files over 50 MB; those files need Git
   LFS before they are added.
+- The LFS guard workflow applies the same 50 MB cap to tracked submission
+  assets in CI, so the allowance is not local-only.
 - The LFS pointer workflow ignores only `submission/`; it remains active for
   every other path.
 - `submission/` is export-ignored so source-code archives exclude the package.
