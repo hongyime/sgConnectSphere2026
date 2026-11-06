@@ -6,42 +6,6 @@ import { test } from '@playwright/test';
 test.describe("E14-S02", () => {
 
   /**
-   * AC: E14-S02 - Scenario 1 (Status change recorded; T-75, T-76)
-   * Sprint: 3
-   * Pre-conditions:
-   * Request "Annual Tech Summit" has status "Under Review"; coordinator_1@connectsphere.com is an Event Coordinator permitted to view and approve it
-   * Test data:
-   * Event: Annual Tech Summit | Action: Approve
-   * Expected result:
-   * An entry is recorded with actor = coordinator_1@connectsphere.com, action = "Status changed to Approved", event = Annual Tech Summit, and a timestamp; the Event Coordinator can read it on that event under existing access rules, without an Administrator role or global audit screen
-   */
-  test.fixme("TC_E14S02_01 - Verify that an event status change should be recorded with the actor, action, affected event, and time", async ({ page }) => {
-    // 1. As coordinator_1@connectsphere.com, approve the request (status -> Approved)
-    // 2. Open the approved event's existing detail page as that Coordinator
-    // 3. Locate the status-change entry in its Activity log
-    // 4. Compare the displayed actor, action and timestamp with the completed change and affected event
-    void page;
-  });
-
-  /**
-   * AC: E14-S02 - Scenario 2 (Access denial recorded; T-75, T-76)
-   * Sprint: 3
-   * Pre-conditions:
-   * organiser_a@clienta.com is linked to Client A; event EVT-B01 belongs to Client B; the tester has read access to a controlled test database
-   * Test data:
-   * User: organiser_a@clienta.com | Target: EVT-B01
-   * Expected result:
-   * An entry is recorded with user = organiser_a@clienta.com, target = EVT-B01, action = "Access Denied", and a timestamp
-   */
-  test.fixme("TC_E14S02_02 - Verify that a denied access attempt should be recorded with the user, target, and time", async ({ page }) => {
-    // 1. As organiser_a@clienta.com, attempt to access EVT-B01 directly
-    // 2. Confirm the request is refused
-    // 3. As the tester, query audit_logs in the controlled test database for that user, target and attempt time
-    // 4. Check the matching denial row's user, target, action and timestamp
-    void page;
-  });
-
-  /**
    * AC: E14-S02 - former Scenario 3 (transferred to E06-S04 Scenario 5 by T-76; see TC_E06S04_05)
    * Sprint: 1
    * Pre-conditions:
@@ -54,42 +18,6 @@ test.describe("E14-S02", () => {
   test.skip("TC_E14S02_03 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that an approved venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. Do not execute this retired case; use TC_E06S04_05 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
-    void page;
-  });
-
-  /**
-   * AC: E14-S02 - Scenario 4 (Deactivation recorded; T-75, T-76)
-   * Sprint: 3
-   * Pre-conditions:
-   * organiser_a@clienta.com is signed in; the tester has read access to a controlled test database
-   * Test data:
-   * Account: organiser_a@clienta.com
-   * Expected result:
-   * An entry is recorded showing the account deactivation with actor and timestamp
-   */
-  test.fixme("TC_E14S02_04 - Verify that an account deactivation should be recorded in the activity log", async ({ page }) => {
-    // 1. As organiser_a@clienta.com, deactivate the account
-    // 2. As the tester, query audit_logs in the controlled test database for that account and action time
-    // 3. Check the matching deactivation row's actor, action and timestamp
-    void page;
-  });
-
-  /**
-   * AC: E14-S02 - Scenario 5 (Log entries immutable; T-75, T-76)
-   * Sprint: 3
-   * Pre-conditions:
-   * A log entry exists: Event = Annual Tech Summit, Action = "Status changed to Approved", Actor = coordinator_1@connectsphere.com (created in TC_E14S02_01 or an equivalent independent fixture in a disposable test database)
-   * Test data:
-   * Target log entry: Event = Annual Tech Summit, Action = "Status changed to Approved" | Attempted edit: Action -> "Status changed to Rejected"
-   * Expected result:
-   * All update and delete attempts are refused. Unsupported API methods or routes may return 404/405; protected mutation routes must reject unauthorised requests. No response may represent a successful mutation. The database rejects both operations and the entry remains unchanged. No Administrator role is required.
-   */
-  test.fixme("TC_E14S02_05 - Verify that any attempt to edit or delete an activity log entry should be refused", async ({ page }) => {
-    // 1. As an Event Coordinator permitted to view the event, open its Activity log
-    // 2. Confirm no edit or delete control is offered for the entry
-    // 3. For each existing application role (event_organiser, event_coordinator, venue_staff, technical_support_staff and attendee), attempt direct API update and delete requests against the entry
-    // 4. As the database test harness, attempt UPDATE and DELETE of that entry through the application database connection in separate transactions
-    // 5. Read the original entry after each refused attempt to confirm its contents and row remain unchanged
     void page;
   });
 
@@ -122,25 +50,6 @@ test.describe("E14-S02", () => {
   test.skip("TC_E14S02_07 - [RETIRED — moved to E06-S04 Scenario 5 by T-76] Verify that a released venue booking should be recorded with the actor, action, affected records, and time", async ({ page }) => {
     // 1. Do not execute this retired case; use TC_E06S04_07 under E06-S04 Scenario 5.
     // 2. Refer to the earlier dated workbook for the original steps.
-    void page;
-  });
-
-  /**
-   * AC: E14-S02 - Scenario 1 (Status change recorded; access-denial entries not shown; T-75)
-   * Sprint: 3
-   * Pre-conditions:
-   * Event EVT-2003 belongs to Client B, is Under Review and is assigned to coord_b@connectsphere.com; organiser_a@clienta.com belongs to Client A; the database is a disposable test database seeded with `npm run db:seed:test --workspace backend`
-   * Test data:
-   * Refused user: organiser_a@clienta.com (Organiser A, Client A) | Event: EVT-2003 (Client B) | Reader: coord_b@connectsphere.com
-   * Expected result:
-   * The Activity log shows the status-change entry from step 3 and no "Access Denied" entry; neither "Organiser A" nor organiser_a@clienta.com appears anywhere in the log
-   */
-  test.fixme("TC_E14S02_08 - Verify that access-denial entries should not be shown in the event Activity log a Coordinator reads", async ({ page }) => {
-    // 1. As organiser_a@clienta.com, attempt to open EVT-2003 directly and confirm the request is refused
-    // 2. As the tester, confirm in the test database that an "Access Denied" row naming organiser_a@clienta.com now exists for that attempt
-    // 3. As coord_b@connectsphere.com, approve EVT-2003 so the log also holds a status-change entry
-    // 4. As coord_b@connectsphere.com, open EVT-2003's Activity log
-    // 5. Check every entry shown
     void page;
   });
 

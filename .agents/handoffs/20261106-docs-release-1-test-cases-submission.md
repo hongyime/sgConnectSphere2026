@@ -1,0 +1,41 @@
+# docs/release-1-test-cases-submission
+
+Goal: prepare the Release 1 "4. TEST CASES" submission (Aaron, Bl0oper):
+reconcile `docs/testing/cases/` with the Release 1 acceptance criteria and
+the IS212 Week 4 template, execute every suite locally and the browser suite
+against the deployed site, record the runs (T-65) and export the workbook.
+Stacked on `test/release-1-test-automation` (the new automated tests); merge
+that PR first.
+
+## Done
+
+- Case corrections: E01 (T-75 audit reading, E01-S01 generic sign-in error,
+  E05-S03 "Unavailable"), E03 (TC_E03S01_01/_02 retired, C-69), E08 (E08-S03
+  sends events to Safety Review, T-107), E10 and E11 references; empty drift
+  allowlist.
+- `run-record-corrections.md`: ledger for wrong historical records (never
+  edited, T-65). `defects.md`: SCRUM-256 to SCRUM-259.
+- `scripts/export_test_submission_xlsx.py`: the course workbook. After Xiang
+  Ying's review, an AC passes only when every linked case passes (a case with
+  no result counts as Not Executed), and a result file named in
+  `manifest.json` but missing stops the export. Both have regressions in
+  `tooling/tests/test_export_test_submission_xlsx.py`.
+- Playwright: per-environment report folders and screenshots for evidence
+  runs; `tests/deployed/` demo sign-ins; e2e fixme stubs replaced.
+
+## Decisions taken without team sign-off
+
+- DB suites ran only against a loopback PostgreSQL, never production. It was
+  a Docker container, which departs from AGENTS.md (native loopback
+  PostgreSQL, no Docker Desktop); raised in Le Xin's review.
+- Against the deployed site only the API-stubbed suite and demo sign-ins ran.
+  Each sign-in writes a session row (removed at sign-out) and resets the
+  failed-login count; nothing else was created. The deployed-site record says
+  `environment: local` (the runner's machine; the enum has only local and ci)
+  and names the target in Remarks; `run-record-corrections.md` states both.
+- Jira Bugs (not in the ticket classification's three types) because the
+  task asked for Bugs linked to the stories; listed for Bryan.
+
+## Not done / next
+
+- E03-S08/S09/S10 case rewrites are in Bryan's #436; not duplicated here.
