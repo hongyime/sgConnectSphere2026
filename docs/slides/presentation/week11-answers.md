@@ -18,7 +18,8 @@ How to read this file:
   person has to confirm it or it comes off the slide.
 
 Numbers were collected on 6 November 2026 from: Jira board 1 (read-only REST),
-`git` on `origin/main` at `0773a721`, GitHub pull requests and Actions runs, and
+`git` on `origin/main` at `0773a721` (commit counts, run records and CI status
+re-read at `c54f30ad`, 6 Nov), GitHub pull requests and Actions runs, and
 `docs/testing/`. Sprint 4 is treated as the final sprint for the ceremony
 recordings, as the teaching assistant told us; Sprint 5 (1 to 5 November) was a
 short close-out sprint.
@@ -94,7 +95,7 @@ are ours to fill. Keep it to 8 rows.
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
 | Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/`: 12 Word files, planning, stand-ups and review + retrospective for Sprints 1 to 4. Repo: the same records as Markdown in `docs/sprints/` (PR #440) |
 | System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/` (SVG, PNG and PDF renders, plus the combined "System Design - ConnectSphere Release 1.pdf"). Repo: `docs/design/` (13 diagrams: C4 context, containers and components; user journey; event state machine; two data flow diagrams; three ERDs; UML class view; two sequence diagrams; index in `docs/design/README.md`, PR #437), plus `docs/class-diagram.md`, `docs/db_schema.md`, `docs/architecture.md` |
-| Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (945 run records) [REFRESH: docs/testing] |
+| Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (955 run records) [REFRESH: docs/testing] |
 | Slide deck, README, decisions | Zip: `5. SLIDE DECK/`, `7. README/`. Repo: `docs/bdr/` (customer clarifications and team decisions) |
 
 **SPEAKER NOTES** (Presenter: ________, about 25 seconds):
@@ -373,7 +374,7 @@ Actions run 42039785462 (5 Nov, `main`, frontend component tests).
 **SLIDE CONTENT:**
 
 - **Delegate:** Well-specified work only: a Jira story with acceptance criteria and test case IDs, boilerplate routes and forms, first drafts of tests and docs. Not product decisions: those went to the Product Owner as decisions (T-xx)
-- **Constrain:** `AGENTS.md` instructions every agent reads first; pre-commit and CI checks (`scripts/check.py`, secret scanning); at most 40 files and 2 open PRs per author (`scripts/check_pr_guardrails.py`); hard rules such as never resetting the shared Supabase database (T-59)
+- **Constrain:** `AGENTS.md` instructions every agent reads first; pre-commit and CI checks (`scripts/check.py`, secret scanning); at most 40 files per PR and 15 open PRs across the team (`scripts/check_pr_guardrails.py`); hard rules such as never resetting the shared Supabase database (T-59)
 - **Verify:** Four required checks on every PR (repository-checks, pr-conventions, lfs-guard, application-checks with real PostgreSQL and Playwright); a teammate's approval on the latest push; hand-taken manual runs (T-65, T-93)
 - **Own:** Every story has a named human owner in Jira. The person who pushes can't approve their own last push. Product Owner acceptance is part of the Definition of Done
 
@@ -408,6 +409,7 @@ required checks green, e.g. PR #355 after the fix.
   - 3 Oct (after the Sprint 2 retro): ruleset on `main` with required checks, approval of the latest push, squash merges through a merge queue (#195, decision 0012). No bypass actors
   - Same day: shared `STATE.md`/`JOURNAL.md` edits banned in PRs, per-task handoff files instead, because they caused conflicts on every merge (decisions 0013, 0014)
   - 27 Oct: PR guardrails, max 40 files and 2 open PRs per author, 10 team-wide
+  - 6 Nov: for the submission push, the per-author cap was removed and the team-wide cap raised to 15 (#446, decision 0017)
 - **How consistently:** no PR has reached `main` without approval since 3 Oct
 - **Where we slipped:** some branches lived too long. The Lead stories' branches (`feature/SCRUM-153` to `155`) have been unmerged since 1 Nov
 
@@ -454,7 +456,7 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 | Coverage (explain why if not 100%) | Definition of Done: 100% of changed code, checked per PR in review. Whole frontend: 84.13% statements on 5 Nov [REFRESH: PR #436]. CI does not enforce a threshold, so older code has gaps |
 | Current passing tests | All of the above on `main` `62e82081` (5 Nov); all checks green on `main` head `0773a721` [REFRESH: CI] |
 | Current failing tests | 0 on `main` head. But one flaky frontend test failed on `main` on 5 Nov (`SessionEditor.test.tsx`, TC_E10S02_14) |
-| CI status | Pass: all checks green on `main` `0773a721` (6 Nov) [REFRESH: CI] |
+| CI status | Pass: all checks green on `main` `c54f30ad` (6 Nov) [REFRESH: CI] |
 | Number of known unresolved defects | 4 known defects (D-01 to D-04, `docs/testing/defects.md`), each tracked by a To Do follow-up story (SCRUM-256 to 259); plus staff-set hold expiry (SCRUM-260, T-84) and flaky focus tests. 0 open GitHub issues [REFRESH: `docs/testing/defects.md` arrives with PR #443] |
 
 **Question 2:** Which type of testing provided the least value to your team, and why?
@@ -678,18 +680,18 @@ Keep the template's column header "Approx. Contribution" (the current deck
 renamed it). Put the "share of commits" explanation in the cell text.
 
 Approx. Contribution = share of commits on `main` per mapped Git author, out of
-380 human commits (Dependabot excluded). Squash merges make this close to a
+384 human commits (Dependabot excluded). Squash merges make this close to a
 count of merged PRs. It is not a measure of effort, so the last column adds
 Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 
 | Team Member | Main Areas Worked On | Approx. Contribution | Code/PR Examples | Other Contributions |
 | --- | --- | --- | --- | --- |
-| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (175 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259, assigned to Aaron (slide 5) |
-| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (58 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
+| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (176 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259, assigned to Aaron (slide 5) |
+| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (59 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
 | Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04), including automatic re-entry into Safety Review (#392); minor vs major edits (E10-S02); Venue Staff notification routing for E11-S01 (#271, #272) | 11% (43 commits) | #88, #134, #151, #190, #272, #298, #348, #349, #385, #392 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
 | Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #24, #174, #236, #282, #283, #328, #412, #413, #426, #427 | Migration 0017, the Safety Review status (#282); C4 diagrams (#24); "4. TEST CASES" deliverable (#441, #443): 45 cases newly automated, 8 new cases, runs locally and on Vercel plus Stryker, which found the gaps behind SCRUM-256 to 259 [REFRESH: until #441 and #443 merge]; assigned the Release 1 follow-ups SCRUM-256 to 259 (To Do); 24 manual run sessions; 79 approvals. 15 stories Done (60 pts), the most in the team |
 | Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); primary-venue publication (#347); change requests for Events and Sessions (E10-S01, #383, #414); notifications (E11-S01); initial database schema documentation (#7) | 9% (35 commits) | #7, #143, #242, #299, #347, #355, #367, #383, #414 | 18 manual run sessions; 51 approvals. 9 stories Done (44 pts) |
-| Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (30 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
+| Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (32 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
 Areas come from the Jira stories each person owns (assignee) plus their own
 PRs. A story owner is not always the only author: for example the waiting list
