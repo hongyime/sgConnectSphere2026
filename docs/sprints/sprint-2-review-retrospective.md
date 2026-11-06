@@ -6,15 +6,14 @@ Sprint 2 | 21 September – 3 October 2026 (Jira sprint 35)
 
 ### 1. Meeting Details
 
-> **Evidence basis.** Sprint and meeting *dates* and *attendance* are accurate (recalled and recorded by the Scrum Master). *Times and durations* are approximate. This session was held live and recorded; the Sprint 4 recordings are linked in the submission `.docx`, and earlier-sprint recording links are [CONFIRM: Amareet]. Any quotations in later sections are summarised contributions, not a verbatim transcript.
-
+> **Evidence basis.** Dates and attendance are accurate; times and durations are approximate. The session was recorded (Sprint 4 links are in the submission `.docx`; other sprints [CONFIRM: Amareet]).
 
 | Field | Details |
 | --- | --- |
 | Date | 2 October 2026 (ran into the early hours of 3 October) |
 | Time / Duration | 11:45 pm – 1:30 am (approx. 1 hour 45 minutes) |
 | Attendees | 6 / 6 members. Product Owner: Bryan. Scrum Master & Frontend Developer: Amareet. Developers: Ji Ning, Aaron, Le Xin, Xiang Ying. |
-| Venue | Microsoft Teams (online); session recorded |
+| Venue | Microsoft Teams (online); recording held, link [CONFIRM: Amareet] |
 | Facilitator | Amareet (Scrum Master) |
 
 ### 2. Sprint Goal Recap

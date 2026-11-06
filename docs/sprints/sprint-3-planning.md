@@ -4,8 +4,7 @@ Sprint 3 | 4 – 17 October 2026 (Jira sprint 36)
 
 ## 1. Meeting Details
 
-> **Evidence basis.** Sprint and meeting *dates* and *attendance* are accurate (recalled and recorded by the Scrum Master). *Times and durations* are approximate. This session was held live and recorded; the Sprint 4 recordings are linked in the submission `.docx`, and earlier-sprint recording links are [CONFIRM: Amareet]. Any quotations in later sections are summarised contributions, not a verbatim transcript.
-
+> **Evidence basis.** Dates and attendance are accurate; times and durations are approximate. The session was recorded (Sprint 4 links are in the submission `.docx`; other sprints [CONFIRM: Amareet]).
 
 | Field | Details |
 | --- | --- |
@@ -13,7 +12,7 @@ Sprint 3 | 4 – 17 October 2026 (Jira sprint 36)
 | Time / Duration | 10:30 am – 12:30 pm (2 hours) |
 | Sprint Dates | 4 October 2026 – 17 October 2026 |
 | Attendees | 6 / 6 members. Product Owner: Bryan. Scrum Master & Developer: Amareet. Developers: Aaron, Le Xin, Xiang Ying, Ji Ning. |
-| Venue | Microsoft Teams (online); session recorded |
+| Venue | Microsoft Teams (online); recording held, link [CONFIRM: Amareet] |
 | Facilitator | Amareet (Scrum Master) |
 
 ## 2. Sprint Goal

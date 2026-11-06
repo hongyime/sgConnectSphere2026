@@ -1,7 +1,6 @@
 # Sprint 4 — Daily Standups
 
-> **Evidence basis.** Stand-up *dates* and *attendance* are accurate. Daily stand-ups were conducted mostly asynchronously and were **not** video-recorded, so no recording links exist and exact clock times are not logged. The notes below summarise each member's reported progress, not a verbatim transcript.
-
+> **Evidence basis.** Dates and attendance are accurate; stand-ups were mostly asynchronous and not video-recorded, so times are not logged and no links exist.
 
 Sprint 4 | 18 – 31 October 2026 | Format: Async written updates (synchronous
 check-ins recorded)
