@@ -235,13 +235,9 @@ def _write_workbook(
         pts_display = int(total_pts) if isinstance(total_pts, float) and total_pts.is_integer() else total_pts
         unresolved_ids = [r["story_id"] for r in release_rows if not isinstance(r.get("points"), (int, float))]
 
+        # Only values computed from the Markdown: a hard-coded fact would go stale in every later export.
         info_rows = [
-            ("Snapshot Date & Time", "2026-11-06 07:44:29 SGT (+0800)"),
-            ("Source Snapshot File", "Jira-backlog-final-20261106.csv"),
-            ("Release 1 Scope", f"{total_release_stories} Stories ({pts_display} points total, {len(unresolved_ids)} Unresolved)"),
-            ("Release 1 Status Breakdown", "Done: 55, In Review: 3, In Progress: 2, To Do: 5"),
-            ("Restored Baseline Estimates (28 pts)", "E01-S12 (5 pts), E01-S13 (5 pts), E07-S08 (5 pts), E07-S09 (5 pts), E08-S06 (8 pts)"),
-            ("Predicted Estimates Added (22 pts)", "E03-S08 (5 pts), E03-S09 (3 pts), E03-S10 (3 pts), E03-S11 (3 pts), E03-S12 (1 pt), E06-S07 (5 pts), E14-S03 (2 pts)"),
+            ("Release 1 Scope (from Markdown)", f"{total_release_stories} Stories ({pts_display} points total, {len(unresolved_ids)} Unresolved)"),
             ("Unresolved Stories", ", ".join(unresolved_ids) if unresolved_ids else "None (all stories estimated)"),
             ("Note", snapshot_note),
         ]
@@ -266,8 +262,8 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Export docs/backlog/*.md to xlsx.")
     parser.add_argument("--date", help="Override the DDMMYY date suffix. Format: DDMMYY.", default=None)
     parser.add_argument("--time", help="Snapshot time suffix. Format: HHMM.", default=None)
-    parser.add_argument("--snapshot-note", help="Jira snapshot note or header.",
-                        default="Jira snapshot: 2026-11-06 07:44 SGT (2026-11-06T07:44:29+08:00)")
+    parser.add_argument("--snapshot-note", default=None,
+                        help="Optional note for the sheet header and a JIRA SNAPSHOT sheet.")
     args = parser.parse_args(argv)
 
     if args.date:
@@ -293,10 +289,7 @@ def main(argv: list[str]) -> int:
         print("ERROR: no Markdown backlog files found under docs/backlog/.", file=sys.stderr)
         return 1
 
-    try:
-        destination = _output_path(target_date, args.time)
-    except TypeError:
-        destination = _output_path(target_date)
+    destination = _output_path(target_date, args.time) if args.time else _output_path(target_date)
 
     _write_workbook(release_rows, product_rows, destination, snapshot_note=args.snapshot_note)
     print(f"Wrote {destination.name}")
