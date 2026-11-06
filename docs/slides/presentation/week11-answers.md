@@ -141,7 +141,7 @@ and where we fell short we've said that too."
 - Changed the Confirm step we had already built (E08-S03), added the Safety Officer review (E08-S06, 8 points) and a "send back to planning" path (E08-S04)
 - The only change that added a status to the event lifecycle, so every status rule, screen and notification around Confirm had to be rechecked
 - Week 9 answers changed it again: rejection returns the event to planning (C-132 onwards), and the review should start automatically (T-82)
-- Not finished: E08-S04 is not Done yet (In Review on 6 Nov) [REFRESH: Jira SCRUM-61], and a first-time event is still submitted by the Coordinator rather than entering review on its own (known gap: T-82 on 13 Oct says the Coordinator does not submit, but E08-S03 was built on 17 Oct, #283, to its written criteria, which still say "When I submit"; only re-entry is automatic, #392, #395)
+- Revert to planning (E08-S04) Done on 6 Nov in Sprint 5 [REFRESH: Jira SCRUM-61]. Not finished: a first-time event is still submitted by the Coordinator rather than entering review on its own (known gap: T-82 on 13 Oct says the Coordinator does not submit, but E08-S03 was built on 17 Oct, #283, to its written criteria, which still say "When I submit"; only re-entry is automatic, #392, #395)
 
 **Question 2:** Describe how you handled these changes, and which components of your project were affected and how.
 
@@ -163,8 +163,8 @@ goes through a safety check before it can be confirmed. And the Safety Officer
 can send an event back to planning, which means venue and equipment
 arrangements may need another look. Then the Week 9 answers moved it again,
 for example the review should start automatically. We haven't finished all of
-it: the 'revert to planning' story is still in progress, and a first-time event
-still needs the Coordinator to submit it.
+it: the 'revert to planning' story only closed in Sprint 5, and a first-time
+event still needs the Coordinator to submit it.
 
 For all six changes we followed the Week 7 guide. Each change became a
 customer clarification row and a team decision. A Done story stayed Done, and
@@ -181,7 +181,7 @@ Safety Officer screen from a manual run:
 item 6; `docs/bdr/customer-sources/G1G2 Week9 Clarification.xlsx` (safety
 rows, O-39, O-40); `docs/bdr/A-customer-clarifications.md` C-70, C-132;
 `docs/bdr/B-team-decisions.md` T-71, T-72, T-74, T-82; Jira SCRUM-158 (Done),
-SCRUM-61 (not Done yet); `docs/db_schema.md` (migration 0017); header comment
+SCRUM-61 (Done 6 Nov); `docs/db_schema.md` (migration 0017); header comment
 of `backend/src/modules/eventReadiness/autoSafetyReview.ts`.
 
 ---
@@ -238,9 +238,9 @@ Week 7); `docs/plans/venue-claim-rule-b-20261022.md`; PRs #339, #378, #385.
 | 1 Setup and turnaround time | E05-S05 | Done |
 | 2 Venue unavailable after booking | E05-S06, lost-venue recovery #355 | Done |
 | 3 Multiple venues | E06-S03, E06-S06 | Done |
-| 4 Tentative holds expire | E06-S05 | Done with a fixed 48-hour expiry; Week 9 asks for staff-set expiry and warnings (T-84), not built yet |
-| 5 Event Coordinator Lead | E01-S13 roles and sign-in, Lead queue (read only) | Gap: new requests are still auto-assigned to a Coordinator, and the Lead's assign, reassign and oversight work is on unmerged branches (`feature/SCRUM-153`, `-154`, `-155`), although Jira shows these stories Done |
-| 6 Safety Officer | E08-S03, E08-S06, E08-S04 | Review and decisions done; revert to planning not Done yet (In Review); first entry into review not yet automatic (C-132, T-82) |
+| 4 Tentative holds expire | E06-S05 | Done with a fixed 48-hour expiry; Week 9 asks for staff-set expiry and warnings (T-84), not built yet. Follow-up story E06-S07 (SCRUM-260) added on 6 Nov (To Do) |
+| 5 Event Coordinator Lead | E01-S13 roles and sign-in, Lead queue (read only) | Gap: new requests are still auto-assigned to a Coordinator, and the Lead's assign, reassign and oversight work is on unmerged branches (`feature/SCRUM-153`, `-154`, `-155`), although Jira shows these stories Done. Follow-up stories SCRUM-256 to 258 added to Release 1 on 6 Nov (To Do) |
+| 6 Safety Officer | E08-S03, E08-S06, E08-S04 | Review, decisions and revert to planning Done; first entry into review not yet automatic (C-132, T-82) |
 
 Note for the team (not on the slide): keep change 5 as a gap. On 6 Nov the
 Lead commits were only on remote feature branches and there was no open Lead
@@ -330,8 +330,8 @@ customer meant and checking our own evidence, because AI wrote code
 that looked right but sometimes answered a question nobody asked."
 
 **AI tools we used (disclosure):** Coding agents for code, tests and docs:
-Bryan used OpenAI Codex, Lexin and Amareet used Claude
-[CONFIRM: tool names from Aaron, Jining and Xiangying], and GitHub's
+Bryan, Jining and Xiangying used OpenAI Codex; Lexin, Amareet and Aaron used
+Claude Code. We also used GitHub's
 Copilot pull request reviewer, which left automatic review comments on 201 of
 our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
 opinion only and Copilot was never an approving reviewer. Every merge into
@@ -455,7 +455,7 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 | Current passing tests | All of the above on `main` `62e82081` (5 Nov); all checks green on `main` head `0773a721` [REFRESH: CI] |
 | Current failing tests | 0 on `main` head. But one flaky frontend test failed on `main` on 5 Nov (`SessionEditor.test.tsx`, TC_E10S02_14) |
 | CI status | Pass: all checks green on `main` `0773a721` (6 Nov) [REFRESH: CI] |
-| Number of known unresolved defects | 0 open GitHub issues. Known gaps: Lead assignment (Week 7 change 5), configurable hold expiry (T-84), E11-S01 notifications not Done yet, flaky focus tests [REFRESH: Jira, PR #436] |
+| Number of known unresolved defects | 0 open GitHub issues. Known gaps, each with a To Do story in Jira: Lead assign, reassign and oversight not on `main` (SCRUM-256 to 258), reuse a previous event not on `main` (SCRUM-259), configurable hold expiry (SCRUM-260, T-84). Also flaky focus tests [REFRESH: Jira, PR #436] |
 
 **Question 2:** Which type of testing provided the least value to your team, and why?
 
@@ -683,11 +683,11 @@ Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 
 | Team Member | Main Areas Worked On | Approx. Contribution | Code/PR Examples | Other Contributions |
 | --- | --- | --- | --- | --- |
-| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (175 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E03-S08 to S10 (14 pts) are not on `main` yet (slide 5) |
-| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02, In Review) | 15% (58 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 7 stories Done (21 pts) |
-| Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); In Review: revert to planning (E08-S04), minor vs major edits (E10-S02) | 11% (43 commits) | #88, #134, #151, #190, #298, #348, #349, #385 | Migration 0025; 22 manual run sessions; 51 approvals. 11 stories Done (33 pts) |
+| Bryan (Product Owner) | CI/CD, repository tooling, Git rules and merge queue, architecture docs; Jira stories: Coordinator scope (E01-S12), Lead and Safety Officer sign-in (E01-S13), reuse a previous event (E02-S05), Lead queue, assign, reassign, oversight (E03-S08 to S10) | 46% (175 commits) | #96, #108, #195, #205, #232, #339, #378, #379 | Product Owner: backlog order, decisions (T-xx), acceptance; Week 7 change analysis (#205); PostPlan dashboards. 6 stories Done in Jira (27 pts), of which E02-S05 and E03-S08 to S10 (17 pts) are not on `main` yet; follow-ups SCRUM-256 to 259 (slide 5) |
+| Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (58 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
+| Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04); minor vs major edits (E10-S02) | 11% (43 commits) | #88, #134, #151, #190, #298, #348, #349, #385 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
 | Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #174, #236, #283, #328, #361 | 24 manual run sessions; 75 approvals. 15 stories Done (60 pts), the most in the team |
-| Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); In Progress: change requests (E10-S01), notifications (E11-S01) | 9% (35 commits) | #143, #242, #299, #300, #355, #367 | 18 manual run sessions; 50 approvals. 7 stories Done (23 pts) |
+| Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); change requests (E10-S01); notifications (E11-S01) | 9% (35 commits) | #143, #242, #299, #300, #355, #367 | 18 manual run sessions; 50 approvals. 9 stories Done (44 pts) |
 | Xiangying | Log in and access control (E01-S01 to S03); event date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04) | 8% (30 commits) | #214, #216, #229, #320, #324, #343, #363, #365 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
 Areas come from the Jira stories each person owns (assignee) plus their own
@@ -722,9 +722,9 @@ approvals); Jira board 1 (assignee and points of Done product stories).
 
 **SLIDE CONTENT:**
 
-- **Velocity (Jira, product story points Done at each sprint's end date):** S1 66 (one-week sprint), S2 66, S3 34, S4 53. Sprint 5 (1 to 5 Nov) is a short close-out sprint and is still open, so it has no velocity yet
-- **Sprint Goal check:** Sprint 4's goal was to complete all remaining Release 1 stories. We didn't meet it: 53 of 85 points Done at the sprint end (62%), 32 points carried over to Sprint 5. On 6 Nov E10-S01 and E11-S01 were still In Progress, E08-S04 and E10-S02 In Review. E11-S01 has been carried since Sprint 2 [REFRESH: Jira]
-- Release 1: 59 of 64 stories Done in Jira (209 of 244 points); 5 not Done yet (In Progress or In Review). 3 of the 59 (Lead, E03-S08 to S10) are not on `main` yet [REFRESH: Jira and the final backlog after PR #442; the backlog review found the 64-story count out of date]
+- **Velocity (Jira, product story points Done at each sprint's end date):** S1 66 (one-week sprint), S2 66, S3 34, S4 53, S5 38 (1 to 5 Nov, short close-out). Jira closed Sprint 5 on 6 Nov with all 14 stories Done (78 pts), but 40 of those points went Done on 6 Nov, after the end date, so they don't count [CONFIRM: Bryan, Sprint 5 figure by the same rule as `docs/plans/sprint-burndown-velocity-analysis.md`]
+- **Sprint Goal check:** Sprint 4's goal was to complete all remaining Release 1 stories. We didn't meet it: 53 of 85 points Done at the sprint end (62%), 32 points carried over to Sprint 5. Sprint 5's goal (finish E08-S04, E10-S01, E10-S02, E11-S01 and unblock E08-S06) was met when Jira closed it on 6 Nov, one day after its end date. E11-S01 had been carried since Sprint 2
+- Release 1: all 64 original stories Done in Jira (244 points). 4 of them (E02-S05, E03-S08 to S10) are not on `main`, so on 6 Nov we added 5 follow-up stories to Release 1, all To Do: SCRUM-256 to 259 for those 4, and E06-S07 (SCRUM-260) for staff-set hold expiry (T-84) [REFRESH: Jira and the final backlog after PR #442]
 - All 20 Week 4 core features map to stories (`docs/bdr/F-core-feature-coverage.md`), but feature 5 "Coordinator Assignment" now means Lead assignment (Week 7 change 5), which is the gap above
 - Design kept in step with code (Weeks 5 and 11): #371 maps every class-diagram method to the real function and adds a test for the error-class hierarchy the diagram shows
 - **Done stays Done:** a missed requirement becomes a new linked story, following the instructors' guidance (`docs/plans/instructor-guidance-2026-10-06.md`) and T-74
@@ -736,12 +736,13 @@ approvals); Jira board 1 (assignee and points of Done product stories).
 - Dashboard: https://5p9t29p9jotq.postplan.dev [REFRESH: dashboard date]
 
 **SPEAKER NOTES** (Presenter: ________, about 1 minute):
-"Last, our numbers and our lessons. Velocity went 66, 66, 34, 53, counting
+"Last, our numbers and our lessons. Velocity went 66, 66, 34, 53 and 38,
 only points Done by each sprint's end date. Sprint 1 was only one week, so
 it isn't directly comparable. Sprints 3 and 4 were lower. In Sprint 4 we
 finished 53 of 85 points, so we didn't meet its Sprint Goal of finishing
-every Release 1 story. The rest moved to Sprint 5, a short close-out that is
-still open.
+every Release 1 story. The rest moved to Sprint 5, a short close-out. Jira
+shows every story Done, but four of them aren't on main, so they now have
+follow-up stories.
 
 What would we do differently? Merge smaller pieces every day. The Coordinator
 Lead work sat on branches and isn't on main, even though Jira says Done, and
@@ -749,11 +750,12 @@ we should have caught that. Never mark Done before the merge. Fix flaky tests
 as a pattern, not one by one. And keep sprints the same length so velocity is
 comparable. Thanks, we're happy to take questions."
 
-**SUGGESTED VISUAL:** Velocity bar chart, Sprints 1 to 4 (Sprint 5 is still open). Source:
+**SUGGESTED VISUAL:** Velocity bar chart, Sprints 1 to 5. Source:
 `artifacts/sprint-burndown-velocity.html` or the PostPlan dashboard.
 
 **Evidence:** `docs/plans/sprint-burndown-velocity-analysis.md` (reconciled 3 Nov:
 Done at each sprint's end date; Sprint 4 53 Done of 85, 32 carried over);
+Jira Sprint 5 report and issue history (closed 6 Nov 15:05 SGT; SCRUM-256 to 260);
 Jira board 1; `CONTRIBUTING.md`.
 
 ---
