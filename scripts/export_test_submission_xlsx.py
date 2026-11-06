@@ -96,7 +96,7 @@ def release1_acs() -> list[dict]:
             if m and story:
                 name = m.group(2).strip()
                 acs.append({"story": story, "story_title": title, "scenario": m.group(1),
-                            "name": name, "superseded": name.startswith("[Superseded")})
+                            "name": name, "superseded": name.startswith(("[Superseded", "Transferred"))})
     return acs
 
 
@@ -268,7 +268,10 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
             if not TC_RE.fullmatch(tc):
                 continue
             prev = latest[tc].get(entry["env"])
-            if not prev or prev["when"] < entry["when"] or (prev["when"] == entry["when"] and RANK[entry["status"]] < RANK[prev["status"]]):
+            # An executed result beats a placeholder; then the newest; then the worst of one run.
+            def key(e: dict) -> tuple:
+                return (e["status"] != "Not Executed", e["when"], -RANK[e["status"]])
+            if not prev or key(entry) > key(prev):
                 latest[tc][entry["env"]] = entry
 
     def overall(tc: str) -> dict | None:
@@ -314,12 +317,15 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
 
     by_ac: dict[tuple[str, str], list[str]] = defaultdict(list)
     for c in cases:
+        if c["scenario"].startswith("[RETIRED"):
+            continue
         # "E08-S06 — Scenario 2 (...); Scenario 3 (...); regression on E03-S05 Scenario 1": own-story segments only.
         for segment in c["ac_reference"].split(";"):
             if any(s != c["story_id"] for s in re.findall(r"E\d{2}-S\d{2}", segment)):
                 continue
-            for scenario in re.findall(r"Scenario\s+(\d+[a-z]?)\b", segment):
-                by_ac[(c["story_id"], scenario)].append(c["case_id"])
+            for group in re.findall(r"Scenarios?\s+(\d+[a-z]?(?:\s*(?:,|and|&)\s*\d+[a-z]?)*)", segment):
+                for scenario in re.findall(r"\d+[a-z]?", group):
+                    by_ac[(c["story_id"], scenario)].append(c["case_id"])
     trace_rows = []
     for ac in acs:
         tcs = by_ac.get((ac["story"], ac["scenario"]), [])
@@ -393,6 +399,16 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
         executed = cnt["Pass"] + cnt["Fail"]
         summary.append([*key, cnt["Pass"], cnt["Fail"], cnt["Not Executed"], cnt["Blocked"],
                         f"{100 * cnt['Pass'] / executed:.1f}%" if executed else "n/a"])
+    if results:
+        summary.append([])
+        summary.append(["Code coverage of the submission runs (c8 / Vitest v8; whole codebase, not only changed code)"])
+        summary.append(["Suite", "Lines %", "Branches %", "Functions %", "Statements %"])
+        for label, folder in (("Backend unit", "backend-unit-cov"), ("Backend integration", "backend-db-cov"),
+                              ("Frontend component", "frontend-cov")):
+            path = results / folder / "coverage-summary.json"
+            if path.exists():
+                total = json.loads(path.read_text(encoding="utf-8"))["total"]
+                summary.append([label, *(total[k]["pct"] for k in ("lines", "branches", "functions", "statements"))])
     summary.append([])
     summary.append(["Pass rate by story and environment (latest result per test case)"])
     summary.append(["Story ID", "Environment", "Cases with a result", "Pass", "Fail", "Not Executed", "Blocked",
