@@ -160,7 +160,7 @@ jobs:
       - name: Lead assignment activity-log PostgreSQL acceptance test
         env:
           TEST_DATABASE_URL: postgresql://postgres:synthetic-local-password@127.0.0.1:5432/connectsphere_notification_test # pragma: allowlist secret - disposable CI database only
-        run: npx tsx --test tests/activityLog.integration.test.ts
+        run: npx tsx --test tests/activityLog.integration.test.ts tests/coordinatorNotifications.integration.test.ts
         working-directory: backend
 
       - name: SCRUM-43 venue block PostgreSQL acceptance test

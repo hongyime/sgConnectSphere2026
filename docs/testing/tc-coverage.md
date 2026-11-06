@@ -7,13 +7,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **394**
-- Automated (explicit TC_ID in an active test title): **363** (92.1%)
-  - Real-database (`.integration.test` / `.db.test`): **76**
+- Automated (explicit TC_ID in an active test title): **371** (94.2%)
+  - Real-database (`.integration.test` / `.db.test`): **84**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **286**
 - Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **3** (0.8%)
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **7** (1.8%)
-- No test yet (no test file mentions the TC_ID): **21** (5.3%)
+- No test yet (no test file mentions the TC_ID): **13** (3.3%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: | ---: |
 | E01 | 38 | 38 | 0 | 0 | 0 |
 | E02 | 21 | 18 | 3 | 0 | 0 |
-| E03 | 62 | 48 | 0 | 4 | 10 |
+| E03 | 62 | 56 | 0 | 4 | 2 |
 | E04 | 5 | 5 | 0 | 0 | 0 |
 | E05 | 40 | 40 | 0 | 0 | 0 |
 | E06 | 48 | 47 | 0 | 0 | 1 |
@@ -32,7 +32,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 15 | 0 | 0 | 0 |
 | E14 | 14 | 11 | 0 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 0 | 3 |
-| **Total** | **394** | **363** | **3** | **7** | **21** |
+| **Total** | **394** | **371** | **3** | **7** | **13** |
 
 ## Case-by-case status
 
@@ -153,16 +153,16 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 | `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
 | `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
 | `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser's unrestricted post-approval edit should also be recorded in the activity log |
-| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | ❌ none | — |
-| `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ❌ none | — |
-| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | ❌ none | — |
-| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | ❌ none | — |
-| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | ❌ none | — |
-| `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | ❌ none | — |
+| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01: a submitted request stays Submitted with no Coordinator, enters the unassigned queue and notifies the Lead |
+| `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_02: the unassigned queue lists each request's basic information oldest first and refuses a Coordinator |
+| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_03: the Lead sees workloads, assigns a queued request, which moves to Under Review, leaves the queue, notifies |
+| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_04: a Coordinator's assign call on a queued request is refused, leaves it queued and is logged |
+| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_05: after a queue assignment the Organiser's status history shows Submitted then Under Review |
+| `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S09_01: a Lead reassignment takes effect at once, notifies both Coordinators and the Organiser and is logged |
 | `TC_E03S09_02` | E03-S09 | Verify that a Coordinator-initiated reassignment should be refused and leave the | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague's acceptance |
 | `TC_E03S09_03` | E03-S09 | Verify that only an Event Coordinator Lead may reassign an event | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
-| `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ❌ none | — |
-| `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ❌ none | — |
+| `TC_E03S10_01` | E03-S10 | Verify that the oversight view should list every active event with its Coordinat | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S10_01: the oversight view lists every active event with its Coordinator or Unassigned, filters, and shows workloa |
+| `TC_E03S10_02` | E03-S10 | Verify that a Coordinator navigating to the oversight view should be refused and | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S10_02: a Coordinator opening the oversight view is refused with no event data and the attempt is logged |
 | `TC_E03S11_01` | E03-S11 | Verify that the Organiser should be able to add the registration setup before ap | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_01: organiser can fill in registration setup before approval and the edit is audited; frontend/src/features/events/EventEditForm.te |
 | `TC_E03S11_02` | E03-S11 | Verify that clearing the registration setup should be blocked and leave the reco | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_02: clearing registration setup is refused and nothing is written; frontend/src/features/events/EventEditForm.test.tsx: TC_E03S11_0 |
 | `TC_E03S11_03` | E03-S11 | Verify that the Organiser should see the registration setup as read-only after a | ✅ active | backend/tests/eventVisibility.test.ts: TC_E03S11_03: organiser cannot change registration setup after approval and nothing is written; frontend/src/features/events/EventEditForm.te |
@@ -627,6 +627,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - SCRUM-33: at most 20 questions can be sent at once
 - SCRUM-33: answers must name a question once, and are limited to 2000 characters
 - SCRUM-33: only Event Coordinators can ask and only Event Organisers can answer; refusals are audited, no event is read
+
+### `backend/tests/coordinatorAssignment.test.ts`
+
+- the assigned-event list is limited to the caller and never includes drafts
+- an event not assigned to the caller is refused like an unknown one, and audited
 
 ### `backend/tests/deactivation.test.ts`
 

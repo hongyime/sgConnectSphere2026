@@ -23,3 +23,14 @@ Recover the missing Release 1 Lead functionality for SCRUM-153, SCRUM-154 and SC
 
 - Local real-database integration was not run because this worktree has no `TEST_DATABASE_URL`. CI must exercise `activityLog.integration.test.ts` against its disposable PostgreSQL service before merge; never run a general migration against shared Supabase.
 - The canonical E03 browser cases remain scaffolded in `docs/testing/tc-coverage.md`; this recovery adds unit/component coverage but not a browser acceptance run.
+
+## PR guardrail follow-up
+
+The original PR exceeded the 1,500-deletion budget (1,723). Retain relevant
+assigned-Coordinator read tests and eight real PostgreSQL Lead API cases from
+the two otherwise-deleted test files; do not restore retired request handlers
+or automatic assignment. Restore their npm/CI wiring and regenerate coverage.
+Focused real native PostgreSQL/unit/audit checks pass 31/31; backend unit main
+suite 726 pass/one intentional skip, pretest six pass; typechecks pass. The new
+immutable record discloses the initial harness import failures and correction.
+No application behavior or guard-policy change. Human review remains required.
