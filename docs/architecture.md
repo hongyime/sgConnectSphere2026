@@ -1,36 +1,48 @@
-# Architecture boundary
+# Release 1 architecture
 
-The product scope and stack are undecided. This document states boundaries rather
-than claiming an implementation exists.
+ConnectSphere is a **TypeScript modular monolith** exposed through Vercel
+Functions, with one **React/Vite single-page application** for seven roles.
+This is the as-built snapshot of main `0773a721` on 5 November 2026, not a
+claim that every Jira story is accepted.
 
-```mermaid
-flowchart LR
-    User[User's browser] --> Frontend[Frontend]
-    Frontend --> API[Backend API]
-    API --> Data[Database or persistence]
-```
+The maintained [design catalogue](design/README.md) contains C4 context,
+containers and API components; a user journey and lifecycle; balanced Level 0/1
+DFDs; selected physical ERDs; and focused UML code/sequence views. Every view
+has one editable `.mmd` source and an explanation with source references.
+Start with [C4 containers](design/02-c4-containers.md).
 
-The frontend owns presentation and browser interaction. The backend owns trusted
-validation, authorization, business rules, and persistence. Browser validation
-improves usability but never replaces server-side validation or authorization.
+## Runtime boundaries
 
-Frontend and backend live in one repository and may deploy independently. Avoid
-importing backend internals directly into the frontend. Define a versioned API
-contract; OpenAPI is an option for different languages, while a shared schema
-package may suit TypeScript throughout. Share code only when a real common need
-exists. Validate untrusted input at runtime even if types are shared.
+- `frontend/`: React, React Router, Vite, TypeScript and plain CSS/shared UI
+  components. Browser validation improves feedback; trusted rules remain server-side.
+- `api/`: Vercel function adapters with consolidated query-task routing and
+  rewrites in `vercel.json`. Local `backend/src/dev.ts` mirrors the adapters.
+- `backend/src/modules/`: access control, visibility, event lifecycle/Sessions,
+  venue booking, equipment/support, readiness/safety, registration/attendance,
+  change management and durable notifications. These collaborate in-process.
+- `backend/src/database/`: `pg` pools and transactions; parameterized SQL with
+  PostgreSQL ranges, locks and constraints. `DATABASE_POOLER_URL` takes precedence
+  over `DATABASE_URL`. Migrations live in `backend/database/migrations/`.
+- Supabase hosts PostgreSQL. Custom cookie sessions use token digests in SQL;
+  this application does not use Supabase Auth or browser database credentials.
+- Business state, audit, inbox and email delivery rows commit atomically. Redis
+  holds delivery IDs; relay/worker handler modes call Upstash and Brevo over HTTPS.
+- GitHub Actions builds/deploys with Vercel CLI. `vercel.json` disables direct Git
+  deployments and declares two daily cron paths. There is no independently
+  deployed always-running worker or declared frequent worker cron.
 
-Keep environments and secrets separate. Database migrations and synthetic seed
-data belong in version control. Production data and credentials do not.
+## Important design limits
 
-Record language/framework, API-contract, database, authentication, hosting, and
-package-manager choices in decision records before adding their infrastructure.
+The runtime still uses one `users.role` value even though ADR-019 accepts a
+multi-role target. Initial Safety Review is Coordinator-triggered; automatic
+entry applies to eligible re-entry after arrangements are reconfirmed. Safety
+factors/decisions are audit data, not a separate physical safety_checks table.
+Read the [discrepancy inventory](design/README.md) and
+[decision reconciliation](decisions/release-1-as-built-reconciliation.md) before
+using earlier target diagrams as evidence.
 
-## Event request date horizon (SCRUM-180)
-
-Event request submission uses the Singapore calendar date plus two calendar
-years in `eventLifecycle/dateHorizon.ts`. Validation precedes persistence on
-create and draft submission; failed PATCH validation returns one structured 400
-through `respondWithResult`. Draft saves may retain farther dates. The sole
-default Session mirrors the Event range; independent Session validation remains
-an E04 integration dependency. See [the contract](contracts/event-date-horizon.md).
+Draft submission validates Event and independent Session dates under the Event
+and Session locks. Session writers recheck status using the same Event lock, so
+queued writes cannot bypass submission. Failed validation rolls back, preserving
+the Draft. See [the submission sequence](design/12-sequence-submission.md) and
+[date-horizon contract](contracts/event-date-horizon.md).
