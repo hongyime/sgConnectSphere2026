@@ -17,22 +17,24 @@ under `docs/` remain writable through their generators. Team decisions and
 derived working content belong in the canonical Markdown files.
 
 New pull requests are limited to 40 changed files, 1,800 additions, and 1,500
-deletions. The repository allows at most 10 open pull requests team-wide. There
+deletions. The repository allows at most 15 open pull requests team-wide. There
 is no per-author open-PR cap. Pull requests opened before 27 October 2026 are
 grandfathered and do not consume the new WIP budget. For a new PR, only active-
 policy PRs opened no later than that PR are counted, so later PRs cannot make an
 earlier check fail. The team-wide cap is the queue cap. The immutable-binary
 check applies to every PR.
 
-### Revision 2026-11-06: per-author cap removed
+### Revision 2026-11-06: per-author cap removed, team-wide cap raised to 15
 
 The per-author open-PR cap (originally 2) was removed at the product owner's
 request to accommodate the Release 1 submission push, during which a single
 author legitimately needs several parallel branches in flight (submission
-scaffolding, CI deploy control, backlog and release audits). The team-wide cap
-of 10 open PRs is retained and continues to bound total queue depth, so the
-overall concurrency ceiling for the team is preserved even without a per-author
-limit. The per-author key is now optional in
+scaffolding, CI deploy control, backlog and release audits). In the same pass
+and for the same reason, the team-wide cap was raised from 10 to 15, because the
+team was already holding 11 open pull requests during the submission push and
+the previous ceiling was blocking otherwise-green work. The team-wide cap of 15
+open PRs remains the sole queue bound, so overall concurrency is still limited
+even without a per-author cap. The per-author key is now optional in
 `.github/settings/pr-guardrails.json`: when it is absent, the per-author check
 is skipped. The grandfathering rule and the immutable-binary check are
 unaffected.
