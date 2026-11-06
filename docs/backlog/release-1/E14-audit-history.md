@@ -67,7 +67,7 @@ in place (T-74), and TC_E14S02_08 verifies it.
 ## E14-S03 — Read edited Activity log dates and times in Singapore time
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 2
 - **BDR references**: T-93
 - **Owner**: Le Xin
 

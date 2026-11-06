@@ -2,7 +2,7 @@
 
 ## E04-S02 — Create a multi-session event
 
-- **Sprint**:
+- **Sprint**: Sprint 5
 - **Points**: 5
 - **BDR references**: C-19, C-62, C-107, T-48, T-79, T-85
 - **Owner**: Amareet

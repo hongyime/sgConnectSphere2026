@@ -135,7 +135,7 @@ Given an event is Cancelled When its original end time passes Then it is not aut
 ## E08-S06 — Conduct the Operational Safety Check as the Safety Officer
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 8
 - **BDR references**: C-70, T-71, T-72, T-73, T-74, O-39, O-40, O-41, O-42, O-43
 - **Owner**:
 

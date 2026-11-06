@@ -359,7 +359,7 @@ Given one event has claims on two different venues over the same period When bot
 ## E06-S07 — Configure tentative-hold expiry and warning
 
 - **Sprint**:
-- **Points**:
+- **Points**: 5
 - **BDR references**: C-68, C-79, C-96, C-99, C-110, C-114, C-124, C-125, C-126, T-74
 - **Owner**:
 

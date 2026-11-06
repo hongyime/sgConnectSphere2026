@@ -239,8 +239,8 @@ Given I have removed an assignment When I assign a replacement Then the same con
 
 ## E07-S08 — Link equipment requests and reservations to Sessions
 
-- **Sprint**:
-- **Points**:
+- **Sprint**: Sprint 5
+- **Points**: 5
 - **BDR references**: C-107, T-74, T-79
 - **Owner**:
 
@@ -275,8 +275,8 @@ Given Technical Support Staff are assigned to support an Event When Sessions are
 
 ## E07-S09 — Preserve reservation warnings when stock reductions overlap withdrawals
 
-- **Sprint**:
-- **Points**:
+- **Sprint**: Sprint 5
+- **Points**: 5
 - **BDR references**: C-07, C-20
 - **Owner**:
 

@@ -212,4 +212,4 @@ The statement is the customer answer's operative outcome. Use `A-customer-clarif
 
 ## [CONFIRM]
 
-- C-111 says venue blocks should not be open-ended; C-119 permits open-ended unavailability until lifted. Preserve both citations until the Product Owner resolves the conflict.
+- C-111 says venue blocks should not be open-ended; C-119 permits open-ended unavailability until lifted. Both citations stay; team decision T-80 selects C-119 for Release 1.
