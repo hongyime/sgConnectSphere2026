@@ -120,3 +120,10 @@ either record.
 | 0016 | [Story-level design ownership and cross-story coordination](0016-story-level-design-ownership.md) |
 | 0017 | [Guard pull-request scope and reference artifacts](0017-pr-guardrails-for-reference-artifacts-and-scope.md) |
 | 0018 | [Guard code changes against doc drift](0018-doc-sync-guard.md) |
+
+## Release 1 as-built submission
+
+The [5 November implementation reconciliation](release-1-as-built-reconciliation.md)
+and [design catalogue](../design/README.md) distinguish implemented behaviour
+from accepted targets, including multi-role accounts, initial Safety Review and
+notification scheduling. Historical decisions remain unchanged.
