@@ -45,8 +45,8 @@ test('E03-S08 Lead assignment moves a queued event to Under Review and notifies 
 
   assert.deepEqual(result, { eventId: '00000000-0000-4000-8000-000000000010', coordinatorId: coordinator.id });
   const update = calls.find(call => call.sql.includes('UPDATE events'))!;
-  assert.match(update.sql, /coordinator_id = \$2/);
-  assert.deepEqual(update.values, ['00000000-0000-4000-8000-000000000010', coordinator.id]);
+  assert.match(update.sql, /assigned_by = \$3/);
+  assert.deepEqual(update.values, ['00000000-0000-4000-8000-000000000010', coordinator.id, lead.id]);
   assert.ok(calls.some(call => call.sql.includes("'Lead assigned'")));
   assert.equal(calls.filter(call => call.sql.includes('INSERT INTO notifications')).length, 2);
   assert.equal(calls.at(-1)?.sql, 'COMMIT');
