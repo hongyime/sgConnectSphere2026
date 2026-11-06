@@ -56,12 +56,12 @@ export const roleNavigation: Record<Role, NavItem[]> = {
     { to: '/coordinator', label: 'Dashboard', end: true },
     { to: '/coordinator/equipment-requests', label: 'Equipment requests' },
     { to: '/coordinator/queue', label: 'Review queue' },
-    { to: '/coordinator/reassignments', label: 'Reassignments' },
     { to: '/coordinator/venues', label: 'Venue search', end: true },
     { to: '/coordinator/calendar', label: 'Venue calendar' },
   ],
   event_coordinator_lead: [
     { to: '/coordinator-lead/queue', label: 'Unassigned queue', end: true },
+    { to: '/coordinator-lead/oversight', label: 'Assignment oversight', end: true },
   ],
   safety_officer: [
     { to: '/safety/queue', label: 'Safety review queue', end: true },

@@ -41,6 +41,19 @@ export type Reassignment = {
   toCoordinator: { id: string; name: string };
 };
 
+export type LeadReassignmentRequest = {
+  id: string;
+  eventId: string;
+  eventCode: string | null;
+  eventTitle: string;
+  status: 'pending' | 'accepted' | 'declined';
+  requestedAt: string;
+  decidedAt: string | null;
+  coordinator: { id: string; name: string };
+  reason: string;
+  decisionNote: string | null;
+};
+
 export type AssignedEventDetail = Omit<AssignedEventSummary, 'reassignment_pending'> & {
   canCancel?: boolean;
   cancellation_reason?: string | null;
@@ -90,6 +103,15 @@ export async function requestReassignment(eventId: string, toCoordinatorId: stri
     jsonRequest('POST', { toCoordinatorId }),
     'Unable to send the reassignment request.');
   return result.ok ? { ok: true as const, data: result.data.reassignment } : result;
+}
+
+export async function requestLeadReassignment(eventId: string, reason: string) {
+  const result = await apiCall<{ request: LeadReassignmentRequest }>(
+    `/api/events?leadReassignment=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', { reason }),
+    'Unable to ask the Lead to review this event.',
+  );
+  return result.ok ? { ok: true as const, data: result.data.request } : result;
 }
 
 export async function respondToReassignment(reassignmentId: string, decision: 'accept' | 'decline') {

@@ -41,12 +41,13 @@ import { getEventRegistrations, manageRegistrations } from '../backend/src/modul
 import { getDatabasePool } from '../backend/src/database/client.js';
 import {
   getAssignedEvent,
+  assignQueuedEvent,
+  reassignEventAsLead,
   listAssignedEvents,
-  listCoordinatorColleagues,
-  listPendingReassignments,
+  listAssignableCoordinators,
+  listLeadOversight,
   listUnassignedEvents,
-  requestCoordinatorReassignment,
-  respondToCoordinatorReassignment,
+  requireLead,
 } from '../backend/src/modules/eventLifecycle/coordinatorAssignment.js';
 import {
   requestClarification,
@@ -154,8 +155,16 @@ export default async function handler(request: VercelRequest, response: VercelRe
       await handleCommentPost(request, response, params);
       return;
     }
-    if (params.get('reassign') === '1' || params.has('reassignment')) {
-      await handleReassignmentPost(request, response, params);
+    if (params.get('assign') === '1') {
+      await handleQueueAssignment(request, response, params);
+      return;
+    }
+    if (params.get('reassign') === '1' && params.get('by_lead') === '1') {
+      await handleLeadReassignmentPost(request, response, params);
+      return;
+    }
+    if (params.get('leadReassignment') === '1' || params.get('reassign') === '1' || params.has('reassignment')) {
+      await refuseCoordinatorReassignment(request, response);
       return;
     }
     if (params.has('clarification')) {
@@ -291,26 +300,31 @@ async function handleInformationPatch(request: VercelRequest, response: VercelRe
   }
 }
 
-// SCRUM-32 (E03-S01) Scenarios 3 to 6. Only the assigned Coordinator may
-// request, and only the named colleague may answer; every rule is enforced
-// in coordinatorAssignment.ts.
-//   POST /api/events?reassign=1&id=<event id or code>  { toCoordinatorId }
-//     -> 201 { reassignment }
-//   POST /api/events?reassignment=<reassignment id>&decision=accept|decline
-//     -> 200 { reassignment }
-async function handleReassignmentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+async function handleQueueAssignment(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const user = await currentUser(request);
+    return { status: 200, body: { assignment: await assignQueuedEvent(getDatabasePool(), user, identifier, request.body) } };
+  });
+}
+
+// C129: reassignment is immediate and Lead-only. Keep retired client paths
+// explicit so a Coordinator attempt is audited rather than silently ignored.
+async function refuseCoordinatorReassignment(request: VercelRequest, response: VercelResponse) {
   await respondWithResult(response, async () => {
     const user = await currentUser(request);
-    const reassignmentId = params.get('reassignment');
-    if (reassignmentId !== null) {
-      const reassignment = await respondToCoordinatorReassignment(
-        getDatabasePool(), user, reassignmentId.slice(0, 64), params.get('decision'));
-      return { status: 200, body: { reassignment } };
-    }
-    const eventId = params.get('id');
-    if (!eventId) throw new AccessError(400, 'missing_id');
-    const reassignment = await requestCoordinatorReassignment(getDatabasePool(), user, eventId.slice(0, 240), request.body);
-    return { status: 201, body: { reassignment } };
+    await requireLead(getDatabasePool(), user, 'coordinator_reassignment');
+    throw new AccessError(410, 'Coordinator-initiated reassignment is no longer available. The Lead assigns and reassigns events directly.');
+  });
+}
+
+async function handleLeadReassignmentPost(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
+  await respondWithResult(response, async () => {
+    const identifier = params.get('id');
+    if (!identifier || identifier.length > 240) throw new AccessError(400, 'A valid Event identifier is required.');
+    const user = await currentUser(request);
+    return { status: 200, body: { reassignment: await reassignEventAsLead(getDatabasePool(), user, identifier, request.body) } };
   });
 }
 
@@ -479,7 +493,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('safetyReview') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('safetyReview') === '1' || params.get('oversight') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -515,21 +529,21 @@ async function handleChangeRequests(request: VercelRequest, response: VercelResp
 // SCRUM-32 (E03-S01): Event Coordinator reads. Coordinators see only the
 // events assigned to them, never drafts (decision D2 in the SCRUM-32 plan).
 //   GET /api/events?assigned=1[&status=<status>]  -> { events }
-//   GET /api/events?assigned=1&id=<id or code>    -> { event } incl. pendingReassignment
-//                                                    and outstandingQuestions (SCRUM-33)
-//   GET /api/events?coordinators=1                -> { coordinators } (reassignment picker)
-//   GET /api/events?reassignments=1               -> { incoming, outgoing } pending requests
+//   GET /api/events?assigned=1&id=<id or code>    -> { event } and outstandingQuestions (SCRUM-33)
+//   GET /api/events?coordinators=1&workload=1     -> Lead assignment choices
 //   GET /api/events?readiness=1&id=<id or code>   -> { readiness } (SCRUM-60, E08-S03)
 async function handleGetCoordinator(request: VercelRequest, response: VercelResponse, params: URLSearchParams) {
   await respond(response, async () => {
     const user = await currentUser(request);
     const database = getDatabasePool();
+    if (params.get('oversight') === '1') return await listLeadOversight(database, user, {
+      status: params.get('status'), coordinator: params.get('coordinator'),
+    });
     if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('safetyReview') === '1') return { review: await getSafetyReviewEvent(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('unassigned') === '1') return { events: await listUnassignedEvents(database, user) };
     if (params.get('safetyQueue') === '1') return { events: await listSafetyReviewEvents(database, user) };
-    if (params.get('coordinators') === '1') return { coordinators: await listCoordinatorColleagues(database, user) };
-    if (params.get('reassignments') === '1') return await listPendingReassignments(database, user);
+    if (params.get('coordinators') === '1') return { coordinators: await listAssignableCoordinators(database, user) };
     const id = params.get('id');
     if (id) {
       const event = await withOutstandingQuestions(query, await getAssignedEvent(database, user, id.slice(0, 240)));
