@@ -136,6 +136,7 @@ Given an event is Cancelled When its original end time passes Then it is not aut
 
 - **Sprint**: Sprint 3
 - **Points**: 8
+- **Estimate source**: SCRUM-158, final Jira export dated 6 November 2026; reconciled from its existing value, not a new or backdated estimate.
 - **BDR references**: C-70, T-71, T-72, T-73, T-74, O-39, O-40, O-41, O-42, O-43
 - **Owner**:
 

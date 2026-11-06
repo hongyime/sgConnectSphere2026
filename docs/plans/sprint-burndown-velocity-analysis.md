@@ -6,6 +6,14 @@
 
 ## Metric definitions
 
+This is a historical **Jira-status** series, not verified Definition-of-Done
+delivery. The ceremony records use evidence-backed product delivery (Sprint 1:
+24 points; Sprint 2: 37 points reported, with its membership reconciliation still
+pending). Do not combine these measures or present the Jira-status figures as
+proof of acceptance. See `docs/sprints/sprint-2-review-retrospective.md` for the
+remaining discrepancy. T-105's later E11-S01 estimate does not restate historical
+sprint commitments.
+
 - **Committed points:** product-story points in the sprint at its starting boundary.
 - **Scope at close:** product-story points in the sprint at the Jira sprint boundary, including scope added during the sprint.
 - **Done at close / velocity:** product-story points whose Jira status was Done at the sprint boundary. Transitions after the boundary are excluded.

@@ -12,4 +12,7 @@ Notation: C4 C2; container means runtime application or data store, not Docker.
 
 Week 4 PDF p. 61; vercel.json; frontend/package.json; backend/src/providers/; api/cron/outbox-relay.ts. Lecture references use PDF page numbers, not necessarily printed slide numbers.
 
-As-built snapshot: main `0773a721`, 5 November 2026. Read the [scope and discrepancy inventory](README.md) before interpreting delivery completeness.
+Application snapshot: main `0773a721`, 5 November 2026. Deployment updated to
+`5313b62d` (#445), 6 November: Vercel Git integration owns automatic deployment;
+GitHub Actions provides checks. Read the [scope and discrepancy inventory](README.md)
+before interpreting delivery completeness.

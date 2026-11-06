@@ -112,7 +112,7 @@ The builder calls the pinned Mermaid CLI 12.2.0 through npx; it adds no applicat
 dependency or lockfile change:
 
 ```bash
-python docs/design/render.py --output "submission/3. SYSTEM DESIGNS"
+python docs/design/render.py --output "<external-final-folder>/3. SYSTEM DESIGNS"
 ```
 
 If Chromium is installed outside Puppeteer's default cache, add
@@ -160,7 +160,7 @@ notation. These supplementary diagrams do not introduce extra runtime services.
 
 - Main `0773a721` remains the application baseline; documentation-only changes
   do not retroactively change the independently tested tree.
-- The confirmed display names are Bryan (Product Owner only), Amareet (Scrum
+- The confirmed display names are Bryan (Product Owner and Developer), Amareet (Scrum
   Master and Developer), Aaron, Xiang Ying, Le Xin and Ji Ning (Developers).
   Confirmed GitHub mappings respectively: bryanseah234, amareetkm2024-del,
   Bl0oper, xiangyingg, lexinphun2024-debug and jininggg. Authorship is not

@@ -60,7 +60,7 @@ E09 registration set except the waiting list.
 | E08-S04 | Revert a confirmed event to planning | SCRUM-61 | 1 | Manual test found late that a date change did not flag Technical Support staff; needed a PO decision (31 Oct) before the fix. | Sprint 5: finish the fix and manual test, then PO acceptance |
 | E10-S01 | Request a change after submission | SCRUM-70 | 8 | Bigger than first thought (re-estimated 3→8, new owner 20 Oct); code merged but a PO decision on changes during Safety Review came only 31 Oct. | Sprint 5: manual test, then PO acceptance |
 | E10-S02 | Distinguish minor edits from arrangement-affecting changes | SCRUM-71 | 8 | Scope grew 31 Oct (5→8) to re-check Technical Support staff; needs migration 0026 applied to production before the code can merge. | Sprint 5: apply the migration, fix review comments, manual test |
-| E11-S01 | Notify users about events they are involved in | SCRUM-75 | 13 | Powers notifications for every other feature; re-estimated 5→13. Carried since Sprint 2. | Sprint 5: finish the remaining notification flows and evidence |
+| E11-S01 | Notify users about events they are involved in | SCRUM-75 | 5 | Powers notifications for every other feature; re-estimated 5→13. Carried since Sprint 2. | Sprint 5: finish the remaining notification flows and evidence |
 | E08-S06 | Conduct the Operational Safety Check as the Safety Officer | SCRUM-158 | 8 | No owner for most of the sprint; added on 30 Oct and not started. (Reached Done 4 Nov.) | Sprint 5: Aaron picked it up on 1 Nov |
 | E06-S06 | Prevent double-booking of a venue | SCRUM-50 | 5 | Built and tested; reached Done at 1 Nov 00:11, just after the close boundary. | Counted in Sprint 5 |
 | E09-S04 | Join the waiting list | SCRUM-66 | 5 | Built and tested; reached Done at 1 Nov 01:00, just after the close boundary. | Counted in Sprint 5 |
@@ -85,7 +85,7 @@ a team decision:
 | Estimated at 8 points | E05-S06 Mark a venue temporarily unavailable | Release 1 story with no estimate yet (28 Oct, #364) |
 | Estimated at 3 points | E02-S07 Validate the event date horizon | Release 1 story with no estimate yet (31 Oct, #388) |
 | Re-estimated 5 → 8 points, scenarios updated | E10-S02 Distinguish minor edits from arrangement-affecting changes | PO decided a date change must also re-check Technical Support staff (31 Oct, #397) |
-| Re-estimated 5 → 13 points | E11-S01 Notify users about events they are involved in | Notifications are shared by every feature; team agreed 13 points via T-105 (31 Oct, #398/#402) |
+| Re-estimated 5 → 13 points | E11-S01 Notify users about events they are involved in | Notifications are shared by every feature; PO approved 13 points via T-105 (1 Nov, #398/#402); the historical sprint ledger is preserved |
 | Scenarios rewritten | E06-S06 Prevent double-booking of a venue | PO clarified first accepted booking claims the slot; later overlaps refused (26 Oct, #339) |
 | Scenarios rewritten | E05-S06 and E10-S05 (venue loss) | A confirmed event returns to Planning, not cancelled, when its venue becomes unavailable (24 Oct, #344) |
 | Rule added | E10-S01 (changes during Safety Review) | An approved change affecting arrangements sends the event back to Planning (31 Oct, #395) |
@@ -105,7 +105,7 @@ the backlog and does not count. Partial points are not counted.
 | Committed product-story points | ~64 at planning, grown to ~85 with mid-sprint additions and re-estimations |
 | Completed (product stories, Done at 1 Nov 00:00 SGT close) | 53 points across 14 stories |
 | Post-close transitions (count in Sprint 5) | E06-S06 (5, Done 1 Nov 00:11) and E09-S04 (5, Done 1 Nov 01:00) |
-| Carryover to Sprint 5 | E08-S04 (1), E10-S01 (8), E10-S02 (8), E11-S01 (13), E08-S06 (8), plus E04-S02 and E02-S07 |
+| Carryover to Sprint 5 | E08-S04 (1), E10-S01 (8), E10-S02 (8), E11-S01 (5 at boundary; 13 after T-105), E08-S06 (8), plus E04-S02 and E02-S07 |
 | Velocity (Sprint 4) | 53 product-story points |
 | Delivery rate | 53 / ~85 committed-at-close by points |
 
@@ -118,32 +118,37 @@ Reconciliation (verified against the Jira status history, close boundary 1 Nov
 - **Done-at-close velocity is 53 points** across 14 stories, matching the PO's
   "53 of 85 product-story points Done." The exact carryover total depends on
   which estimates are counted for the mid-sprint-resized stories (E10-S01 3→8,
-  E10-S02 5→8, E11-S01 5→13); the PO's "32 carried" figure predates some of
-  those re-estimations.
+  E10-S02 5→8, E11-S01 5→13); the historical 32-point carryover must not be inflated using later estimates
+  (T-105). [CONFIRM: reconcile the carryover story list with that historical ledger.]
 - The live Jira board shows all 16 sprint-67 stories Done, but E06-S06 and
   E09-S04 only reached Done after the close; the other 14 were Done between
   20 and 29 October.
 
-Velocity trend across Release 1: Sprint 1 = 24, Sprint 2 = 37, Sprint 3 = 34,
-Sprint 4 = 53. The product-story average is about 37, which the team agreed to
-use as the Sprint 5 planning reference.
+The recorded product-story velocity trend is Sprint 1 = 24, Sprint 2 = 37,
+Sprint 3 = 34, Sprint 4 = 53. The recorded planning reference was their average
+of about 37. [CONFIRM: Sprint 2's 37-point summary conflicts with its Done-story
+table; reconcile that record before presenting this series as final.]
 
 ### 8. Definition of Done (current version)
 
-The Definition of Done in effect at the end of Sprint 4 (`CONTRIBUTING.md`):
+The 6 October instructor guidance applies to this sprint
+(`docs/plans/instructor-guidance-2026-10-06.md`):
 
-- Acceptance criteria as stated in the user story are satisfied.
-- Automated tests pass (unit, integration, or end-to-end where relevant); 100%
-  unit coverage of changed code, or a stated reason.
-- Manual verification passes where the story needs human UI or workflow checking,
-  recorded with hand-taken screenshots per test case (T-93).
-- Code has been peer-reviewed by at least one other developer.
-- Security, accessibility, and UI criteria are satisfied where applicable.
-- Documentation and architecture are updated where the change affects setup,
-  interfaces, decisions, backlog interpretation, or team workflow.
-- The item is deployable and integrated into the increment through the reviewed
-  pull-request process; production migrations go through the protected,
-  audited workflow (#315).
+- Acceptance criteria are satisfied.
+- Automated tests pass; changed code has 100% unit coverage, including boundary
+  and error cases, or an explicit justification reviewed by a human.
+- Integration and manual end-to-end tests are run before the Sprint Review,
+  using the test-case template, with tester, date and outcome logged.
+- Another developer reviews both code and test cases, including AI-generated
+  work, and checks that the tests are valid.
+- Documentation, architecture views and project logs are updated.
+- The item is merged into `main` through the reviewed pull-request process.
+
+Security, accessibility, performance, UI criteria and public deployment are
+not mandatory DoD conditions under that guidance. Incomplete work returns to
+the Product Backlog. A story already marked Done is not reopened: record the
+discrepancy and create a linked follow-up. This corrected summary does not
+claim that missing historical acceptance evidence has since been supplied.
 
 ## Part B — Sprint Retrospective
 
@@ -166,7 +171,7 @@ record written notes, their blank is preserved rather than invented.
 
 | Member | Comments |
 | --- | --- |
-| Bryan | Large mid-sprint sizing changes: E10-S01 re-sized 3→8 as the complexity of multi-session change requests became clear; E11-S01 notifications expanded to 13 points (XXL), needing team-decision record T-105 (#402) to permit stories larger than XL (8 pts). Added stories after sprint start: SCRUM-74 (5), SCRUM-152 (8) and SCRUM-158 were injected into Sprint 4, inflating Jira's scope from 64 to 77+ points and diluting focus from the original commitment. Merge queue and rebase invalidation: strict linear history and require_last_push_approval meant rebasing long-lived branches onto main repeatedly dismissed valid approvals. BDR number collisions: concurrent branches #293 and #316 both allocated T-97, forcing renumbering to T-98/T-99 and regenerating derived Word/Excel exports. |
+| Bryan | Sizing changes (including the later 1 November T-105 decision): E10-S01 re-sized 3→8 as the complexity of multi-session change requests became clear; E11-S01 notifications expanded to 13 points (XXL), needing team-decision record T-105 (#402) to permit stories larger than XL (8 pts). Added stories after sprint start: SCRUM-74 (5), SCRUM-152 (8) and SCRUM-158 were injected into Sprint 4, inflating Jira's scope from 64 to 77+ points and diluting focus from the original commitment. Merge queue and rebase invalidation: strict linear history and require_last_push_approval meant rebasing long-lived branches onto main repeatedly dismissed valid approvals. BDR number collisions: concurrent branches #293 and #316 both allocated T-97, forcing renumbering to T-98/T-99 and regenerating derived Word/Excel exports. |
 | Xiang Ying | *(no written note recorded)* |
 | Aaron | *(no written note recorded)* |
 | Le Xin | New requirements came up mid-sprint, so one story grew and had to be re-estimated. |

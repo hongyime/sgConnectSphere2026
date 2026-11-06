@@ -56,7 +56,7 @@ Sprint 4 stories, with Jira keys and owners:
 | E06-S02 | Check venue suitability against event requirements (Sprint 3 carryover) | 3 | Ji Ning | SCRUM-46 |
 | E06-S03 | Request a venue booking (Sprint 3 carryover) | 3 | Ji Ning | SCRUM-47 |
 | E10-S01 | Request a change after submission | 8 (re-estimated from 3) | Ji Ning / Xiang Ying | SCRUM-70 |
-| E11-S01 | Notify users about events they are involved in (carried since Sprint 2) | 13 (re-estimated from 5) | Ji Ning | SCRUM-75 |
+| E11-S01 | Notify users about events they are involved in (carried since Sprint 2) | 5 | Ji Ning | SCRUM-75 |
 | E06-S04 | Decide on a venue booking request (Sprint 3 carryover) | 3 | Le Xin | SCRUM-48 |
 | E06-S06 | Prevent double-booking of a venue (Sprint 3 carryover) | 5 | Le Xin | SCRUM-50 |
 | E08-S04 | Revert a confirmed event to planning | 1 | Le Xin | SCRUM-61 |
@@ -96,6 +96,6 @@ E05-S06 (SCRUM-152), E08-S06 (SCRUM-158), plus late review-only items E02-S07
 | Sprint | Planned Points | Completed Points | Notes |
 | --- | ---: | ---: | --- |
 | 1 | 36 | 24 | First-sprint baseline. |
-| 2 | 53 | 37 | E11-S01 and E14-S02 carried over. |
-| 3 | 66 | 34 | Six booking/notification stories carried over. |
-| 4 | ~64 (grew with mid-sprint additions) | — (recorded at Sprint 4 review) | Final Release 1 sprint. Several stories re-estimated mid-sprint (E10-S01 3→8, E10-S02 5→8, E11-S01 5→13); mid-sprint stories E10-S05, E05-S06, E08-S06 added. A short Sprint 5 (1–5 Nov) was opened to finish the remainder before submission. |
+| 2 | [CONFIRM: historical commitment] | 37 (recorded; reconciliation pending) | E11-S01 and E14-S02 carried over. |
+| 3 | [CONFIRM: historical commitment; 58 at close] | 34 | Six booking/notification stories carried over. |
+| 4 | ~64 (grew with mid-sprint additions) | — (recorded at Sprint 4 review) | Final Release 1 sprint. E10-S01 and E10-S02 were re-estimated mid-sprint; E11-S01 remained five points at the boundary (T-105 approved thirteen on 1 November). Mid-sprint stories E10-S05, E05-S06, E08-S06 added. A short Sprint 5 (1–5 Nov) was opened to finish the remainder before submission. |

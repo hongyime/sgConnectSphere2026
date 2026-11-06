@@ -25,7 +25,9 @@ The team applied relative story-point estimation (planning poker) per the Week 3
 lecture (slides 18–28), calibrated against the Sprint 1–2 velocities of 24 and
 37 product-story points (slides 30–32). Sprint 3 committed to a large venue-,
 equipment- and confirmation-focused backlog plus the E11-S01 notifications
-carryover (re-estimated to 13 points) and E14-S02 (3 points) from Sprint 2.
+carryover (5 points at this sprint's boundary) and E14-S02 (3 points) from
+Sprint 2. T-105's thirteen-point correction on 1 November preserves this
+historical estimate and sprint ledger.
 
 The planning doc flagged an overcommitment risk up front: ~53 new points against
 a demonstrated velocity of roughly 28–37, plus two carryovers. The team agreed
@@ -50,15 +52,17 @@ breakdowns were captured in Jira.
 | E07-S03 | Check equipment availability | 5 | Xiang Ying | SCRUM-53 |
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | SCRUM-46 |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | SCRUM-47 |
-| E11-S01 | Notify users about events they are involved in (Sprint 2 carryover) | 13 | Ji Ning | SCRUM-75 |
+| E11-S01 | Notify users about events they are involved in (Sprint 2 carryover) | 5 | Ji Ning | SCRUM-75 |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | SCRUM-48 |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | SCRUM-50 |
 | E14-S02 | Record significant actions in an activity log (Sprint 2 carryover) | 3 | Le Xin | SCRUM-86 |
 | E05-S05 | Apply setup and turnaround time | 5 | Bryan | SCRUM-44 |
 
-Total committed product-story points: 66 (includes the two carryovers:
-E11-S01 at 13 and E14-S02 at 3). E05-S05 was pulled into the sprint to supply the
-setup/turnaround buffers that several booking stories depend on.
+The historical close-scope ledger records 58 points, including E11-S01 at 5
+and E14-S02 at 3; this is not a claim about the original planning commitment.
+[CONFIRM: Amareet/Bryan to reconcile the planning table against the original
+sprint membership and estimates.] E05-S05 was pulled into the sprint to supply
+the setup/turnaround buffers that several booking stories depend on.
 
 ## 5. Risks & Dependencies
 
@@ -88,5 +92,5 @@ setup/turnaround buffers that several booking stories depend on.
 | Sprint | Planned Points | Completed Points | Notes |
 | --- | ---: | ---: | --- |
 | 1 | 36 | 24 | First-sprint baseline. |
-| 2 | 53 | 37 | E11-S01 and E14-S02 carried over. |
-| 3 | 66 (incl. 2 carryovers) | — (recorded at Sprint 3 review) | Includes E11-S01 (13) and E14-S02 (3) carried from Sprint 2. Product velocity measured on product stories only; technical-enabler and mid-sprint unestimated stories are excluded. |
+| 2 | [CONFIRM: historical commitment] | 37 (recorded; reconciliation pending) | E11-S01 and E14-S02 carried over. |
+| 3 | [CONFIRM: historical commitment] | — (recorded at Sprint 3 review) | Close-scope ledger: 58 points, including E11-S01 (5) and E14-S02 (3). Product velocity measured on product stories only; technical-enabler and mid-sprint unestimated stories are excluded. |
