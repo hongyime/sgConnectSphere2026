@@ -28,6 +28,10 @@ guards.
 
 ## Remaining steps
 
-- Commit this final handoff update, push and open the small PR using the
-  repository template.
-- Confirm its required checks are green before marking it ready for review.
+- PR #444 is open as a draft with its required PostPlan comment. The PostPlan
+  structural check passed; browser visual inspection was unavailable locally.
+- The `pr-guardrails` check blocks #444 because its author has three open PRs
+  (#436, #442 and #444), above the per-author limit of two. Do not close or
+  merge the other two PRs from this branch. After one is merged or closed,
+  rerun the failed guardrail check and confirm all required checks before
+  marking #444 ready for review.
