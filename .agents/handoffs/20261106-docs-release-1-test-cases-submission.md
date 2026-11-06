@@ -17,13 +17,18 @@ that PR first.
   edited, T-65). `defects.md`: SCRUM-256 to SCRUM-259.
 - `scripts/export_test_submission_xlsx.py`: the course workbook.
 - Playwright: per-environment report folders and screenshots for evidence
-  runs; `tests/deployed/` read-only demo sign-ins; e2e fixme stubs replaced.
+  runs; `tests/deployed/` demo sign-ins; e2e fixme stubs replaced.
 
 ## Decisions taken without team sign-off
 
-- DB suites ran only against a loopback PostgreSQL, never production.
-- Against the deployed site only the API-stubbed suite and read-only sign-ins
-  ran; no data was created there.
+- DB suites ran only against a loopback PostgreSQL, never production. It was
+  a Docker container, which departs from AGENTS.md (native loopback
+  PostgreSQL, no Docker Desktop); raised in Le Xin's review.
+- Against the deployed site only the API-stubbed suite and demo sign-ins ran.
+  Each sign-in writes a session row (removed at sign-out) and resets the
+  failed-login count; nothing else was created. The deployed-site record says
+  `environment: local` (the runner's machine; the enum has only local and ci)
+  and names the target in Remarks; `run-record-corrections.md` states both.
 - Jira Bugs (not in the ticket classification's three types) because the
   task asked for Bugs linked to the stories; listed for Bryan.
 

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Read-only sign-in checks against a deployed site. BASE_URL is required, so
+// Demo sign-in checks against a deployed site (each writes a session row). BASE_URL is required, so
 // this suite never runs against a local stack by accident.
 if (!process.env.BASE_URL) throw new Error('Set BASE_URL to the deployed site, for example https://sgconnectsphere.vercel.app');
 

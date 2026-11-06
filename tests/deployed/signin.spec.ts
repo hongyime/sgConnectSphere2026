@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-// Read-only checks against the deployed site (BASE_URL). Each seeded demo
+// Sign-in checks against the deployed site (BASE_URL). Each seeded demo
 // account signs in once with the correct password, so no failed attempt can
-// count towards a lockout, lands on its role's home, and signs out. Nothing
-// else is created or changed.
+// count towards a lockout, lands on its role's home, and signs out. Not
+// read-only: each sign-in resets the account's failed-login count and creates
+// a session row, which the sign-out removes. Nothing else is created.
 const password = process.env.DEPLOYED_DEMO_PASSWORD ?? 'ValidPass123'; // pragma: allowlist secret - public synthetic seed credential (T-97)
 
 const accounts = [

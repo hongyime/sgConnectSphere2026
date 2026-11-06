@@ -97,7 +97,9 @@ links to are submission files, not committed (large binaries).
 Evidence runs set `PW_SCREENSHOT=on` (screenshot every test) and
 `PW_HTML_REPORT`, `PW_JSON` and `PW_OUTPUT_DIR` per environment; unset, the
 Playwright configs behave as CI expects. `playwright.deployed.config.ts` runs
-read-only demo sign-ins against a deployed site (`BASE_URL` required); the
-API-stubbed browser suite also runs against a deployed site when `BASE_URL`
-is set. Database suites run only against a loopback PostgreSQL, never the
-production database.
+demo sign-ins against a deployed site (`BASE_URL` required). They are not
+read-only: each sign-in resets the account's failed-login count and creates a
+session row, which its sign-out removes. The API-stubbed browser suite also
+runs against a deployed site when `BASE_URL` is set. Database suites run only
+against a native loopback PostgreSQL (AGENTS.md), never the production
+database.
