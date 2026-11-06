@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import { loginDatabase } from './helpers/loginDatabase.js';
 import { decideEventRequest } from '../src/modules/eventLifecycle/decision.js';
 import {
-  getAssignedEvent, listAssignedEvents, requestCoordinatorReassignment, respondToCoordinatorReassignment,
+  getAssignedEvent, listAssignedEvents, reassignEventAsLead,
 } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
 import { deactivateAccount } from '../src/modules/accessControl/deactivation.js';
 import { listInbox } from '../src/modules/eventNotifications/inbox.js';
@@ -41,7 +41,7 @@ async function fixture() {
   const ids = {
     orgA: randomUUID(), orgB: randomUUID(),
     organiserA: randomUUID(), organiserC: randomUUID(),
-    coordA: randomUUID(), coordB: randomUUID(),
+    coordA: randomUUID(), coordB: randomUUID(), lead: randomUUID(),
   };
   await f.pool.query(`INSERT INTO client_organisations (id, name) VALUES ($1, 'Client A'), ($2, 'Client B')`, [ids.orgA, ids.orgB]);
   const people: [string, string | null, string, string][] = [
@@ -49,6 +49,7 @@ async function fixture() {
     [ids.organiserC, ids.orgB, 'Organiser C', 'event_organiser'],
     [ids.coordA, null, 'Coordinator A', 'event_coordinator'],
     [ids.coordB, null, 'Coordinator B', 'event_coordinator'],
+    [ids.lead, null, 'Event Coordinator Lead', 'event_coordinator_lead'],
   ];
   for (const [id, org, name, role] of people) {
     await f.pool.query(
@@ -210,13 +211,12 @@ test('TC_E01S12_02: a Coordinator opening or approving a colleague event is refu
   assert.deepEqual(denials.map(row => row.actor_id), [f.ids.coordA, f.ids.coordA]);
 }));
 
-test('TC_E14S02_01: Coordinator reassignment entries name the Coordinators instead of their account IDs', () => withFixture(async f => {
-  const request = await requestCoordinatorReassignment(f.pool, f.user(f.ids.coordB), 'EVT-2003', { toCoordinatorId: f.ids.coordA });
-  await respondToCoordinatorReassignment(f.pool, f.user(f.ids.coordA), request.id, 'accept');
+test('TC_E14S02_01: Lead reassignment entries name the Coordinators instead of their account IDs', () => withFixture(async f => {
+  await reassignEventAsLead(f.pool, f.user(f.ids.lead), 'EVT-2003', { coordinator_id: f.ids.coordA });
 
   const log = activityOf(await getAssignedEvent(f.pool, f.user(f.ids.coordA), 'EVT-2003'));
   const coordinatorRows = log.filter(entry => entry.field_changed === 'coordinator_id');
-  assert.ok(coordinatorRows.length >= 2, 'the request and the acceptance are both logged');
+  assert.ok(coordinatorRows.length >= 1, 'the Lead reassignment is logged');
   for (const entry of coordinatorRows) {
     assert.deepEqual([entry.old_value, entry.new_value], ['Coordinator B', 'Coordinator A'], entry.action);
   }

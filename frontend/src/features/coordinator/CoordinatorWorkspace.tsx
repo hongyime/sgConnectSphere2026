@@ -56,11 +56,7 @@ function EventRow({ event }: { event: AssignedEventSummary }) {
 // --- Dashboard ----------------------------------------------------------
 
 export function CoordinatorHome() {
-  const { result, reload } = useLoad(async signal => {
-    const [events, reassignments] = await Promise.all([listAssignedEvents(signal), listReassignments(signal)]);
-    if (!events.ok) return events;
-    return { ok: true as const, data: { events: events.data, incoming: reassignments.ok ? reassignments.data.incoming : [] } };
-  }, []);
+  const { result, reload } = useLoad(signal => listAssignedEvents(signal), []);
 
   return (
     <PageLayout
@@ -75,27 +71,17 @@ export function CoordinatorHome() {
     >
       {result.state === 'loading' ? <LoadingState label="Loading your assigned events…" /> : null}
       {result.state === 'error' ? <LoadError failure={result.failure} onRetry={reload} context="your assigned events" /> : null}
-      {result.state === 'ready' ? <DashboardBody events={result.data.events} incoming={result.data.incoming} /> : null}
+      {result.state === 'ready' ? <DashboardBody events={result.data} /> : null}
     </PageLayout>
   );
 }
 
-function DashboardBody({ events, incoming }: { events: AssignedEventSummary[]; incoming: Reassignment[] }) {
+function DashboardBody({ events }: { events: AssignedEventSummary[] }) {
   const active = events.filter(event => ACTIVE_STATUSES.includes(event.status));
   const count = (...statuses: string[]) => events.filter(event => statuses.includes(event.status)).length;
   const upcoming = [...active].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).slice(0, 5);
   return (
     <>
-      {incoming.length > 0 ? (
-        <section className="card coordinator-callout" aria-label="Reassignment requests">
-          <UserRoundCheck size={20} aria-hidden="true" />
-          <div>
-            <strong>{incoming.length === 1 ? 'A colleague has asked you to take over an event' : `${incoming.length} colleagues have asked you to take over events`}</strong>
-            <p>Nothing moves to you until you accept.</p>
-          </div>
-          <ButtonLink to="/coordinator/reassignments" variant="primary">Review requests</ButtonLink>
-        </section>
-      ) : null}
       <section className="coordinator-metrics" aria-label="Workload counts">
         <article><span>Active events</span><strong>{active.length}</strong></article>
         <article><span>Needs review</span><strong>{count('submitted', 'under_review')}</strong></article>
@@ -261,7 +247,6 @@ export function RequestDetail() {
                 ]}
               />
             </Card>
-            <ReassignPanel key={event.id} event={event} onChanged={reload} />
           </section>
           {event.status === 'cancelled' ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />

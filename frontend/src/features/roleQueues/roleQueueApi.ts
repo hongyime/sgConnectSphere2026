@@ -72,16 +72,6 @@ export type SafetyReview = {
 // while a safety decision has sent the Event back to Planning.
 export type SafetyReturn = { decision: 'request_changes' | 'reject'; reason: string | null; decidedAt: string } | null;
 
-export type LeadReassignmentRequest = {
-  id: string;
-  eventId: string;
-  eventCode: string | null;
-  eventTitle: string;
-  requestedAt: string;
-  coordinator: { id: string; name: string };
-  reason: string;
-};
-
 export function listLeadQueue(signal?: AbortSignal) {
   return apiCall<{ events: LeadQueueEvent[] }>('/api/events?unassigned=1', { signal }, 'Unable to load the unassigned queue.');
 }
@@ -121,17 +111,6 @@ export function reassignAsLead(eventId: string, coordinatorId: string) {
     jsonRequest('POST', { coordinator_id: coordinatorId }),
     'Unable to reassign this event.',
   );
-}
-
-export function listLeadReassignmentRequests(signal?: AbortSignal) {
-  return apiCall<{ requests: LeadReassignmentRequest[] }>(
-    '/api/events?leadReassignments=1', { signal }, 'Unable to load reassignment requests.');
-}
-
-export function declineLeadReassignment(requestId: string) {
-  return apiCall<{ request: LeadReassignmentRequest }>(
-    `/api/events?leadReassignment=1&requestId=${encodeURIComponent(requestId)}&decision=decline`,
-    jsonRequest('POST', {}), 'Unable to decline this request.');
 }
 
 export function listLeadOversight(signal?: AbortSignal, status?: string, coordinator?: string) {

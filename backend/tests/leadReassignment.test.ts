@@ -50,7 +50,7 @@ test('E03-S09 non-Leads cannot reassign an event', async () => {
   const { pool, calls } = database();
   await assert.rejects(reassignEventAsLead(pool, outgoing, 'EVT-1', { coordinator_id: incoming.id }),
     (error: unknown) => error instanceof AccessError && error.status === 403);
-  assert.equal(calls.length, 1);
+  assert.match(calls[0]!.sql, /'Access Denied'/);
 });
 
 test('E03-S09 unknown events, same target and inactive stages are refused', async () => {
