@@ -1,6 +1,6 @@
 # Slide deck audit checklist
 
-Source: `docs/slides/presentation/week11-answers.md`, audited against main `a8f2d879` on 6 November. Keep unresolved evidence separate from merged implementation.
+Source: `docs/slides/presentation/week11-answers.md`, audited against main `24095ea4` on 6 November. Keep unresolved evidence separate from merged implementation.
 
 ## Resolved or disclosed
 
@@ -12,11 +12,17 @@ Source: `docs/slides/presentation/week11-answers.md`, audited against main `a8f2
 
 ## [CONFIRM] evidence still needed
 
-- [ ] `docs/slides/presentation/week11-answers.md:29` (slide 2 recording choice): Keep the teaching assistant's confirmation that Sprint 4 recordings satisfy the final-sprint requirement. The choice is currently user-reported.
-- [ ] `docs/slides/presentation/week11-answers.md:253` (slide 5 acceptance): PO/story owners must reconcile SCRUM-256 to 258 and SCRUM-261, human/manual acceptance receipts and D-01 to D-03 in the defects registry after #450. The code is merged; Jira still says To Do.
-- [ ] `docs/slides/presentation/week11-answers.md:547` (slide 11 human review receipts): Confirm independent human review of all test cases/code claimed as reviewed. Manual PASS/FAIL logs and GitHub account approvals do not establish complete human review.
+- [ ] `docs/slides/presentation/week11-answers.md`, slide 2 recording choice: Keep the teaching assistant's confirmation that Sprint 4 recordings satisfy the final-sprint requirement. The choice is currently user-reported.
+- [ ] `docs/slides/presentation/week11-answers.md`, slide 5 acceptance: PO/story owners must reconcile SCRUM-256 to 258 and SCRUM-261, human/manual acceptance receipts and D-01 to D-03 in the defects registry after #450/#453. The code is merged; Jira still says To Do.
+- [ ] `docs/slides/presentation/week11-answers.md`, slide 11 human review receipts: Confirm independent human review of all test cases/code claimed as reviewed. Manual PASS/FAIL logs and GitHub account approvals do not establish complete human review.
 - [ ] Slide 2, recording-access note: confirm instructors can view all three recordings after Google sign-in.
 - [x] Slide 10: main full Application Checks run 42233620112 passed at a8f2d879. Logs inspected; 726 backend unit + 841 frontend component passes, 390 PostgreSQL-labelled passes, 58 auth passes, 476 browser runner successes and 14 skips; six browser outcomes are expected failures.
+
+- [x] #453/#454 merged; assignment-actor tracking and migration 0027 verified. Production run 42240260935 apply/postcheck and #453 application run 42240543400 passed.
+- [x] #456/live Jira: 65 Release 1 stories, 252 points; 60 Done/233 points and 5 To Do/19 points. Lexin's current recorded total is 48 points across 13 Done stories.
+- [ ] Backlog owners: reconcile E03-S08 replacement estimate 5 against historical SCRUM-153 estimate 8; retain the published sprint-allocation caveats. Packaged PDF/CSV were not regenerated for #456.
+
+- [ ] Slide 10 retained from main, excluded from this final refresh at the user's request. Owner must reconcile its historical figures before presentation; no Amareet Slide 10 update included.
 
 ## Derived-deck preparation
 
