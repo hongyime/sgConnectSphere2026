@@ -37,6 +37,7 @@ const EquipmentFormPage = lazy(() => import('../features/support/EquipmentCatalo
 const EquipmentDetail = lazy(() => import('../features/support/EquipmentCatalogue').then(m => ({ default: m.EquipmentDetail })));
 const MarkUnavailablePage = lazy(() => import('../features/support/EquipmentUnavailability').then(m => ({ default: m.MarkUnavailablePage })));
 const LeadQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.LeadQueue })));
+const LeadOversight = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.LeadOversight })));
 const SafetyQueue = lazy(() => import('../features/roleQueues/RoleQueues').then(m => ({ default: m.SafetyQueue })));
 const SafetyReview = lazy(() => import('../features/roleQueues/SafetyReview').then(m => ({ default: m.SafetyReview })));
 
@@ -69,7 +70,6 @@ const RequestClarification = lazy(() => import('../features/coordinator/RequestC
 const CoordinatorHome = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.CoordinatorHome })));
 const CoordinatorReviewQueue = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.ReviewQueue })));
 const CoordinatorRequestDetail = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.RequestDetail })));
-const CoordinatorReassignments = lazy(() => import('../features/coordinator/CoordinatorWorkspace').then(m => ({ default: m.Reassignments })));
 const SupportRequestForm = lazy(() => import('../features/coordinator/TechnicalSupport').then(m => ({ default: m.SupportRequestForm })));
 const PlanningWorkspace = lazy(() => import('../features/coordinator/Coordinator').then(m => ({ default: m.PlanningWorkspace })));
 const ConfirmRedirect = lazy(() => import('../features/coordinator/EventReadiness').then(m => ({ default: m.ConfirmRedirect })));
@@ -203,7 +203,6 @@ export const routes: AppRoute[] = [
   // Event Coordinator
   page('/coordinator', <CoordinatorHome />, 'live', 'E03-S01'),
   page('/coordinator/queue', <CoordinatorReviewQueue />, 'live', 'E03-S01'),
-  page('/coordinator/reassignments', <CoordinatorReassignments />, 'live', 'E03-S01'),
   page('/coordinator/events/:eventCode/attendance', <EventAttendance />, 'live', 'E09-S06'),
   page('/coordinator/events/:eventCode/cancel', <EventCancellation />, 'live', 'E10-S04'),
   page('/events/:eventCode/cancellation', <EventCancellation />, 'live', 'E10-S04'),
@@ -226,6 +225,7 @@ export const routes: AppRoute[] = [
 
   // Event Coordinator Lead and Safety Officer
   page('/coordinator-lead/queue', <LeadQueue />, 'live', 'E01-S13'),
+  page('/coordinator-lead/oversight', <LeadOversight />, 'live', 'E03-S10'),
   page('/safety/queue', <SafetyQueue />, 'live', 'E01-S13'),
   page('/safety/review/:eventId', <SafetyReview />, 'live', 'E08-S06'),
 

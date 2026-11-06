@@ -30,7 +30,7 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
 }
 
 // E03 - 37 cases. Source: docs/testing/cases/E03.md.
-// Each test.fixme() is a specification. Remove .fixme once implemented.
+// Each test.fixme() is a specification, unless it is explicitly superseded.
 
 test.describe("E03-S01", () => {
 
@@ -114,7 +114,8 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   The assigned Coordinator on EVT-1004 is still coord_a@connectsphere.com, the reassignment request is recorded as declined, and coord_a@connectsphere.com is notified that the reassignment was declined
    */
-  test("TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal", async ({ page }) => {
+  // T-83 (C-129) retired Coordinator-to-Coordinator reassignment and acceptance.
+  test.fixme("TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal", async ({ page }) => {
     const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA, pendingTo: coordB });
     backend.signInAs(coordB);
     await page.goto('/coordinator/reassignments');
@@ -146,7 +147,8 @@ test.describe("E03-S01", () => {
    * Expected result:
    *   After step 2 the assigned Coordinator is still coord_a@connectsphere.com and coord_b has been notified. After step 4 the assigned Coordinator is coord_b@connectsphere.com, the previous assignment has ended, and the change is recorded in the activity log
    */
-  test("TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment", async ({ page }) => {
+  // T-83 (C-129) retired Coordinator-to-Coordinator reassignment and acceptance.
+  test.fixme("TC_E03S01_07 - Verify that ownership moves only once the incoming Coordinator accepts a reassignment", async ({ page }) => {
     const backend = await fakeCoordinatorBackend(page, { eventCode: 'EVT-1004', title: 'Charity Run', assignedTo: coordA });
     await page.goto('/coordinator/events/EVT-1004');
     await page.getByRole('button', { name: 'Reassign event' }).click();

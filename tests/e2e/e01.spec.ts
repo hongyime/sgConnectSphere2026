@@ -19,7 +19,6 @@ const coordinatorPages = ['Dashboard', 'Equipment requests', 'Review queue', 'Re
 
 test.describe('E01-S13', () => {
   test('TC_E01S13_01 — a Lead lands on the unassigned queue with the oversight view in the navigation and no Coordinator pages', async ({ page }) => {
-    test.fail(true, 'Known defect: the Lead navigation has no oversight view (E03-S10); it lists only "Unassigned queue".');
     await signedInLanding(page, 'event_coordinator_lead');
     await expect(page).toHaveURL(/\/coordinator-lead\/queue$/);
     for (const label of coordinatorPages) await expect(mainLinks(page).filter({ hasText: label })).toHaveCount(0);

@@ -25,6 +25,20 @@ export type SafetyQueueEvent = {
   organiser_name: string;
 };
 
+export type AssignableCoordinator = { id: string; full_name: string; active_events: number };
+export type OversightEvent = {
+  id: string;
+  event_code: string | null;
+  title: string;
+  status: string;
+  starts_at: string;
+  ends_at: string;
+  expected_attendance: number;
+  coordinator_id: string | null;
+  coordinator_name: string | null;
+  organiser_name: string;
+};
+
 export const SAFETY_FACTORS = [
   'attendance_capacity', 'venue_layout', 'emergency_access', 'accessibility',
   'equipment_placement', 'crowd_movement', 'venue_restrictions',
@@ -62,6 +76,18 @@ export function listLeadQueue(signal?: AbortSignal) {
   return apiCall<{ events: LeadQueueEvent[] }>('/api/events?unassigned=1', { signal }, 'Unable to load the unassigned queue.');
 }
 
+export function listAssignableCoordinators(signal?: AbortSignal) {
+  return apiCall<{ coordinators: AssignableCoordinator[] }>('/api/events?coordinators=1&workload=1', { signal }, 'Unable to load Event Coordinators.');
+}
+
+export function assignQueuedEvent(eventId: string, coordinatorId: string) {
+  return apiCall<{ assignment: { eventId: string; coordinatorId: string } }>(
+    `/api/events?assign=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', { coordinator_id: coordinatorId }),
+    'Unable to assign this event.',
+  );
+}
+
 export function listSafetyQueue(signal?: AbortSignal) {
   return apiCall<{ events: SafetyQueueEvent[] }>('/api/events?safetyQueue=1', { signal }, 'Unable to load the safety review queue.');
 }
@@ -77,4 +103,20 @@ export function submitSafetyDecision(eventId: string, body: {
     `/api/events?safetyDecision=1&id=${encodeURIComponent(eventId)}`,
     jsonRequest('POST', body), 'Unable to save the safety decision.',
   );
+}
+
+export function reassignAsLead(eventId: string, coordinatorId: string) {
+  return apiCall<{ reassignment: { eventId: string; coordinatorId: string } }>(
+    `/api/events?reassign=1&by_lead=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', { coordinator_id: coordinatorId }),
+    'Unable to reassign this event.',
+  );
+}
+
+export function listLeadOversight(signal?: AbortSignal, status?: string, coordinator?: string) {
+  const params = new URLSearchParams({ oversight: '1' });
+  if (status) params.set('status', status);
+  if (coordinator) params.set('coordinator', coordinator);
+  return apiCall<{ events: OversightEvent[]; workloads: AssignableCoordinator[] }>(
+    `/api/events?${params}`, { signal }, 'Unable to load the Lead oversight view.');
 }
