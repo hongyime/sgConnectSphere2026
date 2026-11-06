@@ -927,6 +927,12 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - E03-S09 Lead can decline a pending request and the Coordinator is notified
 - E03-S09 a non-assigned Coordinator cannot ask the Lead to reassign
 
+### `backend/tests/leadOversight.test.ts`
+
+- E03-S10 Lead oversight returns active events and workload counts with filters
+- E03-S10 non-Leads cannot read oversight
+- E03-S10 invalid filters are rejected before reading events
+
 ### `backend/tests/leadReassignment.test.ts`
 
 - E03-S09 Lead reassignment changes ownership immediately and notifies three parties
@@ -1754,6 +1760,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 - Lead queue loads submitted unassigned requests and assigns one
 - Lead can reassign a Coordinator request without naming a colleague in the request
+- Lead oversight loads workload and active event assignments
 
 ### `frontend/src/features/roleQueues/SafetyReview.test.tsx`
 

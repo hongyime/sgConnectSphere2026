@@ -45,6 +45,7 @@ import {
   reassignEventAsLead,
   listAssignedEvents,
   listAssignableCoordinators,
+  listLeadOversight,
   listCoordinatorColleagues,
   listLeadReassignmentRequests,
   listPendingReassignments,
@@ -533,7 +534,7 @@ async function handleGet(request: VercelRequest, response: VercelResponse) {
     return;
   }
 
-  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('leadReassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('safetyReview') === '1') {
+  if (params.get('assigned') === '1' || params.get('coordinators') === '1' || params.get('reassignments') === '1' || params.get('leadReassignments') === '1' || params.get('readiness') === '1' || params.get('unassigned') === '1' || params.get('safetyQueue') === '1' || params.get('safetyReview') === '1' || params.get('oversight') === '1') {
     await handleGetCoordinator(request, response, params);
     return;
   }
@@ -579,6 +580,9 @@ async function handleGetCoordinator(request: VercelRequest, response: VercelResp
   await respond(response, async () => {
     const user = await currentUser(request);
     const database = getDatabasePool();
+    if (params.get('oversight') === '1') return await listLeadOversight(database, user, {
+      status: params.get('status'), coordinator: params.get('coordinator'),
+    });
     if (params.get('readiness') === '1') return { readiness: await getEventReadiness(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('safetyReview') === '1') return { review: await getSafetyReviewEvent(database, user, (params.get('id') || '').slice(0, 240)) };
     if (params.get('unassigned') === '1') return { events: await listUnassignedEvents(database, user) };
