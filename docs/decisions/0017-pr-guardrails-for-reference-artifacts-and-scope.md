@@ -39,6 +39,11 @@ even without a per-author cap. The per-author key is now optional in
 is skipped. The grandfathering rule and the immutable-binary check are
 unaffected.
 
+Files whose old and new paths are both under `submission/` do not consume the
+three PR-size budgets. They remain subject to the submission-specific 50 MB
+limit, while the immutable-binary and open-PR limits remain universal. A rename
+from elsewhere into `submission/` still consumes the budget.
+
 ## Rationale
 
 Binary files cannot be three-way merged meaningfully. Protecting existing

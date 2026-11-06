@@ -177,6 +177,45 @@ class PullRequestPolicyTests(unittest.TestCase):
         errors = MODULE.pr_size_errors(current, self.POLICY)
         self.assertEqual(len(errors), 3)
 
+    def test_submission_files_do_not_consume_size_budget(self):
+        current = {
+            "number": 12,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+            "changedFiles": 41,
+            "additions": 1801,
+            "deletions": 1501,
+        }
+        files = [
+            {"filename": "submission/3. SYSTEM DESIGNS/diagram.pdf", "additions": 3000, "deletions": 2000},
+            {"filename": "docs/decision.md", "additions": 1800, "deletions": 1500},
+        ]
+        policy = {**self.POLICY, "size_limit_excluded_path_prefixes": ["submission/"]}
+        self.assertEqual(MODULE.pr_size_errors(current, policy, files), [])
+
+    def test_rename_into_submission_still_consumes_size_budget(self):
+        current = {
+            "number": 12,
+            "createdAt": "2026-10-27T12:00:00Z",
+            "author": {"login": "agent-user"},
+            "changedFiles": 41,
+            "additions": 1801,
+            "deletions": 1501,
+        }
+        files = [
+            {
+                "filename": "submission/7. README/README.md",
+                "previous_filename": "README.md",
+                "additions": 1801,
+                "deletions": 1501,
+            }
+        ] + [
+            {"filename": f"docs/file-{number}.md", "additions": 0, "deletions": 0}
+            for number in range(40)
+        ]
+        policy = {**self.POLICY, "size_limit_excluded_path_prefixes": ["submission/"]}
+        self.assertEqual(len(MODULE.pr_size_errors(current, policy, files)), 3)
+
 
 if __name__ == "__main__":
     unittest.main()

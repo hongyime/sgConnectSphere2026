@@ -3,5 +3,6 @@
   "max_open_prs": 15,
   "max_changed_files": 40,
   "max_additions": 1800,
-  "max_deletions": 1500
+  "max_deletions": 1500,
+  "size_limit_excluded_path_prefixes": ["submission/"]
 }
