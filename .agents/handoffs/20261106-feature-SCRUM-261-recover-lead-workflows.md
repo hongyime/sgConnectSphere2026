@@ -11,10 +11,11 @@ Recover the missing Release 1 Lead functionality for SCRUM-153, SCRUM-154 and SC
 
 - Recovered explicit queue assignment (E03-S08), Lead reassignment and Coordinator escalation (E03-S09), and assignment oversight (E03-S10).
 - Preserved the current Safety queue/review routes and only integrated the missing Lead behaviour, its migration and focused tests.
-- Rebased onto `origin/main` at `c54f30ad` before recovery work; the three recovery commits are `b08a439f`, `0d2dd1e2`, `4e3b43ac`, and `a1a6c8c`.
-- Focused backend tests, focused frontend tests, typechecks, the backend unit suite and repository check passed locally. Paired current backend-unit and frontend-vitest T-65 records are committed with this task.
+- Rebased onto `origin/main` at `207b4556`; the recovery commits are `ffe2efcc`, `dae777d7`, `c9ef806d`, and `f6f54bd9`.
+- Removed the obsolete automatic-assignment implementation in `ab6f9440`, including its stale tests and supersession allowlist entries. Submission now remains Submitted/unassigned until a Lead chooses a Coordinator.
+- On `ab6f944`, the backend unit suite passed 734 tests with 1 intentional skip, and the focused Lead queue/Coordinator frontend suites passed 18 tests. Current T-65 records are added with this task.
 
 ## Follow-up before merge
 
-- `0028_lead_reassignment_requests.sql` could not be applied to the shared `test` schema: this worktree has no configured database URL. Apply it only with `search_path = test, extensions, public`; never run the production migration command against Supabase.
-- The canonical E03 browser cases remain scaffolded in `docs/testing/tc-coverage.md`; this recovery adds unit/component coverage but not a real-database or browser acceptance run.
+- Local real-database integration was not run because this worktree has no `TEST_DATABASE_URL`. CI must exercise the two updated Lead/coordinator integration tests against its disposable PostgreSQL service before merge; never run a general migration against shared Supabase.
+- The canonical E03 browser cases remain scaffolded in `docs/testing/tc-coverage.md`; this recovery adds unit/component coverage but not a browser acceptance run.
