@@ -39,3 +39,9 @@ Audit and reconcile the Release 1 Product Backlog against the original customer 
 - Commit the final audit/format correction, run repository checks, push the
   same early PR #442, update its body and inspect its live checks. Do not alter
   the unrelated open audit PR #436 or the user checkout's uncommitted files.
+
+## Review feedback resolution (2026-11-06)
+
+- Regenerated `docs/CONNECTSPHERE BACKLOGS CAA 061126.xlsx` using `python scripts/export_backlog_xlsx.py`.
+- Updated `docs/source-of-truth.md` to reference `docs/CONNECTSPHERE BACKLOGS CAA 061126.xlsx` as the authoritative Release 1 export.
+- Copied workbook to `submission/1. PRODUCT BACKLOG/ConnectSphere Release 1 Product Backlog.xlsx`.
