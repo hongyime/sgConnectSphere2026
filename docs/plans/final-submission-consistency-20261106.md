@@ -58,9 +58,10 @@ report behavior. No generated binary belongs in this correction PR.
 - [CONFIRM] Remaining historical ledger questions are inline in Sprint 3/4
   planning and review sources. Owner approval to correct prose is not a new
   meeting, Product Owner acceptance receipt or confirmation of those facts.
-- [CONFIRM] `submission/1. PRODUCT BACKLOG/_CONFIRM-product-backlog.md`:
-  seven estimates, unassigned sprints and customer interpretation questions
-  remain open; do not invent values to complete an export.
+- RESOLVED `submission/1. PRODUCT BACKLOG/_CONFIRM-product-backlog.md`:
+  the Product Owner estimated the seven stories (252 pts total, 0 unestimated),
+  unassigned sprints backfilled to Sprint 5 per live Jira, and C-111/C-119
+  resolved under T-80 (#456).
 - [CONFIRM] `submission/4. TEST CASES/`, traceability: Aaron must resolve E06-S07
   and confirm the test-workbook changes. The original workbook is retained.
 - [CONFIRM] `docs/design/README.md`, review boundaries: instructors' access and
