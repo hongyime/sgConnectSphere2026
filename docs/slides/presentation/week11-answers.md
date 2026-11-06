@@ -89,7 +89,7 @@ are ours to fill. Keep it to 8 rows.
 | Item | URL, location or file/folder name in zip file |
 | --- | --- |
 | Product backlog | Zip: `1. PRODUCT BACKLOG/` [CONFIRM: exact file names from the backlog owner]. Repo: `docs/backlog/release-1/` (one file per epic) |
-| Git URL (e.g. GitHub)(remember to add your two instructors to the repository; see instructions) | https://github.com/hongyime/sgConnectSphere2026 (branch `main`). Zip: `6. CODE REPOSITORY/`. [CONFIRM: Bryan said on 6 Nov the instructors are not added yet; add both before submission, then remove this tag] |
+| Git URL (e.g. GitHub)(remember to add your two instructors to the repository; see instructions) | https://github.com/hongyime/sgConnectSphere2026 (branch `main`). Zip: `6. CODE REPOSITORY/`. Both instructors added (confirmed 6 Nov). |
 | Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
 | Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/` [CONFIRM: file names from the meetings owner] |
