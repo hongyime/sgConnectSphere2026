@@ -33,6 +33,26 @@ test('Lead queue loads submitted unassigned requests and assigns one', async () 
   expect(fetchMock).toHaveBeenCalledWith('/api/events?assign=1&id=event-1', expect.objectContaining({ method: 'POST' }));
 });
 
+test('Lead can reassign a Coordinator request without naming a colleague in the request', async () => {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('coordinators=1')) return new Response(JSON.stringify({ coordinators: [{ id: 'coord-2', full_name: 'Coordinator B', active_events: 1 }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (url.includes('leadReassignments=1')) return new Response(JSON.stringify({ requests: [{ id: 'request-1', eventId: 'event-3', eventTitle: 'Charity Run', requestedAt: '2026-11-01T00:00:00Z', coordinator: { id: 'coord-1', name: 'Coordinator A' }, reason: 'On leave' }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    if (url.includes('reassign=1&by_lead=1')) return new Response(JSON.stringify({ reassignment: { eventId: 'event-3', coordinatorId: 'coord-2' } }), { status: 200, headers: { 'content-type': 'application/json' } });
+    return new Response(JSON.stringify({ events: [] }), { status: 200, headers: { 'content-type': 'application/json' } });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  renderQueue(LeadQueue);
+
+  await screen.findByText('Coordinator A asked for reassignment: On leave');
+  const user = (await import('@testing-library/user-event')).default.setup();
+  await user.selectOptions(screen.getByRole('combobox', { name: 'New Coordinator for Charity Run' }), 'coord-2');
+  await user.click(screen.getByRole('button', { name: 'Reassign' }));
+
+  expect(await screen.findByRole('status')).toHaveTextContent('Reassigned');
+  expect(fetchMock).toHaveBeenCalledWith('/api/events?reassign=1&by_lead=1&id=event-3', expect.objectContaining({ method: 'POST' }));
+});
+
 test('TC_E08S06_01: Safety queue lists events awaiting their Operational Safety Check, each linking to its review', async () => {
   const fetchMock = vi.fn(async () => new Response(JSON.stringify({ events: [{
     id: 'event-2', event_code: 'EVT-2', title: 'Annual Gala', status: 'safety_review', status_changed_at: '2026-12-01T01:00:00Z',

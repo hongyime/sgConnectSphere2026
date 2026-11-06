@@ -88,6 +88,26 @@ test('requesting a reassignment sends the chosen colleague and keeps the current
   expect(JSON.parse(String(post?.init?.body))).toEqual({ toCoordinatorId: 'c-b' });
 });
 
+test('asking the Lead sends the reason and keeps the current Coordinator assigned', async () => {
+  const calls = stub((url, init) => {
+    if (url.searchParams.get('leadReassignment') === '1' && init?.method === 'POST') {
+      return { status: 201, body: { request: { id: 'lr-1', reason: 'On leave 15-20 Jan' } } };
+    }
+    if (url.searchParams.get('assigned') === '1') return { status: 200, body: detail() };
+    return undefined;
+  });
+  renderAt('/coordinator/events/EVT-1004');
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Ask Lead to reassign' }));
+  fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'On leave 15-20 Jan' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Send to Lead' }));
+
+  expect(await screen.findByText('Your request was sent to the Event Coordinator Lead. You stay assigned until the Lead acts.')).toBeInTheDocument();
+  const post = calls.find(call => call.init?.method === 'POST');
+  expect(post?.url.search).toBe('?leadReassignment=1&id=evt-1004');
+  expect(JSON.parse(String(post?.init?.body))).toEqual({ reason: 'On leave 15-20 Jan' });
+});
+
 test('sending without choosing a colleague is blocked with a message', async () => {
   const calls = stub(url => {
     if (url.searchParams.get('coordinators') === '1') {

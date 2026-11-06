@@ -914,6 +914,25 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - notifications without an authorised database record cannot be delivered
 - E09-S03 - the withdrawal deadline can be cleared, and bad values are refused
 
+### `backend/tests/leadAssignment.test.ts`
+
+- E03-S08 Lead assignment moves a queued event to Under Review and notifies both parties
+- E03-S08 submitted requests notify every active Lead
+- E03-S08 non-Leads cannot assign a queued event
+- E03-S08 invalid targets and non-queued events are refused
+
+### `backend/tests/leadEscalation.test.ts`
+
+- E03-S09 assigned Coordinator can ask the Lead to reassign with a reason
+- E03-S09 Lead can decline a pending request and the Coordinator is notified
+- E03-S09 a non-assigned Coordinator cannot ask the Lead to reassign
+
+### `backend/tests/leadReassignment.test.ts`
+
+- E03-S09 Lead reassignment changes ownership immediately and notifies three parties
+- E03-S09 non-Leads cannot reassign an event
+- E03-S09 unknown events, same target and inactive stages are refused
+
 ### `backend/tests/loginRecovery.integration.test.ts`
 
 - E01-S01 real database, API, registration and recovery acceptance cases
@@ -1470,6 +1489,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 ### `frontend/src/features/coordinator/CoordinatorWorkspace.test.tsx`
 
 - requesting a reassignment sends the chosen colleague and keeps the current Coordinator assigned
+- asking the Lead sends the reason and keeps the current Coordinator assigned
 - sending without choosing a colleague is blocked with a message
 - a refused reassignment shows the server reason
 - an unassigned Coordinator is refused and sees no reassignment action
@@ -1732,7 +1752,8 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
 
-- Lead queue loads submitted unassigned requests
+- Lead queue loads submitted unassigned requests and assigns one
+- Lead can reassign a Coordinator request without naming a colleague in the request
 
 ### `frontend/src/features/roleQueues/SafetyReview.test.tsx`
 
