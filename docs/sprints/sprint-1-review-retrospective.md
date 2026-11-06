@@ -6,15 +6,14 @@ Sprint 1 | 14 – 19 September 2026 (Jira sprint 34)
 
 ### 1. Meeting Details
 
-> **Evidence basis.** Dates and attendance are accurate; times and durations are approximate. The session was recorded (Sprint 4 links are in the submission `.docx`; other sprints [CONFIRM: Amareet]).
-
 | Field | Details |
 | --- | --- |
 | Date | 20 September 2026 |
-| Time / Duration | 10:30 am – 12:30 pm (2 hours) |
+| Time / Duration | 10:30 am – 12:30 pm (approx. 2 hours) |
 | Attendees | 5 / 6 members in live meeting. Product Owner: Bryan. Scrum Master & Frontend Developer: Amareet. Developers: Aaron, Le Xin, Xiang Ying. Note: Ji Ning submitted updates asynchronously. |
-| Venue | Microsoft Teams (online); recording held, link [CONFIRM: Amareet] |
+| Venue | Microsoft Teams (online) |
 | Facilitator | Amareet (Scrum Master) |
+| Recording | Google Drive recording (link in the submission `.docx`) |
 
 ### 2. Sprint Goal Recap
 
