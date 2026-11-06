@@ -1,11 +1,5 @@
-// SCRUM-32 (E03-S01): real PostgreSQL proof of automatic Coordinator
-// assignment and reassignment, including migration 0008.
-//
-// coordinatorAssignment.test.ts checks the rules against a scripted fake;
-// this file proves the SQL itself against a disposable schema: the
-// fewest-active-events ordering and its tie-break, eligibility, the
-// advisory lock under concurrent submissions, the one-pending-request index,
-// and that every change lands with its audit entry and notification.
+// SCRUM-261: real PostgreSQL proof of explicit Lead assignment and the
+// retained Coordinator-to-Coordinator reassignment flow.
 //
 // Same isolation approach as eventLifecycle.integration.test.ts: the app's
 // process-wide pool reads DATABASE_URL at import time, so the schema is
@@ -22,7 +16,7 @@ import { Client } from 'pg';
 import { ensureTestExtensions } from './helpers/ensureTestExtensions.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
 
-test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL', async () => {
+test('SCRUM-261: Lead assignment and Coordinator reassignment against PostgreSQL', async () => {
   assert.ok(process.env.TEST_DATABASE_URL, 'Set TEST_DATABASE_URL to a disposable PostgreSQL database');
   const schema = `coordassign_${randomUUID().replaceAll('-', '')}`;
   const db = new Client({ connectionString: process.env.TEST_DATABASE_URL });
@@ -40,12 +34,17 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
     // --- Fixture: one client organisation, one Organiser, four Coordinators.
     const org = randomUUID();
     const organiser = randomUUID();
-    const [coordA, coordB, coordLocked, coordInactive] = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+    const [lead, coordA, coordB, coordLocked, coordInactive] = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];
     await db.query('INSERT INTO client_organisations (id, name) VALUES ($1, $2)', [org, 'Test client']);
     await db.query(
       `INSERT INTO users (id, client_org_id, email, password_hash, full_name, role)
        VALUES ($1, $2, 'organiser@example.test', 'unused', 'Organiser', 'event_organiser')`,
       [organiser, org],
+    );
+    await db.query(
+      `INSERT INTO users (id, email, password_hash, full_name, role)
+       VALUES ($1, 'lead@example.test', 'unused', 'Lead', 'event_coordinator_lead')`,
+      [lead],
     );
     const coordinators: [string, string, string][] = [
       [coordA, 'coord_a@example.test', 'Coordinator A'],
@@ -59,27 +58,9 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
         [id, email, name],
       );
     }
-    // Idle but unavailable: neither may ever be picked, despite having no events.
+    // Unavailable Coordinators cannot be selected by the Lead.
     await db.query(`UPDATE users SET locked_until = now() + interval '1 hour' WHERE id = $1`, [coordLocked]);
     await db.query(`UPDATE users SET is_active = false WHERE id = $1`, [coordInactive]);
-
-    // Existing workload: A holds 2 active events; B holds 1 active event and
-    // 1 completed one (completed is not "active" under T-52).
-    let day = 30;
-    async function existingEvent(coordinatorId: string, status: string, assignedAt: string) {
-      const start = new Date(Date.now() + (day++) * 24 * 60 * 60 * 1000);
-      await db.query(
-        `INSERT INTO events (organiser_id, coordinator_id, client_org_id, title, status, event_range,
-           expected_attendance, coordinator_assigned_at)
-         VALUES ($1, $2, $3, 'Existing event', $4::event_status,
-           tstzrange($5::timestamptz, $5::timestamptz + interval '2 hours', '[)'), 10, $6::timestamptz)`,
-        [organiser, coordinatorId, org, status, start.toISOString(), assignedAt],
-      );
-    }
-    await existingEvent(coordA, 'under_review', '2026-01-01T00:00:00Z');
-    await existingEvent(coordA, 'planning', '2026-01-02T00:00:00Z');
-    await existingEvent(coordB, 'approved', '2026-02-01T00:00:00Z');
-    await existingEvent(coordB, 'completed', '2026-02-02T00:00:00Z');
 
     const testDatabaseUrl = process.env.TEST_DATABASE_URL!;
     const separator = testDatabaseUrl.includes('?') ? '&' : '?';
@@ -88,7 +69,7 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
     const { createEventRequest, updateEventRequest, NONE_REQUIRED } = await import('../src/modules/eventLifecycle/service.js');
     const { PostgresEventLifecycleRepository } = await import('../src/modules/eventLifecycle/repository.js');
     const {
-      getAssignedEvent, listAssignedEvents, listCoordinatorColleagues, listPendingReassignments,
+      assignQueuedEvent, getAssignedEvent, listAssignedEvents, listCoordinatorColleagues, listPendingReassignments,
       requestCoordinatorReassignment, respondToCoordinatorReassignment,
     } = await import('../src/modules/eventLifecycle/coordinatorAssignment.js');
     const { getDatabasePool } = await import('../src/database/client.js');
@@ -110,6 +91,9 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
     const coordinatorUser = (id: string): AuthenticatedUser => ({
       id, email: `${id}@example.test`, role: 'event_coordinator', isActive: true, failedLoginCount: 0,
     });
+    const leadUser: AuthenticatedUser = {
+      id: lead, email: 'lead@example.test', role: 'event_coordinator_lead', isActive: true, failedLoginCount: 0,
+    };
     async function eventRow(id: string) {
       return (await db.query(
         'SELECT status, coordinator_id, coordinator_assigned_at FROM events WHERE id = $1', [id],
@@ -126,55 +110,39 @@ test('SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL'
       )).rows;
     }
 
-    // Scenario 1 + 2: B has 1 active event, A has 2; locked/inactive
-    // Coordinators have 0 but are ineligible. B wins.
+    // A submitted request stays unassigned and notifies the Lead.
     const first = await createEventRequest(repository, completeRequest('Charity Run'));
-    assert.equal(first.status, 'under_review', 'the submitted request moves straight to Under Review');
-    assert.equal(first.coordinatorId, coordB, 'the Coordinator with the fewest active events wins');
+    assert.equal(first.status, 'submitted');
+    assert.equal(first.coordinatorId, undefined);
     const firstRow = await eventRow(first.id);
-    assert.equal(firstRow.status, 'under_review');
-    assert.equal(firstRow.coordinator_id, coordB);
-    assert.ok(firstRow.coordinator_assigned_at instanceof Date);
+    assert.equal(firstRow.status, 'submitted');
+    assert.equal(firstRow.coordinator_id, null);
     const firstAudit = await auditActions(first.id);
-    assert.ok(firstAudit.some(row => row.action === 'Coordinator assigned' && row.new_value === coordB && row.actor_id === null));
-    assert.ok(firstAudit.some(row => row.action === 'Status changed to under_review' && row.old_value === 'submitted'));
-    const firstNotifications = await notificationsFor(coordB, first.id);
+    assert.ok(firstAudit.some(row => row.action === 'Status changed to submitted'));
+    const firstNotifications = await notificationsFor(lead, first.id);
     assert.equal(firstNotifications.length, 1);
-    assert.equal(firstNotifications[0].title, 'New event assigned');
+    assert.equal(firstNotifications[0].title, 'New request awaiting assignment');
 
-    // Tie-break (D3): A and B now both hold 2 active events. A's most recent
-    // assignment (2026-01-02) is older than B's (just now), so A wins. This
-    // also covers the draft -> submitted path (SCRUM-27 + E03-S01).
+    // Only the Lead chooses a valid active Coordinator; that choice moves the
+    // request to Under Review and keeps the old Coordinator flow untouched.
+    await assignQueuedEvent(pool, leadUser, first.id, { coordinator_id: coordB });
+    const assignedFirst = await eventRow(first.id);
+    assert.equal(assignedFirst.status, 'under_review');
+    assert.equal(assignedFirst.coordinator_id, coordB);
+    assert.ok(assignedFirst.coordinator_assigned_at instanceof Date);
+    assert.ok((await auditActions(first.id)).some(row => row.action === 'Lead assigned' && row.new_value === coordB && row.actor_id === lead));
+    assert.equal((await notificationsFor(coordB, first.id)).at(-1)?.title, 'New event assigned');
+
+    // The draft -> submitted path uses the same explicit queue flow.
     const draft = await createEventRequest(repository, completeRequest('Winter Gala', 'draft'));
     assert.equal(draft.status, 'draft');
     assert.equal(draft.coordinatorId, undefined, 'drafts are never assigned');
     const submittedDraft = await updateEventRequest(repository, draft.id, organiser, { status: 'submitted' });
-    assert.equal(submittedDraft.status, 'under_review');
-    assert.equal(submittedDraft.coordinatorId, coordA, 'on a tie, the least recently assigned Coordinator wins');
+    assert.equal(submittedDraft.status, 'submitted');
+    assert.equal(submittedDraft.coordinatorId, undefined);
+    await assignQueuedEvent(pool, leadUser, draft.id, { coordinator_id: coordA });
 
-    // D5: A now holds 3 active events and B holds 2. Of two simultaneous
-    // submissions, whichever commits first goes to B, which ties them, so the
-    // second must go to A. Without the advisory lock both would read B as the
-    // least busy and B would get both.
-    const [concurrentOne, concurrentTwo] = await Promise.all([
-      createEventRequest(repository, completeRequest('Concurrent one')),
-      createEventRequest(repository, completeRequest('Concurrent two')),
-    ]);
-    assert.deepEqual(
-      new Set([concurrentOne.coordinatorId, concurrentTwo.coordinatorId]), new Set([coordA, coordB]),
-      'the advisory lock keeps concurrent assignments fair',
-    );
-
-    // D4: with no eligible Coordinator the submission still succeeds, stays
-    // Submitted and unassigned, and the gap is audited.
-    await db.query('UPDATE users SET is_active = false WHERE id = ANY($1::uuid[])', [[coordA, coordB]]);
-    const unassigned = await createEventRequest(repository, completeRequest('Nobody free'));
-    assert.equal(unassigned.status, 'submitted');
-    assert.equal(unassigned.coordinatorId, undefined);
-    assert.ok((await auditActions(unassigned.id)).some(row => row.action === 'Coordinator assignment pending'));
-    await db.query('UPDATE users SET is_active = true WHERE id = ANY($1::uuid[])', [[coordA, coordB]]);
-
-    // --- Reassignment on `submittedDraft` (currently assigned to A). -------
+    // --- Reassignment on the Lead-assigned Event. ---------------------------
     const userA = coordinatorUser(coordA);
     const userB = coordinatorUser(coordB);
     const eventId = submittedDraft.id;

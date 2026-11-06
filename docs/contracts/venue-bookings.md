@@ -268,7 +268,7 @@ E06-S04 owns confirmation, automatic first-confirmed primary assignment and
 staff assessment presentation. E06-S03 owns explicit Coordinator selection of
 another Confirmed primary on the booking list (Scenario 3c / T-78), as agreed
 with E06-S04's owner on 16 October. Selection locks the event row first to
-serialize with automatic assignment in `decideBooking`.
+serialize with explicit Lead assignment in `decideBooking`.
 
 
 ### Review coordination update (15 October 2026)
