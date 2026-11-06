@@ -222,8 +222,13 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
 
     # Execution log: history from T-65 records, then this submission's raw results.
     log: list[dict] = []
+    manifest = json.loads((results / "manifest.json").read_text(encoding="utf-8")) if results else {"runs": []}
+    # A T-65 record summarising one of these submission runs would duplicate its per-test rows.
+    summarised = {run["started"] for run in manifest["runs"]}
     for path in sorted(RUNS_DIR.glob("2*.md")):
         meta, rows = read_record(path)
+        if meta.get("date") in summarised:
+            continue
         fixed = corrections.get(path.name)
         for tc_cell, name, outcome, remarks in rows:
             log.append({"when": meta.get("date", ""), "env": {"ci": "CI"}.get(meta.get("environment", ""), "Local"),
@@ -234,7 +239,6 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
                         "correction": (f"Corrected: {fixed.get('Problem', '')} -> {fixed.get('Correction', '')}" if fixed else "")})
     out.parent.mkdir(parents=True, exist_ok=True)
     if results:
-        manifest = json.loads((results / "manifest.json").read_text(encoding="utf-8"))
         for run in manifest["runs"]:
             src = results / run["path"]
             if not src.exists():
@@ -299,7 +303,7 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
                           "Yes" if c["story_id"] in release1 else "No (product backlog / cross-cutting)"])
     sheet(wb, "Test Cases",
           ["Test Case ID", "Story ID", "AC Reference", "Test Scenario", "Technique (5-step)", "Pre-conditions",
-           "Test Steps", "Test Data", "Expected Result", "Created By", "Date of Creation", "Sprint", "Case Status",
+           "Test Steps", "Test Data", "Expected Result", "Created By (first commit of the case)", "Date of Creation (first commit)", "Sprint", "Case Status",
            "Actual Result (latest)", "Pass/Fail/Not Executed/Blocked", "Executed By", "Date of Execution",
            "Environment", "Evidence", "Notes", "Release 1"],
           case_rows, [16, 10, 30, 40, 16, 36, 50, 30, 45, 12, 12, 8, 10, 40, 14, 12, 18, 10, 40, 12, 14],
