@@ -14,6 +14,7 @@ Recover the missing Release 1 Lead functionality for SCRUM-153, SCRUM-154 and SC
 - Rebased onto `origin/main` at `981d5495`.
 - Removed the obsolete automatic-assignment implementation in `f1c5c8f5`, including its stale tests and supersession allowlist entries. Submission now remains Submitted/unassigned until a Lead chooses a Coordinator. The merged test catalogue had six now-obsolete `todo` markers for these workflows; they are active real-database checks again.
 - C129 and O-36 require direct, Lead-only reassignment. The retired Coordinator-to-Coordinator and Coordinator-to-Lead request paths, UI entry points, tests, and unmerged `0028_lead_reassignment_requests` migration were removed. Old request URLs now explicitly refuse Coordinator attempts through the audited Lead guard.
+- Removed non-existent `assigned_by` column from `events` update queries in `coordinatorAssignment.ts` and updated unit test mock assertions. The acting Lead is recorded as `actor_id` in `audit_logs`.
 - On `c344848`, backend unit tests passed 723 tests with 1 intentional skip; focused frontend Vitest passed 12 tests; `npm run typecheck` and `python scripts/check.py` passed. New T-65 records accompany the final test runs.
 
 ## Follow-up before merge

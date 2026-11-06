@@ -41,7 +41,7 @@ test('E03-S09 Lead reassignment changes ownership immediately and notifies three
 
   assert.deepEqual(result, { eventId: '00000000-0000-4000-8000-000000000010', coordinatorId: incoming.id });
   assert.deepEqual(calls.find(call => call.sql.includes('UPDATE events'))?.values,
-    ['00000000-0000-4000-8000-000000000010', incoming.id, lead.id]);
+    ['00000000-0000-4000-8000-000000000010', incoming.id]);
   assert.ok(calls.some(call => call.sql.includes("'Lead reassigned'")));
   assert.equal(calls.filter(call => call.sql.includes('INSERT INTO notifications')).length, 3);
 });

@@ -90,7 +90,7 @@ export async function assignQueuedEvent(database: Pool, user: AuthenticatedUser 
     const event = (await client.query<{ id: string; event_code: string | null; title: string; status: string; coordinator_id: string | null; organiser_id: string }>(`SELECT id, event_code, title, status, coordinator_id, organiser_id FROM events WHERE id::text = $1 OR event_code = $1 FOR UPDATE`, [identifier])).rows[0];
     if (!event || event.status !== 'submitted' || event.coordinator_id) throw new AccessError(409, 'This request is no longer in the unassigned queue.');
     const target = await eligibleCoordinator(client, coordinatorId);
-    const updated = await client.query(`UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now(), assigned_by = $3, status = 'under_review'::event_status, status_changed_at = now() WHERE id = $1 AND status = 'submitted' AND coordinator_id IS NULL`, [event.id, coordinatorId, lead.id]);
+    const updated = await client.query(`UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now(), status = 'under_review'::event_status, status_changed_at = now() WHERE id = $1 AND status = 'submitted' AND coordinator_id IS NULL`, [event.id, coordinatorId]);
     if (!updated.rowCount) throw new AccessError(409, 'This request is no longer in the unassigned queue.');
     const audit = await client.query<{ id: string; occurred_at: Date }>(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value) VALUES ($1, 'event', $2, $2, 'Lead assigned', 'coordinator_id', NULL, $3) RETURNING id, occurred_at`, [lead.id, event.id, coordinatorId]);
     await client.query(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value) VALUES ($1, 'event', $2, $2, 'Status changed to under_review', 'status', 'submitted', 'under_review')`, [lead.id, event.id]);
@@ -110,7 +110,7 @@ export async function reassignEventAsLead(database: Pool, user: AuthenticatedUse
     if (!event || !event.coordinator_id || !(ACTIVE_EVENT_STATUSES as readonly string[]).includes(event.status)) throw new AccessError(409, 'Only an active assigned event can be reassigned.');
     if (event.coordinator_id === coordinatorId) throw new AccessError(400, 'Choose a different Event Coordinator.');
     const target = await eligibleCoordinator(client, coordinatorId);
-    await client.query(`UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now(), assigned_by = $3 WHERE id = $1`, [event.id, coordinatorId, lead.id]);
+    await client.query(`UPDATE events SET coordinator_id = $2, coordinator_assigned_at = now() WHERE id = $1`, [event.id, coordinatorId]);
     const audit = await client.query<{ id: string; occurred_at: Date }>(`INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value) VALUES ($1, 'event', $2, $2, 'Lead reassigned', 'coordinator_id', $3, $4) RETURNING id, occurred_at`, [lead.id, event.id, event.coordinator_id, coordinatorId]);
     const change = audit.rows[0]!;
     const label = eventLabel(event);
