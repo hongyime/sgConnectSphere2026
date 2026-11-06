@@ -73,7 +73,33 @@ frontmatter timestamp and is documented in the
 [execution-record guide](runs/README.md#manual-remarks-validation). Automated
 records and earlier manual records keep their existing validation.
 
-A future `scripts/export_test_runs_xlsx.py` will export all session records
-to an "Execution Records" sheet in the course deliverable workbook, following
-the same pattern as `scripts/export_testcases_xlsx.py` for the test-case
-catalogue.
+Records found wrong later are never edited; the correction is listed in
+[`run-record-corrections.md`](run-record-corrections.md). Defects found by a
+failed run are listed in [`defects.md`](defects.md) with their Jira Bug; the
+failing test is committed as an expected failure (Playwright `test.fail`,
+Vitest `test.fails`, node:test `todo`) so it stays visible without breaking CI.
+
+## Course deliverable workbook
+
+`scripts/export_test_submission_xlsx.py` builds the "4. TEST CASES" workbook
+(IS212 Week 4 slide 22 template) from the Markdown above: Summary, Test Cases
+(specification fields plus the latest execution status and evidence),
+Execution Log (every T-65 record row, plus one row per test per run per
+environment of the submission runs, with screenshot links), Traceability
+(Release 1 acceptance criterion to cases to latest result), Defects and
+Mutation Summary (Stryker). The raw results, HTML reports and screenshots it
+links to are submission files, not committed (large binaries).
+
+```text
+.venv-tools/Scripts/python.exe scripts/export_test_submission_xlsx.py --out "<folder>/ConnectSphere Release 1 Test Cases.xlsx" --results <run folder with manifest.json> --mutation <run folder>/mutation/mutation.json
+```
+
+Evidence runs set `PW_SCREENSHOT=on` (screenshot every test) and
+`PW_HTML_REPORT`, `PW_JSON` and `PW_OUTPUT_DIR` per environment; unset, the
+Playwright configs behave as CI expects. `playwright.deployed.config.ts` runs
+demo sign-ins against a deployed site (`BASE_URL` required). They are not
+read-only: each sign-in resets the account's failed-login count and creates a
+session row, which its sign-out removes. The API-stubbed browser suite also
+runs against a deployed site when `BASE_URL` is set. Database suites run only
+against a native loopback PostgreSQL (AGENTS.md), never the production
+database.

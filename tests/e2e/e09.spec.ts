@@ -11,29 +11,6 @@ import { signInAs } from './helpers/fakeSession';
 test.describe("E09-S01", () => {
 
   /**
-   * TC_E09S01_02
-   * AC:      E09-S01 (checklist: choose events to attend in a multi-event event)
-   * Sprint:  4.0
-   *
-   * Pre-conditions:
-   *   Event "Tech Conference 2026" has the event and the event, both open for registration
-   *
-   * Test data:
-   *   Selected: the event only
-   *
-   * Expected result:
-   *   A place is reserved for attendee_d@example.com in the event only; they are not registered for the event
-   */
-  test.fixme("TC_E09S01_02 - Verify that registering for a multi-event event should let the Attendee choose which events to attend, reserving a place in each chosen event", async ({ page }) => {
-    // Steps from the specification:
-    // 1. Log in as attendee_d@example.com
-    // 2. Open event "Tech Conference 2026"
-    // 3. Select the event only (not the event)
-    // 4. Submit registration
-    void page;
-  });
-
-  /**
    * TC_E09S01_03
    * AC:      E09-S01 - Scenario 2 (Duplicate registration prevented)
    * Sprint:  4.0
@@ -113,19 +90,9 @@ test.describe("E09-S01", () => {
 
 test.describe("E09-S02", () => {
 
-  /**
-   * TC_E09S02_03
-   * AC:      E09-S02 - Scenario 4 (Concurrent submissions do not overbook)
-   * Expected result:
-   *   At most one submission is confirmed; any submission exceeding either cap is retained as Pending for Organiser review
-   *
-   * Two real submissions racing for the last place need a real database and its
-   * locks, so this is proven in backend/tests/attendeeCapacity.integration.test.ts
-   * (and the manual run); a fake backend in the browser can't show it.
-   */
-  test.fixme("TC_E09S02_03 - Concurrent registration attempts should not exceed a Session or combined Event capacity", async ({ page }) => {
-    void page;
-  });
+  // TC_E09S02_03: two real submissions racing for the last place need a real
+  // database and its locks, so it is automated in
+  // backend/tests/attendeeCapacity.integration.test.ts.
 
   test("TC_E09S02_04 - A full combined Event should offer its enabled Event-level waiting list", async ({ page }) => {
     await fakeRegistrationBackend(page, { form: { json: registrationForm({
@@ -328,20 +295,10 @@ test.describe("E09-S03", () => {
     await expect(page.getByRole('link', { name: 'Join the waiting list' })).toBeVisible();
   });
 
-  /**
-   * TC_E09S03_07 / TC_E09S03_08: both window ends are inclusive. The decision
-   * uses the database clock, which a browser test against a fake backend can't
-   * set, so the exact instants are proven in backend/tests/attendeeRegistration.test.ts
-   * ("registrationState: both window ends are inclusive") and on real PostgreSQL
-   * in backend/tests/registrationPeriod.integration.test.ts.
-   */
-  test.fixme("TC_E09S03_07 - Verify that registration succeeds at the exact opening timestamp", async ({ page }) => {
-    void page;
-  });
-
-  test.fixme("TC_E09S03_08 - Verify that registration still succeeds at the exact closing timestamp", async ({ page }) => {
-    void page;
-  });
+  // TC_E09S03_07 / TC_E09S03_08: both window ends are inclusive. The decision
+  // uses the database clock, which a browser test against a fake backend can't
+  // set, so the exact instants are automated on real PostgreSQL with a set clock
+  // in backend/tests/registrationPeriod.integration.test.ts.
 
   test("TC_E09S03_09 - One Event-level registration window should apply to all of its selected Sessions", async ({ page }) => {
     let state = 'not_yet_open';

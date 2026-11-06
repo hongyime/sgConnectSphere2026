@@ -14,15 +14,19 @@ export default defineConfig({
     ['list'],
     // The HTML report lists every test by its TC_ id. That report is your
     // traceability evidence for the rubric: requirement -> case -> result.
-    ['html', { outputFolder: 'playwright-report', open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    // PW_HTML_REPORT/PW_JSON keep evidence runs per environment apart (local vs deployed).
+    ['html', { outputFolder: process.env.PW_HTML_REPORT ?? 'playwright-report', open: 'never' }],
+    ['json', { outputFile: process.env.PW_JSON ?? 'test-results/results.json' }],
   ],
+  outputDir: process.env.PW_OUTPUT_DIR ?? 'test-results',
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    // PW_SCREENSHOT=on captures every test for the submission evidence; CI keeps failures only.
+    screenshot: process.env.PW_SCREENSHOT === 'on' ? 'on' : 'only-on-failure',
   },
-  webServer: {
+  // A BASE_URL (for example the deployed Vercel site) needs no local dev server.
+  webServer: process.env.BASE_URL ? undefined : {
     command: 'npm run dev --workspace frontend -- --port 5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

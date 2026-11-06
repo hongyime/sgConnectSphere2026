@@ -4,8 +4,8 @@
 // Coordinator's event read for the Activity log. The rules themselves (stored
 // decision, audit row, notice, buffered clash, races) are proven against
 // PostgreSQL in backend/tests/venueBookingDecisions.integration.test.ts.
-// TC_E06S04_07 (release logging) waits for E10-S04 and stays a placeholder in
-// tests/e2e/e06.spec.ts.
+// TC_E06S04_07 (release logging, through E10-S04's cancellation) is proven in
+// backend/tests/eventCancellation.integration.test.ts.
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { signInAs } from './helpers/fakeSession';
 

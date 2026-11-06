@@ -28,3 +28,15 @@ test('TC_E01S08_02 TC_E01S08_03 — registration displays server field errors an
   await page.getByRole('button', { name: 'Create Account' }).click();
   await expect(page.getByText('This email address is already in use')).toBeVisible();
 });
+
+test('TC_E01S08_05 — the public sign-up form offers no role choice of any kind', async ({ page }) => {
+  await page.goto('/register');
+  const form = page.locator('form');
+  await expect(page.getByRole('button', { name: 'Create Account' })).toBeVisible();
+  for (const control of ['combobox', 'listbox', 'checkbox', 'radio', 'radiogroup'] as const) {
+    await expect(form.getByRole(control)).toHaveCount(0);
+  }
+  const fields = await form.locator('input, select, textarea').evaluateAll(nodes => nodes.map(node => (node as HTMLInputElement).name));
+  expect(fields).toEqual(['full_name', 'email', 'password', 'contact_number']);
+  await expect(page.locator('main')).not.toContainText(/coordinator|organiser|venue staff|technical support|safety officer|lead|role/i);
+});

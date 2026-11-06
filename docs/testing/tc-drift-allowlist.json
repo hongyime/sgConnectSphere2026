@@ -1,4 +1,4 @@
 {
-  "_comment": "Temporary exceptions for superseded cases that still describe live behaviour. The Lead queue recovery removed the E03-S01 automatic-assignment exceptions; new exceptions require a tracked replacement story.",
+  "_comment": "Cases that cite a scenario the backlog marks [Superseded ...] but that still describe shipped behaviour, because the replacing story is not built yet. Every entry names the story that will replace it and must be deleted from here in the same PR that ships that story. scripts/check_test_case_references.py fails on a stale entry, so the list cannot quietly grow.",
   "entries": []
 }
