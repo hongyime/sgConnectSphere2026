@@ -16,6 +16,10 @@ submission (Aaron, Bl0oper). Companion PR: `docs/release-1-test-cases-submission
   SCRUM-256 to SCRUM-259 (E03-S08, E03-S09, E03-S10, E02-S05 code not on
   `main`), so CI stays green while the defect stays visible.
 - `test.fixme` scaffold stubs replaced by live tests were removed.
+- Bryan's review: `scripts/tc_coverage_audit.py` counted those expected
+  failures as automated. It now reports them as a separate "known defect"
+  status, and reads a title up to its own closing quote (a double-quoted
+  title with an apostrophe hid the `todo` option before).
 - Playwright configs read `PW_SCREENSHOT`, `PW_HTML_REPORT`, `PW_JSON` and
   `PW_OUTPUT_DIR` for evidence runs; unset, CI behaviour is unchanged. The main
   config starts no dev server when `BASE_URL` points elsewhere.
