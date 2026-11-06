@@ -1,7 +1,0 @@
-flowchart LR
- U["Users in seven roles"] -->|User input data| P(["0 ConnectSphere"])
- P -->|Permitted views and errors| U
- P -->|Email content and recipient| E["Brevo email service"]
- E -->|Provider acceptance or failure| P
- P -->|Delivery IDs and acknowledgements| Q["Upstash delivery transport"]
- Q -->|Queued IDs and operation results| P

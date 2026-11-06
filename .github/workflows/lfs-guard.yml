@@ -26,14 +26,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Reject Git LFS pointer files outside submission
+      - name: Reject Git LFS pointer files
         shell: bash
         run: |
           set -euo pipefail
-          pointers="$(git grep -l '^version https://git-lfs.github.com/spec/v1' -- ':!*.md' ':!submission/**' || true)"
+          pointers="$(git grep -l '^version https://git-lfs.github.com/spec/v1' -- ':!*.md' || true)"
           if [ -n "$pointers" ]; then
-            echo "::error::Git LFS pointer files are not allowed outside submission/."
+            echo "::error::Git LFS pointer files are not allowed in this repository."
             echo "$pointers"
             exit 1
           fi
-          echo "No Git LFS pointer files found outside submission/."
+          echo "No Git LFS pointer files found."

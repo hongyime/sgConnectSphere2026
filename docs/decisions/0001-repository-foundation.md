@@ -48,11 +48,3 @@ privileged bot auto-merge, DeepSource, or Sourcery.
 The baseline is immediately useful and portable. A green check proves repository
 hygiene and tooling behaviour, not application functionality or deployment health.
 GitHub protections require administrator activation separately from committed files.
-
-## Release 1 implementation note (5 November 2026)
-
-The original stack-independent context above is historical. The application now
-uses React/Vite, Node/TypeScript Vercel Functions and PostgreSQL. See the
-[as-built reconciliation](release-1-as-built-reconciliation.md) and
-[architecture overview](../architecture.md); this note does not replace the
-original repository-policy decision.

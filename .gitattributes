@@ -9,7 +9,6 @@
 *.pdf binary
 *.woff binary
 *.woff2 binary
-submission/ export-ignore
 
 # Continuity logs are dated bullets; when two branches both add entries, keep
 # both instead of writing conflict markers. GitHub ignores this attribute, so

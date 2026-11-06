@@ -26,3 +26,21 @@ immutable evidence record. Jira refreshed: SCRUM39/61/71 In Review,181 Done,
 70/75 In Progress. No Jira writes. Parallel audit workers were unavailable;
 source follow-up completed locally instead. Earlier application test record is
 preserved; no claim those tests were rerun for this documentation-only update.
+
+## PR 437 scope repair after independent review
+
+Restore the source-only deliverable after the submission import merge expanded
+the PR to 125 files and 3,196 additions. Remove that merge's submission copies,
+shared guard configuration, unrelated folder skeleton and duplicate handoff.
+Keep the verified package in local submission output and an exact backup of
+the imported file blobs. The previously published draft release is no longer
+available; do not claim a current release URL.
+PR 444 owns the separate submission skeleton/policy proposal; this PR grants
+no exception to decision 0017. Preserve history through a normal follow-up
+commit, never force push. Keep reconciliation unnumbered and Jira explicitly
+point-in-time; the reviewer confirmed these need no source change.
+
+The historical foundation ADR stays unchanged from main; its already-present
+reconciliation table row explains the subsequent stack selection. This avoids
+a duplicate annotation and leaves room for a new immutable verification record
+within the unchanged forty-file limit. Earlier run records remain untouched.
