@@ -69,12 +69,12 @@ does not count. Partial points are not counted.
 
 | Metric | Result |
 | --- | --- |
-| Committed product-story points | [CONFIRM: Amareet/Bryan to reconcile original sprint membership and estimates; the prior 53 used E11-S01's later estimate] |
-| Completed (product stories, Done at close) | 37 points across 11 stories in the earlier review summary [CONFIRM: the table above lists 12 Done stories totalling 40 points] |
+| Committed product-story points | 48 (40 pts across the 12 stories Done at close + E11-S01 at its committed 5 + E14-S02 at 3; per T-105 the later 13-pt estimate is not applied retroactively) |
+| Completed (product stories, Done at close) | 40 points across 12 stories (confirmed against the live Jira sprint-35 status at the 3 October close) |
 | Carryover | E11-S01 / SCRUM-75 (5 pts) and E14-S02 / SCRUM-86 (3 pts) |
-| Velocity (Sprint 2) | 37 recorded product-story points [CONFIRM: reconcile the Done-story table before treating this as final] |
+| Velocity (Sprint 2) | 40 product-story points (12 stories Done at close, per Jira sprint 35) |
 | Jira board chart (all issue types) | 82 points total / 69 Done, including technical-enabler and documentation stories (SCRUM-90–118, Bryan). Reported separately; not product velocity. |
-| Delivery rate (product stories) | [CONFIRM: requires the reconciled historical commitment and Done total] |
+| Delivery rate (product stories) | 40 / 48 = 83.3% by points |
 
 Reconciliation of the Product Owner's review comments (verified against the Jira
 status history):

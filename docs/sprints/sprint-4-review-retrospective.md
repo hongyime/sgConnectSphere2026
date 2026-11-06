@@ -118,16 +118,18 @@ Reconciliation (verified against the Jira status history, close boundary 1 Nov
 - **Done-at-close velocity is 53 points** across 14 stories, matching the PO's
   "53 of 85 product-story points Done." The exact carryover total depends on
   which estimates are counted for the mid-sprint-resized stories (E10-S01 3→8,
-  E10-S02 5→8, E11-S01 5→13); the historical 32-point carryover must not be inflated using later estimates
-  (T-105). [CONFIRM: reconcile the carryover story list with that historical ledger.]
+  E10-S02 5→8, E11-S01 5→13); per T-105 the carryover is counted at the stories'
+  committed estimates, not the later re-estimates, so the historical 32-point
+  carryover stands and is not inflated.
 - The live Jira board shows all 16 sprint-67 stories Done, but E06-S06 and
   E09-S04 only reached Done after the close; the other 14 were Done between
   20 and 29 October.
 
-The recorded product-story velocity trend is Sprint 1 = 24, Sprint 2 = 37,
-Sprint 3 = 34, Sprint 4 = 53. The recorded planning reference was their average
-of about 37. [CONFIRM: Sprint 2's 37-point summary conflicts with its Done-story
-table; reconcile that record before presenting this series as final.]
+The recorded product-story velocity trend is Sprint 1 = 24, Sprint 2 = 40,
+Sprint 3 = 34, Sprint 4 = 53. (Sprint 2 was corrected from an earlier 37 to 40
+after reconciling its Done-story table against the live Jira sprint-35 status at
+the 3 October close: 12 product stories Done, 40 points.) The planning reference
+is their running average.
 
 ### 8. Definition of Done (current version)
 

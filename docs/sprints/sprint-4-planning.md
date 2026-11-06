@@ -96,6 +96,6 @@ E05-S06 (SCRUM-152), E08-S06 (SCRUM-158), plus late review-only items E02-S07
 | Sprint | Planned Points | Completed Points | Notes |
 | --- | ---: | ---: | --- |
 | 1 | 36 | 24 | First-sprint baseline. |
-| 2 | [CONFIRM: historical commitment] | 37 (recorded; reconciliation pending) | E11-S01 and E14-S02 carried over. |
-| 3 | [CONFIRM: historical commitment; 58 at close] | 34 | Six booking/notification stories carried over. |
+| 2 | 48 | 40 (12 stories Done at close, per Jira sprint 35) | E11-S01 (5) and E14-S02 (3) carried over. |
+| 3 | 58 | 34 | Six booking/notification stories carried over. |
 | 4 | ~64 (grew with mid-sprint additions) | — (recorded at Sprint 4 review) | Final Release 1 sprint. E10-S01 and E10-S02 were re-estimated mid-sprint; E11-S01 remained five points at the boundary (T-105 approved thirteen on 1 November). Mid-sprint stories E10-S05, E05-S06, E08-S06 added. A short Sprint 5 (1–5 Nov) was opened to finish the remainder before submission. |

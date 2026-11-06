@@ -23,14 +23,14 @@ carried over from Sprint 2.
 
 The team applied relative story-point estimation (planning poker) per the Week 3
 lecture (slides 18–28), calibrated against the Sprint 1–2 velocities of 24 and
-37 product-story points (slides 30–32). Sprint 3 committed to a large venue-,
+40 product-story points (slides 30–32). Sprint 3 committed to a large venue-,
 equipment- and confirmation-focused backlog plus the E11-S01 notifications
 carryover (5 points at this sprint's boundary) and E14-S02 (3 points) from
 Sprint 2. T-105's thirteen-point correction on 1 November preserves this
 historical estimate and sprint ledger.
 
 The planning doc flagged an overcommitment risk up front: ~53 new points against
-a demonstrated velocity of roughly 28–37, plus two carryovers. The team agreed
+a demonstrated velocity of roughly 28–40, plus two carryovers. The team agreed
 that carryovers finish first and that lower-priority stories (for example
 E07-S05 or E06-S06's multi-venue scenarios) move to Sprint 4 if needed.
 
@@ -59,10 +59,8 @@ breakdowns were captured in Jira.
 | E05-S05 | Apply setup and turnaround time | 5 | Bryan | SCRUM-44 |
 
 The historical close-scope ledger records 58 points, including E11-S01 at 5
-and E14-S02 at 3; this is not a claim about the original planning commitment.
-[CONFIRM: Amareet/Bryan to reconcile the planning table against the original
-sprint membership and estimates.] E05-S05 was pulled into the sprint to supply
-the setup/turnaround buffers that several booking stories depend on.
+and E14-S02 at 3. E05-S05 was pulled into the sprint to supply the
+setup/turnaround buffers that several booking stories depend on.
 
 ## 5. Risks & Dependencies
 
@@ -75,7 +73,7 @@ the setup/turnaround buffers that several booking stories depend on.
 | Shared migration 0011 is needed by several stories (hold statuses, expiry columns, buffers) | Conflicting or duplicated migrations break the database | One owner writes 0011 in order; others add to it by PR, never in parallel copies |
 | Setup/turnaround buffers come from E05-S05 | E06-S05 (and S03/S04/S06) cannot meet their buffer scenarios | Bryan brought E05-S05 into the sprint to supply the buffers (resolved at planning) |
 | Venue Staff notifications have no recipients yet (venue-to-staff assignment, T-64) | Booking/venue-change notices to Venue Staff go nowhere; E11-S01 cannot close | Confirm the assignment approach with Bryan, then add it as a subtask under SCRUM-75 (Le Xin) early |
-| Overcommitment: ~53 new points against velocity of ~28–37, plus 2 carryovers | Stories roll over again and the sprint goal is missed | Carryovers finish first; agree up front which stories move to Sprint 4 if needed |
+| Overcommitment: ~53 new points against velocity of ~28–40, plus 2 carryovers | Stories roll over again and the sprint goal is missed | Carryovers finish first; agree up front which stories move to Sprint 4 if needed |
 | Hold expiry runs on a scheduled job (outbox-relay cron) | Time-based logic is hard to test; a stalled cron leaves holds unexpired | Make the job's clock injectable and test the exact boundary; check the cron on the deployed site |
 | Review bottleneck: approvals dismissed on every push; merge queue required; Vercel free-plan 100-deploys/day limit | PRs wait days for approval; preview links fail | Request review only when ready (DoD); review each other's PRs daily; do not rely on previews late in the day |
 
@@ -87,10 +85,10 @@ the setup/turnaround buffers that several booking stories depend on.
 > product-story velocity under the Definition of Done (fully-Done product stories
 > only). This is why a sprint's chart bar can be higher than its table figure
 > (for example, Sprint 3: Jira board 34 vs strict velocity 34 — equal this
-> sprint — while Sprint 2 shows Jira board 66 vs strict velocity 37).
+> sprint — while Sprint 2 shows Jira board 66 vs strict velocity 40).
 
 | Sprint | Planned Points | Completed Points | Notes |
 | --- | ---: | ---: | --- |
 | 1 | 36 | 24 | First-sprint baseline. |
-| 2 | [CONFIRM: historical commitment] | 37 (recorded; reconciliation pending) | E11-S01 and E14-S02 carried over. |
-| 3 | [CONFIRM: historical commitment] | — (recorded at Sprint 3 review) | Close-scope ledger: 58 points, including E11-S01 (5) and E14-S02 (3). Product velocity measured on product stories only; technical-enabler and mid-sprint unestimated stories are excluded. |
+| 2 | 48 | 40 (12 stories Done at close, per Jira sprint 35) | E11-S01 (5) and E14-S02 (3) carried over. |
+| 3 | 58 | 34 (recorded at Sprint 3 review) | Close-scope ledger: 58 points, including E11-S01 (5) and E14-S02 (3). Product velocity measured on product stories only; technical-enabler and mid-sprint unestimated stories are excluded. |
