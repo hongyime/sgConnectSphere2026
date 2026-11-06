@@ -25,6 +25,8 @@ export type SafetyQueueEvent = {
   organiser_name: string;
 };
 
+export type AssignableCoordinator = { id: string; full_name: string; active_events: number };
+
 export const SAFETY_FACTORS = [
   'attendance_capacity', 'venue_layout', 'emergency_access', 'accessibility',
   'equipment_placement', 'crowd_movement', 'venue_restrictions',
@@ -60,6 +62,18 @@ export type SafetyReturn = { decision: 'request_changes' | 'reject'; reason: str
 
 export function listLeadQueue(signal?: AbortSignal) {
   return apiCall<{ events: LeadQueueEvent[] }>('/api/events?unassigned=1', { signal }, 'Unable to load the unassigned queue.');
+}
+
+export function listAssignableCoordinators(signal?: AbortSignal) {
+  return apiCall<{ coordinators: AssignableCoordinator[] }>('/api/events?coordinators=1&workload=1', { signal }, 'Unable to load Event Coordinators.');
+}
+
+export function assignQueuedEvent(eventId: string, coordinatorId: string) {
+  return apiCall<{ assignment: { eventId: string; coordinatorId: string } }>(
+    `/api/events?assign=1&id=${encodeURIComponent(eventId)}`,
+    jsonRequest('POST', { coordinator_id: coordinatorId }),
+    'Unable to assign this event.',
+  );
 }
 
 export function listSafetyQueue(signal?: AbortSignal) {
