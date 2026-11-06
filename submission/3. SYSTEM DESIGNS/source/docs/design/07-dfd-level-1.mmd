@@ -1,0 +1,19 @@
+flowchart LR
+ U["Users in seven roles"] -->|Credentials| P1(["1 Authenticate"])
+ P1 -->|Session result or errors| U
+ P1 <-->|Users and auth sessions| D1[("D1 Identity")]
+ U -->|Requests, decisions, registrations| P2(["2 Manage event operations"])
+ P1 -->|Authenticated identity| P2
+ P2 -->|Statuses and errors| U
+ P2 <-->|Events, Sessions, arrangements, registrations| D2[("D2 Business records")]
+ P2 -->|Audit, notices and email outbox| D3[("D3 Audit and notifications")]
+ U -->|View queries and read markers| P3(["3 Present permitted views"])
+ P1 -->|Authenticated identity| P3
+ D2 -->|Scoped public or staff data| P3
+ D3 <-->|Inbox and read state| P3
+ P3 -->|Public details and inbox| U
+ D3 <-->|Committed delivery rows and outcomes| P4(["4 Deliver email"])
+ P4 -->|Delivery IDs and acknowledgements| Q["Upstash delivery transport"]
+ Q -->|Queued IDs and operation results| P4
+ P4 -->|Email content and recipient| E["Brevo email service"]
+ E -->|Provider acceptance or failure| P4

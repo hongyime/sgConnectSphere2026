@@ -106,6 +106,4 @@ artifacts/sbom/*
 # Durable sprint burndown and velocity dashboard
 !artifacts/sprint-burndown-velocity.html
 
-# Local submission exports; published as GitHub assets, not source
-/submission/
 !artifacts/release-1-system-design-review.html

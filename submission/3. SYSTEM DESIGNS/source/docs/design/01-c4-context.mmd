@@ -1,0 +1,10 @@
+flowchart LR
+ EO["Event Organiser<br/>Person: client representative"] -->|Requests and tracks events| CS
+ AT["Attendee<br/>Person: participant"] -->|Registers and withdraws| CS
+ EC["Coordinator<br/>Person: assigned planner"] -->|Reviews and arranges| CS
+ VS["Venue Staff<br/>Person: venue operator"] -->|Decides bookings| CS
+ TS["Technical Support Staff<br/>Person: resource operator"] -->|Reserves and staffs| CS
+ LD["Coordinator Lead<br/>Person: assignment owner"] -->|Assigns coordinators| CS
+ SO["Safety Officer<br/>Person: safety reviewer"] -->|Records safety decision| CS
+ CS["ConnectSphere<br/>Software system<br/>Event planning and venue booking"] -->|Email delivery request| B["Brevo<br/>External email service"]
+ B -->|Notification email| U["Recipients in the seven roles"]

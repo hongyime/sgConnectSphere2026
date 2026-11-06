@@ -34,3 +34,6 @@ docs/testing/runs/
 .agents/handoffs/20261008-feature-SCRUM-86-coordinator-activity-log.md
 # This handoff cites a public T-65 run record whose runner handle is already allowed via docs/testing/runs/.
 .agents/handoffs/20261031-feature-SCRUM-39-event-session-authoring.md
+
+# Submission pack contains mirrors of documentation sources with teammate attributions.
+submission/

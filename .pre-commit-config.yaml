@@ -28,7 +28,12 @@ repos:
       - id: check-added-large-files
         stages: [pre-commit]
         args: [--maxkb=1000]
-        exclude: ^docs/slides/.*\.pdf$
+        exclude: ^(docs/slides/.*\.pdf$|submission/)
+      - id: check-added-large-files
+        name: check added submission files under 50 MB
+        stages: [pre-commit]
+        args: [--maxkb=51200]
+        files: ^submission/
       - id: detect-private-key
         stages: [pre-commit]
 
