@@ -92,7 +92,7 @@ are ours to fill. Keep it to 8 rows.
 | Git URL (e.g. GitHub)(remember to add your two instructors to the repository; see instructions) | https://github.com/hongyime/sgConnectSphere2026 (branch `main`). Zip: `6. CODE REPOSITORY/`. Both instructors added (confirmed 6 Nov). |
 | Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
-| Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/` [CONFIRM: file names from the meetings owner] |
+| Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/`: 12 Word files, planning, stand-ups and review + retrospective for Sprints 1 to 4. Repo: the same records as Markdown in `docs/sprints/` (PR #440) |
 | System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/`. Repo: `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/dynamic-user-flows.md`, `docs/db_schema.md` |
 | Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (945 run records) [REFRESH: docs/testing] |
 | Slide deck, README, decisions | Zip: `5. SLIDE DECK/`, `7. README/`. Repo: `docs/bdr/` (customer clarifications and team decisions) |
@@ -111,7 +111,8 @@ Documents and Videos table) asks for final-sprint recordings of planning,
 review, retro and one daily stand-up, as unlisted links.
 
 **Before presenting:** Check that all three Drive links open in a private
-browser window ("Anyone with the link can view").
+browser window ("Anyone with the link can view"). Amareet will do this check
+in an incognito window and report back; it can't be checked from the repo.
 
 ---
 
@@ -241,10 +242,11 @@ Week 7); `docs/plans/venue-claim-rule-b-20261022.md`; PRs #339, #378, #385.
 | 5 Event Coordinator Lead | E01-S13 roles and sign-in, Lead queue (read only) | Gap: new requests are still auto-assigned to a Coordinator, and the Lead's assign, reassign and oversight work is on unmerged branches (`feature/SCRUM-153`, `-154`, `-155`), although Jira shows these stories Done |
 | 6 Safety Officer | E08-S03, E08-S06, E08-S04 | Review and decisions done; revert to planning not Done yet (In Review); first entry into review not yet automatic (C-132, T-82) |
 
-[CONFIRM: Bryan, as owner of SCRUM-153/154/155, said on 6 Nov the Lead work
-will be merged into `main` before submission. Until it is on `main`, keep the
-gap as written. Once merged, change the change 5 row to Done, and update
-slides 9 (long branches), 15 (Bryan's row) and 16 (Release 1 line and lessons).]
+Note for the team (not on the slide): keep change 5 as a gap. On 6 Nov the
+Lead commits were only on remote feature branches and there was no open Lead
+PR. Bryan will tell the team only if the work is merged into `main`. If that
+happens, change the change 5 row to Done and update slides 9 (long branches),
+15 (Bryan's row) and 16 (Release 1 line and lessons).
 
 ---
 
@@ -327,11 +329,13 @@ with its run record `docs/testing/runs/20261021-180929-Bl0oper-frontend-e2e.md`
 customer meant and checking our own evidence, because AI wrote code
 that looked right but sometimes answered a question nobody asked."
 
-**AI tools we used (disclosure):** Coding agents for code, tests and docs
-(Claude Code and others [CONFIRM: full list from each member]), and GitHub's
+**AI tools we used (disclosure):** Coding agents for code, tests and docs:
+Bryan used OpenAI Codex, Lexin used Claude Code, Amareet used coding agents
+[CONFIRM: tool names from Amareet, Aaron, Jining and Xiangying], and GitHub's
 Copilot pull request reviewer, which left automatic review comments on 201 of
-our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second opinion only. Every merge into
-`main` still needed an approving review from a teammate.
+our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
+opinion only and Copilot was never an approving reviewer. Every merge into
+`main` still needed an approving review from a teammate on the latest push.
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
 "Yes, AI caused rework, and we logged it. Agent screenshots had to be redone by
@@ -621,8 +625,10 @@ then review, then merge queue, then `main`. Source: `.github/workflows/`
 
 **Evidence:** `scripts/tc_coverage_audit.py`; `scripts/check_test_case_references.py`;
 `docs/decisions/0012-merge-queue.md`; Actions run 41078692527 (30 Oct, C4
-render gate); `docs/plans/sprint-1-retrospective.md` [CONFIRM: Sprint 2 retro
-record location].
+render gate); `docs/sprints/sprint-2-review-retrospective.md` (PR #440), Part B
+"What Did Not Go Well" (repeated `main` conflicts; updating a branch dismissed
+its approval) and the Sprint 3 action item to sequence PRs through the merge
+queue.
 
 ---
 
@@ -689,8 +695,9 @@ PRs. A story owner is not always the only author: for example the waiting list
 (E09-S04, Aaron's story) was built in Bryan's #379. All counts
 [REFRESH: Jira assignees, GitHub PR reviews, docs/testing/runs].
 
-[CONFIRM: each member checks their own row. Areas and PR numbers come from git
-and Jira, not from self-reports.]
+[CONFIRM: Lexin, Aaron, Jining and Xiangying check their own rows. Bryan and
+Amareet confirmed theirs on 6 Nov. Areas and PR numbers come from git and
+Jira, not from self-reports.]
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
 "This is who did what, from git and Jira. The commit share is lopsided. Bryan
@@ -715,9 +722,9 @@ approvals); Jira board 1 (assignee and points of Done product stories).
 
 **SLIDE CONTENT:**
 
-- **Velocity (Jira, product story points Done):** S1 24 (one-week sprint), S2 40, S3 34, S4 63. Sprint 5 (1 to 5 Nov) was a short close-out sprint: 43 so far [REFRESH: Jira sprint report]
-- **Sprint Goal check:** Sprint 4's goal was to complete all remaining Release 1 stories. We didn't fully meet it: 16 stories (63 pts) Done, 5 (30 pts) moved to Sprint 5, and on 6 Nov E10-S01 and E11-S01 were still In Progress, E08-S04 and E10-S02 In Review. E11-S01 has been carried since Sprint 2 [REFRESH: Jira]
-- Release 1: 59 of 64 stories Done in Jira (209 of 244 points); 5 not Done yet (In Progress or In Review). 3 of the 59 (Lead, E03-S08 to S10) are not on `main` yet [REFRESH: Jira]
+- **Velocity (Jira, product story points Done at each sprint's end date):** S1 66 (one-week sprint), S2 66, S3 34, S4 53. Sprint 5 (1 to 5 Nov) is a short close-out sprint and is still open, so it has no velocity yet
+- **Sprint Goal check:** Sprint 4's goal was to complete all remaining Release 1 stories. We didn't meet it: 53 of 85 points Done at the sprint end (62%), 32 points carried over to Sprint 5. On 6 Nov E10-S01 and E11-S01 were still In Progress, E08-S04 and E10-S02 In Review. E11-S01 has been carried since Sprint 2 [REFRESH: Jira]
+- Release 1: 59 of 64 stories Done in Jira (209 of 244 points); 5 not Done yet (In Progress or In Review). 3 of the 59 (Lead, E03-S08 to S10) are not on `main` yet [REFRESH: Jira and the final backlog after PR #442; the backlog review found the 64-story count out of date]
 - All 20 Week 4 core features map to stories (`docs/bdr/F-core-feature-coverage.md`), but feature 5 "Coordinator Assignment" now means Lead assignment (Week 7 change 5), which is the gap above
 - Design kept in step with code (Weeks 5 and 11): #371 maps every class-diagram method to the real function and adds a test for the error-class hierarchy the diagram shows
 - **Done stays Done:** a missed requirement becomes a new linked story, following the instructors' guidance (`docs/plans/instructor-guidance-2026-10-06.md`) and T-74
@@ -729,11 +736,12 @@ approvals); Jira board 1 (assignee and points of Done product stories).
 - Dashboard: https://5p9t29p9jotq.postplan.dev [REFRESH: dashboard date]
 
 **SPEAKER NOTES** (Presenter: ________, about 1 minute):
-"Last, our numbers and our lessons. Velocity went 24, 40, 34, 63. Sprint 1
-was only one week, so don't read too much into the first jump. Sprint 4 was
-our biggest, at 63 points, but we still didn't meet its Sprint Goal of
-finishing every Release 1 story. Five stories moved to Sprint 5, and four of
-them are still open. Sprint 5 was a short close-out.
+"Last, our numbers and our lessons. Velocity went 66, 66, 34, 53, counting
+only points Done by each sprint's end date. Sprint 1 was only one week, so
+it isn't directly comparable. Sprints 3 and 4 were lower. In Sprint 4 we
+finished 53 of 85 points, so we didn't meet its Sprint Goal of finishing
+every Release 1 story. The rest moved to Sprint 5, a short close-out that is
+still open.
 
 What would we do differently? Merge smaller pieces every day. The Coordinator
 Lead work sat on branches and isn't on main, even though Jira says Done, and
@@ -741,11 +749,12 @@ we should have caught that. Never mark Done before the merge. Fix flaky tests
 as a pattern, not one by one. And keep sprints the same length so velocity is
 comparable. Thanks, we're happy to take questions."
 
-**SUGGESTED VISUAL:** Velocity bar chart, Sprints 1 to 5. Source:
+**SUGGESTED VISUAL:** Velocity bar chart, Sprints 1 to 4 (Sprint 5 is still open). Source:
 `artifacts/sprint-burndown-velocity.html` or the PostPlan dashboard.
 
-**Evidence:** Jira sprint reports (board 1, sprints 34, 35, 36, 67, 100);
-`docs/plans/sprint-burndown-velocity-analysis.md`; `CONTRIBUTING.md`.
+**Evidence:** `docs/plans/sprint-burndown-velocity-analysis.md` (reconciled 3 Nov:
+Done at each sprint's end date; Sprint 4 53 Done of 85, 32 carried over);
+Jira board 1; `CONTRIBUTING.md`.
 
 ---
 
