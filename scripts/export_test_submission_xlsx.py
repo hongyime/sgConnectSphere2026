@@ -1,24 +1,8 @@
 """Build the Release 1 test-case and execution workbook (submission folder "4. TEST CASES").
 
-Markdown stays authoritative (docs/source-of-truth.md). This script reads:
-
-- docs/testing/cases/*.md: the test-case specifications (IS212 Week 4 slide 22);
-- docs/backlog/release-1/*.md: the Release 1 acceptance criteria (scenarios);
-- docs/testing/runs/*.md: every T-65 execution record (the run history);
-- docs/testing/run-record-corrections.md: records later found wrong;
-- docs/testing/defects.md: defects raised from failed runs;
-- optionally a results folder holding a ``manifest.json`` that lists raw JUnit
-  and Playwright JSON results of the submission runs, plus a Stryker JSON report.
-
-and writes one workbook with the sheets Summary, Test Cases, Execution Log,
-Traceability, Defects and Mutation Summary. Screenshots attached to Playwright
-results are copied next to the workbook under ``screenshots/<TC_ID>/``.
-
-Usage from the repository root:
-
-    .venv-tools\\Scripts\\python.exe scripts\\export_test_submission_xlsx.py \\
-        --out "<submission>/4. TEST CASES/ConnectSphere Release 1 Test Cases.xlsx" \\
-        --results <folder with manifest.json> --mutation reports/mutation/mutation.json
+Markdown is authoritative. Reads cases, acceptance criteria, run history, corrections,
+defects, and raw results; exports one workbook with Summary, Test Cases, Execution Log,
+Traceability, Defects and Mutation Summary.
 """
 from __future__ import annotations
 
@@ -51,9 +35,8 @@ TEAM = {"b": "Bryan", "bryanseah234": "Bryan", "amareetkm2024-del": "Amareet",
         "jininggg": "Ji Ning", "Xiang Ying": "Xiang Ying", "xiangyingg": "Xiang Ying",
         "Bl0oper": "Aaron", "aaronkwk": "Aaron"}
 # The course's four execution statuses (Week 4 slide 22).
-STATUS = {"PASS": "Pass", "PASSED": "Pass", "FAIL": "Fail", "FAILED": "Fail",
-          "TIMEDOUT": "Fail", "INTERRUPTED": "Fail", "SKIP": "Not Executed",
-          "SKIPPED": "Not Executed", "N/A": "Not Executed", "BLOCKED": "Blocked"}
+STATUS = {"PASS": "Pass", "PASSED": "Pass", "FAIL": "Fail", "FAILED": "Fail", "TIMEDOUT": "Fail",
+          "INTERRUPTED": "Fail", "SKIP": "Not Executed", "SKIPPED": "Not Executed", "N/A": "Not Executed", "BLOCKED": "Blocked"}
 # Tie-break for one TC in one run: a failure wins, and an unexecuted placeholder never hides an executed result.
 RANK = {"Fail": 0, "Blocked": 1, "Pass": 2, "Not Executed": 3}
 # Across an AC's cases an unexecuted case outranks a pass, so the AC passes only when every case does.
@@ -315,12 +298,10 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
                           "Duplicate ID" if ids[c["case_id"]] > 1 else "",
                           "Yes" if c["story_id"] in release1 else "No (product backlog / cross-cutting)"])
     sheet(wb, "Test Cases",
-          ["Test Case ID", "Story ID", "AC Reference", "Test Scenario", "Technique (5-step)", "Pre-conditions",
-           "Test Steps", "Test Data", "Expected Result", "Created By (first commit of the case)", "Date of Creation (first commit)", "Sprint", "Case Status",
-           "Actual Result (latest)", "Pass/Fail/Not Executed/Blocked", "Executed By", "Date of Execution",
-           "Environment", "Evidence", "Notes", "Release 1"],
-          case_rows, [16, 10, 30, 40, 16, 36, 50, 30, 45, 12, 12, 8, 10, 40, 14, 12, 18, 10, 40, 12, 14],
-          ("Pass/Fail/Not Executed/Blocked",))
+          ["Test Case ID", "Story ID", "AC Reference", "Test Scenario", "Technique (5-step)", "Pre-conditions", "Test Steps", "Test Data",
+           "Expected Result", "Created By (first commit of the case)", "Date of Creation (first commit)", "Sprint", "Case Status", "Actual Result (latest)",
+           "Pass/Fail/Not Executed/Blocked", "Executed By", "Date of Execution", "Environment", "Evidence", "Notes", "Release 1"],
+          case_rows, [16, 10, 30, 40, 16, 36, 50, 30, 45, 12, 12, 8, 10, 40, 14, 12, 18, 10, 40, 12, 14], ("Pass/Fail/Not Executed/Blocked",))
 
     log_rows = [[e["when"][:19], e["env"], e["commit"], e["runner"], e["suite"], e["browser"], e["title"],
                  ", ".join(e["tcs"]), e["status"], e["actual"], e["shot"], e["source"], e["correction"]]
@@ -354,8 +335,7 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
                            len(tcs), sum(s == "Pass" for s in statuses), worst,
                            "; ".join(sorted({r['env'] + ' ' + r['when'][:10] for r in results_ if r}))])
     sheet(wb, "Traceability",
-          ["Story ID", "Story", "Acceptance Criterion", "AC Name", "AC Status", "Test Cases", "# Cases",
-           "# Passing", "Latest Result (worst case)", "Latest Run(s)"],
+          ["Story ID", "Story", "Acceptance Criterion", "AC Name", "AC Status", "Test Cases", "# Cases", "# Passing", "Latest Result (worst case)", "Latest Run(s)"],
           trace_rows, [10, 36, 12, 44, 11, 40, 8, 9, 14, 30], ("Latest Result (worst case)",))
 
     head = list(defects[0].keys()) if defects else ["Defect", "Jira", "Story", "TC IDs", "Found in run", "Summary", "Status"]
@@ -394,16 +374,10 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
     active = sum(r[12] == "Active" for r in case_rows)
     in_force = [r for r in trace_rows if r[4] == "In force"]
     summary.append([])
-    for label, value in [
-        ("Test cases (all / active / retired)", f"{len(case_rows)} / {active} / {len(case_rows) - active}"),
-        ("Release 1 acceptance criteria in force", len(in_force)),
-        ("ACs in force with no test case", sum(r[6] == 0 for r in in_force)),
-        ("ACs in force whose cases all pass (latest)", sum(r[8] == "Pass" for r in in_force)),
-        ("Historical execution rows (T-65 records)", len(log) - len(sub)),
-        ("Submission execution rows", len(sub)),
-        ("Run dates", ", ".join(sorted({e["when"][:10] for e in sub}))),
-        ("Defects raised", len(defects)),
-    ]:
+    for label, value in [("Test cases (all / active / retired)", f"{len(case_rows)} / {active} / {len(case_rows) - active}"),
+                         ("Release 1 acceptance criteria in force", len(in_force)), ("ACs in force with no test case", sum(r[6] == 0 for r in in_force)),
+                         ("ACs in force whose cases all pass (latest)", sum(r[8] == "Pass" for r in in_force)), ("Historical execution rows (T-65 records)", len(log) - len(sub)),
+                         ("Submission execution rows", len(sub)), ("Run dates", ", ".join(sorted({e["when"][:10] for e in sub}))), ("Defects raised", len(defects))]:
         summary.append([label, value])
     summary.append([])
     summary.append(["Submission runs by environment and suite"])
