@@ -36,8 +36,8 @@ production account inventory.
 - In-app notifications, durable email delivery plumbing and activity records.
 
 These are implemented areas, **not a declaration that every story is Done**.
-At the 5 November snapshot, E04-S02, E08-S04, E10-S01/S02 and E11-S01 remained
-In Progress in Jira; E07-S08 was In Review. See the
+At the 6 November Jira refresh, E04-S02, E08-S04 and E10-S02 were In Review;
+E10-S01 and E11-S01 were In Progress; E07-S08 was Done. See the
 [scope and discrepancy inventory](docs/design/README.md) for the precise snapshot.
 Multi-role switching, reporting/exports, SMS and payments are not claimed as built.
 
@@ -78,11 +78,11 @@ schedule. Read [the decision reconciliation](docs/decisions/release-1-as-built-r
 
 | Member | Scrum role |
 | --- | --- |
-| Bryan Seah | Product Owner |
-| Amareet Kaur Madas | Scrum Master and Developer |
-| Aaron Koh | Developer |
-| Phun Le Xin | Developer |
-| Sim Xiang Ying | Developer |
+| Bryan | Product Owner |
+| Amareet | Scrum Master and Developer |
+| Aaron | Developer |
+| Le Xin | Developer |
+| Xiang Ying | Developer |
 | Ji Ning | Developer |
 
 Contribution and review history live in GitHub PRs; accountable story owners live
@@ -226,7 +226,7 @@ the mutation score and surviving mutants. The verification snapshot scored 72.73
 [Testing documentation](docs/testing/README.md) describes case traceability,
 manual screenshots and immutable execution records. Record evidence cited in a
 PR/demo under `docs/testing/runs/`; never substitute automated screenshots for a
-human manual run. [Verification results](docs/design/readme-verification.md)
+human manual run. [Verification results](docs/testing/runs/20261105-232435-xiangyingg-full-regression.md)
 record what was actually run for this README, including failed setup attempts.
 
 ## Deployment

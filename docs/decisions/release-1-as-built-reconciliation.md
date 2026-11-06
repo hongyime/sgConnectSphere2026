@@ -22,7 +22,7 @@ No acceptance criterion, Jira status or architecture decision is changed here.
 | ADR-012 superseded; ADR-019 multi-role | ADR-019 is accepted target design. Migrations and runtime still expose/check one users.role. Many-to-many grants and role switching must be labelled future until implemented and verified. |
 | ADR-014 Vercel routes; 0010 deploy path | Multiple route adapters share backend modules; rewrites consolidate logical endpoints into function files. Actions is the sole deploy path; direct Vercel Git deployment is disabled. |
 | ADR-015 cookie sessions | Custom opaque HttpOnly cookie, digest in PostgreSQL, Origin checks; not a Supabase Auth JWT architecture. |
-| ADR-016 lockout | Historical thirty-minute wording is superseded in current code by reset-required lockout after five failures; inspect accessControl/service.ts and sessions.ts. No claim of automatic timed unlock. |
+| ADR-016 lockout | Five failures lock sign-in for thirty minutes. `accessControl/sessions.ts` resets an expired window before evaluating the next attempt (lines 35-43); password reset can restore access sooner. The pure helper in `service.ts` is not proof that the database-backed login requires a reset. |
 | T-82 safety automation | Initial Coordinator submission remains; eligible re-entry is automatic. This is a code-versus-target gap requiring team reconciliation, not permission to redraw the code as fully automatic. |
 
 [Lecture-backed notation and exact code evidence](../design/README.md) accompany

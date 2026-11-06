@@ -1,7 +1,7 @@
 # Release 1 system design
 
-As-built source snapshot: main `0773a721` on 5 November 2026. Jira was read on
-5 November 2026; statuses are a point-in-time view, not a new acceptance decision.
+As-built source snapshot: main `0773a721` on 5 November 2026. Jira was refreshed on
+6 November 2026; statuses are a point-in-time view, not a new acceptance decision.
 The system is a React/Vite single-page application and a TypeScript modular
 monolith exposed through Vercel Functions, backed by PostgreSQL, with a durable
 notification transport through Upstash and Brevo.
@@ -61,13 +61,13 @@ the last column highlights the Jira gates still open at the snapshot.
 | Area | Built code and representative stories | Open Jira gate |
 | --- | --- | --- |
 | Identity and visibility | Cookie sessions, verification/reset, profile/deactivation, organisation and assigned-Coordinator scoping (E01) | No multi-role runtime implementation; ADR-019 remains target design. |
-| Event requests and Sessions | Drafts, reuse, two-year horizon, Session authoring (E02-S01/S02/S05/S07; E04-S02) | SCRUM-39 In Progress; SCRUM-180 Done, supplemental manual evidence tracked separately in #435. |
+| Event requests and Sessions | Drafts, reuse, two-year horizon, Session authoring (E02-S01/S02/S05/S07; E04-S02) | SCRUM-39 In Review; SCRUM-180 Done, supplemental manual evidence tracked separately in #435. |
 | Coordination | Assignment, clarification, decisions, threads and Lead oversight (E03) | Jira representative stories Done. |
 | Venues | Catalogue/layout/accessibility, buffers, suitability, holds, claims, blocks and release (E05/E06) | Jira representative stories Done. |
-| Equipment and support | Catalogue, availability, reservation/stock warnings, support/staffing, Session links (E07) | SCRUM-181 In Review; built code is not represented as accepted. |
-| Safety and lifecycle | Initial safety submission, Safety Officer decision, reversion/re-entry, completion and cancellation (E08/E10) | SCRUM-61 In Progress; SCRUM-158, SCRUM-62, SCRUM-73 Done. |
+| Equipment and support | Catalogue, availability, reservation/stock warnings, support/staffing, Session links (E07) | SCRUM-181 Done; Jira status alone is not an acceptance receipt. |
+| Safety and lifecycle | Initial safety submission, Safety Officer decision, reversion/re-entry, completion and cancellation (E08/E10) | SCRUM-61 In Review; SCRUM-158, SCRUM-62, SCRUM-73 Done. |
 | Registration and attendance | Session choices, capacity/Pending review, window, waitlist, withdrawal and attendance (E09) | Jira E09 stories Done. |
-| Change management | Request/decision, impact preview, arrangement reconfirmation, terminal Obsolete handling (E10) | SCRUM-70 and SCRUM-71 In Progress. |
+| Change management | Request/decision, impact preview, arrangement reconfirmation, terminal Obsolete handling (E10) | SCRUM-70 In Progress; SCRUM-71 In Review. |
 | Notifications and audit | In-app inbox, transactional outbox, durable relay/worker, activity records (E11/E14) | SCRUM-75 In Progress despite merged provider-verification evidence #433. |
 
 Future/unbuilt claims excluded from as-built diagrams: multi-role switching,
@@ -121,3 +121,58 @@ installed Chromium. Do not commit machine-specific paths. PNG renders use
 `--size 2600 --scale 2`; individual PDFs fit their diagrams. The combined PDF
 preserves vector diagrams, includes one explanation per view and verifies its
 page count. Inspect SVG, PNG and PDF outputs visually after regeneration.
+
+## Client-source trace and precedence audit (6 November)
+
+All eight supplied client/course source files were read. DOCX references below
+use section names and XML paragraph numbers (including table cells), because
+Word pagination depends on the renderer; no page number is invented. Workbook
+references use physical worksheet rows. PDF references use PDF pages.
+
+| Source, in teaching-week order | Requirement or method and effect on this pack |
+| --- | --- |
+| Week 1 Customer Briefing.docx, Background paragraphs 21-53; features 79-206; sections 7-8 paragraphs 241-258 | Replace fragmented email/spreadsheet coordination with consistent event workflows, role/relationship visibility, mobile use and auditability. This is the wider product vision, not proof every feature is Release 1. |
+| Week 2 User Story Assignment.pdf pp. 1-3 | Title, user story, testable acceptance criteria and INVEST; the design links canonical stories rather than inventing acceptance. |
+| G1G2 Week2 Clarification.xlsx, Sheet1 rows 7, 9, 11-12, 17-18, 21-28, 35, 38-40, 53-59 | No billing/transit model; human venue approval; authenticated accounts; notification channel flexible. Automatic Coordinator assignment, deferred buffers/expiry and nonautomatic status changes are later superseded. Lockout thresholds are unspecified customer policy; 30 minutes/five failures is an implementation choice. |
+| Week 4 Project Instructions.docx, First Release paragraphs 34-79 | Twenty core areas: access, requests, drafts, review, assignment, status, information updates; venue catalogue/calendar/search/suitability/request/approval/conflicts; equipment requests/availability/reservations; registration; changes; notifications. The catalogue groups these into connected workflows, not isolated screens. |
+| Same DOCX, Deliverables paragraphs 80-112; rubrics 155-179 | C4 system design; executable code, tests/CI and README; instructor repository access; significant decisions, trade-offs and traceability. The user's seven folder names/order are used explicitly; the source table orders design/testing/meetings differently. |
+| G1G2 Week4 Clarification.xlsx, Sheet1 rows 2-11 | Preloaded internal accounts; none-required equipment counts complete; capacity differs from planning attendance; tentative holds exist. Earlier separate-Event treatment of Sessions (row 9) is superseded by Week 9 row 38 and the current Session implementation. |
+| Week 7 Customer Changes.pdf p. 1 changes 1-3 | Venue setup/turnaround buffers; preserve Events and flag bookings on venue loss; multiple independent venue bookings. Reflected in arrangements ERD, lifecycle/user flow and API components. |
+| Same PDF p. 2 changes 4-6 | Expiring holds; Lead-only allocation queue and assignment; Safety Officer gate after arrangements and before confirmation. These supersede early auto-assignment and deferred-expiry/buffer answers. |
+| Week 7 Guide to Managing Changes.pdf p. 1 sections 1-6; pp. 2-3 examples | Maintain C4, class, sequence, data model, interfaces and tests with changed requirements. This pack includes those model types and links actual API code. The guide's reopening examples conflict with later instructor/team no-reopening guidance; this design task changes no Jira state and records gaps separately. |
+| G1G2 Week9 Clarification.xlsx, G1G2 rows 2-8, 15-29 | Contracts stay offline; no specified minimum lead time; submitted changes pass through Coordinator; pending changes become obsolete at terminal Events; preloaded roles; material changes require re-review. A two-year submission horizon is a team rule, not a verbatim customer requirement. |
+| Same workbook rows 30-46 | Staff choose hold expiry; Safety Review precedes confirmation; Leads assign immediately and cannot coordinate personally; multiple Session windows and Session-specific equipment. Diagram responsibilities follow these later clarifications. |
+| Same workbook rows 47-67 | Save buffer changes and flag conflicts; row 50 permits open-ended venue blocks, superseding row 42; venue loss returns Events to Planning (51); notify Organiser/Attendees when replacement/formal change is confirmed (52); automatic safety entry (63), decisions/comments (65), no self-registration (67). Automatic initial safety entry remains an explicit implementation gap. Row 58's narrower Lead wording conflicts with rows 31/37's system-wide view; diagrams show actual scoped routes, not an invented new policy. |
+
+### Supplementary notation references
+
+The lecture-backed C4, class and sequence views remain the required design
+foundation. Supplementary views add data movement and lifecycle explanation:
+[Mermaid flowchart](https://mermaid.js.org/syntax/flowchart.html),
+[state diagram](https://mermaid.js.org/syntax/stateDiagram.html) and
+[ER notation](https://mermaid.js.org/syntax/entityRelationshipDiagram.html)
+define the text DSL used. The [IBM DFD reference](https://www.ibm.com/think/topics/data-flow-diagram)
+use context Level 0 followed by Level 1 decomposition. Our cylinder store glyph
+is a declared Mermaid adaptation, not a claim of strict Yourdon/Gane-Sarson
+notation. These supplementary diagrams do not introduce extra runtime services.
+
+### Assumptions and review boundaries
+
+- Main `0773a721` remains the application baseline; documentation-only changes
+  do not retroactively change the independently tested tree.
+- The confirmed display names are Bryan (Product Owner only), Amareet (Scrum
+  Master and Developer), Aaron, Xiang Ying, Le Xin and Ji Ning (Developers).
+  Confirmed GitHub mappings respectively: bryanseah234, amareetkm2024-del,
+  Bl0oper, xiangyingg, lexinphun2024-debug and jininggg. Authorship is not
+  inferred from role or Jira assignment.
+- The user's earlier 9 PM SGT cutoff is the working deadline, ahead of the
+  source instructions' 23:59 cutoff. Submission packaging follows the user's
+  exact numbered folder names. This task does not submit to eLearn.
+- [CONFIRM] `README.md`, repository access: a team member must verify both
+  instructors have access; public visibility alone is not an access receipt.
+- [CONFIRM] `docs/decisions/release-1-as-built-reconciliation.md`, ADR-019,
+  T-82 and scheduling rows: PO/owners must resolve acceptance of documented
+  target/code differences. This documentation PR cannot establish acceptance.
+- Issues for other owners: legacy architecture files listed above remain
+  contradictory outside this task's ownership; `docs/source-of-truth.md` still
+  indexes those older views. Owners should reconcile links after this PR merges.
