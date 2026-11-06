@@ -120,9 +120,33 @@ def pr_limit_errors(
     return errors
 
 
-def pr_size_errors(current: dict[str, Any], policy: dict[str, Any]) -> list[str]:
+def pr_size_errors(
+    current: dict[str, Any],
+    policy: dict[str, Any],
+    files: list[dict[str, Any]] | None = None,
+) -> list[str]:
     if not policy_is_active(current["createdAt"], policy):
         return []
+
+    excluded_prefixes = tuple(policy.get("size_limit_excluded_path_prefixes", []))
+    size = current
+    if excluded_prefixes:
+        if files is None:
+            raise ValueError("PR files are required when paths are excluded from size limits")
+        included_files = [
+            file
+            for file in files
+            if not all(
+                path.startswith(excluded_prefixes)
+                for path in (file["filename"], file.get("previous_filename") or file["filename"])
+            )
+        ]
+        size = {
+            **current,
+            "changedFiles": len(included_files),
+            "additions": sum(int(file["additions"]) for file in included_files),
+            "deletions": sum(int(file["deletions"]) for file in included_files),
+        }
 
     errors: list[str] = []
     limits = (
@@ -131,7 +155,7 @@ def pr_size_errors(current: dict[str, Any], policy: dict[str, Any]) -> list[str]
         ("deletions", "deletions", int(policy["max_deletions"])),
     )
     for key, label, limit in limits:
-        value = int(current.get(key, 0))
+        value = int(size.get(key, 0))
         if value > limit:
             errors.append(f"PR #{current['number']} has {value} {label}; limit is {limit}")
     return errors
@@ -166,6 +190,20 @@ def current_pr(number: str) -> dict[str, Any]:
     )
 
 
+def current_pr_files(number: str) -> list[dict[str, Any]]:
+    repository = os.environ["GITHUB_REPOSITORY"]
+    pages = json.loads(
+        run([
+            "gh",
+            "api",
+            "--paginate",
+            "--slurp",
+            f"repos/{repository}/pulls/{number}/files?per_page=100",
+        ])
+    )
+    return [file for page in pages for file in page]
+
+
 def open_prs() -> list[dict[str, Any]]:
     repository = os.environ["GITHUB_REPOSITORY"]
     return json.loads(
@@ -196,7 +234,7 @@ def main() -> int:
         current = current_pr(args.pr_number)
         open_pull_requests = open_prs()
         errors.extend(pr_limit_errors(current=current, open_prs=open_pull_requests, policy=policy))
-        errors.extend(pr_size_errors(current, policy))
+        errors.extend(pr_size_errors(current, policy, current_pr_files(args.pr_number)))
         if not policy_is_active(current["createdAt"], policy):
             print(f"PR #{args.pr_number}: grandfathered because it predates the guardrail policy")
 

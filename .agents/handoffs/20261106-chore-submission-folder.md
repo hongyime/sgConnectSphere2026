@@ -12,6 +12,9 @@ guards.
 - The LFS pointer workflow ignores only `submission/`; it remains active for
   every other path.
 - `submission/` is export-ignored so source-code archives exclude the package.
+- Submission-only changes do not consume PR-size budgets. Renames from another
+  path into `submission/` still do; open-PR and reference-binary safeguards
+  remain universal.
 
 ## Completed
 
@@ -25,6 +28,9 @@ guards.
 - `python scripts/check.py` passed repository hygiene and 197 tooling tests.
 - `python scripts/doc_guard.py` passed with 160 existing front-matter warnings
   after the documented `Docs-Impact: none` waiver.
+- Added the submission-only PR-size-budget exception, including rename-safe
+  unit coverage. `python scripts/check.py` passed repository hygiene and 199
+  tooling tests; the corresponding automated T-65 run record is committed.
 
 ## Remaining steps
 
@@ -35,3 +41,10 @@ guards.
   merge the other two PRs from this branch. After one is merged or closed,
   rerun the failed guardrail check and confirm all required checks before
   marking #444 ready for review.
+- As of 6 November, the author has four open PRs (#436, #442, #444 and #445).
+  The updated count remains above the per-author limit.
+- The user approved a narrow 6 November exception: `submission/` changes are
+  excluded from the 40-file/1,800-addition/1,500-deletion budgets, with an
+  old-and-new-path check to prevent evasion by rename. The exception does not
+  solve #437 by itself: its non-submission duplicate setup/configuration paths
+  still need to be removed by rebasing onto #444 after #444 merges.
