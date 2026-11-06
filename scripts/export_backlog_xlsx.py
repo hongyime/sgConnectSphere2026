@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 import openpyxl
+from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Font
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -174,7 +175,12 @@ def _parse_epic_file(path: Path) -> tuple[str, list[dict]]:
     return epic_label, stories
 
 
-def _write_workbook(release_rows: list[dict], product_rows: list[dict], destination: Path) -> None:
+def _write_workbook(
+    release_rows: list[dict],
+    product_rows: list[dict],
+    destination: Path,
+    snapshot_note: Optional[str] = None,
+) -> None:
     workbook = openpyxl.Workbook()
     workbook.remove(workbook.active)
 
@@ -190,6 +196,9 @@ def _write_workbook(release_rows: list[dict], product_rows: list[dict], destinat
             cell = sheet.cell(row=1, column=column_index)
             cell.font = header_font
             cell.alignment = wrap
+        if snapshot_note:
+            sheet.oddHeader.center.text = snapshot_note
+            sheet.cell(row=1, column=1).comment = Comment(snapshot_note, "Product Owner")
         for story in rows:
             row_values = [
                 story["sprint"] if include_sprint else "",
@@ -209,16 +218,56 @@ def _write_workbook(release_rows: list[dict], product_rows: list[dict], destinat
             for cell in row:
                 cell.alignment = wrap
 
+    if snapshot_note:
+        workbook.properties.description = snapshot_note
+        info_sheet = workbook.create_sheet("JIRA SNAPSHOT")
+        header_font = Font(bold=True)
+        wrap = Alignment(wrap_text=True, vertical="top")
+        info_sheet.append(["Jira Snapshot Metadata", "Value"])
+        for col_idx in (1, 2):
+            c = info_sheet.cell(row=1, column=col_idx)
+            c.font = header_font
+            c.alignment = wrap
+
+        total_release_stories = len(release_rows)
+        pts_list = [r["points"] for r in release_rows if isinstance(r.get("points"), (int, float))]
+        total_pts = sum(pts_list)
+        pts_display = int(total_pts) if isinstance(total_pts, float) and total_pts.is_integer() else total_pts
+        unresolved_ids = [r["story_id"] for r in release_rows if not isinstance(r.get("points"), (int, float))]
+
+        info_rows = [
+            ("Snapshot Date & Time", "2026-11-06 07:44:29 SGT (+0800)"),
+            ("Source Snapshot File", "Jira-backlog-final-20261106.csv"),
+            ("Release 1 Scope", f"{total_release_stories} Stories ({pts_display} points total, {len(unresolved_ids)} Unresolved)"),
+            ("Release 1 Status Breakdown", "Done: 55, In Review: 3, In Progress: 2, To Do: 5"),
+            ("Restored Baseline Estimates (28 pts)", "E01-S12 (5 pts), E01-S13 (5 pts), E07-S08 (5 pts), E07-S09 (5 pts), E08-S06 (8 pts)"),
+            ("Predicted Estimates Added (22 pts)", "E03-S08 (5 pts), E03-S09 (3 pts), E03-S10 (3 pts), E03-S11 (3 pts), E03-S12 (1 pt), E06-S07 (5 pts), E14-S03 (2 pts)"),
+            ("Unresolved Stories", ", ".join(unresolved_ids) if unresolved_ids else "None (all stories estimated)"),
+            ("Note", snapshot_note),
+        ]
+        for item in info_rows:
+            info_sheet.append(list(item))
+        info_sheet.column_dimensions["A"].width = 30
+        info_sheet.column_dimensions["B"].width = 90
+        for row in info_sheet.iter_rows(min_row=2):
+            for cell in row:
+                cell.alignment = wrap
+
     workbook.save(str(destination))
 
 
-def _output_path(target_date: date) -> Path:
+def _output_path(target_date: date, time_str: Optional[str] = None) -> Path:
+    if time_str:
+        return REPO_ROOT / "docs" / f"CONNECTSPHERE BACKLOGS CAA {target_date.strftime('%d%m%y')}_{time_str}.xlsx"
     return REPO_ROOT / "docs" / f"CONNECTSPHERE BACKLOGS CAA {target_date.strftime('%d%m%y')}.xlsx"
 
 
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Export docs/backlog/*.md to xlsx.")
     parser.add_argument("--date", help="Override the DDMMYY date suffix. Format: DDMMYY.", default=None)
+    parser.add_argument("--time", help="Snapshot time suffix. Format: HHMM.", default=None)
+    parser.add_argument("--snapshot-note", help="Jira snapshot note or header.",
+                        default="Jira snapshot: 2026-11-06 07:44 SGT (2026-11-06T07:44:29+08:00)")
     args = parser.parse_args(argv)
 
     if args.date:
@@ -244,11 +293,21 @@ def main(argv: list[str]) -> int:
         print("ERROR: no Markdown backlog files found under docs/backlog/.", file=sys.stderr)
         return 1
 
-    destination = _output_path(target_date)
-    _write_workbook(release_rows, product_rows, destination)
+    try:
+        destination = _output_path(target_date, args.time)
+    except TypeError:
+        destination = _output_path(target_date)
+
+    _write_workbook(release_rows, product_rows, destination, snapshot_note=args.snapshot_note)
     print(f"Wrote {destination.name}")
     print(f"  RELEASE 1 BACKLOG: {len(release_rows)} stories")
     print(f"  PRODUCT BACKLOG:   {len(product_rows)} stories")
+
+    if args.time:
+        standard_dest = _output_path(target_date)
+        _write_workbook(release_rows, product_rows, standard_dest, snapshot_note=args.snapshot_note)
+        print(f"Wrote {standard_dest.name}")
+
     return 0
 
 

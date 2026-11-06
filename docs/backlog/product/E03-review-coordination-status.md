@@ -233,7 +233,7 @@ Given I am not the assigned Coordinator When I attempt to edit an approved event
 ## E03-S08 — Assign a queued request to an Event Coordinator as the Lead
 
 - **Sprint**:
-- **Points**:
+- **Points**: 5
 - **BDR references**: C-69, C-85, C-93, C-100, C-105, C-106, C-127, C-130, T-70, T-72, T-73, T-74
 - **Owner**:
 
@@ -282,7 +282,7 @@ Given a request has been assigned from the queue When the Organiser tracks the e
 ## E03-S09 — Reassign an event as the Lead
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-69, C-85, C-90, C-93, C-100, C-104, C-105, C-106, C-127, C-128, C-129, T-70, T-73, T-74
 - **Owner**:
 
@@ -319,7 +319,7 @@ Given I am not an Event Coordinator Lead When I attempt to reassign an event The
 ## E03-S10 — Oversee coordinator assignments and active events as the Lead
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-69, C-86, C-93, C-100, C-106, C-127, T-70, T-73
 - **Owner**:
 
@@ -357,7 +357,7 @@ Given I am not an Event Coordinator Lead When I navigate to the oversight view T
 ## E03-S11 — Let the Organiser edit registration setup and fix the date layout
 
 - **Sprint**:
-- **Points**:
+- **Points**: 3
 - **BDR references**: C-52, T-16, T-74
 - **Owner**:
 
@@ -404,7 +404,7 @@ Given I am editing an event When I view the Registration section Then "Registrat
 ## E03-S12 — Show consistent Organiser save success status
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 1
 - **BDR references**: T-93
 - **Owner**: Le Xin
 

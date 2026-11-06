@@ -40,13 +40,11 @@ flow is not implemented.
 
 ## [CONFIRM]
 
-- Team refinement must estimate E03-S08/S09/S10/S11/S12, E06-S07 and E14-S03;
-  their existing Jira records have no defensible point value.
-- Team refinement must select a Sprint for E01-S13, E02-S05, E03-S08/S09/S10
-  and E06-S07; none has a source-backed Sprint commitment.
+- Estimates for E03-S08/S09/S10/S11/S12, E06-S07 and E14-S03 were completed and confirmed by the Product Owner on 6 Nov 2026 (22 points restored; total Release 1 scope reconciled to 65 stories and 252 points).
+- Sprint allocations backfilled and confirmed from Jira (E02-S05, E02-S07, E04-S02, E07-S08, E07-S09 in Sprint 5; E01-S13, E03-S08/S09/S10/S11/S12, E14-S03 in Sprint 3; E06-S07 remaining in backlog To Do).
 - The E06-S07 assignee was inherited from E06-S05 as a practical ownership
   assumption, not a customer requirement; the Product Owner should confirm it.
-- C-111 and C-119 conflict on whether a venue block may be open-ended.
+- C-111 and C-119 conflict on whether a venue block may be open-ended; confirmed resolved by the Product Owner citing Team Decision T-80 (the application, API and schema support both bounded and open-ended maintenance blocks until lifted; no code changes required).
 - E06-S07 needs test cases and implementation by the venue-booking owners.
 - E03-S08/S09/S10 need implementation and updated executable/manual tests by
   their owners; this documentation does not claim them delivered.
