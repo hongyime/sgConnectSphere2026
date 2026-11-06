@@ -47,8 +47,8 @@ DEFECTS = REPO_ROOT / "docs" / "testing" / "defects.md"
 TC_RE = re.compile(r"TC_E\d{2}S\d{2}_\d{2}[a-z]?")
 # Git and GitHub identities -> the team names used in every deliverable.
 TEAM = {"b": "Bryan", "bryanseah234": "Bryan", "amareetkm2024-del": "Amareet",
-        "lexinphun": "Lexin", "lexinphun2024-debug": "Lexin", "Ji Ning": "Jining",
-        "jininggg": "Jining", "Xiang Ying": "Xiangying", "xiangyingg": "Xiangying",
+        "lexinphun": "Le Xin", "lexinphun2024-debug": "Le Xin", "Ji Ning": "Ji Ning",
+        "jininggg": "Ji Ning", "Xiang Ying": "Xiang Ying", "xiangyingg": "Xiang Ying",
         "Bl0oper": "Aaron", "aaronkwk": "Aaron"}
 # The course's four execution statuses (Week 4 slide 22).
 STATUS = {"PASS": "Pass", "PASSED": "Pass", "FAIL": "Fail", "FAILED": "Fail",
@@ -56,6 +56,22 @@ STATUS = {"PASS": "Pass", "PASSED": "Pass", "FAIL": "Fail", "FAILED": "Fail",
           "SKIPPED": "Not Executed", "N/A": "Not Executed", "BLOCKED": "Blocked"}
 # Tie-break for one TC in one run: a failure wins, and an unexecuted placeholder never hides an executed result.
 RANK = {"Fail": 0, "Blocked": 1, "Pass": 2, "Not Executed": 3}
+# Across an AC's cases an unexecuted case outranks a pass, so the AC passes only when every case does.
+AC_RANK = {"Fail": 0, "Blocked": 1, "Not Executed": 2, "Pass": 3}
+
+
+def ac_result(statuses: list[str]) -> str:
+    """Worst latest status of an AC's cases; a case with no result counts as Not Executed."""
+    return min(statuses, key=AC_RANK.get) if statuses else "Not Executed"
+
+
+def manifest_sources(results: Path, manifest: dict) -> list[tuple[dict, Path]]:
+    """Each manifest run with its result file; a missing file stops the export rather than vanishing."""
+    sources = [(run, results / run["path"]) for run in manifest["runs"]]
+    missing = [f"{run['id']}: {src}" for run, src in sources if not src.exists()]
+    if missing:
+        raise SystemExit("Result files listed in manifest.json are missing:\n" + "\n".join(missing))
+    return sources
 
 
 def course_status(raw: str) -> str:
@@ -239,10 +255,7 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
                         "correction": (f"Corrected: {fixed.get('Problem', '')} -> {fixed.get('Correction', '')}" if fixed else "")})
     out.parent.mkdir(parents=True, exist_ok=True)
     if results:
-        for run in manifest["runs"]:
-            src = results / run["path"]
-            if not src.exists():
-                continue
+        for run, src in manifest_sources(results, manifest):
             parsed = playwright_tests(src) if run["kind"] == "playwright" else junit_tests(src)
             for n, t in enumerate(parsed):
                 tcs = tc_ids(t["title"])
@@ -334,8 +347,8 @@ def build(out: Path, results: Path | None, mutation: Path | None) -> str:
     for ac in acs:
         tcs = by_ac.get((ac["story"], ac["scenario"]), [])
         results_ = [overall(tc) for tc in tcs]
-        statuses = [r["status"] for r in results_ if r]
-        worst = min(statuses, key=RANK.get) if statuses else "Not Executed"
+        statuses = [r["status"] if r else "Not Executed" for r in results_]
+        worst = ac_result(statuses)
         trace_rows.append([ac["story"], ac["story_title"], f"Scenario {ac['scenario']}", ac["name"],
                            "Superseded" if ac["superseded"] else "In force", ", ".join(tcs) or "NO TEST CASE",
                            len(tcs), sum(s == "Pass" for s in statuses), worst,

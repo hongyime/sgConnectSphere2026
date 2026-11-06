@@ -15,7 +15,11 @@ that PR first.
   allowlist.
 - `run-record-corrections.md`: ledger for wrong historical records (never
   edited, T-65). `defects.md`: SCRUM-256 to SCRUM-259.
-- `scripts/export_test_submission_xlsx.py`: the course workbook.
+- `scripts/export_test_submission_xlsx.py`: the course workbook. After Xiang
+  Ying's review, an AC passes only when every linked case passes (a case with
+  no result counts as Not Executed), and a result file named in
+  `manifest.json` but missing stops the export. Both have regressions in
+  `tooling/tests/test_export_test_submission_xlsx.py`.
 - Playwright: per-environment report folders and screenshots for evidence
   runs; `tests/deployed/` demo sign-ins; e2e fixme stubs replaced.
 
