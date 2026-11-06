@@ -7,8 +7,11 @@ Run from the repository root:
 
 A test case is counted as **automated** when a live ``test(...)`` block anywhere
 in ``backend/tests/``, ``tests/``, or ``frontend/src/`` has the TC_ID literally
-in its title. A test case is counted as **scaffold** when only a
-``test.fixme`` or ``test.skip`` mentions it. Anything else is **no test**.
+in its title. A test case is a **known defect** when its only live tests
+are expected failures (a node:test ``{ todo: ... }`` option or a Playwright
+``test.fail(...)`` call in the body): the test runs, but the application fails
+it. A test case is counted as **scaffold** when only a ``test.fixme`` or
+``test.skip`` mentions it. Anything else is **no test**.
 """
 from __future__ import annotations
 
@@ -29,6 +32,12 @@ TEST_ROOTS = [
 # TC_ID pattern: TC_E01S01_01 style. Also permit the cross-cutting TC_PERF_01
 # and TC_DoD_XX shapes.
 TC_ID_RE = re.compile(r"TC_[A-Za-z0-9]+_\d+")
+# The title ends at its own closing quote, so "Coordinator's" stays whole.
+TEST_RE = re.compile(r"(test\.fixme|test\.skip|test\.only|test)\s*\(\s*(?:'([^'\n]+)'|\"([^\"\n]+)\")")
+TODO_OPTION_RE = re.compile(r"\s*,\s*\{[^{}]*\btodo\s*:")
+EXPECTED_FAIL_RE = re.compile(r"\btest\.fail\s*\(")
+# A case takes the strongest status any of its tests gives it.
+RANK = {"none": 0, "scaffold": 1, "known-defect": 2, "active": 3}
 
 
 def load_workbook_cases() -> list[dict]:
@@ -78,26 +87,34 @@ def scan_test_files() -> dict:
                 or "from '../mocks'" in text or 'from "../mocks"' in text
                 or "vi.mock(" in text or "jest.mock(" in text
             )
-            for match in re.finditer(r"(test\.fixme|test\.skip|test\.only|test)\s*\(\s*['\"]([^'\"]+)['\"]", text):
+            matches = list(TEST_RE.finditer(text))
+            for index, match in enumerate(matches):
                 keyword = match.group(1)
-                title = match.group(2)
+                title = match.group(2) or match.group(3)
                 is_active = keyword in ("test", "test.only")
+                # The body runs up to the next test call; a test.fail() there or a
+                # todo option right after the title makes this an expected failure.
+                body_end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+                expected_failure = is_active and (
+                    TODO_OPTION_RE.match(text, match.end()) is not None
+                    or EXPECTED_FAIL_RE.search(text, match.end(), body_end) is not None
+                )
+                status = "known-defect" if expected_failure else "active" if is_active else "scaffold"
                 if keyword == "test.only":
                     test_only_warnings.append(f"{rel}: {title}")
                 tc_refs = TC_ID_RE.findall(title)
                 if tc_refs:
                     for tc in tc_refs:
                         entry = tc_index[tc]
-                        if is_active:
-                            entry["status"] = "active"
+                        if RANK[status] > RANK[entry["status"]]:
+                            entry["status"] = status
+                        if status == "active":
                             if is_integration_file:
                                 entry["category"] = "real-db"
                             elif is_mock_file:
                                 entry["category"] = "mock-backed"
                             else:
                                 entry["category"] = "live-assertion"
-                        elif entry["status"] == "none":
-                            entry["status"] = "scaffold"
                         entry["files"].append(f"{rel}: {title}")
                 elif is_active:
                     active_no_tc[rel].append(title)
@@ -118,7 +135,8 @@ def build_report(cases: list[dict], scan: dict) -> str:
     total = len(cases)
     active = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active")
     scaffold = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "scaffold")
-    absent = total - active - scaffold
+    defect = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "known-defect")
+    absent = total - active - scaffold - defect
 
     parts: list[str] = []
     parts.append("# Test case coverage audit")
@@ -156,6 +174,7 @@ def build_report(cases: list[dict], scan: dict) -> str:
     parts.append(f"  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **{mock_backed}**")
     parts.append(f"  - Live-assertion (other active tests): **{live_assertion}**")
 
+    parts.append(f"- Known defect (only an expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **{defect}** ({defect / total * 100:.1f}%)")
     parts.append(f"- Scaffold (mentioned only in `test.fixme` / `test.skip`): **{scaffold}** ({scaffold / total * 100:.1f}%)")
     parts.append(f"- No test yet (no test file mentions the TC_ID): **{absent}** ({absent / total * 100:.1f}%)")
 
@@ -169,23 +188,24 @@ def build_report(cases: list[dict], scan: dict) -> str:
 
     parts.append("## Coverage by epic")
     parts.append("")
-    parts.append("| Epic | Cases | Automated | Scaffold | No test |")
-    parts.append("| --- | ---: | ---: | ---: | ---: |")
+    parts.append("| Epic | Cases | Automated | Known defect | Scaffold | No test |")
+    parts.append("| --- | ---: | ---: | ---: | ---: | ---: |")
     for epic in sorted(by_epic):
         rows = by_epic[epic]
         cnt = len(rows)
         act = sum(1 for r in rows if tc_index.get(r["case_id"], {}).get("status") == "active")
+        dfc = sum(1 for r in rows if tc_index.get(r["case_id"], {}).get("status") == "known-defect")
         scf = sum(1 for r in rows if tc_index.get(r["case_id"], {}).get("status") == "scaffold")
-        none = cnt - act - scf
-        parts.append(f"| {epic} | {cnt} | {act} | {scf} | {none} |")
-    parts.append(f"| **Total** | **{total}** | **{active}** | **{scaffold}** | **{absent}** |")
+        none = cnt - act - dfc - scf
+        parts.append(f"| {epic} | {cnt} | {act} | {dfc} | {scf} | {none} |")
+    parts.append(f"| **Total** | **{total}** | **{active}** | **{defect}** | **{scaffold}** | **{absent}** |")
     parts.append("")
 
     parts.append("## Case-by-case status")
     parts.append("")
     parts.append(
         "Each row records the TC_ID, story, scenario, current status, and (for "
-        "automated or scaffold rows) the test file and test title that touches "
+        "automated, known-defect or scaffold rows) the test file and test title that touches "
         "it. Sort order is by epic then Story ID then TC_ID."
     )
     parts.append("")
@@ -197,7 +217,7 @@ def build_report(cases: list[dict], scan: dict) -> str:
         for case in sorted(by_epic[epic], key=lambda c: (c["story_id"], c["case_id"])):
             entry = tc_index.get(case["case_id"], {"status": "none", "files": []})
             status = entry["status"]
-            emoji = {"active": "✅", "scaffold": "⚠️", "none": "❌"}[status]
+            emoji = {"active": "✅", "known-defect": "🐞", "scaffold": "⚠️", "none": "❌"}[status]
             where = "; ".join(entry["files"][:2]) if entry["files"] else "—"
             scen = case["scenario"].replace("|", "\\|")[:80]
             parts.append(f"| `{case['case_id']}` | {case['story_id']} | {scen} | {emoji} {status} | {where[:180]} |")
@@ -262,7 +282,8 @@ def main() -> int:
     tc_index = scan["tc_index"]
     active = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active")
     scaffold = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "scaffold")
-    absent = len(cases) - active - scaffold
+    defect = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "known-defect")
+    absent = len(cases) - active - scaffold - defect
     real_db = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
                   and tc_index.get(c["case_id"], {}).get("category") == "real-db")
     mock_backed = sum(1 for c in cases if tc_index.get(c["case_id"], {}).get("status") == "active"
@@ -272,6 +293,7 @@ def main() -> int:
     print(f"    real-db:        {real_db}")
     print(f"    mock-backed:    {mock_backed}")
     print(f"    live-assertion: {live_assertion}")
+    print(f"  Known defect: {defect}/{len(cases)} ({defect/len(cases)*100:.1f}%)")
     print(f"  Scaffold:  {scaffold}/{len(cases)} ({scaffold/len(cases)*100:.1f}%)")
     print(f"  No test:   {absent}/{len(cases)} ({absent/len(cases)*100:.1f}%)")
     test_only_warnings = scan.get("test_only_warnings", [])
