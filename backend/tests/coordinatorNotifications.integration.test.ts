@@ -36,19 +36,18 @@ test('TC_E03S08_01 TC_E03S08_03 TC_E11S01_11: submission notifies the Lead, then
       assert.equal(event.status,'submitted');
       assert.equal(event.coordinatorId,undefined);
       const rows=await f.messages(event.id);
-      assert.deepEqual(rows.map(r=>r.user_id).sort(),[f.ids.organiser,f.ids.lead].sort());
+      assert.deepEqual(rows.map(r=>r.user_id),[f.ids.lead]);
       assert.equal(rows.find(r=>r.user_id===f.ids.lead)?.title,'New request awaiting assignment');
-      assert.equal(rows.find(r=>r.user_id===f.ids.organiser)?.title,'Event update');
       assert.ok(rows.every(r=>r.delivery_id && r.recipient_email===`${r.user_id}@example.test`));
       await assignQueuedEvent(f.pool,f.lead(),event.id,{coordinator_id:f.ids.a});
       const assigned=await f.repository.findEventById(event.id);
       assert.equal(assigned?.status,'under_review');
       assert.equal(assigned?.coordinatorId,f.ids.a);
       const assignedRows=await f.messages(event.id);
-      assert.equal(assignedRows.length,4);
+      assert.equal(assignedRows.length,3);
       assert.equal(assignedRows.find(r=>r.user_id===f.ids.a)?.title,'New event assigned');
       await assert.rejects(assignQueuedEvent(f.pool,f.lead(),event.id,{coordinator_id:f.ids.a}),{status:409});
-      assert.equal((await f.messages(event.id)).length,4,'replaying assignment cannot duplicate either channel');
+      assert.equal((await f.messages(event.id)).length,3,'replaying assignment cannot duplicate either channel');
     }
   } finally { await f.close(); }
 });
@@ -119,6 +118,7 @@ async function leadRoutes() {
   process.env.DATABASE_URL=f.connectionString;
   delete process.env.DATABASE_POOLER_URL;
   process.env.APP_URL='https://app.example.test';
+  process.env.ADDITIONAL_ALLOWED_ORIGINS='https://app.example.test';
   const {tokenDigest}=await import('../src/modules/accessControl/sessions.js');
   const {getDatabasePool}=await import('../src/database/client.js');
   const {default:handler}=await import('../../api/events.js');
