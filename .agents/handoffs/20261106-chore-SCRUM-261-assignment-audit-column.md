@@ -6,12 +6,14 @@ Add the nullable `events.assigned_by` foreign key needed by the E03-S08 applicat
 
 - Created this branch from `origin/main` for the migration-only change.
 - CI for #453 exposed the missing `assigned_by` column in the PostgreSQL acceptance tests.
+- Added nullable `events.assigned_by` referencing `users(id)`; existing rows remain null because prior assignments were automatic.
 
 ## Next
 
-- Add a backward-compatible migration for `events.assigned_by`, run the repository checks, push, and open a migration-only PR linked to #453.
+- Run the repository checks, push, and open a migration-only PR linked to #453.
 - The production migration must be separately applied and verified after merge through the protected workflow; no production database operation is part of this task.
 
 ## Verification
 
-- Not run yet.
+- `python scripts/check.py` and `python scripts/doc_guard.py` passed before the handoff-only first commit.
+- Re-run both checks on the migration diff before committing it.
