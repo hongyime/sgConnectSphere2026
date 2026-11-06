@@ -42,3 +42,15 @@ Reviewed e3eb1729 read-only. Full application CI and repository checks succeed; 
 - PR #450 (SCRUM-261 Lead recovery) is open, so the Lead delivery gap remains. PR #451 names the final Jira CSV and adds PDF/CSV packaging, but is also open. Jira still reports 65 Release 1 stories: 60 Done, 5 To Do.
 - User reports all three recording links require sign-in, with no broader sharing option. Do not claim anonymous or verified instructor access.
 - Follow-up PR will include only the two answer copies, confirmation checklist and required handoff/evidence records. No deletion or application change. External laptop copy is not updated in this phase.
+
+## Full file audit and laptop synchronization
+
+User requested a complete local audit and synchronization of all copies after #450. Merged main a8f2d879 into this existing branch without conflicts. #450 and #451 are merged; their old pending text is removed. Lead implementation is separated from manual/PO acceptance: SCRUM-256 to 258 and SCRUM-261 remain To Do; the defects registry still lists historical Lead defects Open. Reuse and initial automatic safety entry remain gaps.
+
+Read-only Jira totals: 65 Release 1 stories, 60 Done, 5 To Do, 227 recorded points. Product-story totals per person are preserved after excluding technical enablers. Refreshed Git/PR/account-review/manual-session counts and their definitions. All 17 template questions retained; timing sums to 20 minutes. Corrected safety re-entry qualification and queue/review component paths. Restored TA-recording confirmation from the laptop's older checklist instead of dropping it. The packaged CSV has 259 issues and 56 fields; earlier source audit metadata mentioning 53 fields is a historical discrepancy outside this task's ownership.
+
+Two independent read-only agent audits checked source/template completeness, arithmetic, existing asset paths and process/safety claims. No application or database suite was run for these prose edits. Successful PR450 CI 42227594248 is cited separately from post-merge main run 42233620112, which was still running at the checkpoint. Tooling/doc guard results and later CI checkpoint are recorded in this session's execution records.
+
+Canva is not changed during this file audit. Its visible text and speaker notes require synchronization; slide 7 has an extra evidence prompt absent from the original template. Laptop Markdown/checklist copies are to be synchronized after checks; preserve instructor access, TA receipt, human-review receipts and Lead acceptance as unresolved confirmations. No deletion. This audit's edits remain local unless separately committed/pushed.
+
+Final checkpoint: main run 42233620112 completed successfully; its log matches the refreshed figures. Source, repo submission and external laptop Markdown/checklist copies were synchronized and hash-checked. Repository gate passed 207 tooling tests (11 skipped), doc guard 0 errors/188 warnings. New immutable local/CI records added for this audit; changes remain local and Canva was not modified.
