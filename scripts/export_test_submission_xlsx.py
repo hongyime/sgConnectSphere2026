@@ -130,13 +130,8 @@ def md_table(path: Path) -> list[dict]:
 def junit_tests(path: Path) -> list[dict]:
     tests = []
     for case in ET.parse(path).getroot().iter("testcase"):
-        if case.find("failure") is not None or case.find("error") is not None:
-            node = case.find("failure") if case.find("failure") is not None else case.find("error")
-            status, detail = "Fail", (node.get("message") or node.text or "")[:500]
-        elif case.find("skipped") is not None:
-            status, detail = "Not Executed", "skipped"
-        else:
-            status, detail = "Pass", ""
+        fail = case.find("failure") if case.find("failure") is not None else case.find("error")
+        status, detail = ("Fail", (fail.get("message") or fail.text or "")[:500]) if fail is not None else (("Not Executed", "skipped") if case.find("skipped") is not None else ("Pass", ""))
         tests.append({"file": case.get("classname") or case.get("file") or "", "title": case.get("name", ""),
                       "project": "", "status": status, "duration": float(case.get("time") or 0),
                       "detail": detail, "shots": []})

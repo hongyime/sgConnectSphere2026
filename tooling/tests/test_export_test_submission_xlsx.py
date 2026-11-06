@@ -10,27 +10,22 @@ SPEC.loader.exec_module(exporter)
 
 
 class ExportTestSubmissionXlsxTests(unittest.TestCase):
-    def test_ac_result(self) -> None:
+    def test_exporter_regressions(self) -> None:
         self.assertEqual(exporter.ac_result(["Pass", "Not Executed", "Not Executed"]), "Not Executed")
         self.assertEqual(exporter.ac_result(["Pass", "Pass"]), "Pass")
         self.assertEqual(exporter.ac_result(["Pass", "Not Executed", "Fail", "Blocked"]), "Fail")
         self.assertEqual(exporter.ac_result(["Pass", "Not Executed", "Blocked"]), "Blocked")
         self.assertEqual(exporter.ac_result([]), "Not Executed")
-
-    def test_manifest_sources_missing_stops_export(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / "present.xml").write_text("<testsuites/>", encoding="utf-8")
             manifest = {"runs": [{"id": "ok", "path": "present.xml"}, {"id": "gone", "path": "missing.json"}]}
             with self.assertRaises(SystemExit) as caught:
                 exporter.manifest_sources(Path(tmp), manifest)
             self.assertTrue("gone" in str(caught.exception) and "missing.json" in str(caught.exception))
-
-    def test_manifest_sources_order(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
             for name in ("a.xml", "b.json"):
                 (Path(tmp) / name).write_text("{}", encoding="utf-8")
-            manifest = {"runs": [{"id": "a", "path": "a.xml"}, {"id": "b", "path": "b.json"}]}
-            self.assertEqual([src.name for _, src in exporter.manifest_sources(Path(tmp), manifest)], ["a.xml", "b.json"])
+            manifest_ok = {"runs": [{"id": "a", "path": "a.xml"}, {"id": "b", "path": "b.json"}]}
+            self.assertEqual([src.name for _, src in exporter.manifest_sources(Path(tmp), manifest_ok)], ["a.xml", "b.json"])
 
 
 if __name__ == "__main__":
