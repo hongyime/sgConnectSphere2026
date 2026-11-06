@@ -58,6 +58,19 @@ export function eventLabel(event: { event_code: string | null; title: string }) 
 
 export type CoordinatorAssignment = { coordinatorId: string; coordinatorName: string };
 
+export async function notifyLeadOfQueuedEvent(client: PoolClient, eventId: string, title: string, changeId: string, occurredAt: Date) {
+  const leads = await client.query<{ id: string }>(
+    `SELECT id FROM users WHERE role::text = 'event_coordinator_lead' AND is_active ORDER BY id`,
+  );
+  for (const lead of leads.rows) {
+    await notifyUser(client, {
+      userId: lead.id, eventId, changeId: `${changeId}:${lead.id}`, occurredAt,
+      title: 'New request awaiting assignment',
+      message: `${title} is waiting in the unassigned Event Coordinator queue.`,
+    });
+  }
+}
+
 // Scenarios 1 and 2. Runs inside the caller's transaction, straight after
 // the request is stored as Submitted, so the submission, the assignment, the
 // status change, their audit entries and the Coordinator's notification all
@@ -207,6 +220,74 @@ export async function listUnassignedEvents(database: Pool, user: AuthenticatedUs
   return result.rows;
 }
 
+// E03-S08: the Lead explicitly assigns one queued request. The event lock
+// keeps two Leads from assigning the same request at the same time.
+export async function assignQueuedEvent(
+  database: Pool,
+  user: AuthenticatedUser | undefined,
+  identifier: string,
+  body: unknown,
+) {
+  const lead = await requireLead(database, user, 'lead_assignment');
+  const coordinatorId = body && typeof body === 'object' && !Array.isArray(body)
+    ? (body as { coordinator_id?: unknown }).coordinator_id : undefined;
+  if (typeof coordinatorId !== 'string' || !UUID_PATTERN.test(coordinatorId)) {
+    throw new AccessError(400, 'Choose an Event Coordinator.');
+  }
+
+  return inTransaction(database, async client => {
+    const eventResult = await client.query<{
+      id: string; event_code: string | null; title: string; status: string;
+      coordinator_id: string | null; organiser_id: string;
+    }>(
+      `SELECT id, event_code, title, status, coordinator_id, organiser_id
+       FROM events WHERE id::text = $1 OR event_code = $1 FOR UPDATE`,
+      [identifier],
+    );
+    const event = eventResult.rows[0];
+    if (!event || event.status !== 'submitted' || event.coordinator_id) {
+      throw new AccessError(409, 'This request is no longer in the unassigned queue.');
+    }
+
+    const target = await client.query<{ id: string; full_name: string }>(
+      `SELECT u.id, u.full_name FROM users u WHERE u.id = $2 AND ${ELIGIBLE_COORDINATOR}`,
+      [LOCKOUT_FAILURE_THRESHOLD, coordinatorId],
+    );
+    if (!target.rows[0]) throw new AccessError(400, 'That user is not an active Event Coordinator.');
+
+    const updated = await client.query(
+      `UPDATE events
+       SET coordinator_id = $2, coordinator_assigned_at = now(), assigned_by = $3,
+           status = 'under_review'::event_status, status_changed_at = now()
+       WHERE id = $1 AND status = 'submitted' AND coordinator_id IS NULL`,
+      [event.id, coordinatorId, lead.id],
+    );
+    if (!updated.rowCount) throw new AccessError(409, 'This request is no longer in the unassigned queue.');
+
+    const audit = await client.query<{ id: string; occurred_at: Date }>(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+       VALUES ($1, 'event', $2, $2, 'Lead assigned', 'coordinator_id', NULL, $3) RETURNING id, occurred_at`,
+      [lead.id, event.id, coordinatorId],
+    );
+    await client.query(
+      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
+       VALUES ($1, 'event', $2, $2, 'Status changed to under_review', 'status', 'submitted', 'under_review')`,
+      [lead.id, event.id],
+    );
+    const change = audit.rows[0]!;
+    const label = eventLabel(event);
+    await notifyUser(client, {
+      userId: coordinatorId, eventId: event.id, changeId: change.id, occurredAt: change.occurred_at,
+      title: 'New event assigned', message: `You have been assigned to ${label}. It is now Under Review.`,
+    });
+    await notifyUser(client, {
+      userId: event.organiser_id, eventId: event.id, changeId: `${change.id}:organiser`, occurredAt: change.occurred_at,
+      title: 'Coordinator assigned', message: `${target.rows[0].full_name} is now coordinating ${label}.`,
+    });
+    return { eventId: event.id, coordinatorId };
+  });
+}
+
 export async function getAssignedEvent(database: Pool, user: AuthenticatedUser | undefined, identifier: string) {
   const coordinator = await requireCoordinator(database, user, 'coordinator_events');
   const result = await database.query(
@@ -247,6 +328,20 @@ export async function listCoordinatorColleagues(database: Pool, user: Authentica
      WHERE ${ELIGIBLE_COORDINATOR} AND u.id <> $3
      ORDER BY u.full_name, u.id`,
     [LOCKOUT_FAILURE_THRESHOLD, [...ACTIVE_EVENT_STATUSES], coordinator.id],
+  );
+  return result.rows;
+}
+
+export async function listAssignableCoordinators(database: Pool, user: AuthenticatedUser | undefined) {
+  await requireLead(database, user, 'lead_assignment');
+  const result = await database.query(
+    `SELECT u.id, u.full_name, u.email,
+       (SELECT count(*)::int FROM events e
+         WHERE e.coordinator_id = u.id AND e.status = ANY($2::event_status[])) AS active_events
+     FROM users u
+     WHERE ${ELIGIBLE_COORDINATOR}
+     ORDER BY active_events, u.full_name, u.id`,
+    [LOCKOUT_FAILURE_THRESHOLD, [...ACTIVE_EVENT_STATUSES]],
   );
   return result.rows;
 }

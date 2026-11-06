@@ -104,7 +104,7 @@ function DashboardBody({ events, incoming }: { events: AssignedEventSummary[]; i
       </section>
       {active.length === 0 ? (
         <EmptyState title="No events assigned to you yet">
-          When an organiser submits a request, it&apos;s assigned automatically to the Coordinator with the fewest active events. New assignments appear here and in your notifications.
+          When an organiser submits a request, it appears in the Lead&apos;s unassigned queue for deliberate assignment. New assignments appear here and in your notifications.
         </EmptyState>
       ) : (
         <section className="coordinator-list" aria-labelledby="upcoming-heading">
@@ -173,7 +173,7 @@ export function ReviewQueue() {
           {shown.length === 0 ? (
             <EmptyState title={events.length === 0 ? 'Your queue is empty' : `No events in “${active.label}”`}>
               {events.length === 0
-                ? 'Requests assigned to you will appear here as soon as organisers submit them.'
+                ? 'Requests assigned to you will appear here after the Lead assigns them.'
                 : 'Choose another filter to see the rest of your assigned events.'}
             </EmptyState>
           ) : (
