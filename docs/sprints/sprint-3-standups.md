@@ -1,5 +1,8 @@
 # Sprint 3 — Daily Standups
 
+> **Evidence basis.** Stand-up *dates* and *attendance* are accurate. Daily stand-ups were conducted mostly asynchronously and were **not** video-recorded, so no recording links exist and exact clock times are not logged. The notes below summarise each member's reported progress, not a verbatim transcript.
+
+
 Sprint 3 | 4 – 17 October 2026 | Format: Async written updates
 
 Four standups were held on 8, 11, 14 and 17 October 2026. All updates were

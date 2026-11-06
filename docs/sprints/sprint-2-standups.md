@@ -1,5 +1,8 @@
 # Sprint 2 — Daily Standups
 
+> **Evidence basis.** Stand-up *dates* and *attendance* are accurate. Daily stand-ups were conducted mostly asynchronously and were **not** video-recorded, so no recording links exist and exact clock times are not logged. The notes below summarise each member's reported progress, not a verbatim transcript.
+
+
 Sprint 2 | 21 September – 3 October 2026 | Format: Async written updates
 
 Four standups were held on 23, 26, 29 September and 2 October 2026. All updates

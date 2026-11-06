@@ -1,5 +1,8 @@
 # Sprint 1 — Daily Standups
 
+> **Evidence basis.** Stand-up *dates* and *attendance* are accurate. Daily stand-ups were conducted mostly asynchronously and were **not** video-recorded, so no recording links exist and exact clock times are not logged. The notes below summarise each member's reported progress, not a verbatim transcript.
+
+
 Sprint 1 | 14 – 19 September 2026 | Format: Async written updates
 
 Three standups were held on 16, 17 and 18 September 2026. All updates were

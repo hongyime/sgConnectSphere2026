@@ -4,6 +4,9 @@ Sprint 2 | 21 September – 3 October 2026 (Jira sprint 35)
 
 ## 1. Meeting Details
 
+> **Evidence basis.** Sprint and meeting *dates* and *attendance* are accurate (recalled and recorded by the Scrum Master). *Times and durations* are approximate. This session was held live and recorded; the Sprint 4 recordings are linked in the submission `.docx`, and earlier-sprint recording links are [CONFIRM: Amareet]. Any quotations in later sections are summarised contributions, not a verbatim transcript.
+
+
 | Field | Details |
 | --- | --- |
 | Date | 20 September 2026 |
