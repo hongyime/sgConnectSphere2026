@@ -102,7 +102,8 @@ test('E01-S01 real database, API, registration and recovery acceptance cases', a
       const locked = await row(a.id);
       assert.equal(locked.failed_login_count, 5);
       assert.ok(locked.locked_until.getTime() - Date.now() > 29 * 60_000);
-      assert.ok(locked.locked_until.getTime() - Date.now() <= 30 * 60_000);
+      // locked_until comes from the database clock, Date.now() from Node's: allow 1 s of skew between them.
+      assert.ok(locked.locked_until.getTime() - Date.now() <= 30 * 60_000 + 1_000);
       await assert.rejects(login(pool, a.email, password));
       await assert.rejects(login(pool, a.email, 'wrong'));
       assert.equal((await row(a.id)).locked_until.getTime(), locked.locked_until.getTime());
