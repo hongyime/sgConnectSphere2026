@@ -4,6 +4,8 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 
 ## Done so far
 
+- Merged current `origin/main` at `a8f2d879` to clear PR #453's conflict with the newer Lead-only reassignment flow from #450. Kept main's current Lead queue, oversight, and reassignment behavior.
+- Updated Lead assignment and reassignment to persist `events.assigned_by`; extended both unit checks. The migration remains in prerequisite PR #454.
 - Created from `origin/main` with a first-commit handoff.
 - Amareet recommended splitting obsolete assignment behavior from the Lead workflows. This branch delivers E03-S08: new requests stay unassigned until a Lead assigns them, and the Lead queue is restored.
 - Retired automatic Coordinator assignment and updated its unit, integration, UI, and E2E coverage. E03-S09/S10 remain known defects for the follow-up in #450.
@@ -17,7 +19,7 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 
 ## Next
 
-- Merge migration-only PR #454 and apply/verify its migration through the protected production workflow before releasing dependent code. Then update #453 against `main` and rerun CI.
+- Commit and push this conflict resolution to #453. Its database workflow still needs #454 merged first; after #454 lands, rerun checks on #453 and verify the migration before release.
 - Amareet's suggested activity-log check passed in #450's CI run 42227594248: `activityLog.integration.test.ts` ran against disposable PostgreSQL.
 - #450 is still at `a154d60`; against current `main`, GitHub reports 726 additions/1,468 deletions and `pr-guardrails` passes. It still contains the E03-S08 slice; after #453 merges, update #450 to remove that overlap and keep E03-S09/S10.
 

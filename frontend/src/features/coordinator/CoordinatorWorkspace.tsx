@@ -21,7 +21,7 @@ import type { ChangeCheck, EditableField } from '../events/eventEditApi';
 import { staffToNotify } from '../events/ArrangementReview';
 import {
   ACTIVE_STATUSES, eventRef, getAssignedEvent, listAssignedEvents, listColleagues,
-  listReassignments, requestReassignment, respondToReassignment,
+  listReassignments, requestLeadReassignment, requestReassignment, respondToReassignment,
   type AssignedEventDetail, type AssignedEventSummary, type Colleague, type Reassignment,
 } from './coordinatorApi';
 import { SUPPORT_VISIBLE, TechnicalSupportCard } from './TechnicalSupport';
@@ -56,11 +56,7 @@ function EventRow({ event }: { event: AssignedEventSummary }) {
 // --- Dashboard ----------------------------------------------------------
 
 export function CoordinatorHome() {
-  const { result, reload } = useLoad(async signal => {
-    const [events, reassignments] = await Promise.all([listAssignedEvents(signal), listReassignments(signal)]);
-    if (!events.ok) return events;
-    return { ok: true as const, data: { events: events.data, incoming: reassignments.ok ? reassignments.data.incoming : [] } };
-  }, []);
+  const { result, reload } = useLoad(signal => listAssignedEvents(signal), []);
 
   return (
     <PageLayout
@@ -75,27 +71,17 @@ export function CoordinatorHome() {
     >
       {result.state === 'loading' ? <LoadingState label="Loading your assigned events…" /> : null}
       {result.state === 'error' ? <LoadError failure={result.failure} onRetry={reload} context="your assigned events" /> : null}
-      {result.state === 'ready' ? <DashboardBody events={result.data.events} incoming={result.data.incoming} /> : null}
+      {result.state === 'ready' ? <DashboardBody events={result.data} /> : null}
     </PageLayout>
   );
 }
 
-function DashboardBody({ events, incoming }: { events: AssignedEventSummary[]; incoming: Reassignment[] }) {
+function DashboardBody({ events }: { events: AssignedEventSummary[] }) {
   const active = events.filter(event => ACTIVE_STATUSES.includes(event.status));
   const count = (...statuses: string[]) => events.filter(event => statuses.includes(event.status)).length;
   const upcoming = [...active].sort((a, b) => a.starts_at.localeCompare(b.starts_at)).slice(0, 5);
   return (
     <>
-      {incoming.length > 0 ? (
-        <section className="card coordinator-callout" aria-label="Reassignment requests">
-          <UserRoundCheck size={20} aria-hidden="true" />
-          <div>
-            <strong>{incoming.length === 1 ? 'A colleague has asked you to take over an event' : `${incoming.length} colleagues have asked you to take over events`}</strong>
-            <p>Nothing moves to you until you accept.</p>
-          </div>
-          <ButtonLink to="/coordinator/reassignments" variant="primary">Review requests</ButtonLink>
-        </section>
-      ) : null}
       <section className="coordinator-metrics" aria-label="Workload counts">
         <article><span>Active events</span><strong>{active.length}</strong></article>
         <article><span>Needs review</span><strong>{count('submitted', 'under_review')}</strong></article>
@@ -261,7 +247,6 @@ export function RequestDetail() {
                 ]}
               />
             </Card>
-            <ReassignPanel key={event.id} event={event} onChanged={reload} />
           </section>
           {event.status === 'cancelled' ? <CancellationNotice reason={event.cancellation_reason} date={event.status_changed_at}/> : null}
           <EventDetailsPanel key={event.id} event={event} onSaved={reload} />
@@ -366,6 +351,10 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
   const [sending, setSending] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadReason, setLeadReason] = useState('');
+  const [leadSending, setLeadSending] = useState(false);
+  const [leadRefusal, setLeadRefusal] = useState<string | null>(null);
   const pending = event.pendingReassignment;
   const reassignable = ACTIVE_STATUSES.includes(event.status);
 
@@ -399,6 +388,20 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
     onChanged();
   }
 
+  async function askLead(formEvent: FormEvent<HTMLFormElement>) {
+    formEvent.preventDefault();
+    if (!leadReason.trim()) { setLeadRefusal('Add a reason for asking the Lead to reassign this event.'); return; }
+    setLeadSending(true);
+    setLeadRefusal(null);
+    const outcome = await requestLeadReassignment(event.id, leadReason);
+    setLeadSending(false);
+    if (!outcome.ok) { setLeadRefusal(outcome.message); return; }
+    setLeadReason('');
+    setLeadOpen(false);
+    setSent('Your request was sent to the Event Coordinator Lead. You stay assigned until the Lead acts.');
+    onChanged();
+  }
+
   return (
     <Card title="Reassignment">
       <div aria-live="polite" className="coordinator-live">
@@ -413,7 +416,21 @@ function ReassignPanel({ event, onChanged }: { event: AssignedEventDetail; onCha
       ) : !open ? (
         <>
           <p className="coordinator-subtle">Hand this event to a colleague. They must accept before it moves to them.</p>
-          <div><Button icon={<Users size={14} aria-hidden="true" />} onClick={() => { setOpen(true); setSent(null); }}>Reassign event</Button></div>
+          <div>
+            <Button icon={<Users size={14} aria-hidden="true" />} onClick={() => { setOpen(true); setLeadOpen(false); setSent(null); }}>Reassign event</Button>{' '}
+            <Button onClick={() => { setLeadOpen(true); setSent(null); }}>Ask Lead to reassign</Button>
+          </div>
+          {leadOpen ? (
+            <form onSubmit={askLead} className="coordinator-reassign-form" noValidate>
+              <FormField label="Reason" error={leadRefusal ?? undefined}>
+                {props => <textarea {...props} value={leadReason} onChange={change => setLeadReason(change.target.value)} rows={4} maxLength={2000} placeholder="Explain why the Lead should review this assignment." />}
+              </FormField>
+              <FormActions>
+                <Button onClick={() => { setLeadOpen(false); setLeadReason(''); setLeadRefusal(null); }}>Cancel</Button>
+                <Button type="submit" variant="primary" busy={leadSending} busyLabel="Sending…">Send to Lead</Button>
+              </FormActions>
+            </form>
+          ) : null}
         </>
       ) : (
         <form onSubmit={submit} className="coordinator-reassign-form" noValidate>
