@@ -18,6 +18,11 @@ it alongside Vercel Git integration would create duplicate deployments for the
 same commit. Application checks remain the repository's build and test gate;
 they do not deploy.
 
+With deployment logs and branch skip rules managed in the Vercel dashboard, failed-deployment
+logs are visible only to team members with dashboard access rather than across open GitHub
+Actions logs. The team accepts this visibility trade-off to eliminate duplicate runs and return
+to native Vercel Git deployment.
+
 The historical record below explains why the Actions-only path was selected at
 the time. It is retained for provenance and is not current operating guidance.
 

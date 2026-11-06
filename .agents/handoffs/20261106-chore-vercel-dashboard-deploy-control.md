@@ -8,3 +8,9 @@ deployment settings.
 
 Run `python scripts/check.py` and `python scripts/doc_guard.py origin/main`
 before committing. No application code or secrets are changed.
+
+## Review feedback resolution (2026-11-06)
+
+- Merged `origin/main` to incorporate #437 and resolved README Deployment section to name Vercel Git integration.
+- Documented dashboard-only log trade-off in `docs/decisions/0010-single-vercel-deploy-path.md`.
+- Documented dashboard Ignored Build Step setting and quota protection in `docs/deploying-and-debugging.md`.

@@ -8,8 +8,18 @@ change deployment settings. See decision 0010.
 
 ## When deployments run
 
-Vercel evaluates Git pushes according to its dashboard configuration. A
-deployment or preview status shown on the pull request is the source for that
+Vercel evaluates Git pushes according to its dashboard configuration. The dashboard's
+**Ignored Build Step** controls whether a deployment proceeds, replacing the repository's
+former workflow `paths-ignore` filter:
+
+- Non-deployable changes (commits touching only `docs/**`, `.agents/**`, `scripts/**`,
+  `tooling/**`, or Markdown documentation) are skipped via the dashboard's build
+  command check or dashboard ignore configuration to avoid exhausting the Vercel Hobby
+  quota (100 deployments per rolling 24 hours).
+- Pushes to `main` produce production deployments.
+- Pull request branches produce preview deployments when configured in the dashboard.
+
+A deployment or preview status shown on the pull request is the source for that
 commit's deployment result. The status is advisory and does not block merging.
 
 ## Debug a failed deployment
