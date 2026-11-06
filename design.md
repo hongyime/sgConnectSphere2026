@@ -1,5 +1,11 @@
 # ConnectSphere design language
 
+This file governs the UI design language. For the implemented system structure,
+lecture-backed diagrams and target-versus-code differences, see the
+[Release 1 design catalogue](docs/design/README.md). UI rules here do not imply
+that every proposed screen or multi-role capability is implemented.
+
+
 - **Status:** Accepted for Release 1; amend by pull request (see "Changing this document")
 - **Owner:** Bryan (SCRUM-117)
 - **Implemented by:** the shared frontend skeleton (SCRUM-116, Amareet), per ADR-017

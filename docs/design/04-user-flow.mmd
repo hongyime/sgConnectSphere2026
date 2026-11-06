@@ -1,0 +1,31 @@
+flowchart LR
+ subgraph REQ["1. Organiser and Coordinator"]
+ direction TB
+ S([Sign in]) --> D[Save Draft and Sessions]
+ D --> V{Valid submission?}
+ V -->|No: correct named field| D
+ V -->|Yes| R[Assign Coordinator and review]
+ R --> Q{Decision?}
+ Q -->|Clarify| A[Organiser answers]
+ A --> R
+ Q -->|Reject| X([Rejected])
+ Q -->|Approve| P[Ready for planning]
+ end
+ subgraph ARR["2. Staff and Safety Officer"]
+ direction TB
+ B[Arrange Session venues and equipment<br/>Assign Event technical staff] --> C{Required arrangements ready?}
+ C -->|No| B
+ C -->|Yes: initial Coordinator submit| SAF[Safety Officer reviews]
+ SAF --> DEC{Approved?}
+ DEC -->|Changes or refusal| B
+ DEC -->|Yes| F[Confirmed and published]
+ end
+ subgraph RUN["3. Attendee and Coordinator"]
+ direction TB
+ REG[Register and select Sessions<br/>Capacity overflow: Pending review or waitlist] --> COMP[Complete started Event manually<br/>or evaluate passed end time]
+ COMP --> ATT([Record attendance])
+ REG --> CAN[Cancel with reason and release resources]
+ CAN --> CX([Cancelled])
+ end
+ REQ -->|Approved Event| ARR
+ ARR -->|Published confirmed Event| RUN
