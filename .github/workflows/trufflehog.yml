@@ -34,4 +34,4 @@ jobs:
         with:
           path: ./
           version: 3.97.9
-          extra_args: --no-verification
+          extra_args: --no-verification --exclude-paths .trufflehog-exclude-paths
