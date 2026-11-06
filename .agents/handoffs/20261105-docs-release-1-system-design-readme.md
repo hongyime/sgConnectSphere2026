@@ -44,3 +44,14 @@ The historical foundation ADR stays unchanged from main; its already-present
 reconciliation table row explains the subsequent stack selection. This avoids
 a duplicate annotation and leaves room for a new immutable verification record
 within the unchanged forty-file limit. Earlier run records remain untouched.
+
+## Remaining Le Xin review comments
+
+Remove the committed PR-only HTML review and restore .gitignore completely to
+main. Keep the already-hosted PostPlan as historical context. The previous
+scope repair already removed tracked source mirrors, blanket .shellignore
+exemption, shared guard configuration and skeleton copies. Add packaging
+instructions using git archive of canonical docs/design sources; no duplicate
+source tree is maintained. PR444 is still open, so do not assume its policy is
+active. Integrate current approved main by a normal merge, preserving shared
+branch history. No force push or rebase is needed for these source-only changes.

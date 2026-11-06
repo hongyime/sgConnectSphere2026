@@ -176,3 +176,21 @@ notation. These supplementary diagrams do not introduce extra runtime services.
 - Issues for other owners: legacy architecture files listed above remain
   contradictory outside this task's ownership; `docs/source-of-truth.md` still
   indexes those older views. Owners should reconcile links after this PR merges.
+
+## Submission packaging uses the canonical sources
+
+Keep only `docs/design/` as the tracked diagram source. Do not commit generated
+renders or a second tree under `submission/3. SYSTEM DESIGNS/source/` in this PR.
+Build renders with the command above, then archive the committed source tree
+at packaging time (replace `<submission>` with the local submission parent):
+
+```bash
+git archive --format=zip --output="<submission>/3. SYSTEM DESIGNS/System Design - sources.zip" HEAD docs/design/ docs/architecture.md docs/decisions/release-1-as-built-reconciliation.md design.md
+python -m zipfile -c "<submission>/System Designs.zip" "<submission>/3. SYSTEM DESIGNS"
+```
+
+Run from the repository root after committing the intended source version.
+The final outer ZIP combines the source archive with the generated renders;
+its source files originate from `docs/design/`, not a maintained submission
+mirror. Generated ZIPs stay in local submission output. Shared submission
+skeleton/policy changes are owned by #444, which was still open at this review.
