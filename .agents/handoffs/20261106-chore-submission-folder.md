@@ -21,13 +21,13 @@ guards.
   repository guards retain their existing scope and threshold.
 - `pre_commit validate-config` passed. The submission-specific large-file hook
   passed for the tracked skeleton, and `git archive` omits `submission/`.
+- Committed the skeleton and guard changes as `9fd8bccf`.
+- `python scripts/check.py` passed repository hygiene and 197 tooling tests.
+- `python scripts/doc_guard.py` passed with 160 existing front-matter warnings
+  after the documented `Docs-Impact: none` waiver.
 
-## Verification to run
+## Remaining steps
 
-- Commit with the required `Docs-Impact: none` waiver because the doc guard
-  maps the guard workflow and test-case placeholder directory, but no canonical
-  architecture or test-case documentation changes.
-- Run `python scripts/doc_guard.py` and `python scripts/check.py` after the
-  waiver commit, then push and open the PR.
-- Open a small PR using the repository template, then confirm its required
-  checks are green before it is ready for review.
+- Commit this final handoff update, push and open the small PR using the
+  repository template.
+- Confirm its required checks are green before marking it ready for review.
