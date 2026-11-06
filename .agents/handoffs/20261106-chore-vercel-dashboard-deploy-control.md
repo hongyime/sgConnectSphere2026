@@ -13,4 +13,5 @@ before committing. No application code or secrets are changed.
 
 - Merged `origin/main` to incorporate #437 and resolved README Deployment section to name Vercel Git integration.
 - Documented dashboard-only log trade-off in `docs/decisions/0010-single-vercel-deploy-path.md`.
-- Documented dashboard Ignored Build Step setting and quota protection in `docs/deploying-and-debugging.md`.
+- Added version-controlled `ignoreCommand` to `vercel.json` and documented skip rules and quota risk acceptance in `docs/decisions/0010-single-vercel-deploy-path.md` and `docs/deploying-and-debugging.md`.
+- Clarified preview deployment mechanics (commit status check rather than Actions PR comments) and production verification expectations.

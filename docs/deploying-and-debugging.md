@@ -8,16 +8,25 @@ change deployment settings. See decision 0010.
 
 ## When deployments run
 
-Vercel evaluates Git pushes according to its dashboard configuration. The dashboard's
-**Ignored Build Step** controls whether a deployment proceeds, replacing the repository's
-former workflow `paths-ignore` filter:
+Vercel evaluates Git pushes using the repository's version-controlled
+`ignoreCommand` defined in `vercel.json`:
+
+```json
+"ignoreCommand": "git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- api backend frontend package.json package-lock.json vercel.json"
+```
+
+This command replaces the former workflow `paths-ignore` filter:
 
 - Non-deployable changes (commits touching only `docs/**`, `.agents/**`, `scripts/**`,
-  `tooling/**`, or Markdown documentation) are skipped via the dashboard's build
-  command check or dashboard ignore configuration to avoid exhausting the Vercel Hobby
+  `tooling/**`, `.github/**`, or Markdown documentation) exit with code 0 and are
+  canceled by Vercel ("Canceled by Ignored Build Step") to conserve Vercel Hobby
   quota (100 deployments per rolling 24 hours).
+- Deployable changes (commits modifying `api/`, `backend/`, `frontend/`, `package.json`,
+  `package-lock.json`, or `vercel.json`) exit with code 1 and proceed to build.
 - Pushes to `main` produce production deployments.
-- Pull request branches produce preview deployments when configured in the dashboard.
+- Pull request branches with deployable changes produce preview deployments.
+  Previews are no longer posted as pull request comments by GitHub Actions; preview
+  URLs and deployment statuses appear directly on the pull request's Vercel status check.
 
 A deployment or preview status shown on the pull request is the source for that
 commit's deployment result. The status is advisory and does not block merging.

@@ -10,18 +10,64 @@ Vercel Git integration is again the single automatic deployment path.
 The prior decision prevented duplicate deployments by disabling Vercel Git
 integration and deploying from GitHub Actions. That is no longer the selected
 operating model. Removing `git.deploymentEnabled: false` from `vercel.json`
-returns branch-deployment control to the Vercel dashboard; the dashboard is
-therefore authoritative for which Git branches deploy.
+returns branch-deployment control to native Vercel Git integration.
 
 `.github/workflows/vercel-deploy.yml` is deleted in the same change. Keeping
 it alongside Vercel Git integration would create duplicate deployments for the
 same commit. Application checks remain the repository's build and test gate;
 they do not deploy.
 
-With deployment logs and branch skip rules managed in the Vercel dashboard, failed-deployment
-logs are visible only to team members with dashboard access rather than across open GitHub
-Actions logs. The team accepts this visibility trade-off to eliminate duplicate runs and return
-to native Vercel Git deployment.
+### Version-controlled build skip rules
+
+Rather than relying on unversioned dashboard settings, the repository defines
+its Ignored Build Step directly in `vercel.json` via `ignoreCommand`:
+
+```json
+"ignoreCommand": "git rev-parse HEAD^ >/dev/null 2>&1 && git diff --quiet HEAD^ HEAD -- api backend frontend package.json package-lock.json vercel.json"
+```
+
+When evaluated by Vercel:
+- An exit code of `0` cancels the build. Any commit touching exclusively
+  non-deployable paths (`docs/**`, `.agents/**`, `scripts/**`, `tooling/**`,
+  `.github/**`, or Markdown documentation) exits 0 and is skipped.
+- An exit code of `1` proceeds with the build. Any commit touching `api/`,
+  `backend/` (imported by API handlers), `frontend/`, `package.json`,
+  `package-lock.json`, or `vercel.json` triggers a deployment.
+- If `HEAD^` is unavailable (e.g., initial or orphaned commits), `git rev-parse`
+  fails with a non-zero code, ensuring the build proceeds safely.
+
+### Quota management and historical trade-offs
+
+The historical decision rejected the Ignored Build Step because canceled builds
+still create deployment records that might count against the Vercel Hobby quota
+(100 deployments per rolling 24-hour window), particularly with scheduled branch
+synchronization (`update-pr-branches.yml`).
+
+The team explicitly accepts this trade-off under the updated operating model:
+- Removing `vercel-deploy.yml` eliminates the duplicate deployment per push (one
+  CLI deploy from Actions plus one from Git integration), cutting deployment
+  volume in half.
+- Ignored builds consume zero build minutes.
+- The repository already runs automated preview cleanup (`vercel-preview-cleanup.yml`,
+  SCRUM-112) every three days to prune stale preview deployments.
+- The team explicitly accepts the residual quota risk of canceled deployment
+  records during peak sprint activity. If daily quota limits are approached,
+  deployments can be temporarily restricted to `main` via the Vercel dashboard.
+
+### Previews and build visibility
+
+- **Previews:** GitHub Actions no longer comments preview URLs on pull requests.
+  Preview URLs and deployment states are tracked directly via Vercel's pull
+  request commit status and the Vercel dashboard. PRs with non-deployable changes
+  will reflect "Canceled by Ignored Build Step" without creating a running preview.
+- **Log visibility:** With deployment logs managed in the Vercel dashboard, build
+  and error logs are accessible only to team members with dashboard seats. The team
+  accepts this trade-off to simplify deployment infrastructure and avoid maintaining
+  custom deployment workflows.
+- **Production verification:** The first merge to `main` following this change
+  will execute the first native Git-integration production deployment since
+  0010. A team member with dashboard access will monitor the initial production
+  run to verify successful deployment.
 
 The historical record below explains why the Actions-only path was selected at
 the time. It is retained for provenance and is not current operating guidance.
