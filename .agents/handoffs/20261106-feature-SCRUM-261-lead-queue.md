@@ -11,6 +11,7 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 - Opened [PR #453](https://github.com/hongyime/sgConnectSphere2026/pull/453). Its first application-check run at `d5de3fc` failed; the CI run is recorded at `docs/testing/runs/20261106-213746-bryanseah234-backend-db.md`.
 - CI exposed three issues: the `assigned_by` migration was absent, one test expected an Organiser self-notification contrary to E11, and the route-test origin allowlist was not initialized. The notification assertion and allowlist fixture are corrected in this branch.
 - Opened migration-only prerequisite [PR #454](https://github.com/hongyime/sgConnectSphere2026/pull/454) for `events.assigned_by`.
+- The follow-up application CI run at `932fc54` is recorded in `docs/testing/runs/20261106-220410-bryanseah234-backend-db.md`: 4 passed, 6 failed, and 2 out-of-scope TODO failures. The route-origin fixture now passes; remaining in-scope failures are blocked by the missing `assigned_by` column from #454.
 - The current app diff is within the 40-file/1800-addition/1500-deletion PR guardrail.
 
 ## Next
@@ -20,6 +21,6 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 
 ## Verification
 
-- `python scripts/check.py` — passed; repository hygiene passed and 207 tooling tests passed. The check warns that secondary worktrees are present.
+- `python scripts/check.py` — passed; repository hygiene and 207 tooling tests passed. It warns that secondary worktrees are present.
 - `python scripts/doc_guard.py` — passed with 0 errors and 188 existing missing-front-matter warnings.
-- Application tests/build were not run locally. The failed CI run on `d5de3fc` is recorded; a fresh CI run after the test fixes is pending, and the schema fix is waiting on PR #454.
+- Application tests/build were not run locally. CI run `42230133758` failed because the schema migration is absent; the migration is isolated in #454 and must be merged/applied before #453 can pass database acceptance checks.
