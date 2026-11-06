@@ -1,6 +1,6 @@
 # Recover the Lead assignment queue as a focused PR
 
-Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests unassigned until a Lead assigns them, retire automatic assignment, and make the queue usable. The existing SCRUM-261 PR will carry E03-S09/S10 after this increment lands.
+Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests unassigned until a Lead assigns them, retire automatic assignment, and make the queue usable. #450 (E03-S09/S10) merged first and brought most of that to `main`; what remains here is recording the assigning Lead in `events.assigned_by`.
 
 ## Done so far
 
@@ -16,12 +16,14 @@ Deliver E03-S08 under SCRUM-261 as a small first increment: keep new requests un
 - The follow-up application CI run at `932fc54` is recorded in `docs/testing/runs/20261106-220410-bryanseah234-backend-db.md`: 4 passed, 6 failed, and 2 out-of-scope TODO failures. The route-origin fixture now passes; remaining in-scope failures are blocked by the missing `assigned_by` column from #454.
 - The same database acceptance checks reran on `729e135` and again failed on the absent `assigned_by` column; this run is recorded in `docs/testing/runs/20261106-221021-bryanseah234-backend-db.md`.
 - The current app diff is within the 40-file/1800-addition/1500-deletion PR guardrail.
+- #450 merged into `main` (`a8f2d879`) before this PR, carrying the queue, the retirement of automatic assignment and its tests. After the merge of `main` at `b35c890`, this PR only adds the `events.assigned_by` writes (with their unit checks), the `TC_E03S01_01`/`_02` retired stubs and the run records.
+- Review fixes (Aaron, at `b35c890`): the retired stubs use `test.skip`, matching `tests/e2e/e14.spec.ts`; `docs/testing/tc-coverage.md` regenerated (the copy regenerated earlier was replaced by `main`'s in the merge, so `repository-checks` failed).
 
 ## Next
 
-- Commit and push this conflict resolution to #453. Its database workflow still needs #454 merged first; after #454 lands, rerun checks on #453 and verify the migration before release.
+- Merge #454 and apply migration 0027 to production through the protected Production Migration workflow. Then merge `main` into this branch and rerun CI: `application-checks` fails until `events.assigned_by` exists.
 - Amareet's suggested activity-log check passed in #450's CI run 42227594248: `activityLog.integration.test.ts` ran against disposable PostgreSQL.
-- #450 is still at `a154d60`; against current `main`, GitHub reports 726 additions/1,468 deletions and `pr-guardrails` passes. It still contains the E03-S08 slice; after #453 merges, update #450 to remove that overlap and keep E03-S09/S10.
+- No #450 follow-up is left: it merged before this PR.
 
 ## Verification
 

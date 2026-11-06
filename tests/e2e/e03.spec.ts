@@ -34,8 +34,8 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
 
 test.describe("E03-S01", () => {
   // C-69 replaced automatic assignment with the Lead queue in E03-S08.
-  test.fixme('TC_E03S01_01 — [RETIRED — superseded by E03-S08 / C-69] automatic assignment on submission', () => {});
-  test.fixme('TC_E03S01_02 — [RETIRED — superseded by E03-S08 / C-69] automatic fewest-workload Coordinator selection', () => {});
+  test.skip('TC_E03S01_01 — [RETIRED — superseded by E03-S08 / C-69] automatic assignment on submission', () => {});
+  test.skip('TC_E03S01_02 — [RETIRED — superseded by E03-S08 / C-69] automatic fewest-workload Coordinator selection', () => {});
 
   /**
    * TC_E03S01_04
