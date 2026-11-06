@@ -200,7 +200,7 @@ test('the dashboard counts active work and flags incoming requests', async () =>
   expect(screen.queryByText('Old Fair')).not.toBeInTheDocument();
 });
 
-test('the dashboard explains automatic assignment when nothing is assigned', async () => {
+test('the dashboard explains Lead assignment when nothing is assigned', async () => {
   stub(url => {
     if (url.searchParams.get('assigned') === '1') return { status: 200, body: { events: [] } };
     if (url.searchParams.get('reassignments') === '1') return { status: 200, body: { incoming: [], outgoing: [] } };

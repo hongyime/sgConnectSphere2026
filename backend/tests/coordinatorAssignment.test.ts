@@ -1,12 +1,9 @@
-// SCRUM-32 (E03-S01) unit tests: permission rules, validation and the exact
-// writes each path makes, against a scripted fake database. The real SQL
-// (ordering, locking, constraints) is proven against PostgreSQL in
-// coordinatorAssignment.integration.test.ts.
+// E03 coordinator reassignment unit tests: permission rules, validation and
+// the exact writes each path makes against a scripted fake database.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 import {
-  assignCoordinatorOnSubmit,
   getAssignedEvent,
   listAssignedEvents,
   requestCoordinatorReassignment,
@@ -14,7 +11,6 @@ import {
 } from '../src/modules/eventLifecycle/coordinatorAssignment.js';
 import { ACTIVE_EVENT_STATUSES } from '../src/modules/eventLifecycle/status.js';
 import { DEACTIVATION_BLOCKING_STATUSES } from '../src/modules/accessControl/deactivation.js';
-import { LOCKOUT_FAILURE_THRESHOLD } from '../src/modules/accessControl/service.js';
 import { AccessError } from '../src/modules/eventVisibility/service.js';
 import { SAFETY_ACTIONS } from '../src/modules/eventReadiness/safetyReturn.js';
 import type { AuthenticatedUser } from '../src/modules/accessControl/types.js';
@@ -28,17 +24,15 @@ type Script = (sql: string, values?: unknown[]) => unknown[] | Error | undefined
 function fakeDatabase(script: Script) {
   const calls: Call[] = [];
   const insertedNotifications = new Set<string>();
-  let assignedId: string | null = null;
   const run = async (sql: string, values?: unknown[]) => {
     calls.push({ sql, values });
     const outcome = script(sql, values);
     if (outcome instanceof Error) throw outcome;
-    if (sql.includes("status = 'under_review'::event_status")) assignedId = String(values?.[1]);
     let fallback: unknown[] = [];
     if (sql.includes('FROM events e LEFT JOIN event_publications')) fallback = [{
-      id:eventId,title:'Annual Tech Summit',public_name:null,status:assignedId ? 'under_review' : 'submitted',
+      id:eventId,title:'Annual Tech Summit',public_name:null,status:'under_review',
       starts_at:new Date('2027-01-01T09:00:00Z'),ends_at:new Date('2027-01-01T12:00:00Z'),
-      organiser_id:organiser.id,coordinator_id:assignedId,
+      organiser_id:organiser.id,coordinator_id:coordA.id,
     }];
     if (sql.includes('INSERT INTO audit_logs')) fallback = [{id:'00000000-0000-4000-8000-0000000000d1',occurred_at:new Date('2027-01-01T00:00:00Z')}];
     if (sql.includes('INSERT INTO notifications')) {
@@ -54,7 +48,7 @@ function fakeDatabase(script: Script) {
     query: run,
     async connect() { return { query: run, release() {} }; },
   } as unknown as Pool;
-  return { pool, calls, client: { query: run } as unknown as PoolClient };
+  return { pool, calls };
 }
 
 const coordA: AuthenticatedUser = {
@@ -70,69 +64,8 @@ const has = (calls: Call[], fragment: string) => calls.some(call => call.sql.inc
 const find = (calls: Call[], fragment: string) => calls.find(call => call.sql.includes(fragment));
 const indexOf = (calls: Call[], fragment: string) => calls.findIndex(call => call.sql.includes(fragment));
 
-test('the active statuses used for assignment match the T-52 list deactivation uses', () => {
+test('the active statuses used by Coordinator workflows match the T-52 deactivation list', () => {
   assert.deepEqual([...ACTIVE_EVENT_STATUSES], [...DEACTIVATION_BLOCKING_STATUSES]);
-});
-
-// --- Scenario 1 and 2: automatic assignment on submission ------------------
-
-function submittedEvent(overrides: Record<string, unknown> = {}) {
-  return { id: eventId, event_code: null, title: 'Annual Tech Summit', status: 'submitted', coordinator_id: null, ...overrides };
-}
-
-test('S1: a submitted request gets exactly one Coordinator, moves to Under Review, is audited and the Coordinator is notified', async () => {
-  const { client, calls } = fakeDatabase(sql => {
-    if (sql.includes('FROM events WHERE id = $1 FOR UPDATE')) return [submittedEvent()];
-    if (sql.includes('FROM users u')) return [{ id: coordA.id, full_name: 'Coordinator A' }];
-    return undefined;
-  });
-
-  const assignment = await assignCoordinatorOnSubmit(client, eventId);
-
-  assert.deepEqual(assignment, { coordinatorId: coordA.id, coordinatorName: 'Coordinator A' });
-  assert.equal(indexOf(calls, 'pg_advisory_xact_lock'), 0, 'the assignment lock is taken before anything is read');
-  const update = find(calls, 'UPDATE events')!;
-  assert.match(update.sql, /coordinator_id = \$2/);
-  assert.match(update.sql, /status = 'under_review'/);
-  assert.deepEqual(update.values, [eventId, coordA.id]);
-  const assigned = find(calls, "'Coordinator assigned'")!;
-  assert.deepEqual(assigned.values, [eventId, coordA.id]);
-  assert.ok(has(calls, "'Status changed to under_review', 'status', 'submitted', 'under_review'"));
-  const notification = find(calls, 'INSERT INTO notifications')!;
-  assert.equal(notification.values?.[0], coordA.id);
-  assert.equal(notification.values?.[2], 'New event assigned');
-  assert.match(String(notification.values?.[3]), /Annual Tech Summit/);
-});
-
-test('S2: the pick orders by fewest active events, then least recently assigned, then id, among eligible Coordinators only', async () => {
-  const { client, calls } = fakeDatabase(sql => {
-    if (sql.includes('FOR UPDATE')) return [submittedEvent()];
-    return [];
-  });
-  await assignCoordinatorOnSubmit(client, eventId);
-  const pick = find(calls, 'FROM users u')!;
-  assert.match(pick.sql, /u\.role = 'event_coordinator' AND u\.is_active/);
-  assert.match(pick.sql, /u\.failed_login_count < \$1/);
-  assert.match(pick.sql, /u\.locked_until IS NULL OR u\.locked_until <= now\(\)/);
-  assert.match(pick.sql, /count\(\*\)[\s\S]*ASC,[\s\S]*max\(e\.coordinator_assigned_at\)[\s\S]*ASC NULLS FIRST,[\s\S]*u\.id ASC/);
-  assert.deepEqual(pick.values, [LOCKOUT_FAILURE_THRESHOLD, [...ACTIVE_EVENT_STATUSES]]);
-});
-
-test('D4: with no eligible Coordinator the request stays Submitted and unassigned, and the gap is audited', async () => {
-  const { client, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE') ? [submittedEvent()] : []));
-  assert.equal(await assignCoordinatorOnSubmit(client, eventId), null);
-  assert.ok(has(calls, "'Coordinator assignment pending'"));
-  assert.equal(has(calls, 'UPDATE events'), false);
-  assert.equal(has(calls, 'INSERT INTO notifications'), false);
-});
-
-test('a request that is not Submitted, or already has a Coordinator, is left alone', async () => {
-  for (const event of [submittedEvent({ status: 'draft' }), submittedEvent({ coordinator_id: coordB.id })]) {
-    const { client, calls } = fakeDatabase(sql => (sql.includes('FOR UPDATE') ? [event] : []));
-    assert.equal(await assignCoordinatorOnSubmit(client, eventId), null);
-    assert.equal(has(calls, 'FROM users u'), false);
-    assert.equal(has(calls, 'UPDATE events'), false);
-  }
 });
 
 // --- Scenario 3 and 6: requesting a reassignment ---------------------------

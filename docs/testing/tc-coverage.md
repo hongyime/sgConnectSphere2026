@@ -7,13 +7,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **394**
-- Automated (explicit TC_ID in an active test title): **366** (92.9%)
-  - Real-database (`.integration.test` / `.db.test`): **78**
+- Automated (explicit TC_ID in an active test title): **369** (93.7%)
+  - Real-database (`.integration.test` / `.db.test`): **82**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **287**
-- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **10** (2.5%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **5** (1.3%)
-- No test yet (no test file mentions the TC_ID): **13** (3.3%)
+  - Live-assertion (other active tests): **286**
+- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **6** (1.5%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **7** (1.8%)
+- No test yet (no test file mentions the TC_ID): **12** (3.0%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: | ---: |
 | E01 | 38 | 37 | 1 | 0 | 0 |
 | E02 | 21 | 18 | 3 | 0 | 0 |
-| E03 | 62 | 52 | 6 | 2 | 2 |
+| E03 | 62 | 55 | 2 | 4 | 1 |
 | E04 | 5 | 5 | 0 | 0 | 0 |
 | E05 | 40 | 40 | 0 | 0 | 0 |
 | E06 | 48 | 47 | 0 | 0 | 1 |
@@ -32,7 +32,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 15 | 0 | 0 | 0 |
 | E14 | 14 | 11 | 0 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 0 | 3 |
-| **Total** | **394** | **366** | **10** | **5** | **13** |
+| **Total** | **394** | **369** | **6** | **7** | **12** |
 
 ## Case-by-case status
 
@@ -111,8 +111,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E03S01_01` | E03-S01 | [RETIRED — C-69: automatic assignment is superseded by the Lead's unassigned que | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
-| `TC_E03S01_02` | E03-S01 | [RETIRED — C-69: automatic assignment by fewest active events is superseded by E | ❌ none | — |
+| `TC_E03S01_01` | E03-S01 | [RETIRED — C-69: automatic assignment is superseded by the Lead's unassigned que | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_01 — [RETIRED — superseded by E03-S08 / C-69] automatic assignment on submission |
+| `TC_E03S01_02` | E03-S01 | [RETIRED — C-69: automatic assignment by fewest active events is superseded by E | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_02 — [RETIRED — superseded by E03-S08 / C-69] automatic fewest-workload Coordinator selection |
 | `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ❌ none | — |
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_05 TC_E03S01_07 TC_E11S01_11: reassignment request and responses produce one outbox job without actor self-not |
@@ -153,11 +153,11 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 | `TC_E03S07_04` | E03-S07 | Verify that an Organiser attempting to directly edit a restricted field after ap | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_04 - Verify that an Organiser attempting to directly edit a restricted field after approval should be refused and directed to the change request fo |
 | `TC_E03S07_05` | E03-S07 | Verify that a Coordinator who is not assigned to an approved event should be ref | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_05 - Verify that a Coordinator who is not assigned to an approved event should be refused when attempting to edit it |
 | `TC_E03S07_06` | E03-S07 | Verify that an Organiser's unrestricted post-approval edit should also be record | ✅ active | tests/e2e/e03.spec.ts: TC_E03S07_06 - Verify that an Organiser's unrestricted post-approval edit should also be recorded in the activity log |
-| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01: a submitted request stays Submitted with no Coordinator, enters the unassigned queue and notifies the Lead |
+| `TC_E03S08_01` | E03-S08 | Verify that a newly submitted request should enter the unassigned queue with no  | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01 TC_E03S08_03 TC_E11S01_11: submission notifies the Lead, then explicit assignment notifies the Coordinator  |
 | `TC_E03S08_02` | E03-S08 | Verify that the unassigned queue should show each request's basic information ol | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_02: the unassigned queue lists each request's basic information oldest first and refuses a Coordinator |
-| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_03: the Lead sees workloads, assigns a queued request, which moves to Under Review, leaves the queue, notifies |
-| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_04: a Coordinator's assign call on a queued request is refused, leaves it queued and is logged |
-| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_05: after a queue assignment the Organiser's status history shows Submitted then Under Review |
+| `TC_E03S08_03` | E03-S08 | Verify that the Lead assigning a Coordinator should move the request to Under Re | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01 TC_E03S08_03 TC_E11S01_11: submission notifies the Lead, then explicit assignment notifies the Coordinator  |
+| `TC_E03S08_04` | E03-S08 | Verify that a Coordinator attempting to assign a queued request should be refuse | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_04: a Coordinator's assign call on a queued request is refused, leaves it queued and is logged |
+| `TC_E03S08_05` | E03-S08 | Verify that the Organiser's status history should show Submitted then Under Revi | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_05: after a queue assignment the Organiser's status history shows Submitted then Under Review |
 | `TC_E03S09_01` | E03-S09 | Verify that a Lead reassignment should take effect immediately with both Coordin | 🐞 known-defect | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S09_01: a Lead reassignment takes effect at once, notifies both Coordinators and the Organiser and is logged |
 | `TC_E03S09_02` | E03-S09 | Verify that a Coordinator-initiated reassignment should be refused and leave the | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_02 — Verify that Coordinator-to-Coordinator reassignment should still require the colleague's acceptance |
 | `TC_E03S09_03` | E03-S09 | Verify that only an Event Coordinator Lead may reassign an event | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S09_03 — Verify that a Coordinator should be able to ask the Lead to reassign an event and be told the outcome, while a non-assigned Coordinator cannot |
@@ -463,7 +463,7 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 | `TC_E11S01_08` | E11-S01 | Verify that email provider failure does not affect the business change or the in | ✅ active | backend/tests/notificationInbox.integration.test.ts: TC_E11S01_08: actual booking approval and inbox survive HTTP 400 rejection; backend/tests/notificationInbox.integration.test.ts |
 | `TC_E11S01_09` | E11-S01 | Verify that a rolled-back business transaction publishes no notification | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E11S01_09: email-outbox failure rolls back creation, draft submission, reassignment request and each response; backen |
 | `TC_E11S01_10` | E11-S01 | Apply the approved role/change recipient matrix | ✅ active | backend/tests/bookingSubmission.integration.test.ts: TC_E06S03_01 TC_E11S01_10: a request notifies only the requested venue\; backend/tests/e11CurrentFlows.integration.test.ts: TC_ |
-| `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S01_01 TC_E11S01_11: submission and draft submission notify organiser and assigned Coordinator once each with emai |
+| `TC_E11S01_11` | E11-S01 | Suppress self-notifications and duplicate recipient links | ✅ active | backend/tests/coordinatorNotifications.integration.test.ts: TC_E03S08_01 TC_E03S08_03 TC_E11S01_11: submission notifies the Lead, then explicit assignment notifies the Coordinator  |
 | `TC_E11S01_12` | E11-S01 | Preserve before/after recipients during cancellation and venue moves | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_12: cancellation notifications retain recipients after registrations and staff are released; backend/tests/eventNoti |
 | `TC_E11S01_13` | E11-S01 | Expose missing Venue Staff assignments without an unsafe fallback | ✅ active | backend/tests/eventNotifications.integration.test.ts: TC_E11S01_13: decided_by and unrelated Venue Staff never stand in for assignments; backend/tests/eventNotifications.integratio |
 | `TC_E11S01_14` | E11-S01 | Protect attendee notification content and membership boundaries | ✅ active | backend/tests/e11CurrentFlows.integration.test.ts: TC_E11S01_02 TC_E11S01_03 TC_E11S01_11 TC_E11S01_14: real E09 memberships receive E10 applied dates once with public content; bac |
@@ -630,15 +630,11 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `backend/tests/coordinatorAssignment.integration.test.ts`
 
-- SCRUM-32: coordinator auto-assignment and reassignment against PostgreSQL
+- SCRUM-261: Lead assignment and Coordinator reassignment against PostgreSQL
 
 ### `backend/tests/coordinatorAssignment.test.ts`
 
-- the active statuses used for assignment match the T-52 list deactivation uses
-- S1: a submitted request gets exactly one Coordinator, moves to Under Review, is audited and the Coordinator is notified
-- S2: the pick orders by fewest active events, then least recently assigned, then id, among eligible Coordinators only
-- D4: with no eligible Coordinator the request stays Submitted and unassigned, and the gap is audited
-- a request that is not Submitted, or already has a Coordinator, is left alone
+- the active statuses used by Coordinator workflows match the T-52 deactivation list
 - S3: the assigned Coordinator names a colleague; the request is recorded and the colleague notified, and ownership does not move
 - S6: a Coordinator who is not assigned is refused, with the denial committed after the rollback
 - S6: an unknown event is refused exactly like one assigned to someone else
@@ -921,6 +917,13 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - list and notification reads use trusted organisation and recipient parameters
 - notifications without an authorised database record cannot be delivered
 - E09-S03 - the withdrawal deadline can be cleared, and bad values are refused
+
+### `backend/tests/leadAssignment.test.ts`
+
+- E03-S08 Lead assignment moves a queued event to Under Review and notifies both parties
+- E03-S08 submitted requests notify every active Lead
+- E03-S08 non-Leads cannot assign a queued event
+- E03-S08 invalid targets and non-queued events are refused
 
 ### `backend/tests/loginRecovery.integration.test.ts`
 
@@ -1486,7 +1489,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 - accepting moves the event to the incoming Coordinator and links to it
 - an answer that was already recorded shows the server reason
 - the dashboard counts active work and flags incoming requests
-- the dashboard explains automatic assignment when nothing is assigned
+- the dashboard explains Lead assignment when nothing is assigned
 - the queue filters by status and shows a filter-specific empty state
 - a signed-out Coordinator is asked to sign in
 - a failed load can be retried
@@ -1740,7 +1743,7 @@ The following tests are actively running (not `test.fixme`) but their titles do 
 
 ### `frontend/src/features/roleQueues/RoleQueues.test.tsx`
 
-- Lead queue loads submitted unassigned requests
+- Lead queue loads submitted unassigned requests and assigns one
 
 ### `frontend/src/features/roleQueues/SafetyReview.test.tsx`
 

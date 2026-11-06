@@ -1,8 +1,6 @@
-// E03-S01 "Assign an Event Coordinator to a request" (SCRUM-32).
+// E03 review coordination.
 //
-// - Auto-assignment on submission (Scenarios 1 and 2): the system picks
-//   exactly one eligible Coordinator, the one with the fewest active events
-//   (BDR C-12, C-41, C-55, T-14), and moves the request to Under Review.
+// - New submissions stay unassigned for a Lead to allocate from the queue.
 // - Reassignment (Scenarios 3 to 6, BDR C-56 / T-15): only the assigned
 //   Coordinator can ask a named colleague to take over; ownership moves only
 //   when that colleague accepts, and a decline leaves it where it was.
@@ -19,10 +17,7 @@ import { canActAsRole, LOCKOUT_FAILURE_THRESHOLD } from '../accessControl/servic
 import type { AuthenticatedUser } from '../accessControl/types.js';
 import { AccessError, listEventActivity } from '../eventVisibility/service.js';
 import { notifyUser } from '../notificationDispatcher/inApp.js';
-import { captureEventAudience, notifyEventChange } from '../eventNotifications/service.js';
-import { ACTIVE_EVENT_STATUSES, isEventStatus, validateEventStatusTransition } from './status.js';
-
-type Runner = PoolClient;
+import { ACTIVE_EVENT_STATUSES, isEventStatus } from './status.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -33,30 +28,9 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 const ELIGIBLE_COORDINATOR = `u.role = 'event_coordinator' AND u.is_active
   AND u.failed_login_count < $1 AND (u.locked_until IS NULL OR u.locked_until <= now())`;
 
-// BDR T-14 plus the D3 tie-break: fewest active events, then the Coordinator
-// whose most recent assignment is oldest (never assigned sorts first), then
-// user id so the choice is always deterministic.
-const PICK_COORDINATOR_SQL = `
-  SELECT u.id, u.full_name
-  FROM users u
-  WHERE ${ELIGIBLE_COORDINATOR}
-  ORDER BY
-    (SELECT count(*) FROM events e
-      WHERE e.coordinator_id = u.id AND e.status = ANY($2::event_status[])) ASC,
-    (SELECT max(e.coordinator_assigned_at) FROM events e WHERE e.coordinator_id = u.id) ASC NULLS FIRST,
-    u.id ASC
-  LIMIT 1`;
-
-// Transaction-scoped advisory lock: two submissions committing at the same
-// moment would otherwise both see the same "least busy" Coordinator. Only the
-// pick-and-assign step is serialised, and the lock is released at COMMIT.
-const ASSIGNMENT_LOCK_SQL = `SELECT pg_advisory_xact_lock(hashtext('connectsphere:coordinator-assignment'))`;
-
 export function eventLabel(event: { event_code: string | null; title: string }) {
   return event.event_code ? `${event.event_code} ${event.title}` : event.title;
 }
-
-export type CoordinatorAssignment = { coordinatorId: string; coordinatorName: string };
 
 export async function notifyLeadOfQueuedEvent(client: PoolClient, eventId: string, title: string, changeId: string, occurredAt: Date) {
   const leads = await client.query<{ id: string }>(
@@ -69,73 +43,6 @@ export async function notifyLeadOfQueuedEvent(client: PoolClient, eventId: strin
       message: `${title} is waiting in the unassigned Event Coordinator queue.`,
     });
   }
-}
-
-// Scenarios 1 and 2. Runs inside the caller's transaction, straight after
-// the request is stored as Submitted, so the submission, the assignment, the
-// status change, their audit entries and the Coordinator's notification all
-// commit together. Returns null when nothing was assigned.
-export async function assignCoordinatorOnSubmit(client: Runner, eventId: string): Promise<CoordinatorAssignment | null> {
-  await client.query(ASSIGNMENT_LOCK_SQL);
-
-  const eventResult = await client.query<{
-    id: string; event_code: string | null; title: string; status: string; coordinator_id: string | null;
-  }>(`SELECT id, event_code, title, status, coordinator_id FROM events WHERE id = $1 FOR UPDATE`, [eventId]);
-  const event = eventResult.rows[0];
-  if (!event) throw new Error(`Event not found: ${eventId}`);
-  if (event.status !== 'submitted' || event.coordinator_id) return null;
-
-  const picked = await client.query<{ id: string; full_name: string }>(
-    PICK_COORDINATOR_SQL, [LOCKOUT_FAILURE_THRESHOLD, [...ACTIVE_EVENT_STATUSES]],
-  );
-  const coordinator = picked.rows[0];
-
-  // D4: with nobody eligible the submission still stands. The request stays
-  // Submitted and unassigned, and the gap is audited so it can be followed up.
-  if (!coordinator) {
-    await client.query(
-      `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, new_value)
-       VALUES (NULL, 'event', $1, $1, 'Coordinator assignment pending', 'coordinator_id', 'No eligible Event Coordinator')`,
-      [eventId],
-    );
-    return null;
-  }
-
-  const before = await captureEventAudience(client, eventId);
-  const transition = validateEventStatusTransition('submitted', 'under_review');
-  if (!transition.allowed) throw new Error('Illegal event status transition: submitted -> under_review');
-
-  await client.query(
-    `UPDATE events
-     SET coordinator_id = $2, coordinator_assigned_at = now(),
-         status = 'under_review'::event_status, status_changed_at = now()
-     WHERE id = $1`,
-    [eventId, coordinator.id],
-  );
-  // The system, not a person, makes the assignment, so both entries have no actor.
-  await client.query(
-    `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
-     VALUES (NULL, 'event', $1, $1, 'Coordinator assigned', 'coordinator_id', NULL, $2)`,
-    [eventId, coordinator.id],
-  );
-  const statusAudit = await client.query<{id:string; occurred_at:Date}>(
-    `INSERT INTO audit_logs (actor_id, entity_type, entity_id, event_id, action, field_changed, old_value, new_value)
-     VALUES (NULL, 'event', $1, $1, 'Status changed to under_review', 'status', 'submitted', 'under_review') RETURNING id,occurred_at`,
-    [eventId],
-  );
-  await notifyUser(client, {
-    userId: coordinator.id,
-    eventId,
-    changeId: statusAudit.rows[0].id, occurredAt: statusAudit.rows[0].occurred_at,
-    title: 'New event assigned',
-    message: `You have been assigned to ${eventLabel(event)}. It is now Under Review.`,
-  });
-
-  const after = await captureEventAudience(client, eventId);
-  await notifyEventChange(client, {changeId:statusAudit.rows[0].id, occurredAt:statusAudit.rows[0].occurred_at,
-    before,after,change:{kind:'status',from:'submitted',to:'under_review'}});
-
-  return { coordinatorId: coordinator.id, coordinatorName: coordinator.full_name };
 }
 
 // --- Access helpers ---------------------------------------------------------

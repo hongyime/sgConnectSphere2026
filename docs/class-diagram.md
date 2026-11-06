@@ -378,7 +378,7 @@ Every diagrammed method resolves to a function in the backend modules.
 | `Event.requestClarification()` | `backend/src/modules/eventLifecycle/clarification.ts:requestClarification` |
 | `Event.cancel()` | `backend/src/modules/eventLifecycle/cancellation.ts:cancelEvent` |
 | `Event.complete()` | `backend/src/modules/eventLifecycle/completion.ts:completeEvent` |
-| `Event.assignCoordinator()` | `backend/src/modules/eventLifecycle/coordinatorAssignment.ts:assignCoordinatorOnSubmit` |
+| `Event.assignCoordinator()` | `backend/src/modules/eventLifecycle/coordinatorAssignment.ts:assignQueuedEvent` |
 | `Event.reassignCoordinator()` | `backend/src/modules/eventLifecycle/coordinatorAssignment.ts` (a Lead action recorded in the audit log, not a function) |
 | `VenueBooking.confirm()` / `VenueBooking.reject()` | `backend/src/modules/venueBooking/decisions.ts:decideBooking` |
 | `VenueBooking.expire()` / `VenueBooking.extend()` | `backend/src/modules/venueBooking/holds.ts:expireHolds` and `:extendHold` |
