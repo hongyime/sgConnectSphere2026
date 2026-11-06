@@ -65,7 +65,7 @@ visuals and slowing down on the tables.
 
 - ConnectSphere: Event Planning and Venue Booking System
 - IS212 Software Project Management, AY2026/27, Team 8
-- Bryan (Product Owner), Amareet (Scrum Master), Aaron, Xiangying, Lexin, Jining (Developers)
+- Bryan (Product Owner), Amareet (Scrum Master), Aaron, Xiang Ying, Lexin, Jining (Developers)
 
 **SPEAKER NOTES** (Presenter: ________, about 20 seconds):
 "Hi, we're Team 8. Our project is ConnectSphere, an event planning and venue
@@ -93,7 +93,7 @@ are ours to fill. Keep it to 8 rows.
 | Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
 | Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/`: 12 Word files, planning, stand-ups and review + retrospective for Sprints 1 to 4. Repo: the same records as Markdown in `docs/sprints/` (PR #440) |
-| System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/`. Repo: `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/dynamic-user-flows.md`, `docs/db_schema.md` |
+| System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/`. Repo: `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/dynamic-user-flows.md` (sequence diagrams), `docs/db_schema.md`, `docs/architecture.md`, `docs/modular-monolith-architecture.md` [REFRESH: design pack in PR #437, not merged yet] |
 | Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (945 run records) [REFRESH: docs/testing] |
 | Slide deck, README, decisions | Zip: `5. SLIDE DECK/`, `7. README/`. Repo: `docs/bdr/` (customer clarifications and team decisions) |
 
@@ -330,7 +330,7 @@ customer meant and checking our own evidence, because AI wrote code
 that looked right but sometimes answered a question nobody asked."
 
 **AI tools we used (disclosure):** Coding agents for code, tests and docs:
-Bryan, Jining and Xiangying used OpenAI Codex; Lexin, Amareet and Aaron used
+Bryan, Jining and Xiang Ying used OpenAI Codex; Lexin, Amareet and Aaron used
 Claude Code. We also used GitHub's
 Copilot pull request reviewer, which left automatic review comments on 201 of
 our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
@@ -688,22 +688,22 @@ Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 | Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04); minor vs major edits (E10-S02) | 11% (43 commits) | #88, #134, #151, #190, #298, #348, #349, #385 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
 | Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #174, #236, #283, #328, #361 | 24 manual run sessions; 75 approvals. 15 stories Done (60 pts), the most in the team |
 | Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); change requests (E10-S01); notifications (E11-S01) | 9% (35 commits) | #143, #242, #299, #300, #355, #367 | 18 manual run sessions; 50 approvals. 9 stories Done (44 pts) |
-| Xiangying | Log in and access control (E01-S01 to S03); event date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04) | 8% (30 commits) | #214, #216, #229, #320, #324, #343, #363, #365 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
+| Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (30 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
 Areas come from the Jira stories each person owns (assignee) plus their own
 PRs. A story owner is not always the only author: for example the waiting list
 (E09-S04, Aaron's story) was built in Bryan's #379. All counts
 [REFRESH: Jira assignees, GitHub PR reviews, docs/testing/runs].
 
-[CONFIRM: Lexin, Aaron, Jining and Xiangying check their own rows. Bryan and
-Amareet confirmed theirs on 6 Nov. Areas and PR numbers come from git and
+[CONFIRM: Lexin, Aaron and Jining check their own rows. Bryan, Amareet and
+Xiang Ying confirmed theirs on 6 Nov. Areas and PR numbers come from git and
 Jira, not from self-reports.]
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
 "This is who did what, from git and Jira. The commit share is lopsided. Bryan
 has 46%, partly because he owned the tooling, CI and docs, which come as lots of
 small PRs. That's why we also show story points Done and reviews: Aaron
-finished the most product points, Xiangying ran the most manual test sessions,
+finished the most product points, Xiang Ying ran the most manual test sessions,
 and Amareet did the most reviews, over a hundred approvals. All six of us
 shipped features and all six of us reviewed others' code. Every row was
 checked by its owner."
