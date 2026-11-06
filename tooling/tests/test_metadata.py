@@ -366,6 +366,33 @@ class MetadataTests(unittest.TestCase):
             self.assertEqual(bad.returncode, 1)
             self.assertIn(b"repository template", bad.stdout)
 
+    def test_pr_event_reads_changed_paths_from_file(self):
+        body = (
+            "## What and why\n\nX.\n\n## Verification\n\nY.\n\n"
+            "## Checklist\n\n- [x] a\n\n## Follow-ups\n\nnone."
+        )
+        event = {"pull_request": {
+            "title": "ci: keep submission upload checks bounded",
+            "head": {"ref": "ci/submission-upload-exceptions"},
+            "user": {"login": "student", "type": "User"},
+            "body": body,
+        }}
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            event_file = root / "event.json"
+            changed_file = root / "changed-files.txt"
+            event_file.write_text(json.dumps(event), encoding="utf-8")
+            changed_file.write_text(".agents/STATE.md\n", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable, str(SCRIPT), "pr", str(event_file),
+                    "--changed-files-file", str(changed_file),
+                ],
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn(b".agents/STATE.md", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -111,8 +111,8 @@ class ReferencePatternTests(unittest.TestCase):
 
 class AllowlistTests(unittest.TestCase):
     def test_platform_vars_excluded_from_developer_set(self):
-        # NODE_ENV, PORT, LOCALAPPDATA, GITHUB_EVENT_PATH, GITHUB_REPOSITORY,
-        # VERCEL_OIDC_TOKEN are OS/CI/host-provided. Emitting them into
+        # NODE_ENV, PORT, LOCALAPPDATA, GITHUB_EVENT_PATH, GITHUB_REPOSITORY
+        # and VERCEL_OIDC_TOKEN are OS/CI/host-provided. Emitting them into
         # .env.template invites a broken hard-coded value.
         raw = {
             "NODE_ENV", "PORT", "LOCALAPPDATA", "GITHUB_EVENT_PATH",
