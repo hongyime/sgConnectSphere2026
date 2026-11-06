@@ -26,14 +26,28 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Reject Git LFS pointer files
+      - name: Reject submission assets over 50 MB
         shell: bash
         run: |
           set -euo pipefail
-          pointers="$(git grep -l '^version https://git-lfs.github.com/spec/v1' -- ':!*.md' || true)"
+          limit_bytes=$((50 * 1024 * 1024))
+          too_large=0
+          while IFS= read -r -d '' path; do
+            size_bytes=$(wc -c < "$path")
+            if [ "$size_bytes" -gt "$limit_bytes" ]; then
+              echo "::error::$path is $size_bytes bytes; submission assets must not exceed $limit_bytes bytes. Use Git LFS instead."
+              too_large=1
+            fi
+          done < <(git ls-files -z -- submission/)
+          [ "$too_large" -eq 0 ]
+      - name: Reject Git LFS pointer files outside submission
+        shell: bash
+        run: |
+          set -euo pipefail
+          pointers="$(git grep -l '^version https://git-lfs.github.com/spec/v1' -- ':!*.md' ':!submission/**' || true)"
           if [ -n "$pointers" ]; then
-            echo "::error::Git LFS pointer files are not allowed in this repository."
+            echo "::error::Git LFS pointer files are not allowed outside submission/."
             echo "$pointers"
             exit 1
           fi
-          echo "No Git LFS pointer files found."
+          echo "No Git LFS pointer files found outside submission/."
