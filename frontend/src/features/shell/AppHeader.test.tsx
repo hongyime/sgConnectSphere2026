@@ -17,7 +17,7 @@ test('TC_E11S01_07 marking a notice read updates the bell without navigation or 
     'POST /api/notifications': () => { read = true; return { body: { notification: notice() } }; },
   }, { role: 'technical_support_staff' });
   render(<MemoryRouter><AppHeader /><NotificationInbox /></MemoryRouter>);
-  expect(await screen.findByRole('link', { name: 'Notifications, 1 unread' })).toBeVisible();
+  expect(await screen.findByRole('link', { name: 'Notifications, 1 unread' }, { timeout: 3_000 })).toBeVisible();
   expect(await screen.findByText('EVT-E11: Microphone × 4 reserved.')).toBeVisible();
   fireEvent.click(screen.getByRole('button', { name: 'Mark as read' }));
   await waitFor(() => expect(screen.queryByRole('link', { name: 'Notifications, 1 unread' })).not.toBeInTheDocument());

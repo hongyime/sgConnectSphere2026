@@ -8,7 +8,7 @@ The 20 core features from the Week 4 project instructions, mapped to the release
 | 2 | Event Request Creation | E02-S01, E02-S03 |
 | 3 | Draft Event Requests | E02-S02 |
 | 4 | Event Review and Approval | E03-S02, E03-S03 |
-| 5 | Coordinator Assignment | E03-S01 |
+| 5 | Coordinator Assignment | E03-S01 (historical automatic assignment), E03-S08 (current Lead-managed queue) |
 | 6 | Event Status Management | E03-S05, E08-S03, E08-S04, E08-S05 |
 | 7 | Event Information Management | E03-S07, E10-S02 |
 | 8 | Venue Catalogue | E05-S01, E05-S02 |
