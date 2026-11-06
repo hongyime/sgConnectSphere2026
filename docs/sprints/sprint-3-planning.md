@@ -10,9 +10,8 @@ Sprint 3 | 4 – 17 October 2026 (Jira sprint 36)
 | Time / Duration | 10:30 am – 12:30 pm (approx. 2 hours) |
 | Sprint Dates | 4 October 2026 – 17 October 2026 |
 | Attendees | 6 / 6 members. Product Owner: Bryan. Scrum Master & Developer: Amareet. Developers: Aaron, Le Xin, Xiang Ying, Ji Ning. |
-| Venue | Microsoft Teams (online) |
+| Venue | Microsoft Teams (online); recording in the submission `.docx` (start 11:00) |
 | Facilitator | Amareet (Scrum Master) |
-| Recording | Google Drive recording (link in the submission `.docx`) |
 
 ## 2. Sprint Goal
 

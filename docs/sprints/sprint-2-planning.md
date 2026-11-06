@@ -10,9 +10,8 @@ Sprint 2 | 21 September – 3 October 2026 (Jira sprint 35)
 | Time / Duration | 10:30 am – 12:30 pm (approx. 2 hours) |
 | Sprint Dates | 21 September 2026 – 3 October 2026 |
 | Attendees | 5 / 6 members in live meeting. Product Owner: Bryan. Scrum Master & Frontend Developer: Amareet. Developers: Aaron, Le Xin, Xiang Ying. Note: Ji Ning (Developer) contributed asynchronously. |
-| Venue | Microsoft Teams (online) |
+| Venue | Microsoft Teams (online); recording in the submission `.docx` (start 1:23:31) |
 | Facilitator | Amareet (Scrum Master) |
-| Recording | Google Drive recording (link in the submission `.docx`) |
 
 ## 2. Sprint Goal
 

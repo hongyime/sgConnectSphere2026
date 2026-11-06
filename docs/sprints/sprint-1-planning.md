@@ -10,9 +10,8 @@ Sprint 1 | 14 – 19 September 2026 (Jira sprint 34)
 | Time / Duration | 10:15 am – 12:15 pm (approx. 2 hours) |
 | Sprint Dates | 14 September 2026 – 19 September 2026 |
 | Attendees | 6 / 6 members. Product Owner: Bryan. Scrum Master & Frontend Developer: Amareet. Developers: Ji Ning, Aaron, Le Xin, Xiang Ying. |
-| Venue | Microsoft Teams (online) |
+| Venue | Microsoft Teams (online); recording in the submission `.docx` (start 1:36) |
 | Facilitator | Amareet (Scrum Master) |
-| Recording | Google Drive recording (link in the submission `.docx`) |
 
 ## 2. Sprint Goal
 

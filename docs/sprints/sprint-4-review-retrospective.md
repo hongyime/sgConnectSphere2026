@@ -11,9 +11,8 @@ Sprint 4 | 18 – 31 October 2026 (Jira sprint 67)
 | Date | 1 November 2026 |
 | Time / Duration | ~40 minutes |
 | Attendees | 6 / 6 members. Product Owner: Bryan. Scrum Master & Developer: Amareet. Developers: Ji Ning, Aaron, Le Xin, Xiang Ying. |
-| Venue | Microsoft Teams (online) |
+| Venue | Microsoft Teams (online); recording in the submission `.docx` (start 0:02) |
 | Facilitator | Amareet (Scrum Master) |
-| Recording | Google Drive recording (link in the submission `.docx`) |
 
 ### 2. Sprint Goal Recap
 
