@@ -37,3 +37,17 @@ Packaged render_docx.py fails missing pdf2image. Microsoft Word COM rendering st
 6. After ALL relevant PRs merge, pull/rebuild external folder and code ZIP, rerun scan/inventory. Final manual steps: visual Word review, human CONFIRM resolutions, Canva transfer, Google Drive upload and course eLearn ZIP submission.
 
 Assumptions: approval authorizes corrections, not human review or meeting/acceptance evidence. Existing historical sources and customer material preserved. No source deletions. PR body must list changes, deletions(none), assumptions, CONFIRM, issues for owners and exact external file inventory via checklist.
+
+## PR455 CI/security repair
+
+The user requested a fix for the pushed handoff PR. Replace the assembler's
+native XML parser with already-pinned defusedxml and cover valid/entity-bearing
+SVG and Office XML. All four focused tests and 211 repository tooling tests
+pass. New immutable tooling record is included. Use the supported reasoned
+Docs-Impact trailer: these are submission tooling tests, not product acceptance
+case changes. Verify doc_guard after the trailer is committed; do not disable
+its rule or edit the acceptance catalogue just to satisfy it.
+
+The broader assembly/rebuild remains the handoff's outstanding work; no final
+seven-folder rebuild, visual approval, secret scan or human confirmation is
+claimed by this narrow CI repair. Existing source changes are preserved.

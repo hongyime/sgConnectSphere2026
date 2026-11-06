@@ -3,6 +3,7 @@ import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "assemble_submission.py"
 SPEC = importlib.util.spec_from_file_location("assemble_submission", SCRIPT)
@@ -21,6 +22,28 @@ class AssemblyBoundaryTests(unittest.TestCase):
                      "scripts/generate_env_template.py"):
             with self.subTest(name=name):
                 self.assertFalse(MODULE.forbidden_archive_path(name))
+
+    def test_valid_svg_and_office_xml_still_parse(self):
+        xml = '<svg xmlns="http://www.w3.org/2000/svg"><text>A &amp; B</text></svg>'
+        with tempfile.TemporaryDirectory() as temporary:
+            svg = Path(temporary) / "drawing.svg"
+            svg.write_text(xml, encoding="utf-8")
+            self.assertTrue(MODULE.check_file(svg).startswith("PASS:"))
+            office = Path(temporary) / "document.docx"
+            with ZipFile(office, "w") as archive:
+                archive.writestr("word/document.xml", "<document>A &amp; B</document>")
+            self.assertTrue(MODULE.check_file(office).startswith("PASS:"))
+
+    def test_entity_declarations_are_rejected_in_svg_and_office_xml(self):
+        xml = '<!DOCTYPE root [<!ENTITY payload "expanded">]><root>&payload;</root>'
+        with tempfile.TemporaryDirectory() as temporary:
+            svg = Path(temporary) / "drawing.svg"
+            svg.write_text(xml, encoding="utf-8")
+            self.assertEqual(MODULE.check_file(svg), "FAIL: EntitiesForbidden (content omitted)")
+            office = Path(temporary) / "document.docx"
+            with ZipFile(office, "w") as archive:
+                archive.writestr("word/document.xml", xml)
+            self.assertEqual(MODULE.check_file(office), "FAIL: EntitiesForbidden (content omitted)")
 
     def test_output_must_be_outside_repo_including_parent_traversal(self):
         with tempfile.TemporaryDirectory() as temporary:

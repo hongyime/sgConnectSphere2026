@@ -11,7 +11,7 @@ import csv
 import json
 import shutil
 import subprocess
-import xml.etree.ElementTree as ET
+import defusedxml.ElementTree as ET
 from collections import Counter
 from pathlib import Path, PurePosixPath
 from zipfile import ZipFile
