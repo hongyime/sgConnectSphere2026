@@ -55,7 +55,7 @@ Product Owner and contributing developer.
 | E07-S03 | Check equipment availability | 5 | Xiang Ying | To Do |
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | In Progress |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | To Do |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | To Do |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do |
 | E14-S02 | Record significant actions in an activity log | 3 | Le Xin | In Review (PR #240) |
@@ -103,7 +103,7 @@ Product Owner and contributing developer.
 | E07-S03 | Check equipment availability | 5 | Xiang Ying | Done |
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | In Review |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | To Do |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | In Progress |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do |
 | E14-S02 | Record significant actions in an activity log | 3 | Le Xin | Done |
@@ -151,7 +151,7 @@ Product Owner and contributing developer.
 | E07-S03 | Check equipment availability | 5 | Xiang Ying | Done |
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | In Review |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | In Progress — C-67: an event may hold several venue bookings, each checked separately (T-68). |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | In Progress — C-65: every clash check includes setup/turnaround time (T-66). |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do — C-65 (T-66). |
 | E14-S02 | Record significant actions in an activity log | 3 | Le Xin | Done |
@@ -203,7 +203,7 @@ Product Owner and contributing developer.
 | E05-S05 | Apply setup and turnaround time | 5 | Bryan | Done |
 | E06-S02 | Check venue suitability against event requirements | 3 | Ji Ning | In Review (integration depends on E06-S04 #298) |
 | E06-S03 | Request a venue booking | 3 | Ji Ning | In Progress — C-67 (T-68). |
-| E11-S01 | Notify users about events they are involved in | 13 | Ji Ning | In Progress |
+| E11-S01 | Notify users about events they are involved in | 5 | Ji Ning | In Progress |
 | E06-S04 | Decide on a venue booking request | 3 | Le Xin | In Review (PR #298, on hold for TC_07) — C-65 (T-66). |
 | E06-S06 | Prevent double-booking of a venue | 5 | Le Xin | To Do (paused, depends on E06-S04) — C-65 (T-66). |
 | E14-S02 | Record significant actions in an activity log | 3 | Le Xin | Done |

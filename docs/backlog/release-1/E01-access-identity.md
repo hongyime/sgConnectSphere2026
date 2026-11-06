@@ -225,6 +225,7 @@ Given I am an Event Coordinator with events assigned to me in an active-lifecycl
 
 - **Sprint**: Sprint 3
 - **Points**: 5
+- **Estimate source**: SCRUM-156, final Jira export dated 6 November 2026; reconciled from its existing value, not a new or backdated estimate.
 - **BDR references**: C-69, C-40, T-70, T-73, T-74, O-38
 - **Owner**:
 
@@ -268,6 +269,7 @@ Given an Event Organiser for Client A is signed in When they open their event li
 
 - **Sprint**: Sprint 3
 - **Points**: 5
+- **Estimate source**: SCRUM-157, final Jira export dated 6 November 2026; reconciled from its existing value, not a new or backdated estimate.
 - **BDR references**: C-69, C-70, C-57, T-72, T-73, T-74, O-44
 - **Owner**:
 

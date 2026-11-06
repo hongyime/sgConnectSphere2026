@@ -22,7 +22,7 @@ carried over from Sprint 2.
 
 ### 3. Increment Demo & Completed Stories
 
-Status reflects the Jira-verified state **at the 17 October sprint close**
+Status reflects the Jira-verified state **at the 18 October 00:00 SGT boundary (after the final inclusive day of 17 October)**
 (project SCRUM, sprint 36). Several booking stories were demonstrated as built
 and tested but were not yet Done at close because of an unmerged dependency
 (see §4); they are listed as carryovers there, not here.
@@ -61,7 +61,7 @@ E06-S06, E06-S02, E06-S03 integration). They reached Done in Sprint 4.
 | E06-S06 | SCRUM-50 | 5 | Builds on E06-S04's approval code (#298), which cannot merge until E10-S04 is done; paused 17 Oct. (Reached Done 1 November.) | Carry over to Sprint 4 after E06-S04; PO already agreed to rewrite TC_01/02/03/05 to match current clash-blocking (first-come-first-served, C-46) |
 | E06-S02 | SCRUM-46 | 3 | Implementation and manual evidence complete (PR #300 merged), but integration depends on E06-S04 (#298) which is on hold. (Reached Done 29 October.) | Carry over to Sprint 4; after #298 merges, verify integrated behaviour before closing |
 | E06-S03 | SCRUM-47 | 3 | Submission, withdrawal, replacement and primary-venue selection implemented and tested; follow-up PR #299 subject to migration-release verification and integration with #298. (Reached Done 29 October.) | Carry over to Sprint 4; complete migration verification, resolve review items and merge #299 |
-| E11-S01 | SCRUM-75 | 13 | Inbox and shared notification infrastructure implemented; equipment/staff routing and UI fixes in draft PR #313; actual email receipt, production staff assignments and integrations with unfinished workflows remain. | Carry over to Sprint 4; complete CI and review for #313, coordinate production staff assignments and email-delivery verification |
+| E11-S01 | SCRUM-75 | 5 | Inbox and shared notification infrastructure implemented; equipment/staff routing and UI fixes in draft PR #313; actual email receipt, production staff assignments and integrations with unfinished workflows remain. | Carry over to Sprint 4; complete CI and review for #313, coordinate production staff assignments and email-delivery verification |
 
 ### 5. Stakeholder Feedback
 
@@ -90,40 +90,44 @@ does not count. Partial points are not counted.
 
 | Metric | Result |
 | --- | --- |
-| Committed product-story points | 66 (includes the Sprint 2 carryovers E11-S01 at 13 and E14-S02 at 3) |
+| Scope at close (historical ledger) | 58 (E11-S01 remains 5 points; the later thirteen-point correction does not revise this sprint) |
 | Completed (product stories, Done at close) | 34 points across 9 estimated stories |
-| Carryover | 32 points: E05-S05 (5), E06-S02 (3), E06-S03 (3), E06-S04 (3), E06-S06 (5), E11-S01 (13) |
+| Carryover | 24 points: E05-S05 (5), E06-S02 (3), E06-S03 (3), E06-S04 (3), E06-S06 (5), E11-S01 (5) |
 | Velocity (Sprint 3) | 34 product-story points |
 | Mid-sprint unestimated stories Done | E03-S11, E03-S12, E14-S03 (0 points; not counted) |
-| Jira board chart (all issue types) | 66 total / 53 Done on the live board, but the 53 includes five carryover stories completed in Sprint 4 (E05-S05, E06-S02, E06-S03, E06-S04, E06-S06) and unpointed enabler/mid-sprint tasks. The status history confirms those five reached Done on 22 Oct – 1 Nov, after the 17 Oct close. |
+| Jira board chart (all issue types) | 66 total / 53 Done on the live board, but the 53 includes five carryover stories completed in Sprint 4 (E05-S05, E06-S02, E06-S03, E06-S04, E06-S06) and unpointed enabler/mid-sprint tasks. The status history confirms those five reached Done on 22 Oct – 1 Nov, after the 18 Oct 00:00 SGT boundary. |
 
-Reconciliation (verified against the Jira status history, close date 17 October):
+Reconciliation (verified against the Jira status history, close boundary 18 October 00:00 SGT):
 
 - The review-draft carryover list (SCRUM-44, 46, 47, 48, 50, 75) is correct:
-  every one of those stories reached Done **after** the 17 October close
-  (22 Oct – 1 Nov), so all six are Sprint 3 carryovers worth 32 points.
+  every one of those stories reached Done **after** the 18 October 00:00 SGT boundary
+  (22 Oct – 1 Nov), so all six are Sprint 3 carryovers worth 24 points at historical estimates.
 - The Product Owner's comment to add **E05-S05 / SCRUM-44** to the carryover list
   is confirmed — it reached Done on 22 October.
-- Done-at-close velocity is **34 points** (66 committed − 32 carried), matching
-  the product-story title audit. The PO's "34 of 58 Done / 24 carried" figures
-  predate E11-S01's re-estimation from 5 to 13 points; using the current
-  13-point estimate gives 66 committed and 32 carried.
+- Done-at-close velocity is **34 points** (58 scope at close minus 24 carried),
+  preserving the PO's historical ledger. T-105 approved E11-S01's change from
+  5 to 13 on 1 November and explicitly prohibits retroactive sprint uplift.
 
 ### 8. Definition of Done (current version)
 
-The Definition of Done in effect at the end of Sprint 3 (`CONTRIBUTING.md`):
+The 6 October instructor guidance applies to this sprint
+(`docs/plans/instructor-guidance-2026-10-06.md`):
 
-- Acceptance criteria as stated in the user story are satisfied.
-- Automated tests pass (unit, integration, or end-to-end where relevant); 100%
-  unit coverage of changed code, or a stated reason.
-- Manual verification passes where the story needs human UI or workflow checking,
-  recorded with hand-taken screenshots per test case (T-93).
-- Code has been peer-reviewed by at least one other developer.
-- Security, accessibility, and UI criteria are satisfied where applicable.
-- Documentation and architecture are updated where the change affects setup,
-  interfaces, decisions, backlog interpretation, or team workflow.
-- The item is deployable and integrated into the increment through the reviewed
-  pull-request process (merge-queue on `main`).
+- Acceptance criteria are satisfied.
+- Automated tests pass; changed code has 100% unit coverage, including boundary
+  and error cases, or an explicit justification reviewed by a human.
+- Integration and manual end-to-end tests are run before the Sprint Review,
+  using the test-case template, with tester, date and outcome logged.
+- Another developer reviews both code and test cases, including AI-generated
+  work, and checks that the tests are valid.
+- Documentation, architecture views and project logs are updated.
+- The item is merged into `main` through the reviewed pull-request process.
+
+Security, accessibility, performance, UI criteria and public deployment are
+not mandatory DoD conditions under that guidance. Incomplete work returns to
+the Product Backlog. A story already marked Done is not reopened: record the
+discrepancy and create a linked follow-up. This corrected summary does not
+claim that missing historical acceptance evidence has since been supplied.
 
 ## Part B — Sprint Retrospective
 

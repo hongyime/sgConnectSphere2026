@@ -23,7 +23,7 @@ availability calendar, with every key action notified to affected users.
 
 The following stories were demonstrated as Done at the Sprint Review. Status
 reflects the Jira-verified state at sprint close (project `SCRUM`, sprint 35
-boundary 3 October 2026 SGT).
+boundary 4 October 2026 00:00 SGT, after the final inclusive day of 3 October).
 
 | Story ID | Title | Jira Key | Points | Status at Close |
 | --- | --- | --- | ---: | --- |
@@ -39,20 +39,20 @@ boundary 3 October 2026 SGT).
 | E05-S03 | View the venue availability calendar | SCRUM-42 | 5 | Done |
 | E05-S04 | Block a venue for maintenance | SCRUM-43 | 3 | Done |
 | E06-S01 | Search for suitable venues | SCRUM-45 | 5 | Done |
-| E14-S02 | Record significant actions in an activity log | SCRUM-86 | 3 | Carried over. At the 3 October close the story was In Progress (it moved Done → In Progress at 2 Oct 22:20 during the review; it only reached Done on 10 October, after the sprint). The Sprint 2 increment logged actions from stories built so far; the reader-role decision and Scenario 3 booking-decision logging were moved to Sprint 3 (T-75/T-76). Not counted toward Sprint 2 velocity. |
+| E14-S02 | Record significant actions in an activity log | SCRUM-86 | 3 | Carried over. At the 4 October 00:00 SGT boundary the story was In Progress (it moved Done → In Progress at 2 Oct 22:20 during the review; it only reached Done on 10 October, after the sprint). The Sprint 2 increment logged actions from stories built so far; the reader-role decision and Scenario 3 booking-decision logging were moved to Sprint 3 (T-75/T-76). Not counted toward Sprint 2 velocity. |
 
 ### 4. Carryovers / Not Completed
 
 | Story ID | Jira Key | Reason for Not Completing | Action Owner |
 | --- | --- | --- | --- |
-| E11-S01 | SCRUM-75 | Built against the triggers that existed; the remainder depends on Sprint 3 stories not yet ready. Re-estimated from 5 to 13 points as the cross-cutting scope became clear. | Ji Ning resumes once dependent stories progress |
+| E11-S01 | SCRUM-75 | Built against the triggers that existed; the remainder depends on Sprint 3 stories not yet ready. Five points at this sprint boundary; T-105 approved thirteen points on 1 November and preserves the historical sprint ledger. | Ji Ning resumes once dependent stories progress |
 | E14-S02 | SCRUM-86 | In Progress at close (reached Done 10 October, after the sprint). Reader-role decision settled and Scenario 3 booking-decision logging transferred to E06-S04; remaining work carried to Sprint 3 (T-75/T-76) at the original 3-point estimate. | Le Xin continues in Sprint 3 |
 
 ### 5. Stakeholder Feedback
 
 No external stakeholder feedback was received this sprint. The Product Owner
-reviewed the increment and accepted it subject to the follow-up actions and the
-two `[CONFIRM]` reconciliation items above.
+reviewed the increment and accepted it subject to the follow-up actions above.
+The final audit reconciliation in section 7 is not a new acceptance receipt.
 
 ### 6. Product Backlog Updates
 
@@ -69,21 +69,21 @@ does not count. Partial points are not counted.
 
 | Metric | Result |
 | --- | --- |
-| Committed product-story points | 53 (40 pts across 12 in-sprint stories + 13 pts E11-S01) |
-| Completed (product stories, Done at close) | 37 points across 11 stories |
-| Carryover | E11-S01 / SCRUM-75 (13 pts) and E14-S02 / SCRUM-86 (3 pts) |
-| Velocity (Sprint 2) | 37 product-story points |
+| Committed product-story points | 48 (40 pts across the 12 stories Done at close + E11-S01 at its committed 5 + E14-S02 at 3; per T-105 the later 13-pt estimate is not applied retroactively) |
+| Completed (product stories, Done at close) | 40 points across 12 stories (confirmed against the live Jira sprint-35 status at the 3 October close) |
+| Carryover | E11-S01 / SCRUM-75 (5 pts) and E14-S02 / SCRUM-86 (3 pts) |
+| Velocity (Sprint 2) | 40 product-story points (12 stories Done at close, per Jira sprint 35) |
 | Jira board chart (all issue types) | 82 points total / 69 Done, including technical-enabler and documentation stories (SCRUM-90–118, Bryan). Reported separately; not product velocity. |
-| Delivery rate (product stories) | 37 / 53 = 69.8% by points |
+| Delivery rate (product stories) | 40 / 48 = 83.3% by points |
 
 Reconciliation of the Product Owner's review comments (verified against the Jira
 status history):
 
-- **E14-S02 / SCRUM-86:** at the 3 October close the story was *In Progress* (it
+- **E14-S02 / SCRUM-86:** at the 4 October 00:00 SGT boundary the story was *In Progress* (it
   moved Done → In Progress at 2 Oct 22:20 during the review and only reached Done
   on 10 October). It is therefore a Sprint 2 carryover and its 3 points do not
   count toward Sprint 2 velocity.
-- **Carryover set:** the product carryover is SCRUM-75 (13 pts) and SCRUM-86
+- **Carryover set:** the product carryover is SCRUM-75 (5 pts) and SCRUM-86
   (3 pts). SCRUM-112 was still open at close (it moved To Do → Done on 6 October)
   but is a 0-point technical-enabler task, so it does not affect product velocity.
 - **E10-S01 = SCRUM-70** is a separate follow-up (its subtasks SCRUM-202–206 were
