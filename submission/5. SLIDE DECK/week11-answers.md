@@ -93,7 +93,7 @@ are ours to fill. Keep it to 8 rows.
 | Exports of project management tools (e.g. Google Sheets, Jira, Notion docs, …) | Jira export in `1. PRODUCT BACKLOG/` [CONFIRM: export file name]. Board: https://theprawnworkspace.atlassian.net/jira/software/projects/SCRUM/boards/1 |
 | Video recording URLs of sprint 4 scrum ceremonies | Sprint Planning: https://drive.google.com/file/d/1KpmvbnEnyXBcUu3NpOHAAw-THKKRz66F/view?usp=sharing. Daily stand-up: https://drive.google.com/file/d/16CDoyd2Ix-ALtighIaiXpY3E7zcN6zZw/view?usp=sharing. Sprint Review and Retrospective (one recording): https://drive.google.com/file/d/1HkO0yxH7kBRUQqzXZkco-GNWNgbsbIwo/view?usp=sharing |
 | Sprint meeting records (all sprints) | Zip: `2. SPRINT MEETINGS/`: 12 Word files, planning, stand-ups and review + retrospective for Sprints 1 to 4. Repo: the same records as Markdown in `docs/sprints/` (PR #440) |
-| System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/`. Repo: `docs/c4-diagrams.md`, `docs/class-diagram.md`, `docs/dynamic-user-flows.md` (sequence diagrams), `docs/db_schema.md`, `docs/architecture.md`, `docs/modular-monolith-architecture.md` [REFRESH: design pack in PR #437, not merged yet] |
+| System designs (C4, class, sequence, database) | Zip: `3. SYSTEM DESIGNS/` (SVG, PNG and PDF renders, plus the combined "System Design - ConnectSphere Release 1.pdf"). Repo: `docs/design/` (13 diagrams: C4 context, containers and components; user journey; event state machine; two data flow diagrams; three ERDs; UML class view; two sequence diagrams; index in `docs/design/README.md`, PR #437), plus `docs/class-diagram.md`, `docs/db_schema.md`, `docs/architecture.md` |
 | Test cases and test run records | Zip: `4. TEST CASES/`. Repo: `docs/testing/cases/` (383 test case IDs), `docs/testing/runs/` (945 run records) [REFRESH: docs/testing] |
 | Slide deck, README, decisions | Zip: `5. SLIDE DECK/`, `7. README/`. Repo: `docs/bdr/` (customer clarifications and team decisions) |
 
@@ -172,8 +172,8 @@ the new behaviour went into a new story with its own estimate, so our velocity
 history stayed honest. We updated the backlog, the test cases and the C4
 diagrams together in one PR, number 205."
 
-**SUGGESTED VISUAL:** The "automatic Safety Review" sequence diagram, section 14
-of `docs/dynamic-user-flows.md` (render the Mermaid block to an image). Or a
+**SUGGESTED VISUAL:** The event lifecycle state machine with the Safety Review
+status, `docs/design/05-event-state.md` (a render is in `3. SYSTEM DESIGNS/`). Or a
 Safety Officer screen from a manual run:
 `docs/testing/runs/evidence/20261103-173700-Bl0oper-frontend-e2e/TC_E08S06_03-requested.png`.
 
@@ -562,7 +562,7 @@ p. 1 step 6; `CONTRIBUTING.md` (retire test cases in the same PR).
 | What events trigger your CI pipeline? | Pull requests to `main` (opened, synchronize, reopened, edited, ready for review), the merge queue, pushes to `main`, and manual runs |
 | What checks/tests are run automatically? | repository-checks (`scripts/check.py`, test-case coverage audit), pr-conventions, lfs-guard, application-checks (typecheck, backend and frontend unit tests, real-PostgreSQL suites, Playwright, C4 diagram render). Also pr-guardrails and security scans (CodeQL, Semgrep, TruffleHog) |
 | Is CI required to pass before code can be merged into main? | Yes. Since 3 Oct 2026 four checks are required (repository-checks, pr-conventions, lfs-guard, application-checks), and the merge queue re-runs them before anything lands |
-| How many CI failures (CI going red) did your team encounter during the project? | 339 failed runs of the required workflows (CI 175, Application Checks 107, LFS Guard 38, PR guardrails 19). 325 were on PR branches, 10 in the merge queue, 4 on `main` [REFRESH: GitHub Actions] |
+| How many CI failures (CI going red) did your team encounter during the project? | 346 failed runs of selected CI workflows (CI 175, Application Checks 106, LFS Guard 38, PR guardrails 27). 334 were on PR branches, 9 in the merge queue, 3 on `main` (counted 6 Nov, 16:06 SGT; reruns can change these totals) [REFRESH: GitHub Actions] |
 | What was the most meaningful CI failure you encountered? | A flaky focus check in our frontend tests (issue #372, `RefusedEdit.navigation.test.tsx`, TC_E10S01_03) |
 | What caused it, and how was it resolved? | The test checked focus right away, before React had moved focus. PR #373 waits for it instead (`waitFor`). The same pattern failed again on `main` on 5 Nov in another file, so we're now fixing it for all tests, not one file at a time [REFRESH: PR #436] |
 | Did CI ever prevent faulty code from being merged? Give one example. | Yes. PR #320 (event cancellation): Typecheck failed on commit `cc7322f` (run 39831097976) because a test used an option `ByRoleOptions` doesn't have. A cached local check had missed it. Fixed before merge |
@@ -573,9 +573,9 @@ p. 1 step 6; `CONTRIBUTING.md` (retire test cases in the same PR).
 The biggest is application-checks, which runs typecheck, all the unit tests,
 the real-database suites and Playwright.
 
-We went red a lot: 339 failed runs. Almost all were on PR branches, which is
-where you want them. Ten were caught in the merge queue, after approval but
-before main. Four slipped onto main, mostly flaky frontend tests.
+We went red a lot: 346 failed runs. Almost all were on PR branches, which is
+where you want them. Nine were caught in the merge queue, after approval but
+before main. Three slipped onto main, mostly flaky frontend tests.
 
 The most useful failure was one of those flaky tests. It checked focus before
 React had moved it, so it passed on our laptops and failed in CI under load. We
@@ -621,7 +621,7 @@ approvals were the top complaints."
 
 **SUGGESTED VISUAL:** Simple pipeline diagram: PR, then four required checks,
 then review, then merge queue, then `main`. Source: `.github/workflows/`
-[CONFIRM: draw in Canva or reuse from `3. SYSTEM DESIGNS/` if one exists].
+Draw it in Canva: the design pack (`docs/design/`) has no CI diagram.
 
 **Evidence:** `scripts/tc_coverage_audit.py`; `scripts/check_test_case_references.py`;
 `docs/decisions/0012-merge-queue.md`; Actions run 41078692527 (30 Oct, C4
@@ -658,7 +658,8 @@ exist'. The query used a column from a newer migration, and that test suite was
 still building its database from two old migrations. So the code was right and
 the test setup was stale, and only a real database could tell. We changed the
 suite to apply every migration, CI went green, and it merged the next day.
-Without that step, the bug would only have shown up for real users."
+CI caught drift between the integration-test schema and the current
+application query before merge."
 
 **SUGGESTED VISUAL:** Screenshot of Actions run 40331728045 with the red step
 and the error line.
@@ -687,7 +688,7 @@ Jira points and reviews. [REFRESH: `git shortlog -sne origin/main`]
 | Amareet (Scrum Master) | Frontend skeleton and shared shell; tentative holds (E06-S05); technical support requests and staffing (E07-S06, E07-S07); attendee registration, capacity, period and list (E09-S01, S02, S03, S07); multi-session events (E04-S02) | 15% (58 commits) | #171, #172, #173, #245, #252, #326, #327, #353, #366, #368 | Scrum Master: Scrum events and Jira board; most reviews in the team (109 approvals); Definition of Done update for Week 7 guidance (#215); re-estimation (#213, #323); 14 manual run sessions. 8 stories Done (26 pts) |
 | Lexin | Venue catalogue and layouts (E05-S01, S02), availability calendar and blocks (E05-S03, S04), venue unavailable over bookings (E05-S06), booking decisions (E06-S04), double-booking prevention (E06-S06), activity log (E14-S02, S03), Organiser registration fixes (E03-S11, S12); revert to planning (E08-S04), including automatic re-entry into Safety Review (#392); minor vs major edits (E10-S02); Venue Staff notification routing for E11-S01 (#271, #272) | 11% (43 commits) | #88, #134, #151, #190, #272, #298, #348, #349, #385, #392 | Migration 0025; 22 manual run sessions; 51 approvals. 13 stories Done (42 pts) |
 | Aaron | Event request submit, draft and accessibility (E02-S01 to S03); auto-assignment, clarification and decision (E03-S01 to S03); setup and turnaround buffers (E05-S05); equipment reservation, unavailability, Sessions and warnings (E07-S04, S05, S08, S09); safety submission and Safety Officer check (E08-S03, E08-S06); waiting list and withdrawal (E09-S04, S05) | 10% (39 commits) | #174, #236, #283, #328, #361 | 24 manual run sessions; 75 approvals. 15 stories Done (60 pts), the most in the team |
-| Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); change requests (E10-S01); notifications (E11-S01) | 9% (35 commits) | #143, #242, #299, #300, #355, #367 | 18 manual run sessions; 50 approvals. 9 stories Done (44 pts) |
+| Jining | Account create, update and deactivate (E01-S04, S08, S11); venue search, near-match results and suitability (E06-S01, S02, T-63); booking requests and multiple venues (E06-S03); lost-venue recovery (E10-S05); primary-venue publication (#347); change requests for Events and Sessions (E10-S01, #383, #414); notifications (E11-S01); initial database schema documentation (#7) | 9% (35 commits) | #7, #143, #242, #299, #347, #355, #367, #383, #414 | 18 manual run sessions; 51 approvals. 9 stories Done (44 pts) |
 | Xiang Ying | Early user flows and architecture (#9); log in and access control (E01-S01 to S03); Organiser event editing (#175); event and Session date validation (E02-S07); status tracking, comments and event details (E03-S05 to S07); equipment catalogue, requests and availability (E07-S01 to S03), including the stock and withdrawal fix (#265); automatic completion (E08-S05); attendance (E09-S06); event cancellation (E10-S04), which makes open change requests Obsolete and prefills a change request after a refused edit (#319, #363, #365) | 8% (30 commits) | #9, #175, #214, #216, #229, #265, #319, #320, #324, #343, #363, #365, #389, #420 | 25 manual run sessions, the most in the team; 31 approvals. 13 stories Done (45 pts) |
 
 Areas come from the Jira stories each person owns (assignee) plus their own
@@ -695,8 +696,8 @@ PRs. A story owner is not always the only author: for example the waiting list
 (E09-S04, Aaron's story) was built in Bryan's #379. All counts
 [REFRESH: Jira assignees, GitHub PR reviews, docs/testing/runs].
 
-[CONFIRM: Aaron and Jining check their own rows. Bryan, Amareet, Xiang Ying
-and Lexin confirmed theirs on 6 Nov. Areas and PR numbers come from git and
+[CONFIRM: Aaron checks his own row. Bryan, Amareet, Xiang Ying, Lexin and
+Jining confirmed theirs on 6 Nov. Areas and PR numbers come from git and
 Jira, not from self-reports.]
 
 **SPEAKER NOTES** (Presenter: ________, about 1.5 minutes):
