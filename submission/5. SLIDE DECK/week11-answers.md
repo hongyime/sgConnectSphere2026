@@ -461,7 +461,7 @@ approval but merged into a feature branch, not `main`, so it is not a bypass.
 
 | Metric | Result |
 | --- | --- |
-| Number of manual e2e test cases using Wk4 template | 394 IDs in `docs/testing/cases/`: 391 story cases across 12 epic files, plus 3 performance cases in `EXX.md`; 249 cases have a recorded hand-run [REFRESH: tc-coverage, docs/testing/runs] |
+| Number of manual e2e test cases using Wk4 template | 394 test cases (391 story + 3 performance): 382 active, 12 retired. From the 6 Nov runs (`1ca12c5` / `f778c77`), the 382 active cases are 363 Pass, 10 Fail, 9 Not Executed; all 10 Fails are expected failures for the 4 known defects D-01 to D-04 (SCRUM-256 to 259). 249 cases have a recorded hand-run [REFRESH: tc-coverage, docs/testing/runs] |
 | Number of unit tests | 1,590: 738 backend + 852 frontend (Vitest). Full CI run 42211312372 on `main` `bf63fdea`, 6 Nov 2026; backend also reports 1 skip [REFRESH: CI] |
 | Number of integration tests (if any) | 378 passing tests in 27 PostgreSQL-labelled CI steps (run 42211312372); 6 additional `todo` expected failures expose the Lead gap. Runtime and Redis tests are excluded from this count |
 | Number of automated e2e tests (if any) | 58 real-stack auth passes; browser suite reports 480 passes and 10 skips (run 42211312372). Its 480 includes 8 expected-failure outcomes for known defects, leaving 472 ordinary passes. These are not all full-stack tests |
@@ -506,10 +506,14 @@ Playwright, manual). Data source: this table.
 frontend `Tests 852 passed`; 27 PostgreSQL-labelled steps total 378 passes;
 Playwright auth `58 passed`, browser suite `480 passed`, `10 skipped`.
 `docs/testing/runs/20261106-075740-Bl0oper-full-regression.md` separates
-ordinary passes from the eight browser expected failures. Automation inventory:
-366 automated cases, 10 known-defect cases, 5 scaffold and 13 without a test
-(`docs/testing/tc-coverage.md`, 394 catalogue cases). A case count is not a test
-execution count. PR #443 and `CONTRIBUTING.md` supply the remaining evidence.
+ordinary passes from the eight browser expected failures. Automation inventory
+as of 6 Nov (#443's `docs/testing/tc-coverage.md`, 394 catalogue cases):
+366 automated cases, 10 known-defect cases, 5 scaffold and 13 without a test.
+This coverage split is a point-in-time snapshot; after #450 (SCRUM-261) the live
+`tc-coverage.md` on `main` reads 371 automated / 3 known-defect / 7 scaffold /
+13 no-test. A case count is not a test execution count, and this categorisation
+differs from the observed Pass/Fail/Not-Executed results on the slide. PR #443
+and `CONTRIBUTING.md` supply the remaining evidence.
 
 ---
 
