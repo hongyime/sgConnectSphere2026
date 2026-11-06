@@ -11,7 +11,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
   - Real-database (`.integration.test` / `.db.test`): **72**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
   - Live-assertion (other active tests): **284**
-- Known defect (only an expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **6** (1.6%)
+- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **6** (1.6%)
 - Scaffold (mentioned only in `test.fixme` / `test.skip`): **10** (2.6%)
 - No test yet (no test file mentions the TC_ID): **13** (3.4%)
 

@@ -31,7 +31,7 @@ class CoverageAuditTests(unittest.TestCase):
             self.assertIn("a.spec.ts: TC_E01S01_01 scaffold", reports[0])
             self.assertIn("z.spec.ts: TC_E01S01_01 active", reports[0])
 
-    def test_expected_failures_are_known_defects_not_automated(self):
+    def test_any_expected_failure_makes_the_case_a_known_defect(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "a.test.ts").write_text(
@@ -52,15 +52,15 @@ class CoverageAuditTests(unittest.TestCase):
                 "TC_E01S01_01": "known-defect",
                 "TC_E01S01_02": "known-defect",
                 "TC_E01S01_03": "active",
-                "TC_E01S01_04": "active",
+                "TC_E01S01_04": "known-defect",
                 "TC_E01S01_05": "known-defect",
                 "TC_E01S01_06": "known-defect",
             })
             cases = [{"case_id": tc, "story_id": "E01-S01", "scenario": "Login"} for tc in sorted(status)]
             report = audit.build_report(cases, scan)
-            self.assertIn("- Automated (explicit TC_ID in an active test title): **2**", report)
-            self.assertIn("**4** (66.7%)", report)
-            self.assertIn("| E01 | 6 | 2 | 4 | 0 | 0 |", report)
+            self.assertIn("- Automated (explicit TC_ID in an active test title): **1**", report)
+            self.assertIn("**5** (83.3%)", report)
+            self.assertIn("| E01 | 6 | 1 | 5 | 0 | 0 |", report)
 
 
 if __name__ == "__main__":

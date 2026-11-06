@@ -7,10 +7,10 @@ Run from the repository root:
 
 A test case is counted as **automated** when a live ``test(...)`` block anywhere
 in ``backend/tests/``, ``tests/``, or ``frontend/src/`` has the TC_ID literally
-in its title. A test case is a **known defect** when its only live tests
-are expected failures (a node:test ``{ todo: ... }`` option or a Playwright
-``test.fail(...)`` call in the body): the test runs, but the application fails
-it. A test case is counted as **scaffold** when only a ``test.fixme`` or
+in its title and none of its live tests is an expected failure. A test case
+is a **known defect** when any of its live tests is an expected failure (a
+node:test ``{ todo: ... }`` option or a Playwright ``test.fail(...)`` call in
+the body): the test runs, but the application fails it. A test case is counted as **scaffold** when only a ``test.fixme`` or
 ``test.skip`` mentions it. Anything else is **no test**.
 """
 from __future__ import annotations
@@ -36,8 +36,9 @@ TC_ID_RE = re.compile(r"TC_[A-Za-z0-9]+_\d+")
 TEST_RE = re.compile(r"(test\.fixme|test\.skip|test\.only|test)\s*\(\s*(?:'([^'\n]+)'|\"([^\"\n]+)\")")
 TODO_OPTION_RE = re.compile(r"\s*,\s*\{[^{}]*\btodo\s*:")
 EXPECTED_FAIL_RE = re.compile(r"\btest\.fail\s*\(")
-# A case takes the strongest status any of its tests gives it.
-RANK = {"none": 0, "scaffold": 1, "known-defect": 2, "active": 3}
+# A case takes the highest-ranked status its tests give it: one expected
+# failure makes the whole case a known defect, even beside passing tests.
+RANK = {"none": 0, "scaffold": 1, "active": 2, "known-defect": 3}
 
 
 def load_workbook_cases() -> list[dict]:
@@ -174,7 +175,7 @@ def build_report(cases: list[dict], scan: dict) -> str:
     parts.append(f"  - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **{mock_backed}**")
     parts.append(f"  - Live-assertion (other active tests): **{live_assertion}**")
 
-    parts.append(f"- Known defect (only an expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **{defect}** ({defect / total * 100:.1f}%)")
+    parts.append(f"- Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **{defect}** ({defect / total * 100:.1f}%)")
     parts.append(f"- Scaffold (mentioned only in `test.fixme` / `test.skip`): **{scaffold}** ({scaffold / total * 100:.1f}%)")
     parts.append(f"- No test yet (no test file mentions the TC_ID): **{absent}** ({absent / total * 100:.1f}%)")
 
