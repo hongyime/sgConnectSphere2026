@@ -330,8 +330,8 @@ customer meant and checking our own evidence, because AI wrote code
 that looked right but sometimes answered a question nobody asked."
 
 **AI tools we used (disclosure):** Coding agents for code, tests and docs:
-Bryan used OpenAI Codex, Lexin used Claude Code, Amareet used coding agents
-[CONFIRM: tool names from Amareet, Aaron, Jining and Xiangying], and GitHub's
+Bryan used OpenAI Codex, Lexin and Amareet used Claude
+[CONFIRM: tool names from Aaron, Jining and Xiangying], and GitHub's
 Copilot pull request reviewer, which left automatic review comments on 201 of
 our 435 PRs [REFRESH: GitHub PR reviews]. Copilot comments were a second
 opinion only and Copilot was never an approving reviewer. Every merge into
