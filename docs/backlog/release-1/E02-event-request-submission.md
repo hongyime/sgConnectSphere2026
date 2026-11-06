@@ -109,7 +109,7 @@ Given predefined accessibility requirements are recorded for an event When a ven
 
 ## E02-S05 — Reuse a previous event's details
 
-- **Sprint**:
+- **Sprint**: Sprint 5
 - **Points**: 3
 - **BDR references**: C-74, T-79, T-87, T-90, T-99
 - **Owner**:
@@ -142,7 +142,7 @@ Given I later submit the copied draft When I enter event and Session dates Then 
 
 ## E02-S07 — Validate the event date horizon
 
-- **Sprint**:
+- **Sprint**: Sprint 5
 - **Points**: 3
 - **BDR references**: C-71, C-72, T-87
 - **Owner**:

@@ -224,7 +224,7 @@ Given I am an Event Coordinator with events assigned to me in an active-lifecycl
 ## E01-S12 — Manage only the events assigned to me as an Event Coordinator
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 5
 - **BDR references**: C-69, C-40, T-70, T-73, T-74, O-38
 - **Owner**:
 
@@ -267,7 +267,7 @@ Given an Event Organiser for Client A is signed in When they open their event li
 ## E01-S13 — Sign in as an Event Coordinator Lead or Safety Officer
 
 - **Sprint**: Sprint 3
-- **Points**:
+- **Points**: 5
 - **BDR references**: C-69, C-70, C-57, T-72, T-73, T-74, O-44
 - **Owner**:
 

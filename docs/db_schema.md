@@ -107,7 +107,7 @@ erDiagram
         uuid organiser_id FK
         uuid coordinator_id FK "null while unassigned; assigned or directly reassigned by a Lead (T-83)"
         timestamptz coordinator_assigned_at "when the current Coordinator took over"
-        uuid assigned_by FK "the Lead who assigned or reassigned; null for legacy or unassigned rows"
+        uuid assigned_by FK "migration 0027; the Lead who assigned or reassigned; null for legacy or unassigned rows"
         uuid client_org_id FK
         varchar title
         text description

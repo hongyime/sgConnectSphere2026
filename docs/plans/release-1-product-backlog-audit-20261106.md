@@ -24,8 +24,8 @@
 | Story type | E02-S05 and E03-S08/S09/S10 were Bugs although each is a product user story. | Changed all four to Jira Story. The final Release 1 set contains 65 Stories and no Bugs. |
 | Epic parent | E02-S05 and E03-S08/S09/S10/S11 had no parent. | Linked them to E02 (`SCRUM-3`) or E03 (`SCRUM-4`). Every final Release 1 Story has an epic parent. |
 | Priority and assignee | Present on all 64 existing Release 1 stories. | Preserved them; the follow-up was assigned to the same accountable owner as E06-S05 and given High priority. Every final Release 1 Story has both fields. |
-| Points | E02-S05 had a source-recorded 3 points but Jira was blank. Six other historical/current stories were blank in Jira and no source-backed estimate existed. | Set E02-S05 to 3. Seven final Stories remain deliberately unestimated; see `[CONFIRM]`. |
-| Sprint | E02-S05 had neither source-backed Sprint nor Jira Sprint. | Did not backdate a Sprint commitment. Six final Stories have no Sprint; see `[CONFIRM]`. |
+| Points | E02-S05 had a source-recorded 3 points but Jira was blank. Six other historical/current stories were blank in Jira and no source-backed estimate existed. | Set E02-S05 to 3. Seven final Stories were left unestimated at first; on 6 Nov the Product Owner set them, and E01-S12, E01-S13, E07-S08, E07-S09 and E08-S06 took their Jira values; see `[CONFIRM]`. |
+| Sprint | E02-S05 had neither source-backed Sprint nor Jira Sprint. | Did not backdate a Sprint commitment at first. On 6 Nov the Product Owner backfilled Sprint 5 for E02-S05 from the earlier Done issue SCRUM-30; see `[CONFIRM]`. |
 | Story/AC format | Five newly scoped issues had incomplete/non-canonical Jira descriptions. | Synchronized their title and source-backed user story/acceptance criteria, and synchronized E06-S07 after its taught user-story format correction. |
 
 ## Status reconciliation rule
@@ -40,13 +40,18 @@ flow is not implemented.
 
 ## [CONFIRM]
 
-- Team refinement must estimate E03-S08/S09/S10/S11/S12, E06-S07 and E14-S03;
-  their existing Jira records have no defensible point value.
-- Team refinement must select a Sprint for E01-S13, E02-S05, E03-S08/S09/S10
-  and E06-S07; none has a source-backed Sprint commitment.
+- Estimates for E03-S08/S09/S10/S11/S12, E06-S07 and E14-S03 were completed and confirmed by the Product Owner on 6 Nov 2026 (22 points restored; total Release 1 scope reconciled to 65 stories and 252 points).
+- Sprint 5 was backfilled from Jira for E02-S05 (SCRUM-30), E02-S07, E04-S02,
+  E07-S08 and E07-S09. Jira has E03-S11, E03-S12 and E14-S03 in Sprint 3.
+  Jira does not confirm the Markdown's Sprint 3 for E01-S12 (SCRUM-156 is in
+  Sprint 5), E01-S13 (SCRUM-157 has no Sprint) or E03-S08/S09/S10 (the
+  Release 1 issues SCRUM-256 to 258 have no Sprint; the earlier SCRUM-153 to
+  155 are in Sprint 5). E06-S07 has no Sprint.
+- E03-S08 is estimated at 5 here, but its earlier Jira issue SCRUM-153 has 8;
+  the Product Owner should confirm which value Release 1 uses.
 - The E06-S07 assignee was inherited from E06-S05 as a practical ownership
   assumption, not a customer requirement; the Product Owner should confirm it.
-- C-111 and C-119 conflict on whether a venue block may be open-ended.
+- C-111 and C-119 conflict on whether a venue block may be open-ended; confirmed resolved by the Product Owner citing Team Decision T-80 (the application, API and schema support both bounded and open-ended maintenance blocks until lifted; no code changes required).
 - E06-S07 needs test cases and implementation by the venue-booking owners.
 - E03-S08/S09/S10 need implementation and updated executable/manual tests by
   their owners; this documentation does not claim them delivered.

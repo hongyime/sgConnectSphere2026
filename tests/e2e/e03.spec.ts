@@ -33,49 +33,9 @@ async function fakeOrganiserEvent(page: Parameters<typeof fakeCoordinatorBackend
 // Each test.fixme() is a specification, unless it is explicitly superseded.
 
 test.describe("E03-S01", () => {
-
-  /**
-   * TC_E03S01_01
-   * AC:      E03-S01 - Scenario 1 (Exactly one Coordinator assigned)
-   * Sprint:  2.0
-   *
-   * Pre-conditions:
-   *   organiser_a@clienta.com has a request "Annual Tech Summit" with all mandatory fields complete, ready to submit. At least one Event Coordinator account exists and is eligible for assignment
-   *
-   * Test data:
-   *   Request: Annual Tech Summit
-   *
-   * Expected result:
-   *   Exactly one Event Coordinator is assigned, the request status changes from "Submitted" to "Under Review", and that Coordinator receives a notification of the new assignment
-   */
-  test("TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review", async ({ page }) => {
-    // Assignment itself runs in the submit transaction and is proven against
-    // PostgreSQL in backend/tests/coordinatorNotifications.integration.test.ts.
-    // This covers what users see: step 2 (Organiser) and step 3 (Coordinator).
-    await page.route('**/api/events?id=EVT-ANNUAL', route => route.fulfill({ json: { event: {
-      id: 'event-annual', event_code: 'EVT-ANNUAL', title: 'Annual Tech Summit', description: 'A summit for the tech community',
-      status: 'under_review', status_changed_at: '2026-09-28T01:00:00.000Z', starts_at: '2026-10-10T09:00:00.000Z',
-      creator_name: 'Organiser A', coordinator_id: coordA.id, coordinator_name: coordA.name,
-      statusHistory: [{ old_value: 'submitted', new_value: 'under_review', occurred_at: '2026-09-28T01:00:00.000Z' }],
-    } } }));
-    await page.goto('/events/EVT-ANNUAL');
-    const status = page.getByRole('heading', { name: 'Current status' }).locator('..');
-    await expect(status).toContainText('Under Review');
-    await expect(status).toContainText(`Assigned Coordinator: ${coordA.name}`);
-    await expect(page.getByText('Submitted → Under Review')).toBeVisible();
-
-    await page.unrouteAll();
-    await page.route('**/api/auth/session', route => route.fulfill({ json: { user: { id: coordA.id, email: coordA.email, role: 'event_coordinator', clientOrgId: null } } }));
-    await page.route('**/api/notifications', route => route.fulfill({ json: { notifications: [{
-      id: 'n-1', title: 'New event assigned', message: 'Annual Tech Summit has been assigned to you for review.',
-      is_read: false, read_at: null, created_at: '2026-09-28T01:00:00.000Z', event_id: 'event-annual',
-    }] } }));
-    await page.route('**/api/events?*', route => route.fulfill({ json: { events: [], incoming: [], outgoing: [] } }));
-    await page.goto('/coordinator');
-    await expect(page.getByRole('link', { name: 'Notifications, 1 unread' })).toBeVisible();
-    await page.getByRole('link', { name: 'Notifications, 1 unread' }).click();
-    await expect(page.getByText('New event assigned')).toBeVisible();
-  });
+  // C-69 replaced automatic assignment with the Lead queue in E03-S08.
+  test.skip('TC_E03S01_01 — [RETIRED — superseded by E03-S08 / C-69] automatic assignment on submission', () => {});
+  test.skip('TC_E03S01_02 — [RETIRED — superseded by E03-S08 / C-69] automatic fewest-workload Coordinator selection', () => {});
 
   /**
    * TC_E03S01_04

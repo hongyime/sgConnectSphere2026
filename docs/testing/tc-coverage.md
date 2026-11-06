@@ -7,13 +7,13 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 ## Summary
 
 - Total test cases: **394**
-- Automated (explicit TC_ID in an active test title): **371** (94.2%)
+- Automated (explicit TC_ID in an active test title): **370** (93.9%)
   - Real-database (`.integration.test` / `.db.test`): **84**
   - Mock-backed (imports `mocks.ts` or uses `vi.mock`/`jest.mock`): **1**
-  - Live-assertion (other active tests): **286**
+  - Live-assertion (other active tests): **285**
 - Known defect (at least one expected-failure test, node:test `todo` or Playwright `test.fail`; the application fails it): **3** (0.8%)
-- Scaffold (mentioned only in `test.fixme` / `test.skip`): **7** (1.8%)
-- No test yet (no test file mentions the TC_ID): **13** (3.3%)
+- Scaffold (mentioned only in `test.fixme` / `test.skip`): **9** (2.3%)
+- No test yet (no test file mentions the TC_ID): **12** (3.0%)
 
 ## Coverage by epic
 
@@ -21,7 +21,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | --- | ---: | ---: | ---: | ---: | ---: |
 | E01 | 38 | 38 | 0 | 0 | 0 |
 | E02 | 21 | 18 | 3 | 0 | 0 |
-| E03 | 62 | 56 | 0 | 4 | 2 |
+| E03 | 62 | 55 | 0 | 6 | 1 |
 | E04 | 5 | 5 | 0 | 0 | 0 |
 | E05 | 40 | 40 | 0 | 0 | 0 |
 | E06 | 48 | 47 | 0 | 0 | 1 |
@@ -32,7 +32,7 @@ Point-in-time mapping of every workbook test case (from `docs/testing/PROJECT TE
 | E11 | 15 | 15 | 0 | 0 | 0 |
 | E14 | 14 | 11 | 0 | 3 | 0 |
 | EXX | 3 | 0 | 0 | 0 | 3 |
-| **Total** | **394** | **371** | **3** | **7** | **13** |
+| **Total** | **394** | **370** | **3** | **9** | **12** |
 
 ## Case-by-case status
 
@@ -111,8 +111,8 @@ Each row records the TC_ID, story, scenario, current status, and (for automated,
 
 | TC_ID | Story | Scenario | Status | Where |
 | --- | --- | --- | --- | --- |
-| `TC_E03S01_01` | E03-S01 | [RETIRED — C-69: automatic assignment is superseded by the Lead's unassigned que | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_01 - Verify that submitting a request should trigger automatic assignment of exactly one Event Coordinator and move its status to Under Review |
-| `TC_E03S01_02` | E03-S01 | [RETIRED — C-69: automatic assignment by fewest active events is superseded by E | ❌ none | — |
+| `TC_E03S01_01` | E03-S01 | [RETIRED — C-69: automatic assignment is superseded by the Lead's unassigned que | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_01 — [RETIRED — superseded by E03-S08 / C-69] automatic assignment on submission |
+| `TC_E03S01_02` | E03-S01 | [RETIRED — C-69: automatic assignment by fewest active events is superseded by E | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_02 — [RETIRED — superseded by E03-S08 / C-69] automatic fewest-workload Coordinator selection |
 | `TC_E03S01_03` | E03-S01 | [RETIRED — contradicts Scenarios 3 and 4, where ownership moves only once the co | ❌ none | — |
 | `TC_E03S01_04` | E03-S01 | Verify that a Coordinator who is not assigned to an event should be refused when | ✅ active | tests/e2e/e03.spec.ts: TC_E03S01_04 - Verify that a Coordinator who is not assigned to an event should be refused when attempting to reassign it |
 | `TC_E03S01_05` | E03-S01 | Verify that when the named colleague declines a reassignment, the original Coord | ⚠️ scaffold | tests/e2e/e03.spec.ts: TC_E03S01_05 - Verify that when the named colleague declines a reassignment, the original Coordinator should remain assigned and be notified of the refusal |
