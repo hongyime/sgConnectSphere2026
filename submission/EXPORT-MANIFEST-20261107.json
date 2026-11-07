@@ -1,0 +1,646 @@
+{
+  "source_commit": "24095ea",
+  "exported_at": "2026-11-07T10:54:54+08:00",
+  "files": [
+    {
+      "path": ".agents/handoffs/20261107-main.md",
+      "bytes": 1554,
+      "sha256": "7c6463012f719140cdc864bfe579d6500bd27f543636e4edf431df25af64d489"
+    },
+    {
+      "path": "docs/ARCHITECTURE DECISION RECORDS CAA 071126.docx",
+      "bytes": 98044,
+      "sha256": "afaa7cd67b9743153c5db45f9189774e0b3502382feeb369d803d41488c830d7"
+    },
+    {
+      "path": "docs/BACKLOG DECISION REVIEW CAA 071126.docx",
+      "bytes": 122784,
+      "sha256": "1e520e318cb023b2cc7824fbbe470721c8429b660f06257d4eea967d200a5122"
+    },
+    {
+      "path": "docs/source-of-truth.md",
+      "bytes": 12771,
+      "sha256": "86261dac70f0ad2ac75f8beb0e42d28c43841aeb7555fe4706b40e1ad81912dd"
+    },
+    {
+      "path": "docs/testing/PROJECT TEST CASES CAA 071126.xlsx",
+      "bytes": 94227,
+      "sha256": "43c390a79c6a197cc1b0092015649dfb0f2cc4e31bbcf839220afad2a802a026"
+    },
+    {
+      "path": "submission/1. PRODUCT BACKLOG/Architecture Decision Records.docx",
+      "bytes": 98044,
+      "sha256": "afaa7cd67b9743153c5db45f9189774e0b3502382feeb369d803d41488c830d7"
+    },
+    {
+      "path": "submission/1. PRODUCT BACKLOG/Backlog Decision Review.docx",
+      "bytes": 122784,
+      "sha256": "1e520e318cb023b2cc7824fbbe470721c8429b660f06257d4eea967d200a5122"
+    },
+    {
+      "path": "submission/1. PRODUCT BACKLOG/Jira All Tickets 20261107.csv",
+      "bytes": 2279568,
+      "sha256": "54441149d3cf08eed80e11aa51d3a5d67caa3230e3433c3456bd3baa265f5b0b"
+    },
+    {
+      "path": "submission/1. PRODUCT BACKLOG/Product Backlog.docx",
+      "bytes": 89650,
+      "sha256": "63d7e6ce8f639360ee2f3a3d8f1c7a43f548135681e57116b795d8bab02fb095"
+    },
+    {
+      "path": "submission/1. PRODUCT BACKLOG/Release 1 Backlog.docx",
+      "bytes": 84737,
+      "sha256": "09f359382f77681294dfb24bbb3d305e113669aa0e288917a04ca66103c6dd8d"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 2 - Planning - 2026-09-20.docx",
+      "bytes": 40279,
+      "sha256": "e9753625f3b2d2f83592ef046febda67230dca4c297378de099da529da258915"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 2 - Review and Retrospective - 2026-10-02.docx",
+      "bytes": 43023,
+      "sha256": "189151014d64d724845528a1c4d128868d2059d091d9d7f5105fce413a893c46"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 2 - Standups - 2026-09-23 to 10-02.docx",
+      "bytes": 41639,
+      "sha256": "d97f0bd924c6f6505d68ea2a26d738a5805a7dd0a89e437d3474df1acdc71de3"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 3 - Planning - 2026-10-05.docx",
+      "bytes": 40697,
+      "sha256": "2c6670a711b9edba458a32adf031d92f7b37603870935a4aaaecb885ba2eb26e"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 3 - Review and Retrospective - 2026-10-18.docx",
+      "bytes": 45046,
+      "sha256": "6866180c0f40fb811ef2e23cdd2eb89dd89a02652dd56f0447b54029e2bbb64b"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 3 - Standups - 2026-10-08 to 10-17.docx",
+      "bytes": 44406,
+      "sha256": "50f2f813438d4d7939c628e060b60afd5e02dd2850ded0e43947e4a26de9079e"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 4 - Planning - 2026-10-18.docx",
+      "bytes": 41047,
+      "sha256": "c7e60ab71247f0c122823ca0fb529d2dc72aa76ce283c90f8113407b1ee7b1c3"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 4 - Review and Retrospective - 2026-11-01.docx",
+      "bytes": 44056,
+      "sha256": "d4166e906d6c92e88e5e3456bb3aab85fc96495b7af7540ac8f33eb65827defc"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint 4 - Standups - 2026-10-25 to 10-31.docx",
+      "bytes": 45405,
+      "sha256": "9d170c86af15d5dca74451caeffff5253d3b324aed39edc2df28f5a9b9272c4a"
+    },
+    {
+      "path": "submission/2. SPRINT MEETINGS/Sprint Meetings Index.docx",
+      "bytes": 37712,
+      "sha256": "4f9b2d24931d06c3cd0806c8dd5fc1fcf0b8f7b89ffd84f15b56974c344160cc"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/01-c4-context.md",
+      "bytes": 801,
+      "sha256": "601c0939b4e84649949028bcd5e8885f3886225cead65c03bf7a4002027c8094"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/01-c4-context.mmd",
+      "bytes": 784,
+      "sha256": "4e7e2b4ec5df3886d688b7370cbf32cd717eb27bce0ff99c5f7f9f44eb30bac1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/01-c4-context.pdf",
+      "bytes": 243761,
+      "sha256": "968e6389533e2939aa47b1ec0b49aeac1cd7756694194eb739dd5dd146a77dd5"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/01-c4-context.png",
+      "bytes": 541509,
+      "sha256": "9e8b447d838468f5cabdf4ae60d1d804229002cd88d9e2f402fca1f52a85e42c"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/01-c4-context.svg",
+      "bytes": 25919,
+      "sha256": "072a15972b09e7fbce1d3ae7f2ee8315dc88c933bebeac34a19e31cf07aacdec"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/02-c4-containers.md",
+      "bytes": 1066,
+      "sha256": "4a5c7258c32fc014d67af5bd7a1635f26fd919b1855985c98d7338fe14be5ff3"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/02-c4-containers.mmd",
+      "bytes": 1040,
+      "sha256": "1826b3a8b0d20db5dd87085389a6dc7a46178be430a7f446a1e0e910424a5925"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/02-c4-containers.pdf",
+      "bytes": 244935,
+      "sha256": "9fa0f95890f7a025097f7e596e63b687cab6ed75e7a32bc963e9efc9b5a781bf"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/02-c4-containers.png",
+      "bytes": 397595,
+      "sha256": "90d602aac3312e1956b644a2978d76f5b1628cd5292e5eac744d2f930258473f"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/02-c4-containers.svg",
+      "bytes": 37872,
+      "sha256": "6439b7086ae57acfdc3ee7b498d3094adea7331ec50bf7624e02509e3129f3b8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/03-c4-components.md",
+      "bytes": 850,
+      "sha256": "0f15c01b934f255f34a93687bdf9fc768db84827555735ba3cf7de92831c91c4"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/03-c4-components.mmd",
+      "bytes": 929,
+      "sha256": "beb5b1f97c2b99640492074618ed0ce51d27ee0e28d943cf15db3e9722cfd064"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/03-c4-components.pdf",
+      "bytes": 628000,
+      "sha256": "bda04c6eaa375c1cb98dc3a51fadd16ce460c87b6f3586dda43486b50444f5c8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/03-c4-components.png",
+      "bytes": 600478,
+      "sha256": "f054749c4b368c05f0377dfee59427c5fdd2aa79bb8a7b177c45cc8f3615f9e0"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/03-c4-components.svg",
+      "bytes": 31416,
+      "sha256": "7d14bc9be0bed5f806cc7e1b861630db796225535eab068e2a528c6643c5483a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/04-user-flow.md",
+      "bytes": 1141,
+      "sha256": "c56167b6baaabf5cbc03a7769c3180ea50bc56841ae8b2c51e2d07c3373ec801"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/04-user-flow.mmd",
+      "bytes": 1121,
+      "sha256": "3637d854d2418132f4214878653a8d05176192c1912f67e79235a61b2494c89a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/04-user-flow.pdf",
+      "bytes": 549219,
+      "sha256": "3d5d1e0887a152929cd31b20308d21e155cb2b282e8b7bfb47eb29139280677d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/04-user-flow.png",
+      "bytes": 651697,
+      "sha256": "3189d63b6c18728d95e1b0917f1334cf0bac46803db73a02f046dc854fd32bd9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/04-user-flow.svg",
+      "bytes": 213424,
+      "sha256": "0b149a071bb74e2adefc7482214cadfa8b09cc777152740e22c48ad1c1b2089b"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/05-event-state.md",
+      "bytes": 935,
+      "sha256": "996af5158da005787dad84156fd9c9800114108c8fb2d99d2d47c26ccdfe018e"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/05-event-state.mmd",
+      "bytes": 1006,
+      "sha256": "b9f3630c6ddda61b745b72b4edc02361b7365a017016d30bf6d0911baf220bea"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/05-event-state.pdf",
+      "bytes": 142141,
+      "sha256": "2e61528680615fbb271e53851afe82f418f66460f3d0184f43366bf618381ece"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/05-event-state.png",
+      "bytes": 209177,
+      "sha256": "a7922fc4be8f8005a18c908c78fdd89dc83de6d7a9e1fd33880ea43c24b88a35"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/05-event-state.svg",
+      "bytes": 59680,
+      "sha256": "3d552127f5d300dcf15bc3acc40e6420823249c506e9e9be00904dd7fedabd2d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/06-dfd-context.md",
+      "bytes": 1244,
+      "sha256": "78667a98ed9c2022ac6be9b8d392617e7f3f8115f2248f04c69e5885bf1c0c1a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/06-dfd-context.mmd",
+      "bytes": 340,
+      "sha256": "03f9b2d7a9de4501671fe695a3953cbf4eca5c3ed90eb78406c8c1f6518fb709"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/06-dfd-context.pdf",
+      "bytes": 203861,
+      "sha256": "198cd2347fce6bba84d844c0f9d066587149bbba0063762807225ebdb8bc9140"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/06-dfd-context.png",
+      "bytes": 306016,
+      "sha256": "d6dd7dd4b62d26ac0c614f7d02e5391b32198d0004606464167bc5355902aee9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/06-dfd-context.svg",
+      "bytes": 65980,
+      "sha256": "4b254253dada0b1b55007fef9cc1435a10f72af7c5377325ecf804319d01f851"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/07-dfd-level-1.md",
+      "bytes": 911,
+      "sha256": "94d310d02a46a9756ab349dcca104607247e80ca910ab32b2ca5c3c1d9fe31d8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/07-dfd-level-1.mmd",
+      "bytes": 984,
+      "sha256": "215f29bc8d557bdad12848c47a76cd1778d2bf5f62181e5d8b377bf94646966b"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/07-dfd-level-1.pdf",
+      "bytes": 296198,
+      "sha256": "73575e32388e2c2f1586a35fa848ce4606ccd825ea9608e81c04890c370e271d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/07-dfd-level-1.png",
+      "bytes": 381362,
+      "sha256": "0fd4235a1b38ccd5df3f93f6d0897c5e491408303304f9123b2446c08debca69"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/07-dfd-level-1.svg",
+      "bytes": 221724,
+      "sha256": "b45156ff48231e219b2164e995a1edcc56ebe914aa94429d056a66a0160d5c82"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/08-erd-core.md",
+      "bytes": 900,
+      "sha256": "357c5ba06a3f37209023724b787f9e088adf68c479d5e05389b21d41007ce8c5"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/08-erd-core.mmd",
+      "bytes": 1020,
+      "sha256": "246e01cf99732d5ec00c201c166d617c28d0fa7839315976e01c56f6b061d83a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/08-erd-core.pdf",
+      "bytes": 304849,
+      "sha256": "3b61f84824f451dc1c6e84dcd8591c008d686d5886fe0f5bebd27dd586b461c8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/08-erd-core.png",
+      "bytes": 505516,
+      "sha256": "1cd91009aa4156fbe7a68d7a8496399f5c2889bf4dc4c7babe551fae4de2f326"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/08-erd-core.svg",
+      "bytes": 133203,
+      "sha256": "dcad4733f37d9014646ab0ef70ef09ce32eb47de54636045a7a14cb27e329d9a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/09-erd-arrangements.md",
+      "bytes": 917,
+      "sha256": "57a7d8df5b7feef4809dcc5c3ba861070b518cf21c241d53b7921d32c9c61151"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/09-erd-arrangements.mmd",
+      "bytes": 1329,
+      "sha256": "a5c43e6b0407e150a74f91eee6208af9e058aab6658e1306c9081ad24a17cb90"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/09-erd-arrangements.pdf",
+      "bytes": 284872,
+      "sha256": "e0945db8bd06590d8f33000b77ed1785f657944a8f464527ad4eb7400ddbbfc7"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/09-erd-arrangements.png",
+      "bytes": 463938,
+      "sha256": "828f9c4a6d7a8f4db65551e776100e1bec2351fd53c269b04510942961bc19be"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/09-erd-arrangements.svg",
+      "bytes": 139696,
+      "sha256": "06f85ddb798dc762e44ab8a19e8d9470c9b0802646f24729f99b8f26beb3b52a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/10-erd-registration-notifications.md",
+      "bytes": 1115,
+      "sha256": "6ec98485e41cbe35501a3e3e3ef084f71964bd3e586bd313ce14db311e2490a9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/10-erd-registration-notifications.mmd",
+      "bytes": 984,
+      "sha256": "dc4180832aba590fd15649d1c41780024c9e28b57cd9ce373056de643225715d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/10-erd-registration-notifications.pdf",
+      "bytes": 355686,
+      "sha256": "6902587c3232e6ce3f400cda1fb64737421706385df2678fdc248e3d8b3fcefd"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/10-erd-registration-notifications.png",
+      "bytes": 510499,
+      "sha256": "a70396b54b84f326733b159b396ffec51ba521416d5a64ebaa958efbf587207e"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/10-erd-registration-notifications.svg",
+      "bytes": 103559,
+      "sha256": "245ef310e7417f6d1b81f31ca769907518df6ea224953ec20b959f977c0b3bc8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/11-uml-lifecycle.md",
+      "bytes": 939,
+      "sha256": "ac6d697a51ec565a9238a9dffbfd6e623f2358872bc6515e48c2ce0252bf0888"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/11-uml-lifecycle.mmd",
+      "bytes": 1110,
+      "sha256": "30fa01b978f52b61ec6fe8cb58f5faf738a665ea6b2573f881fa5051b31f6eb3"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/11-uml-lifecycle.pdf",
+      "bytes": 268679,
+      "sha256": "30ebae526c1cff385783853a39709669e25c9ed016d426152355e4da4db4d0c5"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/11-uml-lifecycle.png",
+      "bytes": 574874,
+      "sha256": "477f4ebd09d9089f12f7a84dc34dce2bfd648cdbf04f10ea3dd522cf0d7463b1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/11-uml-lifecycle.svg",
+      "bytes": 38232,
+      "sha256": "3cf6e856409ff1d106a5da61971fa9858a606fb59613df15b3a08b4e634b8fe6"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/12-sequence-submission.md",
+      "bytes": 962,
+      "sha256": "ad20ef51a81a256886972030a482c2a7595e8a422d469aa4fce145b52e4825ec"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/12-sequence-submission.mmd",
+      "bytes": 888,
+      "sha256": "d6354198cd11f0afbfdf36f4cb82c1814f9329626c9b86324c914434b4d08bc1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/12-sequence-submission.pdf",
+      "bytes": 152572,
+      "sha256": "6f713ea09b3f7efe513198fbaafbd4d8d13c2b76cfde9cd2e0869e67e776d034"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/12-sequence-submission.png",
+      "bytes": 511586,
+      "sha256": "1c7e43bfb02b3d9e6002bd0c175889c255bfedb9a8ba33a7a0cf389933722c93"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/12-sequence-submission.svg",
+      "bytes": 36032,
+      "sha256": "adcaab86e467e361b121c9b2cc0ad49cb8b3fd452a63b10eaa56a05f9704c3a5"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/13-sequence-notifications.md",
+      "bytes": 1004,
+      "sha256": "3b702a7bcdce415dbb7620c90b468666d54e6994d6571d2aeb6b223ccba130b6"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/13-sequence-notifications.mmd",
+      "bytes": 930,
+      "sha256": "5b62a16f6abd291acef131fdf45d7c30acf7c92226139c5422e4c53c3752213d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/13-sequence-notifications.pdf",
+      "bytes": 209015,
+      "sha256": "b0970682795fb8dd6117a2f4ab4a40ed53b5e8886e5cc7d12e3b276003ac74d3"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/13-sequence-notifications.png",
+      "bytes": 506497,
+      "sha256": "c0f1917520a298a673ca3279047777b8e1248f01b77bda31af3faf0b42020153"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/13-sequence-notifications.svg",
+      "bytes": 34710,
+      "sha256": "453e9d3c94162f74eca49646f6ac930afadf95c79af1d0c5c3f24dfc932b1b28"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/README.md",
+      "bytes": 17811,
+      "sha256": "6938e04c346a3809b5c0675f179ef9d57d81a25591ca7264431970dbf33bcf43"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/System Design - ConnectSphere Release 1.pdf",
+      "bytes": 4470596,
+      "sha256": "6fe62850a767ee6fcd757520ffe696ea78d78be0db7414cae33b09dcd0d34526"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/c4-diagrams.md",
+      "bytes": 13982,
+      "sha256": "90094e078bb6d7114c1c46f37fdd4ab3d6deabea112b32393a43017d336b885a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/db_schema.md",
+      "bytes": 28775,
+      "sha256": "0e042b050a4b7ffba7327b41d5e1f8ad55eacba7fe3b4bd2082e1bd6f1ac48f7"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/dynamic-user-flows.md",
+      "bytes": 21735,
+      "sha256": "922bb79e3f375b1e1b2fbfbf548d370f814997356a5164bcc8cb19746be86527"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/figma-wireframe-refinement-plan.md",
+      "bytes": 18364,
+      "sha256": "8365839e7762c8c2829cee3524e3c36f9acb106e9c2139a8632c1b8ab6c4f5d9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/modular-monolith-architecture.md",
+      "bytes": 12698,
+      "sha256": "1ec1f2074aa454e1ae42f18c26b77146d731a2cc723a2e1728941ac6251ecce3"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/01-c4-context.md",
+      "bytes": 801,
+      "sha256": "601c0939b4e84649949028bcd5e8885f3886225cead65c03bf7a4002027c8094"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/01-c4-context.mmd",
+      "bytes": 784,
+      "sha256": "4e7e2b4ec5df3886d688b7370cbf32cd717eb27bce0ff99c5f7f9f44eb30bac1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/02-c4-containers.md",
+      "bytes": 928,
+      "sha256": "e5c7e74613a32976a7f03e6642882d29757173c69232332fb04bcbc48e1f321d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/02-c4-containers.mmd",
+      "bytes": 942,
+      "sha256": "c6ee060ff7e8480e80288997b309037c1bcf9e9876f2a3f8586667de0ce9fcc1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/03-c4-components.md",
+      "bytes": 850,
+      "sha256": "0f15c01b934f255f34a93687bdf9fc768db84827555735ba3cf7de92831c91c4"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/03-c4-components.mmd",
+      "bytes": 929,
+      "sha256": "beb5b1f97c2b99640492074618ed0ce51d27ee0e28d943cf15db3e9722cfd064"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/04-user-flow.md",
+      "bytes": 1141,
+      "sha256": "c56167b6baaabf5cbc03a7769c3180ea50bc56841ae8b2c51e2d07c3373ec801"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/04-user-flow.mmd",
+      "bytes": 1121,
+      "sha256": "3637d854d2418132f4214878653a8d05176192c1912f67e79235a61b2494c89a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/05-event-state.md",
+      "bytes": 935,
+      "sha256": "996af5158da005787dad84156fd9c9800114108c8fb2d99d2d47c26ccdfe018e"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/05-event-state.mmd",
+      "bytes": 1006,
+      "sha256": "b9f3630c6ddda61b745b72b4edc02361b7365a017016d30bf6d0911baf220bea"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/06-dfd-context.md",
+      "bytes": 1244,
+      "sha256": "78667a98ed9c2022ac6be9b8d392617e7f3f8115f2248f04c69e5885bf1c0c1a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/06-dfd-context.mmd",
+      "bytes": 340,
+      "sha256": "03f9b2d7a9de4501671fe695a3953cbf4eca5c3ed90eb78406c8c1f6518fb709"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/07-dfd-level-1.md",
+      "bytes": 911,
+      "sha256": "94d310d02a46a9756ab349dcca104607247e80ca910ab32b2ca5c3c1d9fe31d8"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/07-dfd-level-1.mmd",
+      "bytes": 984,
+      "sha256": "215f29bc8d557bdad12848c47a76cd1778d2bf5f62181e5d8b377bf94646966b"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/08-erd-core.md",
+      "bytes": 900,
+      "sha256": "357c5ba06a3f37209023724b787f9e088adf68c479d5e05389b21d41007ce8c5"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/08-erd-core.mmd",
+      "bytes": 1020,
+      "sha256": "246e01cf99732d5ec00c201c166d617c28d0fa7839315976e01c56f6b061d83a"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/09-erd-arrangements.md",
+      "bytes": 917,
+      "sha256": "57a7d8df5b7feef4809dcc5c3ba861070b518cf21c241d53b7921d32c9c61151"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/09-erd-arrangements.mmd",
+      "bytes": 1329,
+      "sha256": "a5c43e6b0407e150a74f91eee6208af9e058aab6658e1306c9081ad24a17cb90"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/10-erd-registration-notifications.md",
+      "bytes": 1115,
+      "sha256": "6ec98485e41cbe35501a3e3e3ef084f71964bd3e586bd313ce14db311e2490a9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/10-erd-registration-notifications.mmd",
+      "bytes": 984,
+      "sha256": "dc4180832aba590fd15649d1c41780024c9e28b57cd9ce373056de643225715d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/11-uml-lifecycle.md",
+      "bytes": 939,
+      "sha256": "ac6d697a51ec565a9238a9dffbfd6e623f2358872bc6515e48c2ce0252bf0888"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/11-uml-lifecycle.mmd",
+      "bytes": 1110,
+      "sha256": "30fa01b978f52b61ec6fe8cb58f5faf738a665ea6b2573f881fa5051b31f6eb3"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/12-sequence-submission.md",
+      "bytes": 962,
+      "sha256": "ad20ef51a81a256886972030a482c2a7595e8a422d469aa4fce145b52e4825ec"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/12-sequence-submission.mmd",
+      "bytes": 888,
+      "sha256": "d6354198cd11f0afbfdf36f4cb82c1814f9329626c9b86324c914434b4d08bc1"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/13-sequence-notifications.md",
+      "bytes": 1004,
+      "sha256": "3b702a7bcdce415dbb7620c90b468666d54e6994d6571d2aeb6b223ccba130b6"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/13-sequence-notifications.mmd",
+      "bytes": 930,
+      "sha256": "5b62a16f6abd291acef131fdf45d7c30acf7c92226139c5422e4c53c3752213d"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/README.md",
+      "bytes": 10199,
+      "sha256": "4dcee5095c2b76ef93e09d2ac9a0f71098524a79e2c59f09cc962072bb32a291"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/figma-wireframe-refinement-plan.md",
+      "bytes": 18364,
+      "sha256": "8365839e7762c8c2829cee3524e3c36f9acb106e9c2139a8632c1b8ab6c4f5d9"
+    },
+    {
+      "path": "submission/3. SYSTEM DESIGNS/source/readme-verification.md",
+      "bytes": 2179,
+      "sha256": "d42c1c0fe112defb6ccd31bfd14a03c7ac9f269b93a2e334dd916b69f1cdb8d9"
+    },
+    {
+      "path": "submission/4. TEST CASES/ConnectSphere Release 1 Test Cases.xlsx",
+      "bytes": 1017468,
+      "sha256": "b94cdf9093efda293ab6dc6d5ec6e2e605fcc0a44f946d0ff116cf909a919d18"
+    },
+    {
+      "path": "submission/4. TEST CASES/Definition of Done.docx",
+      "bytes": 39367,
+      "sha256": "e9c7a3f2ed840ec09341fbded06c0ee37e8ef93505fbbd647687f6c8913c3f5f"
+    },
+    {
+      "path": "submission/4. TEST CASES/Definition of Done.md",
+      "bytes": 4301,
+      "sha256": "9723b5d83907b9181ba31b9739a8405c414863352fbc33b73788b4eb8d2dcab0"
+    },
+    {
+      "path": "submission/4. TEST CASES/Test Case Catalogue 20261107.xlsx",
+      "bytes": 94227,
+      "sha256": "43c390a79c6a197cc1b0092015649dfb0f2cc4e31bbcf839220afad2a802a026"
+    },
+    {
+      "path": "submission/4. TEST CASES/Test Execution Log 20261107.csv",
+      "bytes": 2866457,
+      "sha256": "3463ac47fe6c6defc400b2be078c7697b6c795095770e71294a9719fc1cb909b"
+    },
+    {
+      "path": "submission/4. TEST CASES/Test Runs 20261107.csv",
+      "bytes": 1708043,
+      "sha256": "8b651012e8c6f32c5a0332896e0ed55b10516ef796485aecb00b72c1a54b9daf"
+    },
+    {
+      "path": "submission/7. README/README.md",
+      "bytes": 12910,
+      "sha256": "9582f279b8e94b1bb57e61bf85db405bd47b29c67221815f7cf62a63d3379824"
+    }
+  ]
+}

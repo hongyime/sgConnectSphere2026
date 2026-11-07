@@ -1,0 +1,19 @@
+erDiagram
+ client_organisations |o--o{ users : contains
+ client_organisations ||--o{ events : owns
+ users ||--o{ auth_sessions : authenticates
+ users ||--o{ verification_tokens : receives
+ users ||--o{ events : organises
+ events ||--|{ sessions : contains
+ events ||--o{ event_threads : discusses
+ users ||--o{ event_threads : writes
+ events ||--o{ change_requests : receives
+ users ||--o{ change_requests : requests
+ users { uuid id PK string email string role uuid client_org_id FK }
+ auth_sessions { string token_hash PK uuid user_id FK datetime expires_at }
+ verification_tokens { uuid id PK uuid user_id FK string token_hash }
+ client_organisations { uuid id PK string name }
+ events { uuid id PK uuid organiser_id FK uuid client_org_id FK string status tstzrange event_range }
+ sessions { uuid id PK uuid event_id FK tstzrange event_range int expected_attendance }
+ event_threads { uuid id PK uuid event_id FK uuid author_id FK }
+ change_requests { uuid id PK uuid event_id FK uuid requested_by FK string status }

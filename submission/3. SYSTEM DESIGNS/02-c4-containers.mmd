@@ -1,0 +1,17 @@
+flowchart LR
+ U["Seven user roles"] -->|HTTPS| W
+ subgraph V["Vercel project: ConnectSphere"]
+ W["Web SPA<br/>React + Vite + plain CSS<br/>Static frontend/dist assets"] -->|Same-origin JSON HTTPS| A
+ A["API functions<br/>Node.js + TypeScript<br/>api/ imports backend modules"]
+ C["Vercel Cron<br/>daily relay and hold maintenance"] -->|Authenticated GET| A
+ R["Relay / worker handler modes<br/>Same function deployment"]
+ A --- R
+ end
+ A -->|Parameterized SQL via pg<br/>TCP with TLS in hosted configuration| DB[("Supabase PostgreSQL<br/>Business data, sessions, audit, outbox")]
+ R -->|Claim and record delivery outcomes| DB
+ R -->|HTTPS REST: delivery IDs only| Q[("Upstash Redis<br/>Bounded delivery queue")]
+ R -->|HTTPS transactional email API| B["Brevo"]
+ B -->|Email| U
+ G["GitHub repository<br/>Vercel Git integration"] -.->|Automatic deployment| V
+ CI["GitHub Actions<br/>Repository and application checks"] -.->|Checks on commits and pull requests| G
+ F["Google Fonts<br/>Inter stylesheet and font files"] -.->|HTTPS font load| W
