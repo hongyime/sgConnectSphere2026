@@ -54,26 +54,73 @@ To prevent assessor confusion between reported totals:
 
 ---
 
-## 4. Search Behavior & Ergonomics
+## 4. UI/UX Architecture: Hamburger Side Drawer & 7 Focused Views
 
-The search header is engineered for human stress during oral defense:
-- **One exact story/PR/TC match** (e.g. `e5s4`, `SCRUM-38`, `TC_E07S07_03`, `PR-239`, `D-01`): Auto-expands that single target drawer for immediate code tracing.
-- **Multiple matches** (e.g. searching `safety` or `venue`): Shows compact result cards only to prevent cognitive overload.
-- **Archive safety**: Never auto-expands the full team decisions or customer clarifications drawers.
-- **Top Likely Answers quick chips**: Single-click filters for the 9 primary exam battlegrounds:
-  1. 🛡️ Safety Review
-  2. 🏢 Venue Loss
-  3. ⚡ Booking Race
-  4. ⏳ Holds
-  5. 👥 Attendee Capacity
-  6. 📬 Outbox
-  7. 📈 Scrum Velocity
-  8. 🤖 AI Governance
-  9. 🚨 Four Defects
+The modernized application replaces the previous continuous vertical scroll with a **responsive application layout**:
+- **Desktop ($\ge 1024$px)**: Persistent left sidebar navigation (`#app-sidebar`) with active view indicator, visual pill counters, and instant view switching.
+- **Mobile / Tablet ($< 1024$px)**: Off-canvas drawer sliding from the left, toggled via the hamburger button `☰` (`#drawer-toggle`) with backdrop dismiss (`#drawer-backdrop`).
+- **Visual Coverage & Position Awareness**: The user always knows exactly which section they are viewing via the sticky topbar (`#current-view-title`) and active sidebar tab highlighting.
+
+### 7 Specialized Defense Views:
+1. 📋 **How to Answer & Protocol** (`view-how-to-answer`): 4-step answering sequence, 5-sentence rehearsable answer template, examiner wording traps, and 9 top likely answer chips.
+2. 🚨 **Defects Radar & Lineage** (`view-defects-radar`): Audit vs HEAD reconciliation banner, 4 defect cards with spoken hooks, and git proof.
+3. 🛡️ **12 Topic Dossiers** (`view-dossiers`): Deep architectural dossiers with category filter chips (Concurrency, Architecture, Reliability, Security, Defects, Specs) and 12 quick-jump buttons with code proofs, PR aliases, and verified test cases.
+4. 📖 **65 Stories & Tech Lineage** (`view-stories`): All 65 user stories with `.story-bdr-adr-block` featuring prominent decision summaries, explicit `data-status` filtering (guaranteeing exact 60 Done / 5 Defect & Partial counts), acceptance scenarios, DoD checklists, and tech slice details.
+5. 📜 **ADR & BDR Decision Vault** (`view-vault`): Authoritative decision vault containing all 19 Architecture Decision Records (ADR-001..ADR-019), 107 Team Decisions (T-01..T-108), and 136 Customer Clarifications (C-01..C-136) with deep-linking synchronization and pulse highlighting.
+6. 🏗️ **Architecture & Diagrams** (`view-architecture`): 4 inline SVG figures: C4 container diagram, Event State Machine, Concurrency lock hierarchy, and Sprint velocity reconciliation.
+7. ⏱️ **20-Min Exam Runbook** (`view-runbook`): Speaker allocations, time pacing checkpoints, live demonstration script, and team accountability matrix isolated cleanly in `#next-steps`.
 
 ---
 
-## 5. Offline Operation & Verification Commands
+## 5. Contextual Per-Section Search & Ergonomics
+
+Instead of an awkward single top search bar, dedicated search inputs and quick chips are embedded directly in the sections where search is needed:
+- **User Stories Search & Strict Status Filtering** (`#story-search-input`):
+  - Instant query matching against story ID (e.g. `e5s4`, `SCRUM-43`), title, route, role, PR, or defect.
+  - Quick filter chips: `All 65`, `Done (60)`, `Defects / Partial (5)`, `Lead`, `Coordinator`, `Admin`, `Student`, `Technician`.
+  - Filter integrity: Story cards carry explicit `data-status="done|defect|partial"`. Clicking `Done (60)` shows exactly the 60 verified Done stories; open defects are strictly excluded from the Done count per DoD integrity rules.
+  - Auto-expand matching detail drawers when searching.
+  - "Expand All Details" / "Collapse All Details" toggle (`#toggle-all-drawers`).
+- **12 Topic Dossiers Quick-Jump & Category Filtering**:
+  - Category filter chips: `All 12 Dossiers`, `Concurrency & Locks (4)`, `Architecture & FSM (3)`, `Reliability & Outbox (1)`, `Security & Tenancy (1)`, `Defects & Limits (1)`, `Spec & AI (2)`.
+  - 12 Quick-jump buttons (`#1 Monolith` to `#12 AI Governance`) that scroll smoothly to the target card and trigger a temporary highlight pulse ring.
+- **ADR & BDR Decision Vault Search** (`#vault-search-input`):
+  - Filters across 19 ADRs, 107 Team Decisions, and 136 Customer Clarifications simultaneously.
+  - Vault type pills: `All Vault (262)`, `ADRs (19)`, `Decisions (107)`, `Clarifications (136)`.
+- **Top Likely Answers Quick Chips**: Single-click filters for the 9 primary exam battlegrounds (Safety Review, Venue Loss, Booking Race, Holds, Attendee Capacity, Outbox, Scrum Velocity, AI Governance, Four Defects).
+- **Keyboard Shortcut**: Press `/` or `Ctrl+K` to immediately focus the active section search input.
+
+---
+
+## 6. Architecture Decisions (ADR) & BDR Integration
+
+All **19 Architecture Decision Records (ADR-001 to ADR-019)** from `docs/adr/` are fully surfaced:
+- Each ADR card displays: Title, Status badge (`Accepted`, `Retired`, `Superseded`), Related BDR references with clickable links, Context, Decision, Alternatives Considered, What It Buys Us, What It Costs Us, and a link to its Markdown source on GitHub.
+- **In each of the 65 user story cards**, an **Architectural Decisions & BDR Lineage block** (`.story-bdr-adr-block`) displays:
+  - Clickable ADR chips (e.g. `<a href="#adr-ADR-018">ADR-018: Multi-Session Registration Envelope</a>`) jumping directly to the ADR in the Vault.
+  - Clickable Team Decision chips (e.g. `<a href="#decision-t-79">T-79: Multi-session restoration</a>`) jumping to the Decision in the Vault.
+  - Clickable Customer Clarification chips (e.g. `<a href="#clarification-c-107">C-107: Sessions allowed</a>`) jumping to the Clarification in the Vault.
+  - **Prominent Short Summaries**: Each chip renders `<span class="chip-desc">` with a concise summary of the rationale or decision so presenters can cite them immediately during oral exams without jumping away.
+  - **Vault Deep-Linking Synchronization**: Clicking any BDR or ADR link in a story card automatically switches to `#view-vault`, unhides the target category even if previously filtered out, clears active search text, scrolls smoothly, and triggers a visual pulse highlight ring (`.target-highlight`).
+
+---
+
+## 7. Defects Radar: Git Investigation & HEAD Reconciliation
+
+During the morning audit on 6 Nov 2026, defects D-01, D-02, and D-03 were documented in `docs/testing/defects.md` against unmerged feature branches (`feature/SCRUM-153`, `feature/SCRUM-154`, `feature/SCRUM-155`).
+
+Later on 6 Nov 2026, **technical enabler SCRUM-261 was merged to main**:
+- **PR #450 (commit `a8f2d879`)**: "feat(backend): Lead direct coordinator assignment and workload oversight" (31 unit/db tests passing).
+- **PR #454 (commit `b5370843`)**: migration `0027_event_assignment_actor.sql` (`events.assigned_by` column).
+- **PR #453 (commit `ced06372`)**: Lead assignment queue restored & `assigned_by` tracking.
+
+Therefore:
+- **D-01, D-02, D-03 are shipped on `main`** via SCRUM-261!
+- **D-04 (SCRUM-259 / E02-S05) remains our single genuine open defect at HEAD**: branch `feature/SCRUM-30-reuse-event-details` (commit `5d1e9ab0`) was deliberately **never merged** into `main` because shallow event cloning dropped child session envelopes, which would have violated ADR-018 multi-session data integrity. We proudly admit D-04 as proof of strict DoD enforcement.
+
+---
+
+## 8. Offline Operation & Verification Commands
 
 The web app is 100% self-contained in `artifacts/final-qna-prep-guide.html`:
 - 0 external scripts, 0 external CSS, 0 CDN dependencies, 4 valid inline SVGs.

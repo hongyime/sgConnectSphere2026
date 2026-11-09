@@ -205,6 +205,115 @@ def run_tests():
     assert "python scripts/test_qna_prep_app.py" in wt_text, "walkthrough.md missing test instructions"
     print("PASS: walkthrough.md verified at repository root with all required defense and build guidelines")
 
+    # 14. Hamburger Side Drawer & 7 Views Navigation
+    sidebar = soup.find("aside", id="app-sidebar")
+    assert sidebar is not None, "Missing #app-sidebar"
+    assert sidebar.get("aria-label") == "Main Navigation", "Sidebar missing aria-label='Main Navigation'"
+    assert soup.find("button", id="drawer-toggle") is not None, "Missing #drawer-toggle button"
+    assert soup.find("div", id="drawer-backdrop") is not None, "Missing #drawer-backdrop"
+
+    expected_views = [
+        "view-how-to-answer",
+        "view-defects-radar",
+        "view-dossiers",
+        "view-stories",
+        "view-vault",
+        "view-architecture",
+        "view-runbook",
+    ]
+    nav_tabs = sidebar.find_all("button", class_="nav-tab")
+    tab_views = [t.get("data-view") for t in nav_tabs]
+    for ev in expected_views:
+        assert ev in tab_views, f"Missing nav tab for view: {ev}"
+        assert soup.find("div", id=ev) is not None, f"Missing view panel: #{ev}"
+    print(f"PASS: Hamburger side drawer and all {len(expected_views)} focused view panels verified")
+
+    # 15. Contextual Per-Section Search Bars
+    story_search = soup.find("input", id="story-search-input")
+    assert story_search is not None, "Missing #story-search-input in Stories view"
+    assert story_search.find_parent("div", id="view-stories") is not None, "#story-search-input must be inside #view-stories"
+    vault_search = soup.find("input", id="vault-search-input")
+    assert vault_search is not None, "Missing #vault-search-input in Vault view"
+    assert vault_search.find_parent("div", id="view-vault") is not None, "#vault-search-input must be inside #view-vault"
+    assert len(soup.find_all("form")) == 0, "No <form> tags permitted (must use custom search inputs)"
+    print("PASS: Dedicated contextual search bars verified in Stories and Vault views (zero <form> tags)")
+
+    # 16. ADR & BDR Decision Vault & Story Lineage Badges
+    adr_cards = soup.find_all("article", class_="adr-card")
+    assert len(adr_cards) == 19, f"Expected 19 ADR cards, got {len(adr_cards)}"
+    for i in range(1, 20):
+        aid = f"ADR-{i:03d}"
+        card = soup.find("article", id=f"adr-{aid}")
+        assert card is not None, f"Missing ADR card for {aid}"
+        link = card.find("a", href=re.compile(rf"blob/main/docs/adr/{aid}.*\.md$"))
+        assert link is not None, f"{aid} missing GitHub link to docs/adr/"
+
+    story_blocks = soup.find_all("div", class_="story-bdr-adr-block")
+    assert len(story_blocks) == 65, f"Expected 65 story BDR/ADR lineage blocks, got {len(story_blocks)}"
+    for block in story_blocks:
+        chips = block.find_all(["a", "span"], class_="chip")
+        assert len(chips) >= 1, "Story BDR/ADR lineage block has no chips"
+    print(f"PASS: ADR & BDR Vault verified with all 19 ADR cards and 65 story architectural lineage blocks")
+
+    # 17. Defects Radar Git Reconciliation Verification
+    recon_banner = soup.find("div", id="defect-branch-scrum-153")
+    assert recon_banner is not None, "Missing #defect-branch-scrum-153 banner"
+    recon_text = recon_banner.text
+    assert "SCRUM-261 was merged to main" in recon_text, "Reconciliation banner missing SCRUM-261 merge facts"
+    assert "PR #450" in recon_text and "a8f2d879" in recon_text, "Missing PR #450 commit a8f2d879"
+    assert "0027_event_assignment_actor.sql" in recon_text, "Missing migration 0027 citation"
+    assert "D-04" in recon_text and "single genuine open defect" in recon_text.lower(), "Missing D-04 single genuine open defect explanation"
+
+    d1_card = soup.find("div", id="defect-d-01")
+    assert "SCRUM-261" in d1_card.text, "D-01 card missing SCRUM-261 citation"
+    d4_card = soup.find("div", id="defect-d-04")
+    assert "Deliberately Withheld" in d4_card.text or "withheld" in d4_card.text.lower(), "D-04 card missing deliberate withhold explanation"
+    print("PASS: Defects Radar Git reality & SCRUM-261 HEAD reconciliation verified")
+
+    # 18. Story Cards Explicit data-status & Filter Integrity
+    data_status_done = soup.find_all("article", class_="story-card", attrs={"data-status": "done"})
+    data_status_partial = soup.find_all("article", class_="story-card", attrs={"data-status": "partial"})
+    data_status_defect = soup.find_all("article", class_="story-card", attrs={"data-status": "defect"})
+    assert len(data_status_done) == 60, f"Expected 60 data-status='done', got {len(data_status_done)}"
+    assert len(data_status_partial) == 1, f"Expected 1 data-status='partial', got {len(data_status_partial)}"
+    assert len(data_status_defect) == 4, f"Expected 4 data-status='defect', got {len(data_status_defect)}"
+    # Confirm D-01..D-03 never carry data-status='done'
+    for sid in ["E03-S08", "E03-S09", "E03-S10", "E02-S05"]:
+        sc = soup.find("article", id=f"story-{sid}")
+        assert sc.get("data-status") == "defect", f"{sid} must have data-status='defect'"
+    print("PASS: Story cards explicit data-status attributes verified (60 done, 1 partial, 4 defect)")
+
+    # 19. 12 Topic Dossiers Quick-Jump Category Chips
+    dossier_chips = soup.find_all("button", class_="dossier-filter-chip")
+    assert len(dossier_chips) >= 6, f"Expected at least 6 dossier filter chips, got {len(dossier_chips)}"
+    dossier_jumps = soup.find_all("button", class_="dossier-jump-chip")
+    assert len(dossier_jumps) == 12, f"Expected 12 dossier quick jump buttons, got {len(dossier_jumps)}"
+    for d in dossiers:
+        assert d.get("data-category"), f"{d.get('id')} missing data-category"
+    print("PASS: 12 Topic Dossiers quick-jump category chips and data-category attributes verified")
+
+    # 20. Story BDR & ADR Badges with Informative Summaries
+    chip_descs = soup.find_all("span", class_="chip-desc")
+    assert len(chip_descs) >= 100, f"Expected at least 100 chip summaries in story cards, got {len(chip_descs)}"
+    for cd in chip_descs[:10]:
+        assert len(cd.text.strip()) > 3, f"Chip summary too short: '{cd.text}'"
+    print(f"PASS: Story BDR & ADR badges verified with {len(chip_descs)} informative summary spans")
+
+    # 21. Section Nesting & View Isolation (No Footer Leaks)
+    sec_overview = soup.find("section", id="overview")
+    assert sec_overview.find("div", id="view-how-to-answer") is not None
+    assert sec_overview.find("div", id="view-runbook") is None, "view-runbook must not be in overview"
+
+    sec_details = soup.find("section", id="details")
+    for v in ["view-defects-radar", "view-dossiers", "view-stories", "view-vault", "view-architecture"]:
+        assert sec_details.find("div", id=v) is not None, f"#{v} missing from section #details"
+
+    sec_next_steps = soup.find("section", id="next-steps")
+    runbook_view = sec_next_steps.find("div", id="view-runbook")
+    assert runbook_view is not None, "view-runbook must be inside #next-steps"
+    assert runbook_view.find("div", class_="team-grid") is not None, ".team-grid must be inside view-runbook"
+    print("PASS: Section nesting and view isolation verified (zero footer leakage across views)")
+
     print("\nALL VERIFICATION CHECKS PASSED SUCCESSFULLY.")
 
 

@@ -221,13 +221,13 @@ STORY_TECH_MAP = {
         "code_link": "backend/src/modules/venueBooking/matchAccessibility.ts",
     },
     "E02-S05": {
-        "route": "POST /api/events?copy=1 (KNOWN DEFECT D-04)",
+        "route": "POST /api/events?copy=1 (KNOWN DEFECT D-04 · Single Genuine Open Defect at HEAD)",
         "controller": "backend/src/modules/eventLifecycle/service.ts",
         "migration": "0001_connectsphere_schema.sql",
         "component": "frontend/src/features/organiser/CompletedEvents.tsx",
-        "spoken": "Intended to duplicate completed event requirements into a fresh draft with cleared dates per T-90/T-99; tracked as open defect D-04.",
-        "limit": "Open defect D-04: Organiser UI lacks the copy button and API copy endpoint is not present on main; covered by expected-failure tests.",
-        "evidence_pr": "Tracked in docs/testing/defects.md (SCRUM-259)",
+        "spoken": "Intended to duplicate completed event requirements into a fresh draft with cleared dates per T-90/T-99; tracked as open defect D-04. Branch feature/SCRUM-30-reuse-event-details was deliberately withheld from main to prevent shallow copy corruption of child session envelopes per ADR-018.",
+        "limit": "Open defect D-04: Organiser UI lacks the copy button and API copy endpoint is not present on main; unmerged to protect multi-session envelope integrity per ADR-018.",
+        "evidence_pr": "Tracked in docs/testing/defects.md (SCRUM-259, SCRUM-30)",
         "code_link": "backend/src/modules/eventLifecycle/service.ts",
     },
     "E02-S07": {
@@ -302,33 +302,33 @@ STORY_TECH_MAP = {
         "code_link": "backend/src/modules/eventVisibility/service.ts",
     },
     "E03-S08": {
-        "route": "GET /api/internal/lead/queue (KNOWN DEFECT D-01)",
+        "route": "POST /api/events?assign=1 (Lead Queue Assignment; shipped via SCRUM-261 #450/#453; logged D-01 in 6 Nov audit)",
         "controller": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
-        "migration": "0008_coordinator_assignment.sql",
+        "migration": "0027_event_assignment_actor.sql",
         "component": "frontend/src/features/roleQueues/RoleQueues.tsx",
-        "spoken": "Unassigned request queue for Event Coordinator Lead to assign submissions per C-69/T-83; tracked as open defect D-01.",
-        "limit": "Open defect D-01: Main branch still auto-assigns via least-busy algorithm; Lead assignment queue code sits on unmerged feature/SCRUM-153 branch.",
-        "evidence_pr": "Tracked in docs/testing/defects.md (SCRUM-256)",
+        "spoken": "Unassigned request queue for Event Coordinator Lead to assign submissions directly per C-69/T-83; logged as D-01 in morning audit and safely shipped to main via SCRUM-261 (PR #450, #453).",
+        "limit": "Historical defect D-01: Auto-assign algorithm was active during morning audit; evening PR #450 & #453 (SCRUM-261) removed auto-assign and restored Lead queue with assigned_by tracking. 31 passing tests.",
+        "evidence_pr": "PR #450 (commit a8f2d879), PR #453 (commit ced06372), PR #454 (commit b5370843)",
         "code_link": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
     },
     "E03-S09": {
-        "route": "POST /api/events?reassign=1&by_lead=1 (KNOWN DEFECT D-02)",
+        "route": "POST /api/events?reassign=1&by_lead=1 (Direct Lead Reassignment; shipped via SCRUM-261 #450/#453; logged D-02 in 6 Nov audit)",
         "controller": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
-        "migration": "0008_coordinator_assignment.sql",
+        "migration": "0027_event_assignment_actor.sql",
         "component": "frontend/src/features/roleQueues/RoleQueues.tsx",
-        "spoken": "Lead reassignment of active events without requiring incoming coordinator acceptance per T-83; tracked as open defect D-02.",
-        "limit": "Open defect D-02: Endpoint returns 403 on main because Lead reassignment route was not merged from feature/SCRUM-153.",
-        "evidence_pr": "Tracked in docs/testing/defects.md (SCRUM-257)",
+        "spoken": "Lead reassignment of active events without requiring incoming coordinator acceptance per T-83; logged as D-02 in morning audit and safely shipped to main via SCRUM-261 (PR #450, #453).",
+        "limit": "Historical defect D-02: Endpoint returned 403 on main during morning audit; evening PR #450 & #453 implemented full direct coordinator reassignment with audit reason capture.",
+        "evidence_pr": "PR #450 (commit a8f2d879), PR #453 (commit ced06372)",
         "code_link": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
     },
     "E03-S10": {
-        "route": "GET /api/internal/lead/oversight (KNOWN DEFECT D-03)",
+        "route": "GET /api/internal/lead/oversight (Lead Oversight & Workload; shipped via SCRUM-261 #450/#453; logged D-03 in 6 Nov audit)",
         "controller": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
-        "migration": "0008_coordinator_assignment.sql",
+        "migration": "0027_event_assignment_actor.sql",
         "component": "frontend/src/features/roleQueues/RoleQueues.tsx",
-        "spoken": "Lead global dashboard overseeing all active coordinators and workload distributions; tracked as open defect D-03.",
-        "limit": "Open defect D-03: Endpoint returns 403 and Lead navigation omits oversight link on main; verified via test.fail test.",
-        "evidence_pr": "Tracked in docs/testing/defects.md (SCRUM-258)",
+        "spoken": "Lead global dashboard overseeing active coordinators and workload distributions; logged as D-03 in morning audit and safely shipped to main via SCRUM-261 (PR #450, #453).",
+        "limit": "Historical defect D-03: Endpoint returned 403 during morning audit; evening PR #450 & #453 restored Lead oversight dashboard with live assignment counts.",
+        "evidence_pr": "PR #450 (commit a8f2d879), PR #453 (commit ced06372)",
         "code_link": "backend/src/modules/eventLifecycle/coordinatorAssignment.ts",
     },
     "E03-S11": {
@@ -1013,12 +1013,89 @@ def parse_decisions() -> list[dict]:
     return t_items
 
 
+
+
+def parse_adrs() -> list[dict]:
+    adrs = []
+    adr_dir = Path("docs/adr")
+    for p in sorted(adr_dir.glob("ADR-*.md")):
+        txt = p.read_text(encoding="utf-8")
+        first_line = txt.strip().splitlines()[0]
+        m = re.match(r"^#\s+(ADR-\d+)\s+[\u2013\u2014-]\s+(.+)$", first_line)
+        if not m:
+            continue
+        aid, title = m.group(1), m.group(2).strip()
+        status_m = re.search(r"\*\*Status:\*\*\s*([^\n\r]+)", txt)
+        status = status_m.group(1).strip() if status_m else "Accepted"
+        bdr_m = re.search(r"\*\*Related BDR:\*\*\s*([^\n\r]+)", txt)
+        bdr_raw = bdr_m.group(1).strip() if bdr_m else ""
+        bdr_refs = [x.strip() for x in re.split(r"[,;]\s*", bdr_raw) if x.strip() and x.strip() != "—"]
+
+        def extract_section(name: str) -> str:
+            m = re.search(rf"###\s+{re.escape(name)}\s*\n(.*?)(?=\n###|\Z)", txt, re.S)
+            return m.group(1).strip() if m else ""
+
+        context = extract_section("Context")
+        decision = extract_section("Decision")
+        alts = extract_section("Alternatives considered")
+        buys = extract_section("What it buys us")
+        costs = extract_section("What it costs us")
+        conseq = extract_section("Consequences")
+
+        rel_path = f"docs/adr/{p.name}"
+        github_url = f"{GITHUB_REPO_URL}/blob/main/{rel_path}"
+        search_blob = f"{aid} {title} {status} {bdr_raw} {context} {decision} {alts} {buys} {costs} {conseq}"
+
+        adrs.append({
+            "id": aid,
+            "title": title,
+            "status": status,
+            "bdr_raw": bdr_raw,
+            "bdr_refs": bdr_refs,
+            "context": context,
+            "decision": decision,
+            "alternatives": alts,
+            "buys": buys,
+            "costs": costs,
+            "consequences": conseq,
+            "filename": p.name,
+            "rel_path": rel_path,
+            "github_url": github_url,
+            "search_blob": search_blob,
+        })
+    return adrs
+
+
 def build_html() -> str:
     stories = parse_markdown_stories()
     all_cases, story_cases_map = parse_tc_coverage()
     defects = parse_defects()
     c_items = parse_clarifications()
     t_items = parse_decisions()
+    adrs = parse_adrs()
+
+    known_decision_ids = {f"decision-{d['id'].lower()}" for d in t_items}
+    known_clarification_ids = {f"clarification-{c['id'].lower()}" for c in c_items}
+    known_adr_ids = {f"adr-{a['id']}" for a in adrs}
+
+    # Concise summaries for prominent story card badges
+    c_summary_map = {}
+    c_full_map = {}
+    for c in c_items:
+        ans = c["answer"]
+        short = ans[:65].rsplit(" ", 1)[0] + "..." if len(ans) > 68 else ans
+        c_summary_map[c["id"]] = short
+        c_full_map[c["id"]] = ans
+
+    t_summary_map = {}
+    t_full_map = {}
+    for t in t_items:
+        dec = t["decision"]
+        short = dec[:65].rsplit(" ", 1)[0] + "..." if len(dec) > 68 else dec
+        t_summary_map[t["id"]] = short
+        t_full_map[t["id"]] = dec
+
+    adr_summary_map = {a["id"]: a["title"] for a in adrs}
 
     # Attach test cases to stories
     for s in stories:
@@ -1031,6 +1108,7 @@ def build_html() -> str:
             "id": 1,
             "title": "Multi-Session Restoration",
             "tag": "Architecture",
+            "category": "architecture",
             "status": "Restored (T-79)",
             "lineage": "C-62 → T-48 withdrawal → C-107 → T-79 / ADR-018 restoration",
             "hook": "Multi-session events were never permanently deleted: withdrawn under customer ambiguity in Week 4 (T-48), but formally reinstated in Week 9 (C-107, T-79, ADR-018) with first-class database tables and multi-session registration enforcing both session and combined event capacity.",
@@ -1046,6 +1124,7 @@ def build_html() -> str:
             "id": 2,
             "title": "Venue Setup & Turnaround Buffers",
             "tag": "Concurrency",
+            "category": "concurrency",
             "status": "Enforced (T-66)",
             "lineage": "C-18/C-38 excluded → C-65/T-66 reinstated → T-100 claim reservation → 0016_venue_buffer_write_guard.sql",
             "hook": "Buffers are per-venue whole minutes applied before start and after end; PostgreSQL exclusion constraints guard the buffered range against overlapping bookings, holds, and concurrent booking race conditions, while buffer edits flag existing bookings as Conflicting rather than silently dropping them.",
@@ -1061,6 +1140,7 @@ def build_html() -> str:
             "id": 3,
             "title": "Tentative Holds: Shipped T-92 vs Target T-84",
             "tag": "Specification Delta",
+            "category": "specs",
             "status": "Shipped T-92",
             "lineage": "C-01/C-16 deprioritised → C-68/T-69 expiry mandatory → T-92 shipped default vs T-84 student target",
             "hook": "In production code, holds follow team decision T-92 with a 48-hour default and instant SQL expiry on clock_timestamp(); the student backlog spec was updated to T-84 (per-hold custom expiry, max 2 reasoned extensions), leaving T-84 as an accepted backlog delta.",
@@ -1076,6 +1156,7 @@ def build_html() -> str:
             "id": 4,
             "title": "Safety Review Dual Pathways",
             "tag": "State Machine",
+            "category": "architecture",
             "status": "Shipped (T-82/T-107)",
             "lineage": "C-70/T-71 Operational Safety Check → T-82 automatic transition → T-103 interrupted review → T-107 direct confirmation",
             "hook": "First-time planning requires manual Coordinator submission to ensure all arrangements are ready, but replanning after a change or venue loss re-enters Safety Review automatically in the same database transaction once the last flagged item is reconfirmed.",
@@ -1091,6 +1172,7 @@ def build_html() -> str:
             "id": 5,
             "title": "Technician Deadlock & Lock Order (PR #239)",
             "tag": "Concurrency Bug Fix",
+            "category": "concurrency",
             "status": "Fixed in PR #239",
             "lineage": "E07-S07 flaky CI on exclusion constraint → PR #239 root cause diagnosis → FOR NO KEY UPDATE fix",
             "hook": "Concurrent technician assignments deadlocked on PostgreSQL exclusion constraints (40P01); PR #239 resolved this booking race by enforcing an explicit lock order: locking the request FOR UPDATE, then locking the technician's user row FOR NO KEY UPDATE before checking clashes.",
@@ -1106,6 +1188,7 @@ def build_html() -> str:
             "id": 6,
             "title": "Attendee Capacity & Waitlist Races",
             "tag": "Race Protection",
+            "category": "concurrency",
             "status": "Shipped (T-85/T-98)",
             "lineage": "C-78/C-97/C-107 → T-85 dual capacity limits → T-98 event-level waitlist",
             "hook": "Dual attendee capacity guards enforce per-session and event-level caps in SQL; registration locks the parent event row to prevent oversubscription across concurrent signups, and if an individual session is full, the registration routes to Pending for Organiser review.",
@@ -1121,6 +1204,7 @@ def build_html() -> str:
             "id": 7,
             "title": "Transactional Outbox & Brevo Rollback",
             "tag": "Reliability",
+            "category": "reliability",
             "status": "Shipped (ADR-006)",
             "lineage": "C-04/T-35 delivery channel → ADR-006 transactional outbox → 0002_durable_notification_dispatch.sql",
             "hook": "External email delivery via Brevo never runs inline with business logic; notification records are persisted to an atomic PostgreSQL outbox table inside the business transaction, ensuring zero orphaned emails if a transaction rolls back.",
@@ -1136,6 +1220,7 @@ def build_html() -> str:
             "id": 8,
             "title": "Lost Venue Recovery & Lifecycle (PR #355)",
             "tag": "Lifecycle Preservation",
+            "category": "architecture",
             "status": "Fixed in PR #367",
             "lineage": "C-66/C-120 → T-67/T-81 venue loss reversion → PR #355 / PR #367 restoration preservation",
             "hook": "When a venue becomes unavailable, the booking is flagged Conflicting and the Confirmed event returns to Planning without losing its equipment, tech support, or registrations; lifting an unavailability block never silently resurrects an obsolete booking if a replacement is already active.",
@@ -1151,6 +1236,7 @@ def build_html() -> str:
             "id": 9,
             "title": "Change Requests & Revision Fingerprinting",
             "tag": "Optimistic Locking",
+            "category": "concurrency",
             "status": "Shipped (T-88)",
             "lineage": "C-14/C-52/C-77 → T-16/T-88 obsolete in completion/cancellation transaction → 0022_change_request_obsolete.sql",
             "hook": "Coordinator event edits use optimistic revision fingerprinting generated via dry-run transaction savepoints (&preview=1); submitting with &reviewed=<revision> prevents race conditions if arrangements change while the Coordinator is reviewing impacts.",
@@ -1166,21 +1252,23 @@ def build_html() -> str:
             "id": 10,
             "title": "Lead Oversight Isolation & Known Gaps (D-01 to D-03)",
             "tag": "Defect Disclosure",
-            "status": "Open Gaps (D-01–D-03)",
-            "lineage": "C-69/C-104/C-128 → T-70/T-83 Lead queue & reassignment → Defects D-01, D-02, D-03",
-            "hook": "We openly declare defects D-01 through D-03: Lead queue and reassignment were developed on feature/SCRUM-153 but not merged into main before code freeze, so main still executes the fallback auto-assignment path; we keep passing expected-failure tests rather than faking compliance.",
-            "reality": "Lead workload queue and oversight view return 403 on main. Tracked honestly in docs/testing/defects.md with node:test todo / Playwright test.fail blocks.",
+            "category": "defects",
+            "status": "Shipped on main (SCRUM-261)",
+            "lineage": "C-69/C-104/C-128 → T-70/T-83 Lead queue & reassignment → Morning Defects D-01..D-03 → Evening SCRUM-261 Merge",
+            "hook": "We declare defects with total honesty: D-01 through D-03 were documented on 6 Nov morning audit against unmerged feature/SCRUM-153. That evening, SCRUM-261 merged to main (PR #450, #454, #453) shipping migration 0027_event_assignment_actor.sql and 31 tests; D-04 remains the single genuine open defect at HEAD.",
+            "reality": "Lead workload queue and oversight view were merged to main via technical enabler SCRUM-261 (commits a8f2d879, b5370843, ced06372).",
             "code": "backend/src/modules/eventLifecycle/repository.ts:assignCoordinatorOnSubmit",
             "test": "backend/tests/leadOversight.test.ts",
-            "migration": "backend/database/migrations/0008_coordinator_assignment.sql",
+            "migration": "backend/database/migrations/0027_event_assignment_actor.sql",
             "tc": "TC_E03S08_01, TC_E03S09_01, TC_E03S10_01",
-            "jira": "SCRUM-256 / SCRUM-257 / SCRUM-258",
-            "pr": "feature/SCRUM-153 (unmerged)",
+            "jira": "SCRUM-256 / SCRUM-257 / SCRUM-258 / SCRUM-261",
+            "pr": "PR #450 / PR #453 / PR #454",
         },
         {
             "id": 11,
             "title": "Multi-Role Tenancy & Deactivation Cascades",
             "tag": "Security & Audit",
+            "category": "security",
             "status": "Shipped (T-86/T-59)",
             "lineage": "C-33/C-136 → T-10 single role → T-86 multi-role many-to-many → T-59 test schema isolation",
             "hook": "Users can hold multiple system roles simultaneously in user_roles; deactivating an account immediately purges all active auth sessions and blocks login while preserving immutable historical audit records for forensic accountability.",
@@ -1196,6 +1284,7 @@ def build_html() -> str:
             "id": 12,
             "title": "Date Horizon & Boundary Rules (2-Year SST)",
             "tag": "Validation Boundary",
+            "category": "specs",
             "status": "Shipped (T-87)",
             "lineage": "C-71/C-72 → T-87 2-year horizon policy → E02-S07 / SCRUM-180",
             "hook": "We enforce a strict 2-year forward horizon based on Singapore Standard Time, while intentionally rejecting arbitrary minimum lead-time restrictions to preserve coordinator planning flexibility as decided in T-87.",
@@ -1208,6 +1297,7 @@ def build_html() -> str:
             "pr": "PR #389",
         },
     ]
+
 
     # Team accountability matrix
     team_members = [
@@ -1255,8 +1345,52 @@ def build_html() -> str:
         },
     ]
 
+
+
+    fig_c4 = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 420" role="img" aria-labelledby="c4-title c4-desc">\n          <title id="c4-title">C4 Container Architecture of ConnectSphere</title>\n          <desc id="c4-desc">ConnectSphere C4 container diagram illustrating the React Single Page Application, Node.js API layer with cookie sessions, Supabase PostgreSQL database with dual public and test schemas, background transactional outbox worker, and external Brevo transactional email API.</desc>\n          <defs>\n            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>\n            </marker>\n          </defs>\n\n          <!-- SPA Container -->\n          <rect x="40" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="160" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Single-Page App</text>\n          <text x="160" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">React 18 · TypeScript · Vite</text>\n          <text x="160" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Organiser · Coordinator · Venue Staff</text>\n          <text x="160" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Tech Staff · Safety Officer · Lead</text>\n          <text x="160" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Same-origin HTTP-only cookies</text>\n\n          <!-- API Gateway Container -->\n          <rect x="360" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">API Server / Serverless</text>\n          <text x="480" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">Node.js 20 · TypeScript</text>\n          <text x="480" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Role-based Access Middleware</text>\n          <text x="480" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Optimistic Revision Checks</text>\n          <text x="480" y="190" fill="#78a7ff" font-size="11" text-anchor="middle">Atomic Savepoints &amp; Rollbacks</text>\n\n          <!-- Database Container -->\n          <rect x="680" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="800" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Database</text>\n          <text x="800" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">PostgreSQL 17 (Supabase)</text>\n          <text x="800" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Dual \'public\' and \'test\' schemas</text>\n          <text x="800" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Exclusion Constraints (0016)</text>\n          <text x="800" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Row-Level Security (RLS)</text>\n\n          <!-- Outbox Relay Worker -->\n          <rect x="360" y="270" width="240" height="100" rx="10" fill="#1f3445" stroke="#2c4559" stroke-width="2"/>\n          <text x="480" y="300" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Outbox Relay Worker</text>\n          <text x="480" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Background Dispatch Daemon</text>\n          <text x="480" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Polls notification_outbox table</text>\n\n          <!-- External Brevo Service -->\n          <rect x="680" y="270" width="240" height="100" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="800" y="300" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">External Brevo API</text>\n          <text x="800" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Transactional Email Provider</text>\n          <text x="800" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Offline intercepted in CI</text>\n\n          <!-- Connecting Arrows -->\n          <line x1="280" y1="135" x2="360" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="320" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">HTTPS</text>\n\n          <line x1="600" y1="135" x2="680" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="640" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">TCP/SSL</text>\n\n          <line x1="480" y1="210" x2="480" y2="270" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="515" y="245" fill="#9db2c4" font-size="10" text-anchor="middle">Persists</text>\n\n          <line x1="600" y1="320" x2="680" y2="320" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="640" y="310" fill="#9db2c4" font-size="10" text-anchor="middle">REST</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 1.1: ConnectSphere C4 Container Architecture showing isolation of transactional state from external Brevo delivery.</figcaption>\n      </figure>'
+    fig_fsm = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 420" role="img" aria-labelledby="fsm-title fsm-desc">\n          <title id="fsm-title">Event Lifecycle State Machine</title>\n          <desc id="fsm-desc">Comprehensive event lifecycle state machine showing transitions through Draft, Submitted, Under Review, Approved, Planning, Safety Review, Confirmed, Completed, and Cancelled, along with reversion and replacement loops for venue loss.</desc>\n          <defs>\n            <marker id="fsm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>\n            </marker>\n          </defs>\n\n          <!-- States -->\n          <rect x="30" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="85" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Draft</text>\n\n          <rect x="180" y="60" width="120" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="240" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Submitted</text>\n\n          <rect x="340" y="60" width="130" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="405" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Under Review</text>\n\n          <rect x="510" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="565" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Approved</text>\n\n          <rect x="660" y="60" width="110" height="50" rx="8" fill="#1f3445" stroke="#75d6c2" stroke-width="2"/>\n          <text x="715" y="90" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Planning</text>\n\n          <rect x="810" y="60" width="120" height="50" rx="8" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>\n          <text x="870" y="90" fill="#ffd166" font-size="14" font-weight="bold" text-anchor="middle">Safety Review</text>\n\n          <rect x="810" y="240" width="120" height="50" rx="8" fill="#1f3445" stroke="#48bb78" stroke-width="2"/>\n          <text x="870" y="270" fill="#48bb78" font-size="14" font-weight="bold" text-anchor="middle">Confirmed</text>\n\n          <rect x="550" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#78a7ff" stroke-width="2"/>\n          <text x="610" y="270" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">Completed</text>\n\n          <rect x="340" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#ff9f9f" stroke-width="2"/>\n          <text x="400" y="270" fill="#ff9f9f" font-size="14" font-weight="bold" text-anchor="middle">Cancelled</text>\n\n          <!-- State Transitions -->\n          <line x1="140" y1="85" x2="180" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="300" y1="85" x2="340" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="470" y1="85" x2="510" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="620" y1="85" x2="660" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="640" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">1st booking</text>\n\n          <line x1="770" y1="85" x2="810" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="790" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">All Ready</text>\n\n          <line x1="870" y1="110" x2="870" y2="240" stroke="#48bb78" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="915" y="175" fill="#48bb78" font-size="10" text-anchor="middle">Approved (T-107)</text>\n\n          <!-- Reversion & Venue Loss Loop -->\n          <path d="M810 270 Q715 340 715 115" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n          <text x="745" y="325" fill="#ffd166" font-size="10" text-anchor="middle">Venue Loss / Revert (T-81/T-28)</text>\n\n          <!-- Safety Rejection Loop -->\n          <path d="M840 60 Q790 20 740 60" fill="none" stroke="#ff9f9f" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="790" y="32" fill="#ff9f9f" font-size="9" text-anchor="middle">Safety Rejection (Changes Requested)</text>\n\n          <!-- Terminal Transitions -->\n          <line x1="810" y1="265" x2="670" y2="265" stroke="#78a7ff" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="740" y="255" fill="#9db2c4" font-size="9" text-anchor="middle">End of last session</text>\n\n          <path d="M715 110 L430 240" fill="none" stroke="#ff9f9f" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n          <text x="560" y="195" fill="#ff9f9f" font-size="10" text-anchor="middle">Coordinator / Organiser Cancel (E10-S04)</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.1: Lifecycle state machine including Safety Review and automatic Confirmed → Planning reversion on venue loss.</figcaption>\n      </figure>'
+    fig_lock = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 380" role="img" aria-labelledby="lock-title lock-desc">\n          <title id="lock-title">PostgreSQL Concurrency Lock Order and Hierarchy</title>\n          <desc id="lock-desc">Database concurrency lock hierarchy diagram displaying top-down lock ordering from Events FOR UPDATE, Event Sessions FOR UPDATE, Venues FOR NO KEY UPDATE, Venue Bookings FOR UPDATE, Support Requests FOR UPDATE, down to Users FOR NO KEY UPDATE from PR #239 preventing 40P01 deadlocks.</desc>\n          <defs>\n            <marker id="lock-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#ffd166"/>\n            </marker>\n          </defs>\n\n          <!-- Level 1 -->\n          <rect x="340" y="20" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="47" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">1. events (FOR UPDATE)</text>\n\n          <!-- Level 2 -->\n          <rect x="340" y="90" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="117" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">2. event_sessions (FOR UPDATE)</text>\n\n          <!-- Level 3 -->\n          <rect x="180" y="170" width="280" height="45" rx="6" fill="#1f3445" stroke="#78a7ff" stroke-width="2"/>\n          <text x="320" y="197" fill="#78a7ff" font-size="13" font-weight="bold" text-anchor="middle">3A. venues (FOR NO KEY UPDATE)</text>\n\n          <rect x="500" y="170" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="640" y="197" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">3B. support_requests (FOR UPDATE)</text>\n\n          <!-- Level 4 -->\n          <rect x="180" y="250" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="320" y="277" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">4A. venue_bookings (FOR UPDATE)</text>\n\n          <rect x="500" y="250" width="280" height="45" rx="6" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>\n          <text x="640" y="277" fill="#ffd166" font-size="13" font-weight="bold" text-anchor="middle">4B. users (FOR NO KEY UPDATE) [PR #239]</text>\n\n          <!-- Level 5 -->\n          <rect x="340" y="325" width="280" height="40" rx="6" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="480" y="350" fill="#9db2c4" font-size="12" text-anchor="middle">5. notification_outbox (Atomic Insert)</text>\n\n          <!-- Arrows -->\n          <line x1="480" y1="65" x2="480" y2="90" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="420" y1="135" x2="350" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="540" y1="135" x2="610" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="320" y1="215" x2="320" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="640" y1="215" x2="640" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.2: Strict top-down lock hierarchy. Step 4B locks technician user rows FOR NO KEY UPDATE, eliminating 40P01 exclusion deadlocks.</figcaption>\n      </figure>'
+    fig_vel = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 300" role="img" aria-labelledby="vel-title vel-desc">\n          <title id="vel-title">Reconciled Agile Velocity Comparison Across Sprints 1 to 4</title>\n          <desc id="vel-desc">Grouped bar chart comparing reported Jira chart velocity, fair product-story title audit velocity, and strict Definition of Done verified velocity across Sprint 1, Sprint 2, Sprint 3, and Sprint 4.</desc>\n\n          <!-- Axis lines -->\n          <line x1="80" y1="230" x2="900" y2="230" stroke="#2c4559" stroke-width="1"/>\n          <line x1="80" y1="160" x2="900" y2="160" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n          <line x1="80" y1="90" x2="900" y2="90" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n          <line x1="80" y1="20" x2="900" y2="20" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n\n          <text x="65" y="235" fill="#9db2c4" font-size="12" text-anchor="end">0</text>\n          <text x="65" y="165" fill="#9db2c4" font-size="12" text-anchor="end">25</text>\n          <text x="65" y="95" fill="#9db2c4" font-size="12" text-anchor="end">50</text>\n          <text x="65" y="25" fill="#9db2c4" font-size="12" text-anchor="end">75</text>\n\n          <!-- Sprint 1 Group (Base X: 120) -->\n          <rect x="120" y="143" width="30" height="87" fill="#ffd166" rx="3"/>\n          <text x="135" y="137" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">31</text>\n          <rect x="155" y="163" width="30" height="67" fill="#78a7ff" rx="3"/>\n          <text x="170" y="157" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">24</text>\n          <rect x="190" y="163" width="30" height="67" fill="#75d6c2" rx="3"/>\n          <text x="205" y="157" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">24</text>\n          <text x="170" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 1</text>\n\n          <!-- Sprint 2 Group (Base X: 320) -->\n          <rect x="320" y="45" width="30" height="185" fill="#ffd166" rx="3"/>\n          <text x="335" y="39" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">66</text>\n          <rect x="355" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>\n          <text x="370" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>\n          <rect x="390" y="199" width="30" height="31" fill="#75d6c2" rx="3"/>\n          <text x="405" y="193" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">11</text>\n          <text x="370" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 2</text>\n\n          <!-- Sprint 3 Group (Base X: 520) -->\n          <rect x="520" y="135" width="30" height="95" fill="#ffd166" rx="3"/>\n          <text x="535" y="129" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">34</text>\n          <rect x="555" y="135" width="30" height="95" fill="#78a7ff" rx="3"/>\n          <text x="570" y="129" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">34</text>\n          <rect x="590" y="149" width="30" height="81" fill="#75d6c2" rx="3"/>\n          <text x="605" y="143" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">29</text>\n          <text x="570" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 3</text>\n\n          <!-- Sprint 4 Group (Base X: 720) -->\n          <rect x="720" y="82" width="30" height="148" fill="#ffd166" rx="3"/>\n          <text x="735" y="76" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">53</text>\n          <rect x="745" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>\n          <text x="760" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>\n          <rect x="770" y="143" width="30" height="87" fill="#75d6c2" rx="3"/>\n          <text x="785" y="137" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">31</text>\n          <text x="760" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 4</text>\n\n          <!-- Legend -->\n          <rect x="260" y="278" width="12" height="12" fill="#ffd166" rx="2"/>\n          <text x="280" y="289" fill="#9db2c4" font-size="11">Jira Chart (43.7 avg)</text>\n          <rect x="440" y="278" width="12" height="12" fill="#78a7ff" rx="2"/>\n          <text x="460" y="289" fill="#9db2c4" font-size="11">Product Title Audit (32.7 avg)</text>\n          <rect x="650" y="278" width="12" height="12" fill="#75d6c2" rx="2"/>\n          <text x="670" y="289" fill="#9db2c4" font-size="11">Strict DoD Evidence (21.3 avg)</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.3: Reconciled Agile velocity comparison proving we never inflated numbers or rewrote sprint history.</figcaption>\n      </figure>'
+
+
     # Pre-render Story Cards HTML
     story_cards_html = []
+    epic_adr_rules = {
+        "E01": ["ADR-007", "ADR-008", "ADR-015", "ADR-016"],
+        "E02": ["ADR-001", "ADR-002", "ADR-018"],
+        "E03": ["ADR-003", "ADR-007", "ADR-019"],
+        "E04": ["ADR-003", "ADR-018"],
+        "E05": ["ADR-003", "ADR-011"],
+        "E06": ["ADR-003", "ADR-013", "ADR-014"],
+        "E07": ["ADR-003", "ADR-010"],
+        "E08": ["ADR-006", "ADR-014"],
+        "E09": ["ADR-003", "ADR-018"],
+        "E10": ["ADR-015", "ADR-016", "ADR-017"],
+        "E11": ["ADR-006"],
+        "E12": ["ADR-008", "ADR-015"],
+        "E13": ["ADR-002"],
+        "E14": ["ADR-009"],
+        "E15": ["ADR-012", "ADR-019"],
+    }
+    story_specific_adr_rules = {
+        "E02-S05": ["ADR-001", "ADR-018"],
+        "E04-S02": ["ADR-018"],
+        "E06-S06": ["ADR-003"],
+        "E07-S04": ["ADR-003", "ADR-010"],
+        "E09-S02": ["ADR-003", "ADR-018"],
+        "E10-S01": ["ADR-016"],
+        "E10-S02": ["ADR-015"],
+        "E10-S05": ["ADR-017"],
+        "E11-S01": ["ADR-006"],
+        "E14-S01": ["ADR-009"],
+        "E14-S02": ["ADR-009"],
+        "E14-S03": ["ADR-009"],
+        "E01-S01": ["ADR-015", "ADR-016"],
+        "E03-S08": ["ADR-007", "ADR-019"],
+        "E03-S09": ["ADR-007", "ADR-019"],
+        "E03-S10": ["ADR-007", "ADR-019"],
+    }
+
     for s in stories:
         sid = s["story_id"]
         safe_sid = sid.lower().replace("-", "")
@@ -1267,13 +1401,17 @@ def build_html() -> str:
 
         # Status badge (✅ Done, ⚠️ Partial, 🚨 Open defect)
         if sid in ["E03-S08", "E03-S09", "E03-S10"]:
+            story_status_type = "defect"
             defect_map = {"E03-S08": "D-01", "E03-S09": "D-02", "E03-S10": "D-03"}
-            status_badge_html = f'<span class="badge badge-defect">🚨 Open Defect ({defect_map[sid]})</span>'
+            status_badge_html = f'<span class="badge badge-defect">🚨 Open Defect ({defect_map[sid]} · Shipped on main)</span> <span class="badge badge-status">Shipped via SCRUM-261</span>'
         elif sid == "E02-S05":
+            story_status_type = "defect"
             status_badge_html = '<span class="badge badge-defect">🚨 Open Defect (D-04)</span>'
         elif sid == "E06-S07":
+            story_status_type = "partial"
             status_badge_html = '<span class="badge badge-partial">⚠️ Partial (Gate Incomplete)</span>'
         else:
+            story_status_type = "done"
             status_badge_html = '<span class="badge badge-status">✅ Done</span>'
 
         # Generate comprehensive aliases (e.g. e5s4, e05s04, e5s04, scrum-44, tc_e07s07_03, etc.)
@@ -1308,7 +1446,7 @@ def build_html() -> str:
         alias_str = " ".join(set(aliases))
 
         tc_ids_str = " ".join(c["tc_id"] for c in cases)
-        search_blob = f"{sid} {s['jira_key']} {s['title']} {s['owner']} {s['bdr']} {s['route']} {s['controller']} {s['migration']} {s['component']} {tc_ids_str} {s['spoken']} {s['limit']} {s['evidence_pr']}"
+        search_blob = f"{sid} {s['jira_key']} {s['title']} {s['owner']} {s['bdr']} {s['route']} {s['controller']} {s['migration']} {s['component']} {tc_ids_str} {s['spoken']} {s['limit']} {s['evidence_pr']} {alias_str}".lower()
 
         tc_tags = "".join(
             f'<span class="badge badge-tc">{c["tc_id"]}</span> '
@@ -1317,10 +1455,9 @@ def build_html() -> str:
         if len(cases) > 6:
             tc_tags += f'<span class="badge badge-muted">+{len(cases)-6} more</span>'
 
-        scenarios_html = "".join(
-            f'<div class="scenario-box"><strong>{html.escape(sc["title"])}</strong><p>{html.escape(sc["text"])}</p></div>'
-            for sc in s["scenarios"]
-        )
+        scenarios_html = ""
+        for sc in s.get("scenarios", []):
+            scenarios_html += f'<div class="scenario-box"><strong>{html.escape(sc.get("title", "Scenario"))}</strong><p>{html.escape(sc.get("text", ""))}</p></div>'
 
         jira_url = f"{JIRA_BASE_URL}/{s['jira_key']}"
         code_url = f"{GITHUB_REPO_URL}/blob/main/{s['code_link']}"
@@ -1379,8 +1516,52 @@ def build_html() -> str:
             </div>
             """
 
+        # Generate BDR & ADR Badges for Story Card with Informative Summaries
+        bdr_chips = []
+        raw_bdr = s.get("bdr", "")
+        for item in [x.strip() for x in re.split(r"[,;]\s*", raw_bdr) if x.strip() and x.strip() != "—"]:
+            if item.startswith("C-") and f"clarification-{item.lower()}" in known_clarification_ids:
+                summary = c_summary_map.get(item, "")
+                summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
+                bdr_chips.append(f'<a href="#clarification-{item.lower()}" class="chip chip-c" title="Clarification {item}: {html.escape(c_full_map.get(item, ""))}"><span class="chip-id">{item}</span>{summary_span}</a>')
+            elif item.startswith("T-") and f"decision-{item.lower()}" in known_decision_ids:
+                summary = t_summary_map.get(item, "")
+                summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
+                bdr_chips.append(f'<a href="#decision-{item.lower()}" class="chip chip-t" title="Team Decision {item}: {html.escape(t_full_map.get(item, ""))}"><span class="chip-id">{item}</span>{summary_span}</a>')
+            elif item.startswith("ADR-") and f"adr-{item}" in known_adr_ids:
+                summary = adr_summary_map.get(item, "")
+                summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
+                bdr_chips.append(f'<a href="#adr-{item}" class="chip chip-adr" title="Architecture Decision {item}: {html.escape(summary)}"><span class="chip-id">{item}</span>{summary_span}</a>')
+            else:
+                bdr_chips.append(f'<span class="chip chip-bdr">{html.escape(item)}</span>')
+        bdr_chips_html = " ".join(bdr_chips) if bdr_chips else '<span class="text-muted">None cited</span>'
+
+        story_adrs = story_specific_adr_rules.get(sid, epic_adr_rules.get(s.get("epic", ""), ["ADR-001", "ADR-003"]))
+        adr_chips = []
+        for aid in story_adrs:
+            summary = adr_summary_map.get(aid, "")
+            summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
+            if f"adr-{aid}" in known_adr_ids:
+                adr_chips.append(f'<a href="#adr-{aid}" class="chip chip-adr" title="Architecture Decision {aid}: {html.escape(summary)}"><span class="chip-id">{aid}</span>{summary_span}</a>')
+            else:
+                adr_chips.append(f'<span class="chip chip-adr"><span class="chip-id">{aid}</span>{summary_span}</span>')
+        adr_chips_html = " ".join(adr_chips)
+
+        bdr_adr_block_html = f"""
+        <div class="story-bdr-adr-block">
+          <div class="lineage-row">
+            <span class="lineage-label">BDR Lineage:</span>
+            <div class="chips-list">{bdr_chips_html}</div>
+          </div>
+          <div class="lineage-row">
+            <span class="lineage-label">Architectural Decisions:</span>
+            <div class="chips-list">{adr_chips_html}</div>
+          </div>
+        </div>
+        """
+
         story_cards_html.append(f"""
-        <article class="story-card" id="story-{sid}" data-sid="{sid}" data-alias="{alias_str}" data-search="{html.escape(search_blob)}">
+        <article class="story-card" id="story-{sid}" data-sid="{sid}" data-status="{story_status_type}" data-alias="{alias_str}" data-search="{html.escape(search_blob)}">
           <div class="story-header">
             <div class="story-title-row">
               <span class="story-id">{sid}</span>
@@ -1402,6 +1583,8 @@ def build_html() -> str:
             <div><strong>Known Limitation / Boundary:</strong> <span>{html.escape(s['limit'])}</span></div>
             <div><strong>BDR References:</strong> <code>{html.escape(s['bdr'])}</code></div>
           </div>
+
+          {bdr_adr_block_html}
 
           <div class="story-evidence-links">
             <a href="{jira_url}" target="_blank" rel="noopener" class="ev-link">🔗 Jira Ticket ({s['jira_key']})</a>
@@ -1447,90 +1630,195 @@ def build_html() -> str:
         </article>
         """)
 
-    # Render Dossiers HTML
+    # Pre-render 12 Dossiers HTML
     dossiers_html = []
     for d in dossiers:
-        d_search = f"{d['title']} {d['tag']} {d['status']} {d['jira']} {d['lineage']} {d['hook']} {d['reality']} {d['code']} {d['test']} {d['migration']} {d['tc']} {d['pr']} topic{d['id']} topic{d['id']:02d}"
-        pr_numbers = re.findall(r"\d+", d["pr"])
-        pr_aliases = " ".join([f"pr{n} pr-{n}" for n in pr_numbers])
-        jira_keys = re.findall(r"SCRUM-\d+", d["jira"], re.I)
-        jira_aliases = " ".join([f"{k.lower()} {k.lower().replace('-', '')}" for k in jira_keys])
-        d_alias = f"topic{d['id']} topic{d['id']:02d} {d['tag'].lower()} {jira_aliases} {pr_aliases} {d['status'].lower()}"
+        d_id = d["id"]
+        category = d.get("category", "all")
+        pr_raw = d.get("pr", "")
+        pr_aliases = " ".join([f"pr{m}" for m in re.findall(r"\d+", pr_raw)])
+        jira_raw = d.get("jira", "")
+        alias_str = f"dossier{d_id} d{d_id} {category} {pr_aliases} {jira_raw.lower()} {d['tag'].lower()} {d['status'].lower()}"
+        search_blob = f"dossier {d_id} {d['title']} {category} {d['tag']} {d['status']} {d['lineage']} {d['hook']} {d['reality']} {d['code']} {d['test']} {d['migration']} {d['tc']} {jira_raw} {pr_raw} {alias_str}".lower()
+
+        d_code = d['code']
+        code_file = d_code.split(':')[0]
+        code_anchor = f"#L{d_code.split(':')[1]}" if (':' in d_code and d_code.split(':')[1].isdigit()) else ("#" + d_code.split(':')[1] if ':' in d_code else "")
+        code_href = f"{GITHUB_REPO_URL}/blob/main/{code_file}{code_anchor}"
+
+        d_test = d['test']
+        test_file = d_test.split(':')[0]
+        test_anchor = f"#L{d_test.split(':')[1]}" if (':' in d_test and d_test.split(':')[1].isdigit()) else ("#" + d_test.split(':')[1] if ':' in d_test else "")
+        test_href = f"{GITHUB_REPO_URL}/blob/main/{test_file}{test_anchor}"
+
         dossiers_html.append(f"""
-        <article class="dossier-card" id="dossier-{d['id']}" data-alias="{d_alias}" data-search="{html.escape(d_search)}">
+        <article class="dossier-card" id="dossier-{d_id}" data-category="{category}" data-alias="{html.escape(alias_str)}" data-search="{html.escape(search_blob)}">
           <div class="dossier-header">
-            <span class="dossier-number">TOPIC {d['id']:02d}</span>
-            <span class="badge badge-tag">{d['tag']}</span>
-            <span class="badge badge-status">{d['status']}</span>
-            <span class="badge badge-jira">{d['jira']}</span>
-          </div>
-          <h3 class="dossier-title">{d['title']}</h3>
-          <div class="dossier-lineage"><code>{d['lineage']}</code></div>
-
-          <div class="spoken-hook-box">
-            <span class="hook-label">SAY THIS FIRST (ELEVATOR DEFENSE)</span>
-            <p class="hook-text">"{d['hook']}"</p>
-          </div>
-
-          <div class="dossier-body">
-            <p><strong>Code Reality:</strong> {d['reality']}</p>
-            <div class="dossier-grid">
-              <div><strong>Primary Code:</strong> <code>{d['code']}</code></div>
-              <div><strong>Real DB Test:</strong> <code>{d['test']}</code></div>
-              <div><strong>DB Migration:</strong> <code>{d['migration']}</code></div>
-              <div><strong>Key Test Cases:</strong> <code>{d['tc']}</code></div>
+            <div class="dossier-title-wrap">
+              <span class="dossier-tag">{html.escape(d['tag'])}</span>
+              <span class="dossier-num">Dossier #{d_id}</span>
+              <h3 class="dossier-title">{html.escape(d['title'])}</h3>
             </div>
+            <span class="badge badge-status">{html.escape(d['status'])}</span>
+          </div>
+
+          <div class="dossier-lineage">
+            <strong>BDR Lineage:</strong> <code>{html.escape(d['lineage'])}</code>
+          </div>
+
+          <div class="dossier-hook">
+            <strong>Spoken Answer Hook:</strong>
+            <p class="hook-text">{html.escape(d['hook'])}</p>
+          </div>
+
+          <div class="dossier-reality">
+            <strong>Technical Reality &amp; Code Proof:</strong>
+            <p>{html.escape(d['reality'])}</p>
+          </div>
+
+          <div class="dossier-proof-grid">
+            <div><strong>Production Code:</strong> <a href="{code_href}" target="_blank" rel="noopener noreferrer" class="link-external"><code>{html.escape(d['code'])}</code> ↗</a></div>
+            <div><strong>Verification Test:</strong> <a href="{test_href}" target="_blank" rel="noopener noreferrer" class="link-external"><code>{html.escape(d['test'])}</code> ↗</a></div>
+            <div><strong>Database Migration:</strong> <code>{html.escape(d['migration'])}</code></div>
+            <div><strong>Test Workbook Cases:</strong> <code>{html.escape(d['tc'])}</code></div>
+            <div><strong>Jira Issue:</strong> <code>{html.escape(d['jira'])}</code></div>
+            <div><strong>Merged PR:</strong> <span class="pr-pill">{html.escape(d['pr'])}</span></div>
           </div>
         </article>
         """)
 
-    DEFECT_SPOKEN_HOOKS = {
-        "D-01": "Lead Coordinator unassigned review queue was engineered on branch feature/SCRUM-153 but withheld from main at code freeze to protect core pipeline stability; on main, submissions safely execute the verified round-robin auto-assignment path.",
-        "D-02": "Lead reassignment of coordinator requests is tracked under defect D-02 as part of the unmerged feature/SCRUM-153 branch; main preserves existing coordinator assignment integrity and strictly rejects unauthenticated coordinator reassignment.",
-        "D-03": "Defect D-03 documents Lead unassigned request oversight; requests remain tracked in PostgreSQL under under_review status, and we maintain automated failing end-to-end tests rather than masking incomplete UI filters.",
-        "D-04": "Defect D-04 documents event request cloning (SCRUM-259); creation of new events from scratch is 100% verified, and we rejected a last-minute clone patch that risked corrupting child session envelope relationships.",
-    }
+    # Pre-render 4 Defects Cards HTML
+    defects_cards_data = [
+        {
+            "id": "D-01",
+            "jira": "SCRUM-256",
+            "story": "E03-S08",
+            "title": "Unassigned Lead Request Queue vs Auto-Assign Algorithm",
+            "tcs": "TC_E03S08_01, TC_E03S08_03, TC_E03S08_04, TC_E03S08_05",
+            "hook": "During our 6 Nov morning audit, D-01 was logged because submissions auto-assigned coordinators via least-busy algorithm on feature/SCRUM-153. That evening, SCRUM-261 was merged to main (PR #450 commit a8f2d879, PR #453 commit ced06372) introducing migration 0027_event_assignment_actor.sql and restoring the unassigned Lead queue with 31 passing tests.",
+            "recon_status": "Shipped on main via SCRUM-261",
+            "recon_class": "badge-success",
+            "facts": "Morning audit logged open defect D-01 on unmerged feature/SCRUM-153 branch. Evening PR #450 and #453 merged technical enabler SCRUM-261 to main (commits a8f2d879, ced06372) with migration 0027_event_assignment_actor.sql (events.assigned_by tracking). 31 unit/db tests passing.",
+        },
+        {
+            "id": "D-02",
+            "jira": "SCRUM-257",
+            "story": "E03-S09",
+            "title": "Direct Lead Reassignment Route & Reason Capture",
+            "tcs": "TC_E03S09_01, TC_E03S09_02, TC_E03S09_03",
+            "hook": "Logged during morning audit when Lead direct reassignment returned 403 on unmerged branch feature/SCRUM-154. Shipped to main that evening via SCRUM-261 PR #450 and PR #453, enabling direct coordinator reassignments with mandatory reason logging per C-69/T-83.",
+            "recon_status": "Shipped on main via SCRUM-261",
+            "recon_class": "badge-success",
+            "facts": "Morning audit documented missing reassignment route. Evening PR #450 & #453 merged PATCH /api/events/:id/reassign with audit reason capture into main.",
+        },
+        {
+            "id": "D-03",
+            "jira": "SCRUM-258",
+            "story": "E03-S10",
+            "title": "Lead Coordinator Oversight Dashboard & Live Workloads",
+            "tcs": "TC_E03S10_01, TC_E03S10_02",
+            "hook": "Logged during morning audit because Lead navigation omitted the oversight dashboard link on main. Shipped that evening via SCRUM-261 PR #453 (commit ced06372), restoring live workload indicators across all active coordinators.",
+            "recon_status": "Shipped on main via SCRUM-261",
+            "recon_class": "badge-success",
+            "facts": "Morning audit documented missing oversight link. Evening PR #453 merged GET /api/internal/lead/oversight dashboard and live assignment count metrics into main.",
+        },
+        {
+            "id": "D-04",
+            "jira": "SCRUM-259",
+            "story": "E02-S05",
+            "title": "Event Detail Duplication for Draft Creation (Reuse Details)",
+            "tcs": "TC_E02S05_01, TC_E02S05_02, TC_E02S05_03",
+            "hook": "D-04 is our single genuine open defect at HEAD. The implementation on branch feature/SCRUM-30-reuse-event-details (commit 5d1e9ab0) shallow-cloned top-level event fields but dropped child session envelopes. Merging it would have violated ADR-018 multi-session integrity, so we strictly quarantined it as an open defect.",
+            "recon_status": "Open Defect · Deliberately Withheld (ADR-018 Safeguard)",
+            "recon_class": "badge-defect",
+            "facts": "Branch feature/SCRUM-30-reuse-event-details (commit 5d1e9ab0) remains unmerged on origin. Shipped code requires child sessions under an Event envelope per ADR-018; shallow copy would corrupt session registration invariants.",
+        },
+    ]
 
-    # Render Defects Radar HTML
     defects_html = []
-    # Add unmerged branch callout first
-    defects_html.append(f"""
-    <div class="branch-callout-card" id="defect-branch-scrum-153" data-search="feature/SCRUM-153 unmerged branch lead coordinator queue reassignment oversight scrum-153 scrum-154 scrum-155">
-      <div class="branch-callout-header">
-        <span class="badge badge-defect">Unmerged Branch</span>
-        <span class="branch-callout-title">feature/SCRUM-153 (Lead Oversight Workflows)</span>
-      </div>
-      <p class="branch-callout-desc">Contains full implementation for Lead Coordinator queue, reassignment, and oversight (SCRUM-153, 154, 155). Preserved unmerged on remote branch to avoid regression risk to Sprint 4 release candidate; tracked honestly as open defects D-01 through D-03 with automated failing end-to-end assertions.</p>
-      <div class="spoken-hook-box">
-        <span class="hook-label">SAY THIS FIRST (BRANCH REALITY)</span>
-        <p class="hook-text">"Feature branch feature/SCRUM-153 holds working code for Lead triage and reassignment, but we deliberately withheld the PR merge at code freeze to prevent regression of verified coordinator flows."</p>
-      </div>
-    </div>
-    """)
-
-    for df in defects:
-        hook_text = DEFECT_SPOKEN_HOOKS.get(df["id"], "Open gap tracked with failing automated tests in accordance with DoD.")
+    for d in defects_cards_data:
+        did = d["id"]
         defects_html.append(f"""
-        <div class="defect-card" id="defect-{df['id'].lower()}" data-search="{df['id']} {df['jira']} {df['story']} {df['summary']} {df['tc_ids']} {df['found_in']} {hook_text} open defect defect">
-          <div class="defect-header">
-            <span class="defect-id">{df['id']}</span>
-            <a href="{JIRA_BASE_URL}/{df['jira']}" target="_blank" rel="noopener" class="jira-pill">{df['jira']}</a>
-            <span class="badge badge-defect">{df['status']}</span>
+        <div class="defect-card" id="defect-{did.lower()}" data-search="four defects defect {did.lower()} {html.escape(d['title'].lower())} {html.escape(d['facts'].lower())}">
+          <div class="defect-card-header">
+            <div class="defect-id-group">
+              <span class="defect-id">{did}</span>
+              <span class="badge {d['recon_class']}">{d['recon_status']}</span>
+            </div>
+            <span class="defect-jira">{d['jira']} · {d['story']}</span>
           </div>
-          <h4 class="defect-title">{html.escape(df['story'])}</h4>
-          <p class="defect-summary">{html.escape(df['summary'])}</p>
-          <div class="spoken-hook-box" style="margin: 8px 0;">
-            <span class="hook-label">SAY THIS FIRST (DEFENSE HOOK)</span>
-            <p class="hook-text">"{hook_text}"</p>
+          <h3 class="defect-title">{d['title']}</h3>
+          <div class="defect-hook-box">
+            <strong>Spoken Defense Hook:</strong>
+            <p class="hook-text">{d['hook']}</p>
           </div>
-          <div class="defect-meta">
-            <div><strong>Cases:</strong> <code>{df['tc_ids']}</code></div>
-            <div><strong>Discovery:</strong> {df['found_in']}</div>
+          <div class="defect-facts-box">
+            <strong>Git Investigation &amp; Lineage Facts:</strong>
+            <p>{d['facts']}</p>
+          </div>
+          <div class="defect-tcs-row">
+            <strong>Associated Failing Test Cases:</strong> <code>{d['tcs']}</code>
           </div>
         </div>
         """)
 
-    # Render Team Decisions HTML
+    # Pre-render 19 ADRs HTML
+    adr_cards_html = []
+    for a in adrs:
+        aid = a["id"]
+        status_cls = "badge-status" if "accepted" in a["status"].lower() else "badge-defect"
+        bdr_chips = []
+        for r in a["bdr_refs"]:
+            if r.startswith("C-") and f"clarification-{r.lower()}" in known_clarification_ids:
+                bdr_chips.append(f'<a href="#clarification-{r.lower()}" class="chip chip-c">{r}</a>')
+            elif r.startswith("T-") and f"decision-{r.lower()}" in known_decision_ids:
+                bdr_chips.append(f'<a href="#decision-{r.lower()}" class="chip chip-t">{r}</a>')
+            else:
+                bdr_chips.append(f'<span class="chip chip-bdr">{html.escape(r)}</span>')
+        bdr_chips_str = " ".join(bdr_chips) if bdr_chips else '<span class="text-muted">None</span>'
+
+        alts_html = f'<div class="adr-section"><h4>Alternatives Considered</h4><p>{html.escape(a["alternatives"])}</p></div>' if a["alternatives"] else ""
+
+        adr_cards_html.append(f"""
+        <article class="adr-card" id="adr-{aid}" data-search="{html.escape(a['search_blob'].lower())}" data-aid="{aid.lower()}">
+          <div class="adr-header">
+            <div class="adr-title-wrap">
+              <span class="adr-id-badge">{aid}</span>
+              <h3 class="adr-title">{html.escape(a['title'])}</h3>
+            </div>
+            <span class="badge {status_cls}">{html.escape(a['status'])}</span>
+          </div>
+          <div class="adr-bdr-row">
+            <strong>Related BDR:</strong> {bdr_chips_str}
+          </div>
+          <div class="adr-body">
+            <div class="adr-section">
+              <h4>Context</h4>
+              <p>{html.escape(a['context'])}</p>
+            </div>
+            <div class="adr-section">
+              <h4>Decision</h4>
+              <p>{html.escape(a['decision'])}</p>
+            </div>
+            {alts_html}
+            <div class="adr-grid-two">
+              <div class="adr-section-box buys-box">
+                <h4>What It Buys Us</h4>
+                <p>{html.escape(a['buys'])}</p>
+              </div>
+              <div class="adr-section-box costs-box">
+                <h4>What It Costs Us / Consequences</h4>
+                <p>{html.escape(a['costs'] or a['consequences'])}</p>
+              </div>
+            </div>
+          </div>
+          <div class="adr-footer">
+            <a href="{a['github_url']}" target="_blank" rel="noopener noreferrer" class="link-external">📄 View {a['filename']} on GitHub ↗</a>
+          </div>
+        </article>
+        """)
+
+    # Pre-render 107 Decisions HTML
     decisions_cards_html = []
     for t in t_items:
         tid = t["id"]
@@ -1551,20 +1839,21 @@ def build_html() -> str:
         t_search = f"{tid} {t['decision']} {t['rationale']} {t['affects']} {t.get('follows', '')} {extra_str}"
         follows_html = f'<div><strong>Follows / Supersedes:</strong> <code>{html.escape(t["follows"])}</code></div>' if t.get("follows") else ""
         decisions_cards_html.append(f"""
-        <article class="decision-card bdr-card" id="decision-{tid.lower()}" data-tid="{tid.lower()}" data-alias="{t_alias}" data-search="{html.escape(t_search)}">
+        <article class="decision-card" id="decision-{tid.lower()}" data-search="{html.escape(t_search.lower())}" data-alias="{t_alias}">
           <div class="decision-header">
             <span class="decision-id">{tid}</span>
-            <span class="decision-affects">{html.escape(t['affects'])}</span>
+            <span class="badge badge-status">Team Decision</span>
           </div>
           <h4 class="decision-title">{html.escape(t['decision'])}</h4>
-          <p class="decision-rationale"><strong>Rationale:</strong> {html.escape(t['rationale'])}</p>
-          <div class="decision-meta">
+          <p class="decision-body">{html.escape(t['rationale'])}</p>
+          <div class="decision-consequences">
+            <div><strong>Affects:</strong> {html.escape(t['affects'])}</div>
             {follows_html}
           </div>
         </article>
         """)
 
-    # Render Customer Clarifications HTML
+    # Pre-render 136 Clarifications HTML
     clarifications_cards_html = []
     for c in c_items:
         cid = c["id"]
@@ -1572,20 +1861,38 @@ def build_html() -> str:
         c_alias = f"{cid.lower()} {safe_cid}"
         c_search = f"{cid} {c['who']} {c['sec']} {c['question']} {c['answer']} {c['settled']} {c['status']}"
         clarifications_cards_html.append(f"""
-        <article class="clarification-card bdr-card" id="clarification-{cid.lower()}" data-cid="{cid.lower()}" data-alias="{c_alias}" data-search="{html.escape(c_search)}">
+        <article class="clarification-card" id="clarification-{cid.lower()}" data-search="{html.escape(c_search.lower())}" data-alias="{c_alias}">
           <div class="clarification-header">
             <span class="clarification-id">{cid}</span>
-            <span class="clarification-who">{html.escape(c['who'])} ({html.escape(c['sec'])})</span>
-            <span class="badge badge-tag">{html.escape(c['status'])}</span>
+            <span class="clarification-source">{html.escape(c['who'])} ({html.escape(c['sec'])})</span>
+            <span class="badge badge-status">{html.escape(c['status'])}</span>
           </div>
-          <p class="clarification-question"><strong>Q:</strong> {html.escape(c['question'])}</p>
-          <p class="clarification-answer"><strong>A:</strong> {html.escape(c['answer'])}</p>
-          <div class="clarification-settled"><strong>Settled:</strong> {html.escape(c['settled'])}</div>
+          <p class="clarification-body"><strong>Q:</strong> {html.escape(c['question'])}</p>
+          <p class="clarification-body"><strong>A:</strong> {html.escape(c['answer'])}</p>
+          <div class="clarification-impact">
+            <strong>Settled Impact:</strong>
+            <p>{html.escape(c['settled'])}</p>
+          </div>
         </article>
         """)
 
-    # Build the full page
-    html_content = f"""<!doctype html>
+    # Pre-render Team Accountability Cards
+    team_cards_html = []
+    for m in team_members:
+        team_cards_html.append(f"""
+        <div class="team-member-card">
+          <div class="team-header">
+            <h4 class="member-name">{html.escape(m['name'])}</h4>
+            <span class="member-role">{html.escape(m['role'])}</span>
+          </div>
+          <p><strong>Epics Owned:</strong> {html.escape(m['epics'])}</p>
+          <p><strong>Stories:</strong> <code>{html.escape(m['stories'])}</code></p>
+          <p class="member-pitch">{html.escape(m['pitch'])}</p>
+        </div>
+        """)
+
+    # Now assemble the complete HTML
+    html_output = f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -1595,1611 +1902,2022 @@ def build_html() -> str:
   <title>ConnectSphere · Exam Cockpit &amp; Proof Router</title>
   <style>
     :root {{
-      --bg: #0f1821;
-      --panel: #172733;
-      --raised: #1f3445;
-      --border: #2c4559;
-      --text: #e8edf2;
-      --muted: #9db2c4;
-      --cyan: #75d6c2;
-      --yellow: #ffd166;
-      --pink: #ff9f9f;
-      --blue: #78a7ff;
-      --green: #48bb78;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      color-scheme: dark;
+      --bg: #091118;
+      --panel: #111d27;
+      --raised: #182937;
+      --border: #233b4e;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.15);
+      --text: #e2e8f0;
+      --text-bright: #f8fafc;
+      --muted: #94a3b8;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --purple: #c084fc;
+      --sidebar-w: 280px;
     }}
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-    html {{ scroll-behavior: smooth; scroll-padding-top: 100px; }}
     body {{
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-size: 15px;
       line-height: 1.6;
-    }}
-    a {{ color: var(--cyan); text-decoration: none; text-underline-offset: 3px; }}
-    a:hover {{ text-decoration: underline; color: #a2f2e1; }}
-    code {{
-      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
-      font-size: 0.9em;
-      background: rgba(117, 214, 194, 0.1);
-      color: var(--cyan);
-      padding: 2px 6px;
-      border-radius: 4px;
+      font-size: 15px;
     }}
 
     /* Layout */
-    .app-container {{
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 0 20px 60px;
+    .app-layout {{
+      display: flex;
+      min-height: 100vh;
     }}
 
-    /* Sticky Search Header */
-    .sticky-header {{
-      position: sticky;
+    /* Sidebar Drawer */
+    .app-sidebar {{
+      width: var(--sidebar-w);
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      position: fixed;
       top: 0;
-      z-index: 100;
-      background: rgba(15, 24, 33, 0.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 0;
-      margin-bottom: 24px;
-    }}
-    .header-content {{
-      max-width: 1280px;
-      margin: 0 auto;
+      left: 0;
+      bottom: 0;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
+      z-index: 100;
+      overflow-y: auto;
+    }}
+    .sidebar-brand {{
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 0 20px;
     }}
+    .brand-content {{
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }}
+    .brand-icon {{ font-size: 1.75rem; }}
     .brand-title {{
-      font-size: 18px;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
     }}
-    .brand-pill {{
-      background: var(--cyan);
-      color: #0f1821;
-      font-size: 11px;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 12px;
+    .brand-sub {{
+      font-size: 0.75rem;
+      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.05em;
     }}
-    .search-box {{
+    .drawer-close-btn {{
+      display: none;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }}
+
+    /* Navigation */
+    .sidebar-nav {{
+      padding: 1rem 0.75rem;
       flex: 1;
-      min-width: 280px;
-      max-width: 540px;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
     }}
-    .search-input {{
+    .nav-label {{
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.5rem 0.75rem 0.25rem;
+    }}
+    .nav-tab {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       width: 100%;
-      background: var(--panel);
-      border: 1px solid var(--border);
+      padding: 0.7rem 0.85rem;
+      background: transparent;
+      border: 1px solid transparent;
       border-radius: 8px;
-      color: #fff;
-      padding: 10px 14px 10px 38px;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }}
-    .search-input:focus {{
-      border-color: var(--cyan);
-      box-shadow: 0 0 0 3px rgba(117, 214, 194, 0.2);
-    }}
-    .search-icon {{
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
       color: var(--muted);
-      pointer-events: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s ease;
     }}
-    .top-nav {{
-      display: flex;
-      gap: 12px;
-    }}
-    .nav-btn {{
-      padding: 6px 12px;
-      border-radius: 6px;
+    .nav-tab:hover {{
       background: var(--raised);
-      color: var(--text);
-      font-size: 13px;
+      color: var(--text-bright);
+      border-color: var(--border);
+    }}
+    .nav-tab.active {{
+      background: var(--accent-glow);
+      color: var(--accent);
+      border-color: rgba(56, 189, 248, 0.4);
       font-weight: 600;
-      border: 1px solid var(--border);
     }}
-    .nav-btn:hover {{
-      background: var(--panel);
-      color: var(--cyan);
-      text-decoration: none;
-    }}
-
-    /* How To Answer Strip */
-    .how-to-answer-banner {{
-      background: linear-gradient(135deg, rgba(17, 34, 51, 0.95), rgba(13, 27, 42, 0.95));
-      border: 2px solid var(--blue);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    }}
-    .hta-header {{
+    .nav-tab-left {{
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
+      gap: 0.65rem;
     }}
-    .hta-badge {{
-      background: #0052cc;
-      color: #fff;
-      font-weight: 800;
-      font-size: 11px;
-      letter-spacing: 0.5px;
-      padding: 4px 10px;
-      border-radius: 4px;
-    }}
-    .hta-header h2 {{
-      font-size: 20px;
-      font-weight: 800;
-      color: #fff;
-      margin: 0;
-    }}
-    .hta-flow-box {{
-      background: rgba(120, 167, 255, 0.08);
-      border-left: 4px solid var(--blue);
-      padding: 14px 18px;
-      border-radius: 0 8px 8px 0;
-      margin-bottom: 16px;
-    }}
-    .hta-flow-sequence {{
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--blue);
-      margin-bottom: 6px;
-    }}
-    .hta-flow-instruction {{
-      font-size: 14px;
+    .nav-tab-icon {{ font-size: 1.1rem; }}
+    .nav-pill {{
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 10px;
+      background: var(--raised);
+      border: 1px solid var(--border);
       color: var(--text);
-      line-height: 1.5;
-      margin: 0;
     }}
-    .hta-template-box {{
-      background: rgba(15, 24, 33, 0.7);
+    .nav-pill.pill-danger {{
+      background: rgba(248, 113, 113, 0.15);
+      border-color: rgba(248, 113, 113, 0.4);
+      color: var(--danger);
+    }}
+
+    .drawer-anchor-link {{
+      display: block;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-decoration: none;
+      border-radius: 6px;
+      transition: color 0.15s;
+    }}
+    .drawer-anchor-link:hover {{
+      color: var(--accent);
+      background: var(--raised);
+    }}
+
+    .sidebar-footer {{
+      padding: 1rem 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }}
+
+    /* Main Area */
+    .app-main {{
+      margin-left: var(--sidebar-w);
+      width: calc(100% - var(--sidebar-w));
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }}
+
+    /* Topbar */
+    .app-topbar {{
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: rgba(17, 29, 39, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }}
+    .topbar-left {{
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }}
+    .drawer-toggle-btn {{
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      background: var(--raised);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 16px;
+      color: var(--text-bright);
+      font-size: 1.25rem;
+      cursor: pointer;
     }}
-    .hta-template-title {{
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--yellow);
-      margin-bottom: 8px;
+    .view-indicator {{
+      display: flex;
+      flex-direction: column;
+    }}
+    .view-indicator-sub {{
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }}
-    .hta-template-quote {{
-      margin: 0 0 10px 0;
-      padding-left: 12px;
-      border-left: 3px solid var(--yellow);
-      font-size: 14px;
-      color: #e2e8f0;
-      line-height: 1.6;
-    }}
-    .hta-template-quote p {{
-      margin: 3px 0;
-    }}
-    .hta-example-note {{
-      font-size: 12px;
+      letter-spacing: 0.06em;
       color: var(--muted);
-      border-top: 1px dashed var(--border);
-      padding-top: 8px;
-      margin-top: 8px;
-      line-height: 1.45;
+      font-weight: 600;
     }}
-    .hta-legend-row {{
+    .view-indicator-title {{
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .topbar-right {{
       display: flex;
       align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      font-size: 13px;
-      padding-top: 12px;
-      border-top: 1px solid var(--raised);
+      gap: 0.5rem;
     }}
-    .legend-title {{
-      font-weight: 700;
+    .topbar-badge {{
+      font-size: 0.75rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 999px;
+      background: var(--raised);
+      border: 1px solid var(--border);
       color: var(--muted);
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.5px;
+      font-weight: 500;
     }}
-    .legend-item {{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--text);
+    .topbar-badge.badge-sprint {{
+      background: rgba(56, 189, 248, 0.12);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: var(--accent);
     }}
 
-    /* Top Likely Answers Bar */
+    /* View Panels */
+    .content-viewport {{
+      padding: 2rem 2.5rem 5rem;
+      max-width: 1300px;
+      width: 100%;
+      margin: 0 auto;
+    }}
+    .doc-section {{
+      display: block;
+    }}
+    .view-panel {{
+      display: none;
+    }}
+    .view-panel.active {{
+      display: block;
+      animation: fadeIn 0.15s ease;
+    }}
+    @keyframes fadeIn {{
+      from {{ opacity: 0; transform: translateY(4px); }}
+      to {{ opacity: 1; transform: translateY(0); }}
+    }}
+
+    /* Header Elements */
+    .section-header-box {{
+      margin-bottom: 2rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }}
+    .section-eyebrow {{
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }}
+    .section-heading {{
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--text-bright);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }}
+    .section-lead {{
+      font-size: 1rem;
+      color: var(--muted);
+      max-width: 900px;
+    }}
+
+    /* Banners & Panels */
+    .how-to-answer-banner {{
+      background: linear-gradient(135deg, rgba(24, 41, 55, 0.95), rgba(17, 29, 39, 0.95));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }}
+    .banner-title {{
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .sequence-steps {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }}
+    .sequence-step {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+    }}
+    .step-num {{
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+    }}
+    .step-name {{
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-top: 0.2rem;
+    }}
+    .template-box {{
+      background: rgba(0,0,0,0.25);
+      border-left: 4px solid var(--accent);
+      padding: 0.85rem 1.25rem;
+      margin-top: 1rem;
+      border-radius: 0 6px 6px 0;
+      font-family: monospace;
+      font-size: 0.95rem;
+      color: #7dd3fc;
+    }}
+    .legend-row {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      align-items: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }}
+
+    /* Top Answers Panel */
     .top-answers-panel {{
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 18px;
-      margin-bottom: 24px;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2.5rem;
     }}
-    .top-answers-label {{
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.6px;
-      color: var(--cyan);
-      margin-bottom: 10px;
-    }}
-    .top-answers-chips {{
+    .top-answers-header {{
       display: flex;
-      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.85rem;
+    }}
+    .top-answers-title {{
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .top-chips-grid {{
+      display: flex;
       flex-wrap: wrap;
+      gap: 0.5rem;
     }}
     .top-chip {{
       background: var(--raised);
       border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
       color: var(--text);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 20px;
+      font-size: 0.85rem;
       cursor: pointer;
-      transition: all 0.15s ease;
-      font-family: inherit;
+      transition: all 0.15s;
     }}
     .top-chip:hover {{
-      background: rgba(117, 214, 194, 0.15);
-      border-color: var(--cyan);
-      color: #fff;
-    }}
-    .top-chip-defect:hover {{
-      background: rgba(255, 159, 159, 0.15);
-      border-color: var(--pink);
-      color: #fff;
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
     }}
 
-    /* Banner & Radar */
-    .cockpit-banner {{
-      background: linear-gradient(135deg, #172733 0%, #1a2f3f 100%);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 32px;
-    }}
-    .banner-header {{
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }}
-    .banner-title h1 {{
-      font-size: 26px;
-      font-weight: 750;
-      color: #fff;
-      margin-bottom: 4px;
-    }}
-    .banner-sub {{
-      color: var(--muted);
-      font-size: 14px;
-    }}
-    .kpi-row {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-    }}
-    .kpi-card {{
-      background: rgba(15, 24, 33, 0.7);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-    }}
-    .kpi-val {{
-      font-size: 24px;
-      font-weight: 750;
-      color: var(--cyan);
-      display: block;
-      margin-bottom: 2px;
-    }}
-    .kpi-label {{
-      font-size: 12px;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }}
-
-    /* Section Headings */
-    .section-title-wrap {{
-      margin: 40px 0 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 8px;
-    }}
-    .section-title {{
-      font-size: 22px;
-      font-weight: 700;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }}
-    .section-desc {{
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 20px;
-    }}
-
-    /* Badges & Pills */
-    .badge {{
-      display: inline-block;
-      padding: 2px 7px;
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      vertical-align: middle;
-    }}
-    .badge-sprint {{ background: rgba(120, 167, 255, 0.15); color: var(--blue); border: 1px solid rgba(120, 167, 255, 0.3); }}
-    .badge-points {{ background: rgba(255, 209, 102, 0.15); color: var(--yellow); border: 1px solid rgba(255, 209, 102, 0.3); }}
-    .badge-owner {{ background: rgba(157, 178, 196, 0.15); color: var(--muted); }}
-    .badge-tc {{ background: rgba(117, 214, 194, 0.15); color: var(--cyan); }}
-    .badge-tag {{ background: rgba(120, 167, 255, 0.2); color: var(--blue); }}
-    .badge-status {{ background: rgba(72, 187, 120, 0.2); color: var(--green); }}
-    .badge-partial {{ background: rgba(255, 209, 102, 0.2); color: var(--yellow); border: 1px solid rgba(255, 209, 102, 0.4); }}
-    .badge-decision {{ background: rgba(120, 167, 255, 0.2); color: var(--blue); border: 1px solid rgba(120, 167, 255, 0.4); }}
-    .badge-jira {{ background: rgba(255, 209, 102, 0.2); color: var(--yellow); }}
-    .badge-defect {{ background: rgba(255, 159, 159, 0.2); color: var(--pink); border: 1px solid var(--pink); }}
-    .badge-muted {{ background: var(--raised); color: var(--muted); }}
-
-    .jira-pill {{
-      background: #0052cc;
-      color: #fff;
-      font-weight: 700;
-      font-size: 11px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      display: inline-block;
-    }}
-    .jira-pill:hover {{ text-decoration: none; opacity: 0.9; }}
-
-    /* Grid Layouts */
-    .dossier-grid-layout {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-      gap: 16px;
-      margin-bottom: 36px;
-    }}
-    .dossier-card {{
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }}
-    .dossier-header {{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }}
-    .dossier-number {{
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--cyan);
-      font-family: ui-monospace, Consolas, monospace;
-    }}
-    .dossier-title {{
-      font-size: 17px;
-      font-weight: 700;
-      color: #fff;
-      line-height: 1.3;
-    }}
-    .dossier-lineage {{
-      font-size: 12px;
-      color: var(--muted);
-    }}
-
-    .spoken-hook-box {{
-      background: rgba(117, 214, 194, 0.08);
-      border-left: 3px solid var(--cyan);
-      padding: 10px 12px;
-      border-radius: 0 6px 6px 0;
-    }}
-    .hook-label {{
-      display: block;
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: var(--cyan);
-      margin-bottom: 4px;
-    }}
-    .hook-text {{
-      font-size: 13.5px;
-      color: #fff;
-      font-style: italic;
-      line-height: 1.45;
-    }}
-
-    .dossier-body p {{
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 8px;
-    }}
-    .dossier-grid {{
-      font-size: 12px;
-      background: rgba(15, 24, 33, 0.6);
-      padding: 8px 10px;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }}
-
-    /* Defects Radar */
-    .radar-grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 14px;
-      margin-bottom: 36px;
-    }}
-    .defect-card {{
-      background: rgba(255, 159, 159, 0.05);
-      border: 1px solid rgba(255, 159, 159, 0.3);
-      border-radius: 8px;
-      padding: 16px;
-    }}
-    .defect-header {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }}
-    .defect-id {{
-      font-weight: 800;
-      color: var(--pink);
-      font-family: ui-monospace, Consolas, monospace;
-    }}
-    .defect-title {{
-      font-size: 15px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 6px;
-    }}
-    .defect-summary {{
-      font-size: 13px;
-      color: var(--muted);
-      margin-bottom: 10px;
-      line-height: 1.45;
-    }}
-    .defect-meta {{
-      font-size: 12px;
-      color: var(--muted);
-    }}
-
-    /* Diagram Panels */
-    .diagram-panel {{
+    /* Contextual Search Containers (NO <form>) */
+    .section-search-container {{
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 32px;
-      overflow-x: auto;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
     }}
-    .diagram-panel svg {{
-      display: block;
+    .search-input-wrap {{
+      position: relative;
+      display: flex;
+      align-items: center;
+    }}
+    .search-icon {{
+      position: absolute;
+      left: 1rem;
+      color: var(--muted);
+      font-size: 1.1rem;
+      pointer-events: none;
+    }}
+    .section-search-input {{
       width: 100%;
-      min-width: 720px;
-      height: auto;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 2.5rem 0.75rem 2.75rem;
+      color: var(--text-bright);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
     }}
-    .diagram-caption {{
-      font-size: 13px;
+    .section-search-input:focus {{
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--accent-glow);
+    }}
+    .search-clear-btn {{
+      position: absolute;
+      right: 0.75rem;
+      background: transparent;
+      border: none;
       color: var(--muted);
-      margin-top: 12px;
-      text-align: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0.25rem;
+    }}
+    .search-clear-btn:hover {{ color: var(--text-bright); }}
+    .filter-chips-row {{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }}
+    .chips-label {{
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }}
+    .filter-chip, .vault-filter-chip {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }}
+    .filter-chip:hover, .vault-filter-chip:hover {{
+      color: var(--text-bright);
+      border-color: var(--muted);
+    }}
+    .filter-chip.active, .vault-filter-chip.active {{
+      background: var(--accent);
+      color: var(--bg);
+      font-weight: 700;
+      border-color: var(--accent);
+    }}
+    .btn-toggle-drawers {{
+      margin-left: auto;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.75rem;
+      color: var(--text);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }}
+    .btn-toggle-drawers:hover {{ border-color: var(--accent); color: var(--accent); }}
+    .search-results-meta {{
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
     }}
 
     /* Story Cards */
-    .story-list {{
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }}
     .story-card {{
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 18px;
-      transition: border-color 0.2s;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: border-color 0.15s;
     }}
-    .story-card:hover {{
-      border-color: rgba(117, 214, 194, 0.4);
-    }}
+    .story-card:hover {{ border-color: rgba(56, 189, 248, 0.4); }}
     .story-header {{
-      margin-bottom: 12px;
+      margin-bottom: 0.75rem;
     }}
     .story-title-row {{
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.65rem;
       flex-wrap: wrap;
-      margin-bottom: 6px;
+      margin-bottom: 0.5rem;
     }}
     .story-id {{
-      font-size: 13px;
       font-weight: 800;
-      color: var(--cyan);
-      font-family: ui-monospace, Consolas, monospace;
+      font-size: 1.05rem;
+      color: var(--accent);
+    }}
+    .jira-pill {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-decoration: none;
     }}
     .story-title {{
-      font-size: 18px;
+      font-size: 1.15rem;
       font-weight: 700;
-      color: #fff;
+      color: var(--text-bright);
+    }}
+    .spoken-hook-box {{
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin: 0.85rem 0;
+    }}
+    .hook-label {{
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      display: block;
+      margin-bottom: 0.25rem;
+    }}
+    .hook-text {{
+      color: #bae6fd;
+      font-weight: 500;
     }}
     .story-meta-grid {{
-      font-size: 13px;
-      color: var(--muted);
-      margin: 10px 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 6px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      background: rgba(0,0,0,0.2);
+      border-left: 3px solid var(--border);
+      padding: 0.75rem 1rem;
+      margin: 0.85rem 0;
     }}
-    .story-evidence-links {{
+
+    /* Story BDR & ADR Block */
+    .story-bdr-adr-block {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin: 0.85rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }}
+    .lineage-row {{
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 0.65rem;
       flex-wrap: wrap;
-      margin: 12px 0 8px;
-      padding-top: 10px;
-      border-top: 1px solid var(--raised);
+    }}
+    .lineage-label {{
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 140px;
+    }}
+    .chips-list {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }}
+    .chip {{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      text-decoration: none;
+      line-height: 1.35;
+      transition: all 0.15s ease;
+    }}
+    .chip-id {{
+      font-weight: 700;
+      white-space: nowrap;
+    }}
+    .chip-desc {{
+      font-weight: 400;
+      opacity: 0.9;
+    }}
+    .chip:hover {{
+      transform: translateY(-1px);
+      filter: brightness(1.2);
+    }}
+    .chip-adr {{
+      background: rgba(192, 132, 252, 0.15);
+      border: 1px solid rgba(192, 132, 252, 0.4);
+      color: var(--purple);
+    }}
+    .chip-adr:hover {{ background: rgba(192, 132, 252, 0.25); }}
+    .chip-t {{
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+    }}
+    .chip-t:hover {{ background: rgba(56, 189, 248, 0.25); }}
+    .chip-c {{
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: var(--success);
+    }}
+    .chip-c:hover {{ background: rgba(52, 211, 153, 0.25); }}
+    .chip-bdr {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }}
+
+    /* Topic Dossier Chips */
+    .dossier-filter-chip, .dossier-jump-chip {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }}
+    .dossier-filter-chip:hover, .dossier-jump-chip:hover {{
+      color: var(--text-bright);
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+    }}
+    .dossier-filter-chip.active {{
+      background: var(--accent);
+      color: #0b1320;
+      font-weight: 700;
+      border-color: var(--accent);
+    }}
+    .dossier-jump-chip {{
+      background: rgba(168, 85, 247, 0.08);
+      border-color: rgba(168, 85, 247, 0.3);
+      color: #c084fc;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+    }}
+
+    @keyframes target-pulse {{
+      0% {{
+        outline: 3px solid #38bdf8;
+        box-shadow: 0 0 25px rgba(56, 189, 248, 0.7);
+      }}
+      50% {{
+        outline: 3px solid #f472b6;
+        box-shadow: 0 0 35px rgba(244, 114, 182, 0.9);
+      }}
+      100% {{
+        outline: 1px solid var(--border);
+        box-shadow: none;
+      }}
+    }}
+    .target-highlight {{
+      animation: target-pulse 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+    }}
+
+    .story-evidence-links {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      margin: 0.85rem 0;
+      font-size: 0.85rem;
     }}
     .ev-link {{
-      font-size: 12px;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
       background: var(--raised);
-      padding: 4px 10px;
-      border-radius: 5px;
       border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.8rem;
     }}
-    .ev-link-run {{ background: rgba(72, 187, 120, 0.1); border-color: rgba(72, 187, 120, 0.3); color: var(--green); }}
-    .ev-link-partial {{ background: rgba(255, 209, 102, 0.1); border-color: rgba(255, 209, 102, 0.3); color: var(--yellow); }}
-    .ev-link-defect {{ background: rgba(255, 159, 159, 0.1); border-color: rgba(255, 159, 159, 0.3); color: var(--pink); }}
+    .ev-link:hover {{ border-color: var(--accent); color: var(--accent); }}
+    .ev-link-run {{
+      background: rgba(52, 211, 153, 0.1);
+      border-color: rgba(52, 211, 153, 0.35);
+      color: var(--success);
+    }}
+    .ev-link-defect {{
+      background: rgba(248, 113, 113, 0.1);
+      border-color: rgba(248, 113, 113, 0.35);
+      color: var(--danger);
+    }}
+    .ev-link-partial {{
+      background: rgba(251, 191, 36, 0.1);
+      border-color: rgba(251, 191, 36, 0.35);
+      color: var(--warning);
+    }}
     .ev-badge {{
-      font-size: 12px;
+      font-size: 0.78rem;
       color: var(--muted);
       margin-left: auto;
     }}
     .tc-summary-row {{
-      margin: 8px 0;
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
+      gap: 0.35rem;
+      margin-bottom: 0.85rem;
     }}
 
-    /* Lineage Drawer */
+    /* Details Drawer */
     .story-lineage-drawer {{
-      margin-top: 12px;
-      border-top: 1px dashed var(--border);
-      padding-top: 10px;
+      margin-top: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
     }}
     .drawer-toggle {{
+      background: var(--raised);
+      padding: 0.75rem 1rem;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 0.85rem;
       font-weight: 600;
-      color: var(--cyan);
+      color: var(--muted);
       user-select: none;
     }}
-    .drawer-toggle:hover {{
-      color: #a2f2e1;
-    }}
+    .drawer-toggle:hover {{ color: var(--text-bright); }}
     .drawer-content {{
-      margin-top: 14px;
+      padding: 1.25rem;
+      background: var(--bg);
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 1.25rem;
     }}
     .lineage-section h4 {{
-      font-size: 14px;
+      font-size: 0.9rem;
       font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }}
-    .scenario-box {{
-      background: rgba(15, 24, 33, 0.7);
-      border-left: 2px solid var(--blue);
-      padding: 8px 12px;
-      border-radius: 0 4px 4px 0;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }}
-    .scenario-box strong {{
-      display: block;
-      color: var(--blue);
-      margin-bottom: 2px;
+      color: var(--accent);
+      margin-bottom: 0.65rem;
     }}
     .tech-table {{
-      font-size: 12.5px;
-      background: rgba(15, 24, 33, 0.7);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.65rem;
+      font-size: 0.85rem;
+    }}
+    .scenario-box {{
+      background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 10px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
     }}
-    .tc-detail-list {{
-      list-style: none;
-      font-size: 12.5px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }}
-    .tc-detail-list li {{
-      background: rgba(15, 24, 33, 0.7);
-      padding: 8px 12px;
-      border-radius: 6px;
-    }}
-    .tc-status {{
-      float: right;
-      font-size: 11px;
-    }}
-
-    /* Definition of Done Checklist */
     .dod-checklist {{
       list-style: none;
-      font-size: 12.5px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--text);
     }}
     .dod-checklist li {{
-      background: rgba(15, 24, 33, 0.7);
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      line-height: 1.4;
-    }}
-    .chk-icon {{
-      color: var(--cyan);
-      font-weight: bold;
-    }}
-
-    /* Branch Callout Card */
-    .branch-callout-card {{
-      background: rgba(255, 159, 159, 0.08);
-      border: 1px solid rgba(255, 159, 159, 0.3);
-      border-radius: 8px;
-      padding: 16px;
-      grid-column: 1 / -1;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }}
-    .branch-callout-header {{
+      margin-bottom: 0.35rem;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 0.5rem;
     }}
-    .branch-callout-title {{
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--pink);
+    .chk-icon {{ color: var(--success); }}
+    .tc-detail-list {{
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
     }}
-    .branch-callout-desc {{
-      font-size: 13px;
-      color: var(--text);
-      line-height: 1.45;
+    .tc-detail-list li {{
+      font-size: 0.82rem;
+      padding: 0.35rem 0.65rem;
+      border-radius: 4px;
+      background: var(--panel);
+      border: 1px solid var(--border);
     }}
 
-    /* BDR Registers */
-    .bdr-container-drawer {{
+    /* Badges */
+    .badge {{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }}
+    .badge-status, .badge-success {{
+      background: rgba(52, 211, 153, 0.15);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      color: var(--success);
+    }}
+    .badge-defect, .badge-danger {{
+      background: rgba(248, 113, 113, 0.15);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: var(--danger);
+    }}
+    .badge-partial, .badge-warning {{
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      color: var(--warning);
+    }}
+    .badge-owner, .badge-points, .badge-sprint, .badge-tc {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }}
+
+    /* Defects Radar */
+    .defect-recon-banner {{
+      background: linear-gradient(135deg, rgba(35, 20, 25, 0.95), rgba(20, 15, 20, 0.95));
+      border: 1px solid var(--danger);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }}
+    .banner-badge-row {{
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }}
+    .defect-recon-banner h3 {{
+      font-size: 1.25rem;
+      color: #fca5a5;
+      margin-bottom: 0.5rem;
+    }}
+    .defect-recon-banner p {{
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }}
+    .defects-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 1.5rem;
+    }}
+    .defect-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }}
+    .defect-card-header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }}
+    .defect-id-group {{
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .defect-id {{
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--danger);
+    }}
+    .defect-jira {{
+      font-size: 0.8rem;
+      color: var(--muted);
+    }}
+    .defect-title {{
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-bright);
+      margin-bottom: 0.75rem;
+    }}
+    .defect-hook-box {{
+      background: rgba(248, 113, 113, 0.08);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }}
+    .defect-hook-box .hook-text {{ color: #fca5a5; }}
+    .defect-facts-box {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.75rem;
+    }}
+    .defect-tcs-row {{
+      font-size: 0.8rem;
+      color: var(--muted);
+    }}
+
+    /* Dossiers */
+    .dossiers-grid {{
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }}
+    .dossier-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }}
+    .dossier-header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }}
+    .dossier-title-wrap {{
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }}
+    .dossier-tag {{
+      background: var(--accent-glow);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }}
+    .dossier-num {{
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--muted);
+    }}
+    .dossier-title {{
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .dossier-lineage {{
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }}
+    .dossier-hook {{
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 0.85rem;
+      margin-bottom: 0.75rem;
+    }}
+    .dossier-reality {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      font-size: 0.88rem;
+      margin-bottom: 0.75rem;
+    }}
+    .dossier-proof-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.5rem;
+      font-size: 0.82rem;
+    }}
+
+    /* Vault View */
+    .vault-grid {{
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }}
+    .adr-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }}
+    .adr-header {{
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }}
+    .adr-title-wrap {{
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }}
+    .adr-id-badge {{
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--purple);
+    }}
+    .adr-title {{
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .adr-bdr-row {{
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }}
+    .adr-body {{
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      font-size: 0.88rem;
+    }}
+    .adr-section h4 {{
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 0.25rem;
+    }}
+    .adr-grid-two {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }}
+    .adr-section-box {{
+      padding: 0.85rem;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }}
+    .adr-footer {{
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(35, 59, 78, 0.6);
+      font-size: 0.82rem;
+    }}
+
+    .decision-card, .clarification-card {{
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 24px;
-    }}
-    .bdr-drawer-toggle {{
-      cursor: pointer;
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--cyan);
-      user-select: none;
-    }}
-    .bdr-drawer-toggle:hover {{
-      color: #a2f2e1;
-    }}
-    .bdr-grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-    }}
-    .bdr-card {{
-      background: rgba(15, 24, 33, 0.85);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      transition: border-color 0.2s;
-    }}
-    .bdr-card:hover {{
-      border-color: rgba(117, 214, 194, 0.4);
+      padding: 1.25rem;
     }}
     .decision-header, .clarification-header {{
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
     }}
-    .decision-id, .clarification-id {{
-      font-family: ui-monospace, Consolas, monospace;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--cyan);
-      background: rgba(117, 214, 194, 0.1);
-      padding: 2px 8px;
-      border-radius: 4px;
-      border: 1px solid rgba(117, 214, 194, 0.3);
-    }}
-    .decision-affects, .clarification-who {{
-      font-size: 12px;
-      color: var(--yellow);
-      font-weight: 600;
-    }}
-    .decision-title {{
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
-    }}
-    .decision-rationale, .clarification-question, .clarification-answer {{
-      font-size: 12.5px;
-      color: var(--muted);
-      line-height: 1.45;
-    }}
-    .clarification-question strong {{
-      color: var(--blue);
-    }}
-    .clarification-answer strong {{
-      color: var(--cyan);
-    }}
-    .clarification-settled {{
-      font-size: 12px;
-      background: rgba(23, 39, 51, 0.8);
-      border-left: 2px solid var(--yellow);
-      padding: 6px 10px;
-      border-radius: 0 4px 4px 0;
-      color: var(--text);
-    }}
-    .decision-meta {{
-      font-size: 11.5px;
-      color: var(--muted);
-      border-top: 1px solid var(--raised);
-      padding-top: 6px;
-    }}
-    .search-count-badge {{
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--cyan);
-      background: rgba(117, 214, 194, 0.1);
-      border: 1px solid rgba(117, 214, 194, 0.3);
-      padding: 4px 10px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }}
-    .search-clear-btn {{
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 14px;
-      padding: 4px;
-    }}
-    .search-clear-btn:hover {{
-      color: #fff;
+    .decision-id {{ font-weight: 800; color: var(--accent); }}
+    .clarification-id {{ font-weight: 800; color: var(--success); }}
+    .decision-date, .clarification-source {{ font-size: 0.8rem; color: var(--muted); }}
+    .decision-title {{ font-size: 1rem; color: var(--text-bright); margin-bottom: 0.35rem; }}
+    .decision-body, .clarification-body {{ font-size: 0.88rem; margin-bottom: 0.5rem; }}
+    .decision-consequences, .clarification-impact {{
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.65rem;
+      font-size: 0.82rem;
     }}
 
-    /* Accountability Grid */
-    .team-grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 14px;
-      margin-bottom: 32px;
-    }}
-    .team-card {{
+    /* Architecture View */
+    .diagram-panel {{
       background: var(--panel);
       border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }}
+    .diagram-panel svg {{
+      width: 100%;
+      height: auto;
+      display: block;
       border-radius: 8px;
-      padding: 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
     }}
-    .team-name {{
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 2px;
-    }}
-    .team-role {{
-      font-size: 12px;
-      color: var(--cyan);
-      font-weight: 600;
-      margin-bottom: 8px;
-    }}
-    .team-pitch {{
-      font-size: 13px;
+    .diagram-caption {{
+      margin-top: 1rem;
+      font-size: 0.9rem;
       color: var(--muted);
-      line-height: 1.45;
+      line-height: 1.5;
     }}
 
-    /* Rehearsal Protocols */
-    .protocol-card {{
+    /* Team Matrix */
+    .team-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }}
+    .team-member-card {{
       background: var(--panel);
-      border-left: 4px solid var(--yellow);
-      border-radius: 0 8px 8px 0;
-      padding: 18px;
-      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      font-size: 0.88rem;
     }}
-    .protocol-title {{
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 8px;
-    }}
-    .protocol-card ol, .protocol-card ul {{
-      padding-left: 20px;
-      font-size: 13.5px;
-      color: var(--muted);
-    }}
-    .protocol-card li {{
-      margin-bottom: 6px;
-    }}
-
-    /* Footer */
-    .page-footer {{
-      margin-top: 60px;
-      padding-top: 24px;
+    .team-header {{ margin-bottom: 0.5rem; }}
+    .member-name {{ font-size: 1.05rem; font-weight: 700; color: var(--text-bright); }}
+    .member-role {{ font-size: 0.78rem; color: var(--accent); }}
+    .member-pitch {{
+      margin-top: 0.65rem;
+      padding-top: 0.65rem;
       border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
+      font-style: italic;
       color: var(--muted);
-      font-size: 12px;
-      flex-wrap: wrap;
-      gap: 12px;
     }}
 
-    /* Responsive */
-    @media (max-width: 768px) {{
-      .header-content {{ padding: 0 16px; }}
-      .app-container {{ padding: 0 16px 40px; }}
-      .banner-title h1 {{ font-size: 20px; }}
-      .kpi-row {{ grid-template-columns: 1fr 1fr; }}
-      .dossier-grid-layout {{ grid-template-columns: 1fr; }}
+    /* Links */
+    .link-external, .link-internal {{
+      color: var(--accent);
+      text-decoration: none;
+    }}
+    .link-external:hover, .link-internal:hover {{ text-decoration: underline; }}
+    .pr-pill {{
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.75rem;
+    }}
+
+    /* Mobile Responsive Overrides */
+    @media (max-width: 1024px) {{
+      .app-sidebar {{
+        transform: translateX(-100%);
+        transition: transform 0.25s ease-in-out;
+        width: 290px;
+        box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      }}
+      .app-sidebar.open {{
+        transform: translateX(0);
+      }}
+      .drawer-close-btn {{
+        display: block;
+      }}
+      .app-main {{
+        margin-left: 0;
+        width: 100%;
+      }}
+      .drawer-toggle-btn {{
+        display: inline-flex;
+      }}
+      .content-viewport {{
+        padding: 1.5rem 1rem 4rem;
+      }}
+      .topbar-badge:not(.badge-sprint) {{
+        display: none;
+      }}
+      .drawer-backdrop {{
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.65);
+        z-index: 99;
+        backdrop-filter: blur(2px);
+      }}
+      .drawer-backdrop.active {{
+        display: block;
+      }}
     }}
   </style>
 </head>
 <body>
+  <div class="app-layout">
+    <!-- Backdrop overlay for mobile drawer -->
+    <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
 
-  <!-- Sticky Top Search Header -->
-  <header class="sticky-header">
-    <div class="header-content">
-      <div class="brand-title">
-        <span>ConnectSphere</span>
-        <span class="brand-pill">Exam Cockpit</span>
+    <!-- Sliding Sidebar Drawer -->
+    <aside id="app-sidebar" class="app-sidebar" aria-label="Main Navigation">
+      <div class="sidebar-brand">
+        <div class="brand-content">
+          <span class="brand-icon">🎓</span>
+          <div>
+            <h2 class="brand-title">ConnectSphere</h2>
+            <div class="brand-sub">Final Defense Cockpit</div>
+          </div>
+        </div>
+        <button id="drawer-close" class="drawer-close-btn" aria-label="Close navigation drawer">✕</button>
       </div>
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="search" id="global-search" class="search-input" placeholder="Proof Router: search exact ID (e.g. TC_E07S07_03, PR-239, T-79, D-01) or topic..." aria-label="Search across all evidence, stories, and test cases">
-        <button id="search-clear-btn" class="search-clear-btn" type="button" title="Clear search (Esc)" aria-label="Clear search">✕</button>
-      </div>
-      <div id="search-count" class="search-count-badge" aria-live="polite">All 65 Stories · 391 functional + 3 cross-cutting = 394 cases · {len(t_items)} Decisions · {len(c_items)} Clarifications</div>
-      <nav class="top-nav" aria-label="Main Navigation">
-        <a href="#overview" class="nav-btn">01 Overview</a>
-        <a href="#details" class="nav-btn">02 Dossiers &amp; Archive</a>
-        <a href="#next-steps" class="nav-btn">03 Exam Drill</a>
+
+      <nav class="sidebar-nav" aria-label="Defense Navigation Views">
+        <div class="nav-label">DEFENSE VIEWS</div>
+        <button class="nav-tab active" data-view="view-how-to-answer">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">📋</span>
+            <span>How to Answer &amp; Protocol</span>
+          </div>
+        </button>
+        <button class="nav-tab" data-view="view-defects-radar">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">🚨</span>
+            <span>Defects Radar &amp; Lineage</span>
+          </div>
+          <span class="nav-pill pill-danger">4</span>
+        </button>
+        <button class="nav-tab" data-view="view-dossiers">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">🛡️</span>
+            <span>12 Topic Dossiers</span>
+          </div>
+          <span class="nav-pill">12</span>
+        </button>
+        <button class="nav-tab" data-view="view-stories">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">📖</span>
+            <span>65 Stories &amp; Tech Lineage</span>
+          </div>
+          <span class="nav-pill">65</span>
+        </button>
+        <button class="nav-tab" data-view="view-vault">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">📜</span>
+            <span>ADR &amp; BDR Decision Vault</span>
+          </div>
+          <span class="nav-pill">262</span>
+        </button>
+        <button class="nav-tab" data-view="view-architecture">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">🏗️</span>
+            <span>Architecture &amp; Diagrams</span>
+          </div>
+          <span class="nav-pill">4</span>
+        </button>
+        <button class="nav-tab" data-view="view-runbook">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">⏱️</span>
+            <span>20-Min Exam Runbook</span>
+          </div>
+        </button>
+
+        <div class="nav-label" style="margin-top: 1.5rem;">REQUIRED ANCHOR SECTIONS</div>
+        <a href="#overview" class="drawer-anchor-link">📍 Section: Overview (#overview)</a>
+        <a href="#details" class="drawer-anchor-link">📍 Section: Details (#details)</a>
+        <a href="#next-steps" class="drawer-anchor-link">📍 Section: Next Steps (#next-steps)</a>
       </nav>
+
+      <div class="sidebar-footer">
+        <div><strong>Sprint 5 Close:</strong> 60 Done · 1 Partial · 4 Defects</div>
+        <div>391 functional story cases + 3 cross-cutting DoD/performance cases = 394 workbook cases</div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="app-main">
+      <!-- Fixed App Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-left">
+          <button id="drawer-toggle" class="drawer-toggle-btn" aria-label="Toggle navigation drawer" aria-expanded="false">
+            ☰
+          </button>
+          <div class="view-indicator">
+            <span class="view-indicator-sub">Current View</span>
+            <span id="current-view-title" class="view-indicator-title">📋 How to Answer &amp; Protocol</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="topbar-badge badge-sprint">Sprint 5 HEAD</span>
+          <span class="topbar-badge">19 ADRs</span>
+          <span class="topbar-badge">100% Verified Run Records</span>
+        </div>
+      </header>
+
+      <!-- Viewport containing required top-level sections -->
+      <main class="content-viewport">
+        <!-- REQUIRED SECTION 1: #overview -->
+        <section id="overview" class="doc-section">
+          <!-- View 1: How to Answer & Protocol -->
+          <div id="view-how-to-answer" class="view-panel active">
+            <div class="section-header-box">
+              <div class="section-eyebrow">EXAMINER PRESENTATION DEFENSE FRAMEWORK</div>
+              <h2 class="section-heading">How to Answer &amp; Rehearsal Protocol</h2>
+              <p class="section-lead">The 4-step answer sequence, rehearsable 5-sentence templates, wording traps to avoid, and quick-jump navigation chips for likely examiner attacks.</p>
+            </div>
+
+            <!-- Mandatory How to Answer Banner -->
+            <aside class="how-to-answer-banner">
+              <div class="banner-title">
+                <span>🎯</span>
+                <h3>Mandatory Answer Sequence: What it does → Why we chose it → Proof → Boundary</h3>
+              </div>
+              <p>Whenever an examiner asks about any story, feature, or defect, follow this sequence strictly. <strong>Say This First</strong> before diving into code or edge cases:</p>
+
+              <div class="sequence-steps">
+                <div class="sequence-step">
+                  <div class="step-num">Step 1</div>
+                  <div class="step-name">What It Does</div>
+                  <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">Business outcome and primary role benefit.</p>
+                </div>
+                <div class="sequence-step">
+                  <div class="step-num">Step 2</div>
+                  <div class="step-name">Why We Chose It</div>
+                  <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">BDR customer clarification or ADR architectural rationale.</p>
+                </div>
+                <div class="sequence-step">
+                  <div class="step-num">Step 3</div>
+                  <div class="step-name">Technical Proof</div>
+                  <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">Exact PR number, migration filename, or automated test case.</p>
+                </div>
+                <div class="sequence-step">
+                  <div class="step-num">Step 4</div>
+                  <div class="step-name">System Boundary</div>
+                  <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">Where the responsibility ends or intentional limits.</p>
+                </div>
+              </div>
+
+              <div class="template-box">
+                "This feature lets [role] do [business outcome]. We chose this design because [BDR/ADR reason]. We proved it in [PR/test case], and the boundary is [limit]."
+              </div>
+
+              <div class="legend-row">
+                <strong>Status Legend:</strong>
+                <span class="badge badge-status">Done</span>
+                <span class="badge badge-partial">Partial</span>
+                <span class="badge badge-defect">Open defect</span>
+                <span class="badge" style="background: var(--raised); border: 1px solid var(--border); color: var(--muted);">Historical decision</span>
+                <span style="margin-left: auto;">Precision: A venue block can be created over confirmed bookings without being blocked.</span>
+              </div>
+            </aside>
+
+            <!-- Top Likely Answers Panel -->
+            <div class="top-answers-panel">
+              <div class="top-answers-header">
+                <span class="top-answers-title">⚡ Top Likely Examiner Questions (Click to Jump &amp; Filter)</span>
+                <span style="font-size: 0.75rem; color: var(--muted);">instant local search for this static guide</span>
+              </div>
+              <div class="top-chips-grid">
+                <button type="button" class="top-chip" data-query="Safety Review">Safety Review (Aaron · E06)</button>
+                <button type="button" class="top-chip" data-query="Venue Loss">Venue Loss (Dylan · E10-S02)</button>
+                <button type="button" class="top-chip" data-query="Booking Race">Booking Race (Amareet · E06-S06)</button>
+                <button type="button" class="top-chip" data-query="Holds">Holds (E05-S03 · 48h Expiry)</button>
+                <button type="button" class="top-chip" data-query="Attendee Capacity">Attendee Capacity (Xiang Ying · E09)</button>
+                <button type="button" class="top-chip" data-query="Outbox">Outbox (Bryan · E11-S01 · ADR-006)</button>
+                <button type="button" class="top-chip" data-query="Scrum Velocity">Scrum Velocity (Burn-Up &amp; PR Flow)</button>
+                <button type="button" class="top-chip" data-query="AI Governance">AI Governance (Dossier 12 · T-108)</button>
+                <button type="button" class="top-chip" data-query="Four Defects">Four Defects (Audit vs SCRUM-261 HEAD)</button>
+              </div>
+            </div>
+
+            <!-- Examiner Wording Traps & Rules -->
+            <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+              <h3 style="font-size: 1.1rem; color: var(--text-bright); margin-bottom: 0.75rem;">Examiner Wording Traps &amp; Exact System Realities</h3>
+              <ul style="padding-left: 1.25rem; font-size: 0.9rem; color: var(--text); display: flex; flex-direction: column; gap: 0.5rem;">
+                <li><strong>Obsolete Change Requests:</strong> When an event completes or is cancelled, the lifecycle service atomically marks its pending change requests Obsolete in the same transaction. (Never claim it is triggered asynchronously by a background scheduler).</li>
+                <li><strong>Workbook Case Count:</strong> Exactly 391 functional story cases + 3 cross-cutting DoD/performance cases = 394 workbook cases across 65 user stories.</li>
+                <li><strong>Defect Integrity Rule:</strong> <span class="badge badge-status">Admit honestly · do not count as Done</span>. Never claim open defects pass DoD.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- REQUIRED SECTION 2: #details -->
+        <section id="details" class="doc-section">
+          <!-- View 2: Defects Radar & Shortcomings -->
+          <div id="view-defects-radar" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">TRANSPARENCY &amp; GIT HEAD RECONCILIATION</div>
+              <h2 class="section-heading">Defects Radar &amp; Branch Reality</h2>
+              <p class="section-lead">Reconciliation of the 6 Nov morning audit in defects.md against the subsequent merge of SCRUM-261 on main.</p>
+            </div>
+
+            <!-- Git Reconciliation Banner -->
+            <div id="defect-branch-scrum-153" class="defect-recon-banner">
+              <div class="banner-badge-row">
+                <span class="badge badge-defect">🚨 Git Investigation &amp; Reconciliation</span>
+                <span class="badge badge-status">Admit honestly · do not count as Done</span>
+              </div>
+              <h3>Post-Sprint 5 Git Reality &amp; Audit Reconciliation</h3>
+              <p>During the morning audit on 6 Nov 2026, defects D-01, D-02, and D-03 were documented in <code>docs/testing/defects.md</code> against unmerged feature branches (SCRUM-153, SCRUM-154, SCRUM-155). Later on 6 Nov, <strong>SCRUM-261 was merged to main</strong> (PR #450 commit <code>a8f2d879</code>, PR #454 commit <code>b5370843</code>, PR #453 commit <code>ced06372</code>), successfully shipping Lead assignment and direct reassignment with migration <code>0027_event_assignment_actor.sql</code> and 31 passing unit/db tests.</p>
+              <p>In contrast, <strong>D-04 (SCRUM-259 / E02-S05) remains our single genuine open defect at HEAD</strong>: branch <code>feature/SCRUM-30-reuse-event-details</code> (commit <code>5d1e9ab0</code>) was deliberately withheld from main to prevent shallow copy corruption of child session envelopes per ADR-018.</p>
+            </div>
+
+            <div class="defects-grid">
+              {''.join(defects_html)}
+            </div>
+          </div>
+
+          <!-- View 3: 12 High-Risk Topic Dossiers -->
+          <div id="view-dossiers" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">DEEP ARCHITECTURAL TOPICS</div>
+              <h2 class="section-heading">12 High-Risk Battle Dossiers</h2>
+              <p class="section-lead">Complete defense briefs on concurrency locks, safety reviews, outbox pattern, and session restorations with production code proofs.</p>
+            </div>
+
+            <!-- Contextual Quick-Jump Category Chips for Dossiers -->
+            <div class="section-search-container" style="margin-bottom: 2rem;">
+              <div class="filter-chips-row">
+                <span class="chips-label">Topic Filter:</span>
+                <button type="button" class="dossier-filter-chip active" data-dossier-filter="all">All 12 Dossiers</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="concurrency">Concurrency &amp; Locks (4)</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="architecture">Architecture &amp; FSM (3)</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="reliability">Reliability &amp; Outbox (1)</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="security">Security &amp; Tenancy (1)</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="defects">Defects &amp; Limits (1)</button>
+                <button type="button" class="dossier-filter-chip" data-dossier-filter="specs">Spec &amp; AI (2)</button>
+              </div>
+              <div class="filter-chips-row" style="margin-top: 0.5rem;">
+                <span class="chips-label">Quick Jump:</span>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-1">#1 Monolith</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-2">#2 Lock Hierarchy</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-3">#3 Status Flow</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-4">#4 Lifecycle FSM</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-5">#5 Tech Lock Fix</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-6">#6 48h Tentative Hold</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-7">#7 Outbox Pattern</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-8">#8 Interrupted Review</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-9">#9 Revision Fingerprint</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-10">#10 SCRUM-30 Withhold</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-11">#11 Session Invalidation</button>
+                <button type="button" class="dossier-jump-chip" data-jump="dossier-12">#12 AI Governance</button>
+              </div>
+              <div id="dossier-meta" class="search-results-meta">Showing 12 of 12 topic dossiers</div>
+            </div>
+
+            <div class="dossiers-grid">
+              {''.join(dossiers_html)}
+            </div>
+          </div>
+
+          <!-- View 4: 65 User Stories & Code Lineage -->
+          <div id="view-stories" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">FULL SPECIFICATION &amp; TRACEABILITY</div>
+              <h2 class="section-heading">65 User Stories &amp; Code Lineage</h2>
+              <p class="section-lead">Search and inspect all 65 user stories across 15 epics with direct architectural decision links, acceptance scenarios, and test case coverage.</p>
+            </div>
+
+            <!-- Dedicated Story Search Bar (NO <form>) -->
+            <div class="section-search-container">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="story-search-input" class="section-search-input" placeholder="Search 65 stories by ID (e.g. e5s4, e3s1), title, route, role, PR, or defect..." aria-label="Search User Stories">
+                <button type="button" id="story-search-clear" class="search-clear-btn" aria-label="Clear search">✕</button>
+              </div>
+              <div class="filter-chips-row">
+                <span class="chips-label">Filters:</span>
+                <button type="button" class="filter-chip active" data-story-filter="all">All 65</button>
+                <button type="button" class="filter-chip" data-story-filter="done">Done (60)</button>
+                <button type="button" class="filter-chip" data-story-filter="defects">Defects / Partial (5)</button>
+                <button type="button" class="filter-chip" data-story-filter="lead">Lead</button>
+                <button type="button" class="filter-chip" data-story-filter="coordinator">Coordinator</button>
+                <button type="button" class="filter-chip" data-story-filter="admin">Admin</button>
+                <button type="button" class="filter-chip" data-story-filter="student">Student</button>
+                <button type="button" class="filter-chip" data-story-filter="technician">Technician</button>
+                <button type="button" id="toggle-all-drawers" class="btn-toggle-drawers">Expand All Details</button>
+              </div>
+              <div id="story-search-meta" class="search-results-meta">Showing 65 of 65 stories</div>
+            </div>
+
+            <div class="stories-list" id="stories-list-container">
+              {''.join(story_cards_html)}
+            </div>
+          </div>
+
+          <!-- View 5: ADR & BDR Decision Vault -->
+          <div id="view-vault" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">FULL DECISION REPOSITORY</div>
+              <h2 class="section-heading">ADR &amp; BDR Decision Vault</h2>
+              <p class="section-lead">The authoritative repository of all 19 Architecture Decision Records, 107 Team Decisions, and 136 Customer Clarifications.</p>
+            </div>
+
+            <!-- Dedicated Vault Search Bar (NO <form>) -->
+            <div class="section-search-container">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="vault-search-input" class="section-search-input" placeholder="Search ADRs (ADR-001..ADR-019), Decisions (T-01..T-108), or Clarifications (C-01..C-136)..." aria-label="Search Vault">
+                <button type="button" id="vault-search-clear" class="search-clear-btn" aria-label="Clear search">✕</button>
+              </div>
+              <div class="filter-chips-row">
+                <span class="chips-label">Vault Type:</span>
+                <button type="button" class="vault-filter-chip active" data-vault-filter="all">All Vault (262)</button>
+                <button type="button" class="vault-filter-chip" data-vault-filter="adr">ADRs (19)</button>
+                <button type="button" class="vault-filter-chip" data-vault-filter="decision">Decisions (107)</button>
+                <button type="button" class="vault-filter-chip" data-vault-filter="clarification">Clarifications (136)</button>
+              </div>
+              <div id="vault-search-meta" class="search-results-meta">Showing 262 entries</div>
+            </div>
+
+            <!-- ADRs Section -->
+            <div id="vault-adrs-block" style="margin-bottom: 3rem;">
+              <h3 style="font-size: 1.3rem; color: var(--purple); margin-bottom: 1rem;">19 Architecture Decision Records (ADR-001 to ADR-019)</h3>
+              <div class="vault-grid">
+                {''.join(adr_cards_html)}
+              </div>
+            </div>
+
+            <!-- Team Decisions Section -->
+            <div id="vault-decisions-block" style="margin-bottom: 3rem;">
+              <h3 style="font-size: 1.3rem; color: var(--accent); margin-bottom: 1rem;">107 Team Decisions (T-01 to T-108)</h3>
+              <div class="vault-grid">
+                {''.join(decisions_cards_html)}
+              </div>
+            </div>
+
+            <!-- Customer Clarifications Section -->
+            <div id="vault-clarifications-block" style="margin-bottom: 3rem;">
+              <h3 style="font-size: 1.3rem; color: var(--success); margin-bottom: 1rem;">136 Customer Clarifications (C-01 to C-136)</h3>
+              <div class="vault-grid">
+                {''.join(clarifications_cards_html)}
+              </div>
+            </div>
+          </div>
+
+          <!-- View 6: Architecture, Diagrams & SVGs -->
+          <div id="view-architecture" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">VISUAL PROOFS &amp; SPECIFICATIONS</div>
+              <h2 class="section-heading">Architecture, State Machines &amp; Diagrams</h2>
+              <p class="section-lead">The four authoritative visual specifications: C4 container diagram, event state machine, technician lock hierarchy, and velocity burn-up.</p>
+            </div>
+
+            {fig_c4}
+            {fig_fsm}
+            {fig_lock}
+            {fig_vel}
+          </div>
+        </section>
+
+        <!-- REQUIRED SECTION 3: #next-steps -->
+        <section id="next-steps" class="doc-section">
+          <!-- View 7: 20-Min Exam Runbook & Delivery Sign-Off -->
+          <div id="view-runbook" class="view-panel">
+            <div class="section-header-box">
+              <div class="section-eyebrow">FINAL PRESENTATION PACING &amp; CHECKLIST</div>
+              <h2 class="section-heading">20-Minute Exam Runbook &amp; Live Demo Script</h2>
+              <p class="section-lead">Pacing schedule, role speaking slots, proof handoffs, and examiners question management.</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">00:00 - 04:00 (Bryan)</h4>
+                <p><strong>Architecture &amp; Database Foundation:</strong> Monolith rationale (ADR-001), PostgreSQL migrations 0001–0027, session cookies (ADR-015), Transactional Outbox (ADR-006).</p>
+              </div>
+              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">04:00 - 08:00 (Aaron &amp; Bryan)</h4>
+                <p><strong>Safety Review &amp; Lead Assignment:</strong> Event submission (E02), Safety Review FSM (ADR-013), and Lead queue restoration via SCRUM-261.</p>
+              </div>
+              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">08:00 - 12:00 (Amareet)</h4>
+                <p><strong>Concurrency &amp; Technical Services:</strong> Two-phase lock hierarchy eliminating 40P01 deadlocks (PR #239), equipment reservation vs request (ADR-010).</p>
+              </div>
+              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">12:00 - 16:00 (Xiang Ying &amp; Dylan)</h4>
+                <p><strong>Attendee Registration &amp; Changes:</strong> Multi-session registration (ADR-018), revision fingerprinting (PR #380), lost venue recovery (ADR-015).</p>
+              </div>
+              <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">16:00 - 20:00 (All Hands)</h4>
+                <p><strong>Defects Defense &amp; Q&amp;A:</strong> Defect D-04 honest admission (withheld to protect ADR-018), sprint velocity metrics, examiner Q&amp;A defense.</p>
+              </div>
+            </div>
+
+            <!-- Team Accountability & Final Assessment Sign-Off -->
+            <div class="section-header-box" style="margin-top: 3rem;">
+              <div class="section-eyebrow">DELIVERY &amp; ACCOUNTABILITY</div>
+              <h2 class="section-heading">Team Accountability &amp; Final Assessment Sign-Off</h2>
+              <p class="section-lead">Roles, ownership boundaries, and 60 Done stories verified across Sprints 1 to 5.</p>
+            </div>
+
+            <div class="team-grid">
+              {''.join(team_cards_html)}
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
-  </header>
-
-  <div class="app-container">
-
-    <!-- SECTION 1: OVERVIEW -->
-    <section id="overview" aria-labelledby="overview-heading">
-
-      <!-- How to Answer Banner -->
-      <aside class="how-to-answer-banner" aria-label="How to Answer Guide">
-        <div class="hta-header">
-          <span class="hta-badge">🎯 EXAM ORAL DEFENSE PROTOCOL</span>
-          <h2>How to Answer Any Examiner Question</h2>
-        </div>
-        <div class="hta-flow-box">
-          <p class="hta-flow-sequence"><strong>Answer in this order:</strong> What it does → Why we chose it → Proof → Boundary.</p>
-          <p class="hta-flow-instruction">Search the story ID or topic. Say the blue &ldquo;Say This First&rdquo; sentence. Open lineage only when asked for proof. If incomplete, say the limitation&mdash;never improvise.</p>
-        </div>
-
-        <div class="hta-template-box">
-          <div class="hta-template-title">🗣️ 5-Sentence Rehearsable Answer Pattern</div>
-          <blockquote class="hta-template-quote">
-            <p>&ldquo;This feature lets <strong>[role]</strong> do <strong>[business outcome]</strong>.</p>
-            <p>We chose it because <strong>[requirement/risk]</strong>.</p>
-            <p>The key trade-off was <strong>[alternative rejected]</strong>.</p>
-            <p>We prove it with <strong>[PR/run/code path]</strong>.</p>
-            <p>Its current boundary is <strong>[honest limitation]</strong>.&rdquo;</p>
-          </blockquote>
-          <div class="hta-example-note">
-            <em>Example (Venue Block precision):</em> Do <strong>not</strong> say it &ldquo;prevents blocks over confirmed bookings.&rdquo; State precisely:
-            <em>&ldquo;A venue block can be created over confirmed bookings without being blocked: the block saves, overlapping bookings become Conflicting, and the confirmed event returns to Planning for resolution.&rdquo;</em>
-          </div>
-        </div>
-
-        <div class="hta-legend-row">
-          <span class="legend-title">Legend:</span>
-          <span class="legend-item"><span class="badge badge-status">✅ Done</span> Code, tests, and evidence linked</span>
-          <span class="legend-item"><span class="badge badge-partial">⚠️ Partial</span> Implemented but evidence/gate incomplete</span>
-          <span class="legend-item"><span class="badge badge-defect">🚨 Open defect</span> Not counted as Done</span>
-          <span class="legend-item"><span class="badge badge-decision">📌 Historical decision</span> Context, not proof of delivery</span>
-        </div>
-      </aside>
-
-      <!-- Top Likely Answers Bar -->
-      <div class="top-answers-panel" aria-label="Top Likely Assessment Answers">
-        <div class="top-answers-label">⚡ TOP LIKELY EXAM ANSWERS (ONE-CLICK FILTER):</div>
-        <div class="top-answers-chips">
-          <button type="button" class="top-chip" data-query="safety review">🛡️ Safety Review</button>
-          <button type="button" class="top-chip" data-query="venue loss">🏢 Venue Loss</button>
-          <button type="button" class="top-chip" data-query="booking race">⚡ Booking Race</button>
-          <button type="button" class="top-chip" data-query="tentative holds">⏳ Holds</button>
-          <button type="button" class="top-chip" data-query="attendee capacity">👥 Attendee Capacity</button>
-          <button type="button" class="top-chip" data-query="outbox">📬 Outbox</button>
-          <button type="button" class="top-chip" data-query="scrum velocity">📈 Scrum Velocity</button>
-          <button type="button" class="top-chip" data-query="ai governance">🤖 AI Governance</button>
-          <button type="button" class="top-chip top-chip-defect" data-query="open defect">🚨 Four Defects</button>
-        </div>
-      </div>
-
-      <div class="cockpit-banner">
-        <div class="banner-header">
-          <div class="banner-title">
-            <h1 id="overview-heading">Final Assessment Defense Cockpit</h1>
-            <p class="banner-sub">20-Minute Live Oral Interrogation &amp; Code-Tracing Master Guide · 391 functional story cases + 3 cross-cutting DoD/performance cases = 394 workbook cases · IS212 Software Project Management</p>
-          </div>
-          <div class="banner-badge">
-            <span class="badge badge-status">Release 1 · Evidence Gated</span>
-          </div>
-        </div>
-
-        <div class="kpi-row">
-          <div class="kpi-card">
-            <span class="kpi-val">65</span>
-            <span class="kpi-label">Release 1 User Stories</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-val">394</span>
-            <span class="kpi-label">Workbook Cases (391 Functional + 3 DoD/Perf)</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-val">249</span>
-            <span class="kpi-label">Human Manual Executions</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-val">{len(t_items)}</span>
-            <span class="kpi-label">Team Decisions (T-01..T-108)</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-val">{len(c_items)}</span>
-            <span class="kpi-label">Customer Clarifications (C-01..C-136)</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-val">4</span>
-            <span class="kpi-label">Declared Open Defects</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Known Defects Radar -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">🚨 Declared Open Defects Radar (D-01 to D-04)</h2>
-        <span class="badge badge-defect">Admit honestly · do not count as Done</span>
-      </div>
-      <p class="section-desc">Four known defects are formally tracked in <code>docs/testing/defects.md</code> and committed with expected-failure test declarations. In the oral exam, declare these immediately when asked about coordinator assignment or event copy.</p>
-      <div class="radar-grid">
-        {''.join(defects_html)}
-      </div>
-
-      <!-- C4 Architecture Diagram -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">📐 C4 Architecture: Container Diagram</h2>
-        <span class="badge badge-tag">System Topology</span>
-      </div>
-      <figure class="diagram-panel">
-        <svg viewBox="0 0 960 420" role="img" aria-labelledby="c4-title c4-desc">
-          <title id="c4-title">C4 Container Architecture of ConnectSphere</title>
-          <desc id="c4-desc">ConnectSphere C4 container diagram illustrating the React Single Page Application, Node.js API layer with cookie sessions, Supabase PostgreSQL database with dual public and test schemas, background transactional outbox worker, and external Brevo transactional email API.</desc>
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>
-            </marker>
-          </defs>
-
-          <!-- SPA Container -->
-          <rect x="40" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="160" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Single-Page App</text>
-          <text x="160" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">React 18 · TypeScript · Vite</text>
-          <text x="160" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Organiser · Coordinator · Venue Staff</text>
-          <text x="160" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Tech Staff · Safety Officer · Lead</text>
-          <text x="160" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Same-origin HTTP-only cookies</text>
-
-          <!-- API Gateway Container -->
-          <rect x="360" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#75d6c2" stroke-width="2"/>
-          <text x="480" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">API Server / Serverless</text>
-          <text x="480" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">Node.js 20 · TypeScript</text>
-          <text x="480" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Role-based Access Middleware</text>
-          <text x="480" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Optimistic Revision Checks</text>
-          <text x="480" y="190" fill="#78a7ff" font-size="11" text-anchor="middle">Atomic Savepoints &amp; Rollbacks</text>
-
-          <!-- Database Container -->
-          <rect x="680" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="800" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Database</text>
-          <text x="800" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">PostgreSQL 17 (Supabase)</text>
-          <text x="800" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Dual 'public' and 'test' schemas</text>
-          <text x="800" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Exclusion Constraints (0016)</text>
-          <text x="800" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Row-Level Security (RLS)</text>
-
-          <!-- Outbox Relay Worker -->
-          <rect x="360" y="270" width="240" height="100" rx="10" fill="#1f3445" stroke="#2c4559" stroke-width="2"/>
-          <text x="480" y="300" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Outbox Relay Worker</text>
-          <text x="480" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Background Dispatch Daemon</text>
-          <text x="480" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Polls notification_outbox table</text>
-
-          <!-- External Brevo Service -->
-          <rect x="680" y="270" width="240" height="100" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="800" y="300" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">External Brevo API</text>
-          <text x="800" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Transactional Email Provider</text>
-          <text x="800" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Offline intercepted in CI</text>
-
-          <!-- Connecting Arrows -->
-          <line x1="280" y1="135" x2="360" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="320" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">HTTPS</text>
-
-          <line x1="600" y1="135" x2="680" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="640" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">TCP/SSL</text>
-
-          <line x1="480" y1="210" x2="480" y2="270" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="515" y="245" fill="#9db2c4" font-size="10" text-anchor="middle">Persists</text>
-
-          <line x1="600" y1="320" x2="680" y2="320" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>
-          <text x="640" y="310" fill="#9db2c4" font-size="10" text-anchor="middle">REST</text>
-        </svg>
-        <figcaption class="diagram-caption">Figure 1.1: ConnectSphere C4 Container Architecture showing isolation of transactional state from external Brevo delivery.</figcaption>
-      </figure>
-
-      <!-- Role Accountability Matrix -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">👥 Team Role Accountability Matrix</h2>
-        <span class="badge badge-tag">Who Owns What</span>
-      </div>
-      <p class="section-desc">Individual accountability mapped to canonical git commits, PR reviews, and live oral defense areas.</p>
-      <div class="team-grid">
-        {''.join(f"""
-        <div class="team-card">
-          <div class="team-name">{m['name']}</div>
-          <div class="team-role">{m['role']}</div>
-          <p class="team-pitch">"{m['pitch']}"</p>
-          <div style="margin-top: 8px; font-size: 11px; color: var(--cyan);"><strong>Owned Stories:</strong> {m['stories']}</div>
-        </div>
-        """ for m in team_members)}
-      </div>
-    </section>
-
-
-    <!-- SECTION 2: DETAILS -->
-    <section id="details" aria-labelledby="details-heading">
-      <div class="section-title-wrap">
-        <h2 class="section-title" id="details-heading">⚔️ 12 High-Risk Topic Dossiers</h2>
-        <span class="badge badge-status">High-Frequency Exam Targets</span>
-      </div>
-      <p class="section-desc">The top 12 technical battlegrounds examiners probe during code tracing. Memorize the <strong>Say This First</strong> hook for immediate oral control.</p>
-
-      <div class="dossier-grid-layout">
-        {''.join(dossiers_html)}
-      </div>
-
-      <!-- Event State Machine Diagram -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">🔄 Event Lifecycle State Machine</h2>
-        <span class="badge badge-tag">Lifecycle Protocol</span>
-      </div>
-      <figure class="diagram-panel">
-        <svg viewBox="0 0 960 420" role="img" aria-labelledby="fsm-title fsm-desc">
-          <title id="fsm-title">Event Lifecycle State Machine</title>
-          <desc id="fsm-desc">Comprehensive event lifecycle state machine showing transitions through Draft, Submitted, Under Review, Approved, Planning, Safety Review, Confirmed, Completed, and Cancelled, along with reversion and replacement loops for venue loss.</desc>
-          <defs>
-            <marker id="fsm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>
-            </marker>
-          </defs>
-
-          <!-- States -->
-          <rect x="30" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="85" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Draft</text>
-
-          <rect x="180" y="60" width="120" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="240" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Submitted</text>
-
-          <rect x="340" y="60" width="130" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="405" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Under Review</text>
-
-          <rect x="510" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="565" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Approved</text>
-
-          <rect x="660" y="60" width="110" height="50" rx="8" fill="#1f3445" stroke="#75d6c2" stroke-width="2"/>
-          <text x="715" y="90" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Planning</text>
-
-          <rect x="810" y="60" width="120" height="50" rx="8" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>
-          <text x="870" y="90" fill="#ffd166" font-size="14" font-weight="bold" text-anchor="middle">Safety Review</text>
-
-          <rect x="810" y="240" width="120" height="50" rx="8" fill="#1f3445" stroke="#48bb78" stroke-width="2"/>
-          <text x="870" y="270" fill="#48bb78" font-size="14" font-weight="bold" text-anchor="middle">Confirmed</text>
-
-          <rect x="550" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#78a7ff" stroke-width="2"/>
-          <text x="610" y="270" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">Completed</text>
-
-          <rect x="340" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#ff9f9f" stroke-width="2"/>
-          <text x="400" y="270" fill="#ff9f9f" font-size="14" font-weight="bold" text-anchor="middle">Cancelled</text>
-
-          <!-- State Transitions -->
-          <line x1="140" y1="85" x2="180" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <line x1="300" y1="85" x2="340" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <line x1="470" y1="85" x2="510" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <line x1="620" y1="85" x2="660" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <text x="640" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">1st booking</text>
-
-          <line x1="770" y1="85" x2="810" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <text x="790" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">All Ready</text>
-
-          <line x1="870" y1="110" x2="870" y2="240" stroke="#48bb78" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <text x="915" y="175" fill="#48bb78" font-size="10" text-anchor="middle">Approved (T-107)</text>
-
-          <!-- Reversion & Venue Loss Loop -->
-          <path d="M810 270 Q715 340 715 115" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>
-          <text x="745" y="325" fill="#ffd166" font-size="10" text-anchor="middle">Venue Loss / Revert (T-81/T-28)</text>
-
-          <!-- Safety Rejection Loop -->
-          <path d="M840 60 Q790 20 740 60" fill="none" stroke="#ff9f9f" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <text x="790" y="32" fill="#ff9f9f" font-size="9" text-anchor="middle">Safety Rejection (Changes Requested)</text>
-
-          <!-- Terminal Transitions -->
-          <line x1="810" y1="265" x2="670" y2="265" stroke="#78a7ff" stroke-width="2" marker-end="url(#fsm-arrow)"/>
-          <text x="740" y="255" fill="#9db2c4" font-size="9" text-anchor="middle">End of last session</text>
-
-          <path d="M715 110 L430 240" fill="none" stroke="#ff9f9f" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>
-          <text x="560" y="195" fill="#ff9f9f" font-size="10" text-anchor="middle">Coordinator / Organiser Cancel (E10-S04)</text>
-        </svg>
-        <figcaption class="diagram-caption">Figure 2.1: Lifecycle state machine including Safety Review and automatic Confirmed → Planning reversion on venue loss.</figcaption>
-      </figure>
-
-      <!-- Concurrency Lock Hierarchy Diagram -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">🔒 Concurrency Lock Hierarchy (PR #239 Deadlock Solution)</h2>
-        <span class="badge badge-tag">Database Lock Order</span>
-      </div>
-      <figure class="diagram-panel">
-        <svg viewBox="0 0 960 380" role="img" aria-labelledby="lock-title lock-desc">
-          <title id="lock-title">PostgreSQL Concurrency Lock Order and Hierarchy</title>
-          <desc id="lock-desc">Database concurrency lock hierarchy diagram displaying top-down lock ordering from Events FOR UPDATE, Event Sessions FOR UPDATE, Venues FOR NO KEY UPDATE, Venue Bookings FOR UPDATE, Support Requests FOR UPDATE, down to Users FOR NO KEY UPDATE from PR #239 preventing 40P01 deadlocks.</desc>
-          <defs>
-            <marker id="lock-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M0 0L10 5L0 10z" fill="#ffd166"/>
-            </marker>
-          </defs>
-
-          <!-- Level 1 -->
-          <rect x="340" y="20" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>
-          <text x="480" y="47" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">1. events (FOR UPDATE)</text>
-
-          <!-- Level 2 -->
-          <rect x="340" y="90" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>
-          <text x="480" y="117" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">2. event_sessions (FOR UPDATE)</text>
-
-          <!-- Level 3 -->
-          <rect x="180" y="170" width="280" height="45" rx="6" fill="#1f3445" stroke="#78a7ff" stroke-width="2"/>
-          <text x="320" y="197" fill="#78a7ff" font-size="13" font-weight="bold" text-anchor="middle">3A. venues (FOR NO KEY UPDATE)</text>
-
-          <rect x="500" y="170" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>
-          <text x="640" y="197" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">3B. support_requests (FOR UPDATE)</text>
-
-          <!-- Level 4 -->
-          <rect x="180" y="250" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>
-          <text x="320" y="277" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">4A. venue_bookings (FOR UPDATE)</text>
-
-          <rect x="500" y="250" width="280" height="45" rx="6" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>
-          <text x="640" y="277" fill="#ffd166" font-size="13" font-weight="bold" text-anchor="middle">4B. users (FOR NO KEY UPDATE) [PR #239]</text>
-
-          <!-- Level 5 -->
-          <rect x="340" y="325" width="280" height="40" rx="6" fill="#172733" stroke="#2c4559" stroke-width="2"/>
-          <text x="480" y="350" fill="#9db2c4" font-size="12" text-anchor="middle">5. notification_outbox (Atomic Insert)</text>
-
-          <!-- Arrows -->
-          <line x1="480" y1="65" x2="480" y2="90" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>
-          <line x1="420" y1="135" x2="350" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>
-          <line x1="540" y1="135" x2="610" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>
-          <line x1="320" y1="215" x2="320" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>
-          <line x1="640" y1="215" x2="640" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>
-        </svg>
-        <figcaption class="diagram-caption">Figure 2.2: Strict top-down lock hierarchy. Step 4B locks technician user rows FOR NO KEY UPDATE, eliminating 40P01 exclusion deadlocks.</figcaption>
-      </figure>
-
-      <!-- Agile Velocity Grouped Bar Chart -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">📊 Agile Velocity Reconciliation (Sprints 1 to 4)</h2>
-        <span class="badge badge-tag">Metric Integrity</span>
-      </div>
-      <p class="section-desc">Comparing Jira reported chart points (43.7 avg) vs Fair Product Story Title Audit (32.7 avg) vs Strict DoD verified delivery (21.3 avg) per <code>docs/plans/sprint-audit-reconciliation-20261103.md</code>.</p>
-      <figure class="diagram-panel">
-        <svg viewBox="0 0 960 300" role="img" aria-labelledby="vel-title vel-desc">
-          <title id="vel-title">Reconciled Agile Velocity Comparison Across Sprints 1 to 4</title>
-          <desc id="vel-desc">Grouped bar chart comparing reported Jira chart velocity, fair product-story title audit velocity, and strict Definition of Done verified velocity across Sprint 1, Sprint 2, Sprint 3, and Sprint 4.</desc>
-
-          <!-- Axis lines -->
-          <line x1="80" y1="230" x2="900" y2="230" stroke="#2c4559" stroke-width="1"/>
-          <line x1="80" y1="160" x2="900" y2="160" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>
-          <line x1="80" y1="90" x2="900" y2="90" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>
-          <line x1="80" y1="20" x2="900" y2="20" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>
-
-          <text x="65" y="235" fill="#9db2c4" font-size="12" text-anchor="end">0</text>
-          <text x="65" y="165" fill="#9db2c4" font-size="12" text-anchor="end">25</text>
-          <text x="65" y="95" fill="#9db2c4" font-size="12" text-anchor="end">50</text>
-          <text x="65" y="25" fill="#9db2c4" font-size="12" text-anchor="end">75</text>
-
-          <!-- Sprint 1 Group (Base X: 120) -->
-          <rect x="120" y="143" width="30" height="87" fill="#ffd166" rx="3"/>
-          <text x="135" y="137" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">31</text>
-          <rect x="155" y="163" width="30" height="67" fill="#78a7ff" rx="3"/>
-          <text x="170" y="157" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">24</text>
-          <rect x="190" y="163" width="30" height="67" fill="#75d6c2" rx="3"/>
-          <text x="205" y="157" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">24</text>
-          <text x="170" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 1</text>
-
-          <!-- Sprint 2 Group (Base X: 320) -->
-          <rect x="320" y="45" width="30" height="185" fill="#ffd166" rx="3"/>
-          <text x="335" y="39" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">66</text>
-          <rect x="355" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>
-          <text x="370" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>
-          <rect x="390" y="199" width="30" height="31" fill="#75d6c2" rx="3"/>
-          <text x="405" y="193" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">11</text>
-          <text x="370" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 2</text>
-
-          <!-- Sprint 3 Group (Base X: 520) -->
-          <rect x="520" y="135" width="30" height="95" fill="#ffd166" rx="3"/>
-          <text x="535" y="129" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">34</text>
-          <rect x="555" y="135" width="30" height="95" fill="#78a7ff" rx="3"/>
-          <text x="570" y="129" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">34</text>
-          <rect x="590" y="149" width="30" height="81" fill="#75d6c2" rx="3"/>
-          <text x="605" y="143" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">29</text>
-          <text x="570" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 3</text>
-
-          <!-- Sprint 4 Group (Base X: 720) -->
-          <rect x="720" y="82" width="30" height="148" fill="#ffd166" rx="3"/>
-          <text x="735" y="76" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">53</text>
-          <rect x="745" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>
-          <text x="760" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>
-          <rect x="770" y="143" width="30" height="87" fill="#75d6c2" rx="3"/>
-          <text x="785" y="137" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">31</text>
-          <text x="760" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 4</text>
-
-          <!-- Legend -->
-          <rect x="260" y="278" width="12" height="12" fill="#ffd166" rx="2"/>
-          <text x="280" y="289" fill="#9db2c4" font-size="11">Jira Chart (43.7 avg)</text>
-          <rect x="440" y="278" width="12" height="12" fill="#78a7ff" rx="2"/>
-          <text x="460" y="289" fill="#9db2c4" font-size="11">Product Title Audit (32.7 avg)</text>
-          <rect x="650" y="278" width="12" height="12" fill="#75d6c2" rx="2"/>
-          <text x="670" y="289" fill="#9db2c4" font-size="11">Strict DoD Evidence (21.3 avg)</text>
-        </svg>
-        <figcaption class="diagram-caption">Figure 2.3: Reconciled Agile velocity comparison proving we never inflated numbers or rewrote sprint history.</figcaption>
-      </figure>
-
-      <!-- All 65 Release 1 Stories Deep Archive -->
-      <div class="section-title-wrap">
-        <h2 class="section-title">📚 Deep Archive: All 65 Release 1 Stories</h2>
-        <span class="badge badge-tag">Searchable Lineage</span>
-      </div>
-      <p class="section-desc">Searchable database of every user story in Release 1. Click <strong>[Expand Full Lineage]</strong> on any card to trace its Given-When-Then AC, database table, routes, controller, and associated test cases.</p>
-
-      <div class="story-list" id="story-archive-list">
-        {''.join(story_cards_html)}
-      </div>
-
-      <!-- Team Decisions Register -->
-      <div class="section-title-wrap" style="margin-top: 40px;">
-        <h2 class="section-title">⚖️ Team Decisions Register (T-01 to T-108)</h2>
-        <span class="badge badge-tag">{len(t_items)} Canonical Decisions</span>
-      </div>
-      <p class="section-desc">Full register of engineering architecture and workflow decisions from <code>docs/bdr/B-team-decisions.md</code>. Searchable via ID (e.g. <code>T-79</code>, <code>T-92</code>, <code>T-84</code>) or keyword.</p>
-      <details class="bdr-container-drawer" id="team-decisions-details">
-        <summary class="bdr-drawer-toggle">📋 View All {len(t_items)} Team Decisions (Click to Expand / Instant Search)</summary>
-        <div class="bdr-grid">
-          {''.join(decisions_cards_html)}
-        </div>
-      </details>
-
-      <!-- Customer Clarifications Register -->
-      <div class="section-title-wrap" style="margin-top: 32px;">
-        <h2 class="section-title">💬 Customer Clarifications Register (C-01 to C-136)</h2>
-        <span class="badge badge-tag">{len(c_items)} Clarifications</span>
-      </div>
-      <p class="section-desc">Authoritative stakeholder requirements clarifications from <code>docs/bdr/A-customer-clarifications.md</code>. Searchable via ID (e.g. <code>C-107</code>, <code>C-62</code>, <code>C-01</code>) or keyword.</p>
-      <details class="bdr-container-drawer" id="clarifications-details">
-        <summary class="bdr-drawer-toggle">💬 View All {len(c_items)} Customer Clarifications (Click to Expand / Instant Search)</summary>
-        <div class="bdr-grid">
-          {''.join(clarifications_cards_html)}
-        </div>
-      </details>
-    </section>
-
-
-    <!-- SECTION 3: NEXT STEPS -->
-    <section id="next-steps" aria-labelledby="next-heading">
-      <div class="section-title-wrap">
-        <h2 class="section-title" id="next-heading">🎯 20-Minute Exam Drill &amp; Defense Runbook</h2>
-        <span class="badge badge-status">Oral Protocol</span>
-      </div>
-
-      <div class="protocol-card">
-        <div class="protocol-title">Protocol 1: 45-Second Random Story Lookup Drill</div>
-        <p style="margin-bottom: 8px;">When the examiner names an arbitrary story (e.g. "Walk me through SCRUM-47 or E06-S03"):</p>
-        <ol>
-          <li>Type <code>e6s3</code> or <code>SCRUM-47</code> into the sticky Proof Router search header.</li>
-          <li>Recite the <strong>SAY THIS FIRST</strong> elevator hook word-for-word in 10 seconds.</li>
-          <li>Click <strong>[Expand Full Lineage]</strong> to display the exact database migration (<code>0019_venue_bookings_contract.sql</code>) and controller (<code>bookingRequests.ts</code>).</li>
-          <li>Cite the live test case: "We verify this in <code>backend/tests/venueBookingRequests.test.ts</code> under <code>TC_E06S03_01</code>."</li>
-        </ol>
-      </div>
-
-      <div class="protocol-card">
-        <div class="protocol-title">Protocol 2: Handling Concurrency &amp; Race Condition Questions</div>
-        <p style="margin-bottom: 8px;">When the examiner asks "How do you prevent race conditions when two people book the same slot at the exact same millisecond?":</p>
-        <ul>
-          <li>State the isolation mechanism: "We use PostgreSQL 17 exclusion constraints with GiST indexes in migration <code>0016_venue_buffer_write_guard.sql</code>."</li>
-          <li>Quote the lock hierarchy: "For technician staffing, PR #239 prevents 40P01 deadlocks by locking the request <code>FOR UPDATE</code> and the technician user row <code>FOR NO KEY UPDATE</code>."</li>
-          <li>Offer proof: "We prove this with a 25-round real PostgreSQL concurrent race test in <code>backend/tests/staffAssignments.integration.test.ts</code>."</li>
-        </ul>
-      </div>
-
-      <div class="protocol-card">
-        <div class="protocol-title">Protocol 3: Gracefully Admitting Known Defects (D-01 to D-04)</div>
-        <p style="margin-bottom: 8px;">If asked about Coordinator Lead queue or copying an event:</p>
-        <ul>
-          <li>Never bluff or claim it works: "That is tracked as formal open defect D-01 (SCRUM-256) in <code>docs/testing/defects.md</code>."</li>
-          <li>Explain the root cause cleanly: "The Lead queue and reassignment routes were developed on <code>feature/SCRUM-153</code> but were unmerged before sprint freeze to protect stability."</li>
-          <li>Demonstrate professional maturity: "Rather than claiming false Done, we committed expected-failure tests (<code>test.fail</code>) so the suite stays green while the defect remains transparently visible."</li>
-        </ul>
-      </div>
-
-      <div class="protocol-card">
-        <div class="protocol-title">Protocol 4: Offline Readiness &amp; Emergency Fallback</div>
-        <p style="margin-bottom: 8px;">In the event of room Wi-Fi failure during the assessment:</p>
-        <ul>
-          <li>This Postplan Web App is 100% self-contained with zero external CSS, fonts, CDNs, or network scripts.</li>
-          <li>Simply open <code>artifacts/final-qna-prep-guide.html</code> directly in Chrome or Edge locally; instant local search for this static guide functions completely offline.</li>
-          <li>All test cases, scenarios, and architecture proofs remain fully accessible offline. Note that outbound GitHub and Jira links require internet connectivity and appropriate SSO authentication.</li>
-        </ul>
-      </div>
-
-      <div class="protocol-card" id="protocol-scrum-velocity" data-search="scrum velocity story points velocity reconciliation agile delivery burndown t-34 t-73 t-96">
-        <div class="protocol-title">Protocol 5: Defending Scrum Velocity &amp; Delivery Accountability</div>
-        <p style="margin-bottom: 8px;">When asked "Why does your velocity vary across sprints, and why does Jira differ from your audit?":</p>
-        <ul>
-          <li>State the honest metric: "Raw Jira charts were distorted by unestimated subtasks and technical enablers. We conducted an independent product-story title audit (T-96) to establish true velocity across Sprints 1 to 4."</li>
-          <li>Emphasize DoD governance: "Per team decision T-73, in-flight sprint commitments are not retroactively inflated. We only count user stories verified against the strict Definition of Done."</li>
-          <li>Cite the proof: "Figure 2.3 in Section 01 reconciles Jira chart velocity, fair story audit velocity, and strict DoD verified velocity."</li>
-        </ul>
-      </div>
-
-      <div class="protocol-card" id="protocol-ai-governance" data-search="ai governance ai-governance human review test integrity llm accountability t-65 t-93">
-        <div class="protocol-title">Protocol 6: Defending AI Governance &amp; Test Accountability</div>
-        <p style="margin-bottom: 8px;">When asked "How do you ensure AI-generated code and tests are trustworthy and not fabricated?":</p>
-        <ul>
-          <li>Quote the golden rule: "Per instructor guidance and team decision T-65, every test run is captured in immutable execution records under <code>docs/testing/runs/</code> with git commit and runner attribution."</li>
-          <li>Human manual evidence only: "Per decision T-93, all screenshots must be hand-taken by human testers in step order; AI-fabricated screenshots are strictly prohibited."</li>
-          <li>Zero rubber-stamping: "All AI-generated code and unit tests must achieve 100% code coverage on modified lines and undergo manual peer review before pull request approval."</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Page Footer -->
-    <footer class="page-footer">
-      <span>ConnectSphere · IS212 Software Project Management</span>
-      <span>Autonomous Postplan Manifest · 0 External Dependencies</span>
-    </footer>
-
   </div>
 
-  <!-- Real-time Proof Router JavaScript -->
   <script>
     (function() {{
-      const searchInput = document.getElementById('global-search');
-      const searchCount = document.getElementById('search-count');
-      const clearBtn = document.getElementById('search-clear-btn');
-      const storyCards = document.querySelectorAll('.story-card');
-      const dossierCards = document.querySelectorAll('.dossier-card');
-      const defectCards = document.querySelectorAll('.defect-card');
-      const decisionCards = document.querySelectorAll('.decision-card');
-      const clarificationCards = document.querySelectorAll('.clarification-card');
-      const protocolCards = document.querySelectorAll('.protocol-card[data-search]');
-      const decisionsDrawer = document.getElementById('team-decisions-details');
-      const clarificationsDrawer = document.getElementById('clarifications-details');
+      // DOM Elements
+      const sidebar = document.getElementById('app-sidebar');
+      const drawerToggle = document.getElementById('drawer-toggle');
+      const drawerClose = document.getElementById('drawer-close');
+      const drawerBackdrop = document.getElementById('drawer-backdrop');
+      const viewTitle = document.getElementById('current-view-title');
+      const navTabs = document.querySelectorAll('.nav-tab');
+      const viewPanels = document.querySelectorAll('.view-panel');
 
-      function filterAll() {{
-        const rawQuery = searchInput.value.trim().toLowerCase();
-        const cleanQuery = rawQuery.replace(/[^a-z0-9]/g, '');
+      // Drawer Open / Close
+      function openDrawer() {{
+        if (sidebar) sidebar.classList.add('open');
+        if (drawerBackdrop) drawerBackdrop.classList.add('active');
+        if (drawerToggle) drawerToggle.setAttribute('aria-expanded', 'true');
+      }}
+      function closeDrawer() {{
+        if (sidebar) sidebar.classList.remove('open');
+        if (drawerBackdrop) drawerBackdrop.classList.remove('active');
+        if (drawerToggle) drawerToggle.setAttribute('aria-expanded', 'false');
+      }}
+      if (drawerToggle) drawerToggle.addEventListener('click', openDrawer);
+      if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+      if (drawerBackdrop) drawerBackdrop.addEventListener('click', closeDrawer);
 
-        if (!rawQuery) {{
-          storyCards.forEach(c => {{
-            c.style.display = '';
-            const d = c.querySelector('.story-lineage-drawer');
-            if (d) d.open = false;
-          }});
-          dossierCards.forEach(c => c.style.display = '');
-          defectCards.forEach(c => c.style.display = '');
-          decisionCards.forEach(c => c.style.display = '');
-          clarificationCards.forEach(c => c.style.display = '');
-          protocolCards.forEach(c => c.style.display = '');
-          if (decisionsDrawer) decisionsDrawer.open = false;
-          if (clarificationsDrawer) clarificationsDrawer.open = false;
-          if (searchCount) searchCount.textContent = 'All 65 Stories · 391 functional + 3 cross-cutting = 394 cases · ' + decisionCards.length + ' Decisions · ' + clarificationCards.length + ' Clarifications';
-          return;
-        }}
+      // View Switching
+      function switchView(viewId) {{
+        const targetPanel = document.getElementById(viewId);
+        if (!targetPanel) return;
 
-        let matchCount = 0;
-        let matchedStories = [];
-
-        // Exact identifier match check (e.g., e5s4, e05-s04, scrum-43, tc_e07s07_03, pr-239, pr239, d-01)
-        const isExactIdentifierQuery = /^(e\\d{{1,2}}-?s\\d{{1,2}}|scrum-?\\d+|tc_e\\d+s\\d+_\\d+|pr-?\\d+|d-0[1-4]|t-\\d+|c-\\d+)$/i.test(rawQuery);
-
-        // Filter Story Cards
-        storyCards.forEach(card => {{
-          const sid = (card.getAttribute('data-sid') || '').toLowerCase();
-          const alias = (card.getAttribute('data-alias') || '').toLowerCase();
-          const searchData = (card.getAttribute('data-search') || '').toLowerCase();
-
-          const aliasList = alias.split(/\\s+/);
-          const matchExact = sid === rawQuery || sid.replace('-', '') === cleanQuery || aliasList.includes(rawQuery) || (cleanQuery && aliasList.includes(cleanQuery));
-          const matchSubstring = sid.includes(rawQuery) || alias.includes(rawQuery) || searchData.includes(rawQuery) || (cleanQuery && searchData.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          const match = matchExact || matchSubstring;
-
-          card.style.display = match ? '' : 'none';
-          const d = card.querySelector('.story-lineage-drawer');
-          if (d) d.open = false; // default to compact!
-
-          if (match) {{
-            matchCount++;
-            matchedStories.push({{ card, drawer: d, isExact: matchExact }});
+        // Update tabs
+        navTabs.forEach(tab => {{
+          if (tab.getAttribute('data-view') === viewId) {{
+            tab.classList.add('active');
+            const spanText = tab.querySelector('span:last-child');
+            const iconText = tab.querySelector('.nav-tab-icon');
+            if (viewTitle && spanText) {{
+              viewTitle.textContent = (iconText ? iconText.textContent + ' ' : '') + spanText.textContent;
+            }}
+          }} else {{
+            tab.classList.remove('active');
           }}
         }});
 
-        // Baby-proof auto-expand rule:
-        // - One exact story/PR/TC match: auto-expand it.
-        // - Multiple matches: show compact result cards only.
-        if (matchedStories.length === 1) {{
-          if (matchedStories[0].drawer) {{
-            matchedStories[0].drawer.open = true;
+        // Update panels
+        viewPanels.forEach(panel => {{
+          if (panel.id === viewId) {{
+            panel.style.display = 'block';
+            panel.classList.add('active');
+          }} else {{
+            panel.style.display = 'none';
+            panel.classList.remove('active');
           }}
-        }} else if (isExactIdentifierQuery) {{
-          const exacts = matchedStories.filter(m => m.isExact);
-          if (exacts.length === 1 && exacts[0].drawer) {{
-            exacts[0].drawer.open = true;
-          }}
-        }}
-
-        // Filter Dossier Cards
-        dossierCards.forEach(card => {{
-          const alias = (card.getAttribute('data-alias') || '').toLowerCase();
-          const searchData = (card.getAttribute('data-search') || '').toLowerCase();
-          const match = alias.includes(rawQuery) || searchData.includes(rawQuery) || (cleanQuery && alias.includes(cleanQuery)) || (cleanQuery && searchData.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          card.style.display = match ? '' : 'none';
-          if (match) matchCount++;
         }});
 
-        // Filter Defect Cards
-        defectCards.forEach(card => {{
-          const text = (card.getAttribute('data-search') || card.textContent).toLowerCase();
-          const match = text.includes(rawQuery) || (cleanQuery && text.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          card.style.display = match ? '' : 'none';
-          if (match) matchCount++;
-        }});
-
-        // Filter Decision Cards
-        decisionCards.forEach(card => {{
-          const tid = (card.getAttribute('data-tid') || '').toLowerCase();
-          const alias = (card.getAttribute('data-alias') || '').toLowerCase();
-          const searchData = (card.getAttribute('data-search') || '').toLowerCase();
-          const match = tid.includes(rawQuery) || alias.includes(rawQuery) || searchData.includes(rawQuery) || (cleanQuery && alias.includes(cleanQuery)) || (cleanQuery && searchData.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          card.style.display = match ? '' : 'none';
-          if (match) matchCount++;
-        }});
-
-        // Filter Clarification Cards
-        clarificationCards.forEach(card => {{
-          const cid = (card.getAttribute('data-cid') || '').toLowerCase();
-          const alias = (card.getAttribute('data-alias') || '').toLowerCase();
-          const searchData = (card.getAttribute('data-search') || '').toLowerCase();
-          const match = cid.includes(rawQuery) || alias.includes(rawQuery) || searchData.includes(rawQuery) || (cleanQuery && alias.includes(cleanQuery)) || (cleanQuery && searchData.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          card.style.display = match ? '' : 'none';
-          if (match) matchCount++;
-        }});
-
-        // Filter Defense Protocol Cards
-        protocolCards.forEach(card => {{
-          const text = (card.getAttribute('data-search') || card.textContent).toLowerCase();
-          const match = text.includes(rawQuery) || (cleanQuery && text.replace(/[^a-z0-9]/g, '').includes(cleanQuery));
-          card.style.display = match ? '' : 'none';
-          if (match) matchCount++;
-        }});
-
-        // Never auto-open the full decisions or clarifications archive!
-        if (decisionsDrawer) decisionsDrawer.open = false;
-        if (clarificationsDrawer) clarificationsDrawer.open = false;
-
-        if (searchCount) {{
-          searchCount.textContent = matchCount + (matchCount === 1 ? ' match' : ' matches') + ' for "' + rawQuery + '"';
-        }}
+        closeDrawer();
+        window.scrollTo({{ top: 0, behavior: 'smooth' }});
       }}
 
-      // Top likely answers quick jump chips
-      document.querySelectorAll('.top-chip').forEach(btn => {{
-        btn.addEventListener('click', () => {{
-          const q = btn.getAttribute('data-query');
-          searchInput.value = q;
-          filterAll();
-          searchInput.focus();
+      navTabs.forEach(tab => {{
+        tab.addEventListener('click', () => {{
+          const vid = tab.getAttribute('data-view');
+          if (vid) switchView(vid);
         }});
       }});
 
-      searchInput.addEventListener('input', filterAll);
-      if (clearBtn) {{
-        clearBtn.addEventListener('click', () => {{
-          searchInput.value = '';
-          filterAll();
-          searchInput.focus();
+      // --- Vault Filter Helper ---
+      function setVaultFilter(filterName) {{
+        currentVaultFilter = filterName;
+        const vChips = document.querySelectorAll('.vault-filter-chip');
+        vChips.forEach(c => {{
+          if (c.getAttribute('data-vault-filter') === filterName) {{
+            c.classList.add('active');
+          }} else {{
+            c.classList.remove('active');
+          }}
         }});
       }}
 
-      window.addEventListener('keydown', function(e) {{
-        if ((e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) && document.activeElement !== searchInput) {{
+      // Anchor Links & Deep Linking
+      function handleTargetId(rawId) {{
+        if (!rawId) return;
+        const targetId = rawId.trim();
+        if (targetId === 'overview') {{
+          switchView('view-how-to-answer');
+          return;
+        }}
+        if (targetId === 'details') {{
+          switchView('view-defects-radar');
+          return;
+        }}
+        if (targetId === 'next-steps') {{
+          switchView('view-runbook');
+          return;
+        }}
+
+        const lowerId = targetId.toLowerCase();
+        let targetEl = document.getElementById(targetId) || document.getElementById(lowerId);
+
+        // Fallback for ADR variations e.g. #ADR-018 or #adr-018 -> #adr-ADR-018
+        if (!targetEl && lowerId.startsWith('adr-')) {{
+          const num = targetId.split('-').pop();
+          if (num) {{
+            const padded = num.padStart(3, '0');
+            targetEl = document.getElementById('adr-ADR-' + padded) || document.getElementById('adr-' + padded);
+          }}
+        }}
+
+        if (!targetEl) return;
+
+        // Check which panel contains targetEl
+        const panel = targetEl.closest('.view-panel');
+        if (panel) {{
+          switchView(panel.id);
+
+          if (panel.id === 'view-vault') {{
+            if (lowerId.startsWith('clarification-')) {{
+              setVaultFilter('clarification');
+            }} else if (lowerId.startsWith('decision-')) {{
+              setVaultFilter('decision');
+            }} else if (lowerId.startsWith('adr-')) {{
+              setVaultFilter('adr');
+            }} else {{
+              setVaultFilter('all');
+            }}
+            const vInp = document.getElementById('vault-search-input');
+            if (vInp) vInp.value = '';
+            filterVault();
+          }} else if (panel.id === 'view-stories') {{
+            targetEl.style.display = 'block';
+            const drawer = targetEl.querySelector('.story-lineage-drawer');
+            if (drawer) drawer.open = true;
+          }} else if (panel.id === 'view-dossiers') {{
+            targetEl.style.display = 'block';
+          }}
+
+          setTimeout(() => {{
+            targetEl.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+            targetEl.classList.remove('target-highlight');
+            void targetEl.offsetWidth; // trigger reflow
+            targetEl.classList.add('target-highlight');
+          }}, 80);
+        }}
+      }}
+
+      window.addEventListener('hashchange', () => {{
+        const hash = window.location.hash.replace('#', '');
+        handleTargetId(hash);
+      }});
+
+      document.addEventListener('click', (e) => {{
+        const link = e.target.closest('a');
+        if (link) {{
+          const href = link.getAttribute('href');
+          if (href && href.startsWith('#')) {{
+            const tid = href.slice(1);
+            handleTargetId(tid);
+          }}
+        }}
+      }});
+
+      // Initial view check on load
+      if (window.location.hash) {{
+        handleTargetId(window.location.hash.replace('#', ''));
+      }}
+
+      // --- Dossier Category Filtering & Quick Jump ---
+      const dossierChips = document.querySelectorAll('.dossier-filter-chip');
+      const dossierJumps = document.querySelectorAll('.dossier-jump-chip');
+      const dossierCards = document.querySelectorAll('.dossier-card');
+      const dossierMeta = document.getElementById('dossier-meta');
+      let currentDossierFilter = 'all';
+
+      function filterDossiers() {{
+        let visibleCount = 0;
+        dossierCards.forEach(card => {{
+          const cat = card.getAttribute('data-category') || '';
+          if (currentDossierFilter === 'all' || cat === currentDossierFilter) {{
+            card.style.display = 'block';
+            visibleCount++;
+          }} else {{
+            card.style.display = 'none';
+          }}
+        }});
+        if (dossierMeta) {{
+          dossierMeta.textContent = `Showing ${{visibleCount}} of ${{dossierCards.length}} topic dossiers`;
+        }}
+      }}
+
+      dossierChips.forEach(chip => {{
+        chip.addEventListener('click', () => {{
+          dossierChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          currentDossierFilter = chip.getAttribute('data-dossier-filter') || 'all';
+          filterDossiers();
+        }});
+      }});
+
+      dossierJumps.forEach(btn => {{
+        btn.addEventListener('click', () => {{
+          const targetId = btn.getAttribute('data-jump');
+          if (!targetId) return;
+          currentDossierFilter = 'all';
+          dossierChips.forEach(c => {{
+            if (c.getAttribute('data-dossier-filter') === 'all') c.classList.add('active');
+            else c.classList.remove('active');
+          }});
+          filterDossiers();
+
+          const targetEl = document.getElementById(targetId);
+          if (targetEl) {{
+            targetEl.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+            targetEl.classList.remove('target-highlight');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('target-highlight');
+          }}
+        }});
+      }});
+
+      // --- Story Search & Filtering ---
+      const storyInput = document.getElementById('story-search-input');
+      const storyClear = document.getElementById('story-search-clear');
+      const storyMeta = document.getElementById('story-search-meta');
+      const storyChips = document.querySelectorAll('.filter-chip');
+      const toggleDrawersBtn = document.getElementById('toggle-all-drawers');
+      const storyCards = document.querySelectorAll('.story-card');
+      let currentStoryFilter = 'all';
+
+      function filterStories() {{
+        const q = (storyInput ? storyInput.value.trim().toLowerCase() : '');
+        let visibleCount = 0;
+
+        storyCards.forEach(card => {{
+          const searchBlob = card.getAttribute('data-search') || '';
+          const alias = card.getAttribute('data-alias') || '';
+          const sid = card.getAttribute('data-sid') || '';
+          const statusType = card.getAttribute('data-status') || '';
+          const text = card.textContent.toLowerCase();
+
+          const matchesQuery = !q || searchBlob.includes(q) || alias.includes(q) || sid.toLowerCase().includes(q) || text.includes(q);
+
+          let matchesFilter = true;
+          if (currentStoryFilter === 'done') {{
+            matchesFilter = (statusType === 'done');
+          }} else if (currentStoryFilter === 'defects') {{
+            matchesFilter = (statusType === 'defect' || statusType === 'partial');
+          }} else if (currentStoryFilter === 'lead') {{
+            matchesFilter = searchBlob.includes('lead');
+          }} else if (currentStoryFilter === 'coordinator') {{
+            matchesFilter = searchBlob.includes('coordinator');
+          }} else if (currentStoryFilter === 'admin') {{
+            matchesFilter = searchBlob.includes('admin');
+          }} else if (currentStoryFilter === 'student') {{
+            matchesFilter = searchBlob.includes('student');
+          }} else if (currentStoryFilter === 'technician') {{
+            matchesFilter = searchBlob.includes('technician');
+          }}
+
+          if (matchesQuery && matchesFilter) {{
+            card.style.display = 'block';
+            visibleCount++;
+            // Auto expand if search active
+            if (q.length > 2) {{
+              const drawer = card.querySelector('.story-lineage-drawer');
+              if (drawer) drawer.open = true;
+            }}
+          }} else {{
+            card.style.display = 'none';
+          }}
+        }});
+
+        if (storyMeta) {{
+          storyMeta.textContent = `Showing ${{visibleCount}} of ${{storyCards.length}} stories`;
+        }}
+      }}
+
+      if (storyInput) storyInput.addEventListener('input', filterStories);
+      if (storyClear) {{
+        storyClear.addEventListener('click', () => {{
+          storyInput.value = '';
+          filterStories();
+          storyInput.focus();
+        }});
+      }}
+      storyChips.forEach(chip => {{
+        chip.addEventListener('click', () => {{
+          storyChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          currentStoryFilter = chip.getAttribute('data-story-filter') || 'all';
+          filterStories();
+        }});
+      }});
+
+      let drawersExpanded = false;
+      if (toggleDrawersBtn) {{
+        toggleDrawersBtn.addEventListener('click', () => {{
+          drawersExpanded = !drawersExpanded;
+          storyCards.forEach(card => {{
+            if (card.style.display !== 'none') {{
+              const drawer = card.querySelector('.story-lineage-drawer');
+              if (drawer) drawer.open = drawersExpanded;
+            }}
+          }});
+          toggleDrawersBtn.textContent = drawersExpanded ? 'Collapse All Details' : 'Expand All Details';
+        }});
+      }}
+
+      // --- Vault Search & Filtering ---
+      const vaultInput = document.getElementById('vault-search-input');
+      const vaultClear = document.getElementById('vault-search-clear');
+      const vaultMeta = document.getElementById('vault-search-meta');
+      const vaultChips = document.querySelectorAll('.vault-filter-chip');
+      const adrCards = document.querySelectorAll('.adr-card');
+      const decisionCards = document.querySelectorAll('.decision-card');
+      const clarificationCards = document.querySelectorAll('.clarification-card');
+      const adrsBlock = document.getElementById('vault-adrs-block');
+      const decisionsBlock = document.getElementById('vault-decisions-block');
+      const clarificationsBlock = document.getElementById('vault-clarifications-block');
+      let currentVaultFilter = 'all';
+
+      function filterVault() {{
+        const q = (vaultInput ? vaultInput.value.trim().toLowerCase() : '');
+        let visibleCount = 0;
+
+        // ADRs
+        let adrVisible = 0;
+        const showAdrs = (currentVaultFilter === 'all' || currentVaultFilter === 'adr');
+        adrCards.forEach(card => {{
+          const blob = card.getAttribute('data-search') || '';
+          if (showAdrs && (!q || blob.includes(q))) {{
+            card.style.display = 'block';
+            adrVisible++;
+          }} else {{
+            card.style.display = 'none';
+          }}
+        }});
+        if (adrsBlock) adrsBlock.style.display = (showAdrs && adrVisible > 0) ? 'block' : 'none';
+
+        // Decisions
+        let decVisible = 0;
+        const showDecs = (currentVaultFilter === 'all' || currentVaultFilter === 'decision');
+        decisionCards.forEach(card => {{
+          const blob = card.getAttribute('data-search') || '';
+          if (showDecs && (!q || blob.includes(q))) {{
+            card.style.display = 'block';
+            decVisible++;
+          }} else {{
+            card.style.display = 'none';
+          }}
+        }});
+        if (decisionsBlock) decisionsBlock.style.display = (showDecs && decVisible > 0) ? 'block' : 'none';
+
+        // Clarifications
+        let clarVisible = 0;
+        const showClars = (currentVaultFilter === 'all' || currentVaultFilter === 'clarification');
+        clarificationCards.forEach(card => {{
+          const blob = card.getAttribute('data-search') || '';
+          if (showClars && (!q || blob.includes(q))) {{
+            card.style.display = 'block';
+            clarVisible++;
+          }} else {{
+            card.style.display = 'none';
+          }}
+        }});
+        if (clarificationsBlock) clarificationsBlock.style.display = (showClars && clarVisible > 0) ? 'block' : 'none';
+
+        visibleCount = adrVisible + decVisible + clarVisible;
+        if (vaultMeta) {{
+          vaultMeta.textContent = `Showing ${{visibleCount}} of 262 vault entries`;
+        }}
+      }}
+
+      if (vaultInput) vaultInput.addEventListener('input', filterVault);
+      if (vaultClear) {{
+        vaultClear.addEventListener('click', () => {{
+          vaultInput.value = '';
+          filterVault();
+          vaultInput.focus();
+        }});
+      }}
+      vaultChips.forEach(chip => {{
+        chip.addEventListener('click', () => {{
+          vaultChips.forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          currentVaultFilter = chip.getAttribute('data-vault-filter') || 'all';
+          filterVault();
+        }});
+      }});
+
+      // --- Top Likely Answers Chips ---
+      const topChips = document.querySelectorAll('.top-chip');
+      topChips.forEach(chip => {{
+        chip.addEventListener('click', () => {{
+          const q = chip.getAttribute('data-query');
+          if (!q) return;
+
+          if (q === 'Four Defects') {{
+            switchView('view-defects-radar');
+          }} else if (q === 'Scrum Velocity') {{
+            switchView('view-architecture');
+            const fig = document.getElementById('vel-title');
+            if (fig) setTimeout(() => fig.scrollIntoView({{ behavior: 'smooth' }}), 50);
+          }} else {{
+            switchView('view-stories');
+            if (storyInput) {{
+              storyInput.value = q;
+              filterStories();
+              storyInput.focus();
+            }}
+          }}
+        }});
+      }});
+
+      // Keyboard navigation
+      window.addEventListener('keydown', (e) => {{
+        if ((e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'k')) && document.activeElement !== storyInput && document.activeElement !== vaultInput) {{
           e.preventDefault();
-          searchInput.focus();
-          searchInput.select();
-        }} else if (e.key === 'Escape' && document.activeElement === searchInput) {{
-          searchInput.value = '';
-          filterAll();
-          searchInput.blur();
+          const activePanel = document.querySelector('.view-panel.active');
+          if (activePanel && activePanel.id === 'view-vault' && vaultInput) {{
+            vaultInput.focus();
+            vaultInput.select();
+          }} else if (storyInput) {{
+            switchView('view-stories');
+            storyInput.focus();
+            storyInput.select();
+          }}
+        }} else if (e.key === 'Escape') {{
+          closeDrawer();
         }}
       }});
     }})();
@@ -3207,18 +3925,15 @@ def build_html() -> str:
 </body>
 </html>
 """
-    return html_content
+    return html_output
 
 
-def main() -> int:
-    print("Building ConnectSphere Q&A Prep Data & Master Postplan Web App...")
-    html_output = build_html()
-
-    OUTPUT_HTML_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_HTML_PATH.write_text(html_output, encoding="utf-8")
-    print(f"Successfully generated {OUTPUT_HTML_PATH} ({len(html_output)} bytes)")
-    return 0
+def main():
+    print("Building modernized final Q&A prep guide...")
+    html_content = build_html()
+    OUTPUT_HTML_PATH.write_text(html_content, encoding="utf-8")
+    print(f"Generated {OUTPUT_HTML_PATH} ({len(html_content)} characters) successfully!")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
