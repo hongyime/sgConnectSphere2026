@@ -4,5 +4,5 @@
   "max_changed_files": 40,
   "max_additions": 1800,
   "max_deletions": 1500,
-  "size_limit_excluded_path_prefixes": ["submission/"]
+  "size_limit_excluded_path_prefixes": ["submission/", "artifacts/"]
 }
