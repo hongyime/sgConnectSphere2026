@@ -34,3 +34,7 @@ docs/testing/runs/
 .agents/handoffs/20261008-feature-SCRUM-86-coordinator-activity-log.md
 # This handoff cites a public T-65 run record whose runner handle is already allowed via docs/testing/runs/.
 .agents/handoffs/20261031-feature-SCRUM-39-event-session-authoring.md
+# Q&A prep guide and generator cite public T-65 run records containing runner handles.
+artifacts/final-qna-prep-guide.html
+scripts/build_qna_prep_data.py
+.agents/handoffs/20261109-docs-SCRUM-262-final-assessment-qna-guide.md
