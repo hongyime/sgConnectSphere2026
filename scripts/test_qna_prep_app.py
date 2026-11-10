@@ -172,7 +172,7 @@ def run_tests():
         assert dod_header is not None, f"{sid}: missing DoD checklist header"
         assert len(dod_header.find_parent("div").find_all("li")) > 0, f"{sid}: empty DoD checklist items"
         assert "Technical Slice Architecture" in drawer.text, f"{sid}: missing tech slice"
-        assert "All Associated Test Cases" in drawer.text, f"{sid}: missing test cases"
+        assert "Coverage traceability" in drawer.text, f"{sid}: missing test-case traceability"
 
     assert done_count == 60, f"Expected 60 Done stories, got {done_count}"
     assert partial_count == 1, f"Expected 1 Partial story, got {partial_count}"
@@ -347,11 +347,10 @@ def run_tests():
     assert runbook_view.find("div", class_="team-grid") is not None, ".team-grid must be inside view-runbook"
     print("PASS: Section nesting and view isolation verified (zero footer leakage across views)")
 
-    # 22. Production Credentials Matrix & Sticky Strip Verification
+    # 22. Production Credentials Drawer Verification
     cred_drawer = soup.find("aside", id="credentials-drawer")
     assert cred_drawer is not None, "Missing #credentials-drawer"
-    cred_strip = soup.find("div", id="sticky-credentials-bar")
-    assert cred_strip is not None, "Missing #sticky-credentials-bar"
+    assert soup.find(id="sticky-credentials-bar") is None, "Credentials must not occupy a sticky bar"
 
     expected_accounts = [
         ("Aaron", "venue_staff", "aaron.koh.2024@smu.edu.sg"),
@@ -364,11 +363,7 @@ def run_tests():
     for name, role, email in expected_accounts:
         assert email in cred_drawer.text, f"Credentials drawer missing email: {email}"
         assert role in cred_drawer.text, f"Credentials drawer missing role: {role}"
-        assert any(c.get("data-copy") == email for c in cred_drawer.find_all(attrs={"data-copy": True})), f"Missing data-copy button for {email}"
-
-    # Verify Password123! in copy buttons
-    pw_copy_btns = soup.find_all(attrs={"data-copy": "Password123!"})
-    assert len(pw_copy_btns) >= 7, f"Expected at least 7 Password123! copy buttons, got {len(pw_copy_btns)}"
+    assert not soup.find_all(attrs={"data-copy": True}), "Credentials drawer must not expose copy buttons"
 
     expected_launch_routes = {
         "Aaron": "/venue/blockout",
@@ -387,7 +382,7 @@ def run_tests():
         launch_link = card.find("a", class_="cred-launch-link")
         assert launch_link is not None and expected_route in launch_link.get("href", ""), f"Wrong launch route for {short}: expected {expected_route}"
     assert "Ephemeral" in text, "Missing ephemeral testbed accounts notice"
-    print("PASS: Production role credentials drawer & sticky bar verified (6 accounts + Password123! copy buttons + verified routes)")
+    print("PASS: Production role credentials drawer verified (6 accounts and verified routes, no sticky/copy clutter)")
 
     # 23. 7-Step Live Demonstration Protocol on all 65 Stories
     for s in stories:
@@ -402,7 +397,7 @@ def run_tests():
 
         # Step 1: Live app demo & navigation path
         p1 = proto.find("div", id=f"demo-p1-{sid}")
-        assert "https://sgconnectsphere.vercel.app" in p1.text or p1.find("a", href=re.compile(r"https://sgconnectsphere\.vercel\.app")), f"{sid}: Step 1 missing Vercel app link"
+        assert "https://sgconnectsphere.hong-yi.me" in p1.text or p1.find("a", href=re.compile(r"https://sgconnectsphere\.hong-yi\.me")), f"{sid}: Step 1 missing production app link"
         assert "Navigation Click Path:" in p1.text, f"{sid}: Step 1 missing navigation click path"
 
         # Step 2: Jira story link
@@ -420,14 +415,16 @@ def run_tests():
 
         # Step 4: CI Workflow run link
         p4 = proto.find("div", id=f"demo-p4-{sid}")
-        assert p4.find("a", href=re.compile(r"github\.com/.*/actions")), f"{sid}: Step 4 missing GitHub Actions CI link"
+        assert p4.find("a", href=re.compile(r"github\.com/.*/pull/\d+/checks")), f"{sid}: Step 4 missing GitHub PR checks link"
         assert "pr-conventions" in p4.text, f"{sid}: Step 4 missing CI check list"
 
-        # Step 5: Test Cases with EP & BVA
+        # Step 5: Complete English test cases from the canonical Markdown
         p5 = proto.find("div", id=f"demo-p5-{sid}")
-        assert "Equivalence Partitioning (EP):" in p5.text, f"{sid}: Step 5 missing EP header"
-        assert "Boundary Value Analysis (BVA):" in p5.text, f"{sid}: Step 5 missing BVA header"
-        assert "Real PostgreSQL Isolation" in p5.text, f"{sid}: Step 5 missing real DB rationale"
+        test_cases = p5.find_all("article", class_="test-case-detail")
+        assert len(test_cases) == len(s.find_all("a", class_="badge-tc")), f"{sid}: incomplete English test-case details"
+        for case in test_cases:
+            assert case.find("a", href=re.compile(r"docs/testing/cases/E\d+\.md#tc")), f"{sid}: test case lacks canonical anchor"
+            assert "Expected outcome:" in case.text and "Justification:" in case.text, f"{sid}: incomplete test reasoning"
 
         # Step 6: Presentation Slide Anchor (1-17)
         p6 = proto.find("div", id=f"demo-p6-{sid}")
@@ -451,7 +448,8 @@ def run_tests():
     assert "Event Coordinator" in e8s3_proto.find("span", class_="demo-protocol-role-hint").text, "E08-S03 acting role must be Event Coordinator"
     e8s6_proto = soup.find("div", attrs={"data-sid": "E08-S06"})
     assert "Safety Officer" in e8s6_proto.find("span", class_="demo-protocol-role-hint").text, "E08-S06 acting role must be Safety Officer"
-    print("PASS: 7-Step Live Demonstration Protocol verified across all 65 stories (Live Demo, Jira, PR, CI, EP/BVA, Slide, Postplan + Concurrency/Safety lineage)")
+    assert "+" not in " ".join(tag.text for tag in soup.find_all("a", class_="badge-tc")), "Test case badges must not be collapsed"
+    print("PASS: Unified story cockpit verified across all 65 stories (live app, Jira, PR, checks, complete English tests, slide and postplan)")
 
     # 24. Week 11 Presentation Companion (All 17 Slides)
     slides_view = soup.find("div", id="view-slides")

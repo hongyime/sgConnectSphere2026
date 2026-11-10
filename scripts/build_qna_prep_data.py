@@ -29,13 +29,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKLOG_DIR = REPO_ROOT / "docs" / "backlog" / "release-1"
+TEST_CASES_DIR = REPO_ROOT / "docs" / "testing" / "cases"
 TC_COVERAGE_PATH = REPO_ROOT / "docs" / "testing" / "tc-coverage.md"
 DEFECTS_PATH = REPO_ROOT / "docs" / "testing" / "defects.md"
 BDR_C_PATH = REPO_ROOT / "docs" / "bdr" / "A-customer-clarifications.md"
 BDR_T_PATH = REPO_ROOT / "docs" / "bdr" / "B-team-decisions.md"
 OUTPUT_HTML_PATH = REPO_ROOT / "artifacts" / "final-qna-prep-guide.html"
 SLIDES_PATH = REPO_ROOT / "docs" / "slides" / "presentation" / "week11-answers.md"
-VERCEL_APP_URL = "https://sgconnectsphere.vercel.app"
+APP_URL = "https://sgconnectsphere.hong-yi.me"
 
 GITHUB_REPO_URL = "https://github.com/hongyime/sgConnectSphere2026"
 JIRA_BASE_URL = "https://theprawnworkspace.atlassian.net/browse"
@@ -1080,6 +1081,38 @@ def parse_tc_coverage() -> tuple[list[dict], dict[str, list[dict]]]:
     return all_cases, story_cases_map
 
 
+def markdown_text(value: str) -> str:
+    """Keep canonical test-case prose readable in the standalone HTML."""
+    return re.sub(r"\s+", " ", re.sub(r"[*`]", "", value)).strip()
+
+
+def github_anchor(value: str) -> str:
+    return re.sub(r"[^a-z0-9 -]", "", value.lower()).replace(" ", "-")
+
+
+def parse_test_case_details() -> dict[str, dict]:
+    """Read the English test-case source instead of reducing it to coverage rows."""
+    details = {}
+    for path in TEST_CASES_DIR.glob("E*.md"):
+        text = path.read_text(encoding="utf-8")
+        for match in re.finditer(r"^### (TC_[A-Z0-9_]+)\s+[-—]\s+(.+)$([\s\S]*?)(?=^### |\Z)", text, re.M):
+            tc_id, title, body = match.groups()
+            sections = {}
+            for section in ("Pre-conditions", "Test steps", "Test data", "Expected result", "Justification"):
+                part = re.search(rf"^#### {section}\s*\n([\s\S]*?)(?=^#### |\Z)", body, re.M)
+                if part:
+                    sections[section.lower().replace("-", "_").replace(" ", "_")] = markdown_text(part.group(1))
+            heading = f"{tc_id} — {title}"
+            details[tc_id] = {
+                "title": markdown_text(title), "anchor": github_anchor(heading),
+                "pre_conditions": sections.get("pre_conditions", "Not separately recorded."),
+                "test_steps": sections.get("test_steps", "See the canonical case."),
+                "expected_result": sections.get("expected_result", "See the canonical case."),
+                "justification": sections.get("justification", "Acceptance scenario and expected result define the reason for this case."),
+            }
+    return details
+
+
 def parse_defects() -> list[dict]:
     text = DEFECTS_PATH.read_text(encoding="utf-8")
     defects = []
@@ -1414,7 +1447,7 @@ def get_slide_claim_and_notes(slide_num: int) -> tuple[str, str]:
     return claims.get(slide_num, claims[10])
 
 def parse_week11_slides():
-    text = SLIDES_PATH.read_text(encoding="utf-8")
+    text = SLIDES_PATH.read_text(encoding="utf-8").replace("https://sgconnectsphere.vercel.app", APP_URL)
     chunks = re.split(r"\n(?=## Slide \d+:)", text)[1:]
     slides = []
 
@@ -1704,7 +1737,7 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
         click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open Event Detail -> 4. Switch to Audit Log tab -> 5. Verify chronological immutable audit events with actor attribution."
 
     account = next((a for a in PRODUCTION_ACCOUNTS if a["id"] == account_id), PRODUCTION_ACCOUNTS[1])
-    live_target_url = f"{VERCEL_APP_URL}{start_path}"
+    live_target_url = f"{APP_URL}{start_path}"
 
     jira_key = s.get("jira_key", "SCRUM-00")
     jira_url = f"{JIRA_BASE_URL}/{jira_key}"
@@ -1719,7 +1752,7 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
     pr_m = re.search(r"PR #?(\d+)", evidence_pr_raw)
     pr_num = pr_m.group(1) if pr_m else "440"
     pr_url = f"{GITHUB_REPO_URL}/pull/{pr_num}"
-    ci_workflow_url = f"{GITHUB_REPO_URL}/actions?query=pull_request%3A{pr_num}"
+    ci_workflow_url = f"{GITHUB_REPO_URL}/pull/{pr_num}/checks"
 
     tc_ids = [c["tc_id"] for c in cases]
     ep_valid, ep_invalid, bva, real_db = get_test_design_details(sid, epic, s)
@@ -1778,6 +1811,7 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
 def build_html() -> str:
     stories = parse_markdown_stories()
     all_cases, story_cases_map = parse_tc_coverage()
+    test_case_details = parse_test_case_details()
     defects = parse_defects()
     c_items = parse_clarifications()
     t_items = parse_decisions()
@@ -1793,16 +1827,14 @@ def build_html() -> str:
     c_full_map = {}
     for c in c_items:
         ans = c["answer"]
-        short = ans[:65].rsplit(" ", 1)[0] + "..." if len(ans) > 68 else ans
-        c_summary_map[c["id"]] = short
+        c_summary_map[c["id"]] = ans
         c_full_map[c["id"]] = ans
 
     t_summary_map = {}
     t_full_map = {}
     for t in t_items:
         dec = t["decision"]
-        short = dec[:65].rsplit(" ", 1)[0] + "..." if len(dec) > 68 else dec
-        t_summary_map[t["id"]] = short
+        t_summary_map[t["id"]] = dec
         t_full_map[t["id"]] = dec
 
     adr_summary_map = {a["id"]: a["title"] for a in adrs}
@@ -1811,6 +1843,23 @@ def build_html() -> str:
     for s in stories:
         sid = s["story_id"]
         s["test_cases"] = story_cases_map.get(sid, [])
+        for case in s["test_cases"]:
+            case.update(test_case_details.get(case["tc_id"], {
+                "title": case["scenario"], "anchor": "", "pre_conditions": "Not separately recorded.",
+                "test_steps": "See the canonical case.", "expected_result": "See the canonical case.",
+                "justification": "See the canonical case.",
+            }))
+
+    stories_by_slide = defaultdict(list)
+    for story_id, slide_num in STORY_SLIDE_MAP.items():
+        stories_by_slide[slide_num].append(story_id)
+    slide_fallbacks = {
+        1: ["E01-S01", "E01-S02"], 2: ["E01-S01", "E01-S04"], 3: ["E01-S08", "E01-S12"],
+        10: ["E01-S02", "E03-S05"], 12: ["E01-S01", "E06-S06"], 13: ["E01-S11", "E14-S02"],
+        14: ["E01-S01", "E11-S01"], 15: ["E03-S01", "E06-S03"], 17: ["E08-S03", "E09-S01"],
+    }
+    for slide in slides:
+        slide["backing_stories"] = (stories_by_slide.get(slide["num"]) or slide_fallbacks[slide["num"]])[:3]
 
     # High-Risk Battle Dossiers metadata
     dossiers = [
@@ -2105,6 +2154,14 @@ def build_html() -> str:
         sid = s["story_id"]
         safe_sid = sid.lower().replace("-", "")
         epic = s.get("epic", sid.split("-")[0])
+        cases = s["test_cases"]
+        case_details_html = "".join(
+            f'''<article class="test-case-detail"><h5><a href="{GITHUB_REPO_URL}/blob/main/docs/testing/cases/{epic}.md#{c["anchor"]}" target="_blank" rel="noopener"><code>{c["tc_id"]}</code> — {html.escape(c["title"])}</a></h5>
+            <p><strong>Scenario:</strong> {html.escape(c["scenario"])}</p><p><strong>Pre-conditions:</strong> {html.escape(c["pre_conditions"])}</p>
+            <p><strong>Steps:</strong> {html.escape(c["test_steps"])}</p><p><strong>Expected outcome:</strong> {html.escape(c["expected_result"])}</p>
+            <p><strong>Justification:</strong> {html.escape(c["justification"])}</p></article>'''
+            for c in cases
+        ) or '<p class="muted">No canonical test case is associated with this story.</p>'
         demo_meta = get_story_demo_metadata(sid, epic, s, s["test_cases"])
         dm_acct = demo_meta["account"]
         dm_td = demo_meta["test_design"]
@@ -2128,16 +2185,6 @@ def build_html() -> str:
             <span class="demo-protocol-role-hint">Acting Role: <strong>{dm_acct["role_title"]}</strong> ({dm_acct["name"]})</span>
           </div>
 
-          <div class="demo-step-tabs" role="tablist">
-            <button type="button" class="demo-step-btn active" data-tab-target="demo-p1-{sid}">📱 1. Live Demo</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p2-{sid}">🎯 2. Jira Story</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p3-{sid}">🔀 3. GitHub PR</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p4-{sid}">⚙️ 4. CI Workflow</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p5-{sid}">🧪 5. EP &amp; BVA</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p6-{sid}">📊 6. Slide #{dm_slide["num"]}</button>
-            <button type="button" class="demo-step-btn" data-tab-target="demo-p7-{sid}">📑 7. Past Postplan</button>
-          </div>
-
           <div class="demo-step-panels">
             <!-- Step 1: Live Demo -->
             <div class="demo-step-panel active" id="demo-p1-{sid}">
@@ -2146,12 +2193,6 @@ def build_html() -> str:
                   <div class="demo-meta-row">
                     <span class="demo-meta-label">Primary Account:</span>
                     <span class="demo-account-chip">👤 {dm_acct["name"]} ({dm_acct["role_title"]})</span>
-                  </div>
-                  <div class="demo-meta-row">
-                    <span class="demo-meta-label">Credentials:</span>
-                    <code>{dm_acct["email"]}</code>
-                    <button type="button" class="btn-copy-chip" data-copy="{dm_acct['email']}" title="Copy Email">📋 Copy Email</button>
-                    <button type="button" class="btn-copy-chip" data-copy="{SHARED_PASSWORD}" title="Copy Password">📋 Copy Password</button>
                   </div>
                   <div class="demo-meta-row">
                     <span class="demo-meta-label">Target URL:</span>
@@ -2166,7 +2207,7 @@ def build_html() -> str:
             </div>
 
             <!-- Step 2: Jira Story -->
-            <div class="demo-step-panel" id="demo-p2-{sid}" style="display:none;">
+            <div class="demo-step-panel" id="demo-p2-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Jira SCRUM Issue:</span>
                 <a href="{demo_meta['jira_url']}" target="_blank" rel="noopener" class="jira-pill">{s['jira_key']}</a>
@@ -2184,7 +2225,7 @@ def build_html() -> str:
             </div>
 
             <!-- Step 3: GitHub PR -->
-            <div class="demo-step-panel" id="demo-p3-{sid}" style="display:none;">
+            <div class="demo-step-panel" id="demo-p3-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Pull Request:</span>
                 <a href="{demo_meta['pr_url']}" target="_blank" rel="noopener" class="ev-link">🔀 Pull Request #{demo_meta['pr_num']}</a>
@@ -2204,7 +2245,7 @@ def build_html() -> str:
             </div>
 
             <!-- Step 4: CI Workflow -->
-            <div class="demo-step-panel" id="demo-p4-{sid}" style="display:none;">
+            <div class="demo-step-panel" id="demo-p4-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">GitHub Actions CI:</span>
                 <a href="{demo_meta['ci_workflow_url']}" target="_blank" rel="noopener" class="ev-link">⚙️ GitHub Actions CI Run (PR #{demo_meta['pr_num']})</a>
@@ -2213,28 +2254,18 @@ def build_html() -> str:
               <div class="ci-checks-list">
                 <strong>Enforced CI Gates:</strong>
                 <span class="badge badge-tc">✓ pr-conventions</span>
-                <span class="badge badge-tc">✓ backend-tests (Native PostgreSQL)</span>
-                <span class="badge badge-tc">✓ frontend-build</span>
+                <span class="badge badge-tc">✓ repository-checks — repeatable repository tooling</span>
+                <span class="badge badge-tc">✓ application-checks — application behavior</span>
+                <span class="badge badge-tc">✓ test-evidence — recorded execution proof</span>
                 <span class="badge badge-tc">✓ doc-guard</span>
-                <span class="badge badge-tc">✓ check-worktrees</span>
+                <span class="muted">Together, these gates protect PR metadata, repository hygiene, behavior, evidence, and code-to-doc traceability.</span>
               </div>
             </div>
 
-            <!-- Step 5: Test Cases & EP/BVA -->
-            <div class="demo-step-panel" id="demo-p5-{sid}" style="display:none;">
-              <div class="demo-test-grid">
-                <div class="demo-test-box">
-                  <strong class="demo-subhead">Equivalence Partitioning (EP):</strong>
-                  <p><strong>Valid Partitions:</strong> {html.escape(dm_td['ep_valid'])}</p>
-                  <p><strong>Invalid Partitions:</strong> {html.escape(dm_td['ep_invalid'])}</p>
-                </div>
-                <div class="demo-test-box">
-                  <strong class="demo-subhead">Boundary Value Analysis (BVA):</strong>
-                  <p>{html.escape(dm_td['bva'])}</p>
-                  <strong class="demo-subhead" style="margin-top:0.5rem; display:block;">Real PostgreSQL Isolation (T-59):</strong>
-                  <p>{html.escape(dm_td['real_db'])}</p>
-                </div>
-              </div>
+            <!-- Step 5: Complete canonical test cases -->
+            <div class="demo-step-panel" id="demo-p5-{sid}">
+              <h5 class="demo-subhead">Complete English test cases</h5>
+              <div class="test-case-details">{case_details_html}</div>
               <div class="demo-meta-row" style="margin-top:0.75rem;">
                 <span class="demo-meta-label">Verified Run Evidence:</span>
                 {step5_run_link}
@@ -2243,7 +2274,7 @@ def build_html() -> str:
             </div>
 
             <!-- Step 6: Slide Deck Mapping -->
-            <div class="demo-step-panel" id="demo-p6-{sid}" style="display:none;">
+            <div class="demo-step-panel" id="demo-p6-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Presentation Anchor:</span>
                 <span class="badge badge-sprint">Slide {dm_slide['num']}: {html.escape(dm_slide['title'])}</span>
@@ -2260,7 +2291,7 @@ def build_html() -> str:
             </div>
 
             <!-- Step 7: Past Postplan -->
-            <div class="demo-step-panel" id="demo-p7-{sid}" style="display:none;">
+            <div class="demo-step-panel" id="demo-p7-{sid}">
               <div class="demo-meta-row">
                 <span class="demo-meta-label">Review Artifact:</span>
                 {demo_meta['postplan_link_html']}
@@ -2273,7 +2304,6 @@ def build_html() -> str:
         </div>
         '''
 
-        cases = s["test_cases"]
         active_cases = [c for c in cases if "active" in c["status"] or "✅" in c["status"]]
         defect_cases = [c for c in cases if "defect" in c["status"] or "⚠️" in c["status"]]
         scaffold_cases = [c for c in cases if "scaffold" in c["status"] or "⏳" in c["status"]]
@@ -2328,11 +2358,9 @@ def build_html() -> str:
         search_blob = f"{sid} {s['jira_key']} {s['title']} {s['owner']} {s['bdr']} {s['route']} {s['controller']} {s['migration']} {s['component']} {tc_ids_str} {s['spoken']} {s['limit']} {s['evidence_pr']} {alias_str}".lower()
 
         tc_tags = "".join(
-            f'<span class="badge badge-tc">{c["tc_id"]}</span> '
-            for c in cases[:6]
+            f'<a class="badge badge-tc" href="{GITHUB_REPO_URL}/blob/main/docs/testing/cases/{epic}.md#{c["anchor"]}" target="_blank" rel="noopener">{c["tc_id"]}</a> '
+            for c in cases
         )
-        if len(cases) > 6:
-            tc_tags += f'<span class="badge badge-muted">+{len(cases)-6} more</span>'
 
         scenarios_html = ""
         for sc in s.get("scenarios", []):
@@ -2402,15 +2430,15 @@ def build_html() -> str:
             if item.startswith("C-") and f"clarification-{item.lower()}" in known_clarification_ids:
                 summary = c_summary_map.get(item, "")
                 summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
-                bdr_chips.append(f'<a href="#clarification-{item.lower()}" class="chip chip-c" title="Clarification {item}: {html.escape(c_full_map.get(item, ""))}"><span class="chip-id">{item}</span>{summary_span}</a>')
+                bdr_chips.append(f'<a href="#clarification-{item.lower()}" class="chip chip-c"><span class="chip-id">{item}</span>{summary_span}</a>')
             elif item.startswith("T-") and f"decision-{item.lower()}" in known_decision_ids:
                 summary = t_summary_map.get(item, "")
                 summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
-                bdr_chips.append(f'<a href="#decision-{item.lower()}" class="chip chip-t" title="Team Decision {item}: {html.escape(t_full_map.get(item, ""))}"><span class="chip-id">{item}</span>{summary_span}</a>')
+                bdr_chips.append(f'<a href="#decision-{item.lower()}" class="chip chip-t"><span class="chip-id">{item}</span>{summary_span}</a>')
             elif item.startswith("ADR-") and f"adr-{item}" in known_adr_ids:
                 summary = adr_summary_map.get(item, "")
                 summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
-                bdr_chips.append(f'<a href="#adr-{item}" class="chip chip-adr" title="Architecture Decision {item}: {html.escape(summary)}"><span class="chip-id">{item}</span>{summary_span}</a>')
+                bdr_chips.append(f'<a href="#adr-{item}" class="chip chip-adr"><span class="chip-id">{item}</span>{summary_span}</a>')
             else:
                 bdr_chips.append(f'<span class="chip chip-bdr">{html.escape(item)}</span>')
         bdr_chips_html = " ".join(bdr_chips) if bdr_chips else '<span class="text-muted">None cited</span>'
@@ -2421,7 +2449,7 @@ def build_html() -> str:
             summary = adr_summary_map.get(aid, "")
             summary_span = f' <span class="chip-desc">{html.escape(summary)}</span>' if summary else ""
             if f"adr-{aid}" in known_adr_ids:
-                adr_chips.append(f'<a href="#adr-{aid}" class="chip chip-adr" title="Architecture Decision {aid}: {html.escape(summary)}"><span class="chip-id">{aid}</span>{summary_span}</a>')
+                adr_chips.append(f'<a href="#adr-{aid}" class="chip chip-adr"><span class="chip-id">{aid}</span>{summary_span}</a>')
             else:
                 adr_chips.append(f'<span class="chip chip-adr"><span class="chip-id">{aid}</span>{summary_span}</span>')
         adr_chips_html = " ".join(adr_chips)
@@ -2460,7 +2488,6 @@ def build_html() -> str:
 
           <div class="story-meta-grid">
             <div><strong>Known Limitation / Boundary:</strong> <span>{html.escape(s['limit'])}</span></div>
-            <div><strong>BDR References:</strong> <code>{html.escape(s['bdr'])}</code></div>
           </div>
 
           {bdr_adr_block_html}
@@ -2501,10 +2528,8 @@ def build_html() -> str:
               </div>
 
               <div class="lineage-section">
-                <h4>All Associated Test Cases ({len(cases)})</h4>
-                <ul class="tc-detail-list">
-                  {''.join(f'<li><code>{c["tc_id"]}</code> — {html.escape(c["scenario"])} <span class="tc-status">{c["status"]}</span><br><small class="muted">{html.escape(c["where"])}</small></li>' for c in cases)}
-                </ul>
+                <h4>Coverage traceability ({len(cases)} cases)</h4>
+                <ul class="tc-detail-list">{''.join(f'<li><code>{c["tc_id"]}</code> — <span class="tc-status">{c["status"]}</span><br><small class="muted">{html.escape(c["where"])}</small></li>' for c in cases)}</ul>
               </div>
             </div>
           </details>
@@ -2773,9 +2798,8 @@ def build_html() -> str:
         """)
 
 
-    # Pre-render Production Credentials Drawer Cards & Header Strip Pills
+    # Credentials stay in one deliberate reference drawer, never in story cards.
     credentials_cards_html = []
-    credentials_strip_chips_html = []
     for acct in PRODUCTION_ACCOUNTS:
         credentials_cards_html.append(f"""
         <div class="cred-account-card" id="cred-card-{acct['id']}">
@@ -2784,23 +2808,15 @@ def build_html() -> str:
               <span class="cred-name">{acct['name']}</span>
               <span class="cred-role-tag">{acct['role']}</span>
             </div>
-            <a href="{VERCEL_APP_URL}{acct['start_path']}" target="_blank" rel="noopener" class="cred-launch-link">🚀 Open ({acct['start_path']})</a>
+            <a href="{APP_URL}{acct['start_path']}" target="_blank" rel="noopener" class="cred-launch-link">🚀 Open ({acct['start_path']})</a>
           </div>
           <p class="cred-scope"><strong>Scope:</strong> {acct['scope']}</p>
           <div class="cred-copy-row">
             <div><strong>Email:</strong> <code>{acct['email']}</code></div>
-            <button type="button" class="btn-copy-chip" data-copy="{acct['email']}" title="Copy Email">📋 Copy Email</button>
           </div>
           <div class="cred-copy-row">
             <div><strong>Password:</strong> <code>{SHARED_PASSWORD}</code></div>
-            <button type="button" class="btn-copy-chip" data-copy="{SHARED_PASSWORD}" title="Copy Password">📋 Copy Password</button>
           </div>
-        </div>
-        """)
-        credentials_strip_chips_html.append(f"""
-        <div class="cred-pill">
-          <strong>{acct['short_name']}</strong> <span>({acct['role']})</span>
-          <button type="button" class="btn-copy-chip" data-copy="{acct['email']}" title="Copy {acct['email']}">✉️ Copy</button>
         </div>
         """)
 
@@ -2819,7 +2835,7 @@ def build_html() -> str:
         <div class="protocol-sop-card">
           <span class="sop-step-badge">STEP 1</span>
           <h4>📱 1-Click Live App Login</h4>
-          <p>Grab credentials from the production matrix, open <a href="{VERCEL_APP_URL}" target="_blank" rel="noopener" style="color:var(--accent);">sgconnectsphere.vercel.app</a>, and execute the exact navigation path.</p>
+          <p>Open <a href="{APP_URL}" target="_blank" rel="noopener" style="color:var(--accent);">sgconnectsphere.hong-yi.me</a>, use the reference drawer only when needed, and execute the exact navigation path.</p>
         </div>
         <div class="protocol-sop-card">
           <span class="sop-step-badge">STEP 2</span>
@@ -4173,7 +4189,7 @@ def build_html() -> str:
       }}
     }}
 
-    /* --- Production Credentials Matrix & Sticky Strip --- */
+    /* --- Production Credentials Drawer --- */
     .sticky-credentials-bar {{
       background: #0f1c26;
       border-bottom: 1px solid var(--border);
@@ -4869,20 +4885,20 @@ def build_html() -> str:
       </div>
 
       <nav class="sidebar-nav" aria-label="Defense Navigation Views">
-        <div class="nav-label">DEFENSE VIEWS</div>
-        <button class="nav-tab active" data-view="view-how-to-answer">
+        <div class="nav-label">1. 📖 65 STORIES &amp; LIVE TRACING</div>
+        <button class="nav-tab" data-view="view-how-to-answer">
           <div class="nav-tab-left">
             <span class="nav-tab-icon">📋</span>
             <span>How to Answer &amp; Protocol</span>
           </div>
         </button>
-        <button class="nav-tab" data-view="view-live-demo">
-          <div class="nav-tab-left">
-            <span class="nav-tab-icon">🎬</span>
-            <span>Live Exam Demo Protocol</span>
-          </div>
-          <span class="nav-pill pill-accent">65</span>
+        <button class="nav-tab" data-view="view-stories">
+          <div class="nav-tab-left"><span class="nav-tab-icon">📖</span><span>65 Stories &amp; Live Tracing</span></div><span class="nav-pill pill-accent">65</span>
         </button>
+        <button class="nav-tab" data-view="view-live-demo">
+          <div class="nav-tab-left"><span class="nav-tab-icon">🎬</span><span>Live Demo Launcher</span></div>
+        </button>
+        <div class="nav-label">2. 📊 WEEK 11 PRESENTATION COMPANION</div>
         <button class="nav-tab" data-view="view-slides">
           <div class="nav-tab-left">
             <span class="nav-tab-icon">📊</span>
@@ -4890,6 +4906,7 @@ def build_html() -> str:
           </div>
           <span class="nav-pill">17</span>
         </button>
+        <div class="nav-label">3. 🛡️ REFERENCE VAULTS</div>
         <button class="nav-tab" data-view="view-defects-radar">
           <div class="nav-tab-left">
             <span class="nav-tab-icon">🚨</span>
@@ -4903,13 +4920,6 @@ def build_html() -> str:
             <span>12 Topic Dossiers</span>
           </div>
           <span class="nav-pill">12</span>
-        </button>
-        <button class="nav-tab" data-view="view-stories">
-          <div class="nav-tab-left">
-            <span class="nav-tab-icon">📖</span>
-            <span>65 Stories &amp; Tech Lineage</span>
-          </div>
-          <span class="nav-pill">65</span>
         </button>
         <button class="nav-tab" data-view="view-vault">
           <div class="nav-tab-left">
@@ -4961,40 +4971,18 @@ def build_html() -> str:
           <button type="button" id="topbar-credentials-btn" class="topbar-cred-btn" aria-label="Toggle Production Credentials Matrix">
             🔑 Role Credentials (6 Accounts)
           </button>
-          <button type="button" class="topbar-copy-pw-btn" data-copy="Password123!" title="Copy shared password Password123!">
-            📋 Copy PW
-          </button>
           <span class="topbar-badge badge-sprint">Sprint 5 HEAD</span>
           <span class="topbar-badge">19 ADRs</span>
           <span class="topbar-badge">100% Verified Run Records</span>
         </div>
       </header>
 
-      <!-- Sticky Production Role Credentials Bar -->
-      <div id="sticky-credentials-bar" class="sticky-credentials-bar">
-        <div class="cred-strip-inner">
-          <div class="cred-strip-title">
-            <span class="cred-strip-icon">🔑</span>
-            <strong>SMU Production Accounts:</strong>
-          </div>
-          <div class="cred-strip-chips">
-            {''.join(credentials_strip_chips_html)}
-          </div>
-          <div class="cred-strip-actions">
-            <span class="cred-security-badge" style="font-size:0.75rem; color:#ffd166; background:rgba(255,209,102,0.1); border:1px solid #ffd166; border-radius:4px; padding:0.2rem 0.5rem; margin-right:0.25rem;">🔒 Ephemeral Testbed</span>
-            <span class="cred-pw-label">PW: <code>Password123!</code></span>
-            <button type="button" class="btn-copy-chip" data-copy="Password123!" title="Copy shared password Password123!">📋 Copy PW</button>
-            <button type="button" id="open-credentials-drawer-btn" class="btn-view-matrix">Full Matrix ▾</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Viewport containing required top-level sections -->
       <main class="content-viewport">
         <!-- REQUIRED SECTION 1: #overview -->
         <section id="overview" class="doc-section">
           <!-- View 1: How to Answer & Protocol -->
-          <div id="view-how-to-answer" class="view-panel active">
+          <div id="view-how-to-answer" class="view-panel">
             <div class="section-header-box">
               <div class="section-eyebrow">EXAMINER PRESENTATION DEFENSE FRAMEWORK</div>
               <h2 class="section-heading">How to Answer &amp; Rehearsal Protocol</h2>
@@ -5240,7 +5228,7 @@ def build_html() -> str:
           </div>
 
           <!-- View 4: 65 User Stories & Code Lineage -->
-          <div id="view-stories" class="view-panel">
+    <div id="view-stories" class="view-panel active">
             <div class="section-header-box">
               <div class="section-eyebrow">FULL SPECIFICATION &amp; TRACEABILITY</div>
               <h2 class="section-heading">65 User Stories &amp; Code Lineage</h2>
