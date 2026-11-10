@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Automated verification suite for ConnectSphere Q&A Prep Web App."""
+from collections import Counter
 from pathlib import Path
 import re
+import subprocess
 from bs4 import BeautifulSoup
 
 
@@ -80,7 +82,10 @@ def run_tests():
     assert len(blob_links) >= 100, f"Expected at least 100 blob/main links, found {len(blob_links)}"
     missing_paths = [p for p in set(blob_links) if not Path(p).exists()]
     assert len(missing_paths) == 0, f"Found {len(missing_paths)} blob/main links pointing to missing paths: {missing_paths}"
-    print(f"PASS: All {len(set(blob_links))} GitHub blob/main links target existing files at HEAD on disk")
+    tracked_files = set(Path(p).as_posix() for p in subprocess.check_output(["git", "ls-files"]).decode("utf-8").splitlines())
+    untracked_blob_links = [p for p in set(blob_links) if Path(p).as_posix() not in tracked_files]
+    assert len(untracked_blob_links) == 0, f"Found blob/main links not tracked in git at HEAD: {untracked_blob_links}"
+    print(f"PASS: All {len(set(blob_links))} GitHub blob/main links target existing files tracked at HEAD in Git")
 
     # 7. Stories Status & Run Evidence
     stories = soup.find_all("article", class_="story-card")
@@ -96,6 +101,11 @@ def run_tests():
         status = s.find("span", class_=re.compile(r"badge-(status|defect|partial)"))
         assert status, f"{sid}: missing status badge"
         assert "Known Limitation / Boundary:" in s.text, f"{sid}: missing limitation"
+
+        owner_badge = s.find("span", class_="badge-owner")
+        assert owner_badge is not None, f"{sid}: missing owner badge"
+        assert "###" not in owner_badge.text, f"{sid}: invalid owner badge: {owner_badge.text}"
+        assert len(owner_badge.text.strip()) > 3, f"{sid}: owner badge too short: {owner_badge.text}"
 
         # Evidence links
         links_container = s.find("div", class_="story-evidence-links")
@@ -214,6 +224,8 @@ def run_tests():
 
     expected_views = [
         "view-how-to-answer",
+        "view-live-demo",
+        "view-slides",
         "view-defects-radar",
         "view-dossiers",
         "view-stories",
@@ -305,7 +317,7 @@ def run_tests():
     assert sec_overview.find("div", id="view-runbook") is None, "view-runbook must not be in overview"
 
     sec_details = soup.find("section", id="details")
-    for v in ["view-defects-radar", "view-dossiers", "view-stories", "view-vault", "view-architecture"]:
+    for v in ["view-live-demo", "view-slides", "view-defects-radar", "view-dossiers", "view-stories", "view-vault", "view-architecture"]:
         assert sec_details.find("div", id=v) is not None, f"#{v} missing from section #details"
 
     sec_next_steps = soup.find("section", id="next-steps")
@@ -313,6 +325,105 @@ def run_tests():
     assert runbook_view is not None, "view-runbook must be inside #next-steps"
     assert runbook_view.find("div", class_="team-grid") is not None, ".team-grid must be inside view-runbook"
     print("PASS: Section nesting and view isolation verified (zero footer leakage across views)")
+
+    # 22. Production Credentials Matrix & Sticky Strip Verification
+    cred_drawer = soup.find("aside", id="credentials-drawer")
+    assert cred_drawer is not None, "Missing #credentials-drawer"
+    cred_strip = soup.find("div", id="sticky-credentials-bar")
+    assert cred_strip is not None, "Missing #sticky-credentials-bar"
+
+    expected_accounts = [
+        ("Aaron", "venue_staff", "aaron.koh.2024@smu.edu.sg"),
+        ("Amareet", "event_coordinator", "amareetk.m.2024@smu.edu.sg"),
+        ("Ji Ning", "event_organiser", "jining.yee.2024@smu.edu.sg"),
+        ("Lexin", "technical_support_staff", "lexin.phun.2024@smu.edu.sg"),
+        ("XY", "attendee", "xy.sim.2024@smu.edu.sg"),
+        ("Bryan", "safety_officer", "bryanseah234@gmail.com"),
+    ]
+    for name, role, email in expected_accounts:
+        assert email in cred_drawer.text, f"Credentials drawer missing email: {email}"
+        assert role in cred_drawer.text, f"Credentials drawer missing role: {role}"
+        assert any(c.get("data-copy") == email for c in cred_drawer.find_all(attrs={"data-copy": True})), f"Missing data-copy button for {email}"
+
+    # Verify Password123! in copy buttons
+    pw_copy_btns = soup.find_all(attrs={"data-copy": "Password123!"})
+    assert len(pw_copy_btns) >= 7, f"Expected at least 7 Password123! copy buttons, got {len(pw_copy_btns)}"
+    print("PASS: Production role credentials drawer & sticky bar verified (6 accounts + Password123! copy buttons)")
+
+    # 23. 7-Step Live Demonstration Protocol on all 65 Stories
+    for s in stories:
+        sid = s.get("data-sid")
+        proto = s.find("div", class_="story-demo-protocol")
+        assert proto is not None, f"{sid}: missing .story-demo-protocol"
+
+        # Check all 7 step panels exist
+        for step_idx in range(1, 8):
+            panel = proto.find("div", id=f"demo-p{step_idx}-{sid}")
+            assert panel is not None, f"{sid}: missing demo panel #demo-p{step_idx}-{sid}"
+
+        # Step 1: Live app demo & navigation path
+        p1 = proto.find("div", id=f"demo-p1-{sid}")
+        assert "https://sgconnectsphere.vercel.app" in p1.text or p1.find("a", href=re.compile(r"https://sgconnectsphere\.vercel\.app")), f"{sid}: Step 1 missing Vercel app link"
+        assert "Navigation Click Path:" in p1.text, f"{sid}: Step 1 missing navigation click path"
+
+        # Step 2: Jira story link
+        p2 = proto.find("div", id=f"demo-p2-{sid}")
+        assert p2.find("a", href=re.compile(r"theprawnworkspace\.atlassian\.net/browse/SCRUM-")), f"{sid}: Step 2 missing Jira link"
+        assert "PO Acceptance:" in p2.text, f"{sid}: Step 2 missing PO acceptance"
+
+        # Step 3: GitHub PR link, Author, Reviewer, Commit SHA
+        p3 = proto.find("div", id=f"demo-p3-{sid}")
+        assert p3.find("a", href=re.compile(r"github\.com/.*/pull/")), f"{sid}: Step 3 missing GitHub PR link"
+        assert "Author:" in p3.text, f"{sid}: Step 3 missing Author"
+        assert "###" not in p3.text, f"{sid}: Step 3 has invalid Author (###)"
+        assert "Reviewer:" in p3.text, f"{sid}: Step 3 missing Reviewer"
+        assert "Commit:" in p3.text or re.search(r"[0-9a-f]{7,8}", p3.text), f"{sid}: Step 3 missing Commit SHA"
+
+        # Step 4: CI Workflow run link
+        p4 = proto.find("div", id=f"demo-p4-{sid}")
+        assert p4.find("a", href=re.compile(r"github\.com/.*/actions")), f"{sid}: Step 4 missing GitHub Actions CI link"
+        assert "pr-conventions" in p4.text, f"{sid}: Step 4 missing CI check list"
+
+        # Step 5: Test Cases with EP & BVA
+        p5 = proto.find("div", id=f"demo-p5-{sid}")
+        assert "Equivalence Partitioning (EP):" in p5.text, f"{sid}: Step 5 missing EP header"
+        assert "Boundary Value Analysis (BVA):" in p5.text, f"{sid}: Step 5 missing BVA header"
+        assert "Real PostgreSQL Isolation" in p5.text, f"{sid}: Step 5 missing real DB rationale"
+
+        # Step 6: Presentation Slide Anchor (1-17)
+        p6 = proto.find("div", id=f"demo-p6-{sid}")
+        m_slide = re.search(r"Slide (\d+):", p6.text)
+        assert m_slide is not None, f"{sid}: Step 6 missing Slide number citation"
+        slide_num = int(m_slide.group(1))
+        assert 1 <= slide_num <= 17, f"{sid}: invalid slide number {slide_num}"
+        assert p6.find("a", href=f"#slide-card-{slide_num}") is not None, f"{sid}: Step 6 missing jump link to #slide-card-{slide_num}"
+
+        # Step 7: Historical Postplan
+        p7 = proto.find("div", id=f"demo-p7-{sid}")
+        assert p7.find("a", href=re.compile(r"\.html$")), f"{sid}: Step 7 missing postplan HTML link"
+    print("PASS: 7-Step Live Demonstration Protocol verified across all 65 stories (Live Demo, Jira, PR, CI, EP/BVA, Slide, Postplan)")
+
+    # 24. Week 11 Presentation Companion (All 17 Slides)
+    slides_view = soup.find("div", id="view-slides")
+    assert slides_view is not None, "Missing #view-slides"
+    slide_cards = slides_view.find_all("article", class_="slide-card")
+    assert len(slide_cards) == 17, f"Expected 17 slide cards, got {len(slide_cards)}"
+
+    for s_idx in range(1, 18):
+        sc = soup.find("article", id=f"slide-card-{s_idx}")
+        assert sc is not None, f"Missing #slide-card-{s_idx}"
+        assert sc.find("p", class_="slide-q-text") is not None, f"Slide {s_idx} missing question text"
+        assert sc.find("div", class_="slide-content-text") is not None, f"Slide {s_idx} missing content text"
+        assert sc.find("div", class_="slide-notes-text") is not None, f"Slide {s_idx} missing speaker notes text"
+        assert "Spoken Defense Response" in sc.text, f"Slide {s_idx} missing spoken defense response"
+    print(f"PASS: Week 11 Presentation Companion verified with all 17 slides and complete defense dossiers")
+
+    # 25. Document strictly contains zero duplicate IDs
+    all_elements_with_id = soup.find_all(attrs={"id": True})
+    id_counts = Counter([el["id"] for el in all_elements_with_id])
+    duplicate_ids = [i for i, count in id_counts.items() if count > 1]
+    assert len(duplicate_ids) == 0, f"Found duplicate IDs in document: {duplicate_ids}"
+    print("PASS: Document strictly contains zero duplicate IDs across all elements")
 
     print("\nALL VERIFICATION CHECKS PASSED SUCCESSFULLY.")
 

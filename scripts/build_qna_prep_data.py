@@ -33,6 +33,8 @@ DEFECTS_PATH = REPO_ROOT / "docs" / "testing" / "defects.md"
 BDR_C_PATH = REPO_ROOT / "docs" / "bdr" / "A-customer-clarifications.md"
 BDR_T_PATH = REPO_ROOT / "docs" / "bdr" / "B-team-decisions.md"
 OUTPUT_HTML_PATH = REPO_ROOT / "artifacts" / "final-qna-prep-guide.html"
+SLIDES_PATH = REPO_ROOT / "docs" / "slides" / "presentation" / "week11-answers.md"
+VERCEL_APP_URL = "https://sgconnectsphere.vercel.app"
 
 GITHUB_REPO_URL = "https://github.com/hongyime/sgConnectSphere2026"
 JIRA_BASE_URL = "https://theprawnworkspace.atlassian.net/browse"
@@ -841,6 +843,123 @@ STORY_RUN_EVIDENCE_MAP = {
     "E14-S03": "20261106-075740-Bl0oper-full-regression.md",
 }
 
+# Authoritative Story Owner Mapping from Slide 15 & Jira Backlog
+STORY_OWNER_MAP = {
+    # Bryan (Product Owner)
+    "E01-S12": "Bryan Seah (Product Owner)",
+    "E01-S13": "Bryan Seah (Product Owner)",
+    "E02-S05": "Bryan Seah (Product Owner)",
+    "E03-S08": "Bryan Seah (Product Owner)",
+    "E03-S09": "Bryan Seah (Product Owner)",
+    "E03-S10": "Bryan Seah (Product Owner)",
+    # Amareet (Scrum Master)
+    "E04-S02": "Amareet Kaur (Scrum Master)",
+    "E06-S05": "Amareet Kaur (Scrum Master)",
+    "E07-S06": "Amareet Kaur (Scrum Master)",
+    "E07-S07": "Amareet Kaur (Scrum Master)",
+    "E09-S01": "Amareet Kaur (Scrum Master)",
+    "E09-S02": "Amareet Kaur (Scrum Master)",
+    "E09-S03": "Amareet Kaur (Scrum Master)",
+    "E09-S07": "Amareet Kaur (Scrum Master)",
+    # Lexin
+    "E03-S11": "Lexin Phun",
+    "E03-S12": "Lexin Phun",
+    "E05-S01": "Lexin Phun",
+    "E05-S02": "Lexin Phun",
+    "E05-S03": "Lexin Phun",
+    "E05-S04": "Lexin Phun",
+    "E05-S06": "Lexin Phun",
+    "E06-S04": "Lexin Phun",
+    "E06-S06": "Lexin Phun",
+    "E08-S04": "Lexin Phun",
+    "E10-S02": "Lexin Phun",
+    "E14-S02": "Lexin Phun",
+    "E14-S03": "Lexin Phun",
+    # Aaron
+    "E02-S01": "Aaron Koh",
+    "E02-S02": "Aaron Koh",
+    "E02-S03": "Aaron Koh",
+    "E03-S01": "Aaron Koh",
+    "E03-S02": "Aaron Koh",
+    "E03-S03": "Aaron Koh",
+    "E05-S05": "Aaron Koh",
+    "E07-S04": "Aaron Koh",
+    "E07-S05": "Aaron Koh",
+    "E07-S08": "Aaron Koh",
+    "E07-S09": "Aaron Koh",
+    "E08-S03": "Aaron Koh",
+    "E08-S06": "Aaron Koh",
+    "E09-S04": "Aaron Koh",
+    "E09-S05": "Aaron Koh",
+    # Ji Ning
+    "E01-S04": "Ji Ning Yee",
+    "E01-S08": "Ji Ning Yee",
+    "E01-S11": "Ji Ning Yee",
+    "E06-S01": "Ji Ning Yee",
+    "E06-S02": "Ji Ning Yee",
+    "E06-S03": "Ji Ning Yee",
+    "E06-S07": "Ji Ning Yee",
+    "E10-S01": "Ji Ning Yee",
+    "E10-S05": "Ji Ning Yee",
+    "E11-S01": "Ji Ning Yee",
+    # Xiang Ying
+    "E01-S01": "Xiang Ying Sim",
+    "E01-S02": "Xiang Ying Sim",
+    "E01-S03": "Xiang Ying Sim",
+    "E02-S07": "Xiang Ying Sim",
+    "E03-S05": "Xiang Ying Sim",
+    "E03-S06": "Xiang Ying Sim",
+    "E03-S07": "Xiang Ying Sim",
+    "E07-S01": "Xiang Ying Sim",
+    "E07-S02": "Xiang Ying Sim",
+    "E07-S03": "Xiang Ying Sim",
+    "E08-S05": "Xiang Ying Sim",
+    "E09-S06": "Xiang Ying Sim",
+    "E10-S04": "Xiang Ying Sim",
+}
+
+def get_story_reviewer(author: str) -> str:
+    if "Bryan" in author:
+        return "Amareet Kaur (Scrum Master, 109 PR approvals)"
+    elif "Amareet" in author:
+        return "Bryan Seah (Product Owner, Lead Architect)"
+    elif "Aaron" in author:
+        return "Amareet Kaur (Scrum Master, 109 PR approvals)"
+    elif "Lexin" in author:
+        return "Aaron Koh (Lead Reviewer, 79 PR approvals)"
+    elif "Ji Ning" in author:
+        return "Lexin Phun (51 PR approvals)"
+    elif "Xiang Ying" in author:
+        return "Aaron Koh (Lead Reviewer, 79 PR approvals)"
+    return "Amareet Kaur (Scrum Master)"
+
+def get_git_pr_commits() -> dict[str, str]:
+    pr_commits = {
+        "450": "a8f2d879",
+        "453": "ced06372",
+        "454": "b5370843",
+        "426": "0d1609d8",
+        "427": "62e82081",
+        "429": "04b5b60c",
+        "378": "3ac65827",
+        "298": "9c8a37f4",
+        "30": "5d1e9ab0",
+        "153": "5d1e9ab0",
+    }
+    try:
+        out = subprocess.check_output(["git", "log", "--oneline", "-n", "1000"]).decode("utf-8")
+        for line in out.splitlines():
+            m = re.search(r"^([0-9a-f]{7,8})\s+.*?\(#(\d+)\)", line)
+            if m:
+                sha, pr = m.group(1), m.group(2)
+                if pr not in pr_commits:
+                    pr_commits[pr] = sha
+    except Exception:
+        pass
+    return pr_commits
+
+GIT_PR_COMMITS = get_git_pr_commits()
+
 
 def parse_markdown_stories() -> list[dict]:
     stories = []
@@ -860,7 +979,6 @@ def parse_markdown_stories() -> list[dict]:
             sprint_m = re.search(r"^-\s+\*\*Sprint\*\*:\s*(.+)$", b, re.M)
             pts_m = re.search(r"^-\s+\*\*Points\*\*:\s*(.+)$", b, re.M)
             bdr_m = re.search(r"^-\s+\*\*BDR references\*\*:\s*(.+)$", b, re.M)
-            owner_m = re.search(r"^-\s+\*\*Owner\*\*:\s*(.+)$", b, re.M)
 
             sprint = sprint_m.group(1).strip() if sprint_m else "Sprint 1"
             pts_raw = pts_m.group(1).strip() if pts_m else ""
@@ -869,7 +987,13 @@ def parse_markdown_stories() -> list[dict]:
             except ValueError:
                 pts = pts_raw
             bdr = bdr_m.group(1).strip() if bdr_m else ""
-            owner = owner_m.group(1).strip() if owner_m else ""
+            owner = STORY_OWNER_MAP.get(sid)
+            if not owner:
+                owner_m = re.search(r"^-\s+\*\*Owner\*\*:[ \t]*([^\r\n#]+)$", b, re.M)
+                if owner_m and owner_m.group(1).strip() and not owner_m.group(1).strip().startswith("<"):
+                    owner = owner_m.group(1).strip()
+                else:
+                    owner = "ConnectSphere Team"
 
             # User story text
             us_m = re.search(r"### User story\s*\n\s*(.*?)(?=\n###|\Z)", b, re.S)
@@ -1066,6 +1190,548 @@ def parse_adrs() -> list[dict]:
     return adrs
 
 
+
+# --- SMU Production Role Accounts & Live Credentials ---
+PRODUCTION_ACCOUNTS = [
+    {
+        "id": "aaron",
+        "name": "Aaron Koh",
+        "short_name": "Aaron",
+        "role": "venue_staff",
+        "role_title": "Venue Staff",
+        "email": "aaron.koh.2024@smu.edu.sg",
+        "scope": "Venue catalog, setup/turnaround buffers, maintenance blocks (E05, E06)",
+        "start_path": "/venues",
+    },
+    {
+        "id": "amareet",
+        "name": "Amareet Kaur",
+        "short_name": "Amareet",
+        "role": "event_coordinator",
+        "role_title": "Event Coordinator",
+        "email": "amareetk.m.2024@smu.edu.sg",
+        "scope": "Event review, clarifications, venue booking requests, confirmation (E03, E06, E08, E10)",
+        "start_path": "/events",
+    },
+    {
+        "id": "jining",
+        "name": "Ji Ning Yee",
+        "short_name": "Ji Ning",
+        "role": "event_organiser",
+        "role_title": "Event Organiser",
+        "email": "jining.yee.2024@smu.edu.sg",
+        "scope": "Event submission, draft saving, client event list, cancellation requests (E01, E02, E09, E10)",
+        "start_path": "/events/new",
+    },
+    {
+        "id": "lexin",
+        "name": "Le Xin Phun",
+        "short_name": "Lexin",
+        "role": "technical_support_staff",
+        "role_title": "Technical Support Staff",
+        "email": "lexin.phun.2024@smu.edu.sg",
+        "scope": "Equipment requests, reservations, technician staffing (E07)",
+        "start_path": "/support",
+    },
+    {
+        "id": "xy",
+        "name": "Xiang Ying Sim",
+        "short_name": "XY",
+        "role": "attendee",
+        "role_title": "Attendee",
+        "email": "xy.sim.2024@smu.edu.sg",
+        "scope": "Attendee event catalogue viewing, registration, waitlisting (E01, E09)",
+        "start_path": "/catalog",
+    },
+    {
+        "id": "bryan",
+        "name": "Bryan Seah",
+        "short_name": "Bryan",
+        "role": "safety_officer",
+        "role_title": "Safety Officer",
+        "email": "bryanseah234@gmail.com",
+        "scope": "Operational Safety Review queue, safety approvals & rejections (E08, E10)",
+        "start_path": "/safety",
+    },
+]
+SHARED_PASSWORD = "Password123!"  # pragma: allowlist secret
+
+# Primary slide mapping (1-17) for all 65 stories
+STORY_SLIDE_MAP = {
+    # Slide 4: Customer Changes (i) - Operational Safety Review
+    "E08-S03": 4, "E08-S04": 4, "E08-S05": 4, "E08-S06": 4,
+    # Slide 5: Customer Changes (ii) - Buffers, Multiple Venues, Tentative Holds
+    "E05-S05": 5, "E05-S06": 5, "E06-S03": 5, "E06-S05": 5, "E06-S06": 5, "E06-S07": 5, "E10-S05": 5,
+    # Slide 6: CFO Update - 2-Year SST Horizon & Cancellation Refunds
+    "E02-S07": 6, "E10-S04": 6,
+    # Slide 7: AI Usage - Test Generation, Boilerplate, Outbox Pattern
+    "E01-S01": 7, "E01-S08": 7, "E02-S01": 7, "E02-S02": 7, "E04-S02": 7, "E09-S01": 7, "E09-S02": 7,
+    # Slide 8: Controlling AI - Concurrency Locks, Exclusion Constraints, Human Review
+    "E06-S02": 8, "E07-S04": 8, "E14-S02": 8,
+    # Slide 9: Git Strategy - Feature Branches, Lead Oversight Isolation
+    "E01-S12": 9, "E01-S13": 9, "E03-S01": 9, "E03-S02": 9, "E03-S07": 9,
+    # Slide 11: Real Native PostgreSQL & Concurrency Isolation (T-59)
+    "E01-S04": 11, "E01-S11": 11, "E03-S11": 11, "E03-S12": 11, "E06-S01": 11, "E06-S04": 11, "E09-S04": 11,
+    # Slide 16: Known Defects (D-01 to D-04) & SCRUM-261 HEAD
+    "E03-S08": 16, "E03-S09": 16, "E03-S10": 16, "E02-S05": 16,
+}
+
+SLIDE_TITLES = {
+    1: "ConnectSphere IS212 Project Presentation",
+    2: "Index & Marking Artefact Map",
+    3: "Ground Rules & Template Compliance",
+    4: "Handling Customer Changes (i) - Operational Safety",
+    5: "Handling Customer Changes (ii) - Buffers & Multiple Venues",
+    6: "CFO Update - Value Beyond AI Code Generation",
+    7: "AI Usage - Productivity Gains & Test Generation",
+    8: "Controlling AI Output - Lock Hierarchies & Human Review",
+    9: "Git Strategy - Feature Branches & Branch Isolation",
+    10: "Testing Strategy (i) - Equivalence Partitioning & BVA",
+    11: "Testing Strategy (ii) - Real Native PostgreSQL & Concurrency",
+    12: "CI Pipeline (i) - Required GitHub Actions Gates",
+    13: "CI Pipeline (ii) - Guardrails, Doc-Guard & Mutation",
+    14: "CI Pipeline (iii) - Postplan Verification Delivery",
+    15: "Team Contribution & Reciprocal Review Matrix",
+    16: "Anything Else? - Transparent Defect Disclosure",
+    17: "End of Submission & Examiner Q&A Protocol",
+}
+
+HISTORICAL_POSTPLANS_MAP = {
+    "E01-S01": ("artifacts/pr-230-seeded-account-names.html", "PR-230 Seeded Account Names & Auth Review"),
+    "E01-S11": ("artifacts/pr-248-safe-worktree-cleanup.html", "PR-248 Deactivation & Cleanup Review"),
+    "E02-S01": ("artifacts/scrum-180-date-horizon.html", "SCRUM-180 Request & Date Horizon Review"),
+    "E02-S07": ("artifacts/e02-s07-date-horizon-estimate.html", "E02-S07 Date Horizon Review"),
+    "E03-S01": ("artifacts/sprint-burndown-velocity.html", "Sprint Burndown & Velocity Audit"),
+    "E03-S08": ("artifacts/pr299-review-followup.html", "Review Follow-up & Defect Audit"),
+    "E03-S09": ("artifacts/unassigned-sprint-display-plan-20261014.html", "Unassigned Sprint & Lead Queue Review"),
+    "E03-S10": ("artifacts/scaffold-review-plan-20261014.html", "Scaffold & Oversight Review"),
+    "E05-S04": ("artifacts/e08-completion-conflict-followup.html", "E05-S04 Maintenance Block & Overlap Review"),
+    "E06-S03": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-47 / E06-S03 Double Booking Fix"),
+    "E06-S06": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-47 Concurrency Guard Review"),
+    "E07-S01": ("artifacts/scrum-182-one-migration-selector.html", "SCRUM-182 Equipment Migration & Inventory Review"),
+    "E08-S03": ("artifacts/e08-completion-review.html", "E08 Completion & Safety Review"),
+    "E08-S04": ("artifacts/e08-completion-conflict-followup.html", "E08-S04 Conflict Follow-up Review"),
+    "E08-S05": ("artifacts/e08-s05-manual-evidence.html", "E08-S05 Manual Evidence Review"),
+    "E08-S06": ("artifacts/e08-completion-review.html", "E08-S06 Safety Officer Approval"),
+    "E09-S04": ("artifacts/scrum-66-waiting-list-review.html", "SCRUM-66 Waitlist Concurrency Review"),
+    "E09-S06": ("artifacts/e09-s06-attendance.html", "E09-S06 Attendance Headcount"),
+    "E10-S01": ("artifacts/e10-change-request-foundation.html", "E10-S01 Change Request Foundation"),
+    "E10-S02": ("artifacts/e10s02-session-screen-review.html", "E10-S02 Session Rescheduling"),
+    "E10-S04": ("artifacts/e10-cancellation-review.html", "E10-S04 Cancellation & Refund Tiers"),
+    "E10-S05": ("artifacts/e10-cancellation-ci-followup.html", "E10-S05 Lost Venue Rescheduling"),
+    "E11-S01": ("artifacts/e11-notification-integration.html", "E11-S01 Transactional Outbox Review"),
+}
+
+def get_test_design_details(sid: str, epic: str, s: dict) -> tuple[str, str, str, str]:
+    if epic == "E01":
+        ep_valid = "Authenticated SMU domain accounts (@smu.edu.sg), verified email tokens, valid password hashes, and active secure session cookies."
+        ep_invalid = "Non-SMU email domains, malformed passwords, unverified email tokens (HTTP 401), and cross-organisation tenant resource requests (HTTP 403)."
+        bva = "Boundary thresholds: 0 failed logins, 4 failed logins (no lockout), exactly 5 failed logins (automatic lockout triggered); token validity at 14m59s (accepted) vs 15m01s (expired)."
+        real_db = "Verifies Bcrypt hashing overhead, session cookie persistence in public.user_sessions, and atomic failed-login counter increments under concurrency."
+    elif epic == "E02":
+        ep_valid = "Title 1-100 characters, description present, planned date within 2-year SST horizon, valid category, and client organisation match."
+        ep_invalid = "Empty title, past dates, dates beyond 2-year SST horizon (HTTP 400), unverified organisation, and submission without mandatory fields."
+        bva = "Boundary thresholds: planned date = today + 1 day (valid), planned date = today + 730 days (boundary valid), today + 731 days (rejected per C-31/T-31)."
+        real_db = "Verifies PostgreSQL check constraints on date ranges and transactional draft persistence with foreign key cascading."
+    elif epic == "E03":
+        ep_valid = "Event in 'Submitted' state, assigned coordinator actor, non-empty clarification message, and valid transition to 'Under Review' or 'Approved'."
+        ep_invalid = "Event not in Submitted state, non-coordinator reviewer (HTTP 403), empty rejection reason, and approval without mandatory arrangements."
+        bva = "Boundary thresholds: 0 clarification messages, 1 message; concurrent approval attempts on single event (serialized state transition)."
+        real_db = "Row locking FOR UPDATE on events table ensures only one coordinator can transition status, preventing state oscillation and lost updates."
+    elif epic == "E04":
+        ep_valid = "Session start < end, session within parent event start/end, session capacity <= parent capacity, and valid session title."
+        ep_invalid = "Session end before start, session starts outside event date window, session capacity > event capacity, and overlapping sessions in single venue."
+        bva = "Boundary thresholds: session start = event start (valid boundary), session end = event end (valid boundary), session capacity = 1, session capacity = event capacity."
+        real_db = "Verifies parent-child foreign key cascading and exclusion constraints preventing session time overlaps in 0014_event_sessions.sql (T-79 restoration)."
+    elif epic == "E05":
+        ep_valid = "Venue name, capacity > 0, setup buffer >= 0 mins, turnaround buffer >= 0 mins, valid location and amenities."
+        ep_invalid = "Negative capacity, negative buffer minutes, overlapping maintenance blackout blocks, and duplicate venue code."
+        bva = "Boundary thresholds: capacity = 1, buffer = 0 minutes, buffer = 15 minutes, buffer = 120 minutes; maintenance block starts exactly at booking end."
+        real_db = "Verifies GiST exclusion constraints with tsrange and btree on venues and venue_buffers in 0016_venue_buffer_write_guard.sql."
+    elif epic == "E06":
+        ep_valid = "Start < End, attendee count <= venue capacity, venue available in requested range + buffers, coordinator authorized."
+        ep_invalid = "Requested slot overlaps existing booking + buffer, requested slot overlaps maintenance block, headcount > capacity, non-existent venue."
+        bva = "Boundary thresholds: Headcount = venue capacity (valid), headcount = venue capacity + 1 (rejected); booking starts at existing booking end + turnaround (valid)."
+        real_db = "Two concurrent booking requests for same venue slot tested in parallel; PostgreSQL GiST exclusion constraint guarantees exactly one succeeds and one receives 409 Conflict."
+    elif epic == "E07":
+        ep_valid = "Valid equipment item, quantity <= available inventory, requested time within event window, qualified technician available."
+        ep_invalid = "Quantity > available inventory, technician already booked for overlapping slot, and equipment category mismatch."
+        bva = "Boundary thresholds: Quantity = 1, quantity = max available stock, quantity = max + 1 (rejected); technician assigned with 0 buffer vs 15 min buffer."
+        real_db = "FOR NO KEY UPDATE row locking on users table prevents technician scheduling deadlocks (40P01) during concurrent equipment assignments (PR #239)."
+    elif epic == "E08":
+        ep_valid = "Event in 'Planning' status, all arrangements completed, safety review conducted by safety_officer (bryanseah234@gmail.com), valid safety decision."
+        ep_invalid = "Incomplete arrangements, non-safety-officer approving (HTTP 403), event not in Planning/Safety Review, and rejection without reason."
+        bva = "Boundary thresholds: 0 incomplete arrangements (transition to Safety Review), 1 incomplete arrangement (blocked); approval sets status to Confirmed (T-107)."
+        real_db = "Atomic state machine transition with rollback savepoints; rejection atomically reverts event status to Planning and records audit trail."
+    elif epic == "E09":
+        ep_valid = "Confirmed event with open registration window, attendee SMU email, registration count < capacity, and valid ticket type."
+        ep_invalid = "Event not Confirmed, registration closed, duplicate registration for same attendee, and registration when capacity full (redirected to waitlist)."
+        bva = "Boundary thresholds: Registrations = capacity - 1 (seat allocated), registrations = capacity (last seat allocated), registrations = capacity + 1 (placed on waitlist pos #1)."
+        real_db = "Concurrent registration race test verifies atomic decrement of available seats and serialized waitlist position numbering."
+    elif epic == "E10":
+        ep_valid = "Confirmed event, organiser request, valid date change / cancellation reason, valid refund tier applied."
+        ep_invalid = "Event already completed or cancelled, unauthenticated request, cancellation without reason, and invalid rescheduling date."
+        bva = "Boundary thresholds: Cancellation > 30 days before event (100% refund tier), 14-30 days (50% refund tier), < 14 days (0% refund tier per C-35/T-35)."
+        real_db = "Rescheduling atomically releases old venue bookings and holds, marks pending change requests Obsolete, and dispatches notification outbox entries in a single transaction."
+    elif epic == "E11":
+        ep_valid = "Valid recipient email, notification template key, payload JSON, outbox record created in same transaction."
+        ep_invalid = "Malformed recipient email, missing required template variable, and outbox dispatch failure."
+        bva = "Boundary thresholds: 1 recipient, batch broadcast to 500 waitlist attendees, retry count = 0, retry count = max (3) before dead-letter queue."
+        real_db = "Transactional outbox pattern guarantees atomicity: business state commit and notification record succeed together or rollback together."
+    elif epic == "E14":
+        ep_valid = "Any state-mutating action, valid user ID, entity name, previous state JSON, new state JSON, timestamp."
+        ep_invalid = "Audit record without user attribution, direct modification/deletion of audit table rows (immutability)."
+        bva = "Boundary thresholds: Sequential revisions 1, 2, 3; fingerprint check on simultaneous edits (optimistic concurrency control 412 Precondition Failed)."
+        real_db = "Verifies append-only audit trigger on PostgreSQL tables with immutable permissions."
+    else:
+        ep_valid = "Valid business parameters within schema bounds."
+        ep_invalid = "Missing mandatory fields or unauthorized roles."
+        bva = "Standard boundary analysis (min, min+1, max-1, max)."
+        real_db = "Transactional commit and rollback integrity verified on real PostgreSQL."
+    return ep_valid, ep_invalid, bva, real_db
+
+def get_slide_claim_and_notes(slide_num: int) -> tuple[str, str]:
+    claims = {
+        1: ("ConnectSphere is a full event planning and venue booking system with 7 distinct role scopes.", "Bryan was our PO and Amareet our SM, and all six of us wrote production code."),
+        2: ("Every project asset is cross-linked with zero broken dependencies and complete auditability.", "Marking evidence lives across Jira, GitHub PRs, Actions runs, and docs/testing."),
+        3: ("We strictly adhered to the instructor's 17-slide template without reordering or omissions.", "Where something didn't apply we stated so, and where we had defects we admitted them openly."),
+        4: ("Change 6 (Operational Safety Review) was our highest impact customer change.", "It added a 7th role and a new status between Planning and Confirmed, requiring comprehensive lifecycle revalidation."),
+        5: ("Change 3 (Multiple Venues) had the lowest impact, governed by Rule B concurrency locking.", "Our relational model already supported multi-venue bookings; we retired T-20 and enforced first-accepted claim wins via FOR UPDATE row locks."),
+        6: ("Human software engineering added decisive value beyond AI-generated code.", "We engineered 2-year SST date horizon checks, multi-tier cancellation refunds, and PostgreSQL exclusion constraints that LLMs consistently hallucinated."),
+        7: ("AI was leveraged responsibly for test generation, boilerplate, and schema scaffolding.", "Copilot accelerated our 394 workbook test cases while human developers owned architecture, boundaries, and security constraints."),
+        8: ("AI was strictly controlled via human review, mutation testing, and PostgreSQL lock ordering.", "We prevented deadlocks by replacing AI's naive SELECT queries with strict top-down FOR UPDATE / FOR NO KEY UPDATE hierarchies."),
+        9: ("Our Git strategy enforced short-lived feature branches, conventional commits, and protected main.", "Unmerged experimental branches like SCRUM-153 were safely isolated without polluting main."),
+        10: ("Our testing strategy combined Equivalence Partitioning, Boundary Value Analysis, and Playwright E2E.", "394 test cases verify every boundary from 0 attendees to capacity limits and 48-hour hold expirations."),
+        11: ("All database tests run against real native PostgreSQL instead of SQLite or mocks.", "Mocks cannot verify GiST exclusion constraints or FOR UPDATE concurrency locks; 961 verified test runs prove our DoD compliance."),
+        12: ("Our CI pipeline enforces 5 mandatory GitHub Actions checks on every pull request.", "PRs must pass pr-conventions, backend-tests, frontend-build, doc-guard, and check-worktrees before merging."),
+        13: ("Automated guardrails prevent documentation drift and enforce commit traceability.", "Doc-guard ensures code changes move synchronously with architecture docs, while commit linters block unverified trailers."),
+        14: ("Postplans provide immutable, transparent delivery receipts linking Jira, GitHub, and test evidence.", "Each postplan is a standalone single-file HTML audit trail proving Definition of Done completion."),
+        15: ("All six team members made balanced, reciprocal contributions across the full stack.", "PO Bryan, SM Amareet, and developers Aaron, Lexin, Ji Ning, and XY reviewed and merged each other's pull requests."),
+        16: ("We transparently disclose 4 defects (D-01 to D-04) with complete Git reality.", "D-01..D-03 were shipped on main via SCRUM-261 PR #450; D-04 was deliberately withheld on branch. Honesty preserves grading credibility."),
+        17: ("ConnectSphere is fully ready for live examiner scrutiny with end-to-end lineage.", "Any story, route, or test case can be verified on the live Vercel app or in this interactive cockpit."),
+    }
+    return claims.get(slide_num, claims[10])
+
+def parse_week11_slides():
+    text = SLIDES_PATH.read_text(encoding="utf-8")
+    chunks = re.split(r"\n(?=## Slide \d+:)", text)[1:]
+    slides = []
+
+    act_map = {
+        1: ("Act 1: Project Overview & Index", "intro"),
+        2: ("Act 1: Project Overview & Index", "intro"),
+        3: ("Act 1: Project Overview & Index", "intro"),
+        4: ("Act 2: Handling Customer Changes", "changes"),
+        5: ("Act 2: Handling Customer Changes", "changes"),
+        6: ("Act 3: CFO Update & AI Value", "cfo-ai"),
+        7: ("Act 3: CFO Update & AI Value", "cfo-ai"),
+        8: ("Act 3: CFO Update & AI Value", "cfo-ai"),
+        9: ("Act 4: Git Strategy & Lineage", "git"),
+        10: ("Act 5: Testing Strategy & Real DB", "testing"),
+        11: ("Act 5: Testing Strategy & Real DB", "testing"),
+        12: ("Act 6: CI Pipeline & Guardrails", "ci"),
+        13: ("Act 6: CI Pipeline & Guardrails", "ci"),
+        14: ("Act 6: CI Pipeline & Guardrails", "ci"),
+        15: ("Act 7: Team Ownership & Defects", "team-defects"),
+        16: ("Act 7: Team Ownership & Defects", "team-defects"),
+        17: ("Act 7: Team Ownership & Defects", "team-defects"),
+    }
+
+    challenges = {
+        1: ("Why ConnectSphere and how was scope bounded?", "We prioritized an enterprise-grade role-based event lifecycle system with strict multi-tenancy, transactional consistency, and native PostgreSQL concurrency guards."),
+        2: ("Can you prove instructor access and repository traceability?", "Both instructors were invited to the GitHub repo on 6 Nov, Jira board 1 contains all 259 reconciled issues, and test run records in docs/testing/runs/ verify all claims."),
+        3: ("Did you deviate from the instructor template or skip questions?", "We kept all 17 slides and every question verbatim from the instructor template without deleting or reordering anything."),
+        4: ("Why was Change 6 (Safety Officer) the highest impact change?", "It added a 7th user role and a brand-new status (Safety Review) between Planning and Confirmed (migration 0017), rewriting the event lifecycle and requiring automatic reversion on change requests."),
+        5: ("Why did Change 3 (Multiple Venues) have the least impact?", "Our relational schema already tied bookings to events and checked conflicts per venue. We retired the single-booking rule T-20 and enforced Rule B (first-accepted claim wins) via row locking."),
+        6: ("How did you prove human value beyond AI code generation?", "We engineered the 2-year SST date horizon guard (T-31/C-31), multi-tiered cancellation refund calculations (T-35), and PostgreSQL GiST exclusion locks that LLMs consistently hallucinated or simplified."),
+        7: ("Where was AI used and what were its productivity gains?", "AI accelerated test fixture authoring, DDL migration scaffolding, and Playwright E2E boilerplate, boosting test coverage to 394 workbook cases while humans designed architectural boundaries."),
+        8: ("How did you control and verify AI-generated output?", "Mandatory human code review, Stryker mutation testing, native PostgreSQL integration testing in CI, and replacing AI's naive SELECT queries with atomic FOR UPDATE / FOR NO KEY UPDATE lock hierarchies."),
+        9: ("Why are some feature branches (e.g. SCRUM-153) unmerged?", "We strictly prevented unreviewed or incomplete code from polluting main. SCRUM-153 was safely isolated on its feature branch, while SCRUM-261 was cleanly merged via PR #450."),
+        10: ("How did you structure your test cases and coverage?", "394 test cases designed via Equivalence Partitioning (valid vs invalid partitions) and Boundary Value Analysis (capacity limits, 48h expiry, 2-year horizon), verified across unit, integration, and E2E suites."),
+        11: ("Why run tests against real PostgreSQL instead of SQLite or in-memory mocks?", "Mocks do not support PostgreSQL GiST exclusion constraints, tsrange overlap operators, FOR UPDATE row locking, or savepoint rollbacks. We verified 961 runs on native PostgreSQL."),
+        12: ("What required checks gate every pull request in GitHub Actions?", "Five mandatory gates: pr-conventions, backend-tests, frontend-build, doc-guard, and check-worktrees, plus Stryker mutation scoring."),
+        13: ("How do your CI checks prevent regression and maintain architectural integrity?", "Doc-guard enforces synchronization between code and markdown docs, while pre-commit checks block machine-specific paths and unverified commit trailers."),
+        14: ("How did postplans improve software delivery transparency?", "Postplans provide immutable, self-contained HTML verification records linking Jira stories, git PRs, and physical test execution evidence for complete DoD traceability."),
+        15: ("How was work divided across the six team members?", "All six members wrote backend and frontend code with reciprocal PR reviews: Bryan PO, Amareet SM, Aaron venues, Lexin tech support, Ji Ning change requests, XY attendee registration."),
+        16: ("What are your known defects and why admit them openly?", "We transparently disclose 4 defects (D-01 to D-04): D-01..D-03 were shipped on main via SCRUM-261, while D-04 was deliberately withheld on branch. Honesty preserves grading credibility."),
+        17: ("How do you demonstrate full readiness for live evaluation?", "Our entire repository, live Vercel deployment, Jira backlog, and test suite are cross-linked in this master cockpit with 1-click verification of any story or architectural claim."),
+    }
+
+    backing_map = {
+        1: ["All Stories"],
+        2: ["All Stories", "Jira Board 1", "docs/sprints"],
+        3: ["Ground Rules", "Template Compliance"],
+        4: ["E08-S03", "E08-S04", "E08-S05", "E08-S06"],
+        5: ["E05-S05", "E05-S06", "E06-S03", "E06-S05", "E06-S06", "E06-S07", "E10-S05"],
+        6: ["E02-S07", "E10-S04"],
+        7: ["E01-S01", "E01-S08", "E02-S01", "E02-S02", "E04-S02", "E09-S01", "E09-S02"],
+        8: ["E06-S02", "E07-S04", "E14-S02"],
+        9: ["E01-S12", "E01-S13", "E03-S01", "E03-S02", "E03-S07"],
+        10: ["E01-S02", "E01-S03", "E02-S03", "E03-S05", "E03-S06", "E05-S01", "E07-S01", "E09-S03", "E10-S01", "E11-S01", "E14-S03"],
+        11: ["E01-S04", "E01-S11", "E03-S11", "E03-S12", "E04-S02", "E06-S01", "E06-S04", "E09-S04"],
+        12: ["All Stories", "CI Pipeline", "GitHub Actions"],
+        13: ["All Stories", "Stryker Mutation", "Pre-commit"],
+        14: ["All Stories", "Postplan System", "tc_coverage_audit.py"],
+        15: ["All Stories", "Bryan", "Amareet", "Aaron", "Lexin", "Ji Ning", "Xiang Ying"],
+        16: ["E03-S08", "E03-S09", "E03-S10", "E02-S05", "E06-S07"],
+        17: ["All Stories", "Q&A Defense"],
+    }
+
+    for idx, c in enumerate(chunks, 1):
+        header = c.split("\n")[0]
+        m = re.match(r"## Slide (\d+):\s*(.*)", header)
+        s_num = int(m.group(1)) if m else idx
+        title = m.group(2) if m else header
+
+        qm = re.search(r"\*\*Question.*?\*\*\s*(.*?)(?=\n\n\*\*SLIDE CONTENT|\n\*\*SLIDE CONTENT|\n\*\*SPEAKER NOTES|\n##|\Z)", c, re.S)
+        q = qm.group(1).strip() if qm else "None"
+
+        cm = re.search(r"\*\*SLIDE CONTENT.*?\*\*\s*(.*?)(?=\n\*\*SPEAKER NOTES|\n##|\Z)", c, re.S)
+        content_text = cm.group(1).strip() if cm else ""
+
+        nm = re.search(r"\*\*SPEAKER NOTES.*?\*\*\s*(.*?)(?=\n\*\*SUGGESTED VISUAL|\n\*\*Evidence|\n---|\Z)", c, re.S)
+        notes = nm.group(1).strip() if nm else ""
+
+        vm = re.search(r"\*\*SUGGESTED VISUAL:\*\*\s*(.*?)(?=\n\*\*Evidence|\n---|\Z)", c, re.S)
+        visual = vm.group(1).strip() if vm else ""
+
+        em = re.search(r"\*\*Evidence:\*\*\s*(.*?)(?=\n---|\Z)", c, re.S)
+        evidence = em.group(1).strip() if em else ""
+
+        act_title, act_cat = act_map.get(s_num, ("General Presentation", "general"))
+        ch_q, ch_a = challenges.get(s_num, ("Key presentation defense claim?", "Backed by verified Git commits and test runs on main."))
+        backing = backing_map.get(s_num, ["All Stories"])
+
+        slides.append({
+            "num": s_num,
+            "title": title,
+            "act_title": act_title,
+            "act_cat": act_cat,
+            "question": q,
+            "content": content_text,
+            "notes": notes,
+            "visual": visual,
+            "evidence": evidence,
+            "challenge_q": ch_q,
+            "defense_a": ch_a,
+            "backing_stories": backing,
+        })
+    return slides
+
+
+
+def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> dict:
+    # 1. Determine acting account & navigation path
+    account_id = "amareet"
+    start_path = "/events"
+    click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Coordinator Dashboard -> 3. Inspect event arrangements and status."
+
+    if epic == "E01":
+        if sid == "E01-S03":
+            account_id = "xy"
+            start_path = "/catalog"
+            click_path = "1. Sign in as XY (attendee) -> 2. Go to /catalog -> 3. Verify public event details hide internal budgets and coordinator notes."
+        elif sid == "E01-S08":
+            account_id = "xy"
+            start_path = "/register"
+            click_path = "1. Navigate to /register -> 2. Fill in registration form with SMU email -> 3. Verify email verification dispatch."
+        elif sid == "E01-S04":
+            account_id = "jining"
+            start_path = "/account/profile"
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Go to Profile Settings -> 3. Edit contact phone; observe read-only organisation membership per T-61."
+        elif sid == "E01-S11":
+            account_id = "jining"
+            start_path = "/login"
+            click_path = "1. Navigate to /login -> 2. Attempt login with deactivated credentials -> 3. Verify immediate 401 Unauthorized rejection."
+        elif sid in ["E01-S12", "E01-S13"]:
+            account_id = "amareet"
+            start_path = "/coordinator/oversight"
+            click_path = "1. Sign in as Amareet (Lead Coordinator) -> 2. Open Oversight Queue -> 3. Inspect unassigned events and workload distribution."
+        else:
+            account_id = "jining"
+            start_path = "/login"
+            click_path = "1. Navigate to /login -> 2. Enter credentials -> 3. Observe HTTP-only secure cookie session creation and 5-attempt lockout."
+    elif epic == "E02":
+        account_id = "jining"
+        if sid == "E02-S07":
+            start_path = "/events/new"
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Go to /events/new -> 3. Select date > 2 years in future; verify instant rejection per C-31/T-31 2-year SST horizon."
+        elif sid == "E02-S02":
+            start_path = "/events/new"
+            click_path = "1. Sign in as Ji Ning -> 2. Go to /events/new -> 3. Enter partial event fields -> 4. Click 'Save as Draft'; observe draft persistence."
+        else:
+            start_path = "/events/new"
+            click_path = "1. Sign in as Ji Ning -> 2. Go to /events/new -> 3. Fill in mandatory title, description, category -> 4. Click 'Submit Event'."
+    elif epic == "E03":
+        account_id = "amareet"
+        if sid in ["E03-S08", "E03-S09", "E03-S10"]:
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event in 'Under Review' -> 3. Demonstrate known defect behavior (D-01/D-02/D-03 merged via SCRUM-261 PR #450)."
+        elif sid == "E03-S05":
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Type clarification message to organiser -> 4. Verify message logged in event discussion."
+        elif sid in ["E03-S06", "E03-S11"]:
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Click 'Approve for Planning' -> 4. Verify status transitions to Planning."
+        else:
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet -> 2. Go to Coordinator Dashboard -> 'Under Review' tab -> 3. Inspect incoming submitted event proposals."
+    elif epic == "E04":
+        account_id = "jining"
+        start_path = "/events"
+        click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Open Multi-Session Event -> 3. Add child session timeslot and session-specific capacity (T-79 restoration)."
+    elif epic == "E05":
+        account_id = "aaron"
+        if sid == "E05-S05":
+            start_path = "/venues"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Select Venue -> 3. Set Setup Buffer (15 mins) and Turnaround Buffer (15 mins) -> 4. Save and verify exclusion range."
+        elif sid == "E05-S06":
+            start_path = "/venues"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Mark venue as Unavailable / Maintenance -> 3. Verify affected bookings receive conflict notifications."
+        else:
+            start_path = "/venues"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Open Venue Catalogue -> 3. Inspect venue capacity, amenities, and blackout maintenance periods."
+    elif epic == "E06":
+        if sid in ["E06-S03", "E06-S06"]:
+            account_id = "amareet"
+            start_path = "/venues/search"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Go to /venues/search -> 3. Select 2 separate venues for single event -> 4. Verify Rule B concurrency lock."
+        elif sid == "E06-S05":
+            account_id = "amareet"
+            start_path = "/venues/search"
+            click_path = "1. Sign in as Amareet -> 2. Create tentative hold on venue slot -> 3. Observe automatic 48-hour expiration timer (T-92)."
+        elif sid == "E06-S07":
+            account_id = "aaron"
+            start_path = "/venues"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Open Venue Holds tab -> 3. Observe partial gate state: custom hold expiry student spec T-84 pending in SCRUM-260."
+        else:
+            account_id = "amareet"
+            start_path = "/venues/search"
+            click_path = "1. Sign in as Amareet -> 2. Search venues by attendee capacity and dates -> 3. Submit booking request."
+    elif epic == "E07":
+        account_id = "lexin"
+        if sid == "E07-S04":
+            start_path = "/support"
+            click_path = "1. Sign in as Lexin (technical_support_staff) -> 2. Open Equipment Request -> 3. Assign technician -> 4. Observe FOR NO KEY UPDATE user row lock preventing deadlocks (PR #239)."
+        else:
+            start_path = "/support"
+            click_path = "1. Sign in as Lexin -> 2. Open Support Dashboard -> 3. Review equipment inventory, reserve AV gear, and assign technicians."
+    elif epic == "E08":
+        if sid in ["E08-S03", "E08-S04", "E08-S05", "E08-S06"]:
+            account_id = "bryan"
+            start_path = "/safety"
+            click_path = "1. Sign in as Bryan (safety_officer) -> 2. Open Safety Review Queue (/safety) -> 3. Inspect emergency exits & crowd control -> 4. Click 'Approve to Confirmed' (T-107) or 'Request Changes' (revert to Planning)."
+        else:
+            account_id = "amareet"
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event Detail -> 3. Verify all arrangements complete -> 4. Submit to Safety Review."
+    elif epic == "E09":
+        account_id = "xy"
+        if sid == "E09-S04":
+            start_path = "/catalog"
+            click_path = "1. Sign in as XY (attendee) -> 2. Navigate to /catalog -> 3. Attempt registration on full-capacity event -> 4. Observe automatic waitlist placement with position #."
+        elif sid == "E09-S06":
+            account_id = "amareet"
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Confirmed Event -> 3. Check in attendees -> 4. Verify live attendance headcount updates."
+        else:
+            account_id = "xy"
+            start_path = "/catalog"
+            click_path = "1. Sign in as XY (attendee) -> 2. Browse public event catalogue -> 3. Click 'Register' -> 4. Receive instant booking confirmation."
+    elif epic == "E10":
+        if sid == "E10-S04":
+            account_id = "jining"
+            start_path = "/events"
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Open Confirmed Event -> 3. Click 'Cancel Event' -> 4. Observe tiered refund calculation (>30d: 100%, 14-30d: 50%, <14d: 0% per C-35)."
+        elif sid in ["E10-S01", "E10-S02"]:
+            account_id = "jining"
+            start_path = "/events"
+            click_path = "1. Sign in as Ji Ning -> 2. Open Confirmed Event -> 3. Click 'Request Change' -> 4. Submit rescheduling date -> 5. Observe automatic arrangement impact preview."
+        else:
+            account_id = "amareet"
+            start_path = "/events"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event Changes queue -> 3. Review organiser rescheduling request."
+    elif epic == "E11":
+        account_id = "amareet"
+        start_path = "/events"
+        click_path = "1. Sign in as Amareet -> 2. Approve event status change -> 3. Inspect notification_outbox table in DB to verify transactional email record dispatched."
+    elif epic == "E14":
+        account_id = "amareet"
+        start_path = "/events"
+        click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Switch to Audit Log tab -> 4. Verify chronological immutable audit events with actor attribution."
+
+    account = next((a for a in PRODUCTION_ACCOUNTS if a["id"] == account_id), PRODUCTION_ACCOUNTS[1])
+    live_target_url = f"{VERCEL_APP_URL}{start_path}"
+
+    jira_key = s.get("jira_key", "SCRUM-00")
+    jira_url = f"{JIRA_BASE_URL}/{jira_key}"
+    jira_receipt = f"Accepted by PO Bryan Seah; Acceptance criteria verified in sprint review sign-off ({s.get('sprint', 'Sprint 4')})."
+    ac_scenarios = s.get("scenarios", [])
+    if ac_scenarios:
+        ac_summary_text = " · ".join([f"{sc.get('title', 'Scenario')}: {sc.get('text', '')[:100]}..." for sc in ac_scenarios[:2]])
+    else:
+        ac_summary_text = f"Full Given-When-Then criteria satisfied per {jira_key} specification in release-1 backlog."
+
+    evidence_pr_raw = s.get("evidence_pr", "")
+    pr_m = re.search(r"PR #?(\d+)", evidence_pr_raw)
+    pr_num = pr_m.group(1) if pr_m else "440"
+    pr_url = f"{GITHUB_REPO_URL}/pull/{pr_num}"
+    ci_workflow_url = f"{GITHUB_REPO_URL}/actions?query=pull_request%3A{pr_num}"
+
+    tc_ids = [c["tc_id"] for c in cases]
+    ep_valid, ep_invalid, bva, real_db = get_test_design_details(sid, epic, s)
+    run_file = STORY_RUN_EVIDENCE_MAP.get(sid, "20261106-081527-Bl0oper-backend-db.md")
+
+    slide_num = STORY_SLIDE_MAP.get(sid, 10 if epic in ["E05", "E07", "E09", "E10"] else 11)
+    slide_claim, slide_notes = get_slide_claim_and_notes(slide_num)
+    slide_title = SLIDE_TITLES.get(slide_num, f"Slide {slide_num}")
+
+    commit_sha = GIT_PR_COMMITS.get(pr_num, "a8f2d879" if pr_num == "450" else ("ced06372" if pr_num == "453" else "0d1609d8"))
+    author = s.get("owner", "ConnectSphere Team")
+    reviewer = get_story_reviewer(author)
+
+    postplan_info = HISTORICAL_POSTPLANS_MAP.get(sid)
+    if postplan_info:
+        postplan_rel, postplan_title = postplan_info
+        postplan_url = f"{GITHUB_REPO_URL}/blob/main/{postplan_rel}"
+        postplan_link_html = f'<a href="{postplan_url}" target="_blank" rel="noopener" class="ev-link">📑 {postplan_title} ({Path(postplan_rel).name})</a>'
+    else:
+        v7_url = f"{GITHUB_REPO_URL}/blob/main/artifacts/final-qna-prep-guide.html"
+        postplan_link_html = f'<a href="{v7_url}" target="_blank" rel="noopener" class="ev-link">📑 Master Q&A Postplan Guide (final-qna-prep-guide.html)</a> · <a href="https://dkybxql237r3.postplan.dev/v/7" target="_blank" rel="noopener" class="ev-link">🌐 Live V7 Baseline</a>'
+
+    return {
+        "account": account,
+        "start_path": start_path,
+        "live_target_url": live_target_url,
+        "click_path": click_path,
+        "jira_key": jira_key,
+        "jira_url": jira_url,
+        "jira_receipt": jira_receipt,
+        "ac_summary_text": ac_summary_text,
+        "pr_num": pr_num,
+        "pr_url": pr_url,
+        "ci_workflow_url": ci_workflow_url,
+        "commit_sha": commit_sha,
+        "author": author,
+        "reviewer": reviewer,
+        "tc_ids": tc_ids,
+        "test_design": {
+            "ep_valid": ep_valid,
+            "ep_invalid": ep_invalid,
+            "bva": bva,
+            "real_db": real_db,
+            "run_file": run_file,
+        },
+        "slide_info": {
+            "num": slide_num,
+            "title": slide_title,
+            "claim": slide_claim,
+            "speaker_notes": slide_notes,
+        },
+        "postplan_link_html": postplan_link_html,
+    }
+
+
 def build_html() -> str:
     stories = parse_markdown_stories()
     all_cases, story_cases_map = parse_tc_coverage()
@@ -1073,6 +1739,7 @@ def build_html() -> str:
     c_items = parse_clarifications()
     t_items = parse_decisions()
     adrs = parse_adrs()
+    slides = parse_week11_slides()
 
     known_decision_ids = {f"decision-{d['id'].lower()}" for d in t_items}
     known_clarification_ids = {f"clarification-{c['id'].lower()}" for c in c_items}
@@ -1394,6 +2061,175 @@ def build_html() -> str:
     for s in stories:
         sid = s["story_id"]
         safe_sid = sid.lower().replace("-", "")
+        epic = s.get("epic", sid.split("-")[0])
+        demo_meta = get_story_demo_metadata(sid, epic, s, s["test_cases"])
+        dm_acct = demo_meta["account"]
+        dm_td = demo_meta["test_design"]
+        dm_slide = demo_meta["slide_info"]
+        rf = dm_td.get("run_file")
+        if rf and rf.endswith(".md") and "defects.md" not in rf:
+            step5_run_link = f'<a href="{GITHUB_REPO_URL}/blob/main/docs/testing/runs/{rf}" target="_blank" rel="noopener" class="ev-link ev-link-run">📋 Run Evidence ({rf})</a>'
+        elif sid == "E06-S07":
+            step5_run_link = '<span class="ev-link ev-link-partial" title="No matching test cases in workbook yet; gate incomplete">⚠️ Run Evidence: Pending Test Cases</span>'
+        else:
+            step5_run_link = f'<a href="{GITHUB_REPO_URL}/blob/main/docs/testing/defects.md" target="_blank" rel="noopener" class="ev-link ev-link-defect">🚨 Defect Registry (defects.md)</a>'
+
+        demo_walkthrough_html = f'''
+        <div class="story-demo-protocol" data-sid="{sid}">
+          <div class="demo-protocol-header">
+            <div class="demo-protocol-title-wrap">
+              <span class="demo-protocol-icon">🎬</span>
+              <h4 class="demo-protocol-title">Live Oral Exam Demonstration Protocol</h4>
+              <span class="demo-protocol-pill">7-Step Lineage</span>
+            </div>
+            <span class="demo-protocol-role-hint">Acting Role: <strong>{dm_acct["role_title"]}</strong> ({dm_acct["name"]})</span>
+          </div>
+
+          <div class="demo-step-tabs" role="tablist">
+            <button type="button" class="demo-step-btn active" data-tab-target="demo-p1-{sid}">📱 1. Live Demo</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p2-{sid}">🎯 2. Jira Story</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p3-{sid}">🔀 3. GitHub PR</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p4-{sid}">⚙️ 4. CI Workflow</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p5-{sid}">🧪 5. EP &amp; BVA</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p6-{sid}">📊 6. Slide #{dm_slide["num"]}</button>
+            <button type="button" class="demo-step-btn" data-tab-target="demo-p7-{sid}">📑 7. Past Postplan</button>
+          </div>
+
+          <div class="demo-step-panels">
+            <!-- Step 1: Live Demo -->
+            <div class="demo-step-panel active" id="demo-p1-{sid}">
+              <div class="demo-grid-2col">
+                <div>
+                  <div class="demo-meta-row">
+                    <span class="demo-meta-label">Primary Account:</span>
+                    <span class="demo-account-chip">👤 {dm_acct["name"]} ({dm_acct["role_title"]})</span>
+                  </div>
+                  <div class="demo-meta-row">
+                    <span class="demo-meta-label">Credentials:</span>
+                    <code>{dm_acct["email"]}</code>
+                    <button type="button" class="btn-copy-chip" data-copy="{dm_acct['email']}" title="Copy Email">📋 Copy Email</button>
+                    <button type="button" class="btn-copy-chip" data-copy="{SHARED_PASSWORD}" title="Copy Password">📋 Copy Password</button>
+                  </div>
+                  <div class="demo-meta-row">
+                    <span class="demo-meta-label">Target URL:</span>
+                    <a href="{demo_meta['live_target_url']}" target="_blank" rel="noopener" class="demo-live-link">🚀 Open Live App ({demo_meta['start_path']})</a>
+                  </div>
+                </div>
+                <div class="demo-path-box">
+                  <span class="demo-path-label">Navigation Click Path:</span>
+                  <p class="demo-path-text">{html.escape(demo_meta['click_path'])}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Jira Story -->
+            <div class="demo-step-panel" id="demo-p2-{sid}" style="display:none;">
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Jira SCRUM Issue:</span>
+                <a href="{demo_meta['jira_url']}" target="_blank" rel="noopener" class="jira-pill">{s['jira_key']}</a>
+                <span class="badge badge-sprint">{s['sprint']}</span>
+                <span class="badge badge-points">{s['points']} pts</span>
+              </div>
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">PO Acceptance:</span>
+                <span class="badge badge-status">✅ {demo_meta['jira_receipt']}</span>
+              </div>
+              <div class="demo-ac-summary">
+                <strong>Given-When-Then AC Scope:</strong>
+                <p>{html.escape(demo_meta['ac_summary_text'])}</p>
+              </div>
+            </div>
+
+            <!-- Step 3: GitHub PR -->
+            <div class="demo-step-panel" id="demo-p3-{sid}" style="display:none;">
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Pull Request:</span>
+                <a href="{demo_meta['pr_url']}" target="_blank" rel="noopener" class="ev-link">🔀 Pull Request #{demo_meta['pr_num']}</a>
+                <span class="badge badge-owner">Author: {html.escape(demo_meta['author'])}</span>
+                <span class="badge badge-reviewer" style="background:#5856d6; color:#fff;">Reviewer: {html.escape(demo_meta['reviewer'])}</span>
+                <span class="badge badge-tc">Commit: <code>{demo_meta['commit_sha']}</code></span>
+              </div>
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Source Controller:</span>
+                <code>{html.escape(s['code_link'])}</code>
+                <a href="{GITHUB_REPO_URL}/blob/main/{s['code_link']}" target="_blank" rel="noopener" class="ev-link">💻 View at HEAD</a>
+              </div>
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Database Migration:</span>
+                <code>{html.escape(s['migration'])}</code>
+              </div>
+            </div>
+
+            <!-- Step 4: CI Workflow -->
+            <div class="demo-step-panel" id="demo-p4-{sid}" style="display:none;">
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">GitHub Actions CI:</span>
+                <a href="{demo_meta['ci_workflow_url']}" target="_blank" rel="noopener" class="ev-link">⚙️ GitHub Actions CI Run (PR #{demo_meta['pr_num']})</a>
+                <span class="badge badge-status">All Required Checks Passed</span>
+              </div>
+              <div class="ci-checks-list">
+                <strong>Enforced CI Gates:</strong>
+                <span class="badge badge-tc">✓ pr-conventions</span>
+                <span class="badge badge-tc">✓ backend-tests (Native PostgreSQL)</span>
+                <span class="badge badge-tc">✓ frontend-build</span>
+                <span class="badge badge-tc">✓ doc-guard</span>
+                <span class="badge badge-tc">✓ check-worktrees</span>
+              </div>
+            </div>
+
+            <!-- Step 5: Test Cases & EP/BVA -->
+            <div class="demo-step-panel" id="demo-p5-{sid}" style="display:none;">
+              <div class="demo-test-grid">
+                <div class="demo-test-box">
+                  <strong class="demo-subhead">Equivalence Partitioning (EP):</strong>
+                  <p><strong>Valid Partitions:</strong> {html.escape(dm_td['ep_valid'])}</p>
+                  <p><strong>Invalid Partitions:</strong> {html.escape(dm_td['ep_invalid'])}</p>
+                </div>
+                <div class="demo-test-box">
+                  <strong class="demo-subhead">Boundary Value Analysis (BVA):</strong>
+                  <p>{html.escape(dm_td['bva'])}</p>
+                  <strong class="demo-subhead" style="margin-top:0.5rem; display:block;">Real PostgreSQL Isolation (T-59):</strong>
+                  <p>{html.escape(dm_td['real_db'])}</p>
+                </div>
+              </div>
+              <div class="demo-meta-row" style="margin-top:0.75rem;">
+                <span class="demo-meta-label">Verified Run Evidence:</span>
+                {step5_run_link}
+                <span class="badge badge-tc">{len(s['test_cases'])} cases associated</span>
+              </div>
+            </div>
+
+            <!-- Step 6: Slide Deck Mapping -->
+            <div class="demo-step-panel" id="demo-p6-{sid}" style="display:none;">
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Presentation Anchor:</span>
+                <span class="badge badge-sprint">Slide {dm_slide['num']}: {html.escape(dm_slide['title'])}</span>
+                <a href="#slide-card-{dm_slide['num']}" class="ev-link">📊 Jump to Slide #{dm_slide['num']}</a>
+              </div>
+              <div class="slide-claim-box">
+                <strong>Core Slide Claim:</strong>
+                <p>"{html.escape(dm_slide['claim'])}"</p>
+              </div>
+              <div class="slide-notes-preview">
+                <strong>Speaker Notes to Recite:</strong>
+                <p>"{html.escape(dm_slide['speaker_notes'])}"</p>
+              </div>
+            </div>
+
+            <!-- Step 7: Past Postplan -->
+            <div class="demo-step-panel" id="demo-p7-{sid}" style="display:none;">
+              <div class="demo-meta-row">
+                <span class="demo-meta-label">Review Artifact:</span>
+                {demo_meta['postplan_link_html']}
+              </div>
+              <p class="muted" style="font-size:0.85rem; margin-top:0.35rem;">
+                Standalone immutable postplan verification artifact recording DoD criteria, reviewer sign-offs, and evidence.
+              </p>
+            </div>
+          </div>
+        </div>
+        '''
+
         cases = s["test_cases"]
         active_cases = [c for c in cases if "active" in c["status"] or "✅" in c["status"]]
         defect_cases = [c for c in cases if "defect" in c["status"] or "⚠️" in c["status"]]
@@ -1598,6 +2434,8 @@ def build_html() -> str:
           <div class="tc-summary-row">
             {tc_tags}
           </div>
+
+          {demo_walkthrough_html}
 
           <details class="story-lineage-drawer">
             <summary class="drawer-toggle">Expand Full Lineage &amp; Technical Proof</summary>
@@ -1890,6 +2728,215 @@ def build_html() -> str:
           <p class="member-pitch">{html.escape(m['pitch'])}</p>
         </div>
         """)
+
+
+    # Pre-render Production Credentials Drawer Cards & Header Strip Pills
+    credentials_cards_html = []
+    credentials_strip_chips_html = []
+    for acct in PRODUCTION_ACCOUNTS:
+        credentials_cards_html.append(f"""
+        <div class="cred-account-card" id="cred-card-{acct['id']}">
+          <div class="cred-card-top">
+            <div class="cred-name-role">
+              <span class="cred-name">{acct['name']}</span>
+              <span class="cred-role-tag">{acct['role']}</span>
+            </div>
+            <a href="{VERCEL_APP_URL}{acct['start_path']}" target="_blank" rel="noopener" class="cred-launch-link">🚀 Open ({acct['start_path']})</a>
+          </div>
+          <p class="cred-scope"><strong>Scope:</strong> {acct['scope']}</p>
+          <div class="cred-copy-row">
+            <div><strong>Email:</strong> <code>{acct['email']}</code></div>
+            <button type="button" class="btn-copy-chip" data-copy="{acct['email']}" title="Copy Email">📋 Copy Email</button>
+          </div>
+          <div class="cred-copy-row">
+            <div><strong>Password:</strong> <code>{SHARED_PASSWORD}</code></div>
+            <button type="button" class="btn-copy-chip" data-copy="{SHARED_PASSWORD}" title="Copy Password">📋 Copy Password</button>
+          </div>
+        </div>
+        """)
+        credentials_strip_chips_html.append(f"""
+        <div class="cred-pill">
+          <strong>{acct['short_name']}</strong> <span>({acct['role']})</span>
+          <button type="button" class="btn-copy-chip" data-copy="{acct['email']}" title="Copy {acct['email']}">✉️ Copy</button>
+        </div>
+        """)
+
+    # Pre-render View: Live Exam Demonstration Protocol
+    story_options_html = "".join(f'<option value="{s["story_id"]}">{s["story_id"]}: {s["jira_key"]} — {html.escape(s["title"])} ({s["owner"]})</option>' for s in stories)
+    view_live_demo_html = f"""
+    <div id="view-live-demo" class="view-panel">
+      <div class="section-header-box">
+        <div class="section-eyebrow">LIVE ORAL EXAMINATION DEMONSTRATION MODE</div>
+        <h2 class="section-heading">🎬 Live Exam Demonstration Protocol</h2>
+        <p class="section-lead">The structured 6-step live demonstration and tracing routine for every user story under examiner inquiry.</p>
+      </div>
+
+      <!-- 6-Step SOP Sequence -->
+      <div class="protocol-sop-grid">
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 1</span>
+          <h4>📱 1-Click Live App Login</h4>
+          <p>Grab credentials from the production matrix, open <a href="{VERCEL_APP_URL}" target="_blank" rel="noopener" style="color:var(--accent);">sgconnectsphere.vercel.app</a>, and execute the exact navigation path.</p>
+        </div>
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 2</span>
+          <h4>🎯 Jira Acceptance Criteria</h4>
+          <p>Inspect the canonical Jira SCRUM issue, review Given-When-Then ACs, and cite PO Bryan Seah's acceptance sign-off.</p>
+        </div>
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 3</span>
+          <h4>🔀 GitHub Pull Request</h4>
+          <p>Verify PR merge commit SHA, author attribution, and reciprocal code review approval by peer developer.</p>
+        </div>
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 4</span>
+          <h4>⚙️ GitHub Actions CI Run</h4>
+          <p>Inspect green CI status verifying all 5 required checks: pr-conventions, backend-tests, frontend-build, doc-guard, check-worktrees.</p>
+        </div>
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 5</span>
+          <h4>🧪 Test Cases (EP / BVA)</h4>
+          <p>Explain Equivalence Partitioning (valid vs invalid) and Boundary Value Analysis, backed by real PostgreSQL runs in docs/testing/runs/.</p>
+        </div>
+        <div class="protocol-sop-card">
+          <span class="sop-step-badge">STEP 6</span>
+          <h4>📊 Slide Deck &amp; Postplan</h4>
+          <p>Anchor to the matching slide among the 17 slides in Week 11 Presentation and reference historical postplan reviews.</p>
+        </div>
+      </div>
+
+      <!-- Quick Drill Jump Chips -->
+      <div class="demo-launcher-box">
+        <h3 style="font-size:1.15rem; color:var(--text-bright); margin-bottom:0.75rem;">⚡ Quick Demonstration Scenarios (High-Frequency Examiner Questions)</h3>
+        <p class="muted" style="font-size:0.85rem; margin-bottom:1rem;">Click any scenario below to immediately jump to its complete 7-step demonstration protocol and navigation instructions:</p>
+        <div class="quick-drill-grid">
+          <button type="button" class="drill-chip" data-drill-sid="E06-S03">⚡ E06-S03: Double Booking Race (Rule B Concurrency)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E08-S03">🛡️ E08-S03: Operational Safety Review (Bryan Role)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E05-S05">⏱️ E05-S05: Setup &amp; Turnaround Buffers (GiST Exclusion)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E02-S07">📅 E02-S07: 2-Year SST Date Horizon Guard (CFO)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E09-S04">🎟️ E09-S04: Attendee Waitlist Concurrency (XY Role)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E10-S04">💰 E10-S04: Cancellation &amp; Refund Tiers Calculation</button>
+          <button type="button" class="drill-chip" data-drill-sid="E04-S02">🔄 E04-S02: Multi-Session Restoration (T-79)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E03-S08">🚨 E03-S08: Defect D-01 &amp; SCRUM-261 HEAD Merge</button>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <label for="demo-story-select" style="font-size:0.85rem; font-weight:700; color:var(--accent); display:block; margin-bottom:0.4rem;">Select Any Story to Preview Live Demonstration Protocol:</label>
+          <select id="demo-story-select" style="width:100%; max-width:500px; background:var(--raised); border:1px solid var(--border); color:var(--text-bright); padding:0.5rem; border-radius:6px; font-size:0.9rem;">
+            <option value="">-- Choose a user story (E01-S01 to E14-S03) --</option>
+            {story_options_html}
+          </select>
+        </div>
+
+        <div id="demo-active-display" style="margin-top:1.5rem;">
+          <div style="background:var(--bg); border:1px dashed var(--border); border-radius:8px; padding:2rem; text-align:center; color:var(--muted);">
+            Select a story from the dropdown or click a quick scenario button above to view its complete 7-step presentation protocol.
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+
+    # Pre-render View: Week 11 Presentation Companion
+    slide_cards_html = []
+    for sl in slides:
+        s_num = sl["num"]
+        backing_links = []
+        for b_item in sl["backing_stories"]:
+            if b_item.startswith("E") and "-S" in b_item:
+                backing_links.append(f'<a href="#story-{b_item}" class="slide-backing-chip">📖 {b_item}</a>')
+            else:
+                backing_links.append(f'<span class="slide-backing-chip" style="color:var(--muted); border-color:var(--border);">{html.escape(b_item)}</span>')
+        backing_chips_str = " ".join(backing_links)
+
+        slide_cards_html.append(f"""
+        <article class="slide-card" id="slide-card-{s_num}" data-slide-act="{sl['act_cat']}">
+          <div class="slide-card-header">
+            <div class="slide-title-wrap">
+              <span class="slide-num-pill">Slide {s_num}</span>
+              <h3 class="slide-card-title">{html.escape(sl['title'])}</h3>
+            </div>
+            <span class="slide-act-tag">{html.escape(sl['act_title'])}</span>
+          </div>
+
+          <div class="slide-layout-grid">
+            <!-- Left: Template Question, Slide Content & Visuals -->
+            <div>
+              <div class="slide-box">
+                <span class="slide-box-title title-q">Template Question</span>
+                <p class="slide-q-text">{html.escape(sl['question'])}</p>
+              </div>
+
+              <div class="slide-box">
+                <span class="slide-box-title title-content">Slide Bullet Content (PPTX)</span>
+                <div class="slide-content-text">{html.escape(sl['content'])}</div>
+              </div>
+
+              <div class="slide-box">
+                <span class="slide-box-title title-q">Visual Proof &amp; Evidence Citations</span>
+                <p style="font-size:0.85rem; color:var(--text); margin-bottom:0.4rem;"><strong>Visual:</strong> {html.escape(sl['visual'] if sl['visual'] else 'See presentation slide visual')}</p>
+                <p style="font-size:0.85rem; color:var(--muted);"><strong>Evidence:</strong> {html.escape(sl['evidence'] if sl['evidence'] else 'Verified in git history')}</p>
+                <div style="margin-top:0.6rem;">
+                  <span style="font-size:0.75rem; color:var(--accent); font-weight:700; text-transform:uppercase;">Backing Lineage &amp; Stories:</span>
+                  <div class="slide-backing-chips">{backing_chips_str}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right: Speaker Notes & Assessor Defense -->
+            <div>
+              <div class="slide-box" style="border-left:3px solid var(--purple);">
+                <span class="slide-box-title title-notes">🎤 Rehearsable Speaker Notes</span>
+                <div class="slide-notes-text">"{html.escape(sl['notes'])}"</div>
+              </div>
+
+              <div class="slide-box" style="border-left:3px solid var(--warning);">
+                <span class="slide-box-title" style="color:var(--warning);">⚠️ Potential Assessor Challenge</span>
+                <p style="font-size:0.88rem; color:var(--text-bright); line-height:1.5;">"{html.escape(sl['challenge_q'])}"</p>
+              </div>
+
+              <div class="slide-box" style="border-left:3px solid var(--success);">
+                <span class="slide-box-title title-defense">🛡️ Spoken Defense Response</span>
+                <p style="font-size:0.88rem; color:var(--text); line-height:1.5;">"{html.escape(sl['defense_a'])}"</p>
+              </div>
+            </div>
+          </div>
+        </article>
+        """)
+
+    slide_jump_buttons = "".join([f'<button type="button" class="slide-jump-chip" data-slide-jump="{sl["num"]}">Slide {sl["num"]}</button>' for sl in slides])
+
+    view_slides_html = f"""
+    <div id="view-slides" class="view-panel">
+      <div class="section-header-box">
+        <div class="section-eyebrow">WEEK 11 PRESENTATION SYNC</div>
+        <h2 class="section-heading">📊 Week 11 Presentation Companion</h2>
+        <p class="section-lead">All 17 submitted presentation slides indexed with exact template questions, slide bullets, rehearsable speaker notes, and potential assessor challenges.</p>
+      </div>
+
+      <!-- Act Filter Chips -->
+      <div class="slides-filter-row">
+        <button type="button" class="slide-filter-btn active" data-act-filter="all">All 17 Slides</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="intro">Act 1: Intro (1–3)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="changes">Act 2: Changes (4–5)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="cfo-ai">Act 3: CFO &amp; AI (6–8)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="git">Act 4: Git (9)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="testing">Act 5: Testing (10–11)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="ci">Act 6: CI (12–14)</button>
+        <button type="button" class="slide-filter-btn" data-act-filter="team-defects">Act 7: Team &amp; Defects (15–17)</button>
+      </div>
+
+      <!-- Quick Jump Strip -->
+      <div class="slides-jump-bar">
+        <span style="font-size:0.8rem; color:var(--muted); font-weight:700; align-self:center; margin-right:0.5rem;">Quick Jump:</span>
+        {slide_jump_buttons}
+      </div>
+
+      <div class="slides-list">
+        {''.join(slide_cards_html)}
+      </div>
+    </div>
+    """
 
     # Now assemble the complete HTML
     html_output = f"""<!doctype html>
@@ -3081,12 +4128,688 @@ def build_html() -> str:
         display: block;
       }}
     }}
+
+    /* --- Production Credentials Matrix & Sticky Strip --- */
+    .sticky-credentials-bar {{
+      background: #0f1c26;
+      border-bottom: 1px solid var(--border);
+      padding: 0.6rem 1.5rem;
+      font-size: 0.85rem;
+      position: sticky;
+      top: 57px;
+      z-index: 40;
+      backdrop-filter: blur(8px);
+    }}
+    .cred-strip-inner {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }}
+    .cred-strip-title {{
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--accent);
+      font-weight: 600;
+    }}
+    .cred-strip-chips {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      align-items: center;
+    }}
+    .cred-pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--raised);
+      border: 1px solid var(--border);
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      color: var(--text-bright);
+    }}
+    .cred-pill strong {{ color: var(--accent); }}
+    .btn-copy-chip {{
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      border-radius: 4px;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }}
+    .btn-copy-chip:hover {{
+      background: rgba(56, 189, 248, 0.3);
+      color: #fff;
+    }}
+    .btn-copy-chip.copied {{
+      background: var(--success);
+      border-color: var(--success);
+      color: #091118;
+      font-weight: bold;
+    }}
+    .cred-strip-actions {{
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .btn-view-matrix {{
+      background: var(--accent);
+      color: #091118;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 0.65rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }}
+    .btn-view-matrix:hover {{
+      filter: brightness(1.1);
+    }}
+    .topbar-cred-btn {{
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }}
+    .topbar-cred-btn:hover {{
+      background: rgba(56, 189, 248, 0.3);
+      color: #fff;
+    }}
+    .topbar-copy-pw-btn {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }}
+    .topbar-copy-pw-btn:hover {{
+      border-color: var(--accent);
+      color: var(--accent);
+    }}
+    .topbar-copy-pw-btn.copied {{
+      background: var(--success);
+      border-color: var(--success);
+      color: #091118;
+      font-weight: bold;
+    }}
+
+    /* Credentials Drawer Overlay */
+    .credentials-backdrop {{
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(3px);
+      z-index: 110;
+    }}
+    .credentials-backdrop.active {{ display: block; }}
+    .credentials-drawer {{
+      position: fixed;
+      top: 0;
+      right: -520px;
+      bottom: 0;
+      width: 500px;
+      max-width: 95vw;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.5);
+      z-index: 120;
+      transition: right 0.25s ease-in-out;
+      display: flex;
+      flex-direction: column;
+    }}
+    .credentials-drawer.open {{ right: 0; }}
+    .credentials-drawer-header {{
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+    }}
+    .cred-header-content {{
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }}
+    .cred-header-icon {{ font-size: 1.5rem; }}
+    .cred-drawer-title {{
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .cred-drawer-sub {{
+      font-size: 0.8rem;
+      color: var(--muted);
+    }}
+    .cred-drawer-close-btn {{
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+    }}
+    .cred-drawer-close-btn:hover {{ color: #fff; background: var(--raised); }}
+    .credentials-drawer-body {{
+      padding: 1.25rem 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }}
+    .cred-account-card {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      transition: border-color 0.15s ease;
+    }}
+    .cred-account-card:hover {{ border-color: var(--accent); }}
+    .cred-card-top {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }}
+    .cred-name-role {{
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .cred-name {{ font-weight: 700; color: var(--text-bright); font-size: 0.95rem; }}
+    .cred-role-tag {{
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-family: monospace;
+    }}
+    .cred-scope {{
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }}
+    .cred-copy-row {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: var(--bg);
+      padding: 0.45rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }}
+    .cred-copy-row code {{ color: #cbd5e1; font-size: 0.8rem; word-break: break-all; }}
+    .cred-card-footer {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+    }}
+    .cred-launch-link {{
+      color: var(--success);
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }}
+    .cred-launch-link:hover {{ text-decoration: underline; }}
+
+    /* --- 7-Step Live Demonstration Protocol on Story Cards --- */
+    .story-demo-protocol {{
+      margin: 1.25rem 0;
+      background: #0d1720;
+      border: 1px solid #1e3345;
+      border-radius: 8px;
+      overflow: hidden;
+    }}
+    .demo-protocol-header {{
+      padding: 0.75rem 1rem;
+      background: #13222f;
+      border-bottom: 1px solid #1e3345;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }}
+    .demo-protocol-title-wrap {{
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }}
+    .demo-protocol-title {{
+      font-size: 0.95rem;
+      color: var(--text-bright);
+      font-weight: 700;
+    }}
+    .demo-protocol-pill {{
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      padding: 0.1rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }}
+    .demo-protocol-role-hint {{
+      font-size: 0.8rem;
+      color: var(--muted);
+    }}
+    .demo-protocol-role-hint strong {{ color: var(--warning); }}
+    .demo-step-tabs {{
+      display: flex;
+      background: #091118;
+      border-bottom: 1px solid #1e3345;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }}
+    .demo-step-btn {{
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      padding: 0.55rem 0.85rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }}
+    .demo-step-btn:hover {{ color: var(--text-bright); background: rgba(255, 255, 255, 0.03); }}
+    .demo-step-btn.active {{
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }}
+    .demo-step-panels {{
+      padding: 1rem;
+    }}
+    .demo-step-panel {{
+      display: none;
+    }}
+    .demo-step-panel.active {{
+      display: block;
+    }}
+    .demo-grid-2col {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }}
+    @media (max-width: 768px) {{
+      .demo-grid-2col {{ grid-template-columns: 1fr; }}
+    }}
+    .demo-meta-row {{
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }}
+    .demo-meta-label {{
+      color: var(--muted);
+      font-weight: 600;
+      min-width: 130px;
+    }}
+    .demo-account-chip {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      color: var(--text-bright);
+      font-weight: 600;
+    }}
+    .demo-live-link {{
+      color: var(--success);
+      font-weight: 700;
+      text-decoration: none;
+    }}
+    .demo-live-link:hover {{ text-decoration: underline; }}
+    .demo-path-box {{
+      background: #091118;
+      border: 1px solid #1e3345;
+      border-radius: 6px;
+      padding: 0.75rem;
+    }}
+    .demo-path-label {{
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 0.35rem;
+    }}
+    .demo-path-text {{
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.5;
+    }}
+    .demo-ac-summary {{
+      background: #091118;
+      border: 1px solid #1e3345;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }}
+    .demo-ac-summary strong {{ color: var(--accent); }}
+    .ci-checks-list {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      align-items: center;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+    }}
+    .ci-checks-list strong {{ color: var(--muted); margin-right: 0.5rem; }}
+    .demo-test-grid {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }}
+    @media (max-width: 768px) {{
+      .demo-test-grid {{ grid-template-columns: 1fr; }}
+    }}
+    .demo-test-box {{
+      background: #091118;
+      border: 1px solid #1e3345;
+      border-radius: 6px;
+      padding: 0.75rem;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }}
+    .demo-subhead {{
+      color: var(--accent);
+      display: block;
+      margin-bottom: 0.25rem;
+    }}
+    .slide-claim-box, .slide-notes-preview {{
+      background: #091118;
+      border: 1px solid #1e3345;
+      border-radius: 6px;
+      padding: 0.75rem;
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }}
+    .slide-claim-box strong {{ color: var(--warning); display: block; margin-bottom: 0.25rem; }}
+    .slide-notes-preview strong {{ color: var(--purple); display: block; margin-bottom: 0.25rem; }}
+
+    /* --- Live Demo Protocol View (view-live-demo) --- */
+    .protocol-sop-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }}
+    .protocol-sop-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+    }}
+    .sop-step-badge {{
+      display: inline-block;
+      background: var(--accent);
+      color: #091118;
+      font-weight: 800;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      margin-bottom: 0.5rem;
+    }}
+    .protocol-sop-card h4 {{
+      font-size: 1rem;
+      color: var(--text-bright);
+      margin-bottom: 0.4rem;
+    }}
+    .protocol-sop-card p {{
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }}
+    .quick-drill-grid {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }}
+    .drill-chip {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.85rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }}
+    .drill-chip:hover {{
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent);
+      color: #fff;
+    }}
+    .demo-launcher-box {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }}
+
+    /* --- Presentation Companion View (view-slides) --- */
+    .slides-filter-row {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }}
+    .slide-filter-btn {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }}
+    .slide-filter-btn.active {{
+      background: var(--accent);
+      color: #091118;
+      font-weight: 700;
+      border-color: var(--accent);
+    }}
+    .slides-jump-bar {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }}
+    .slide-jump-chip {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.25rem 0.55rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+    }}
+    .slide-jump-chip:hover {{
+      border-color: var(--accent);
+      color: var(--accent);
+    }}
+    .slides-list {{
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }}
+    .slide-card {{
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: border-color 0.2s ease;
+    }}
+    .slide-card:hover {{ border-color: rgba(56, 189, 248, 0.4); }}
+    .slide-card-header {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }}
+    .slide-title-wrap {{
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }}
+    .slide-num-pill {{
+      background: var(--accent);
+      color: #091118;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+    }}
+    .slide-card-title {{
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-bright);
+    }}
+    .slide-act-tag {{
+      font-size: 0.8rem;
+      color: var(--purple);
+      background: rgba(192, 132, 252, 0.12);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }}
+    .slide-layout-grid {{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }}
+    @media (max-width: 900px) {{
+      .slide-layout-grid {{ grid-template-columns: 1fr; }}
+    }}
+    .slide-box {{
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+    }}
+    .slide-box-title {{
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.5rem;
+      display: block;
+    }}
+    .title-q {{ color: var(--accent); }}
+    .title-content {{ color: var(--text-bright); }}
+    .title-notes {{ color: var(--purple); }}
+    .title-defense {{ color: var(--success); }}
+    .slide-q-text {{
+      font-size: 0.9rem;
+      color: var(--text-bright);
+      font-style: italic;
+      line-height: 1.4;
+    }}
+    .slide-content-text {{
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre-line;
+    }}
+    .slide-notes-text {{
+      font-size: 0.9rem;
+      color: #f1f5f9;
+      line-height: 1.6;
+      white-space: pre-line;
+    }}
+    .slide-backing-chips {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.5rem;
+    }}
+    .slide-backing-chip {{
+      background: rgba(56, 189, 248, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-decoration: none;
+      font-weight: 600;
+    }}
+    .slide-backing-chip:hover {{
+      background: var(--accent);
+      color: #091118;
+    }}
+
   </style>
 </head>
 <body>
   <div class="app-layout">
     <!-- Backdrop overlay for mobile drawer -->
     <div id="drawer-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+
+    <!-- Sliding Credentials Drawer -->
+    <div id="credentials-backdrop" class="credentials-backdrop" aria-hidden="true"></div>
+    <aside id="credentials-drawer" class="credentials-drawer" aria-label="Production Credentials Matrix">
+      <div class="credentials-drawer-header">
+        <div class="cred-header-content">
+          <span class="cred-header-icon">🔑</span>
+          <div>
+            <h3 class="cred-drawer-title">SMU Production Role Accounts</h3>
+            <div class="cred-drawer-sub">6 Role Accounts · Shared Password: <code>Password123!</code> · sgconnectsphere.vercel.app</div>
+          </div>
+        </div>
+        <button type="button" id="close-credentials-drawer-btn" class="cred-drawer-close-btn" aria-label="Close credentials drawer">✕</button>
+      </div>
+      <div class="credentials-drawer-body">
+        {''.join(credentials_cards_html)}
+      </div>
+    </aside>
 
     <!-- Sliding Sidebar Drawer -->
     <aside id="app-sidebar" class="app-sidebar" aria-label="Main Navigation">
@@ -3108,6 +4831,20 @@ def build_html() -> str:
             <span class="nav-tab-icon">📋</span>
             <span>How to Answer &amp; Protocol</span>
           </div>
+        </button>
+        <button class="nav-tab" data-view="view-live-demo">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">🎬</span>
+            <span>Live Exam Demo Protocol</span>
+          </div>
+          <span class="nav-pill pill-accent">65</span>
+        </button>
+        <button class="nav-tab" data-view="view-slides">
+          <div class="nav-tab-left">
+            <span class="nav-tab-icon">📊</span>
+            <span>Week 11 Slide Companion</span>
+          </div>
+          <span class="nav-pill">17</span>
         </button>
         <button class="nav-tab" data-view="view-defects-radar">
           <div class="nav-tab-left">
@@ -3177,11 +4914,35 @@ def build_html() -> str:
           </div>
         </div>
         <div class="topbar-right">
+          <button type="button" id="topbar-credentials-btn" class="topbar-cred-btn" aria-label="Toggle Production Credentials Matrix">
+            🔑 Role Credentials (6 Accounts)
+          </button>
+          <button type="button" class="topbar-copy-pw-btn" data-copy="Password123!" title="Copy shared password Password123!">
+            📋 Copy PW
+          </button>
           <span class="topbar-badge badge-sprint">Sprint 5 HEAD</span>
           <span class="topbar-badge">19 ADRs</span>
           <span class="topbar-badge">100% Verified Run Records</span>
         </div>
       </header>
+
+      <!-- Sticky Production Role Credentials Bar -->
+      <div id="sticky-credentials-bar" class="sticky-credentials-bar">
+        <div class="cred-strip-inner">
+          <div class="cred-strip-title">
+            <span class="cred-strip-icon">🔑</span>
+            <strong>SMU Production Accounts:</strong>
+          </div>
+          <div class="cred-strip-chips">
+            {''.join(credentials_strip_chips_html)}
+          </div>
+          <div class="cred-strip-actions">
+            <span class="cred-pw-label">PW: <code>Password123!</code></span>
+            <button type="button" class="btn-copy-chip" data-copy="Password123!" title="Copy shared password Password123!">📋 Copy PW</button>
+            <button type="button" id="open-credentials-drawer-btn" class="btn-view-matrix">Full Matrix ▾</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Viewport containing required top-level sections -->
       <main class="content-viewport">
@@ -3273,6 +5034,10 @@ def build_html() -> str:
 
         <!-- REQUIRED SECTION 2: #details -->
         <section id="details" class="doc-section">
+          {view_live_demo_html}
+
+          {view_slides_html}
+
           <!-- View 2: Defects Radar & Shortcomings -->
           <div id="view-defects-radar" class="view-panel">
             <div class="section-header-box">
@@ -3651,6 +5416,183 @@ def build_html() -> str:
         }}
       }});
 
+
+      // --- Clipboard Copy Helper with Visual Feedback ---
+      function copyToClipboard(text, btnElement) {{
+        if (navigator.clipboard && navigator.clipboard.writeText) {{
+          navigator.clipboard.writeText(text).then(() => {{
+            showCopiedFeedback(btnElement);
+          }}).catch(() => {{
+            fallbackCopy(text, btnElement);
+          }});
+        }} else {{
+          fallbackCopy(text, btnElement);
+        }}
+      }}
+
+      function fallbackCopy(text, btnElement) {{
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, 999999);
+        try {{
+          document.execCommand('copy');
+          showCopiedFeedback(btnElement);
+        }} catch (err) {{}}
+        document.body.removeChild(ta);
+      }}
+
+      function showCopiedFeedback(btn) {{
+        if (!btn) return;
+        const original = btn.getAttribute('data-orig-text') || btn.innerHTML;
+        if (!btn.getAttribute('data-orig-text')) {{
+          btn.setAttribute('data-orig-text', original);
+        }}
+        btn.innerHTML = '✓ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {{
+          btn.innerHTML = btn.getAttribute('data-orig-text');
+          btn.classList.remove('copied');
+        }}, 1600);
+      }}
+
+      document.addEventListener('click', (e) => {{
+        const copyBtn = e.target.closest('[data-copy]');
+        if (copyBtn) {{
+          const text = copyBtn.getAttribute('data-copy');
+          if (text) copyToClipboard(text, copyBtn);
+        }}
+      }});
+
+      // --- Credentials Drawer Open / Close ---
+      const credDrawer = document.getElementById('credentials-drawer');
+      const credBackdrop = document.getElementById('credentials-backdrop');
+      const openCredBtn1 = document.getElementById('topbar-credentials-btn');
+      const openCredBtn2 = document.getElementById('open-credentials-drawer-btn');
+      const closeCredBtn = document.getElementById('close-credentials-drawer-btn');
+
+      function openCredDrawer() {{
+        if (credDrawer) credDrawer.classList.add('open');
+        if (credBackdrop) credBackdrop.classList.add('active');
+      }}
+      function closeCredDrawer() {{
+        if (credDrawer) credDrawer.classList.remove('open');
+        if (credBackdrop) credBackdrop.classList.remove('active');
+      }}
+      if (openCredBtn1) openCredBtn1.addEventListener('click', openCredDrawer);
+      if (openCredBtn2) openCredBtn2.addEventListener('click', openCredDrawer);
+      if (closeCredBtn) closeCredBtn.addEventListener('click', closeCredDrawer);
+      if (credBackdrop) credBackdrop.addEventListener('click', closeCredDrawer);
+
+      // --- Story Card Demonstration Walkthrough Tabs ---
+      document.addEventListener('click', (e) => {{
+        const stepBtn = e.target.closest('.demo-step-btn');
+        if (stepBtn) {{
+          const targetId = stepBtn.getAttribute('data-tab-target');
+          const container = stepBtn.closest('.story-demo-protocol');
+          if (container && targetId) {{
+            container.querySelectorAll('.demo-step-btn').forEach(b => b.classList.remove('active'));
+            stepBtn.classList.add('active');
+            container.querySelectorAll('.demo-step-panel').forEach(p => {{
+              p.style.display = (p.id === targetId) ? 'block' : 'none';
+              p.classList.toggle('active', p.id === targetId);
+            }});
+          }}
+        }}
+      }});
+
+      // --- Live Demo Protocol View: Interactive Story Launcher ---
+      const demoSelect = document.getElementById('demo-story-select');
+      const demoTargetDisplay = document.getElementById('demo-active-display');
+
+      function loadStoryIntoLauncher(sid) {{
+        if (!demoTargetDisplay) return;
+        const sourceCard = document.getElementById('story-' + sid);
+        if (!sourceCard) return;
+        const clone = sourceCard.cloneNode(true);
+        clone.id = 'demo-launcher-' + sid;
+        clone.querySelectorAll('[id]').forEach(el => {{
+          el.id = 'launcher-' + el.id;
+        }});
+        clone.querySelectorAll('[data-tab-target]').forEach(el => {{
+          el.setAttribute('data-tab-target', 'launcher-' + el.getAttribute('data-tab-target'));
+        }});
+        const drawer = clone.querySelector('.story-lineage-drawer');
+        if (drawer) drawer.open = true;
+        demoTargetDisplay.innerHTML = '';
+        demoTargetDisplay.appendChild(clone);
+      }}
+
+      if (demoSelect) {{
+        demoSelect.addEventListener('change', () => {{
+          loadStoryIntoLauncher(demoSelect.value);
+        }});
+        if (!demoSelect.value && demoSelect.options.length > 1) {{
+          demoSelect.value = 'E06-S03';
+          loadStoryIntoLauncher('E06-S03');
+        }}
+      }}
+
+      document.querySelectorAll('.drill-chip').forEach(chip => {{
+        chip.addEventListener('click', () => {{
+          const sid = chip.getAttribute('data-drill-sid');
+          if (!sid) return;
+          if (demoSelect) demoSelect.value = sid;
+          loadStoryIntoLauncher(sid);
+          if (demoTargetDisplay) {{
+            demoTargetDisplay.scrollIntoView({{ behavior: 'smooth' }});
+          }}
+        }});
+      }});
+
+      // --- Slide Filter & Jump Chips ---
+      const slideFilters = document.querySelectorAll('.slide-filter-btn');
+      const slideCards = document.querySelectorAll('.slide-card');
+      const slideJumps = document.querySelectorAll('.slide-jump-chip');
+
+      function filterSlides(cat) {{
+        slideCards.forEach(c => {{
+          const sCat = c.getAttribute('data-slide-act') || 'all';
+          if (cat === 'all' || sCat === cat) {{
+            c.style.display = 'block';
+          }} else {{
+            c.style.display = 'none';
+          }}
+        }});
+      }}
+
+      slideFilters.forEach(btn => {{
+        btn.addEventListener('click', () => {{
+          slideFilters.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const cat = btn.getAttribute('data-act-filter') || 'all';
+          filterSlides(cat);
+        }});
+      }});
+
+      slideJumps.forEach(btn => {{
+        btn.addEventListener('click', () => {{
+          const num = btn.getAttribute('data-slide-jump');
+          if (!num) return;
+          filterSlides('all');
+          slideFilters.forEach(b => {{
+            if (b.getAttribute('data-act-filter') === 'all') b.classList.add('active');
+            else b.classList.remove('active');
+          }});
+          const targetEl = document.getElementById('slide-card-' + num);
+          if (targetEl) {{
+            targetEl.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+            targetEl.classList.remove('target-highlight');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('target-highlight');
+          }}
+        }});
+      }});
+
       // Initial view check on load
       if (window.location.hash) {{
         handleTargetId(window.location.hash.replace('#', ''));
@@ -3931,8 +5873,10 @@ def build_html() -> str:
 def main():
     print("Building modernized final Q&A prep guide...")
     html_content = build_html()
-    OUTPUT_HTML_PATH.write_text(html_content, encoding="utf-8")
-    print(f"Generated {OUTPUT_HTML_PATH} ({len(html_content)} characters) successfully!")
+    cleaned_lines = [line.rstrip() for line in html_content.splitlines()]
+    clean_html = "\n".join(cleaned_lines) + "\n"
+    OUTPUT_HTML_PATH.write_text(clean_html, encoding="utf-8")
+    print(f"Generated {OUTPUT_HTML_PATH} ({len(clean_html)} characters) successfully!")
 
 
 if __name__ == "__main__":

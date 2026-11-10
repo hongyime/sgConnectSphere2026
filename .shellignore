@@ -37,4 +37,5 @@ docs/testing/runs/
 # Q&A prep guide and generator cite public T-65 run records containing runner handles.
 artifacts/final-qna-prep-guide.html
 scripts/build_qna_prep_data.py
+scripts/test_qna_prep_app.py
 .agents/handoffs/20261109-docs-SCRUM-262-final-assessment-qna-guide.md

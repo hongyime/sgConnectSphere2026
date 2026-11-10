@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Session Screen Review</title>
+<style>
+  :root { --bg: #11161b; --panel: #1a2128; --ink: #e8edf1; --muted: #a4afb9; --accent: #4cc2b0; --line: #313b45; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.7rem; margin: 0 0 8px; }
+  h2 { color: var(--accent); font-size: 1.2rem; margin: 36px 0 10px; }
+  p { margin: 0 0 12px; }
+  figure { margin: 18px 0; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  figcaption { color: var(--muted); font-size: .9rem; margin-top: 8px; }
+  svg { width: 100%; height: auto; display: block; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  code { background: var(--panel); border-radius: 4px; padding: 1px 4px; }
+</style>
+</head>
+<body>
+<main>
+<h1>The Session screen shows what a change affects</h1>
+<section id="overview">
+  <p>In Planning, an Organiser now sees what a Session change affects, by name, before anything is saved, and a stale check no longer gets stuck.</p>
+  <figure>
+    <svg viewBox="0 0 760 170" role="img" aria-labelledby="flow-title flow-desc">
+      <title id="flow-title">Session save flow in Planning</title>
+      <desc id="flow-desc">Save session runs a check. If something is flagged or places fall short, the review opens. Saving against the check either succeeds, or is refused because the check went stale, which reopens the review with the fresh list.</desc>
+      <g font-family="system-ui, sans-serif" font-size="15" fill="#e8edf1" text-anchor="middle">
+        <rect x="10" y="50" width="150" height="60" rx="8" fill="#1a2128" stroke="#313b45"/><text x="85" y="85">Save session</text>
+        <rect x="205" y="50" width="150" height="60" rx="8" fill="#1a2128" stroke="#313b45"/><text x="280" y="85">Check (preview)</text>
+        <rect x="400" y="50" width="150" height="60" rx="8" fill="#1a2128" stroke="#4cc2b0"/><text x="475" y="85">Review by name</text>
+        <rect x="595" y="50" width="150" height="60" rx="8" fill="#1a2128" stroke="#313b45"/><text x="670" y="85">Saved</text>
+        <g stroke="#a4afb9" stroke-width="2" fill="none">
+          <path d="M160 80H203"/><path d="M355 80H398"/><path d="M550 80H593"/>
+          <path d="M670 50V22H475V48"/>
+        </g>
+        <text x="572" y="16" fill="#a4afb9" font-size="13">Stale check: review again with the fresh list</text>
+      </g>
+    </svg>
+    <figcaption>The review is the same panel the Coordinator's Event edit already uses.</figcaption>
+  </figure>
+</section>
+<section id="details">
+  <h2>What changed</h2>
+  <div class="scroll"><table>
+    <tr><th>Before</th><th>Now</th><th>Reference</th></tr>
+    <tr><td>Only counts: "flags 0 booking(s), 0 reservation(s) and 1 Technical Support request(s)"</td><td>Bookings, equipment and Technical Support by name, with the new time</td><td>E10-S02 Scenario 3, T-104, TC_E10S02_14</td></tr>
+    <tr><td>Over-subscription was ignored, so the edit just saved</td><td>A warning first, even when nothing is flagged, saying no one is removed</td><td>E10-S02 Scenario 4, TC_E10S02_16</td></tr>
+    <tr><td>A stale check kept failing until the Organiser cancelled</td><td>The review reopens with the fresh list and saves against it</td><td>#416 review, gap A</td></tr>
+  </table></div>
+  <h2>Evidence</h2>
+  <p>Full suites on <code>429407b</code>, local, with faked replies: Vitest 833 of 833; Playwright 395 passed, 1 failed, 212 skipped. The failure, <code>e09.spec.ts:105</code> on mobile, is on a screen this change doesn't touch and passed 5 of 5 alone. A test for Cancel came after that. CI passes all 17 checks on the final commit, <code>14ebff5</code>. No backend change. After this merged, Le Xin ran TC_E10S02_14, _15 and _16 by hand on the real local stack, and all three passed (record <code>20261104-175800</code>).</p>
+</section>
+<section id="next-steps">
+  <h2>Next steps</h2>
+  <ol>
+    <li>Bryan accepts SCRUM-71.</li>
+  </ol>
+</section>
+</main>
+</body>
+</html>
