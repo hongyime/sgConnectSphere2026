@@ -25,6 +25,26 @@ Teach every team member this standard response structure:
 > 4. “We prove it with **[PR/run/code path]**.”
 > 5. “Its current boundary is **[honest limitation]**.”
 
+### First 10 Seconds Protocol
+Say this formula immediately:
+> "This is [story ID / feature name]. I will show the live behaviour first, then its Jira acceptance criteria, the exact PR and commit, CI, the named EP/BVA test and execution record, and the matching slide."
+
+### Top 3 Critical Examiner Traps & System Realities
+1. **Double-Booking Concurrency (Rule B)**:
+   - Story: **E06-S06 / SCRUM-50** (NOT E06-S03 which is request creation). PR #378 / commit `3ac65827`, test `backend/tests/venueBooking.concurrency.test.ts`, Slide 5. PostgreSQL exclusion constraint enforces first accepted claim wins; losing concurrent request returns 409 Conflict with buffered window.
+2. **Operational Safety Review Decision**:
+   - Split: **E08-S03** is Coordinator submitting readiness (PR #283 / `c44c6afd`). Safety Officer decision is **E08-S06** (PR #392 / commit `44d08267`) at `/safety/queue` → `/safety/review/:eventId`. All 7 factors need a choice and comment; approval goes directly to Confirmed (T-107).
+3. **Defect Audit Boundary (defects.md vs SCRUM-261 HEAD)**:
+   - `docs/testing/defects.md` was frozen at the 6 Nov morning audit boundary per team convention. The remediation was merged later that day under technical enabler SCRUM-261 (PRs #450, #453, #454). We declare this boundary with total transparency: D-01..D-03 are merged on main; D-04 remains intentionally open.
+
+### Mechanical Role Routes & Traps
+- **Organiser (`jining`)**: Login → Events → New request → `/organiser/new-request`. *Trap*: `/events/new` is NOT a route. Submit requires future start, end after start.
+- **Coordinator (`amareet`)**: Login → Review queue (`/coordinator/queue`) → select event → Venue search / bookings / Readiness. *Trap*: `/events` is organiser event list. Venue booking work is event-scoped (`/coordinator/events/:eventCode/venues`), not `/venues/search`. Do not hunt for "Under Review tab".
+- **Venue Staff (`aaron`)**: Login → Inventory → Maintenance blocks → `/venue/blockout`. *Trap*: A block overlapping another unavailability is refused. A block over an existing booking flags that booking `Conflicting` (E05-S06).
+- **Technical Support (`lexin`)**: Login → Technician staffing (`/support/technicians`) → open support request → select colleague → confirm. *Trap*: `/support` is a mock dashboard. An overlapping colleague shows a warning; demonstrate refusal after confirmation flow.
+- **Safety Officer (`bryan`)**: Login → Safety review queue (`/safety/queue`) → choose event (`/safety/review/:eventId`). *Trap*: `/safety` is NOT a route. All 7 factors need a choice and comment.
+- **Attendee (`xy`)**: Login → Discover (`/attendee/discover`) → choose confirmed event → Register (`/attendee/register/:eventCode`) or waitlist. *Trap*: `/catalog` is NOT a route. Closed or unconfirmed registration cannot proceed.
+
 #### Precision Example: Venue Block over Confirmed Bookings
 Do **not** say it “prevents blocks over confirmed bookings.” State precisely:
 > “A venue block can be created over confirmed bookings without being blocked: the block saves, overlapping bookings become Conflicting, and the confirmed event returns to Planning for resolution (C-119, T-80, T-81).”

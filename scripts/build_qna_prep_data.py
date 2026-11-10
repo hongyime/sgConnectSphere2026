@@ -22,6 +22,7 @@ from __future__ import annotations
 import html
 import json
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -209,7 +210,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/organiser/OrganiserDrafts.tsx",
         "spoken": "Organisers can save partially filled event requests as Drafts without triggering validation rules or coordinator assignment.",
         "limit": "Drafts remain private to the authoring organiser until formal submission.",
-        "evidence_pr": "PR #79 (Organiser draft request persistence)",
+        "evidence_pr": "PR #99 (Organiser draft request persistence)",
         "code_link": "backend/src/modules/eventLifecycle/service.ts",
     },
     "E02-S03": {
@@ -412,7 +413,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/venue/VenueForm.tsx",
         "spoken": "Venue Staff configures per-venue whole-minute setup and turnaround buffers (C-65, T-66), expanding booking occupancy windows.",
         "limit": "Exclusion constraints in Postgres enforce [start - setup, end + turnaround]; maintenance blocks do not get buffered (T-80).",
-        "evidence_pr": "PR #234 (Per-venue setup/turnaround buffers)",
+        "evidence_pr": "PR #328 (Per-venue setup/turnaround buffers)",
         "code_link": "backend/src/modules/venueBooking/catalogue.ts",
     },
     "E05-S06": {
@@ -450,10 +451,10 @@ STORY_TECH_MAP = {
         "route": "POST /api/venues/bookings, POST /api/venues/bookings?action=withdraw",
         "controller": "backend/src/modules/venueBooking/bookingRequests.ts",
         "migration": "0019_venue_bookings_contract.sql, 0020_released_booking_replacement_retry.sql",
-        "component": "frontend/src/features/venue/VenueBookingForm.tsx",
-        "spoken": "Coordinator requests venue booking or withdraws pending request; multiple bookings allowed per event (T-68), first request transitions to Planning. Guards against booking race conditions.",
+        "component": "frontend/src/features/venue/VenueBookingRequests.tsx",
+        "spoken": "Coordinator requests venue booking or withdraws pending request; multiple bookings allowed per event (T-68), first request transitions to Planning.",
         "limit": "Withdrawal locks venue row FOR NO KEY UPDATE then booking FOR UPDATE (T-95); Released bookings permit fresh replacement requests (T-96).",
-        "evidence_pr": "PR #298 (Venue booking requests & withdrawal concurrency)",
+        "evidence_pr": "PR #274 (Venue booking requests) / PR #299 (Withdrawal & primary)",
         "code_link": "backend/src/modules/venueBooking/bookingRequests.ts",
     },
     "E06-S04": {
@@ -481,7 +482,7 @@ STORY_TECH_MAP = {
         "controller": "backend/src/modules/venueBooking/decisions.ts",
         "migration": "0016_venue_buffer_write_guard.sql",
         "component": "frontend/src/features/venue/VenueBookingForm.tsx",
-        "spoken": "Prevents booking race and double-booking: PostgreSQL exclusion constraint blocks overlapping holds or bookings across buffered occupancy windows (T-100).",
+        "spoken": "Prevents booking race and double-booking: PostgreSQL exclusion constraint blocks overlapping holds or bookings across buffered occupancy windows (T-100). First accepted claim wins under Rule B.",
         "limit": "Losing concurrent request returns 409 Conflict with clear buffered window timeframe without leaking competing event titles (T-102).",
         "evidence_pr": "PR #378 (Venue booking exclusion guard & concurrency tests)",
         "code_link": "backend/src/modules/venueBooking/decisions.ts",
@@ -534,7 +535,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/support/EquipmentReservations.tsx",
         "spoken": "Reserves equipment stock against requests; partial reservations are allowed in planning, but any shortfall blocks event confirmation (T-24).",
         "limit": "Atomic SQL decrement serialized under FOR UPDATE lock on the equipment inventory row prevents stock overselling.",
-        "evidence_pr": "PR #224 (Equipment reservation transactions)",
+        "evidence_pr": "PR #309 (Equipment reservation transactions)",
         "code_link": "backend/src/modules/equipmentSupport/reservations.ts",
     },
     "E07-S05": {
@@ -574,7 +575,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/support/EquipmentRequests.tsx",
         "spoken": "Links equipment requests and reservations directly to child Sessions per C-107/T-79; free quantities evaluated per session timeframe.",
         "limit": "Multi-session events require session association; single-session events automatically infer the parent session.",
-        "evidence_pr": "PR #418 (Per-session equipment reservations)",
+        "evidence_pr": "PR #426 (Per-session equipment reservations)",
         "code_link": "backend/src/modules/equipmentSupport/requests.ts",
     },
     "E07-S09": {
@@ -615,7 +616,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/events/EventCompletion.tsx",
         "spoken": "Transitions event to Completed once all sessions finish, or allows Coordinator early completion once the final session starts (T-26).",
         "limit": "Terminal state: pending change requests are marked Obsolete (T-88); event can no longer accept edits, bookings, or registrations.",
-        "evidence_pr": "PR #337 (Event completion & obsolete change cleanup)",
+        "evidence_pr": "PR #324 (Event completion & obsolete change cleanup)",
         "code_link": "backend/src/modules/eventLifecycle/completion.ts",
     },
     "E08-S06": {
@@ -696,7 +697,7 @@ STORY_TECH_MAP = {
         "component": "frontend/src/features/organiser/EventRegistrations.tsx",
         "spoken": "Organiser exports attendee registration and session selections to CSV; personal data restricted per role access boundaries (T-32).",
         "limit": "Export streams CSV directly with appropriate content-disposition and sanitised fields to prevent formula injection.",
-        "evidence_pr": "PR #372 (Attendee registration CSV export)",
+        "evidence_pr": "PR #368 (Attendee registration list & CSV export)",
         "code_link": "backend/src/modules/attendeeRegistration/organiser.ts",
     },
     # E10: Changes, Rescheduling & Cancellation
@@ -1201,7 +1202,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Venue Staff",
         "email": "aaron.koh.2024@smu.edu.sg",
         "scope": "Venue catalog, setup/turnaround buffers, maintenance blocks (E05, E06)",
-        "start_path": "/venues",
+        "start_path": "/venue/blockout",
     },
     {
         "id": "amareet",
@@ -1211,7 +1212,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Event Coordinator",
         "email": "amareetk.m.2024@smu.edu.sg",
         "scope": "Event review, clarifications, venue booking requests, confirmation (E03, E06, E08, E10)",
-        "start_path": "/events",
+        "start_path": "/coordinator/queue",
     },
     {
         "id": "jining",
@@ -1221,7 +1222,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Event Organiser",
         "email": "jining.yee.2024@smu.edu.sg",
         "scope": "Event submission, draft saving, client event list, cancellation requests (E01, E02, E09, E10)",
-        "start_path": "/events/new",
+        "start_path": "/organiser/new-request",
     },
     {
         "id": "lexin",
@@ -1231,7 +1232,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Technical Support Staff",
         "email": "lexin.phun.2024@smu.edu.sg",
         "scope": "Equipment requests, reservations, technician staffing (E07)",
-        "start_path": "/support",
+        "start_path": "/support/technicians",
     },
     {
         "id": "xy",
@@ -1241,7 +1242,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Attendee",
         "email": "xy.sim.2024@smu.edu.sg",
         "scope": "Attendee event catalogue viewing, registration, waitlisting (E01, E09)",
-        "start_path": "/catalog",
+        "start_path": "/attendee/discover",
     },
     {
         "id": "bryan",
@@ -1251,7 +1252,7 @@ PRODUCTION_ACCOUNTS = [
         "role_title": "Safety Officer",
         "email": "bryanseah234@gmail.com",
         "scope": "Operational Safety Review queue, safety approvals & rejections (E08, E10)",
-        "start_path": "/safety",
+        "start_path": "/safety/queue",
     },
 ]
 SHARED_PASSWORD = "Password123!"  # pragma: allowlist secret
@@ -1306,13 +1307,13 @@ HISTORICAL_POSTPLANS_MAP = {
     "E03-S09": ("artifacts/unassigned-sprint-display-plan-20261014.html", "Unassigned Sprint & Lead Queue Review"),
     "E03-S10": ("artifacts/scaffold-review-plan-20261014.html", "Scaffold & Oversight Review"),
     "E05-S04": ("artifacts/e08-completion-conflict-followup.html", "E05-S04 Maintenance Block & Overlap Review"),
-    "E06-S03": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-47 / E06-S03 Double Booking Fix"),
-    "E06-S06": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-47 Concurrency Guard Review"),
+    "E06-S03": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-47 / E06-S03 Booking Requests & Withdrawal"),
+    "E06-S06": ("artifacts/scrum-47-e06s03-pr299-fix.html", "SCRUM-50 / E06-S06 Rule B Concurrency Guard Review"),
     "E07-S01": ("artifacts/scrum-182-one-migration-selector.html", "SCRUM-182 Equipment Migration & Inventory Review"),
-    "E08-S03": ("artifacts/e08-completion-review.html", "E08 Completion & Safety Review"),
+    "E08-S03": ("artifacts/e08-completion-review.html", "E08-S03 Readiness Submission Review"),
     "E08-S04": ("artifacts/e08-completion-conflict-followup.html", "E08-S04 Conflict Follow-up Review"),
     "E08-S05": ("artifacts/e08-s05-manual-evidence.html", "E08-S05 Manual Evidence Review"),
-    "E08-S06": ("artifacts/e08-completion-review.html", "E08-S06 Safety Officer Approval"),
+    "E08-S06": ("artifacts/e08-completion-review.html", "E08-S06 Safety Officer Approval Decision"),
     "E09-S04": ("artifacts/scrum-66-waiting-list-review.html", "SCRUM-66 Waitlist Concurrency Review"),
     "E09-S06": ("artifacts/e09-s06-attendance.html", "E09-S06 Attendance Headcount"),
     "E10-S01": ("artifacts/e10-change-request-foundation.html", "E10-S01 Change Request Foundation"),
@@ -1523,30 +1524,30 @@ def parse_week11_slides():
 def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> dict:
     # 1. Determine acting account & navigation path
     account_id = "amareet"
-    start_path = "/events"
-    click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Coordinator Dashboard -> 3. Inspect event arrangements and status."
+    start_path = "/coordinator/queue"
+    click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue (/coordinator/queue) -> 3. Choose event -> 4. Inspect arrangements and status."
 
     if epic == "E01":
         if sid == "E01-S03":
             account_id = "xy"
-            start_path = "/catalog"
-            click_path = "1. Sign in as XY (attendee) -> 2. Go to /catalog -> 3. Verify public event details hide internal budgets and coordinator notes."
+            start_path = "/attendee/discover"
+            click_path = "1. Sign in as XY (attendee) -> 2. Discover (/attendee/discover) -> 3. Choose event -> 4. Verify public event details hide internal budgets and coordinator notes."
         elif sid == "E01-S08":
             account_id = "xy"
             start_path = "/register"
             click_path = "1. Navigate to /register -> 2. Fill in registration form with SMU email -> 3. Verify email verification dispatch."
         elif sid == "E01-S04":
             account_id = "jining"
-            start_path = "/account/profile"
-            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Go to Profile Settings -> 3. Edit contact phone; observe read-only organisation membership per T-61."
+            start_path = "/profile"
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Profile (/profile) -> 3. Edit contact phone; observe read-only organisation membership per T-61."
         elif sid == "E01-S11":
             account_id = "jining"
             start_path = "/login"
             click_path = "1. Navigate to /login -> 2. Attempt login with deactivated credentials -> 3. Verify immediate 401 Unauthorized rejection."
         elif sid in ["E01-S12", "E01-S13"]:
             account_id = "amareet"
-            start_path = "/coordinator/oversight"
-            click_path = "1. Sign in as Amareet (Lead Coordinator) -> 2. Open Oversight Queue -> 3. Inspect unassigned events and workload distribution."
+            start_path = "/coordinator-lead/queue"
+            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect unassigned events and workload distribution per C-69/T-70."
         else:
             account_id = "jining"
             start_path = "/login"
@@ -1554,111 +1555,153 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
     elif epic == "E02":
         account_id = "jining"
         if sid == "E02-S07":
-            start_path = "/events/new"
-            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Go to /events/new -> 3. Select date > 2 years in future; verify instant rejection per C-31/T-31 2-year SST horizon."
+            start_path = "/organiser/new-request"
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Events -> 3. New request (/organiser/new-request) -> 4. Select date > 2 years in future; verify instant rejection per C-31/T-31 2-year SST horizon."
         elif sid == "E02-S02":
-            start_path = "/events/new"
-            click_path = "1. Sign in as Ji Ning -> 2. Go to /events/new -> 3. Enter partial event fields -> 4. Click 'Save as Draft'; observe draft persistence."
+            start_path = "/organiser/drafts"
+            click_path = "1. Sign in as Ji Ning -> 2. Events -> 3. Drafts (/organiser/drafts) -> 4. Save and resume draft (draft has lighter validation than full submission)."
         else:
-            start_path = "/events/new"
-            click_path = "1. Sign in as Ji Ning -> 2. Go to /events/new -> 3. Fill in mandatory title, description, category -> 4. Click 'Submit Event'."
+            start_path = "/organiser/new-request"
+            click_path = "1. Sign in as Ji Ning -> 2. Events -> 3. New request (/organiser/new-request) -> 4. Fill in mandatory fields (requires future start, end after start) -> 5. Click 'Submit Event'."
     elif epic == "E03":
         account_id = "amareet"
-        if sid in ["E03-S08", "E03-S09", "E03-S10"]:
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event in 'Under Review' -> 3. Demonstrate known defect behavior (D-01/D-02/D-03 merged via SCRUM-261 PR #450)."
+        if sid in ["E03-S08", "E03-S09"]:
+            account_id = "amareet"
+            start_path = "/coordinator-lead/queue"
+            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect Lead assignment and direct reassignment per C-69/T-70 (remediated on main via SCRUM-261 PR #450/#453)."
+        elif sid == "E03-S10":
+            account_id = "amareet"
+            start_path = "/coordinator-lead/oversight"
+            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Oversight (/coordinator-lead/oversight) -> 3. Inspect coordinator workloads and metrics per C-128/T-83 (remediated on main via SCRUM-261)."
         elif sid == "E03-S05":
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Type clarification message to organiser -> 4. Verify message logged in event discussion."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Open Event Detail -> 4. Type clarification message to organiser -> 5. Verify message logged in event discussion."
         elif sid in ["E03-S06", "E03-S11"]:
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Click 'Approve for Planning' -> 4. Verify status transitions to Planning."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Open Event Detail -> 4. Click 'Approve for Planning' -> 5. Status transitions to Planning."
         else:
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet -> 2. Go to Coordinator Dashboard -> 'Under Review' tab -> 3. Inspect incoming submitted event proposals."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Choose incoming event proposal -> 4. Inspect details and evaluate feasibility."
     elif epic == "E04":
         account_id = "jining"
         start_path = "/events"
-        click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Open Multi-Session Event -> 3. Add child session timeslot and session-specific capacity (T-79 restoration)."
+        click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Events (/events) -> 3. Open Multi-Session Event -> 4. Add child session timeslot and session-specific capacity (T-79 restoration)."
     elif epic == "E05":
         account_id = "aaron"
-        if sid == "E05-S05":
-            start_path = "/venues"
-            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Select Venue -> 3. Set Setup Buffer (15 mins) and Turnaround Buffer (15 mins) -> 4. Save and verify exclusion range."
+        if sid == "E05-S04":
+            start_path = "/venue/blockout"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Inventory -> 3. Maintenance blocks (/venue/blockout) -> 4. Create block; note overlapping unavailabilities are refused, while blocks over existing bookings flag bookings as Conflicting (E05-S06)."
+        elif sid == "E05-S05":
+            start_path = "/venue/inventory"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Inventory (/venue/inventory) -> 3. Select Venue -> 4. Set Setup Buffer (15 mins) and Turnaround Buffer (15 mins) -> 5. Save and verify exclusion range."
         elif sid == "E05-S06":
-            start_path = "/venues"
-            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Mark venue as Unavailable / Maintenance -> 3. Verify affected bookings receive conflict notifications."
+            start_path = "/venue/blockout"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Maintenance blocks (/venue/blockout) -> 3. Mark venue as Unavailable / Maintenance -> 4. Verify affected bookings receive conflict notifications."
         else:
-            start_path = "/venues"
-            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Open Venue Catalogue -> 3. Inspect venue capacity, amenities, and blackout maintenance periods."
+            start_path = "/venue/inventory"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Inventory (/venue/inventory) -> 3. Inspect venue capacity, amenities, and blackout maintenance periods."
     elif epic == "E06":
-        if sid in ["E06-S03", "E06-S06"]:
+        if sid == "E06-S03":
             account_id = "amareet"
-            start_path = "/venues/search"
-            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Go to /venues/search -> 3. Select 2 separate venues for single event -> 4. Verify Rule B concurrency lock."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue (/coordinator/queue) -> 3. Open event -> 4. Venue bookings (/coordinator/events/:eventCode/venue-bookings) -> 5. Request venue or withdraw pending request (T-68/T-95)."
+        elif sid == "E06-S04":
+            account_id = "aaron"
+            start_path = "/venue/bookings"
+            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Booking requests (/venue/bookings) -> 3. Review request -> 4. Approve or reject with alternative suggestion (C-08/T-76)."
         elif sid == "E06-S05":
             account_id = "amareet"
-            start_path = "/venues/search"
-            click_path = "1. Sign in as Amareet -> 2. Create tentative hold on venue slot -> 3. Observe automatic 48-hour expiration timer (T-92)."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open event -> 4. Venue hold (/coordinator/events/:eventCode/venues/:venueId/hold) -> 5. Observe 48-hour tentative hold timer (T-92)."
+        elif sid == "E06-S06":
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue -> 3. Open event -> 4. Venue search (/coordinator/events/:eventCode/venues) -> 5. Demonstrate Rule B concurrency: first accepted claim wins, concurrent request returns 409 Conflict."
         elif sid == "E06-S07":
-            account_id = "aaron"
-            start_path = "/venues"
-            click_path = "1. Sign in as Aaron (venue_staff) -> 2. Open Venue Holds tab -> 3. Observe partial gate state: custom hold expiry student spec T-84 pending in SCRUM-260."
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open event -> 4. Designate confirmed venue as primary (T-78)."
         else:
             account_id = "amareet"
-            start_path = "/venues/search"
-            click_path = "1. Sign in as Amareet -> 2. Search venues by attendee capacity and dates -> 3. Submit booking request."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open event -> 4. Venue search (/coordinator/events/:eventCode/venues) -> 5. Search by capacity and submit request."
     elif epic == "E07":
         account_id = "lexin"
-        if sid == "E07-S04":
-            start_path = "/support"
-            click_path = "1. Sign in as Lexin (technical_support_staff) -> 2. Open Equipment Request -> 3. Assign technician -> 4. Observe FOR NO KEY UPDATE user row lock preventing deadlocks (PR #239)."
+        if sid == "E07-S07":
+            start_path = "/support/technicians"
+            click_path = "1. Sign in as Lexin (technical_support_staff) -> 2. Technician staffing (/support/technicians) -> 3. Open support request -> 4. Select colleague -> 5. Confirm assignment (FOR NO KEY UPDATE lock prevents 40P01 deadlocks per PR #239)."
+        elif sid == "E07-S04":
+            start_path = "/support/equipment-requests"
+            click_path = "1. Sign in as Lexin -> 2. Equipment requests (/support/equipment-requests) -> 3. Reserve equipment for event session."
+        elif sid == "E07-S05":
+            start_path = "/support/catalogue"
+            click_path = "1. Sign in as Lexin -> 2. Equipment catalogue (/support/catalogue) -> 3. Mark item unavailable."
         else:
-            start_path = "/support"
-            click_path = "1. Sign in as Lexin -> 2. Open Support Dashboard -> 3. Review equipment inventory, reserve AV gear, and assign technicians."
+            start_path = "/support/technicians"
+            click_path = "1. Sign in as Lexin -> 2. Technician staffing (/support/technicians) -> 3. Review inventory, reserve AV gear, and assign technicians."
     elif epic == "E08":
-        if sid in ["E08-S03", "E08-S04", "E08-S05", "E08-S06"]:
+        if sid == "E08-S03":
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue (/coordinator/queue) -> 3. Open event -> 4. Readiness checklist (/coordinator/events/:eventCode/readiness) -> 5. Submit to Safety Review once all arrangements are Confirmed."
+        elif sid == "E08-S04":
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open Confirmed event -> 4. Revert to Planning (arrangements remain intact; affected items flagged for reconfirmation)."
+        elif sid == "E08-S05":
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open event -> 4. Complete event (/coordinator/events/:eventCode/complete) once all sessions finish (T-26)."
+        elif sid == "E08-S06":
             account_id = "bryan"
-            start_path = "/safety"
-            click_path = "1. Sign in as Bryan (safety_officer) -> 2. Open Safety Review Queue (/safety) -> 3. Inspect emergency exits & crowd control -> 4. Click 'Approve to Confirmed' (T-107) or 'Request Changes' (revert to Planning)."
+            start_path = "/safety/queue"
+            click_path = "1. Sign in as Bryan (safety_officer) -> 2. Safety review queue (/safety/queue) -> 3. Choose Safety Review event (/safety/review/:eventId) -> 4. Evaluate all 7 safety factors -> 5. Approve directly to Confirmed (T-107) or Request Changes (revert to Planning)."
         else:
             account_id = "amareet"
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event Detail -> 3. Verify all arrangements complete -> 4. Submit to Safety Review."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open Event Detail -> 4. Verify all arrangements complete -> 5. Submit to Safety Review."
     elif epic == "E09":
-        account_id = "xy"
         if sid == "E09-S04":
-            start_path = "/catalog"
-            click_path = "1. Sign in as XY (attendee) -> 2. Navigate to /catalog -> 3. Attempt registration on full-capacity event -> 4. Observe automatic waitlist placement with position #."
+            account_id = "xy"
+            start_path = "/attendee/discover"
+            click_path = "1. Sign in as XY (attendee) -> 2. Discover (/attendee/discover) -> 3. Attempt registration on full-capacity event -> 4. Join waitlist (/attendee/waitlist/:eventCode) with position #."
         elif sid == "E09-S06":
             account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue -> 3. Open event attendance (/coordinator/events/:eventCode/attendance) -> 4. Check in attendees with live headcount."
+        elif sid == "E09-S07":
+            account_id = "jining"
             start_path = "/events"
-            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Confirmed Event -> 3. Check in attendees -> 4. Verify live attendance headcount updates."
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Events -> 3. Registrations (/organiser/requests/:eventCode/registrations) -> 4. Export CSV with formula injection sanitisation."
         else:
             account_id = "xy"
-            start_path = "/catalog"
-            click_path = "1. Sign in as XY (attendee) -> 2. Browse public event catalogue -> 3. Click 'Register' -> 4. Receive instant booking confirmation."
+            start_path = "/attendee/discover"
+            click_path = "1. Sign in as XY (attendee) -> 2. Discover (/attendee/discover) -> 3. Browse public event catalogue -> 4. Click 'Register' -> 5. Receive booking confirmation."
     elif epic == "E10":
         if sid == "E10-S04":
             account_id = "jining"
             start_path = "/events"
-            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Open Confirmed Event -> 3. Click 'Cancel Event' -> 4. Observe tiered refund calculation (>30d: 100%, 14-30d: 50%, <14d: 0% per C-35)."
+            click_path = "1. Sign in as Ji Ning (event_organiser) -> 2. Events -> 3. Open Confirmed Event -> 4. Click 'Cancel Event' (/organiser/requests/:eventCode/cancel) -> 5. Observe tiered refund calculation (>30d: 100%, 14-30d: 50%, <14d: 0% per C-35)."
         elif sid in ["E10-S01", "E10-S02"]:
             account_id = "jining"
             start_path = "/events"
-            click_path = "1. Sign in as Ji Ning -> 2. Open Confirmed Event -> 3. Click 'Request Change' -> 4. Submit rescheduling date -> 5. Observe automatic arrangement impact preview."
+            click_path = "1. Sign in as Ji Ning -> 2. Events -> 3. Open Confirmed Event -> 4. Click 'Request Change' (/organiser/requests/:eventCode/change) -> 5. Submit rescheduling date -> 6. Observe automatic arrangement impact preview with revision fingerprinting."
+        elif sid == "E10-S05":
+            account_id = "amareet"
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue -> 3. Lost venue recovery (/coordinator/events/:eventCode/venue-recovery) -> 4. Select replacement venue preserving bookings (PR #367)."
         else:
             account_id = "amareet"
-            start_path = "/events"
-            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Open Event Changes queue -> 3. Review organiser rescheduling request."
+            start_path = "/coordinator/queue"
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue -> 3. Open Event Changes queue -> 4. Review organiser rescheduling request."
     elif epic == "E11":
         account_id = "amareet"
-        start_path = "/events"
-        click_path = "1. Sign in as Amareet -> 2. Approve event status change -> 3. Inspect notification_outbox table in DB to verify transactional email record dispatched."
+        start_path = "/notifications"
+        click_path = "1. Sign in as Amareet -> 2. Notifications (/notifications) -> 3. Verify in-app notifications and transactional outbox relay."
     elif epic == "E14":
         account_id = "amareet"
-        start_path = "/events"
-        click_path = "1. Sign in as Amareet -> 2. Open Event Detail -> 3. Switch to Audit Log tab -> 4. Verify chronological immutable audit events with actor attribution."
+        start_path = "/coordinator/queue"
+        click_path = "1. Sign in as Amareet -> 2. Review queue -> 3. Open Event Detail -> 4. Switch to Audit Log tab -> 5. Verify chronological immutable audit events with actor attribution."
 
     account = next((a for a in PRODUCTION_ACCOUNTS if a["id"] == account_id), PRODUCTION_ACCOUNTS[1])
     live_target_url = f"{VERCEL_APP_URL}{start_path}"
@@ -1686,7 +1729,7 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
     slide_claim, slide_notes = get_slide_claim_and_notes(slide_num)
     slide_title = SLIDE_TITLES.get(slide_num, f"Slide {slide_num}")
 
-    commit_sha = GIT_PR_COMMITS.get(pr_num, "a8f2d879" if pr_num == "450" else ("ced06372" if pr_num == "453" else "0d1609d8"))
+    commit_sha = GIT_PR_COMMITS.get(pr_num, "5d1e9ab0" if "30" in pr_num else "6e843ff8")
     author = s.get("owner", "ConnectSphere Team")
     reviewer = get_story_reviewer(author)
 
@@ -2810,8 +2853,9 @@ def build_html() -> str:
         <h3 style="font-size:1.15rem; color:var(--text-bright); margin-bottom:0.75rem;">⚡ Quick Demonstration Scenarios (High-Frequency Examiner Questions)</h3>
         <p class="muted" style="font-size:0.85rem; margin-bottom:1rem;">Click any scenario below to immediately jump to its complete 7-step demonstration protocol and navigation instructions:</p>
         <div class="quick-drill-grid">
-          <button type="button" class="drill-chip" data-drill-sid="E06-S03">⚡ E06-S03: Double Booking Race (Rule B Concurrency)</button>
-          <button type="button" class="drill-chip" data-drill-sid="E08-S03">🛡️ E08-S03: Operational Safety Review (Bryan Role)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E06-S06">⚡ E06-S06: Double Booking Race (Rule B Concurrency)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E08-S06">⚖️ E08-S06: Operational Safety Review (Safety Officer)</button>
+          <button type="button" class="drill-chip" data-drill-sid="E08-S03">🛡️ E08-S03: Readiness Submission (Coordinator)</button>
           <button type="button" class="drill-chip" data-drill-sid="E05-S05">⏱️ E05-S05: Setup &amp; Turnaround Buffers (GiST Exclusion)</button>
           <button type="button" class="drill-chip" data-drill-sid="E02-S07">📅 E02-S07: 2-Year SST Date Horizon Guard (CFO)</button>
           <button type="button" class="drill-chip" data-drill-sid="E09-S04">🎟️ E09-S04: Attendee Waitlist Concurrency (XY Role)</button>
@@ -4801,7 +4845,7 @@ def build_html() -> str:
           <span class="cred-header-icon">🔑</span>
           <div>
             <h3 class="cred-drawer-title">SMU Production Role Accounts</h3>
-            <div class="cred-drawer-sub">6 Role Accounts · Shared Password: <code>Password123!</code> · sgconnectsphere.vercel.app</div>
+            <div class="cred-drawer-sub">6 Role Accounts · Shared Password: <code>Password123!</code> · Ephemeral testbed accounts (rotate post-assessment)</div>
           </div>
         </div>
         <button type="button" id="close-credentials-drawer-btn" class="cred-drawer-close-btn" aria-label="Close credentials drawer">✕</button>
@@ -4937,6 +4981,7 @@ def build_html() -> str:
             {''.join(credentials_strip_chips_html)}
           </div>
           <div class="cred-strip-actions">
+            <span class="cred-security-badge" style="font-size:0.75rem; color:#ffd166; background:rgba(255,209,102,0.1); border:1px solid #ffd166; border-radius:4px; padding:0.2rem 0.5rem; margin-right:0.25rem;">🔒 Ephemeral Testbed</span>
             <span class="cred-pw-label">PW: <code>Password123!</code></span>
             <button type="button" class="btn-copy-chip" data-copy="Password123!" title="Copy shared password Password123!">📋 Copy PW</button>
             <button type="button" id="open-credentials-drawer-btn" class="btn-view-matrix">Full Matrix ▾</button>
@@ -4964,6 +5009,14 @@ def build_html() -> str:
               </div>
               <p>Whenever an examiner asks about any story, feature, or defect, follow this sequence strictly. <strong>Say This First</strong> before diving into code or edge cases:</p>
 
+              <!-- First 10 Seconds Protocol -->
+              <div class="first-10-seconds-box" style="background: rgba(117,214,194,0.08); border-left: 4px solid var(--accent); padding: 0.85rem 1.15rem; border-radius: 8px; margin: 0.75rem 0 1rem 0;">
+                <strong style="color: var(--accent); display: block; margin-bottom: 0.35rem; font-size: 0.92rem;">⏱️ First 10 Seconds Protocol (Say This Exactly):</strong>
+                <p style="font-style: italic; color: var(--text-bright); margin: 0; font-size: 0.92rem;">
+                  "This is [story ID / feature name]. I will show the live behaviour first, then its Jira acceptance criteria, the exact PR and commit, CI, the named EP/BVA test and execution record, and the matching slide."
+                </p>
+              </div>
+
               <div class="sequence-steps">
                 <div class="sequence-step">
                   <div class="step-num">Step 1</div>
@@ -4987,8 +5040,15 @@ def build_html() -> str:
                 </div>
               </div>
 
-              <div class="template-box">
-                "This feature lets [role] do [business outcome]. We chose this design because [BDR/ADR reason]. We proved it in [PR/test case], and the boundary is [limit]."
+              <div class="template-box" style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-top: 1rem;">
+                <strong style="color: var(--accent); display: block; margin-bottom: 0.4rem;">5-Sentence Rehearsal Pattern:</strong>
+                <ol style="margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.88rem; color: var(--text);">
+                  <li>"This feature lets <strong>[role]</strong> do <strong>[business outcome]</strong>."</li>
+                  <li>"We chose it because <strong>[requirement/risk from BDR/ADR]</strong>."</li>
+                  <li>"The key trade-off was <strong>[alternative rejected]</strong>."</li>
+                  <li>"We prove it with <strong>[PR / commit / execution run record / test file]</strong>."</li>
+                  <li>"Its current boundary is <strong>[honest limitation]</strong>."</li>
+                </ol>
               </div>
 
               <div class="legend-row">
@@ -5017,6 +5077,80 @@ def build_html() -> str:
                 <button type="button" class="top-chip" data-query="Scrum Velocity">Scrum Velocity (Burn-Up &amp; PR Flow)</button>
                 <button type="button" class="top-chip" data-query="AI Governance">AI Governance (Dossier 12 · T-108)</button>
                 <button type="button" class="top-chip" data-query="Four Defects">Four Defects (Audit vs SCRUM-261 HEAD)</button>
+              </div>
+            </div>
+
+            <!-- Top 3 Critical Examiner Traps -->
+            <div class="examiner-traps-panel" style="background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+                <span style="font-size: 1.25rem;">⚠️</span>
+                <h3 style="font-size: 1.1rem; color: var(--text-bright); margin: 0;">Top 3 Examiner Traps &amp; Exact Defense Realities</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+                  <strong style="color: #ff8585; display: block; margin-bottom: 0.25rem;">Trap 1: Double-Booking Concurrency (Rule B)</strong>
+                  <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><em>Examiner asks:</em> "Show me where double-booking concurrency is handled in the app."</p>
+                  <p style="font-size: 0.88rem; color: var(--text); margin: 0;"><strong>Defense:</strong> Concurrency race is <strong>E06-S06 / SCRUM-50</strong> (NOT E06-S03 which is request creation). PR #378 (commit <code>3ac65827</code>), test <code>backend/tests/venueBooking.concurrency.test.ts</code>, Slide 5. PostgreSQL exclusion constraint enforces first accepted claim wins; losing concurrent request returns <strong>409 Conflict</strong> with buffered timeframe.</p>
+                </div>
+                <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+                  <strong style="color: #ff8585; display: block; margin-bottom: 0.25rem;">Trap 2: Operational Safety Review Workflow Split</strong>
+                  <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><em>Examiner asks:</em> "Log in as Safety Officer and show E08-S03 approval."</p>
+                  <p style="font-size: 0.88rem; color: var(--text); margin: 0;"><strong>Defense:</strong> <strong>E08-S03</strong> is Coordinator submitting readiness into Safety Review (PR #283 / <code>c44c6afd</code>). Safety Officer evaluation and decision is <strong>E08-S06</strong> (PR #392 / commit <code>44d08267</code>) at <code>/safety/queue</code> → <code>/safety/review/:eventId</code>. All 7 factors need a choice and comment; approval goes directly to Confirmed (T-107).</p>
+                </div>
+                <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem;">
+                  <strong style="color: #ff8585; display: block; margin-bottom: 0.25rem;">Trap 3: Defect Audit Boundary (defects.md vs SCRUM-261 HEAD)</strong>
+                  <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem;"><em>Examiner asks:</em> "Why does defects.md say D-01..D-03 are Open if you claim you fixed them?"</p>
+                  <p style="font-size: 0.88rem; color: var(--text); margin: 0;"><strong>Defense:</strong> <code>docs/testing/defects.md</code> was frozen at the 6 Nov morning audit boundary per team convention. The remediation was merged later that day under technical enabler SCRUM-261 (PRs #450, #453, #454). We declare this boundary with total transparency: D-01..D-03 are merged on main; D-04 remains intentionally open.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mechanical Role Rehearsal & Click Paths Table -->
+            <div class="role-rehearsal-panel" style="background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem;">
+              <h3 style="font-size: 1.1rem; color: var(--text-bright); margin-bottom: 0.75rem;">Mechanical Role Rehearsal &amp; Verified Click Paths</h3>
+              <p class="muted" style="font-size: 0.85rem; margin-bottom: 1rem;">Never guess or type unmapped URLs during the oral exam. Use these exact verified paths:</p>
+              <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left;">
+                  <thead>
+                    <tr style="border-bottom: 2px solid var(--border); color: var(--text-bright);">
+                      <th style="padding: 0.6rem;">Role</th>
+                      <th style="padding: 0.6rem;">Correct Click Path</th>
+                      <th style="padding: 0.6rem;">Examiner Trap to Avoid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Organiser (Ji Ning)</td>
+                      <td style="padding: 0.6rem;">Login → Events → New request → <code>/organiser/new-request</code></td>
+                      <td style="padding: 0.6rem; color: var(--muted);"><code>/events/new</code> is NOT a route. Full submit requires all 10 fields, future start, end after start. Drafts have lighter validation.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Coordinator (Amareet)</td>
+                      <td style="padding: 0.6rem;">Login → Review queue (<code>/coordinator/queue</code>) → select event → Venue search / bookings / Readiness</td>
+                      <td style="padding: 0.6rem; color: var(--muted);"><code>/events</code> is organiser event list. Venue booking work is event-scoped (<code>/coordinator/events/:eventCode/venues</code>), not global <code>/venues/search</code>. Do not hunt for "Under Review tab".</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Venue Staff (Aaron)</td>
+                      <td style="padding: 0.6rem;">Login → Inventory → Maintenance blocks → <code>/venue/blockout</code></td>
+                      <td style="padding: 0.6rem; color: var(--muted);">A block overlapping another unavailability is refused. A block over an existing booking flags that booking <code>Conflicting</code> (E05-S06).</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Technical Support (Lexin)</td>
+                      <td style="padding: 0.6rem;">Login → Technician staffing (<code>/support/technicians</code>) → open support request → select colleague → confirm</td>
+                      <td style="padding: 0.6rem; color: var(--muted);"><code>/support</code> is a mock dashboard. An overlapping colleague shows a warning; demonstrate refusal after confirmation flow, not merely queue row.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Safety Officer (Bryan)</td>
+                      <td style="padding: 0.6rem;">Login → Safety review queue (<code>/safety/queue</code>) → choose event (<code>/safety/review/:eventId</code>)</td>
+                      <td style="padding: 0.6rem; color: var(--muted);"><code>/safety</code> is NOT a route. All 7 factors need a choice and comment; approval requires all satisfactory, request-changes requires ≥1 unsatisfactory.</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid var(--border);">
+                      <td style="padding: 0.6rem; font-weight: 700; color: var(--accent);">Attendee (XY)</td>
+                      <td style="padding: 0.6rem;">Login → Discover (<code>/attendee/discover</code>) → choose confirmed event → Register (<code>/attendee/register/:eventCode</code>) or waitlist</td>
+                      <td style="padding: 0.6rem; color: var(--muted);"><code>/catalog</code> is NOT a route. Closed or unconfirmed registration cannot proceed. Full event offers waitlist.</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -5532,8 +5666,8 @@ def build_html() -> str:
           loadStoryIntoLauncher(demoSelect.value);
         }});
         if (!demoSelect.value && demoSelect.options.length > 1) {{
-          demoSelect.value = 'E06-S03';
-          loadStoryIntoLauncher('E06-S03');
+          demoSelect.value = 'E06-S06';
+          loadStoryIntoLauncher('E06-S06');
         }}
       }}
 

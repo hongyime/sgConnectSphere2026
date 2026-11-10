@@ -36,10 +36,31 @@ def run_tests():
     hta_text = hta.text
     assert "What it does → Why we chose it → Proof → Boundary" in hta_text, "Missing 4-step answering sequence in How to Answer banner"
     assert "Say This First" in hta_text, "Missing 'Say This First' instruction in banner"
+    assert "First 10 Seconds Protocol" in hta_text, "Missing First 10 Seconds Protocol"
+    assert "This is [story ID / feature name]. I will show the live behaviour first" in hta_text, "Missing exact 10-second opening formula"
     assert "This feature lets [role] do [business outcome]" in hta_text or "This feature lets" in hta_text, "Missing 5-sentence rehearsable answer template"
     assert "Done" in hta_text and "Partial" in hta_text and "Open defect" in hta_text and "Historical decision" in hta_text, "Missing legend items in banner"
     assert "A venue block can be created over confirmed bookings without being blocked" in hta_text, "Missing venue block precision guidance"
-    print("PASS: How to Answer banner verified (4-step sequence, legend, 5-sentence template, venue block precision)")
+
+    # Top 3 Critical Examiner Traps & Role Rehearsal
+    traps_panel = soup.find("div", class_="examiner-traps-panel")
+    assert traps_panel is not None, "Missing .examiner-traps-panel"
+    traps_text = traps_panel.text
+    assert "Trap 1: Double-Booking Concurrency (Rule B)" in traps_text, "Missing Trap 1 in traps panel"
+    assert "E06-S06 / SCRUM-50" in traps_text, "Trap 1 missing E06-S06 citation"
+    assert "Trap 2: Operational Safety Review Workflow Split" in traps_text, "Missing Trap 2 in traps panel"
+    assert "E08-S03 is Coordinator" in traps_text and "E08-S06" in traps_text, "Trap 2 missing E08-S03 vs E08-S06 split"
+    assert "Trap 3: Defect Audit Boundary" in traps_text, "Missing Trap 3 in traps panel"
+
+    role_panel = soup.find("div", class_="role-rehearsal-panel")
+    assert role_panel is not None, "Missing .role-rehearsal-panel"
+    assert "/organiser/new-request" in role_panel.text, "Role table missing /organiser/new-request"
+    assert "/coordinator/queue" in role_panel.text, "Role table missing /coordinator/queue"
+    assert "/venue/blockout" in role_panel.text, "Role table missing /venue/blockout"
+    assert "/support/technicians" in role_panel.text, "Role table missing /support/technicians"
+    assert "/safety/queue" in role_panel.text, "Role table missing /safety/queue"
+    assert "/attendee/discover" in role_panel.text, "Role table missing /attendee/discover"
+    print("PASS: How to Answer banner, Top 3 Examiner Traps & Mechanical Role Table verified")
 
     # 4. Top Likely Answers Panel
     top_panel = soup.find("div", class_="top-answers-panel")
@@ -348,7 +369,25 @@ def run_tests():
     # Verify Password123! in copy buttons
     pw_copy_btns = soup.find_all(attrs={"data-copy": "Password123!"})
     assert len(pw_copy_btns) >= 7, f"Expected at least 7 Password123! copy buttons, got {len(pw_copy_btns)}"
-    print("PASS: Production role credentials drawer & sticky bar verified (6 accounts + Password123! copy buttons)")
+
+    expected_launch_routes = {
+        "Aaron": "/venue/blockout",
+        "Amareet": "/coordinator/queue",
+        "Ji Ning": "/organiser/new-request",
+        "Le Xin": "/support/technicians",
+        "Xiang Ying": "/attendee/discover",
+        "Bryan": "/safety/queue",
+    }
+    for card in cred_drawer.find_all("div", class_="cred-account-card"):
+        c_name = card.find("span", class_="cred-name").text.strip()
+        matches = [k for k in expected_launch_routes if k in c_name]
+        assert len(matches) > 0, f"Unknown account card: {c_name}"
+        short = matches[0]
+        expected_route = expected_launch_routes[short]
+        launch_link = card.find("a", class_="cred-launch-link")
+        assert launch_link is not None and expected_route in launch_link.get("href", ""), f"Wrong launch route for {short}: expected {expected_route}"
+    assert "Ephemeral" in text, "Missing ephemeral testbed accounts notice"
+    print("PASS: Production role credentials drawer & sticky bar verified (6 accounts + Password123! copy buttons + verified routes)")
 
     # 23. 7-Step Live Demonstration Protocol on all 65 Stories
     for s in stories:
@@ -401,7 +440,18 @@ def run_tests():
         # Step 7: Historical Postplan
         p7 = proto.find("div", id=f"demo-p7-{sid}")
         assert p7.find("a", href=re.compile(r"\.html$")), f"{sid}: Step 7 missing postplan HTML link"
-    print("PASS: 7-Step Live Demonstration Protocol verified across all 65 stories (Live Demo, Jira, PR, CI, EP/BVA, Slide, Postplan)")
+
+    # Assert commit 0d1609d8 appears exactly once (on E07-S08 only)
+    assert len(re.findall(r"0d1609d8", text)) == 1, "commit 0d1609d8 must only appear on E07-S08"
+    # Assert E06-S06 is the concurrency story
+    e6s6_proto = soup.find("div", attrs={"data-sid": "E06-S06"})
+    assert "3ac65827" in e6s6_proto.text and "378" in e6s6_proto.text, "E06-S06 missing PR #378 / commit 3ac65827"
+    # Assert E08-S03 is Coordinator readiness and E08-S06 is Safety Officer
+    e8s3_proto = soup.find("div", attrs={"data-sid": "E08-S03"})
+    assert "Event Coordinator" in e8s3_proto.find("span", class_="demo-protocol-role-hint").text, "E08-S03 acting role must be Event Coordinator"
+    e8s6_proto = soup.find("div", attrs={"data-sid": "E08-S06"})
+    assert "Safety Officer" in e8s6_proto.find("span", class_="demo-protocol-role-hint").text, "E08-S06 acting role must be Safety Officer"
+    print("PASS: 7-Step Live Demonstration Protocol verified across all 65 stories (Live Demo, Jira, PR, CI, EP/BVA, Slide, Postplan + Concurrency/Safety lineage)")
 
     # 24. Week 11 Presentation Companion (All 17 Slides)
     slides_view = soup.find("div", id="view-slides")
