@@ -2352,30 +2352,51 @@ def build_html() -> str:
         demo_meta = get_story_demo_metadata(sid, epic, s, s["test_cases"])
         dm_acct = demo_meta["account"]
         dm_td = demo_meta["test_design"]
-        dm_slide = demo_meta["slide_info"]
-        rf = dm_td.get("run_file")
-        if rf and rf.endswith(".md") and "defects.md" not in rf:
-            step5_run_link = f'<a href="{GITHUB_REPO_URL}/blob/main/docs/testing/runs/{rf}" target="_blank" rel="noopener" class="ev-link ev-link-run">📋 Run Evidence ({rf})</a>'
+
+        active_cases = [c for c in cases if "active" in c["status"] or "✅" in c["status"]]
+        defect_cases = [c for c in cases if "defect" in c["status"] or "⚠️" in c["status"]]
+        scaffold_cases = [c for c in cases if "scaffold" in c["status"] or "⏳" in c["status"]]
+
+        jira_url = f"{JIRA_BASE_URL}/{s['jira_key']}"
+        code_url = f"{GITHUB_REPO_URL}/blob/main/{s['code_link']}"
+        code_filename = Path(s["code_link"]).name
+
+        pr_m = re.search(r"PR #?(\d+)", s.get("evidence_pr", ""))
+
+        primary_test_file = ""
+        for c in cases:
+            if c.get("where"):
+                w_file = c["where"].split(":")[0].strip()
+                if "/" in w_file:
+                    primary_test_file = w_file
+                    break
+        if primary_test_file:
+            test_url = f"{GITHUB_REPO_URL}/blob/main/{primary_test_file}"
+            test_link_html = f'<a href="{test_url}" target="_blank" rel="noopener" class="ev-link ev-link-test">🧪 Test File ({Path(primary_test_file).name})</a>'
+        else:
+            test_link_html = ""
+
+        run_file = STORY_RUN_EVIDENCE_MAP.get(sid)
+        if run_file and run_file.endswith(".md") and "defects.md" not in run_file:
+            run_url = f"{GITHUB_REPO_URL}/blob/main/docs/testing/runs/{run_file}"
+            step5_run_link = f'<a href="{run_url}" target="_blank" rel="noopener" class="ev-link ev-link-run">📋 Run Evidence ({Path(run_file).name})</a>'
         elif sid == "E06-S07":
             step5_run_link = '<span class="ev-link ev-link-partial" title="No matching test cases in workbook yet; gate incomplete">⚠️ Run Evidence: Pending Test Cases</span>'
+        elif sid in ["E03-S08", "E03-S09", "E03-S10", "E02-S05"]:
+            defect_url = f"{GITHUB_REPO_URL}/blob/main/docs/testing/defects.md"
+            step5_run_link = f'<a href="{defect_url}" target="_blank" rel="noopener" class="ev-link ev-link-defect">🚨 Defect Registry (defects.md)</a>'
         else:
-            step5_run_link = f'<a href="{GITHUB_REPO_URL}/blob/main/docs/testing/defects.md" target="_blank" rel="noopener" class="ev-link ev-link-defect">🚨 Defect Registry (defects.md)</a>'
+            step5_run_link = ""
 
         demo_walkthrough_html = f'''
         <div class="story-demo-protocol" data-sid="{sid}">
-          <div class="demo-protocol-header">
-            <div class="demo-protocol-title-wrap">
-              <span class="demo-protocol-icon">🎬</span>
-              <h4 class="demo-protocol-title">Live Oral Exam Demonstration &amp; Verification Stack</h4>
-              <span class="demo-protocol-pill">All Evidence Visible Inline (Zero Tab Switching)</span>
-            </div>
-            <span class="demo-protocol-role-hint">Acting Role: <strong>{dm_acct["role_title"]}</strong> ({dm_acct["name"]})</span>
-          </div>
-
           <div class="demo-step-panels">
-            <!-- Step 1: Live Demo -->
+            <!-- Step 1: Live Demo & Source Code -->
             <div class="demo-step-panel active" id="demo-p1-{sid}">
-              <h5 class="demo-section-header"><span class="step-num">Step 1</span> 🎬 1-Click Live App Target &amp; Navigation Path</h5>
+              <h5 class="demo-section-header">
+                <span><span class="step-num">Step 1</span> 🎬 1-Click Live App Target &amp; Navigation Path</span>
+                <span class="step-role-pill demo-protocol-role-hint">👤 Acting Role: <strong>{dm_acct["role_title"]}</strong> ({dm_acct["name"]})</span>
+              </h5>
               <div class="demo-grid-2col">
                 <div>
                   <div class="demo-meta-row">
@@ -2385,6 +2406,10 @@ def build_html() -> str:
                   <div class="demo-meta-row">
                     <span class="demo-meta-label">Target URL:</span>
                     <a href="{demo_meta['live_target_url']}" target="_blank" rel="noopener" class="demo-live-link">🚀 Open Live App ({demo_meta['start_path']})</a>
+                  </div>
+                  <div class="demo-meta-row">
+                    <span class="demo-meta-label">Source Code:</span>
+                    <a href="{code_url}" target="_blank" rel="noopener" class="ev-link">💻 Source ({code_filename})</a>
                   </div>
                 </div>
                 <div class="demo-path-box">
@@ -2455,50 +2480,16 @@ def build_html() -> str:
             <!-- Step 5: Complete canonical test cases -->
             <div class="demo-step-panel active" id="demo-p5-{sid}">
               <h5 class="demo-section-header"><span class="step-num">Step 5</span> 🧪 Complete Canonical Test Cases &amp; IS212 Spoken Defense</h5>
-              <div class="test-case-details">{case_details_html}</div>
-              <div class="demo-meta-row" style="margin-top:0.75rem;">
-                <span class="demo-meta-label">Verified Run Evidence:</span>
+              <div class="demo-meta-row test-evidence-meta" style="margin-bottom:0.75rem; gap:0.5rem; flex-wrap:wrap; align-items:center;">
+                {test_link_html}
                 {step5_run_link}
-                <span class="badge badge-tc">{len(s['test_cases'])} cases associated</span>
+                <span class="badge badge-tc" style="margin-left:auto;">Coverage: {len(active_cases)} active / {len(cases)} total</span>
               </div>
-            </div>
-
-            <!-- Step 6: Slide Deck Mapping -->
-            <div class="demo-step-panel active" id="demo-p6-{sid}">
-              <h5 class="demo-section-header"><span class="step-num">Step 6</span> 📊 Week 11 Presentation Anchor &amp; Speaker Claim</h5>
-              <div class="demo-meta-row">
-                <span class="demo-meta-label">Presentation Anchor:</span>
-                <span class="badge badge-sprint">Slide {dm_slide['num']}: {html.escape(dm_slide['title'])}</span>
-                <a href="#slide-card-{dm_slide['num']}" class="ev-link">📊 Jump to Slide #{dm_slide['num']}</a>
-              </div>
-              <div class="slide-claim-box">
-                <strong>Core Slide Claim:</strong>
-                <p>"{html.escape(dm_slide['claim'])}"</p>
-              </div>
-              <div class="slide-notes-preview">
-                <strong>Speaker Notes to Recite:</strong>
-                <p>"{html.escape(dm_slide['speaker_notes'])}"</p>
-              </div>
-            </div>
-
-            <!-- Step 7: Past Postplan -->
-            <div class="demo-step-panel active" id="demo-p7-{sid}">
-              <h5 class="demo-section-header"><span class="step-num">Step 7</span> 📜 Standalone Postplan Review Artifact</h5>
-              <div class="demo-meta-row">
-                <span class="demo-meta-label">Review Artifact:</span>
-                {demo_meta['postplan_link_html']}
-              </div>
-              <p class="muted" style="font-size:0.85rem; margin-top:0.35rem;">
-                Standalone immutable postplan verification artifact recording DoD criteria, reviewer sign-offs, and evidence.
-              </p>
+              <div class="test-case-details">{case_details_html}</div>
             </div>
           </div>
         </div>
         '''
-
-        active_cases = [c for c in cases if "active" in c["status"] or "✅" in c["status"]]
-        defect_cases = [c for c in cases if "defect" in c["status"] or "⚠️" in c["status"]]
-        scaffold_cases = [c for c in cases if "scaffold" in c["status"] or "⏳" in c["status"]]
 
         # Status badge (✅ Done, ⚠️ Partial, 🚨 Open defect)
         if sid in ["E03-S08", "E03-S09", "E03-S10"]:
@@ -2531,7 +2522,6 @@ def build_html() -> str:
                 f"e{e_num}-s{s_num:02d}",
                 f"e{e_num:02d}-s{s_num}",
             ])
-        pr_m = re.search(r"PR #?(\d+)", s.get("evidence_pr", ""))
         if pr_m:
             pr_num = pr_m.group(1)
             aliases.extend([f"pr{pr_num}", f"pr-{pr_num}"])
@@ -2549,58 +2539,9 @@ def build_html() -> str:
         tc_ids_str = " ".join(c["tc_id"] for c in cases)
         search_blob = f"{sid} {s['jira_key']} {s['title']} {s['owner']} {s['bdr']} {s['route']} {s['controller']} {s['migration']} {s['component']} {tc_ids_str} {s['spoken']} {s['limit']} {s['evidence_pr']} {alias_str}".lower()
 
-        tc_tags = "".join(
-            f'<a class="badge badge-tc" href="{GITHUB_REPO_URL}/blob/main/docs/testing/cases/{epic}.md#{c["anchor"]}" target="_blank" rel="noopener">{c["tc_id"]}</a> '
-            for c in cases
-        )
-
         scenarios_html = ""
         for sc in s.get("scenarios", []):
             scenarios_html += f'<div class="scenario-box"><strong>{html.escape(sc.get("title", "Scenario"))}</strong><p>{html.escape(sc.get("text", ""))}</p></div>'
-
-        jira_url = f"{JIRA_BASE_URL}/{s['jira_key']}"
-        code_url = f"{GITHUB_REPO_URL}/blob/main/{s['code_link']}"
-        code_filename = Path(s["code_link"]).name
-
-        # Evidence links: 3 direct evidence links (Jira, PR/test run, Source Code)
-        if pr_m:
-            pr_num = pr_m.group(1)
-            pr_url = f"{GITHUB_REPO_URL}/pull/{pr_num}"
-            pr_link_html = f'<a href="{pr_url}" target="_blank" rel="noopener" class="ev-link">🔀 Pull Request #{pr_num}</a>'
-        elif "SCRUM-153" in s.get("evidence_pr", "") or "feature/SCRUM-153" in s.get("evidence_pr", ""):
-            branch_url = f"{GITHUB_REPO_URL}/tree/feature/SCRUM-153-lead-oversight"
-            pr_link_html = f'<a href="{branch_url}" target="_blank" rel="noopener" class="ev-link">🌿 Branch (feature/SCRUM-153)</a>'
-        elif "defects.md" in s.get("evidence_pr", ""):
-            defect_url = f"{GITHUB_REPO_URL}/blob/main/docs/testing/defects.md"
-            pr_link_html = f'<a href="{defect_url}" target="_blank" rel="noopener" class="ev-link">🚨 Defect Registry</a>'
-        else:
-            pr_link_html = f'<a href="{jira_url}" target="_blank" rel="noopener" class="ev-link">📋 Jira {s["jira_key"]}</a>'
-
-        primary_test_file = ""
-        for c in cases:
-            if c.get("where"):
-                w_file = c["where"].split(":")[0].strip()
-                if "/" in w_file:
-                    primary_test_file = w_file
-                    break
-        if primary_test_file:
-            test_url = f"{GITHUB_REPO_URL}/blob/main/{primary_test_file}"
-            test_link_html = f'<a href="{test_url}" target="_blank" rel="noopener" class="ev-link">🧪 Test ({Path(primary_test_file).name})</a>'
-        else:
-            test_link_html = ""
-
-        # Explicit Run Evidence link pointing to real execution records
-        run_file = STORY_RUN_EVIDENCE_MAP.get(sid)
-        if run_file and run_file.endswith(".md") and "defects.md" not in run_file:
-            run_url = f"{GITHUB_REPO_URL}/blob/main/docs/testing/runs/{run_file}"
-            run_link_html = f'<a href="{run_url}" target="_blank" rel="noopener" class="ev-link ev-link-run">📋 Run Evidence ({Path(run_file).name})</a>'
-        elif sid == "E06-S07":
-            run_link_html = '<span class="ev-link ev-link-partial" title="No matching test cases in workbook yet; gate incomplete">⚠️ Run Evidence: Pending Test Cases</span>'
-        elif sid in ["E03-S08", "E03-S09", "E03-S10", "E02-S05"]:
-            defect_url = f"{GITHUB_REPO_URL}/blob/main/docs/testing/defects.md"
-            run_link_html = f'<a href="{defect_url}" target="_blank" rel="noopener" class="ev-link ev-link-defect">🚨 Defect Registry (defects.md)</a>'
-        else:
-            run_link_html = ""
 
         # Level 2 Definition of Done Checklist
         checklist_html = ""
@@ -2683,19 +2624,6 @@ def build_html() -> str:
           </div>
 
           {bdr_adr_block_html}
-
-          <div class="story-evidence-links">
-            <a href="{jira_url}" target="_blank" rel="noopener" class="ev-link">🔗 Jira Ticket ({s['jira_key']})</a>
-            {pr_link_html}
-            <a href="{code_url}" target="_blank" rel="noopener" class="ev-link">💻 Source ({code_filename})</a>
-            {test_link_html}
-            {run_link_html}
-            <span class="ev-badge">Coverage: {len(active_cases)} active / {len(cases)} total</span>
-          </div>
-
-          <div class="tc-summary-row">
-            {tc_tags}
-          </div>
 
           {demo_walkthrough_html}
 
@@ -4643,53 +4571,28 @@ def build_html() -> str:
     }}
     .cred-launch-link:hover {{ text-decoration: underline; }}
 
-    /* --- 7-Step Live Demonstration Protocol on Story Cards --- */
+    /* --- 5-Step Story Demonstration & Verification Stack --- */
     .story-demo-protocol {{
-      margin: 1.25rem 0;
-      background: #0d1720;
-      border: 1px solid #1e3345;
-      border-radius: 8px;
-      overflow: hidden;
+      margin: 1rem 0;
+      background: transparent;
+      border: none;
     }}
-    .demo-protocol-header {{
-      padding: 0.75rem 1rem;
-      background: #13222f;
-      border-bottom: 1px solid #1e3345;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }}
-    .demo-protocol-title-wrap {{
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }}
-    .demo-protocol-title {{
-      font-size: 0.95rem;
-      color: var(--text-bright);
-      font-weight: 700;
-    }}
-    .demo-protocol-pill {{
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--accent);
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      padding: 0.1rem 0.5rem;
+    .step-role-pill {{
+      font-size: 0.78rem;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: var(--warning);
+      padding: 0.15rem 0.55rem;
       border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-weight: 500;
+      margin-left: auto;
     }}
-    .demo-protocol-role-hint {{
-      font-size: 0.8rem;
-      color: var(--muted);
-    }}
-    .demo-protocol-role-hint strong {{ color: var(--warning); }}
+    .step-role-pill strong {{ color: #fef08a; }}
     .demo-step-panels {{
-      padding: 1rem;
+      padding: 0;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 1rem;
     }}
     .demo-step-panel {{
       display: block;
@@ -4704,7 +4607,9 @@ def build_html() -> str:
       margin: 0 0 0.75rem 0;
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
+      flex-wrap: wrap;
       border-bottom: 1px solid #172733;
       padding-bottom: 0.4rem;
     }}
