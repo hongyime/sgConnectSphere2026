@@ -1287,6 +1287,16 @@ PRODUCTION_ACCOUNTS = [
         "scope": "Operational Safety Review queue, safety approvals & rejections (E08, E10)",
         "start_path": "/safety/queue",
     },
+    {
+        "id": "coord_lead",
+        "name": "Coordinator Lead",
+        "short_name": "Lead",
+        "role": "event_coordinator_lead",
+        "role_title": "Event Coordinator Lead",
+        "email": "coord_lead@connectsphere.com",
+        "scope": "Lead request queue, coordinator assignment, workload oversight (E01, E03)",
+        "start_path": "/coordinator-lead/queue",
+    },
 ]
 SHARED_PASSWORD = "Password123!"  # pragma: allowlist secret
 
@@ -1578,9 +1588,9 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
             start_path = "/login"
             click_path = "1. Navigate to /login -> 2. Attempt login with deactivated credentials -> 3. Verify immediate 401 Unauthorized rejection."
         elif sid in ["E01-S12", "E01-S13"]:
-            account_id = "amareet"
+            account_id = "coord_lead"
             start_path = "/coordinator-lead/queue"
-            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect unassigned events and workload distribution per C-69/T-70."
+            click_path = "1. Sign in as Coordinator Lead (coord_lead@connectsphere.com) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect unassigned events and workload distribution per C-69/T-70."
         else:
             account_id = "jining"
             start_path = "/login"
@@ -1599,19 +1609,19 @@ def get_story_demo_metadata(sid: str, epic: str, s: dict, cases: list[dict]) -> 
     elif epic == "E03":
         account_id = "amareet"
         if sid in ["E03-S08", "E03-S09"]:
-            account_id = "amareet"
+            account_id = "coord_lead"
             start_path = "/coordinator-lead/queue"
-            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect Lead assignment and direct reassignment per C-69/T-70 (remediated on main via SCRUM-261 PR #450/#453)."
+            click_path = "1. Sign in as Coordinator Lead (coord_lead@connectsphere.com) -> 2. Lead Queue (/coordinator-lead/queue) -> 3. Inspect Lead assignment and direct reassignment per C-69/T-70 (remediated on main via SCRUM-261 PR #450/#453)."
         elif sid == "E03-S10":
-            account_id = "amareet"
+            account_id = "coord_lead"
             start_path = "/coordinator-lead/oversight"
-            click_path = "1. Sign in as Amareet (Coordinator Lead) -> 2. Lead Oversight (/coordinator-lead/oversight) -> 3. Inspect coordinator workloads and metrics per C-128/T-83 (remediated on main via SCRUM-261)."
+            click_path = "1. Sign in as Coordinator Lead (coord_lead@connectsphere.com) -> 2. Lead Oversight (/coordinator-lead/oversight) -> 3. Inspect coordinator workloads and metrics per C-128/T-83 (remediated on main via SCRUM-261)."
         elif sid == "E03-S05":
             start_path = "/coordinator/queue"
             click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Open Event Detail -> 4. Type clarification message to organiser -> 5. Verify message logged in event discussion."
         elif sid in ["E03-S06", "E03-S11"]:
             start_path = "/coordinator/queue"
-            click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Open Event Detail -> 4. Click 'Approve for Planning' -> 5. Status transitions to Planning."
+            click_path = "1. Sign in as Amareet (event_coordinator) -> 2. Review queue (/coordinator/queue) -> 3. Open Event Detail -> 4. Click 'Approve Request' (status transitions to Approved) -> 5. Search venues & submit booking request (status transitions to Planning)."
         else:
             start_path = "/coordinator/queue"
             click_path = "1. Sign in as Amareet -> 2. Review queue (/coordinator/queue) -> 3. Choose incoming event proposal -> 4. Inspect details and evaluate feasibility."
@@ -2037,13 +2047,13 @@ def build_html() -> str:
         },
         {
             "id": 11,
-            "title": "Multi-Role Tenancy & Deactivation Cascades",
+            "title": "Role Boundaries & Deactivation Cascades",
             "tag": "Security & Audit",
             "category": "security",
-            "status": "Shipped (T-86/T-59)",
-            "lineage": "C-33/C-136 → T-10 single role → T-86 multi-role many-to-many → T-59 test schema isolation",
-            "hook": "Users can hold multiple system roles simultaneously in user_roles; deactivating an account immediately purges all active auth sessions and blocks login while preserving immutable historical audit records for forensic accountability.",
-            "reality": "PostgreSQL test schema mirrors public schema in the same database (T-59) to prevent cross-test contamination and ensure rollback safety without docker.",
+            "status": "Shipped (ADR-012/T-59)",
+            "lineage": "C-33/C-136 → ADR-012 single role per account → T-59 test schema isolation",
+            "hook": "Each account holds exactly one system role (ADR-012); deactivating an account immediately purges all active auth sessions and blocks login while preserving immutable historical audit records for forensic accountability.",
+            "reality": "PostgreSQL test schema mirrors public schema in the same database (T-59) to prevent cross-test contamination and ensure rollback safety without docker. Strict single-role boundaries enforced per account (ADR-012).",
             "code": "backend/src/modules/accessControl/deactivation.ts",
             "test": "backend/tests/deactivation.integration.test.ts",
             "migration": "backend/database/migrations/0012_user_role_enum_additions.sql",
@@ -2075,51 +2085,119 @@ def build_html() -> str:
         {
             "name": "Bryan",
             "role": "Product Owner / Architecture Lead",
-            "epics": "E01 Access, E02 Submission, Outbox & Database Migrations",
-            "stories": "E01-S01..S08, E02-S01..S07, E11-S01",
-            "pitch": "Architected database migrations 0001–0027, session auth with HTTP-only cookies, transactional outbox pattern, and overall team delivery discipline.",
+            "epics": "E01 Roles & Scopes, E02 Reuse, E03 Lead Oversight, Tooling & Migrations",
+            "stories": "E01-S12..S13, E02-S05, E03-S08..S10",
+            "pitch": "Delivered repository tooling, CI gates, database migrations 0001–0027, session auth with HTTP-only cookies, transactional outbox pattern, and Coordinator Lead governance (E01-S12..S13, E03-S08..S10).",
         },
         {
             "name": "Amareet",
-            "role": "Backend Concurrency & Technical Services",
-            "epics": "E07 Equipment & Technical Support",
-            "stories": "E07-S01..S09",
-            "pitch": "Diagnosed and eliminated technician 40P01 deadlocks in PR #239 via lock hierarchy enforcement; author of equipment inventory and reservation transactions.",
+            "role": "Scrum Master / Concurrency & Registration Lead",
+            "epics": "E09 Attendee Registration, E06 Holds, E07 Tech Support, E04 Multi-Session",
+            "stories": "E04-S02, E06-S05, E07-S06..S07, E09-S01..S03, E09-S07",
+            "pitch": "Engineered attendee registration & capacity enforcement (PRs #326, #327, #353, #354, #368), 48h tentative hold lifecycles (E06-S05), and technician deadlock elimination (PR #239).",
         },
         {
             "name": "Aaron",
             "role": "Workflow & Safety Verification Lead",
-            "epics": "E08 Readiness & Confirmation, E03 Review",
-            "stories": "E08-S03..S06, E03-S01..S07",
-            "pitch": "Authored the Safety Review state machine, automated re-entry algorithms, coordinator readiness checks, and decision factor auditing.",
+            "epics": "E08 Readiness & Confirmation, E02 Submission, E03 Review, E07 Staffing, E09 Waitlist",
+            "stories": "E02-S01..S03, E03-S01..S03, E05-S05, E07-S04..S05, E07-S08..S09, E08-S03, E08-S06, E09-S04..S05",
+            "pitch": "Authored the Safety Review state machine (PR #282), automated re-entry algorithms, coordinator readiness checks, and decision factor auditing.",
         },
         {
             "name": "Xiang Ying",
-            "role": "Attendee Registration & Capacity Systems",
-            "epics": "E09 Attendee Registration",
-            "stories": "E09-S01..S07",
-            "pitch": "Engineered multi-session attendee registration, dual session/event capacity serialization (PR #426), and broadcast waitlist notifications.",
+            "role": "Equipment Inventory & Clarifications Lead",
+            "epics": "E07 Equipment Inventory, E01 Access, E03 Reviews, E08 Completion, E09 Attendance, E10 Cancellation",
+            "stories": "E01-S01..S03, E02-S07, E03-S05..S07, E07-S01..S03, E08-S05, E09-S06, E10-S04",
+            "pitch": "Authored equipment inventory management (E07-S01..S03), organisation access control, and coordinator clarification workflows.",
         },
         {
             "name": "Le Xin",
             "role": "Venue Booking & Inventory Systems",
-            "epics": "E05 Venue Catalogue, E06 Search & Booking",
-            "stories": "E05-S01..S06, E06-S01..S07",
-            "pitch": "Implemented venue setup/turnaround buffers, PostgreSQL exclusion constraint guards (0016), tentative hold lifecycles, and timezone grids.",
+            "epics": "E05 Venue Catalogue, E06 Search & Booking, E03 Registration Fixes, E08 Revert, E10 Minor Edits, E14 Activity Log",
+            "stories": "E03-S11..S12, E05-S01..S04, E05-S06, E06-S04, E06-S06, E08-S04, E10-S02, E14-S02..S03",
+            "pitch": "Implemented venue setup/turnaround buffers, PostgreSQL exclusion constraint guards (0016), double-booking prevention (E06-S06), activity logs, and revert to planning loops (#392).",
         },
         {
             "name": "Ji Ning",
             "role": "Lifecycle Change & Rescheduling Lead",
-            "epics": "E10 Changes & Cancellation, E14 Audit",
-            "stories": "E10-S01..S05, E14-S02..S03",
-            "pitch": "Delivered arrangement impact previews with revision fingerprinting (PR #380) and lost venue recovery with booking preservation (PR #367).",
+            "epics": "E01 Account Admin, E06 Venue Search & Booking, E10 Changes & Cancellation, E11 Notifications",
+            "stories": "E01-S04, E01-S08, E01-S11, E06-S01..S03, E06-S07, E10-S01, E10-S05, E11-S01",
+            "pitch": "Delivered arrangement impact previews with revision fingerprinting (PR #380), lost venue recovery with booking preservation (PR #367), and notification outbox relay (E11-S01).",
         },
     ]
 
 
 
     fig_c4 = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 420" role="img" aria-labelledby="c4-title c4-desc">\n          <title id="c4-title">C4 Container Architecture of ConnectSphere</title>\n          <desc id="c4-desc">ConnectSphere C4 container diagram illustrating the React Single Page Application, Node.js API layer with cookie sessions, Supabase PostgreSQL database with dual public and test schemas, background transactional outbox worker, and external Brevo transactional email API.</desc>\n          <defs>\n            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>\n            </marker>\n          </defs>\n\n          <!-- SPA Container -->\n          <rect x="40" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="160" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Single-Page App</text>\n          <text x="160" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">React 18 · TypeScript · Vite</text>\n          <text x="160" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Organiser · Coordinator · Venue Staff</text>\n          <text x="160" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Tech Staff · Safety Officer · Lead</text>\n          <text x="160" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Same-origin HTTP-only cookies</text>\n\n          <!-- API Gateway Container -->\n          <rect x="360" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">API Server / Serverless</text>\n          <text x="480" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">Node.js 20 · TypeScript</text>\n          <text x="480" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Role-based Access Middleware</text>\n          <text x="480" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Optimistic Revision Checks</text>\n          <text x="480" y="190" fill="#78a7ff" font-size="11" text-anchor="middle">Atomic Savepoints &amp; Rollbacks</text>\n\n          <!-- Database Container -->\n          <rect x="680" y="60" width="240" height="150" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="800" y="95" fill="#75d6c2" font-size="16" font-weight="bold" text-anchor="middle">Database</text>\n          <text x="800" y="120" fill="#9db2c4" font-size="12" text-anchor="middle">PostgreSQL 17 (Supabase)</text>\n          <text x="800" y="145" fill="#e8edf2" font-size="11" text-anchor="middle">Dual \'public\' and \'test\' schemas</text>\n          <text x="800" y="165" fill="#e8edf2" font-size="11" text-anchor="middle">Exclusion Constraints (0016)</text>\n          <text x="800" y="190" fill="#ffd166" font-size="11" text-anchor="middle">Row-Level Security (RLS)</text>\n\n          <!-- Outbox Relay Worker -->\n          <rect x="360" y="270" width="240" height="100" rx="10" fill="#1f3445" stroke="#2c4559" stroke-width="2"/>\n          <text x="480" y="300" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Outbox Relay Worker</text>\n          <text x="480" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Background Dispatch Daemon</text>\n          <text x="480" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Polls notification_outbox table</text>\n\n          <!-- External Brevo Service -->\n          <rect x="680" y="270" width="240" height="100" rx="10" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="800" y="300" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">External Brevo API</text>\n          <text x="800" y="325" fill="#9db2c4" font-size="11" text-anchor="middle">Transactional Email Provider</text>\n          <text x="800" y="345" fill="#e8edf2" font-size="11" text-anchor="middle">Offline intercepted in CI</text>\n\n          <!-- Connecting Arrows -->\n          <line x1="280" y1="135" x2="360" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="320" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">HTTPS</text>\n\n          <line x1="600" y1="135" x2="680" y2="135" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="640" y="125" fill="#9db2c4" font-size="10" text-anchor="middle">TCP/SSL</text>\n\n          <line x1="480" y1="210" x2="480" y2="270" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="515" y="245" fill="#9db2c4" font-size="10" text-anchor="middle">Persists</text>\n\n          <line x1="600" y1="320" x2="680" y2="320" stroke="#75d6c2" stroke-width="2" marker-end="url(#arrow)"/>\n          <text x="640" y="310" fill="#9db2c4" font-size="10" text-anchor="middle">REST</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 1.1: ConnectSphere C4 Container Architecture showing isolation of transactional state from external Brevo delivery.</figcaption>\n      </figure>'
-    fig_fsm = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 420" role="img" aria-labelledby="fsm-title fsm-desc">\n          <title id="fsm-title">Event Lifecycle State Machine</title>\n          <desc id="fsm-desc">Comprehensive event lifecycle state machine showing transitions through Draft, Submitted, Under Review, Approved, Planning, Safety Review, Confirmed, Completed, and Cancelled, along with reversion and replacement loops for venue loss.</desc>\n          <defs>\n            <marker id="fsm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>\n            </marker>\n          </defs>\n\n          <!-- States -->\n          <rect x="30" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="85" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Draft</text>\n\n          <rect x="180" y="60" width="120" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="240" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Submitted</text>\n\n          <rect x="340" y="60" width="130" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="405" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Under Review</text>\n\n          <rect x="510" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="565" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Approved</text>\n\n          <rect x="660" y="60" width="110" height="50" rx="8" fill="#1f3445" stroke="#75d6c2" stroke-width="2"/>\n          <text x="715" y="90" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Planning</text>\n\n          <rect x="810" y="60" width="120" height="50" rx="8" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>\n          <text x="870" y="90" fill="#ffd166" font-size="14" font-weight="bold" text-anchor="middle">Safety Review</text>\n\n          <rect x="810" y="240" width="120" height="50" rx="8" fill="#1f3445" stroke="#48bb78" stroke-width="2"/>\n          <text x="870" y="270" fill="#48bb78" font-size="14" font-weight="bold" text-anchor="middle">Confirmed</text>\n\n          <rect x="550" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#78a7ff" stroke-width="2"/>\n          <text x="610" y="270" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">Completed</text>\n\n          <rect x="340" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#ff9f9f" stroke-width="2"/>\n          <text x="400" y="270" fill="#ff9f9f" font-size="14" font-weight="bold" text-anchor="middle">Cancelled</text>\n\n          <!-- State Transitions -->\n          <line x1="140" y1="85" x2="180" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="300" y1="85" x2="340" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="470" y1="85" x2="510" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <line x1="620" y1="85" x2="660" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="640" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">1st booking</text>\n\n          <line x1="770" y1="85" x2="810" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="790" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">All Ready</text>\n\n          <line x1="870" y1="110" x2="870" y2="240" stroke="#48bb78" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="915" y="175" fill="#48bb78" font-size="10" text-anchor="middle">Approved (T-107)</text>\n\n          <!-- Reversion & Venue Loss Loop -->\n          <path d="M810 270 Q715 340 715 115" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n          <text x="745" y="325" fill="#ffd166" font-size="10" text-anchor="middle">Venue Loss / Revert (T-81/T-28)</text>\n\n          <!-- Safety Rejection Loop -->\n          <path d="M840 60 Q790 20 740 60" fill="none" stroke="#ff9f9f" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="790" y="32" fill="#ff9f9f" font-size="9" text-anchor="middle">Safety Rejection (Changes Requested)</text>\n\n          <!-- Terminal Transitions -->\n          <line x1="810" y1="265" x2="670" y2="265" stroke="#78a7ff" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n          <text x="740" y="255" fill="#9db2c4" font-size="9" text-anchor="middle">End of last session</text>\n\n          <path d="M715 110 L430 240" fill="none" stroke="#ff9f9f" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n          <text x="560" y="195" fill="#ff9f9f" font-size="10" text-anchor="middle">Coordinator / Organiser Cancel (E10-S04)</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.1: Lifecycle state machine including Safety Review and automatic Confirmed → Planning reversion on venue loss.</figcaption>\n      </figure>'
+    fig_fsm = ('<figure class="diagram-panel">\n'
+               '        <svg viewBox="0 0 960 420" role="img" aria-labelledby="fsm-title fsm-desc">\n'
+               '          <title id="fsm-title">Event Lifecycle State Machine</title>\n'
+               '          <desc id="fsm-desc">Comprehensive event lifecycle state machine showing transitions through Draft, Submitted, Under Review, Approved, Planning, Safety Review, Confirmed, Completed, and Cancelled, along with reversion and replacement loops for venue loss.</desc>\n'
+               '          <defs>\n'
+               '            <marker id="fsm-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n'
+               '              <path d="M0 0L10 5L0 10z" fill="#75d6c2"/>\n'
+               '            </marker>\n'
+               '          </defs>\n\n'
+               '          <!-- States -->\n'
+               '          <rect x="30" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n'
+               '          <text x="85" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Draft</text>\n\n'
+               '          <rect x="180" y="60" width="120" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n'
+               '          <text x="240" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Submitted</text>\n\n'
+               '          <rect x="340" y="60" width="130" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n'
+               '          <text x="405" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Under Review</text>\n\n'
+               '          <rect x="510" y="60" width="110" height="50" rx="8" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n'
+               '          <text x="565" y="90" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">Approved</text>\n\n'
+               '          <rect x="660" y="60" width="110" height="50" rx="8" fill="#1f3445" stroke="#75d6c2" stroke-width="2"/>\n'
+               '          <text x="715" y="90" fill="#75d6c2" font-size="14" font-weight="bold" text-anchor="middle">Planning</text>\n\n'
+               '          <rect x="810" y="60" width="120" height="50" rx="8" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>\n'
+               '          <text x="870" y="90" fill="#ffd166" font-size="14" font-weight="bold" text-anchor="middle">Safety Review</text>\n\n'
+               '          <rect x="810" y="240" width="120" height="50" rx="8" fill="#1f3445" stroke="#48bb78" stroke-width="2"/>\n'
+               '          <text x="870" y="270" fill="#48bb78" font-size="14" font-weight="bold" text-anchor="middle">Confirmed</text>\n\n'
+               '          <rect x="550" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#78a7ff" stroke-width="2"/>\n'
+               '          <text x="610" y="270" fill="#78a7ff" font-size="14" font-weight="bold" text-anchor="middle">Completed</text>\n\n'
+               '          <rect x="340" y="240" width="120" height="50" rx="8" fill="#172733" stroke="#ff9f9f" stroke-width="2"/>\n'
+               '          <text x="400" y="270" fill="#ff9f9f" font-size="14" font-weight="bold" text-anchor="middle">Cancelled</text>\n\n'
+               '          <!-- State Transitions -->\n'
+               '          <line x1="140" y1="85" x2="180" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <line x1="300" y1="85" x2="340" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <line x1="470" y1="85" x2="510" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <line x1="620" y1="85" x2="660" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="640" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">1st booking</text>\n\n'
+               '          <line x1="770" y1="85" x2="810" y2="85" stroke="#75d6c2" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="790" y="75" fill="#9db2c4" font-size="9" text-anchor="middle">All Ready</text>\n\n'
+               '          <line x1="870" y1="110" x2="870" y2="240" stroke="#48bb78" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="915" y="175" fill="#48bb78" font-size="10" text-anchor="middle">Approved (T-107)</text>\n\n'
+               '          <!-- Reversion & Venue Loss Loop -->\n'
+               '          <path d="M810 270 Q715 340 715 115" fill="none" stroke="#ffd166" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="745" y="325" fill="#ffd166" font-size="10" text-anchor="middle">Venue Loss / Revert (T-81/T-28)</text>\n\n'
+               '          <!-- Safety Rejection Loop -->\n'
+               '          <path d="M840 60 Q790 20 740 60" fill="none" stroke="#ff9f9f" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="790" y="32" fill="#ff9f9f" font-size="9" text-anchor="middle">Safety Rejection (Changes Requested)</text>\n\n'
+               '          <!-- Terminal Transitions -->\n'
+               '          <line x1="810" y1="265" x2="670" y2="265" stroke="#78a7ff" stroke-width="2" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="740" y="255" fill="#9db2c4" font-size="9" text-anchor="middle">End of last session</text>\n\n'
+               '          <path d="M715 110 L430 240" fill="none" stroke="#ff9f9f" stroke-width="2" stroke-dasharray="4" marker-end="url(#fsm-arrow)"/>\n'
+               '          <text x="560" y="195" fill="#ff9f9f" font-size="10" text-anchor="middle">Coordinator / Organiser Cancel (E10-S04)</text>\n'
+               '        </svg>\n'
+               '        <figcaption class="diagram-caption">Figure 2.1: Lifecycle state machine including Safety Review and automatic Confirmed → Planning reversion on venue loss.</figcaption>\n'
+               '        <div class="fsm-gap-callout" style="background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: 8px; padding: 1.25rem; margin-top: 1rem; text-align: left;">\n'
+               '          <h4 style="color: var(--accent); margin-bottom: 0.5rem; font-size: 1.05rem;">📋 End-to-End Walkthrough: 11 Steps to Make a Confirmed Event Visible to Attendees</h4>\n'
+               '          <p style="font-size: 0.9rem; color: var(--text-dim); margin-bottom: 0.75rem;"><strong>Important Lifecycle Finding &amp; Known Gap (Steps 8–10):</strong> An event reaching <code>Confirmed</code> does not automatically appear on the Attendee Discover page. Registration must be explicitly enabled, the window configured, and the event published via console command.</p>\n'
+               '          <ol style="margin-left: 1.25rem; font-size: 0.9rem; line-height: 1.6; color: var(--text);">\n'
+               '            <li><strong>Organiser:</strong> Submit a new event request (choose equipment = <em>None required</em> for fast path).</li>\n'
+               '            <li><strong>Coordinator Lead (<code>coord_lead@connectsphere.com</code>):</strong> Review lead queue and assign the event to a Coordinator (ADR-012 role isolation).</li>\n'
+               '            <li><strong>Coordinator:</strong> Approve the request. <em>(Event status transitions to <code>Approved</code>, not Planning.)</em></li>\n'
+               '            <li><strong>Coordinator:</strong> Search venues and submit a booking request. <em>(Status transitions to <code>Planning</code> only once booking request is submitted.)</em></li>\n'
+               '            <li><strong>Venue Staff:</strong> Approve the booking request and designate it as the primary venue.</li>\n'
+               '            <li><strong>Coordinator:</strong> Open Readiness checklist and click <strong>Submit for Safety Check</strong>. <em>(Status transitions to <code>Safety Review</code>.)</em></li>\n'
+               '            <li><strong>Safety Officer:</strong> Evaluate all 7 checklist factors and approve. The event is now <strong>Confirmed</strong>.</li>\n'
+               '            <li><strong>Organiser:</strong> Send a change request to turn registration on and set the registration window dates/times.</li>\n'
+               '            <li><strong>Coordinator:</strong> Approve the change request, then apply it to the event.</li>\n'
+               '            <li><strong>Coordinator / Admin (Console):</strong> Publish the event (known UI gap: no GUI button exists; executed via console command/database publication).</li>\n'
+               '            <li><strong>Attendee:</strong> Check Discover (<code>/attendee/discover</code>). The event now appears in the public catalogue and accepts registrations.</li>\n'
+               '          </ol>\n'
+               '        </div>\n'
+               '      </figure>')
     fig_lock = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 380" role="img" aria-labelledby="lock-title lock-desc">\n          <title id="lock-title">PostgreSQL Concurrency Lock Order and Hierarchy</title>\n          <desc id="lock-desc">Database concurrency lock hierarchy diagram displaying top-down lock ordering from Events FOR UPDATE, Event Sessions FOR UPDATE, Venues FOR NO KEY UPDATE, Venue Bookings FOR UPDATE, Support Requests FOR UPDATE, down to Users FOR NO KEY UPDATE from PR #239 preventing 40P01 deadlocks.</desc>\n          <defs>\n            <marker id="lock-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">\n              <path d="M0 0L10 5L0 10z" fill="#ffd166"/>\n            </marker>\n          </defs>\n\n          <!-- Level 1 -->\n          <rect x="340" y="20" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="47" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">1. events (FOR UPDATE)</text>\n\n          <!-- Level 2 -->\n          <rect x="340" y="90" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="480" y="117" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">2. event_sessions (FOR UPDATE)</text>\n\n          <!-- Level 3 -->\n          <rect x="180" y="170" width="280" height="45" rx="6" fill="#1f3445" stroke="#78a7ff" stroke-width="2"/>\n          <text x="320" y="197" fill="#78a7ff" font-size="13" font-weight="bold" text-anchor="middle">3A. venues (FOR NO KEY UPDATE)</text>\n\n          <rect x="500" y="170" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="640" y="197" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">3B. support_requests (FOR UPDATE)</text>\n\n          <!-- Level 4 -->\n          <rect x="180" y="250" width="280" height="45" rx="6" fill="#172733" stroke="#75d6c2" stroke-width="2"/>\n          <text x="320" y="277" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">4A. venue_bookings (FOR UPDATE)</text>\n\n          <rect x="500" y="250" width="280" height="45" rx="6" fill="#1f3445" stroke="#ffd166" stroke-width="2"/>\n          <text x="640" y="277" fill="#ffd166" font-size="13" font-weight="bold" text-anchor="middle">4B. users (FOR NO KEY UPDATE) [PR #239]</text>\n\n          <!-- Level 5 -->\n          <rect x="340" y="325" width="280" height="40" rx="6" fill="#172733" stroke="#2c4559" stroke-width="2"/>\n          <text x="480" y="350" fill="#9db2c4" font-size="12" text-anchor="middle">5. notification_outbox (Atomic Insert)</text>\n\n          <!-- Arrows -->\n          <line x1="480" y1="65" x2="480" y2="90" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="420" y1="135" x2="350" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="540" y1="135" x2="610" y2="170" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="320" y1="215" x2="320" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n          <line x1="640" y1="215" x2="640" y2="250" stroke="#ffd166" stroke-width="2" marker-end="url(#lock-arrow)"/>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.2: Strict top-down lock hierarchy. Step 4B locks technician user rows FOR NO KEY UPDATE, eliminating 40P01 exclusion deadlocks.</figcaption>\n      </figure>'
     fig_vel = '<figure class="diagram-panel">\n        <svg viewBox="0 0 960 300" role="img" aria-labelledby="vel-title vel-desc">\n          <title id="vel-title">Reconciled Agile Velocity Comparison Across Sprints 1 to 4</title>\n          <desc id="vel-desc">Grouped bar chart comparing reported Jira chart velocity, fair product-story title audit velocity, and strict Definition of Done verified velocity across Sprint 1, Sprint 2, Sprint 3, and Sprint 4.</desc>\n\n          <!-- Axis lines -->\n          <line x1="80" y1="230" x2="900" y2="230" stroke="#2c4559" stroke-width="1"/>\n          <line x1="80" y1="160" x2="900" y2="160" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n          <line x1="80" y1="90" x2="900" y2="90" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n          <line x1="80" y1="20" x2="900" y2="20" stroke="#2c4559" stroke-width="1" stroke-dasharray="4"/>\n\n          <text x="65" y="235" fill="#9db2c4" font-size="12" text-anchor="end">0</text>\n          <text x="65" y="165" fill="#9db2c4" font-size="12" text-anchor="end">25</text>\n          <text x="65" y="95" fill="#9db2c4" font-size="12" text-anchor="end">50</text>\n          <text x="65" y="25" fill="#9db2c4" font-size="12" text-anchor="end">75</text>\n\n          <!-- Sprint 1 Group (Base X: 120) -->\n          <rect x="120" y="143" width="30" height="87" fill="#ffd166" rx="3"/>\n          <text x="135" y="137" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">31</text>\n          <rect x="155" y="163" width="30" height="67" fill="#78a7ff" rx="3"/>\n          <text x="170" y="157" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">24</text>\n          <rect x="190" y="163" width="30" height="67" fill="#75d6c2" rx="3"/>\n          <text x="205" y="157" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">24</text>\n          <text x="170" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 1</text>\n\n          <!-- Sprint 2 Group (Base X: 320) -->\n          <rect x="320" y="45" width="30" height="185" fill="#ffd166" rx="3"/>\n          <text x="335" y="39" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">66</text>\n          <rect x="355" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>\n          <text x="370" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>\n          <rect x="390" y="199" width="30" height="31" fill="#75d6c2" rx="3"/>\n          <text x="405" y="193" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">11</text>\n          <text x="370" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 2</text>\n\n          <!-- Sprint 3 Group (Base X: 520) -->\n          <rect x="520" y="135" width="30" height="95" fill="#ffd166" rx="3"/>\n          <text x="535" y="129" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">34</text>\n          <rect x="555" y="135" width="30" height="95" fill="#78a7ff" rx="3"/>\n          <text x="570" y="129" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">34</text>\n          <rect x="590" y="149" width="30" height="81" fill="#75d6c2" rx="3"/>\n          <text x="605" y="143" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">29</text>\n          <text x="570" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 3</text>\n\n          <!-- Sprint 4 Group (Base X: 720) -->\n          <rect x="720" y="82" width="30" height="148" fill="#ffd166" rx="3"/>\n          <text x="735" y="76" fill="#ffd166" font-size="11" font-weight="bold" text-anchor="middle">53</text>\n          <rect x="745" y="118" width="30" height="112" fill="#78a7ff" rx="3"/>\n          <text x="760" y="112" fill="#78a7ff" font-size="11" font-weight="bold" text-anchor="middle">40</text>\n          <rect x="770" y="143" width="30" height="87" fill="#75d6c2" rx="3"/>\n          <text x="785" y="137" fill="#75d6c2" font-size="11" font-weight="bold" text-anchor="middle">31</text>\n          <text x="760" y="252" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">Sprint 4</text>\n\n          <!-- Legend -->\n          <rect x="260" y="278" width="12" height="12" fill="#ffd166" rx="2"/>\n          <text x="280" y="289" fill="#9db2c4" font-size="11">Jira Chart (43.7 avg)</text>\n          <rect x="440" y="278" width="12" height="12" fill="#78a7ff" rx="2"/>\n          <text x="460" y="289" fill="#9db2c4" font-size="11">Product Title Audit (32.7 avg)</text>\n          <rect x="650" y="278" width="12" height="12" fill="#75d6c2" rx="2"/>\n          <text x="670" y="289" fill="#9db2c4" font-size="11">Strict DoD Evidence (21.3 avg)</text>\n        </svg>\n        <figcaption class="diagram-caption">Figure 2.3: Reconciled Agile velocity comparison proving we never inflated numbers or rewrote sprint history.</figcaption>\n      </figure>'
 
@@ -5067,11 +5145,11 @@ def build_html() -> str:
                 <span style="font-size: 0.75rem; color: var(--muted);">instant local search for this static guide</span>
               </div>
               <div class="top-chips-grid">
-                <button type="button" class="top-chip" data-query="Safety Review">Safety Review (Aaron · E06)</button>
-                <button type="button" class="top-chip" data-query="Venue Loss">Venue Loss (Dylan · E10-S02)</button>
+                <button type="button" class="top-chip" data-query="Safety Review">Safety Review (Aaron · E08)</button>
+                <button type="button" class="top-chip" data-query="Venue Loss">Venue Loss (Lexin · E10-S02)</button>
                 <button type="button" class="top-chip" data-query="Booking Race">Booking Race (Amareet · E06-S06)</button>
-                <button type="button" class="top-chip" data-query="Holds">Holds (E05-S03 · 48h Expiry)</button>
-                <button type="button" class="top-chip" data-query="Attendee Capacity">Attendee Capacity (Xiang Ying · E09)</button>
+                <button type="button" class="top-chip" data-query="Holds">Holds (Amareet · E06-S05 · 48h Expiry)</button>
+                <button type="button" class="top-chip" data-query="Attendee Capacity">Attendee Capacity (Amareet · E09-S02)</button>
                 <button type="button" class="top-chip" data-query="Outbox">Outbox (Bryan · E11-S01 · ADR-006)</button>
                 <button type="button" class="top-chip" data-query="Scrum Velocity">Scrum Velocity (Burn-Up &amp; PR Flow)</button>
                 <button type="button" class="top-chip" data-query="AI Governance">AI Governance (Dossier 12 · T-108)</button>
@@ -5359,11 +5437,11 @@ def build_html() -> str:
               </div>
               <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
                 <h4 style="color: var(--accent); margin-bottom: 0.5rem;">08:00 - 12:00 (Amareet)</h4>
-                <p><strong>Concurrency &amp; Technical Services:</strong> Two-phase lock hierarchy eliminating 40P01 deadlocks (PR #239), equipment reservation vs request (ADR-010).</p>
+                <p><strong>Attendee Registration &amp; Concurrency:</strong> Registration &amp; capacity enforcement (E09, PRs #326, #327, #353, #354, #368), 48h tentative hold lifecycles (E06-S05), and technician deadlock elimination (PR #239).</p>
               </div>
               <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
-                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">12:00 - 16:00 (Xiang Ying &amp; Dylan)</h4>
-                <p><strong>Attendee Registration &amp; Changes:</strong> Multi-session registration (ADR-018), revision fingerprinting (PR #380), lost venue recovery (ADR-015).</p>
+                <h4 style="color: var(--accent); margin-bottom: 0.5rem;">12:00 - 16:00 (Xiang Ying &amp; Ji Ning)</h4>
+                <p><strong>Equipment Inventory &amp; Lifecycle Changes:</strong> Equipment inventory &amp; requests (E07-S01..S03), revision fingerprinting (PR #380), and lost venue recovery (E10-S05 / PR #367).</p>
               </div>
               <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem;">
                 <h4 style="color: var(--accent); margin-bottom: 0.5rem;">16:00 - 20:00 (All Hands)</h4>

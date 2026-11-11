@@ -359,6 +359,7 @@ def run_tests():
         ("Lexin", "technical_support_staff", "lexin.phun.2024@smu.edu.sg"),
         ("XY", "attendee", "xy.sim.2024@smu.edu.sg"),
         ("Bryan", "safety_officer", "bryanseah234@gmail.com"),
+        ("Lead", "event_coordinator_lead", "coord_lead@connectsphere.com"),
     ]
     for name, role, email in expected_accounts:
         assert email in cred_drawer.text, f"Credentials drawer missing email: {email}"
@@ -372,6 +373,7 @@ def run_tests():
         "Le Xin": "/support/technicians",
         "Xiang Ying": "/attendee/discover",
         "Bryan": "/safety/queue",
+        "Lead": "/coordinator-lead/queue",
     }
     for card in cred_drawer.find_all("div", class_="cred-account-card"):
         c_name = card.find("span", class_="cred-name").text.strip()
@@ -382,7 +384,7 @@ def run_tests():
         launch_link = card.find("a", class_="cred-launch-link")
         assert launch_link is not None and expected_route in launch_link.get("href", ""), f"Wrong launch route for {short}: expected {expected_route}"
     assert "Ephemeral" in text, "Missing ephemeral testbed accounts notice"
-    print("PASS: Production role credentials drawer verified (6 accounts and verified routes, no sticky/copy clutter)")
+    print("PASS: Production role credentials drawer verified (7 accounts and verified routes, no sticky/copy clutter)")
 
     # 23. 7-Step Live Demonstration Protocol on all 65 Stories
     for s in stories:
@@ -472,6 +474,45 @@ def run_tests():
     duplicate_ids = [i for i, count in id_counts.items() if count > 1]
     assert len(duplicate_ids) == 0, f"Found duplicate IDs in document: {duplicate_ids}"
     print("PASS: Document strictly contains zero duplicate IDs across all elements")
+
+    # 26. Team Accountability, ADR-012 Roles, Lifecycle FSM & 11-Step Publication Gap
+    team_grid = runbook_view.find("div", class_="team-grid")
+    assert team_grid is not None, "Missing .team-grid in runbook view"
+    member_cards = team_grid.find_all("div", class_="team-member-card")
+    assert len(member_cards) == 6, f"Expected 6 team member cards, got {len(member_cards)}"
+    member_names = [mc.find(class_="member-name").text.strip() for mc in member_cards]
+    assert set(member_names) == {"Bryan", "Amareet", "Aaron", "Xiang Ying", "Le Xin", "Ji Ning"}, f"Unexpected team members: {member_names}"
+
+    # Dylan must never appear in document
+    assert "dylan" not in text.lower(), "Found reference to non-existent member 'Dylan' in document"
+
+    # Specific member ownership assertions
+    card_map = {mc.find(class_="member-name").text.strip(): mc.text for mc in member_cards}
+    assert "E01-S12..S13" in card_map["Bryan"] and "E01-S01..S08" not in card_map["Bryan"], "Bryan's stories mismatch"
+    assert "E09-S01..S03" in card_map["Amareet"] and "E07-S06..S07" in card_map["Amareet"], "Amareet's stories mismatch"
+    assert "E07-S01..S09" not in card_map["Amareet"], "Amareet must not own all of E07-S01..S09"
+    assert "326" in card_map["Amareet"] and "368" in card_map["Amareet"], "Amareet missing E09 PR attributions"
+    assert "E07-S01..S03" in card_map["Xiang Ying"], "Xiang Ying missing E07 inventory stories"
+
+    # Single-role tenancy & ADR-012 enforcement (no multi-role claim)
+    assert "users can hold multiple roles simultaneously" not in text.lower(), "Contradicts ADR-012 single role per account"
+    assert "sign in as amareet (coordinator lead)" not in text.lower(), "Conflates Amareet with Coordinator Lead"
+    assert "coord_lead@connectsphere.com" in text, "Missing Coordinator Lead account coord_lead@connectsphere.com"
+
+    # State machine and holds precision
+    assert "approve for planning" not in text.lower(), "Invalid state transition 'Approve for Planning'"
+    assert "Holds (Amareet · E06-S05 · 48h Expiry)" in text, "Missing 48h tentative holds chip under Amareet E06-S05"
+
+    # 11-Step Lifecycle & Publication Gap Callout
+    gap_callout = soup.find("div", class_="fsm-gap-callout")
+    assert gap_callout is not None, "Missing .fsm-gap-callout in Figure 2.1"
+    gap_steps = gap_callout.find_all("li")
+    assert len(gap_steps) == 11, f"Expected 11 steps in lifecycle walkthrough, got {len(gap_steps)}"
+    assert "Submit for Safety Check" in gap_callout.text, "Missing safety check submission step"
+    assert "change request" in gap_callout.text.lower(), "Missing registration window change request step"
+    assert "console command" in gap_callout.text.lower() or "console" in gap_callout.text.lower(), "Missing console publication gap step"
+    assert "Discover" in gap_callout.text, "Missing Attendee Discover final step"
+    print("PASS: Team Accountability, ADR-012 Roles, Lifecycle FSM & 11-Step Publication Gap verified")
 
     print("\nALL VERIFICATION CHECKS PASSED SUCCESSFULLY.")
 
